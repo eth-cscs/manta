@@ -193,7 +193,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Verb::Log(log_cmd) => {
             logging_session_name = log_cmd.session_name;
             layer_id = log_cmd.layer_id;
-            shasta_cfs_session_logs::client::session_logs(shasta_token, shasta_base_url, &None, &Some(logging_session_name), &Some(1), layer_id).await?;
+            shasta_cfs_session_logs::client::session_logs(shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
         }
     }
 

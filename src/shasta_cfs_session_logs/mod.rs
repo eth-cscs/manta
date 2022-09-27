@@ -8,12 +8,12 @@ pub mod client {
 
     use crate::{shasta_cfs_session};
 
-    pub async fn session_logs(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, limit_number: &Option<u8>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
-
+    pub async fn session_logs(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
+        
         // Get CFS sessions
-        let mut cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, limit_number).await?;
+        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
 
-        cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
+        // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
 
         if cfs_sessions.is_empty() {
             log::info!("No CFS session found");
