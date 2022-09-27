@@ -90,7 +90,7 @@ Get shasta api token api (check with your shasta administrator)
 
 Get a k8s config file to connect to shasta k8s api (check with your shasta administrator)
 
-Run
+## Run
 
 ```shell
 RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to shasta k8s api server> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token> cargo run -- --help
