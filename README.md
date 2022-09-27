@@ -4,6 +4,8 @@ Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
 
 It basically translates your manta command into http calls against Shasta related APIs
 
+NOTE: current implementation does not creates/updates/deletes any information in the Shasta mgmt plane
+
 ## Features
 
 - List and filter CFS configurations based on cluster name or configuration name
