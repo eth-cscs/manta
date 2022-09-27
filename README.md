@@ -1,6 +1,6 @@
 # MANTA
 
-Another CLI tool for Shasta
+Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
 
 ## Prerequisites
 
@@ -10,10 +10,10 @@ Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-Start a socks5 proxy layer to access shasta mgmt and shasta k8s api nodes. This is needed so manta http client can reach shasta cvs, mgmt and k8s rest apis.
+Start a socks5 proxy (this is needed so manta http client can reach required apis like cvs, shasta mgmt and k8s api server).
 
 ```shell
-ssh -D 1080 msopena@mgmt-alps -J bastion.cscs.ch
+ssh -D 1080 $USER@mgmt-alps -J bastion.cscs.ch
 ```
 
 Get shasta api token api (check with your shasta administrator)
@@ -23,9 +23,15 @@ Get a k8s config file to connect to shasta k8s api (check with your shasta admin
 Run
 
 ```shell
-RUST_LOG=info KUBECONFIG=<k8s config file to connect to shasta> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token> cargo run -- --help
+RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to shasta k8s api server> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token> cargo run -- --help
 ```
 
 ## Deployment
 
 cargo build --release
+
+## Features
+
+- List and filter CFS configurations based on cluster name or configuration name
+- List and filter CFS sessions based on cluster name or configuration name
+- CFS session logs watcher
