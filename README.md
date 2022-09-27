@@ -8,7 +8,7 @@ It basically translates your manta command into http calls against Shasta relate
 
 - List and filter CFS configurations based on cluster name or configuration name
 - List and filter CFS sessions based on cluster name or session name
-- CFS session logs watcher
+- CFS session layer log watcher
   
 ## Prerequisites
 
