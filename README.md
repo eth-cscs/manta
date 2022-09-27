@@ -52,4 +52,6 @@ RUST_LOG=info KUBECONFIG=<Shasta k8s config> SHASTA_ADMIN_PWD=<shasta api admin 
 
 ## Deployment
 
+```shell
 cargo build --release
+```
