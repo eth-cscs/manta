@@ -11,7 +11,67 @@ It basically translates your manta command into http calls against Shasta relate
 - List and filter CFS configurations based on cluster name or configuration name
 - List and filter CFS sessions based on cluster name or session name
 - CFS session layer log watcher
-  
+
+## Example
+
+Get lastest (most recent) session
+
+```shell
+$ manta get session -m
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] *** CFS SESSIONS ***
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] ================================
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] name: batcher-cef892ee-39af-444a-b32c-89478a100e4d
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] configuration: rigi-cos-config-3.0.2
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] target definition: dynamic
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] target groups name: 
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] ansible - limit: "x1500c7s2b0n0"
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] start time: 2022-09-27T12:17:38
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] status: complete
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] succeeded: true
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] job: cfs-b49cdc2b-d6cb-4477-b502-6be479472546
+[2022-09-27T12:41:34Z INFO  manta::cfs_utils] ================================
+```
+
+Get logs 
+
+```shell
+$ manta log -s batcher-cef892ee-39af-444a-b32c-89478a100e4d -l 0
+[2022-09-27T12:41:49Z INFO  manta::shasta_cfs_session_logs::client] Pod name: "cfs-b49cdc2b-d6cb-4477-b502-6be479472546-2jrlg"
+Waiting for Inventory
+Waiting for Inventory
+Waiting for Inventory
+Waiting for Inventory
+Waiting for Inventory
+Waiting for Inventory
+Waiting for Inventory
+Inventory generation completed
+SSH keys migrated to /root/.ssh
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 200 OK
+content-type: text/html; charset=UTF-8
+cache-control: no-cache, max-age=0
+x-content-type-options: nosniff
+date: Tue, 27 Sep 2022 12:18:16 GMT
+server: envoy
+transfer-encoding: chunked
+
+Sidecar available
+[WARNING]: Invalid characters were found in group names but not replaced, use
+-vvvv to see details
+
+PLAY [Compute] *****************************************************************
+
+PLAY [Application] *************************************************************
+skipping: no hosts matched
+
+PLAY [Management_Worker] *******************************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0   
+```
 ## Prerequisites
 
 Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)
