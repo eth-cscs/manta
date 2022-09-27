@@ -121,7 +121,7 @@ pub mod client {
         }).await?.boxed();
     
         while let Some(line) = logs.try_next().await? {
-            println!("{:?}", String::from_utf8_lossy(&line));
+            print!("{}", std::str::from_utf8(&line).unwrap());
         }
     
         Ok(())
