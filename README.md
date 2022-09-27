@@ -1,6 +1,7 @@
 # MANTA
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
+
 It basically translates your manta command into http calls against Shasta related APIs
 
 ## Features
