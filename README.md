@@ -39,7 +39,7 @@ RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to sha
 or
 
 ```shell
-cargo bild
+cargo build
 RUST_LOG=info KUBECONFIG=<Shasta k8s config> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token>  target/debug/manta --help
 ```
 
