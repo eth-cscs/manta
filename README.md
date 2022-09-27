@@ -43,8 +43,8 @@ cargo bild
 RUST_LOG=info KUBECONFIG=<Shasta k8s config> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token>  target/debug/manta --help
 ```
 
-|end|meaning|
-|---|-------|
+|env var|Description|
+|-------|-----------|
 |RUST_LOG|log details/verbosity|
 |KUBECONFIG|path to file with kubernetes configuration to reach Shasta k8s api server. Manta will use this file to talk to k8s api server in same fashion as kubectl does|
 |SHASTA_ADMIN_PWD|admin-client-auth secret in Shasta k8s|
