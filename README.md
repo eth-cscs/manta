@@ -17,7 +17,7 @@ It basically translates your manta command into http calls against Shasta relate
 Get lastest (most recent) session
 
 ```shell
-$ manta get session -m
+$ manta get session --most-recent
 [2022-09-27T12:41:34Z INFO  manta::cfs_utils] *** CFS SESSIONS ***
 [2022-09-27T12:41:34Z INFO  manta::cfs_utils] ================================
 [2022-09-27T12:41:34Z INFO  manta::cfs_utils] name: batcher-cef892ee-39af-444a-b32c-89478a100e4d
@@ -32,10 +32,10 @@ $ manta get session -m
 [2022-09-27T12:41:34Z INFO  manta::cfs_utils] ================================
 ```
 
-Get logs 
+Get logs for a session/layer
 
 ```shell
-$ manta log -s batcher-cef892ee-39af-444a-b32c-89478a100e4d -l 0
+$ manta log --session-name batcher-cef892ee-39af-444a-b32c-89478a100e4d --layer-id 0
 [2022-09-27T12:41:49Z INFO  manta::shasta_cfs_session_logs::client] Pod name: "cfs-b49cdc2b-d6cb-4477-b502-6be479472546-2jrlg"
 Waiting for Inventory
 Waiting for Inventory
