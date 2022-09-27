@@ -123,14 +123,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_token;
     let shasta_base_url = "https://api-gw-service-nmn.local/apis";
 
-    // let args: Vec<String> = std::env::args().collect();
-
-    // let cluster_name = std::env::var("CLUSTER_NAME").unwrap();
     let shasta_admin_pwd = std::env::var("SHASTA_ADMIN_PWD").unwrap();
-
-    // let cluster_name = args[1].as_str();
-
-    // log::info!("Processing cluster - {}", cluster_name);
 
     let shasta_token_resp = auth::auth(&shasta_admin_pwd).await?;
 
@@ -202,30 +195,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             layer_id = log_cmd.layer_id;
             shasta_cfs_session_logs::client::session_logs(shasta_token, shasta_base_url, &None, &Some(logging_session_name), &Some(1), layer_id).await?;
         }
-        // Verb::Create(_) => {
-        //     log::info!("Comming soon");
-        //     process::exit(0);
-        // }, 
     }
-
-    // // Get CFS sessions
-    // let mut cfs_sessions = cfs_http_client::get_cfs_sessions(shasta_token, shasta_base_url, &cluster_name).await?;
-
-    // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
-
-    // if cfs_sessions.is_empty() {
-    //     log::info!("No CFS session found for cluster {}", cluster_name);
-    //     return Ok(())
-    // }
-
-    // cfs_utils::print_cfs_session(&cfs_sessions.last().unwrap());
-
-    // let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
-
-    // let client = k8s_programmatic_client::get_client().await?;
-
-    // Get CFS session logs
-    // k8s_programmatic_client::get_pod_logs(client, cfs_session_name, layer_id).await?; // TODO: do we need this method to be async?
 
     Ok(())
 }

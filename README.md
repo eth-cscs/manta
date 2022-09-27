@@ -2,9 +2,9 @@
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
 
-It basically translates your manta command into http calls against Shasta related APIs (Manta does not use other tools like cray cli or kubectl)
+Manta is a rest client against Shasta related APIs (Manta does not use other tools like cray cli or kubectl) and presented as a CLI
 
-**NOTE:** current implementation does not creates/updates/deletes any information in the Shasta mgmt plane
+**NOTE:** current implementation does not create/update/delete any information in the Shasta mgmt plane
 
 ## Features
 

@@ -65,41 +65,6 @@ pub mod client {
         Ok(client)
     }
 
-    // pub async fn get_client() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
-
-    //     let config = kube::Config::infer().await?;
-    //     // log::info!("{:#?}", config);
-    
-    //     let connector = {
-    //         let mut http = HttpConnector::new();
-    //         http.enforce_http(false);
-    //         let proxy = hyper_socks2::SocksConnector {
-    //             proxy_addr: Uri::from_static("socks5://localhost:1080"),
-    //             auth: None,
-    //             connector: http,
-    //         };
-    //         let mut native_tls_builder = native_tls::TlsConnector::builder();
-    //         native_tls_builder.danger_accept_invalid_certs(true);
-    //         native_tls_builder.danger_accept_invalid_hostnames(true);
-    //         native_tls_builder.use_sni(false);
-    
-    //         // let native_tls_connector = native_tls_builder.build().unwrap();
-    
-    //         // let tls = tokio_native_tls::TlsConnector::from(native_tls_connector);
-    //         let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
-    //         hyper_tls::HttpsConnector::from((proxy, tls))
-    //     };
-    
-    //     let service = tower::ServiceBuilder::new()
-    //         .layer(config.base_uri_layer())
-    //         .option_layer(config.auth_layer()?)
-    //         .service(hyper::Client::builder().build(connector));
-    
-    //     let client = kube::Client::new(service, config.default_namespace);
-    
-    //     Ok(client)
-    // }
-    
     pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> core::result::Result<(), Box<dyn std::error::Error>> {
     
         let pods: Api<Pod> = Api::namespaced(client, "services");
