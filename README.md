@@ -1,7 +1,14 @@
 # MANTA
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
+It basically translates your manta command into http calls against Shasta related APIs
 
+## Features
+
+- List and filter CFS configurations based on cluster name or configuration name
+- List and filter CFS sessions based on cluster name or configuration name
+- CFS session logs watcher
+  
 ## Prerequisites
 
 Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)
@@ -29,9 +36,3 @@ RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to sha
 ## Deployment
 
 cargo build --release
-
-## Features
-
-- List and filter CFS configurations based on cluster name or configuration name
-- List and filter CFS sessions based on cluster name or configuration name
-- CFS session logs watcher
