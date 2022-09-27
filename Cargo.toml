@@ -1,0 +1,25 @@
+[package]
+name = "manta"
+description = "Another CLI for basic/simple Shasta operations"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11", features = ["blocking", "json", "rustls-tls", "socks"] }
+serde_json = "1.0"
+log = "0.4.17"
+env_logger = "0.9.0"
+tokio = { version = "1", features = ["full"] }
+kube = { version = "0.74.0", features = ["runtime", "derive", "native-tls"] }
+k8s-openapi = { version = "0.15.0", features = ["v1_24"] }
+# https://github.com/kube-rs/kube-rs/discussions/1012 and https://crates.io/crates/hyper-socks2
+hyper-socks2 = "0.6.0" 
+hyper = { version = "0.14", features = ["full"] }
+tokio-native-tls = "0.3.0"
+hyper-tls = "0.5.0"
+tower = "0.4.13"
+native-tls = "0.2.10"
+futures-util = "0.3.24"
+clap = { version = "3.2.22", features = ["derive"] }
