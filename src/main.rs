@@ -10,6 +10,7 @@ mod manta_cfs;
 // use std::process;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
+use git2::{ObjectType, Repository, PushOptions};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]struct Cli {
@@ -22,8 +23,8 @@ enum Verb {
     // NOTE: clap uses '///' comments as a command description
     /// Get shasta objects data sorted by creation or update time in desc order
     Get(Get),
-    // /// Create new shasta object (SESSION|CONFIGURATION)
-    // Create(Create),
+    /// Create new shasta object 
+    Apply(Apply),
     /// Print session logs
     Log(Log),
 }
@@ -32,14 +33,14 @@ enum Verb {
 #[clap(args_conflicts_with_subcommands = true)]
 struct Get {
     #[clap(subcommand)]
-    shasta_object: ShastaObject,
+    shasta_object: ShastaObjectGet,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-struct Create {
+struct Apply {
     #[clap(subcommand)]
-    shasta_object: ShastaObject,
+    shasta_object: ShastaObjectApply,
 }
 
 #[derive(Debug, Args)]
@@ -54,18 +55,24 @@ struct Log {
 }
 
 #[derive(Debug, Subcommand)]
-enum ShastaObject {
-    /// Manage configuration details
-    Configuration(Configuration),
-    /// Manage session details
-    Session(Session),
+enum ShastaObjectGet {
+    /// Get configuration details
+    Configuration(GetConfigurationOptions),
+    /// Get session details
+    Session(GetSessionOptions),
+}
+
+#[derive(Debug, Subcommand)]
+enum ShastaObjectApply {
+    /// Apply/Create new session
+    Session(ApplySessionOptions),
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["name", "cluster-name"]),))]
 #[clap(group(ArgGroup::new("config-limit").args(&["most-recent", "limit-number"]),))]
-struct Configuration {
+struct GetConfigurationOptions {
     /// Configuration name
     #[clap(short, long, value_parser)]
     name: Option<String>,
@@ -83,7 +90,8 @@ struct Configuration {
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("session-type").args(&["name", "cluster-name"]),))]
-#[clap(group(ArgGroup::new("session-limit").args(&["most-recent", "limit-number"]),))]struct Session {
+#[clap(group(ArgGroup::new("session-limit").args(&["most-recent", "limit-number"]),))]
+struct GetSessionOptions {
     /// Session name
     #[clap(short, long, value_parser)]
     name: Option<String>,
@@ -96,6 +104,18 @@ struct Configuration {
     /// Number of configurations to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     limit_number: Option<u8>
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+#[clap(group(ArgGroup::new("session-type").args(&["session-name", "cluster-name"]),))]
+struct ApplySessionOptions {
+    /// Session name
+    #[clap(short, long, value_parser)]
+    session_name: Option<String>,
+    /// Cluster name
+    #[clap(short, long, value_parser)]
+    cluster_name: Option<String>
 }
 
 #[derive(Debug, Args)]
@@ -139,7 +159,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     match args.command {
         Verb::Get(get_cmd) => {
             match get_cmd.shasta_object {
-                ShastaObject::Configuration(configuration) => {
+                ShastaObjectGet::Configuration(configuration) => {
 
                     configuration_name = configuration.name;
                     cluster_name = configuration.cluster_name;
@@ -166,7 +186,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         cfs_utils::print_cfs_configurations(&cfs_configurations);
                     }
                 },
-                ShastaObject::Session(session) => {
+                ShastaObjectGet::Session(session) => {
 
                     session_name = session.name;
                     cluster_name = session.cluster_name;
@@ -189,6 +209,54 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
+        }
+        Verb::Apply(apply_cmd) => {
+            let repo_root = std::env::current_dir().unwrap();
+            log::info!("Checking repo on {}", repo_root.display());
+            let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
+            log::info!("{} state={:?}", repo.path().display(), repo.state());
+
+            let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
+            let commit = obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit")).unwrap();
+
+            let timestamp = commit.time().seconds();
+            // let tm = ime::at(time::Timespec::new(timestamp, 0));
+            println!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
+                     commit.id(),
+                     commit.author(),
+                    //  tm.rfc822(),
+                    timestamp,
+                     commit.message().unwrap_or("no commit message"));
+
+            let mut remote = repo.find_remote("origin").unwrap();
+
+            log::info!("remote name: {:#?}", remote.name());
+            let refspecs = remote.refspecs();
+            for refspec in refspecs {
+                log::info!("remote refspecs: {:#?}", refspec.str().unwrap());
+            }
+            log::info!("url: {:#?}", remote.url());
+
+            let mut callbacks = git2::RemoteCallbacks::new();
+
+            callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+                log::info!("url is: {}", _url);
+                log::info!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
+                log::info!("allowed types are: {:#?}", _allowed_types);
+                git2::Cred::userpass_plaintext("msopena", "MasberLugano0720") // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
+            });
+
+            callbacks.push_update_reference(|_reference_name, callback_status| {
+                log::info!("reference name: {}", _reference_name);
+                log::info!("callback status: {}", callback_status.unwrap_or("Not defined"));
+                Ok(())
+            });
+
+            let po = &mut PushOptions::default();
+            po.remote_callbacks(callbacks);
+
+            remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
+            
         }
         Verb::Log(log_cmd) => {
             logging_session_name = log_cmd.session_name;
