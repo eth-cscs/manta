@@ -232,9 +232,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 let ret = if status.contains(git2::Status::WT_MODIFIED)
                     || status.contains(git2::Status::WT_NEW)
                 {
-                    println!("add '{}'", path.display());
+                    log::info!(" - Adding file: '{}'", path.display());
                     0
                 } else {
+                    log::info!(" - NOT adding file: '{}'", path.display());
                     1
                 };
 
