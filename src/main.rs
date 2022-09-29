@@ -228,6 +228,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             let mut index = repo.index().unwrap();
 
             // Check if conflicts
+            // TODO: This may be the wrong place to check if there are conflicts (maybe too early) and we need to fetch data from remote
             if index.has_conflicts() {
                 log::error!("THERE ARE CONFLICTS!!!!!");
 
