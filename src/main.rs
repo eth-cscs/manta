@@ -9,6 +9,8 @@ mod manta_cfs;
 
 // use std::process;
 
+use std::path::Path;
+
 use clap::{Args, ArgGroup, Parser, Subcommand};
 use git2::{ObjectType, Repository, PushOptions};
 use k8s_openapi::chrono::NaiveDateTime;
@@ -213,6 +215,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         }
         Verb::Apply(apply_cmd) => {
 
+            // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
+
             // Get repo on current dir (pwd)
             let repo_root = std::env::current_dir().unwrap();
             log::info!("Checking repo on {}", repo_root.display());
@@ -222,7 +226,20 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             // Adding all files (git add)
             log::debug!("Running 'git add'");
             let mut index = repo.index().unwrap();
-            index.add_all(&["."], git2::IndexAddOption::DEFAULT, None)
+            index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
+                let status = repo.status_file(path).unwrap();
+        
+                let ret = if status.contains(git2::Status::WT_MODIFIED)
+                    || status.contains(git2::Status::WT_NEW)
+                {
+                    println!("add '{}'", path.display());
+                    0
+                } else {
+                    1
+                };
+
+                ret
+            }))
                 .unwrap();
             index.write().unwrap();
             log::debug!("git add command ran successfully");
