@@ -55,6 +55,6 @@ pub mod http_client {
         // cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].to_string().cmp(&b["lastUpdated"].to_string()));
         json_response.sort_by(|a, b| a["commit"]["committer"]["date"].to_string().cmp(&b["commit"]["committer"]["date"].to_string()));
         
-        Ok(json_response.last().unwrap().clone())
+        Ok(json_response.first().unwrap().clone())
     }
 }
