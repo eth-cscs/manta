@@ -219,12 +219,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             // Get repo on current dir (pwd)
             let repo_root = std::env::current_dir().unwrap();
-            log::info!("Checking repo on {}", repo_root.display());
+            log::debug!("Checking repo on {}", repo_root.display());
+
             let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
-            log::info!("{} state={:?}", repo.path().display(), repo.state());
+            log::debug!("{} state={:?}", repo.path().display(), repo.state());
 
             // Adding all files (git add)
             log::debug!("Running 'git add'");
+
             let mut index = repo.index().unwrap();
             index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
                 let status = repo.status_file(path).unwrap();
@@ -232,10 +234,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 let ret = if status.contains(git2::Status::WT_MODIFIED)
                     || status.contains(git2::Status::WT_NEW)
                 {
-                    log::info!(" - Adding file: '{}'", path.display());
+                    log::debug!(" - Adding file: '{}'", path.display());
+
                     0
                 } else {
-                    log::info!(" - NOT adding file: '{}'", path.display());
+                    log::debug!(" - NOT adding file: '{}'", path.display());
+
                     1
                 };
 
@@ -251,7 +255,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             let timestamp = commit.time().seconds();
             let tm = NaiveDateTime::from_timestamp(timestamp, 0);
-            log::info!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
+            log::debug!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
                     commit.id(),
                     commit.author(),
                     tm,
@@ -260,15 +264,18 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             // Get remote from repo
             let mut remote = repo.find_remote("origin").unwrap();
 
-            log::info!("remote name: {}", remote.name().unwrap());
+            log::debug!("remote name: {}", remote.name().unwrap());
+
             let refspecs = remote.refspecs();
             for refspec in refspecs {
-                log::info!("remote refspecs: {:#?}", refspec.str().unwrap());
+                log::debug!("remote refspecs: {:#?}", refspec.str().unwrap());
+
             }
-            log::info!("url: {}", remote.url().unwrap());
+            log::debug!("url: {}", remote.url().unwrap());
 
             // Create commit
             log::debug!("Committing changes");
+
             let mut index = repo.index().unwrap();
             let oid = index.write_tree().unwrap();
             let signature = repo.signature().unwrap();
@@ -281,21 +288,24 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 "testing git2-rs... commit created programatically...", 
                 &tree, 
                 &[&parent_commit]).unwrap();
+
             log::debug!("Commit seems successful");
 
             // Configure callbacks for push operation
             let mut callbacks = git2::RemoteCallbacks::new();
 
             callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-                log::info!("url is: {}", _url);
-                log::info!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
-                log::info!("allowed types are: {:#?}", _allowed_types);
+                log::debug!("url is: {}", _url);
+                log::debug!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
+                log::debug!("allowed types are: {:#?}", _allowed_types);
+                
                 git2::Cred::userpass_plaintext("msopena", "MasberLugano0720") // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
             });
 
             callbacks.push_update_reference(|_reference_name, callback_status| {
-                log::info!("reference name: {}", _reference_name);
-                log::info!("callback status: {}", callback_status.unwrap_or("Not defined"));
+                log::debug!("reference name: {}", _reference_name);
+                log::debug!("callback status: {}", callback_status.unwrap_or("Not defined"));
+
                 Ok(())
             });
 
