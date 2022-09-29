@@ -328,7 +328,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
 
-            log::info!("last commit from cray/admin-scripts shasta vcs repo {:#?}", last_commitid);
+            log::info!("last commit from cray/admin-scripts shasta vcs repo {:#?}", last_commitid["commit"]["committer"]);
             
         }
         Verb::Log(log_cmd) => {
