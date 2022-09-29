@@ -11,6 +11,7 @@ mod manta_cfs;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
 use git2::{ObjectType, Repository, PushOptions};
+use k8s_openapi::chrono::NaiveDateTime;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]struct Cli {
@@ -211,23 +212,34 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             }
         }
         Verb::Apply(apply_cmd) => {
+
+            // Get repo on current dir (pwd)
             let repo_root = std::env::current_dir().unwrap();
             log::info!("Checking repo on {}", repo_root.display());
             let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
             log::info!("{} state={:?}", repo.path().display(), repo.state());
 
+            // Add all files (git add)
+            log::debug!("Running 'git add'");
+            repo.index()
+                .unwrap()
+                .add_all(&["."], git2::IndexAddOption::DEFAULT, None)
+                .unwrap();
+            log::debug!("git add command ran successfully");
+
+            // Get last commit
             let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
             let commit = obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit")).unwrap();
 
             let timestamp = commit.time().seconds();
-            // let tm = ime::at(time::Timespec::new(timestamp, 0));
-            println!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
-                     commit.id(),
-                     commit.author(),
-                    //  tm.rfc822(),
-                    timestamp,
-                     commit.message().unwrap_or("no commit message"));
+            let tm = NaiveDateTime::from_timestamp(timestamp, 0);
+            log::info!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
+                    commit.id(),
+                    commit.author(),
+                    tm,
+                    commit.message().unwrap_or("no commit message"));
 
+            // Get remote from repo
             let mut remote = repo.find_remote("origin").unwrap();
 
             log::info!("remote name: {:#?}", remote.name());
@@ -237,6 +249,23 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             }
             log::info!("url: {:#?}", remote.url());
 
+            // Create commit
+            log::debug!("Committing changes");
+            let mut index = repo.index().unwrap();
+            let oid = index.write_tree().unwrap();
+            let signature = repo.signature().unwrap();
+            let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
+            let tree = repo.find_tree(oid).unwrap();
+            repo.commit(
+                Some("HEAD"), 
+                &signature, 
+                &signature, 
+                "testing git2-rs... commit created programatically...", 
+                &tree, 
+                &[&parent_commit]).unwrap();
+            log::debug!("Commit seems successful");
+
+            // Configure callbacks for push operation
             let mut callbacks = git2::RemoteCallbacks::new();
 
             callbacks.credentials(|_url, _username_from_url, _allowed_types| {
@@ -252,9 +281,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 Ok(())
             });
 
+            // Configure push options
             let po = &mut PushOptions::default();
             po.remote_callbacks(callbacks);
 
+            // Push
             remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
             
         }
