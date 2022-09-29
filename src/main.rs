@@ -224,10 +224,19 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
             log::debug!("{} state={:?}", repo.path().display(), repo.state());
 
+            // Get indexes
+            let mut index = repo.index().unwrap();
+
+            // Check if conflicts
+            if index.has_conflicts() {
+                log::error!("THERE ARE CONFLICTS!!!!!");
+
+                std::process::exit(1);
+            }
+
             // Adding all files (git add)
             log::debug!("Running 'git add'");
 
-            let mut index = repo.index().unwrap();
             index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
                 let status = repo.status_file(path).unwrap();
         
