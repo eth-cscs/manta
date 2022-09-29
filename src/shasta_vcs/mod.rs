@@ -45,7 +45,7 @@ pub mod http_client {
             .build()?;
         
         let resp = client
-            .get(format!("{}/repos/{}/git/commits", gitea_api_base_url, repo_name))
+            .get(format!("{}/repos/{}/commits", gitea_api_base_url, repo_name))
             .header("Authorization", format!("token {}", gitea_token))
             .send()
             .await?;
