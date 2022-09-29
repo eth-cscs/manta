@@ -219,12 +219,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
             log::info!("{} state={:?}", repo.path().display(), repo.state());
 
-            // Add all files (git add)
+            // Adding all files (git add)
             log::debug!("Running 'git add'");
-            repo.index()
-                .unwrap()
-                .add_all(&["."], git2::IndexAddOption::DEFAULT, None)
+            let mut index = repo.index().unwrap();
+            index.add_all(&["."], git2::IndexAddOption::DEFAULT, None)
                 .unwrap();
+            index.write().unwrap();
             log::debug!("git add command ran successfully");
 
             // Get last commit
