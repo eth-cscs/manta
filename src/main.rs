@@ -260,12 +260,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             // Get remote from repo
             let mut remote = repo.find_remote("origin").unwrap();
 
-            log::info!("remote name: {:#?}", remote.name());
+            log::info!("remote name: {}", remote.name().unwrap());
             let refspecs = remote.refspecs();
             for refspec in refspecs {
                 log::info!("remote refspecs: {:#?}", refspec.str().unwrap());
             }
-            log::info!("url: {:#?}", remote.url());
+            log::info!("url: {}", remote.url().unwrap());
 
             // Create commit
             log::debug!("Committing changes");
