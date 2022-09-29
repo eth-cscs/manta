@@ -325,6 +325,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             // Push
             remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
+
+            let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
+
+            log::info!("last commit from cray/admin-scripts shasta vcs repo {:#?}", last_commitid);
             
         }
         Verb::Log(log_cmd) => {

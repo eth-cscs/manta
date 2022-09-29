@@ -30,7 +30,7 @@ pub mod http_client {
         Ok(json_response)
     }
 
-    pub async fn get_lat_commitid(repo_name: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn get_last_commitid(repo_name: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
         let gitea_base_url = "https://api-gw-service-nmn.local/vcs/";
         let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
