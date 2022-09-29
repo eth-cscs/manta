@@ -265,7 +265,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             let timestamp = commit.time().seconds();
             let tm = NaiveDateTime::from_timestamp(timestamp, 0);
-            log::debug!("commit {}\nAuthor: {}\nDate:   {}\n\n    {}",
+            log::debug!("\nCommit {}\nAuthor: {}\nDate:   {}\n\n    {}",
                     commit.id(),
                     commit.author(),
                     tm,
