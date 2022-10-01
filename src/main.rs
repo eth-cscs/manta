@@ -236,6 +236,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             }
 
             // Adding all files (git add)
+            log::info!("Debugging index\n");
+            for item in index.iter() {
+                log::info!("{:#?}", item);
+            }
             log::debug!("Running 'git add'");
 
             index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
@@ -328,7 +332,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
 
-            log::info!("last commit from cray/admin-scripts shasta vcs repo {:?}", last_commitid["commit"]["committer"]);
+            log::info!("last commit from cray/admin-scripts shasta vcs repo {:#?}", last_commitid["commit"]["committer"]);
             
         }
         Verb::Log(log_cmd) => {
