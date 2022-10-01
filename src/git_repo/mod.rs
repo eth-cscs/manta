@@ -19,7 +19,7 @@ pub mod local {
 
     pub fn untracked_changed_local_files(repo: Repository) {
         
-        let mut index = repo.index().unwrap();
+        let index = repo.index().unwrap();
 
         use walkdir::WalkDir;
 
