@@ -45,7 +45,7 @@ pub mod local {
                 if status.contains(git2::Status::WT_MODIFIED) {
                     log::debug!(" - Modified file: '{}'", file.path().display());
                 } else if status.contains(git2::Status::WT_NEW) {
-                    log::debug!(" - New file: '{}'", file.path().display());
+                    log::debug!(" - New/added file: '{}'", file.path().display());
                 };
             }
         }        
@@ -58,10 +58,10 @@ pub mod local {
         log::debug!("Running 'git add'");
 
         index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
+
             let status = repo.status_file(path).unwrap();
     
-            let ret = if status.contains(git2::Status::WT_MODIFIED)
-                || status.contains(git2::Status::WT_NEW)
+            let ret = if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW)
             {
                 log::debug!(" - Adding file: '{}' with status {:?}", path.display(), status);
 
