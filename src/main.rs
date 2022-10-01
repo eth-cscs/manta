@@ -10,11 +10,8 @@ mod git_repo;
 
 // use std::process;
 
-use std::path::Path;
-
 use clap::{Args, ArgGroup, Parser, Subcommand};
-use git2::{ObjectType, PushOptions};
-use git_repo::local::add_all;
+use git2::{ObjectType};
 use k8s_openapi::chrono::NaiveDateTime;
 
 #[derive(Parser)]
@@ -229,7 +226,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             log::debug!("{} state={:?}", repo.path().display(), repo.state());
 
             // Get indexes
-            let mut index = repo.index().unwrap();
+            let index = repo.index().unwrap();
 
             // Check if conflicts
             // TODO: This may be the wrong place to check if there are conflicts (maybe too early) and we need to fetch data from remote
@@ -277,7 +274,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             log::debug!("Commit seems successful");
 
             // Get remote from repo
-            let mut remote = repo.find_remote("origin").unwrap();
+            let remote = repo.find_remote("origin").unwrap();
 
             log::debug!("remote name: {}", remote.name().unwrap());
             log::debug!("url: {}", remote.url().unwrap());
@@ -315,7 +312,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             // // Push
             // remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
-            git_repo::local::push(remote);
+            git_repo::local::push(remote)?;
 
             let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
 

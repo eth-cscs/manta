@@ -93,7 +93,7 @@ pub mod local {
             &[&parent_commit]).unwrap();
     }
 
-    pub fn push(mut remote: Remote) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn push(mut remote: Remote) -> Result<(), git2::Error> {
         // Configure callbacks for push operation
         let mut callbacks = git2::RemoteCallbacks::new();
 
@@ -117,8 +117,7 @@ pub mod local {
         po.remote_callbacks(callbacks);
         
         // Push
-        remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
+        remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))
 
-        Ok(())
     }
 }
