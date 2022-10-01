@@ -6,13 +6,15 @@ mod shasta_cfs_session;
 mod shasta_cfs_session_logs;
 mod shasta_vcs;
 mod manta_cfs;
+mod git_repo;
 
 // use std::process;
 
 use std::path::Path;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
-use git2::{ObjectType, Repository, PushOptions};
+use git2::{ObjectType, PushOptions};
+use git_repo::local::add_all;
 use k8s_openapi::chrono::NaiveDateTime;
 
 #[derive(Parser)]
@@ -215,13 +217,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         }
         Verb::Apply(apply_cmd) => {
 
-            // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
+            // // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 
-            // Get repo on current dir (pwd)
-            let repo_root = std::env::current_dir().unwrap();
-            log::debug!("Checking repo on {}", repo_root.display());
+            // // Get repo on current dir (pwd)
+            // let repo_root = std::env::current_dir().unwrap();
+            // log::debug!("Checking repo on {}", repo_root.display());
 
-            let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
+            // let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
+            let repo = git_repo::local::get_repo();
+
             log::debug!("{} state={:?}", repo.path().display(), repo.state());
 
             // Get indexes
@@ -236,31 +240,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             }
 
             // Adding all files (git add)
-            log::info!("Debugging index\n");
-            for item in index.iter() {
-                log::info!("{:#?}", item);
-            }
             log::debug!("Running 'git add'");
 
-            index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
-                let status = repo.status_file(path).unwrap();
-        
-                let ret = if status.contains(git2::Status::WT_MODIFIED)
-                    || status.contains(git2::Status::WT_NEW)
-                {
-                    log::debug!(" - Adding file: '{}'", path.display());
-
-                    0
-                } else {
-                    log::debug!(" - NOT adding file: '{}'", path.display());
-
-                    1
-                };
-
-                ret
-            }))
-                .unwrap();
-            index.write().unwrap();
+            git_repo::local::add_all(&repo);
             log::debug!("git add command ran successfully");
 
             // Get last commit
@@ -275,60 +257,65 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     tm,
                     commit.message().unwrap_or("no commit message"));
 
+            // Create commit
+            log::debug!("Committing changes");
+
+            // let mut index = repo.index().unwrap();
+            // let oid = index.write_tree().unwrap();
+            // let signature = repo.signature().unwrap();
+            // let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
+            // let tree = repo.find_tree(oid).unwrap();
+            // repo.commit(
+            //     Some("HEAD"), 
+            //     &signature, 
+            //     &signature, 
+            //     "testing git2-rs... commit created programatically...", 
+            //     &tree, 
+            //     &[&parent_commit]).unwrap();
+            git_repo::local::commit(&repo);
+
+            log::debug!("Commit seems successful");
+
             // Get remote from repo
             let mut remote = repo.find_remote("origin").unwrap();
 
             log::debug!("remote name: {}", remote.name().unwrap());
-
+            log::debug!("url: {}", remote.url().unwrap());
+            
+            // Get refspecs
             let refspecs = remote.refspecs();
+            
             for refspec in refspecs {
                 log::debug!("remote refspecs: {:#?}", refspec.str().unwrap());
-
+            
             }
-            log::debug!("url: {}", remote.url().unwrap());
 
-            // Create commit
-            log::debug!("Committing changes");
+            // Push commit
+            // // Configure callbacks for push operation
+            // let mut callbacks = git2::RemoteCallbacks::new();
 
-            let mut index = repo.index().unwrap();
-            let oid = index.write_tree().unwrap();
-            let signature = repo.signature().unwrap();
-            let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
-            let tree = repo.find_tree(oid).unwrap();
-            repo.commit(
-                Some("HEAD"), 
-                &signature, 
-                &signature, 
-                "testing git2-rs... commit created programatically...", 
-                &tree, 
-                &[&parent_commit]).unwrap();
-
-            log::debug!("Commit seems successful");
-
-            // Configure callbacks for push operation
-            let mut callbacks = git2::RemoteCallbacks::new();
-
-            callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-                log::debug!("url is: {}", _url);
-                log::debug!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
-                log::debug!("allowed types are: {:#?}", _allowed_types);
+            // callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+            //     log::debug!("url is: {}", _url);
+            //     log::debug!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
+            //     log::debug!("allowed types are: {:#?}", _allowed_types);
                 
-                git2::Cred::userpass_plaintext("msopena", "MasberLugano0720") // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
-            });
+            //     git2::Cred::userpass_plaintext("msopena", "MasberLugano0720") // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
+            // });
 
-            callbacks.push_update_reference(|_reference_name, callback_status| {
-                log::debug!("reference name: {}", _reference_name);
-                log::debug!("callback status: {}", callback_status.unwrap_or("Not defined"));
+            // callbacks.push_update_reference(|_reference_name, callback_status| {
+            //     log::debug!("reference name: {}", _reference_name);
+            //     log::debug!("callback status: {}", callback_status.unwrap_or("Not defined"));
 
-                Ok(())
-            });
+            //     Ok(())
+            // });
 
-            // Configure push options
-            let po = &mut PushOptions::default();
-            po.remote_callbacks(callbacks);
+            // // Configure push options
+            // let po = &mut PushOptions::default();
+            // po.remote_callbacks(callbacks);
 
-            // Push
-            remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
+            // // Push
+            // remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
+            git_repo::local::push(remote);
 
             let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
 
