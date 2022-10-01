@@ -63,11 +63,11 @@ pub mod local {
             let ret = if status.contains(git2::Status::WT_MODIFIED)
                 || status.contains(git2::Status::WT_NEW)
             {
-                log::debug!(" - Adding file: '{}'", path.display());
+                log::debug!(" - Adding file: '{}' with status {:?}", path.display(), status);
 
                 0
             } else {
-                log::debug!(" - NOT adding file: '{}'", path.display());
+                log::debug!(" - NOT adding file: '{}' with status {:?}", path.display(), status);
 
                 1
             };
