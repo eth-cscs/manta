@@ -192,6 +192,7 @@ pub mod local {
     
 
     pub fn has_conflicts(repo: &Repository, local: &git2::AnnotatedCommit, remote: &git2::AnnotatedCommit) -> Result<(), Box<dyn std::error::Error>> {
+        
         let local_tree = repo.find_commit(local.id())?.tree()?;
         let remote_tree = repo.find_commit(remote.id())?.tree()?;
         let ancestor = repo

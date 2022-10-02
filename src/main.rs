@@ -273,7 +273,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             // Check conflicts
             let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
             let mut remoteAux = repo.find_remote("origin")?;
-            let remote_branch = "main";
+            let remote_branch = "apply-dynamic-target-session";
             let fetch_commit = git_repo::local::fetch(&repo, &[remote_branch], &mut remoteAux)?;
             git_repo::local::has_conflicts(&repo, &head_commit, &fetch_commit)?;
             log::debug!("No conflicts");
