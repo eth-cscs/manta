@@ -214,13 +214,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         }
         Verb::Apply(apply_cmd) => {
 
-            // // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
+            // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 
-            // // Get repo on current dir (pwd)
-            // let repo_root = std::env::current_dir().unwrap();
-            // log::debug!("Checking repo on {}", repo_root.display());
-
-            // let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
+            // Get repo on current dir (pwd)
             let repo = git_repo::local::get_repo();
 
             log::debug!("{} state={:?}", repo.path().display(), repo.state());
@@ -248,33 +244,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
             let timestamp = commit.time().seconds();
             let tm = NaiveDateTime::from_timestamp(timestamp, 0);
-            log::debug!("\nCommit {}\nAuthor: {}\nDate:   {}\n\n    {}",
-                    commit.id(),
-                    commit.author(),
-                    tm,
-                    commit.message().unwrap_or("no commit message"));
+            log::debug!("\nCommit {}\nAuthor: {}\nDate:   {}\n\n    {}", commit.id(), commit.author(), tm, commit.message().unwrap_or("no commit message"));
 
             // Create commit
             log::debug!("Committing changes");
 
-            // let mut index = repo.index().unwrap();
-            // let oid = index.write_tree().unwrap();
-            // let signature = repo.signature().unwrap();
-            // let parent_commit = repo.head().unwrap().peel_to_commit().unwrap();
-            // let tree = repo.find_tree(oid).unwrap();
-            // repo.commit(
-            //     Some("HEAD"), 
-            //     &signature, 
-            //     &signature, 
-            //     "testing git2-rs... commit created programatically...", 
-            //     &tree, 
-            //     &[&parent_commit]).unwrap();
             git_repo::local::commit(&repo);
 
             log::debug!("Commit seems successful");
 
             // Get remote from repo
-            let remote = repo.find_remote("origin").unwrap();
+            let remote = repo.find_remote("origin")?;
 
             log::debug!("remote name: {}", remote.name().unwrap());
             log::debug!("url: {}", remote.url().unwrap());
@@ -287,33 +267,18 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             
             }
 
-            // Push commit
-            // // Configure callbacks for push operation
-            // let mut callbacks = git2::RemoteCallbacks::new();
+            // // Push commit
+            // git_repo::local::push(remote)?;
 
-            // callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-            //     log::debug!("url is: {}", _url);
-            //     log::debug!("username from url is: {}", _username_from_url.unwrap_or("Not defined")); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git' 
-            //     log::debug!("allowed types are: {:#?}", _allowed_types);
-                
-            //     git2::Cred::userpass_plaintext("msopena", "MasberLugano0720") // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
-            // });
+            // Check conflicts
+            let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
+            let mut remoteAux = repo.find_remote("origin")?;
+            let remote_branch = "main";
+            let fetch_commit = git_repo::local::fetch(&repo, &[remote_branch], &mut remoteAux)?;
+            git_repo::local::has_conflicts(&repo, &head_commit, &fetch_commit)?;
+            log::debug!("No conflicts");
 
-            // callbacks.push_update_reference(|_reference_name, callback_status| {
-            //     log::debug!("reference name: {}", _reference_name);
-            //     log::debug!("callback status: {}", callback_status.unwrap_or("Not defined"));
-
-            //     Ok(())
-            // });
-
-            // // Configure push options
-            // let po = &mut PushOptions::default();
-            // po.remote_callbacks(callbacks);
-
-            // // Push
-            // remote.push(&["+refs/heads/main","+refs/heads/apply-dynamic-target-session"], Some(po))?;
-            git_repo::local::push(remote)?;
-
+            // Check last commit in local and remote matches
             let last_commitid = shasta_vcs::http_client::get_last_commitid("cray/admin-scripts", &gitea_token).await?;
 
             log::info!("last commit from cray/admin-scripts shasta vcs repo {:#?}", last_commitid["commit"]["committer"]);
