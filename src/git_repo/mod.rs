@@ -192,7 +192,7 @@ pub mod local {
     
 
     pub fn has_conflicts(repo: &Repository, local: &git2::AnnotatedCommit, remote: &git2::AnnotatedCommit) -> Result<(), Box<dyn std::error::Error>> {
-        
+
         let local_tree = repo.find_commit(local.id())?.tree()?;
         let remote_tree = repo.find_commit(remote.id())?.tree()?;
         let ancestor = repo
@@ -203,7 +203,7 @@ pub mod local {
         if idx.has_conflicts() {
             println!("Merge conficts detected...");
             // repo.checkout_index(Some(&mut idx), None)?;
-            return Err("error".into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
+            return Err("Conflicts have been found while checking local and remote repos. Please fix conflicts and try again, Your local repo is instact.".into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     
         Ok(())
