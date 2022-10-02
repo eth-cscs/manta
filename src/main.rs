@@ -267,8 +267,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             
             }
 
-            // // Push commit
-            // git_repo::local::push(remote)?;
+            // Push commit
+            git_repo::local::push(remote)?;
 
             // Check conflicts
             let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
