@@ -119,7 +119,13 @@ struct ApplySessionOptions {
     cluster_name: Option<String>,
     /// Repo path
     #[clap(short, long, value_parser)]
-    repo_path: Option<String>
+    repo_path: Option<String>,
+    /// Watch logs
+    #[clap(short, long, value_parser)]
+    watch_logs: bool,
+    /// Ansible limit
+    #[clap(short, long, value_parser)]
+    ansible_limit: String
 }
 
 #[derive(Debug, Args)]
@@ -210,7 +216,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         return Ok(())
                     } else {
                         cfs_utils::print_cfs_sessions(&cfs_sessions);
-
                     }
                 }
             }
@@ -226,7 +231,22 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                     log::debug!("{} state={:?}", repo.path().display(), repo.state());
         
-                    create_session_from_repo::run(repo, gitea_token, String::from(shasta_token), String::from(shasta_base_url)).await;
+                    let cfs_session_name = create_session_from_repo::run(repo, gitea_token, String::from(shasta_token), String::from(shasta_base_url), apply_session_params.ansible_limit).await;
+
+                    log::info!("cfs session: {}", cfs_session_name.as_ref().unwrap());
+
+                    if apply_session_params.watch_logs {
+                        log::info!("Fetching logs ...");
+                        shasta_cfs_session_logs::client::session_logs(cfs_session_name.unwrap().as_str(), 0).await;
+                    }
+
+                    // match session_logs_result {
+                    //     Ok(()) => log::debug!("Logs finished"),
+                    //     Err(_) => {
+                    //         // Session do exists hence a pod managing the CFS session should start soon ...
+                    //         session_logs_result = shasta_cfs_session_logs::client::session_logs(&cfs_session_name.as_ref().unwrap(), 0).await;
+                    //     }
+                    // }
 
                     // // // Get indexes
                     // // let index = repo.index().unwrap();
@@ -446,7 +466,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Verb::Log(log_cmd) => {
             logging_session_name = log_cmd.session_name;
             layer_id = log_cmd.layer_id;
-            shasta_cfs_session_logs::client::session_logs(shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
+            shasta_cfs_session_logs::client::session_logs_proxy(shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
         }
     }
 

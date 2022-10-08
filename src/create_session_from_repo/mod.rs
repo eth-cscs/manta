@@ -9,7 +9,7 @@ use crate::shasta_cfs_session;
 
 use crate::{git2_rs_utils, shasta_vcs_utils, shasta_cfs_configuration};
 
-pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String) {
+pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String) -> Result<String, Box<dyn std::error::Error>> {
 
     // Get last (most recent) commit
     let local_last_commit_local = git2_rs_utils::local::get_last_commit(&repo).unwrap();
@@ -135,7 +135,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     let session = shasta_cfs_session::Session::new(
         cfs_session_name,
         cfs_object_name,
-        Some(String::from("x1500c3s4b0n0")),
+        Some(limit),
     );
 
     log::debug!("Session:\n{:#?}", session);
@@ -155,6 +155,8 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
 
     log::info!("CFS session name: {}", cfs_session_name);
     log::debug!("CFS session response: {:#?}", cfs_session_resp);
+
+    Ok(String::from(cfs_session_name))
 
     // Get pod name running the CFS session
 
