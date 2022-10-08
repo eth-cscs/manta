@@ -4,7 +4,7 @@ pub mod configuration {
     use serde_json::Value;
     use super::layer;
 
-    use crate::shasta_vcs;
+    use crate::shasta_vcs_utils;
 
     pub struct Config {
         name: String,
@@ -26,13 +26,13 @@ pub mod configuration {
         }
     }
 
-    pub async fn create(shasta_config_details: &Value, gitea_token: String) -> core::result::Result<Config, Box<dyn std::error::Error>> {
+    pub async fn create(shasta_config_details: &Value, gitea_token: &str) -> core::result::Result<Config, Box<dyn std::error::Error>> {
 
         // Convert layers
         let mut config_layers: Vec<layer::ConfigLayer> = vec![];
         for layer in shasta_config_details["layers"].as_array().unwrap() {
             // Get CFS layer details from Gitea
-            let gitea_commit_details = shasta_vcs::http_client::get(layer["cloneUrl"].as_str().unwrap(), layer["commit"].as_str().unwrap(), &gitea_token).await?;
+            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(layer["cloneUrl"].as_str().unwrap(), layer["commit"].as_str().unwrap(), &gitea_token).await?;
             config_layers.push(layer::create(layer, gitea_commit_details).unwrap());
         }
 

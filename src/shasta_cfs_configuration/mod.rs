@@ -1,6 +1,72 @@
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Layer {
+    #[serde(rename = "cloneUrl")]
+    clone_url: String,
+    commit: String,
+    name: String,
+    playbook: String
+}
+
+#[derive(Debug, Serialize)] // TODO: investigate why serde can Deserialize dynamically syzed structs `Vec<Layer>`
+pub struct Configuration {
+    layers: Vec<Layer>
+}
+
+impl Layer {
+    pub fn new(clone_url: String, commit: String, name: String, playbook: String) -> Self {
+        Layer {
+            clone_url: clone_url,
+            commit: commit,
+            name: name,
+            playbook: playbook
+        }
+    }
+}
+
+impl Configuration {
+    pub fn new() -> Self {
+        Configuration {
+            layers: vec![]
+        }
+    }
+}
+
+pub fn add_layer(layer: Layer, mut configuration: Configuration) -> Configuration {
+    configuration.layers.push(layer);
+    configuration
+}
+
 pub mod http_client {
 
+    use super::Configuration;
     use serde_json::Value;
+
+    pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: Configuration, configuration_name: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+
+        // socks5 proxy
+        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+    
+        // rest client update cfs configurations
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .proxy(socks5proxy)
+            .build()?;
+            
+        let resp = client
+            .put(format!("{}{}{}", shasta_base_url, "/cfs/v2/configurations/", configuration_name))
+            .json(&configuration)
+            .bearer_auth(shasta_token)
+            .send()
+            .await?;
+        
+        if resp.status().is_success() {
+            Ok(serde_json::from_str(&resp.text().await?)?)
+        } else {
+            Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+        }
+    }
 
     pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, configuration_name: &Option<String>, limit_number: &Option<u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 

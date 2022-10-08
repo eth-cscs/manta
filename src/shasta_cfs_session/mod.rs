@@ -1,6 +1,116 @@
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Tag {
+    property1: String,
+    property2: String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Group {
+    name: String,
+    members: Vec<String>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Target {
+    definition: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    groups: Option<Vec<Group>>
+}
+
+impl Default for Target {
+    fn default() -> Target {
+        Target {
+            definition: String::from("dynamic"),
+            groups: None
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Session {
+    name: String,
+    #[serde(rename = "configurationName")]
+    configuration_name: String,
+    #[serde(rename = "configurationLimit")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    configuration_limit: Option<String>,
+    #[serde(rename = "ansibleLimit")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ansible_limit: Option<String>,
+    #[serde(rename = "ansibleConfig")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ansible_config: Option<String>,
+    #[serde(rename = "ansibleVerbosity")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ansible_verbosity: Option<u8>,
+    #[serde(rename = "ansiblePassthrough")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ansible_passthrough: Option<String>,
+    #[serde(default)]
+    target: Target,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tags: Option<Tag>
+}
+
+impl Default for Session {
+    fn default() -> Session {
+        Session {
+            name: String::from(""),
+            configuration_name: String::from(""),
+            configuration_limit: None,
+            ansible_limit: None,
+            ansible_config: None,
+            ansible_verbosity: None,
+            ansible_passthrough: None,
+            target: Default::default(),
+            tags: None,
+        }
+    }
+}
+
+impl Session {
+    pub fn new(name: String, configuration_name: String, ansibe_limit: Option<String>) -> Self {
+        Session {
+            name: name,
+            configuration_name: configuration_name,
+            ansible_limit: ansibe_limit,
+            ..Default::default()
+        }
+    }
+}
+
 pub mod http_client {
 
     use serde_json::Value;
+
+    use super::Session;
+
+    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: Session) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+
+        // socks5 proxy
+        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+
+        // rest client create new cfs sessions
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .proxy(socks5proxy)
+            .build()?;
+    
+        let resp = client
+            .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
+            .bearer_auth(shasta_token)
+            .json(&session)
+            .send()
+            .await?;
+
+        if resp.status().is_success() {
+            Ok(serde_json::from_str(&resp.text().await?)?)
+        } else {
+            Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+        }
+    }
 
     pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, limit_number: &Option<u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
