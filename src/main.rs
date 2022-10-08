@@ -119,7 +119,7 @@ struct ApplySessionOptions {
     cluster_name: Option<String>,
     /// Repo path
     #[clap(short, long, value_parser)]
-    repo_path: Option<String>,
+    repo_path: String,
     /// Watch logs
     #[clap(short, long, value_parser)]
     watch_logs: bool,

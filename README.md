@@ -3,15 +3,14 @@
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
 
-Manta is a rest client against Shasta related APIs (Manta does not use other tools like cray cli or kubectl) and presented as a CLI
-
-**NOTE:** current implementation does not create/update/delete any information in the Shasta mgmt plane
+Manta is a rest client against Shasta related APIs (Manta does not use other tools like cray cli or kubectl) presented as a CLI
 
 ## Features
 
 - List and filter CFS configurations based on cluster name or configuration name
 - List and filter CFS sessions based on cluster name or session name
-- CFS session layer log watcher
+- Watch logs of a CFS session
+- Create CFS session out of a repository
 
 ## Example
 
@@ -73,6 +72,45 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0   
 ```
+
+Create a CFS session and watch logs
+
+```
+$ manta apply session --repo-path muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n0
+[2022-10-08T20:29:21Z INFO  manta::create_session_from_repo] CFS configuration name: m-muttler-orchestrator
+[2022-10-08T20:29:21Z INFO  manta::create_session_from_repo] CFS session name: m-muttler-orchestrator-20221008202921
+[2022-10-08T20:29:21Z INFO  manta] cfs session: m-muttler-orchestrator-20221008202921
+[2022-10-08T20:29:21Z INFO  manta] Fetching logs ...
+[2022-10-08T20:29:22Z INFO  manta::shasta_cfs_session_logs::client] Pod for cfs session m-muttler-orchestrator-20221008202921 not ready. Trying again in 2 secs. Attempt 1 of 10
+[2022-10-08T20:29:24Z INFO  manta::shasta_cfs_session_logs::client] Pod name: "cfs-aebbc6a9-af43-4df8-b6f5-b53596937f64-2lf9q"
+[2022-10-08T20:29:24Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 1 of 10
+[2022-10-08T20:29:27Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 2 of 10
+[2022-10-08T20:29:29Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 3 of 10
+Waiting for Inventory
+Waiting for Inventory
+Inventory generation completed
+SSH keys migrated to /root/.ssh
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 200 OK
+content-type: text/html; charset=UTF-8
+cache-control: no-cache, max-age=0
+x-content-type-options: nosniff
+date: Sat, 08 Oct 2022 20:29:36 GMT
+server: envoy
+transfer-encoding: chunked
+
+Sidecar available
+[WARNING]: Invalid characters were found in group names but not replaced, use
+-vvvv to see details
+
+PLAY [Compute:Application] *****************************************************
+
+PLAY RECAP *********************************************************************
+x1500c3s4b0n0              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
+```
+
 ## Prerequisites
 
 Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)

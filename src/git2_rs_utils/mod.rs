@@ -10,17 +10,10 @@ pub mod local {
     // use git2::{ObjectType, Repository, PushOptions};
 
 
-    pub fn get_repo(repo_path: Option<String>) -> Repository {
+    pub fn get_repo(repo_path: String) -> Repository {
         
-        let mut repo_root;
-
-        if repo_path.is_some() {
-            // Get repo on current dir (pwd)
-            repo_root = PathBuf::new();
-            repo_root.push(repo_path.unwrap());
-        } else {
-           repo_root = std::env::current_dir().unwrap() 
-        }
+        let mut repo_root = PathBuf::new();
+        repo_root.push(repo_path);
 
         log::debug!("Checking repo on {}", repo_root.display());
         

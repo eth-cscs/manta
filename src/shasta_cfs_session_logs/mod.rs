@@ -11,38 +11,6 @@ pub mod client {
 
     use crate::{shasta_cfs_session};
 
-    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
-        
-        // Get CFS sessions
-        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
-
-        // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
-
-        if cfs_sessions.is_empty() {
-            log::info!("No CFS session found");
-            return Ok(())
-        }
-
-        let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
-
-        let client = get_k8s_client().await?;
-
-        // Get CFS session logs
-        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
-
-        return Ok(())
-    }
-
-    pub async fn session_logs(cfs_session_name: &str, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
-        
-        let client = get_k8s_client().await?;
-
-        // Get CFS session logs
-        get_pod_logs(client, &cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
-
-        return Ok(())
-    }
-
     pub async fn get_k8s_client() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
 
         let config = kube::Config::infer().await?;
@@ -77,6 +45,38 @@ pub mod client {
     
         Ok(client)
     }
+    
+    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
+        
+        // Get CFS sessions
+        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
+
+        // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
+
+        if cfs_sessions.is_empty() {
+            log::info!("No CFS session found");
+            return Ok(())
+        }
+
+        let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
+
+        let client = get_k8s_client().await?;
+
+        // Get CFS session logs
+        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
+
+        return Ok(())
+    }
+
+    pub async fn session_logs(cfs_session_name: &str, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
+        
+        let client = get_k8s_client().await?;
+
+        // Get CFS session logs
+        get_pod_logs(client, &cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
+
+        return Ok(())
+    }
 
     pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> core::result::Result<(), Box<dyn std::error::Error>> {
     
@@ -108,7 +108,7 @@ pub mod client {
 
         let pod_name = pod.items[0].metadata.name.clone().unwrap();
 
-        log::info!("Pod name: {:#?}", pod_name);
+        log::info!("Pod name: {}", pod_name);
 
         let mut container_ready = pod.items[0].status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(&container_name)).next().unwrap().ready;
 
