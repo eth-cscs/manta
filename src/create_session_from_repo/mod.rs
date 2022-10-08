@@ -14,9 +14,11 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     // Get last (most recent) commit
     let local_last_commit_local = git2_rs_utils::local::get_last_commit(&repo).unwrap();
 
+    log::info!("Checking local repo status ({})", &repo.path().display());
+
     if !git2_rs_utils::local::untracked_changed_local_files(&repo).unwrap() {
         if Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Your local repo has not commited changes. Do you want to continue?")
+            .with_prompt("Your local repo has changes not commited. Do you want to continue?")
             .interact()
             .unwrap()
         {
@@ -25,13 +27,9 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
                 local_last_commit_local.id()
             );
         } else {
-            println!("Cancelled by user.");
+            println!("Cancelled by user. Aborting.");
             std::process::exit(0);
         }
-        // Question::new("Your repo has some untracked files. Do you want to continue ()?")
-        //     .yes_no()
-        //     .until_acceptable()
-        //     .ask();
     }
 
     // Check site.yml file exists inside repo folder

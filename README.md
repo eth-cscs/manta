@@ -76,31 +76,32 @@ x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    s
 Create a CFS session and watch logs
 
 ```
-$ manta apply session --repo-path muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n0
-[2022-10-08T20:29:21Z INFO  manta::create_session_from_repo] CFS configuration name: m-muttler-orchestrator
-[2022-10-08T20:29:21Z INFO  manta::create_session_from_repo] CFS session name: m-muttler-orchestrator-20221008202921
-[2022-10-08T20:29:21Z INFO  manta] cfs session: m-muttler-orchestrator-20221008202921
-[2022-10-08T20:29:21Z INFO  manta] Fetching logs ...
-[2022-10-08T20:29:22Z INFO  manta::shasta_cfs_session_logs::client] Pod for cfs session m-muttler-orchestrator-20221008202921 not ready. Trying again in 2 secs. Attempt 1 of 10
-[2022-10-08T20:29:24Z INFO  manta::shasta_cfs_session_logs::client] Pod name: "cfs-aebbc6a9-af43-4df8-b6f5-b53596937f64-2lf9q"
-[2022-10-08T20:29:24Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 1 of 10
-[2022-10-08T20:29:27Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 2 of 10
-[2022-10-08T20:29:29Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 3 of 10
+$ manta apply session --repo-path muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n1
+[2022-10-08T22:56:31Z INFO  manta::create_session_from_repo] Checking repo /home/msopena/ownCloud/Documents/ALPSINFRA/vcluster_shasta_scripts/muttler/muttler_orchestrator/.git/ status
+[2022-10-08T22:56:32Z INFO  manta::create_session_from_repo] CFS configuration name: m-muttler-orchestrator
+[2022-10-08T22:56:35Z INFO  manta::create_session_from_repo] CFS session name: m-muttler-orchestrator-20221008225632
+[2022-10-08T22:56:35Z INFO  manta] cfs session: m-muttler-orchestrator-20221008225632
+[2022-10-08T22:56:35Z INFO  manta] Fetching logs ...
+[2022-10-08T22:56:35Z INFO  manta::shasta_cfs_session_logs::client] Pod for cfs session m-muttler-orchestrator-20221008225632 not ready. Trying again in 2 secs. Attempt 1 of 10
+[2022-10-08T22:56:38Z INFO  manta::shasta_cfs_session_logs::client] Pod name: cfs-f1588924-f791-4bb8-a565-f61563a4274b-n7bbn
+[2022-10-08T22:56:38Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 1 of 10
+[2022-10-08T22:56:40Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 2 of 10
+[2022-10-08T22:56:42Z INFO  manta::shasta_cfs_session_logs::client] Container ansible-0 not ready. Trying again in 2 secs. Attempt 3 of 10
 Waiting for Inventory
 Waiting for Inventory
 Inventory generation completed
 SSH keys migrated to /root/.ssh
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 HTTP/1.1 200 OK
 content-type: text/html; charset=UTF-8
 cache-control: no-cache, max-age=0
 x-content-type-options: nosniff
-date: Sat, 08 Oct 2022 20:29:36 GMT
+date: Sat, 08 Oct 2022 22:56:49 GMT
 server: envoy
 transfer-encoding: chunked
 
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 Sidecar available
 [WARNING]: Invalid characters were found in group names but not replaced, use
 -vvvv to see details
@@ -108,7 +109,7 @@ Sidecar available
 PLAY [Compute:Application] *****************************************************
 
 PLAY RECAP *********************************************************************
-x1500c3s4b0n0              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0  
+x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
 ## Prerequisites
