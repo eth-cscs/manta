@@ -65,7 +65,7 @@ pub mod client {
         // Get CFS session logs
         get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
 
-        return Ok(())
+        Ok(())
     }
 
     pub async fn session_logs(cfs_session_name: &str, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -73,9 +73,9 @@ pub mod client {
         let client = get_k8s_client().await?;
 
         // Get CFS session logs
-        get_pod_logs(client, &cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
+        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
 
-        return Ok(())
+        Ok(())
     }
 
     pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -94,7 +94,7 @@ pub mod client {
 
         while pod.items.is_empty() && i < 10 {
             log::info!("Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10", cfs_session_name, i + 1);
-            i = i + 1;
+            i += 1;
             thread::sleep(time::Duration::from_secs(2));
             pod = pods.list(&params).await?;
         }
@@ -116,7 +116,7 @@ pub mod client {
 
         while !container_ready && i < 10 {
             log::info!("Container {} not ready. Trying again in 2 secs. Attempt {} of 10", container_name, i + 1);
-            i = i + 1;
+            i += 1;
             thread::sleep(time::Duration::from_secs(2));
             pod = pods.list(&params).await?;
             container_ready = pod.items[0].status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(&container_name)).next().unwrap().ready;

@@ -101,7 +101,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
 
     // Update/PUT CFS configuration
     log::debug!("Replacing '_' with '-' in repo name and create configuration and session name.");
-    let cfs_object_name = format!("m-{}", str::replace(&repo_name, "_", "-"));
+    let cfs_object_name = format!("m-{}", str::replace(repo_name, "_", "-"));
     let cfs_configuration_resp = shasta_cfs_configuration::http_client::put(
         &shasta_token,
         &shasta_base_url,

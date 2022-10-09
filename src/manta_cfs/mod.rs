@@ -19,7 +19,7 @@ pub mod configuration {
             let mut cont = 0;
             for config_layer in &self.config_layers {
                 write!(f, "\n Layer {}:{}", cont, config_layer)?;
-                cont = cont + 1;
+                cont += 1;
             }
 
             Ok(())
@@ -32,7 +32,7 @@ pub mod configuration {
         let mut config_layers: Vec<layer::ConfigLayer> = vec![];
         for layer in shasta_config_details["layers"].as_array().unwrap() {
             // Get CFS layer details from Gitea
-            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(layer["cloneUrl"].as_str().unwrap(), layer["commit"].as_str().unwrap(), &gitea_token).await?;
+            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(layer["cloneUrl"].as_str().unwrap(), layer["commit"].as_str().unwrap(), gitea_token).await?;
             config_layers.push(layer::create(layer, gitea_commit_details).unwrap());
         }
 
@@ -40,7 +40,7 @@ pub mod configuration {
         let config = Config {
             name: String::from(shasta_config_details["name"].as_str().unwrap()),
             last_updated: String::from(shasta_config_details["lastUpdated"].as_str().unwrap()),
-            config_layers: config_layers
+            config_layers
         };
 
         Ok(config)

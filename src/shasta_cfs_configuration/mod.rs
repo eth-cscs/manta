@@ -17,10 +17,10 @@ pub struct Configuration {
 impl Layer {
     pub fn new(clone_url: String, commit: String, name: String, playbook: String) -> Self {
         Layer {
-            clone_url: clone_url,
-            commit: commit,
-            name: name,
-            playbook: playbook
+            clone_url,
+            commit,
+            name,
+            playbook
         }
     }
 }

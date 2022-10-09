@@ -24,7 +24,7 @@ pub fn print_cfs_sessions(cfs_sessions: &Vec<Value>) {
     log::info!("*** CFS SESSIONS ***");
     log::info!("================================");
     for cfs_session in cfs_sessions {
-        print_cfs_session(&cfs_session);
+        print_cfs_session(cfs_session);
         log::info!("================================");
     }
 }

@@ -19,7 +19,7 @@ pub async fn auth(shasta_admin_pwd: &str) -> core::result::Result<Value, Box<dyn
         .build()?;
         
     let resp = client
-        .post(format!("https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"))
+        .post("https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token")
         .form(&params)
         .send()
         .await?;

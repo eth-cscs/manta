@@ -73,8 +73,8 @@ impl Default for Session {
 impl Session {
     pub fn new(name: String, configuration_name: String, ansibe_limit: Option<String>) -> Self {
         Session {
-            name: name,
-            configuration_name: configuration_name,
+            name,
+            configuration_name,
             ansible_limit: ansibe_limit,
             ..Default::default()
         }
