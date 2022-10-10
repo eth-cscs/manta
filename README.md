@@ -76,7 +76,7 @@ x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    s
 Create a CFS session and watch logs
 
 ```
-$ manta apply session --repo-path muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n1
+$ manta apply session --repo-path /home/msopena/ownCloud/Documents/ALPSINFRA/vcluster_shasta_scripts/muttler/muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n1
 [2022-10-08T22:56:31Z INFO  manta::create_session_from_repo] Checking repo /home/msopena/ownCloud/Documents/ALPSINFRA/vcluster_shasta_scripts/muttler/muttler_orchestrator/.git/ status
 [2022-10-08T22:56:32Z INFO  manta::create_session_from_repo] CFS configuration name: m-muttler-orchestrator
 [2022-10-08T22:56:35Z INFO  manta::create_session_from_repo] CFS session name: m-muttler-orchestrator-20221008225632
