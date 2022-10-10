@@ -43,8 +43,7 @@ pub struct Session {
     #[serde(skip_serializing_if = "Option::is_none")]
     ansible_config: Option<String>,
     #[serde(rename = "ansibleVerbosity")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    ansible_verbosity: Option<u8>,
+    ansible_verbosity: u8,
     #[serde(rename = "ansiblePassthrough")]
     #[serde(skip_serializing_if = "Option::is_none")]
     ansible_passthrough: Option<String>,
@@ -62,7 +61,7 @@ impl Default for Session {
             configuration_limit: None,
             ansible_limit: None,
             ansible_config: None,
-            ansible_verbosity: None,
+            ansible_verbosity: 2,
             ansible_passthrough: None,
             target: Default::default(),
             tags: None,
@@ -71,11 +70,12 @@ impl Default for Session {
 }
 
 impl Session {
-    pub fn new(name: String, configuration_name: String, ansibe_limit: Option<String>) -> Self {
+    pub fn new(name: String, configuration_name: String, ansible_limit: Option<String>, ansible_verbosity: u8) -> Self {
         Session {
             name,
             configuration_name,
-            ansible_limit: ansibe_limit,
+            ansible_limit,
+            ansible_verbosity,
             ..Default::default()
         }
     }
@@ -97,6 +97,8 @@ pub mod http_client {
             .danger_accept_invalid_certs(true)
             .proxy(socks5proxy)
             .build()?;
+
+        log::debug!("Session:\n{:#?}", session);
     
         let resp = client
             .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))

@@ -9,7 +9,7 @@ use crate::shasta_cfs_session;
 
 use crate::{git2_rs_utils, shasta_vcs_utils, shasta_cfs_configuration};
 
-pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
     // Get last (most recent) commit
     let local_last_commit_local = git2_rs_utils::local::get_last_commit(&repo).unwrap();
@@ -77,7 +77,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     // git2_rs_utils::local::fetch_and_check_conflicts(&repo)?;
     // log::debug!("No conflicts");
 
-    // Create CFS configuration
+    // Create CFS layer
     let cfs_layer = shasta_cfs_configuration::Layer::new(
         String::from(format!(  // git repo url in shasta faced VCS
             "https://api-gw-service-nmn.local/vcs/cray/{}",
@@ -93,6 +93,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         String::from("site.yml"),
     );
 
+    // Create CFS configuration
     let mut cfs_configuration = shasta_cfs_configuration::Configuration::new();
 
     cfs_configuration = shasta_cfs_configuration::add_layer(cfs_layer, cfs_configuration);
@@ -134,6 +135,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         cfs_session_name,
         cfs_object_name,
         Some(limit),
+        ansible_verbosity
     );
 
     log::debug!("Session:\n{:#?}", session);

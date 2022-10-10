@@ -4,8 +4,8 @@ pub mod client {
     use std::thread;
 
     use hyper::{client::HttpConnector, Uri};
-    use k8s_openapi::api::core::v1::Pod;
-    use kube::{client::ConfigExt, Api};
+    use k8s_openapi::api::core::v1::{Pod, ContainerState};
+    use kube::{client::ConfigExt, Api, core::ObjectList};
 
     use futures_util::{StreamExt, TryStreamExt};
 
@@ -78,57 +78,92 @@ pub mod client {
         Ok(())
     }
 
+    // /// Returns True is container is ready/running
+    // fn is_container_ready(pod: &Pod, container_name: &String) -> bool {
+    //     pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(container_name)).next().unwrap().ready
+    // }
+
+    // /// Returns true if container ran and already finished
+    // fn is_container_terminated(pod: &Pod, container_name: &String) -> bool {
+    //     pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(container_name)).next().unwrap().state.is_some()
+    // }
+
+    fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
+        pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
+            .iter().filter(|container_status| container_status.name.eq(container_name))
+            .next().unwrap().state.clone()
+    }
+
+    // fn is_container_waiting(pod: Pod, container_name: &String) -> bool {
+    //     let container_state = get_container_state(&pod, container_name);
+
+    //     container_state.is_some() && container_state.as_ref().unwrap().waiting.is_some()
+    // }
+
+    // fn is_container_running(pod: Pod, container_name: &String) -> bool {
+    //     let container_state = get_container_state(&pod, container_name);
+        
+    //     container_state.is_some() && container_state.as_ref().unwrap().running.is_some()
+    // }
+
+
     pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> core::result::Result<(), Box<dyn std::error::Error>> {
     
-        let pods: Api<Pod> = Api::namespaced(client, "services");
+        let pods_api: Api<Pod> = Api::namespaced(client, "services");
 
         log::debug!("cfs session: {}", cfs_session_name);
     
         let params = kube::api::ListParams::default().limit(1).labels(format!("cfsession={}", cfs_session_name).as_str());
         
-        let mut pod = pods.list(&params).await?;
+        let mut pods = pods_api.list(&params).await?;
         
-        log::debug!("Pod:\n{:#?}", pod);
-
         let mut i = 0;
 
-        while pod.items.is_empty() && i < 10 {
+        while pods.items.is_empty() && i < 10 {
             log::info!("Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10", cfs_session_name, i + 1);
             i += 1;
             thread::sleep(time::Duration::from_secs(2));
-            pod = pods.list(&params).await?;
+            pods = pods_api.list(&params).await?;
         }
 
-        if pod.items.is_empty() {
+        if pods.items.is_empty() {
             log::info!("Pod for cfs session {} not ready. Aborting operation", cfs_session_name);
             std::process::exit(1);
         }
 
+        let mut cfs_session_pod = &pods.items[0];
+
         let container_name = format!("ansible-{}", layer_id);
 
-        let pod_name = pod.items[0].metadata.name.clone().unwrap();
+        let cfs_session_pod_name = cfs_session_pod.metadata.name.clone().unwrap();
 
-        log::info!("Pod name: {}", pod_name);
+        log::info!("Pod name: {}", cfs_session_pod_name);
 
-        let mut container_ready = pod.items[0].status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(&container_name)).next().unwrap().ready;
+        // let mut container_ready = is_container_terminated(cfs_session_pod, &container_name);
+
+        // log::info!("Container state:\n{:#?}", container_state(cfs_session_pod, &container_name));
+
+        let mut container_state = get_container_state(&cfs_session_pod, &container_name);
 
         let mut i = 0;
 
-        while !container_ready && i < 10 {
-            log::info!("Container {} not ready. Trying again in 2 secs. Attempt {} of 10", container_name, i + 1);
+        while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
+            log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", container_name, i + 1);
             i += 1;
             thread::sleep(time::Duration::from_secs(2));
-            pod = pods.list(&params).await?;
-            container_ready = pod.items[0].status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(&container_name)).next().unwrap().ready;
+            pods = pods_api.list(&params).await?;
+            cfs_session_pod = &pods.items[0];
+            container_state = get_container_state(cfs_session_pod, &container_name);
+            log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
         }
 
-        if !container_ready {
+        if container_state.as_ref().unwrap().waiting.is_some() {
             log::info!("Container {} not ready. Aborting operation", container_name);
             std::process::exit(1);
         }
 
-        let mut logs = pods
-        .log_stream(&pod_name, &kube::api::LogParams {
+        let mut logs = pods_api
+        .log_stream(&cfs_session_pod_name, &kube::api::LogParams {
             follow: true,
             // tail_lines: Some(1),
             container: Some(container_name),

@@ -7,7 +7,7 @@ mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
 mod manta_cfs;
 mod git2_rs_utils;
-mod create_session_from_repo;
+mod create_cfs_session_from_repo;
 
 // use std::process;
 
@@ -117,7 +117,7 @@ struct ApplySessionOptions {
     /// Cluster name
     #[clap(short, long, value_parser)]
     cluster_name: Option<String>,
-    /// Repo path
+    /// Repo path. The path with a git repo and an ansible-playbook to configure the CFS image.
     #[clap(short, long, value_parser)]
     repo_path: String,
     /// Watch logs
@@ -125,7 +125,11 @@ struct ApplySessionOptions {
     watch_logs: bool,
     /// Ansible limit
     #[clap(short, long, value_parser)]
-    ansible_limit: String
+    ansible_limit: String,
+    /// Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command. 
+    /// 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.
+    #[clap(short = 'v', long, value_parser, default_value_t = 2)]
+    ansible_verbosity: u8
 }
 
 #[derive(Debug, Args)]
@@ -224,16 +228,19 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             match apply_cmd.shasta_object {
                 ShastaObjectApply::Session(apply_session_params) => {
                     
-                    // Code related to this method inspired on https://github.com/rust-lang/git2-rs/issues/561
+                    // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
         
                     // Get repo on current dir (pwd)
                     let repo = git2_rs_utils::local::get_repo(apply_session_params.repo_path.clone());
 
                     log::debug!("{} state={:?}", repo.path().display(), repo.state());
         
-                    let cfs_session_name = create_session_from_repo::run(repo, gitea_token, String::from(shasta_token), String::from(shasta_base_url), apply_session_params.ansible_limit).await;
-
-                    log::info!("cfs session: {}", cfs_session_name.as_ref().unwrap());
+                    let cfs_session_name = create_cfs_session_from_repo::run(
+                        repo, gitea_token, String::from(shasta_token)
+                        , String::from(shasta_base_url)
+                        , apply_session_params.ansible_limit
+                        , apply_session_params.ansible_verbosity)
+                        .await;
 
                     if apply_session_params.watch_logs {
                         log::info!("Fetching logs ...");
