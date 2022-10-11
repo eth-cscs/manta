@@ -5,6 +5,7 @@ mod shasta_cfs_configuration;
 mod shasta_cfs_session;
 mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
+mod shasta_cfs_component;
 mod shasta_capmc;
 mod manta_cfs;
 mod git2_rs_utils;
@@ -17,36 +18,36 @@ use clap::{Args, ArgGroup, Parser, Subcommand};
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]struct Cli {
     #[clap(subcommand)]
-    command: Verb,
+    command: MainSubcommand,
 }
 
 #[derive(Debug, Subcommand)]
-enum Verb {
+enum MainSubcommand {
     /// Get information from Shasta system
-    Get(Get),
+    Get(MainGetArgs),
     /// Make changes to Shata clusters/nodes 
-    Apply(Apply),
+    Apply(MainApplyArgs),
     /// Print session logs
-    Log(Log),
+    Log(MainLogArgs),
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-struct Get {
+struct MainGetArgs {
     #[clap(subcommand)]
-    shasta_object: ShastaObjectGet,
+    main_get_subcommand: MainGetSubcommand,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-struct Apply {
+struct MainApplyArgs {
     #[clap(subcommand)]
-    shasta_object: ShastaObjectApply,
+    main_apply_subcommand: MainApplySubcommand,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-struct Log {
+struct MainLogArgs {
     /// Session name
     #[clap(short, long, value_parser)]
     session_name: String,
@@ -56,26 +57,43 @@ struct Log {
 }
 
 #[derive(Debug, Subcommand)]
-enum ShastaObjectGet {
+enum MainGetSubcommand {
     /// Get configuration details
-    Configuration(GetConfigurationOptions),
+    MainGetConfiguration(MainGetConfigurationOptions),
     /// Get session details
-    Session(GetSessionOptions),
+    MainGetSession(MainGetSessionOptions),
 }
 
 #[derive(Debug, Subcommand)]
-enum ShastaObjectApply {
+enum MainApplySubcommand {
     /// Create new CFS session
     Session(ApplySessionOptions),
     /// Restart Power on/off a node
-    Node(ApplyNodeOptions)
+    Node(MainApplyNodeArgs)
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+struct MainApplyNodeArgs {
+    #[clap(subcommand)]
+    main_apply_node_subcommand: MainApplyNodeSubcommand,
+}
+
+#[derive(Debug, Subcommand)]
+enum MainApplyNodeSubcommand {
+    /// Start a node
+    On(MainApplyNodeOnOptions),
+    /// Shutdown a node
+    Off(MainApplyNodeOffOptions),
+    /// Restart a node
+    Reset(MainApplyNodeResetOptions)
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["name", "cluster-name"]),))]
 #[clap(group(ArgGroup::new("config-limit").args(&["most-recent", "limit-number"]),))]
-struct GetConfigurationOptions {
+struct MainGetConfigurationOptions {
     /// Configuration name
     #[clap(short, long, value_parser)]
     name: Option<String>,
@@ -94,7 +112,7 @@ struct GetConfigurationOptions {
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("session-type").args(&["name", "cluster-name"]),))]
 #[clap(group(ArgGroup::new("session-limit").args(&["most-recent", "limit-number"]),))]
-struct GetSessionOptions {
+struct MainGetSessionOptions {
     /// Session name
     #[clap(short, long, value_parser)]
     name: Option<String>,
@@ -136,12 +154,41 @@ struct ApplySessionOptions {
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-struct ApplyNodeOptions {
-    /// List of xnames to power on/off or reboot
+struct MainApplyNodeOffOptions {
+    /// Reason to shutdown
+    #[clap(short, long, value_parser)]
+    reason: String,   
+    /// List of xnames to power off
     #[clap(short, long, value_parser)]
     xnames: String,
+    /// Force node operation
     #[clap(short, long, value_parser)]
-    force: Option<bool>
+    force: bool
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+struct MainApplyNodeOnOptions {
+    /// Reason to power on
+    #[clap(short, long, value_parser)]
+    reason: String, 
+    /// List of xnames to power on
+    #[clap(short, long, value_parser)]
+    xnames: String,
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+struct MainApplyNodeResetOptions {
+    /// Reason to reboot
+    #[clap(short, long, value_parser)]
+    reason: String, 
+    /// List of xnames to reboot
+    #[clap(short, long, value_parser)]
+    xnames: String,
+    /// Force node operation
+    #[clap(short, long, value_parser)]
+    force: bool
 }
 
 #[derive(Debug, Args)]
@@ -184,9 +231,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Process input params
     match args.command {
-        Verb::Get(get_cmd) => {
-            match get_cmd.shasta_object {
-                ShastaObjectGet::Configuration(configuration) => {
+        MainSubcommand::Get(main_subcommand) => {
+            match main_subcommand.main_get_subcommand {
+                MainGetSubcommand::MainGetConfiguration(configuration) => {
 
                     configuration_name = configuration.name;
                     cluster_name = configuration.cluster_name;
@@ -213,7 +260,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         cfs_utils::print_cfs_configurations(&cfs_configurations);
                     }
                 },
-                ShastaObjectGet::Session(session) => {
+                MainGetSubcommand::MainGetSession(session) => {
 
                     session_name = session.name;
                     cluster_name = session.cluster_name;
@@ -236,9 +283,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Verb::Apply(apply_cmd) => {
-            match apply_cmd.shasta_object {
-                ShastaObjectApply::Session(apply_session_params) => {
+        MainSubcommand::Apply(main_subcommand ) => {
+            match main_subcommand.main_apply_subcommand {
+                MainApplySubcommand::Session(apply_session_params) => {
                     
                     // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
         
@@ -480,12 +527,28 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     //     log::info!("reference target: {:?}", refer.target());
                     // }
                 },
-                ShastaObjectApply::Node(apply_node_params) => {
-                    shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), None, apply_node_params.xnames, apply_node_params.force);
+                MainApplySubcommand::Node(main_apply_subcommand) => {
+                    match main_apply_subcommand.main_apply_node_subcommand {
+                        MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
+                            let xnames = main_apply_node_off_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            log::info!("{:?}", xnames);
+                            shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), None, xnames, main_apply_node_off_subcommand.force).await?;
+                        },
+                        MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
+                            let xnames = main_apply_node_on_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            log::info!("{:?}", xnames);
+                            shasta_capmc::http_client::node_power_on::post(shasta_token.to_string(), None, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
+                        },
+                        MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
+                            let xnames = main_apply_node_reset_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            log::info!("{:?}", xnames);
+                            shasta_capmc::http_client::node_restart::post(shasta_token.to_string(), None, xnames, main_apply_node_reset_subcommand.force).await?;
+                        }
+                    }
                 }
             }
         }
-        Verb::Log(log_cmd) => {
+        MainSubcommand::Log(log_cmd) => {
             logging_session_name = log_cmd.session_name;
             layer_id = log_cmd.layer_id;
             shasta_cfs_session_logs::client::session_logs_proxy(shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;

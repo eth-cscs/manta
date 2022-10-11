@@ -111,6 +111,18 @@ PLAY RECAP *********************************************************************
 x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
+Power off a node
+
+```
+$ manta apply node off --xnames "x1004c1s4b0n1" --force
+```
+
+Shutdown a node
+
+```
+$ manta apply node on --xnames "x1004c1s4b0n1"
+```
+
 ## Prerequisites
 
 Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)

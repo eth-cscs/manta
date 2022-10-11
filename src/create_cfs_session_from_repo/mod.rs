@@ -12,7 +12,7 @@ use crate::{git2_rs_utils, shasta_vcs_utils, shasta_cfs_configuration};
 pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
     // Get last (most recent) commit
-    let local_last_commit_local = git2_rs_utils::local::get_last_commit(&repo).unwrap();
+    let local_last_commit = git2_rs_utils::local::get_last_commit(&repo).unwrap();
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
@@ -24,7 +24,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         {
             println!(
                 "Continue. Checking commit id {} against remote",
-                local_last_commit_local.id()
+                local_last_commit.id()
             );
         } else {
             println!("Cancelled by user. Aborting.");
@@ -51,7 +51,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     // Check if repo and local commit id exists in Shasta cvs
     let shasta_commitid_details_resp = shasta_vcs_utils::http_client::get_commit_details(
         &format!("cray/{}", repo_name),
-        &local_last_commit_local.id().to_string(),
+        &local_last_commit.id().to_string(),
         &gitea_token,
     )
     .await;
@@ -62,7 +62,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         Ok(_) => {
             log::debug!(
                 "Local latest commit id {} for repo {} exists in shasta",
-                local_last_commit_local.id(),
+                local_last_commit.id(),
                 repo_name
             );
             shasta_commitid_details = shasta_commitid_details_resp.unwrap();
@@ -72,6 +72,10 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
             std::process::exit(1);
         }
     }
+    
+    let timestamp = local_last_commit.time().seconds();
+    let tm = chrono::NaiveDateTime::from_timestamp(timestamp, 0);
+    log::debug!("\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
     // Check conflicts
     // git2_rs_utils::local::fetch_and_check_conflicts(&repo)?;

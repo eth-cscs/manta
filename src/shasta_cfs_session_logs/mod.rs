@@ -5,7 +5,7 @@ pub mod client {
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
-    use kube::{client::ConfigExt, Api, core::ObjectList};
+    use kube::{client::ConfigExt, Api};
 
     use futures_util::{StreamExt, TryStreamExt};
 
