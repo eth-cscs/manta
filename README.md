@@ -2,7 +2,7 @@
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
 
-Manta is a rest client against Shasta related APIs (Manta does not use other tools like cray cli or kubectl) presented as a CLI
+Manta is an aggregator from multiple sources (Shasta API, K8s API, local git repo, Gitlab API and Gitea API). Manta's goal is to simplify daily Shasta operations.
 
 ## Features
 
