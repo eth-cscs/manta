@@ -71,7 +71,7 @@ pub mod http_client {
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client create new cfs sessions
+            // rest client shutdown node
             let client = reqwest::Client::builder()
                 .danger_accept_invalid_certs(true)
                 .proxy(socks5proxy)
@@ -104,7 +104,7 @@ pub mod http_client {
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client create new cfs sessions
+            // rest client start node
             let client = reqwest::Client::builder()
                 .danger_accept_invalid_certs(true)
                 .proxy(socks5proxy)
@@ -137,7 +137,7 @@ pub mod http_client {
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client create new cfs sessions
+            // rest client restart node
             let client = reqwest::Client::builder()
                 .danger_accept_invalid_certs(true)
                 .proxy(socks5proxy)
@@ -170,7 +170,7 @@ pub mod http_client {
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client create new cfs sessions
+            // rest client get node status
             let client = reqwest::Client::builder()
                 .danger_accept_invalid_certs(true)
                 .proxy(socks5proxy)

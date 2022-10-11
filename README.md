@@ -1,4 +1,3 @@
-# ANOTHER ANOTHER EDIT - CREATING A CONFLICT ... ...
 # MANTA
 
 Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
