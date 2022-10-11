@@ -157,7 +157,7 @@ struct ApplySessionOptions {
 struct MainApplyNodeOffOptions {
     /// Reason to shutdown
     #[clap(short, long, value_parser)]
-    reason: String,   
+    reason: Option<String>,   
     /// List of xnames to power off
     #[clap(short, long, value_parser)]
     xnames: String,
@@ -171,7 +171,7 @@ struct MainApplyNodeOffOptions {
 struct MainApplyNodeOnOptions {
     /// Reason to power on
     #[clap(short, long, value_parser)]
-    reason: String, 
+    reason: Option<String>, 
     /// List of xnames to power on
     #[clap(short, long, value_parser)]
     xnames: String,
@@ -182,7 +182,7 @@ struct MainApplyNodeOnOptions {
 struct MainApplyNodeResetOptions {
     /// Reason to reboot
     #[clap(short, long, value_parser)]
-    reason: String, 
+    reason: Option<String>, 
     /// List of xnames to reboot
     #[clap(short, long, value_parser)]
     xnames: String,
@@ -532,17 +532,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
                             let xnames = main_apply_node_off_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("{:?}", xnames);
-                            shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), None, xnames, main_apply_node_off_subcommand.force).await?;
+                            shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
                         },
                         MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
                             let xnames = main_apply_node_on_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("{:?}", xnames);
-                            shasta_capmc::http_client::node_power_on::post(shasta_token.to_string(), None, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
+                            shasta_capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
                         },
                         MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
                             let xnames = main_apply_node_reset_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("{:?}", xnames);
-                            shasta_capmc::http_client::node_restart::post(shasta_token.to_string(), None, xnames, main_apply_node_reset_subcommand.force).await?;
+                            shasta_capmc::http_client::node_restart::post(shasta_token.to_string(), main_apply_node_reset_subcommand.reason, xnames, main_apply_node_reset_subcommand.force).await?;
                         }
                     }
                 }
