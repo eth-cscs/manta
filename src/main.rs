@@ -5,6 +5,7 @@ mod shasta_cfs_configuration;
 mod shasta_cfs_session;
 mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
+mod shasta_capmc;
 mod manta_cfs;
 mod git2_rs_utils;
 mod create_cfs_session_from_repo;
@@ -21,10 +22,9 @@ use clap::{Args, ArgGroup, Parser, Subcommand};
 
 #[derive(Debug, Subcommand)]
 enum Verb {
-    // NOTE: clap uses '///' comments as a command description
-    /// Get shasta objects data sorted by creation or update time in desc order
+    /// Get information from Shasta system
     Get(Get),
-    /// Create new shasta object 
+    /// Make changes to Shata clusters/nodes 
     Apply(Apply),
     /// Print session logs
     Log(Log),
@@ -65,8 +65,10 @@ enum ShastaObjectGet {
 
 #[derive(Debug, Subcommand)]
 enum ShastaObjectApply {
-    /// Apply/Create new session
+    /// Create new CFS session
     Session(ApplySessionOptions),
+    /// Restart Power on/off a node
+    Node(ApplyNodeOptions)
 }
 
 #[derive(Debug, Args)]
@@ -130,6 +132,16 @@ struct ApplySessionOptions {
     /// 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.
     #[clap(short = 'v', long, value_parser, default_value_t = 2)]
     ansible_verbosity: u8
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+struct ApplyNodeOptions {
+    /// List of xnames to power on/off or reboot
+    #[clap(short, long, value_parser)]
+    xnames: String,
+    #[clap(short, long, value_parser)]
+    force: Option<bool>
 }
 
 #[derive(Debug, Args)]
@@ -467,6 +479,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     //     log::info!("reference name: {}", refer.name().unwrap());
                     //     log::info!("reference target: {:?}", refer.target());
                     // }
+                },
+                ShastaObjectApply::Node(apply_node_params) => {
+                    shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), None, apply_node_params.xnames, apply_node_params.force);
                 }
             }
         }
