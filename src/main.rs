@@ -7,6 +7,7 @@ mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
 mod shasta_cfs_component;
 mod shasta_capmc;
+mod shasta_hsm;
 mod manta_cfs;
 mod git2_rs_utils;
 mod create_cfs_session_from_repo;
@@ -217,12 +218,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let shasta_base_url = "https://api-gw-service-nmn.local/apis";
     // let repo_path;
 
-    let shasta_admin_pwd = std::env::var("SHASTA_ADMIN_PWD").unwrap();
+    let shasta_admin_pwd = std::env::var("SHASTA_ADMIN_PWD").expect("SHASTA_ADMIN_PWD env missing");
 
     let shasta_token_resp = auth::auth(&shasta_admin_pwd).await?;
 
     shasta_token = shasta_token_resp["access_token"].as_str().unwrap();
-    gitea_token = std::env::var("GITEA_TOKEN").unwrap();
+    gitea_token = std::env::var("GITEA_TOKEN").expect("GITEA_TOKEN env missing");
+
+    std::env::var("KUBECONFIG").expect("KUBECONFIG missing");
 
     // let resp = cfs::check_cfs_health(shasta_token, shasta_base_url).await?;
 
@@ -531,17 +534,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     match main_apply_subcommand.main_apply_node_subcommand {
                         MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
                             let xnames = main_apply_node_off_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
-                            log::info!("{:?}", xnames);
+                            log::info!("Servers to turn off: {:?}", xnames);
                             shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
                         },
                         MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
                             let xnames = main_apply_node_on_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
-                            log::info!("{:?}", xnames);
+                            log::info!("Servers to turn on: {:?}", xnames);
                             shasta_capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
                         },
                         MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
                             let xnames = main_apply_node_reset_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
-                            log::info!("{:?}", xnames);
+                            log::info!("Servers to reboot: {:?}", xnames);
                             shasta_capmc::http_client::node_restart::post(shasta_token.to_string(), main_apply_node_reset_subcommand.reason, xnames, main_apply_node_reset_subcommand.force).await?;
                         }
                     }

@@ -5,11 +5,22 @@ use git2::Repository;
 use k8s_openapi::chrono;
 use serde_json::Value;
 use substring::Substring;
-use crate::shasta_cfs_session;
+use crate::{shasta_cfs_session, shasta_cfs_component, shasta_hsm};
 
 use crate::{git2_rs_utils, shasta_vcs_utils, shasta_cfs_configuration};
 
 pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
+
+    let component_status = shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &limit).await?;
+    let hsm_configuration_state = &shasta_hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &limit).await?["State"];
+    log::info!("HSM component state for component {}: {}", limit, hsm_configuration_state.as_str().unwrap());
+    log::info!("Is component enabled for batched CFS: {}", component_status["enabled"]);
+    log::info!("Error count: {}", component_status["errorCount"]);
+
+    if hsm_configuration_state.eq("On") || hsm_configuration_state.eq("Standby") {
+        log::info!("There is an CFS session scheduled to run on this node. Pleas try again later. Aborting");
+        std::process::exit(0);
+    }
 
     // Get last (most recent) commit
     let local_last_commit = git2_rs_utils::local::get_last_commit(&repo).unwrap();
