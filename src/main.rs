@@ -60,9 +60,9 @@ struct MainLogArgs {
 #[derive(Debug, Subcommand)]
 enum MainGetSubcommand {
     /// Get configuration details
-    MainGetConfiguration(MainGetConfigurationOptions),
+    Configuration(MainGetConfigurationOptions),
     /// Get session details
-    MainGetSession(MainGetSessionOptions),
+    Session(MainGetSessionOptions),
 }
 
 #[derive(Debug, Subcommand)]
@@ -216,13 +216,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let shasta_token;
     let gitea_token;
     let shasta_base_url = "https://api-gw-service-nmn.local/apis";
-    // let repo_path;
 
-    let shasta_admin_pwd = std::env::var("SHASTA_ADMIN_PWD").expect("SHASTA_ADMIN_PWD env missing");
-
-    let shasta_token_resp = auth::auth(&shasta_admin_pwd).await?;
-
-    shasta_token = shasta_token_resp["access_token"].as_str().unwrap();
+    // shasta_token = shasta_token_resp["access_token"].as_str().unwrap();
+    shasta_token = auth::get_shasta_api_token().await?;
     gitea_token = std::env::var("GITEA_TOKEN").expect("GITEA_TOKEN env missing");
 
     std::env::var("KUBECONFIG").expect("KUBECONFIG missing");
@@ -236,7 +232,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     match args.command {
         MainSubcommand::Get(main_subcommand) => {
             match main_subcommand.main_get_subcommand {
-                MainGetSubcommand::MainGetConfiguration(configuration) => {
+                MainGetSubcommand::Configuration(configuration) => {
 
                     configuration_name = configuration.name;
                     cluster_name = configuration.cluster_name;
@@ -249,7 +245,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     }
 
                     // Get CFS configurations
-                    let cfs_configurations = crate::shasta_cfs_configuration::http_client::get(shasta_token, shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
+                    let cfs_configurations = crate::shasta_cfs_configuration::http_client::get(&shasta_token, shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
 
                     if cfs_configurations.is_empty() {
                         log::info!("No CFS configuration found!");
@@ -263,7 +259,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         cfs_utils::print_cfs_configurations(&cfs_configurations);
                     }
                 },
-                MainGetSubcommand::MainGetSession(session) => {
+                MainGetSubcommand::Session(session) => {
 
                     session_name = session.name;
                     cluster_name = session.cluster_name;
@@ -275,7 +271,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         limit_number = session.limit_number;
                     }
 
-                    let cfs_sessions = crate::shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
+                    let cfs_sessions = crate::shasta_cfs_session::http_client::get(&shasta_token, shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
 
                     if cfs_sessions.is_empty() {
                         log::info!("No CFS session found!");
@@ -554,7 +550,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         MainSubcommand::Log(log_cmd) => {
             logging_session_name = log_cmd.session_name;
             layer_id = log_cmd.layer_id;
-            shasta_cfs_session_logs::client::session_logs_proxy(shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
+            shasta_cfs_session_logs::client::session_logs_proxy(&shasta_token, shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
         }
     }
 
