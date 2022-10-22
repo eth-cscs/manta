@@ -85,11 +85,17 @@ pub mod http_client {
             .get(format!("{}{}", shasta_base_url, "/cfs/v2/configurations"))
             .bearer_auth(shasta_token)
             .send()
-            .await?
-            .text()
             .await?;
     
-        let json_response: Value = serde_json::from_str(&resp)?;
+        // let json_response: Value = serde_json::from_str(&resp)?;
+
+        let json_response: Value;
+
+        if resp.status().is_success() {
+            json_response = serde_json::from_str(&resp.text().await?)?;
+        } else {
+            return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
+        }
     
         if cluster_name.is_some() {
             for cfs_configuration in json_response.as_array().unwrap() {

@@ -31,16 +31,19 @@ pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
 
     log::debug!("Cache file: {:?}", path);
 
+    if path.exists() {
+        shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
+    }
+
     let mut attempts = 0;
 
-    while !path.exists() || (fs::metadata(&path)?.len() == 0 && attempts < 3) {
+    while !is_token_valid(&shasta_token).await.unwrap() && attempts < 3 {
 
         log::info!("Please type your Keycloak credentials");
         let username: String = Input::new().with_prompt("username").interact_text()?;
-
         let password = Password::new().with_prompt("password").interact()?;
 
-        match auth(&username, &password).await {
+        match get_token_from_shasta_endpoint(&username, &password).await {
             Ok(shasta_token) => {
                 file = File::create(&path).expect("Error encountered while creating file!");
                 file.write_all(shasta_token.as_bytes())
@@ -52,15 +55,47 @@ pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
         }
     }
 
-    if path.exists() && fs::metadata(&path)?.len() > 0 {
-        File::open(path).unwrap().read_to_string(&mut shasta_token).unwrap();
-        Ok(shasta_token.to_string())
+    if attempts < 3 {
+        shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
+        Ok(shasta_token)
     } else {
         Err("Authentication unsucessful".into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
     }
 }
 
-pub async fn auth(username: &str, password: &str) -> Result<String, Box<dyn Error>> {
+pub fn get_token_from_local_file(path: &std::ffi::OsStr) -> Result<String, Box<dyn Error>> {
+    let mut shasta_token = String::new();
+    File::open(path).unwrap().read_to_string(&mut shasta_token).unwrap();
+    Ok(shasta_token.to_string())
+}
+
+pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> {
+
+    // socks5 proxy
+    let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+    
+    // rest client to authenticate
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .proxy(socks5proxy)
+        .build()?;
+    
+    let resp = client
+        .get("https://api-gw-service-nmn.local/apis/cfs/healthz")
+        .bearer_auth(shasta_token)
+        .send()
+        .await?;
+    
+    if resp.status().is_success() {
+        log::info!("Token is valid");
+        Ok(true)
+    } else {
+        log::warn!("Token is not valid");
+        Ok(false)
+    }
+}
+
+pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> Result<String, Box<dyn Error>> {
     
     let json_response: Value;
 

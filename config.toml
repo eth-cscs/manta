@@ -1,0 +1,2 @@
+shasta_base_url = "https://api-gw-service-nmn.local/apis"
+kubeconfig = "/home/msopena/ownCloud/Documents/tests/rust/manta/shasta.kube.config"
