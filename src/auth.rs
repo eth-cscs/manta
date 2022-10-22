@@ -15,7 +15,7 @@ use std::{
 pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
 
     let mut file;
-    let mut shasta_token = "".to_string();
+    let mut shasta_token = String::new();
 
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -33,7 +33,7 @@ pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
 
     let mut attempts = 0;
 
-    while path.exists() && fs::metadata(&path)?.len() == 0 && attempts < 3 {
+    while !path.exists() || (fs::metadata(&path)?.len() == 0 && attempts < 3) {
 
         log::info!("Please type your Keycloak credentials");
         let username: String = Input::new().with_prompt("username").interact_text()?;
@@ -53,7 +53,7 @@ pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
     }
 
     if path.exists() && fs::metadata(&path)?.len() > 0 {
-        File::open(path).unwrap().read_to_string(&mut shasta_token);
+        File::open(path).unwrap().read_to_string(&mut shasta_token).unwrap();
         Ok(shasta_token.to_string())
     } else {
         Err("Authentication unsucessful".into()) // Black magic conversion from Err(Box::new("my error msg")) which does not

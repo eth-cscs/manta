@@ -12,8 +12,6 @@ mod manta_cfs;
 mod git2_rs_utils;
 mod create_cfs_session_from_repo;
 
-// use std::process;
-
 use clap::{Args, ArgGroup, Parser, Subcommand};
 
 #[derive(Parser)]
