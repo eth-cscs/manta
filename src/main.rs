@@ -11,6 +11,7 @@ mod shasta_hsm;
 mod manta_cfs;
 mod git2_rs_utils;
 mod create_cfs_session_from_repo;
+mod vault;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
 
@@ -217,7 +218,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // shasta_token = shasta_token_resp["access_token"].as_str().unwrap();
     shasta_token = auth::get_shasta_api_token().await?;
-    gitea_token = std::env::var("GITEA_TOKEN").expect("GITEA_TOKEN env missing");
+    // gitea_token = std::env::var("GITEA_TOKEN").expect("GITEA_TOKEN env missing");
+    gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
+
+    log::info!("{}", gitea_token);
 
     std::env::var("KUBECONFIG").expect("KUBECONFIG missing");
 

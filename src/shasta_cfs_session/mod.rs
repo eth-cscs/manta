@@ -89,6 +89,8 @@ pub mod http_client {
 
     pub async fn post(shasta_token: &str, shasta_base_url: &str, session: Session) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
+        log::debug!("Session:\n{:#?}", session);
+        
         // socks5 proxy
         let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
@@ -97,8 +99,6 @@ pub mod http_client {
             .danger_accept_invalid_certs(true)
             .proxy(socks5proxy)
             .build()?;
-
-        log::debug!("Session:\n{:#?}", session);
     
         let resp = client
             .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
