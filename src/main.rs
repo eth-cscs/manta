@@ -219,7 +219,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
-    std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
+    // std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
     std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
 
     shasta_token = shasta_authentication::get_api_token().await?;
@@ -281,22 +281,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                             )
                         );
                     } else {
-                        // cfs_utils::print_cfs_configurations(&cfs_configurations);
-
-                        // let mut configurations = vec![];
-
-                        // for configuration in cfs_configurations {
-
-                        //     configurations.push(
-                        //         manta_cfs::configuration::Config::new(
-                        //             configuration["name"].as_str().unwrap(), 
-                        //             configuration["lastUpdated"].as_str().unwrap(), 
-                        //             vec![]
-                        //         )
-                        //     )
-                        // }
-
-                        // print_table(configurations);
 
                         shasta_cfs_configuration::utils::print_table(cfs_configurations);
                     }
@@ -319,7 +303,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         log::info!("No CFS session found!");
                         return Ok(())
                     } else {
-                        // cfs_utils::print_cfs_sessions(&cfs_sessions);
+
                         shasta_cfs_session::utils::print_table(cfs_sessions);
                     }
                 }

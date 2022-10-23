@@ -132,22 +132,21 @@ pub mod http_client {
         }
     
         if cluster_name.is_some() {
+
             for cfs_configuration in json_response.as_array().unwrap() {
-                if cfs_configuration
-                    .get("name")
-                    .unwrap()
+                if cfs_configuration["name"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.as_ref().unwrap()) //TODO: investigate why I ned to use this ugly 'as_ref'
+                    .contains(cluster_name.as_ref().unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }
             }
+
         } else if configuration_name.is_some() {
+
             for cfs_configuration in json_response.as_array().unwrap() {
-                if cfs_configuration
-                    .get("name")
-                    .unwrap()
+                if cfs_configuration["name"]
                     .as_str()
                     .unwrap()
                     .eq(configuration_name.as_ref().unwrap()) // TODO: investigate why I ned to use this ugly 'as_ref'
@@ -155,6 +154,7 @@ pub mod http_client {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }
             }
+
         } else { // Returning all results
             cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
 
@@ -163,7 +163,7 @@ pub mod http_client {
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
+            // cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
     
             cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].to_string().cmp(&b["lastUpdated"].to_string()));
     

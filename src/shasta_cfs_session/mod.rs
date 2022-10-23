@@ -206,7 +206,7 @@ pub mod http_client {
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
+            // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
     
             cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
     

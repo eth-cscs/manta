@@ -1,17 +1,18 @@
 pub mod client {
 
     use core::time;
-    use std::thread;
+    use std::{thread, str::FromStr};
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
-    use kube::{client::ConfigExt, Api, Client};
+    use kube::{client::ConfigExt, Api, Client, config::{KubeConfigOptions, Cluster, NamedCluster, NamedAuthInfo, AuthInfo, Kubeconfig, NamedContext, Context}};
 
     use futures_util::{StreamExt, TryStreamExt};
+    use secrecy::SecretString;
 
-    use crate::{shasta_cfs_session};
+    use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
-    pub async fn get_k8s_client() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
+    pub async fn get_k8s_client_from_env() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
 
         let config = kube::Config::infer().await?;
         // log::info!("{:#?}", config);
@@ -54,6 +55,112 @@ pub mod client {
     
         Ok(client)
     }
+
+    pub async fn get_k8s_client_programmatically() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
+
+        let shasta_k8s_secrets = fetch_shasta_k8s_secrets().await?;
+        // log::info!("\n{:#?}", fetch_shasta_k8s_secrets().await);
+
+        let shasta_cluster = Cluster {
+            server: String::from("https://10.252.1.12:6442"),
+            insecure_skip_tls_verify: Some(true),
+            certificate_authority: None,
+            certificate_authority_data: Some(String::from(shasta_k8s_secrets["certificate-authority-data"].as_str().unwrap())),
+            proxy_url: Some(std::env::var("SOCKS5").unwrap()),
+            extensions: None,
+        };
+
+        let shasta_named_cluster = NamedCluster {
+            name: String::from("shasta"),
+            cluster: shasta_cluster,
+        };
+
+        let shasta_auth_info = AuthInfo {
+            username: None,
+            password: None,
+            token: None,
+            token_file: None,
+            client_certificate: None,
+            client_certificate_data: Some(String::from(shasta_k8s_secrets["client-certificate-data"].as_str().unwrap())),
+            client_key: None,
+            client_key_data: Some(SecretString::from_str(shasta_k8s_secrets["client-key-data"].as_str().unwrap()).unwrap()),
+            impersonate: None,
+            impersonate_groups: None,
+            auth_provider: None,
+            exec: None,
+        };
+
+        let shasta_named_auth_info = NamedAuthInfo {
+            name: String::from("kubernetes-admin"),
+            auth_info: shasta_auth_info,
+        };
+
+        let shasta_context = Context {
+            cluster: String::from("shasta"),
+            user: String::from("kubernetes-admin"),
+            namespace: None,
+            extensions: None,
+        };
+
+        let shasta_named_context = NamedContext {
+            name: String::from("kubernetes-admin@kubernetes"),
+            context: shasta_context,
+        };
+
+        let kube_config = Kubeconfig {
+            preferences: None,
+            clusters: vec![shasta_named_cluster],
+            auth_infos: vec![shasta_named_auth_info],
+            contexts: vec![shasta_named_context],
+            current_context: Some(String::from("kubernetes-admin@kubernetes")),
+            extensions: None,
+            kind: None,
+            api_version: None
+        };
+
+        let kube_config_options = KubeConfigOptions {
+            context: Some(String::from("kubernetes-admin@kubernetes")),
+            cluster: Some(String::from("shasta")),
+            user: Some(String::from("kubernetes-admin"))
+        };
+
+        let config = kube::Config::from_custom_kubeconfig(kube_config, &kube_config_options).await?;
+    
+        let client;
+
+        if std::env::var("SOCKS5").is_ok() {
+            let connector = {
+                let mut http = HttpConnector::new();
+                http.enforce_http(false);
+                let proxy = hyper_socks2::SocksConnector {
+                    proxy_addr: std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap(),
+                    auth: None,
+                    connector: http,
+                };
+                let mut native_tls_builder = native_tls::TlsConnector::builder();
+                native_tls_builder.danger_accept_invalid_certs(true);
+                native_tls_builder.danger_accept_invalid_hostnames(true);
+                native_tls_builder.use_sni(false);
+        
+                let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
+                hyper_tls::HttpsConnector::from((proxy, tls))
+            };
+
+            let service = tower::ServiceBuilder::new()
+            .layer(config.base_uri_layer())
+            .option_layer(config.auth_layer()?)
+            .service(hyper::Client::builder().build(connector));
+    
+            client = kube::Client::new(service, config.default_namespace);
+
+        } else {
+
+            client = Client::try_default().await?;
+
+        }
+    
+        Ok(client)
+    }
     
     pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
         
@@ -69,7 +176,7 @@ pub mod client {
 
         let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-        let client = get_k8s_client().await?;
+        let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
         get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
@@ -79,7 +186,7 @@ pub mod client {
 
     pub async fn session_logs(cfs_session_name: &str, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
         
-        let client = get_k8s_client().await?;
+        let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
         get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
