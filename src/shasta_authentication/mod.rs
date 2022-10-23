@@ -71,14 +71,22 @@ pub fn get_token_from_local_file(path: &std::ffi::OsStr) -> Result<String, Box<d
 
 pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> {
 
-    // socks5 proxy
-    let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-    // rest client to authenticate
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .proxy(socks5proxy)
-        .build()?;
+    let client;
+
+    let client_builder = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true);
+
+    // Build client
+    if std::env::var("SOCKS5").is_ok() {
+        
+        // socks5 proxy
+        let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+
+        // rest client to authenticate
+        client = client_builder.proxy(socks5proxy).build()?;
+    } else {
+        client = client_builder.build()?;
+    }
     
     let resp = client
         .get("https://api-gw-service-nmn.local/apis/cfs/healthz")
@@ -99,9 +107,6 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
     
     let json_response: Value;
 
-    // socks5 proxy
-    let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
     let mut params = HashMap::new();
     params.insert("grant_type", "password");
     params.insert("client_id", "shasta");
@@ -111,11 +116,31 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
     // params.insert("client_id", "admin-client");
     // params.insert("client_secret", shasta_admin_pwd);
 
-    // rest client to authenticate
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        .proxy(socks5proxy)
-        .build()?;
+    // // socks5 proxy
+    // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+
+    // // rest client to authenticate
+    // let client = reqwest::Client::builder()
+    //     .danger_accept_invalid_certs(true)
+    //     .proxy(socks5proxy)
+    //     .build()?;
+
+    let client;
+
+    let client_builder = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true);
+
+    // Build client
+    if std::env::var("SOCKS5").is_ok() {
+        
+        // socks5 proxy
+        let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+
+        // rest client to authenticate
+        client = client_builder.proxy(socks5proxy).build()?;
+    } else {
+        client = client_builder.build()?;
+    }
 
     let resp = client
         .post(

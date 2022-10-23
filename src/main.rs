@@ -130,18 +130,14 @@ struct MainGetSessionOptions {
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-#[clap(group(ArgGroup::new("session-type").args(&["session-name", "cluster-name"]),))]
 struct ApplySessionOptions {
     /// Session name
     #[clap(short, long, value_parser)]
     session_name: Option<String>,
-    /// Cluster name
-    #[clap(short, long, value_parser)]
-    cluster_name: Option<String>,
     /// Repo path. The path with a git repo and an ansible-playbook to configure the CFS image.
     #[clap(short, long, value_parser)]
     repo_path: String,
-    /// Watch logs
+    /// Watch logs. Hooks stdout to aee container running ansible scripts
     #[clap(short, long, value_parser)]
     watch_logs: bool,
     /// Ansible limit
@@ -224,6 +220,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
+    std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
 
     shasta_token = shasta_authentication::get_api_token().await?;
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();

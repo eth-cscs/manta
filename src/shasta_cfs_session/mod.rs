@@ -91,14 +91,31 @@ pub mod http_client {
 
         log::debug!("Session:\n{:#?}", session);
         
-        // socks5 proxy
-        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-        // rest client create new cfs sessions
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .proxy(socks5proxy)
-            .build()?;
+        // // rest client create new cfs sessions
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
+
+        let client;
+
+        let client_builder = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true);
+    
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+    
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
     
         let resp = client
             .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
@@ -118,14 +135,31 @@ pub mod http_client {
 
         let mut cluster_cfs_sessions: Vec<Value> = Vec::new();
 
-        // socks5 proxy
-        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
     
-        // rest client get cfs sessions
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .proxy(socks5proxy)
-            .build()?;
+        // // rest client get cfs sessions
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
+
+        let client;
+
+        let client_builder = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true);
+    
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+    
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
         
         let resp = client
             .get(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))

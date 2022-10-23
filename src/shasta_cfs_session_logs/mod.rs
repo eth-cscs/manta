@@ -5,7 +5,7 @@ pub mod client {
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
-    use kube::{client::ConfigExt, Api};
+    use kube::{client::ConfigExt, Api, Client};
 
     use futures_util::{StreamExt, TryStreamExt};
 
@@ -16,32 +16,41 @@ pub mod client {
         let config = kube::Config::infer().await?;
         // log::info!("{:#?}", config);
     
-        let connector = {
-            let mut http = HttpConnector::new();
-            http.enforce_http(false);
-            let proxy = hyper_socks2::SocksConnector {
-                proxy_addr: Uri::from_static("socks5://localhost:1080"),
-                auth: None,
-                connector: http,
+        let client;
+
+        if std::env::var("SOCKS5").is_ok() {
+            let connector = {
+                let mut http = HttpConnector::new();
+                http.enforce_http(false);
+                let proxy = hyper_socks2::SocksConnector {
+                    proxy_addr: std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap(),
+                    auth: None,
+                    connector: http,
+                };
+                let mut native_tls_builder = native_tls::TlsConnector::builder();
+                native_tls_builder.danger_accept_invalid_certs(true);
+                native_tls_builder.danger_accept_invalid_hostnames(true);
+                native_tls_builder.use_sni(false);
+        
+                // let native_tls_connector = native_tls_builder.build().unwrap();
+        
+                // let tls = tokio_native_tls::TlsConnector::from(native_tls_connector);
+                let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
+                hyper_tls::HttpsConnector::from((proxy, tls))
             };
-            let mut native_tls_builder = native_tls::TlsConnector::builder();
-            native_tls_builder.danger_accept_invalid_certs(true);
-            native_tls_builder.danger_accept_invalid_hostnames(true);
-            native_tls_builder.use_sni(false);
-    
-            // let native_tls_connector = native_tls_builder.build().unwrap();
-    
-            // let tls = tokio_native_tls::TlsConnector::from(native_tls_connector);
-            let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
-            hyper_tls::HttpsConnector::from((proxy, tls))
-        };
-    
-        let service = tower::ServiceBuilder::new()
+
+            let service = tower::ServiceBuilder::new()
             .layer(config.base_uri_layer())
             .option_layer(config.auth_layer()?)
             .service(hyper::Client::builder().build(connector));
     
-        let client = kube::Client::new(service, config.default_namespace);
+            client = kube::Client::new(service, config.default_namespace);
+
+        } else {
+
+            client = Client::try_default().await?;
+
+        }
     
         Ok(client)
     }

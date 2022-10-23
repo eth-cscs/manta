@@ -10,14 +10,31 @@ pub mod http_client {
 
         let repo_name = repo_url.trim_start_matches(gitea_base_url).trim_end_matches(".git");
 
-        // socks5 proxy
-        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-        // rest client get commit details
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .proxy(socks5proxy)
-            .build()?;
+        // // rest client get commit details
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
+
+        let client;
+
+        let client_builder = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true);
+    
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+    
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
 
         let resp = client
             .get(format!("{}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid))
@@ -37,14 +54,31 @@ pub mod http_client {
         let gitea_base_url = "https://api-gw-service-nmn.local/vcs/";
         let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
 
-        // socks5 proxy
-        let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-        // rest client get commit details
-        let client = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true)
-            .proxy(socks5proxy)
-            .build()?;
+        // // rest client get commit details
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
+
+        let client;
+
+        let client_builder = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true);
+    
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+    
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
         
         let resp = client
             .get(format!("{}/repos/{}/commits", gitea_api_base_url, repo_name))

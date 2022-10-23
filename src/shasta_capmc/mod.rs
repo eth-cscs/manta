@@ -83,14 +83,31 @@ pub mod http_client {
 
             log::debug!("Payload:\n{:#?}", power_off);
 
-            // socks5 proxy
-            let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+            // // socks5 proxy
+            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client shutdown node
-            let client = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .proxy(socks5proxy)
-                .build()?;
+            // // rest client shutdown node
+            // let client = reqwest::Client::builder()
+            //     .danger_accept_invalid_certs(true)
+            //     .proxy(socks5proxy)
+            //     .build()?;
+
+            let client;
+
+            let client_builder = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true);
+        
+            // Build client
+            if std::env::var("SOCKS5").is_ok() {
+                
+                // socks5 proxy
+                let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+        
+                // rest client to authenticate
+                client = client_builder.proxy(socks5proxy).build()?;
+            } else {
+                client = client_builder.build()?;
+            }
         
             let resp = client
                 .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_off")
@@ -124,14 +141,31 @@ pub mod http_client {
             
             log::debug!("Payload:\n{:#?}", power_on);
 
-            // socks5 proxy
-            let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+            // // socks5 proxy
+            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client start node
-            let client = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .proxy(socks5proxy)
-                .build()?;
+            // // rest client start node
+            // let client = reqwest::Client::builder()
+            //     .danger_accept_invalid_certs(true)
+            //     .proxy(socks5proxy)
+            //     .build()?;
+
+            let client;
+
+            let client_builder = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true);
+        
+            // Build client
+            if std::env::var("SOCKS5").is_ok() {
+                
+                // socks5 proxy
+                let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+        
+                // rest client to authenticate
+                client = client_builder.proxy(socks5proxy).build()?;
+            } else {
+                client = client_builder.build()?;
+            }
         
             let resp = client
                 .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_on")
@@ -165,14 +199,31 @@ pub mod http_client {
             
             log::debug!("Payload:\n{:#?}", node_restart);
 
-            // socks5 proxy
-            let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+            // // socks5 proxy
+            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client restart node
-            let client = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .proxy(socks5proxy)
-                .build()?;
+            // // rest client restart node
+            // let client = reqwest::Client::builder()
+            //     .danger_accept_invalid_certs(true)
+            //     .proxy(socks5proxy)
+            //     .build()?;
+
+            let client;
+
+            let client_builder = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true);
+        
+            // Build client
+            if std::env::var("SOCKS5").is_ok() {
+                
+                // socks5 proxy
+                let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+        
+                // rest client to authenticate
+                client = client_builder.proxy(socks5proxy).build()?;
+            } else {
+                client = client_builder.build()?;
+            }
         
             let resp = client
                 .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_reinit")
@@ -202,14 +253,31 @@ pub mod http_client {
             
             let node_status = NodeStatus::new(None, Some(xnames), None);
             
-            // socks5 proxy
-            let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+            // // socks5 proxy
+            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-            // rest client get node status
-            let client = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .proxy(socks5proxy)
-                .build()?;
+            // // rest client get node status
+            // let client = reqwest::Client::builder()
+            //     .danger_accept_invalid_certs(true)
+            //     .proxy(socks5proxy)
+            //     .build()?;
+
+            let client;
+
+            let client_builder = reqwest::Client::builder()
+                .danger_accept_invalid_certs(true);
+        
+            // Build client
+            if std::env::var("SOCKS5").is_ok() {
+                
+                // socks5 proxy
+                let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+        
+                // rest client to authenticate
+                client = client_builder.proxy(socks5proxy).build()?;
+            } else {
+                client = client_builder.build()?;
+            }
         
             let resp = client
                 .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/get_xname_status")
