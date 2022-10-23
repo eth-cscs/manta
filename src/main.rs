@@ -14,8 +14,7 @@ mod vault;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
 use config::Config;
-use manta_cfs::{configuration::{print_table, print_details_table}, layer::ConfigLayer};
-use serde_json::Value;
+use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]struct Cli {
@@ -277,7 +276,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                             );
                         }
 
-                        print_details_table(
+                        print_table(
                             manta_cfs::configuration::Config::new(
                                 most_recent_cfs_configuration["name"].as_str().unwrap(), 
                                 most_recent_cfs_configuration["lastUpdated"].as_str().unwrap(), 
@@ -286,20 +285,23 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         );
                     } else {
                         // cfs_utils::print_cfs_configurations(&cfs_configurations);
-                        let mut configurations = vec![];
 
-                        for configuration in cfs_configurations {
+                        // let mut configurations = vec![];
 
-                            configurations.push(
-                                manta_cfs::configuration::Config::new(
-                                    configuration["name"].as_str().unwrap(), 
-                                    configuration["lastUpdated"].as_str().unwrap(), 
-                                    vec![]
-                                )
-                            )
-                        }
+                        // for configuration in cfs_configurations {
 
-                        print_table(configurations);
+                        //     configurations.push(
+                        //         manta_cfs::configuration::Config::new(
+                        //             configuration["name"].as_str().unwrap(), 
+                        //             configuration["lastUpdated"].as_str().unwrap(), 
+                        //             vec![]
+                        //         )
+                        //     )
+                        // }
+
+                        // print_table(configurations);
+
+                        shasta_cfs_configuration::utils::print_table(cfs_configurations);
                     }
                 },
                 MainGetSubcommand::Session(session) => {
@@ -320,7 +322,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         log::info!("No CFS session found!");
                         return Ok(())
                     } else {
-                        cfs_utils::print_cfs_sessions(&cfs_sessions);
+                        // cfs_utils::print_cfs_sessions(&cfs_sessions);
+                        shasta_cfs_session::utils::print_table(cfs_sessions);
                     }
                 }
             }

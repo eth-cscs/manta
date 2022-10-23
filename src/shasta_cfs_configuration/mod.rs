@@ -144,3 +144,43 @@ pub mod http_client {
         Ok(cluster_cfs_configs)
     }
 }
+
+pub mod utils {
+    
+    use comfy_table::Table;
+    use serde_json::Value;
+
+
+    pub fn print_table(cfs_configurations: Vec<Value>) {
+        
+        let mut table = Table::new();
+
+        table.set_header(vec!["Name", "Last updated", "Layers"]);
+    
+        for cfs_configuration in cfs_configurations {
+
+            let mut layers: String = String::new();
+
+            if cfs_configuration["layers"].as_array().is_some() {
+
+                let layers_json = cfs_configuration["layers"].as_array().unwrap();
+
+                layers = format!("COMMIT: {} NAME: {}", layers_json[0]["commit"], layers_json[0]["name"]);
+                
+                for i in 1..layers_json.len() {
+
+                    let layer = &layers_json[i];
+                    layers = format!("{}\nCOMMIT: {} NAME: {}", layers, layer["commit"], layer["name"]);
+                }
+            }
+
+            table.add_row(vec![
+                cfs_configuration["name"].as_str().unwrap(),
+                cfs_configuration["lastUpdated"].as_str().unwrap(),
+                &layers
+            ]);
+        }
+    
+        println!("{table}");
+    }
+}

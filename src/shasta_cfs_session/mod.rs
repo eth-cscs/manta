@@ -187,3 +187,47 @@ pub mod http_client {
         Ok(cluster_cfs_sessions)
     }
 }
+
+pub mod utils {
+
+    use comfy_table::Table;
+    use serde_json::Value;
+
+    pub fn print_table(cfs_sessions: Vec<Value>) {
+        
+        let mut table = Table::new();
+
+        table.set_header(vec!["Name", "Configuration", "Target definition", "Target groups", "Ansible limit", "Start", "Status", "Succeeded", "Job"]);
+    
+        for cfs_session in cfs_sessions {
+
+            let mut target_groups: String = String::new();
+
+            if cfs_session["target"]["groups"].as_array().is_some() {
+
+                let target_groups_json = cfs_session["target"]["groups"].as_array().unwrap();
+
+                target_groups = String::from(target_groups_json[0]["name"].as_str().unwrap());
+
+                for i in 1..target_groups_json.len() {
+                    
+                    target_groups = format!("{},{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
+                }
+            }
+
+            table.add_row(vec![
+                cfs_session["name"].as_str().unwrap(),
+                cfs_session["configuration"]["name"].as_str().unwrap(),
+                cfs_session["target"]["definition"].as_str().unwrap(),
+                &target_groups,
+                cfs_session["ansible"]["limit"].as_str().unwrap_or_default(),
+                cfs_session["status"]["session"]["startTime"].as_str().unwrap(),
+                cfs_session["status"]["session"]["status"].as_str().unwrap(),
+                cfs_session["status"]["session"]["succeeded"].as_str().unwrap(),
+                cfs_session["status"]["session"]["job"].as_str().unwrap()
+            ]);
+        }
+    
+        println!("{table}");
+    }
+}

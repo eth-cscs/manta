@@ -1,33 +1,13 @@
 use serde_json::Value;
 
-// pub fn print_cfs_configurations(cfs_configurations: &Vec<Value>) {
-
-//     let mut table = Table::new();
-
-//     table.set_header(vec!["Name", "Last updated", "Layers"]);
-
-//     for cfs_configuration in cfs_configurations {
-//         table.add_row(vec![
-//             cfs_configuration["name"].as_str().unwrap(),
-//             cfs_configuration["lastUpdated"].as_str().unwrap(),
-//         ]);
-//         let mut layers: Vec<String> = vec![];
-//         if !cfs_configuration["layers"].is_null() {
-//             for layer in cfs_configuration["layers"].as_array().unwrap() {
-//                 layers.push(format!(" - layer - name: {}; commit: {}", layer["name"].as_str().unwrap(), layer["commit"].as_str().unwrap()));
-//             }
-//         }
-//     }
-
-//     println!("{table}");
-//     // println!("*** CFS CONFIGURATIONS ***");
-//     // println!("================================");
-//     // for cfs_configuration in cfs_configurations {
-//     //     print_cfs_configuration(cfs_configuration);
-//     //     println!("================================");
-//     // }
-
-// }
+pub fn print_cfs_configurations(cfs_configurations: &Vec<Value>) {
+    println!("*** CFS CONFIGURATIONS ***");
+    println!("================================");
+    for cfs_configuration in cfs_configurations {
+        print_cfs_configuration(cfs_configuration);
+        println!("================================");
+    }
+}
 
 pub fn print_cfs_configuration(cfs_configuration: &Value) {
     println!("name: {}", cfs_configuration["name"].as_str().unwrap());

@@ -25,7 +25,9 @@ pub mod configuration {
 
             write!(f, "\nConfig Details:\n - name: {}\n - last updated: {}\nLayers:", self.name, self.last_updated)?;
             let mut cont = 0;
+
             for config_layer in &self.config_layers {
+
                 write!(f, "\n Layer {}:{}", cont, config_layer)?;
                 cont += 1;
             }
@@ -34,24 +36,24 @@ pub mod configuration {
         }
     }
 
-    pub fn print_table(cfs_configurations: Vec<Config>) {
+    // pub fn print_table(cfs_configurations: Vec<Config>) {
         
-        let mut table = Table::new();
+    //     let mut table = Table::new();
 
-        table.set_header(vec!["Name", "Last updated"]);
+    //     table.set_header(vec!["Name", "Last updated"]);
     
-        for cfs_configuration in cfs_configurations {
+    //     for cfs_configuration in cfs_configurations {
 
-            table.add_row(vec![
-                cfs_configuration.name,
-                cfs_configuration.last_updated
-            ]);
-        }
+    //         table.add_row(vec![
+    //             cfs_configuration.name,
+    //             cfs_configuration.last_updated
+    //         ]);
+    //     }
     
-        println!("{table}");
-    }
+    //     println!("{table}");
+    // }
 
-    pub fn print_details_table(mut cfs_configuration: Config) {
+    pub fn print_table(cfs_configuration: Config) {
         
         let mut table = Table::new();
 
@@ -60,12 +62,16 @@ pub mod configuration {
         let mut layers: String = String::new();
 
         if !cfs_configuration.config_layers.is_empty() {
+
             layers = format!("COMMIT: {} DATE: {} NAME: {} AUTOR: {}", cfs_configuration.config_layers[0].commit_id, cfs_configuration.config_layers[0].commit_date, cfs_configuration.config_layers[0].name, cfs_configuration.config_layers[0].author);
+            
             for i in 1..cfs_configuration.config_layers.len() {
+                
                 let layer = &cfs_configuration.config_layers[i];
                 layers = format!("{}\nCOMMIT: {} DATE: {} NAME: {} AUTOR: {}", layers, layer.commit_id, layer.commit_date, layer.name, layer.author);
             }
         }
+
         table.add_row(vec![
             cfs_configuration.name,
             cfs_configuration.last_updated,
