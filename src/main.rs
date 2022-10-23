@@ -1,6 +1,5 @@
 pub mod cfs_utils;
-pub mod auth;
-// pub mod k8s_programmatic_client;
+mod shasta_authentication;
 mod shasta_cfs_configuration;
 mod shasta_cfs_session;
 mod shasta_cfs_session_logs;
@@ -15,6 +14,8 @@ mod vault;
 
 use clap::{Args, ArgGroup, Parser, Subcommand};
 use config::Config;
+use manta_cfs::{configuration::{print_table, print_details_table}, layer::ConfigLayer};
+use serde_json::Value;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]struct Cli {
@@ -222,18 +223,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    // println!("{:?}", settings.try_deserialize::<std::collections::HashMap<String,String>>().unwrap());
-
     shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
-    // std::env::var("KUBECONFIG").expect("kubeconfig missing in configuration file");
 
-    // shasta_token = shasta_token_resp["access_token"].as_str().unwrap();
-    shasta_token = auth::get_shasta_api_token().await?;
-    // gitea_token = std::env::var("GITEA_TOKEN").expect("GITEA_TOKEN env missing");
+    shasta_token = shasta_authentication::get_api_token().await?;
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
-
-    // let resp = cfs::check_cfs_health(shasta_token, shasta_base_url).await?;
 
     // Parse input params
     let args = Cli::parse();
@@ -258,15 +252,54 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     let cfs_configurations = crate::shasta_cfs_configuration::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
 
                     if cfs_configurations.is_empty() {
-                        log::info!("No CFS configuration found!");
+                        println!("No CFS configuration found!");
                         return Ok(())
                     } else if cfs_configurations.len() == 1 {
 
                         let most_recent_cfs_configuration = &cfs_configurations[0];
 
-                        log::info!("{}", manta_cfs::configuration::create(most_recent_cfs_configuration, &gitea_token).await?);
+                        let mut layers: Vec<ConfigLayer> = vec![];
+                        for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
+
+                            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(
+                                layer["cloneUrl"].as_str().unwrap(), 
+                                layer["commit"].as_str().unwrap(), 
+                                &gitea_token).await?;
+
+                            layers.push(
+                                manta_cfs::layer::ConfigLayer::new(
+                                    layer["name"].as_str().unwrap(), 
+                                    layer["cloneUrl"].as_str().unwrap().trim_start_matches("https://api-gw-service-nmn.local/vcs/").trim_end_matches(".git"), 
+                                    layer["commit"].as_str().unwrap(),
+                                    gitea_commit_details["commit"]["committer"]["name"].as_str().unwrap(), 
+                                    gitea_commit_details["commit"]["committer"]["date"].as_str().unwrap()
+                                )
+                            );
+                        }
+
+                        print_details_table(
+                            manta_cfs::configuration::Config::new(
+                                most_recent_cfs_configuration["name"].as_str().unwrap(), 
+                                most_recent_cfs_configuration["lastUpdated"].as_str().unwrap(), 
+                                layers
+                            )
+                        );
                     } else {
-                        cfs_utils::print_cfs_configurations(&cfs_configurations);
+                        // cfs_utils::print_cfs_configurations(&cfs_configurations);
+                        let mut configurations = vec![];
+
+                        for configuration in cfs_configurations {
+
+                            configurations.push(
+                                manta_cfs::configuration::Config::new(
+                                    configuration["name"].as_str().unwrap(), 
+                                    configuration["lastUpdated"].as_str().unwrap(), 
+                                    vec![]
+                                )
+                            )
+                        }
+
+                        print_table(configurations);
                     }
                 },
                 MainGetSubcommand::Session(session) => {

@@ -1,15 +1,23 @@
 pub mod configuration {
 
     use std::fmt;
-    use serde_json::Value;
+    use comfy_table::Table;
     use super::layer;
-
-    use crate::shasta_vcs_utils;
 
     pub struct Config {
         name: String,
         last_updated: String,
         config_layers: Vec<layer::ConfigLayer>
+    }
+
+    impl Config {
+        pub fn new(name: &str, last_updated: &str, config_layers: Vec<layer::ConfigLayer>) -> Self {
+            Config {
+                name: String::from(name),
+                last_updated: String::from(last_updated),
+                config_layers
+            }
+        }
     }
 
     impl fmt::Display for Config {
@@ -26,31 +34,52 @@ pub mod configuration {
         }
     }
 
-    pub async fn create(shasta_config_details: &Value, gitea_token: &str) -> core::result::Result<Config, Box<dyn std::error::Error>> {
+    pub fn print_table(cfs_configurations: Vec<Config>) {
+        
+        let mut table = Table::new();
 
-        // Convert layers
-        let mut config_layers: Vec<layer::ConfigLayer> = vec![];
-        for layer in shasta_config_details["layers"].as_array().unwrap() {
-            // Get CFS layer details from Gitea
-            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(layer["cloneUrl"].as_str().unwrap(), layer["commit"].as_str().unwrap(), gitea_token).await?;
-            config_layers.push(layer::create(layer, gitea_commit_details).unwrap());
+        table.set_header(vec!["Name", "Last updated"]);
+    
+        for cfs_configuration in cfs_configurations {
+
+            table.add_row(vec![
+                cfs_configuration.name,
+                cfs_configuration.last_updated
+            ]);
         }
+    
+        println!("{table}");
+    }
 
-        // Instantiate image layer struct
-        let config = Config {
-            name: String::from(shasta_config_details["name"].as_str().unwrap()),
-            last_updated: String::from(shasta_config_details["lastUpdated"].as_str().unwrap()),
-            config_layers
-        };
+    pub fn print_details_table(mut cfs_configuration: Config) {
+        
+        let mut table = Table::new();
 
-        Ok(config)
+        table.set_header(vec!["Name", "Last updated", "Layers"]);
+    
+        let mut layers: String = String::new();
+
+        if !cfs_configuration.config_layers.is_empty() {
+            layers = format!("COMMIT: {} DATE: {} NAME: {} AUTOR: {}", cfs_configuration.config_layers[0].commit_id, cfs_configuration.config_layers[0].commit_date, cfs_configuration.config_layers[0].name, cfs_configuration.config_layers[0].author);
+            for i in 1..cfs_configuration.config_layers.len() {
+                let layer = &cfs_configuration.config_layers[i];
+                layers = format!("{}\nCOMMIT: {} DATE: {} NAME: {} AUTOR: {}", layers, layer.commit_id, layer.commit_date, layer.name, layer.author);
+            }
+        }
+        table.add_row(vec![
+            cfs_configuration.name,
+            cfs_configuration.last_updated,
+            layers
+        ]);
+    
+        println!("{table}");
     }
 }
 
 pub mod layer {
 
     use std::fmt;
-    use serde_json::Value;
+    // use serde_json::Value;
 
     pub struct ConfigLayer {
         pub name: String,
@@ -59,24 +88,23 @@ pub mod layer {
         pub author: String,
         pub commit_date: String
     }
+
+    impl ConfigLayer {
+        pub fn new(name: &str, repo_name: &str, commit_id: &str, author: &str, commit_date: &str) -> Self {
+            ConfigLayer {
+                name: String::from(name),
+                repo_name: String::from(repo_name),
+                commit_id: String::from(commit_id),
+                author: String::from(author),
+                commit_date: String::from(commit_date)
+            }
+        }
+    }
         
     impl fmt::Display for ConfigLayer {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "\n - name: {}\n - repo name: {}\n - commit id: {}\n - commit date: {}\n - author: {}", self.name, self.repo_name, self.commit_id, self.commit_date, self.author)
         }
     }
-    
-    pub fn create(layer: &Value, gitea_commit_details: Value) -> core::result::Result<ConfigLayer, Box<dyn std::error::Error>> { // TODO: convert this to constructior 'imp' *I think*
-            
-        // Instantiate image layer struct
-        let image_layer = ConfigLayer {
-            name: String::from(layer["name"].as_str().unwrap()),
-            repo_name: String::from(layer["cloneUrl"].as_str().unwrap().trim_start_matches("https://api-gw-service-nmn.local/vcs/").trim_end_matches(".git")),
-            commit_id: String::from(layer["commit"].as_str().unwrap()),
-            author: String::from(gitea_commit_details["commit"]["committer"]["name"].as_str().unwrap()),
-            commit_date: String::from(gitea_commit_details["commit"]["committer"]["date"].as_str().unwrap())
-        };
-    
-        Ok(image_layer)
-    }
+
 }

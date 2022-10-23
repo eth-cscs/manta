@@ -5,14 +5,14 @@ use dialoguer::{Input, Password};
 use std::{
     collections::HashMap,
     error::Error,
-    fs::{self, create_dir_all, File},
+    fs::{create_dir_all, File},
     io::{Read, Write},
     path::PathBuf,
 };
 
 /// docs --> https://cray-hpe.github.io/docs-csm/en-12/operations/security_and_authentication/api_authorization/
 ///      --> https://cray-hpe.github.io/docs-csm/en-12/operations/security_and_authentication/retrieve_an_authentication_token/
-pub async fn get_shasta_api_token() -> Result<String, Box<dyn Error>> {
+pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     let mut file;
     let mut shasta_token = String::new();
