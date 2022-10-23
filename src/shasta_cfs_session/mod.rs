@@ -197,7 +197,7 @@ pub mod utils {
         
         let mut table = Table::new();
 
-        table.set_header(vec!["Name", "Configuration", "Target definition", "Target groups", "Ansible limit", "Start", "Status", "Succeeded", "Job"]);
+        table.set_header(vec!["Name", "Configuration", "Target", "Target groups", "Ansible limit", "Start", "Status", "Succeeded", "Job"]);
     
         for cfs_session in cfs_sessions {
 
@@ -210,8 +210,40 @@ pub mod utils {
                 target_groups = String::from(target_groups_json[0]["name"].as_str().unwrap());
 
                 for i in 1..target_groups_json.len() {
+
+                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
+                        target_groups = format!("{},\n", target_groups);
+                    } else {
+                        target_groups = format!("{}, ", target_groups);
+                    }
                     
-                    target_groups = format!("{},{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
+                    target_groups = format!("{}{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
+                }
+            }
+
+            let mut list_ansible_limit = cfs_session["ansible"]["limit"].as_str().unwrap_or_default().split(",");
+
+            let mut ansible_limits: String = String::new();
+
+            let first = list_ansible_limit.next();
+
+            if first.is_some() {
+                
+                ansible_limits = String::from(first.unwrap());
+
+                let mut i = 1;
+
+                for ansible_limit in list_ansible_limit {
+
+                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
+                        ansible_limits = format!("{},\n", ansible_limits);
+                    } else {
+                        ansible_limits = format!("{}, ", ansible_limits);
+                    }
+    
+                    ansible_limits = format!("{}{}", ansible_limits, ansible_limit);
+    
+                    i += 1;
                 }
             }
 
@@ -220,7 +252,8 @@ pub mod utils {
                 cfs_session["configuration"]["name"].as_str().unwrap(),
                 cfs_session["target"]["definition"].as_str().unwrap(),
                 &target_groups,
-                cfs_session["ansible"]["limit"].as_str().unwrap_or_default(),
+                // cfs_session["ansible"]["limit"].as_str().unwrap_or_default(),
+                &ansible_limits,
                 cfs_session["status"]["session"]["startTime"].as_str().unwrap(),
                 cfs_session["status"]["session"]["status"].as_str().unwrap(),
                 cfs_session["status"]["session"]["succeeded"].as_str().unwrap(),
