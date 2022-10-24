@@ -10,6 +10,15 @@ Manta is an aggregator from multiple sources (Shasta API, K8s API, local git rep
 - List and filter CFS sessions based on cluster name or session name
 - Watch logs of a CFS session
 - Create CFS session out of a repository
+- Power On/Off nodes
+
+## Configuration
+
+|Name|Type|Description|
+|----|----|-----------|
+|RUST_LOG|env|log details/verbosity|
+|socks5_proxy|config file|socks proxy to access the services|
+|shasta_base_url|config file|Shasta base URL|
 
 ## Example
 
@@ -123,7 +132,35 @@ Shutdown a node
 $ manta apply node on --xnames "x1004c1s4b0n1"
 ```
 
-## Prerequisites
+## Deployment
+
+Build container image
+
+```
+docker build -t manta .
+```
+
+Run
+
+```
+$ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
+[2022-10-24T17:04:50Z INFO  manta::shasta_authentication] Token is valid
+Another CLI for basic/simple Shasta operations
+
+Usage: manta <COMMAND>
+
+Commands:
+  get    Get information from Shasta system
+  apply  Make changes to Shata clusters/nodes
+  log    Print session logs
+  help   Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help information
+  -V, --version  Print version information
+```
+
+## To contribute
 
 Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)
 
@@ -141,7 +178,7 @@ Get shasta api token api (check with your shasta administrator)
 
 Get a k8s config file to connect to shasta k8s api (check with your shasta administrator)
 
-## Run
+## Test Run
 
 ```shell
 RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to shasta k8s api server> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token> cargo run -- --help
@@ -152,17 +189,4 @@ or
 ```shell
 cargo build
 RUST_LOG=info KUBECONFIG=<Shasta k8s config> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token>  target/debug/manta --help
-```
-
-|env var|Description|
-|-------|-----------|
-|RUST_LOG|log details/verbosity|
-|KUBECONFIG|path to file with kubernetes configuration to reach Shasta k8s api server. Manta will use this file to talk to k8s api server in same fashion as kubectl does|
-|SHASTA_ADMIN_PWD|admin-client-auth secret in Shasta k8s|
-|GITEA_TOKEN|user authentitacion token for gitea|
-
-## Deployment
-
-```shell
-cargo build --release
 ```

@@ -18,9 +18,9 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
     let mut shasta_token = String::new();
 
     let project_dirs = ProjectDirs::from(
-        "local", /*qualifier*/
+        "local",    /*qualifier*/
         "cscs",  /*organization*/
-        "manta", /*application*/
+        "manta",  /*application*/
     );
 
     let mut path = PathBuf::from(project_dirs.unwrap().cache_dir());
@@ -39,20 +39,23 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     while !is_token_valid(&shasta_token).await.unwrap() && attempts < 3 {
 
-        log::info!("Please type your Keycloak credentials");
+        println!("Please type your Keycloak credentials");
         let username: String = Input::new().with_prompt("username").interact_text()?;
         let password = Password::new().with_prompt("password").interact()?;
 
         match get_token_from_shasta_endpoint(&username, &password).await {
-            Ok(shasta_token) => {
+            Ok(shasta_token_aux) => {
                 file = File::create(&path).expect("Error encountered while creating file!");
-                file.write_all(shasta_token.as_bytes())
+                file.write_all(shasta_token_aux.as_bytes())
                     .expect("Error while writing to file");
+                shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
             },
             Err(_) => {
-                attempts += 1;
+                
             }
         }
+
+        attempts += 1;
     }
 
     if attempts < 3 {
@@ -98,7 +101,7 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
         log::info!("Token is valid");
         Ok(true)
     } else {
-        log::warn!("Token is not valid");
+        log::warn!("Token is not valid - {}", resp.text().await?);
         Ok(false)
     }
 }
@@ -154,7 +157,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
         json_response = serde_json::from_str(&resp.text().await?)?;
         Ok(json_response["access_token"].as_str().unwrap().to_string())
     } else {
-        Err(resp.json::<Value>().await?["detail"]
+        Err(resp.json::<Value>().await?
             .as_str()
             .unwrap()
             .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not

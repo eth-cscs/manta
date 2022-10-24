@@ -5,7 +5,7 @@ pub mod client {
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
-    use kube::{client::ConfigExt, Api, Client, config::{KubeConfigOptions, Cluster, NamedCluster, NamedAuthInfo, AuthInfo, Kubeconfig, NamedContext, Context}};
+    use kube::{client::ConfigExt, Api, Client, config::{KubeConfigOptions, Cluster, NamedCluster, NamedAuthInfo, AuthInfo, Kubeconfig, NamedContext, Context}, Resource};
 
     use futures_util::{StreamExt, TryStreamExt};
     use secrecy::SecretString;
@@ -205,9 +205,17 @@ pub mod client {
     // }
 
     fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
-        pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
-            .iter().filter(|container_status| container_status.name.eq(container_name))
-            .next().unwrap().state.clone()
+        let container_status = pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
+        .iter().filter(|container_status| container_status.name.eq(container_name))
+        .next();
+
+        match container_status {
+            Some(container_status_aux) => container_status_aux.state.clone(),
+            None => None
+        }
+        // pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
+        //     .iter().filter(|container_status| container_status.name.eq(container_name))
+        //     .next().unwrap().state.clone()
     }
 
     // fn is_container_waiting(pod: Pod, container_name: &String) -> bool {
@@ -255,9 +263,13 @@ pub mod client {
 
         log::info!("Pod name: {}", cfs_session_pod_name);
 
-        // let mut container_ready = is_container_terminated(cfs_session_pod, &container_name);
+        // Check if container exists in pod
+        let container_exists = cfs_session_pod.spec.as_ref().unwrap().containers.iter().find(|x| x.name.eq(&container_name));
 
-        // log::info!("Container state:\n{:#?}", container_state(cfs_session_pod, &container_name));
+        if container_exists.is_none() {
+            println!("Container {} (layer {}) does not exists. Aborting", container_name, layer_id);
+            std::process::exit(0);
+        }
 
         let mut container_state = get_container_state(&cfs_session_pod, &container_name);
 
