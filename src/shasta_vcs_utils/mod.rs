@@ -8,6 +8,8 @@ pub mod http_client {
         let gitea_base_url = "https://api-gw-service-nmn.local/vcs/";
         let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
 
+        log::debug!("Repo URL: {}", repo_url);
+
         let repo_name = repo_url.trim_start_matches(gitea_base_url).trim_end_matches(".git");
 
         // // socks5 proxy
@@ -36,6 +38,8 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
+        log::debug!("Request to {}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid);
+
         let resp = client
             .get(format!("{}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid))
             .header("Authorization", format!("token {}", gitea_token))
@@ -45,7 +49,7 @@ pub mod http_client {
         if resp.status().is_success() {
             Ok(serde_json::from_str(&resp.text().await?)?)
         } else {
-            Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+             Err(resp.json::<Value>().await?.as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     }
 

@@ -51,13 +51,15 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
 
     // Get repo name
     let repo_ref_origin = repo.find_remote("origin").unwrap();
+    log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
     let repo_ref_origin_url = repo_ref_origin.url().unwrap();
     let repo_name = repo_ref_origin_url.substring(
         repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-        repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+        repo_ref_origin_url.len()
+        // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
     );
 
-    log::debug!("Repo name:\n{}", repo_name);
+    log::debug!("Repo name: {}", repo_name);
 
     // Check if repo and local commit id exists in Shasta cvs
     let shasta_commitid_details_resp = shasta_vcs_utils::http_client::get_commit_details(

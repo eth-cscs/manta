@@ -29,7 +29,7 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     path.push("http");
 
-    log::debug!("Cache file: {:?}", path);
+    log::info!("Cache file: {:?}", path);
 
     if path.exists() {
         shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
@@ -45,13 +45,14 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
         match get_token_from_shasta_endpoint(&username, &password).await {
             Ok(shasta_token_aux) => {
+                log::info!("Shasta token received");
                 file = File::create(&path).expect("Error encountered while creating file!");
                 file.write_all(shasta_token_aux.as_bytes())
                     .expect("Error while writing to file");
                 shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
             },
             Err(_) => {
-                
+                log::error!("Failed in getting token from Shasta API");
             }
         }
 

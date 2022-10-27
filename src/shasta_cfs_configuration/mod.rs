@@ -141,6 +141,8 @@ pub mod http_client {
                 {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }
+
+                cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(&b["lastUpdated"].as_str().unwrap()));
             }
 
         } else if configuration_name.is_some() {
@@ -158,14 +160,14 @@ pub mod http_client {
         } else { // Returning all results
             cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
 
-            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].to_string().cmp(&b["lastUpdated"].to_string()));
+            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(&b["lastUpdated"].as_str().unwrap()));
         }
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
             // cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
     
-            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].to_string().cmp(&b["lastUpdated"].to_string()));
+            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(&b["lastUpdated"].as_str().unwrap()));
     
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             

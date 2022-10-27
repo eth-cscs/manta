@@ -14,11 +14,11 @@ Manta is an aggregator from multiple sources (Shasta API, K8s API, local git rep
 
 ## Configuration
 
-|Name|Type|Description|
-|----|----|-----------|
-|RUST_LOG|env|log details/verbosity|
-|socks5_proxy|config file|socks proxy to access the services|
-|shasta_base_url|config file|Shasta base URL|
+|Name|Type|Description|Example|
+|----|----|-----------|-------|
+|RUST_LOG|env|log details/verbosity|info|
+|socks5_proxy|config file|socks proxy to access the services|ssocks5h://127.0.0.1:1080|
+|shasta_base_url|config file|Shasta base URL|https://api-gw-service-nmn.local/apis|
 
 ## Example
 
@@ -158,35 +158,4 @@ Commands:
 Options:
   -h, --help     Print help information
   -V, --version  Print version information
-```
-
-## To contribute
-
-Install Rust toolchain [ref](https://www.rust-lang.org/tools/install)
-
-```shell
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Start a socks5 proxy (this is needed so manta http client can reach required apis like cvs, shasta mgmt and k8s api server).
-
-```shell
-ssh -D 1080 $USER@mgmt-alps -J bastion.cscs.ch
-```
-
-Get shasta api token api (check with your shasta administrator)
-
-Get a k8s config file to connect to shasta k8s api (check with your shasta administrator)
-
-## Test Run
-
-```shell
-RUST_LOG=info KUBECONFIG=<path to k8s config file with connection details to shasta k8s api server> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token> cargo run -- --help
-```
-
-or
-
-```shell
-cargo build
-RUST_LOG=info KUBECONFIG=<Shasta k8s config> SHASTA_ADMIN_PWD=<shasta api admin token> GITEA_TOKEN=<shasta gitea auth token>  target/debug/manta --help
 ```

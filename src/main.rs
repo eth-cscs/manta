@@ -8,193 +8,17 @@ mod shasta_cfs_component;
 mod shasta_capmc;
 mod shasta_hsm;
 mod manta_cfs;
+mod node_console;
 mod git2_rs_utils;
 mod create_cfs_session_from_repo;
 mod vault;
+mod cli_struct;
 
-use clap::{Args, ArgGroup, Parser, Subcommand};
+use clap::{Parser};
+use cli_struct::{Cli, MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand};
 use config::Config;
 use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
-
-#[derive(Parser)]
-#[clap(author, version, about, long_about = None)]struct Cli {
-    #[clap(subcommand)]
-    command: MainSubcommand,
-}
-
-#[derive(Debug, Subcommand)]
-enum MainSubcommand {
-    /// Get information from Shasta system
-    Get(MainGetArgs),
-    /// Make changes to Shata clusters/nodes 
-    Apply(MainApplyArgs),
-    /// Print session logs
-    Log(MainLogArgs),
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainGetArgs {
-    #[clap(subcommand)]
-    main_get_subcommand: MainGetSubcommand,
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainApplyArgs {
-    #[clap(subcommand)]
-    main_apply_subcommand: MainApplySubcommand,
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainLogArgs {
-    /// Session name
-    #[clap(short, long, value_parser)]
-    session_name: String,
-    #[clap(short, long, value_parser)]
-    /// Layer id to target. 0 => ansible-0; 1 => ansible-1 ...
-    layer_id: u8,
-}
-
-#[derive(Debug, Subcommand)]
-enum MainGetSubcommand {
-    /// Get configuration details
-    Configuration(MainGetConfigurationOptions),
-    /// Get session details
-    Session(MainGetSessionOptions),
-}
-
-#[derive(Debug, Subcommand)]
-enum MainApplySubcommand {
-    /// Create new CFS session
-    Session(ApplySessionOptions),
-    /// Restart Power on/off a node
-    Node(MainApplyNodeArgs)
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainApplyNodeArgs {
-    #[clap(subcommand)]
-    main_apply_node_subcommand: MainApplyNodeSubcommand,
-}
-
-#[derive(Debug, Subcommand)]
-enum MainApplyNodeSubcommand {
-    /// Start a node
-    On(MainApplyNodeOnOptions),
-    /// Shutdown a node
-    Off(MainApplyNodeOffOptions),
-    /// Restart a node
-    Reset(MainApplyNodeResetOptions)
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-#[clap(group(ArgGroup::new("config-type").args(&["name", "cluster-name"]),))]
-#[clap(group(ArgGroup::new("config-limit").args(&["most-recent", "limit-number"]),))]
-struct MainGetConfigurationOptions {
-    /// Configuration name
-    #[clap(short, long, value_parser)]
-    name: Option<String>,
-    /// Cluster name
-    #[clap(short, long, value_parser)]
-    cluster_name: Option<String>,
-    /// Most recent (equivalent to --limit 1)
-    #[clap(short, long, action)]
-    most_recent: bool,
-    /// Number of configurations to show on screen
-    #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
-    limit_number: Option<u8>
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-#[clap(group(ArgGroup::new("session-type").args(&["name", "cluster-name"]),))]
-#[clap(group(ArgGroup::new("session-limit").args(&["most-recent", "limit-number"]),))]
-struct MainGetSessionOptions {
-    /// Session name
-    #[clap(short, long, value_parser)]
-    name: Option<String>,
-    /// Cluster name
-    #[clap(short, long, value_parser)]
-    cluster_name: Option<String>,
-    /// Most recent (equivalent to --limit 1)
-    #[clap(short, long, action)]
-    most_recent: bool,
-    /// Number of configurations to show on screen
-    #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
-    limit_number: Option<u8>
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct ApplySessionOptions {
-    /// Session name
-    #[clap(short, long, value_parser)]
-    session_name: Option<String>,
-    /// Repo path. The path with a git repo and an ansible-playbook to configure the CFS image.
-    #[clap(short, long, value_parser)]
-    repo_path: String,
-    /// Watch logs. Hooks stdout to aee container running ansible scripts
-    #[clap(short, long, value_parser)]
-    watch_logs: bool,
-    /// Ansible limit
-    #[clap(short, long, value_parser)]
-    ansible_limit: String,
-    /// Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command. 
-    /// 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.
-    #[clap(short = 'v', long, value_parser, default_value_t = 2)]
-    ansible_verbosity: u8
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainApplyNodeOffOptions {
-    /// Reason to shutdown
-    #[clap(short, long, value_parser)]
-    reason: Option<String>,   
-    /// List of xnames to power off
-    #[clap(short, long, value_parser)]
-    xnames: String,
-    /// Force node operation
-    #[clap(short, long, value_parser)]
-    force: bool
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainApplyNodeOnOptions {
-    /// Reason to power on
-    #[clap(short, long, value_parser)]
-    reason: Option<String>, 
-    /// List of xnames to power on
-    #[clap(short, long, value_parser)]
-    xnames: String,
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct MainApplyNodeResetOptions {
-    /// Reason to reboot
-    #[clap(short, long, value_parser)]
-    reason: Option<String>, 
-    /// List of xnames to reboot
-    #[clap(short, long, value_parser)]
-    xnames: String,
-    /// Force node operation
-    #[clap(short, long, value_parser)]
-    force: bool
-}
-
-#[derive(Debug, Args)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct Cluster {
-    #[clap(short, long, value_parser)]
-    /// Cluster name
-    name: Option<String>,
-}
+use node_console::connect_to_console;
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -208,6 +32,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let session_name;
     let limit_number;
     let logging_session_name;
+    let xname;
     let layer_id;
     let shasta_token;
     let gitea_token;
@@ -220,8 +45,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     // std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
-    std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
-
+    // std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
+    match settings.get::<String>("socks5_proxy") {
+        Ok(socks_proxy) => std::env::set_var("SOCKS5", socks_proxy),
+        Err(_) => log::info!("socks proxy not provided")
+    }
+    
     shasta_token = shasta_authentication::get_api_token().await?;
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
 
@@ -318,18 +147,20 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     // Get repo on current dir (pwd)
                     let repo = git2_rs_utils::local::get_repo(apply_session_params.repo_path.clone());
 
-                    log::debug!("{} state={:?}", repo.path().display(), repo.state());
+                    log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
         
                     let cfs_session_name = create_cfs_session_from_repo::run(
-                        repo, gitea_token, String::from(shasta_token)
+                        repo
+                        , gitea_token
+                        , String::from(shasta_token)
                         , String::from(shasta_base_url)
                         , apply_session_params.ansible_limit
-                        , apply_session_params.ansible_verbosity)
-                        .await;
+                        , apply_session_params.ansible_verbosity
+                    ).await;
 
                     if apply_session_params.watch_logs {
                         log::info!("Fetching logs ...");
-                        shasta_cfs_session_logs::client::session_logs(cfs_session_name.unwrap().as_str(), 0).await;
+                        shasta_cfs_session_logs::client::session_logs(cfs_session_name.unwrap().as_str(), 0).await?;
                     }
 
                     // match session_logs_result {
@@ -578,6 +409,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             logging_session_name = log_cmd.session_name;
             layer_id = log_cmd.layer_id;
             shasta_cfs_session_logs::client::session_logs_proxy(&shasta_token, &shasta_base_url, &None, &Some(logging_session_name), layer_id).await?;
+        }
+        MainSubcommand::Console(console_cmd) => {
+            
+            xname = console_cmd.xname;
+
+            connect_to_console(&xname).await?;
         }
     }
 

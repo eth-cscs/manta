@@ -185,6 +185,9 @@ pub mod http_client {
                 {
                     cluster_cfs_sessions.push(cfs_session.clone());
                 }
+
+                cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
+
             }
         } else if session_name.is_some() {
             for cfs_session in json_response.as_array().unwrap() {
@@ -201,14 +204,14 @@ pub mod http_client {
         } else { // Returning all results
             cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
 
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
+            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
         }
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
             // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
     
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
+            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
     
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             

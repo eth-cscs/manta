@@ -1,7 +1,7 @@
 pub mod client {
 
     use core::time;
-    use std::{thread, str::FromStr};
+    use std::{thread, str::FromStr, error::Error};
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
@@ -12,7 +12,7 @@ pub mod client {
 
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
-    pub async fn get_k8s_client_from_env() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
+    pub async fn get_k8s_client_from_env() -> Result<kube::Client, Box<dyn Error>> {
 
         let config = kube::Config::infer().await?;
         // log::info!("{:#?}", config);
@@ -56,19 +56,24 @@ pub mod client {
         Ok(client)
     }
 
-    pub async fn get_k8s_client_programmatically() -> core::result::Result<kube::Client, Box<dyn std::error::Error>> {
+    pub async fn get_k8s_client_programmatically() -> Result<kube::Client, Box<dyn Error>> {
 
         let shasta_k8s_secrets = fetch_shasta_k8s_secrets().await?;
         // log::info!("\n{:#?}", fetch_shasta_k8s_secrets().await);
 
-        let shasta_cluster = Cluster {
+        let mut shasta_cluster = Cluster {
             server: String::from("https://10.252.1.12:6442"),
             insecure_skip_tls_verify: Some(true),
             certificate_authority: None,
             certificate_authority_data: Some(String::from(shasta_k8s_secrets["certificate-authority-data"].as_str().unwrap())),
-            proxy_url: Some(std::env::var("SOCKS5").unwrap()),
+            proxy_url: None,
             extensions: None,
         };
+
+        match std::env::var("SOCKS5") {
+            Ok(socks_proxy) => shasta_cluster.proxy_url = Some(socks_proxy),
+            Err(_) => log::info!("socks proxy not provided")
+        }
 
         let shasta_named_cluster = NamedCluster {
             name: String::from("shasta"),
@@ -162,7 +167,7 @@ pub mod client {
         Ok(client)
     }
     
-    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> Result<(), Box<dyn Error>> {
         
         // Get CFS sessions
         let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
@@ -194,16 +199,6 @@ pub mod client {
         Ok(())
     }
 
-    // /// Returns True is container is ready/running
-    // fn is_container_ready(pod: &Pod, container_name: &String) -> bool {
-    //     pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(container_name)).next().unwrap().ready
-    // }
-
-    // /// Returns true if container ran and already finished
-    // fn is_container_terminated(pod: &Pod, container_name: &String) -> bool {
-    //     pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap().iter().filter(|container_status| container_status.name.eq(container_name)).next().unwrap().state.is_some()
-    // }
-
     fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
         let container_status = pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
         .iter().filter(|container_status| container_status.name.eq(container_name))
@@ -213,25 +208,9 @@ pub mod client {
             Some(container_status_aux) => container_status_aux.state.clone(),
             None => None
         }
-        // pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
-        //     .iter().filter(|container_status| container_status.name.eq(container_name))
-        //     .next().unwrap().state.clone()
     }
 
-    // fn is_container_waiting(pod: Pod, container_name: &String) -> bool {
-    //     let container_state = get_container_state(&pod, container_name);
-
-    //     container_state.is_some() && container_state.as_ref().unwrap().waiting.is_some()
-    // }
-
-    // fn is_container_running(pod: Pod, container_name: &String) -> bool {
-    //     let container_state = get_container_state(&pod, container_name);
-        
-    //     container_state.is_some() && container_state.as_ref().unwrap().running.is_some()
-    // }
-
-
-    pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: &str) -> Result<(), Box<dyn Error>> {
     
         let pods_api: Api<Pod> = Api::namespaced(client, "services");
 
@@ -243,6 +222,7 @@ pub mod client {
         
         let mut i = 0;
 
+        // Waiting for pod to start
         while pods.items.is_empty() && i < 10 {
             log::info!("Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10", cfs_session_name, i + 1);
             i += 1;
@@ -275,6 +255,7 @@ pub mod client {
 
         let mut i = 0;
 
+        // Waiting for container ansible-x to start
         while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
             log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", container_name, i + 1);
             i += 1;
@@ -291,12 +272,15 @@ pub mod client {
         }
 
         let mut logs = pods_api
-        .log_stream(&cfs_session_pod_name, &kube::api::LogParams {
-            follow: true,
-            // tail_lines: Some(1),
-            container: Some(container_name),
-            ..kube::api::LogParams::default()
-        }).await?.boxed();
+        .log_stream(
+            &cfs_session_pod_name, 
+            &kube::api::LogParams {
+                follow: true,
+                // tail_lines: Some(1),
+                container: Some(container_name),
+                ..kube::api::LogParams::default()
+            }
+        ).await?.boxed();
         
         while let Some(line) = logs.try_next().await? {
             print!("{}", std::str::from_utf8(&line).unwrap());
