@@ -36,3 +36,4 @@ secrecy = "0.8.0"
 openssl-sys = { version = "0.9.77",features = ["vendored"] }
 tracing-subscriber = "0.3.16"
 tokio-util = "0.7.4"
+termion = "2.0.1"
