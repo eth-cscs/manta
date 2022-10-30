@@ -2,10 +2,11 @@ use std::{error::Error, io::{Write, Read, stdout}};
 
 use futures_util::StreamExt;
 use k8s_openapi::api::core::v1::Pod;
-use kube::{Api, api::{AttachParams, AttachedProcess}};
+use kube::{Api, api::AttachParams};
 use serde_json::Value;
 use termion::{raw::IntoRawMode, color};
 use tokio::{io::{AsyncWriteExt}, runtime::Runtime};
+use tokio_util::io::ReaderStream;
 
 use crate::shasta_cfs_session_logs::client::get_k8s_client_programmatically;
 
@@ -28,16 +29,15 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
         &AttachParams::default().container("cray-console-operator").stderr(false)
     ).await?;
 
-    // let output = get_exec_command_output(attached).await;
     let mut stdout_stream = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
-    let next_stdout = stdout_stream.next().await;
-    let stdout_str = String::from_utf8(next_stdout.unwrap().unwrap().to_vec()).unwrap();
+    let next_stdout = stdout_stream.next().await.unwrap().unwrap();
+    let stdout_str = std::str::from_utf8(&next_stdout).unwrap();
     let output_json: Value = serde_json::from_str(&stdout_str)?;
 
     let console_pod_name = output_json["podname"].as_str().unwrap();
 
-    // let command = vec!["conman", "-j", xname];
-    let command = vec!["bash"];
+    let command = vec!["conman", "-j", xname];
+    // let command = vec!["bash"];
 
     log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| x.to_string() + " ").collect::<String>());
 
@@ -59,7 +59,7 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
 
     let mut stdin_writer = attached.stdin().unwrap();
-    let mut stdout_stream = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
+    let mut stdout_stream = ReaderStream::new(attached.stdout().unwrap());
 
     let mut stdin = std::io::stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();

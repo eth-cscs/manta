@@ -2,6 +2,7 @@ use directories::ProjectDirs;
 use serde_json::Value;
 
 use dialoguer::{Input, Password};
+use termion::color;
 use std::{
     collections::HashMap,
     error::Error,
@@ -39,7 +40,7 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     while !is_token_valid(&shasta_token).await.unwrap() && attempts < 3 {
 
-        println!("Please type your Keycloak credentials");
+        println!("Please type your {}Keycloak credentials{}", color::Fg(color::Green), color::Fg(color::Reset));
         let username: String = Input::new().with_prompt("username").interact_text()?;
         let password = Password::new().with_prompt("password").interact()?;
 
