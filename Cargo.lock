@@ -119,6 +119,9 @@ name = "bytes"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec8a7b6a70fde80372154c65702f00a0f56f3e1c36abbc6c440484be248856db"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "cc"
@@ -1191,6 +1194,7 @@ dependencies = [
 name = "manta"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "clap",
  "comfy-table",
  "config",
@@ -1216,6 +1220,7 @@ dependencies = [
  "termion",
  "tokio",
  "tokio-native-tls",
+ "tokio-stream",
  "tokio-util",
  "tower",
  "tracing-subscriber",
@@ -2262,6 +2267,17 @@ dependencies = [
  "either",
  "futures-util",
  "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d660770404473ccd7bc9f8b28494a811bc18542b915c0855c51e8f419d5223ce"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
  "tokio",
 ]
 

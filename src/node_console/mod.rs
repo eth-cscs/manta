@@ -36,13 +36,13 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
     let console_pod_name = output_json["podname"].as_str().unwrap();
 
-    let command = vec!["conman", "-j", xname];
-    // let command = vec!["bash"];
+    // let command = vec!["conman", "-j", xname];
+    let command = vec!["bash"];
 
     log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| x.to_string() + " ").collect::<String>());
 
     log::info!("Connecting to console {}", xname);
-
+    
     let mut attached = pods_api.exec(
         &console_pod_name, 
         command,
@@ -68,21 +68,26 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
     rt.spawn(async move {
 
         let mut next_stdout;
-        let mut stdout_str;
 
         loop {
 
             next_stdout = stdout_stream.next().await;
-            stdout_str = String::from_utf8(next_stdout.unwrap().unwrap().to_vec()).unwrap();
-            print!("{}", stdout_str);
-            stdout.flush().unwrap();
+            match next_stdout {
+                Some(next_from_remote_stdout) => { // Print stream to stdout while steam lives
+                    print!("{}", std::str::from_utf8(&next_from_remote_stdout.unwrap()).unwrap());
+                    stdout.flush().unwrap();
+                }
+                None => { // Stream has finished. Reseting terminal and Exiting application.
+                    stdout.suspend_raw_mode().unwrap();
+                    std::process::exit(0);
+                }
+            }
         }
     });
 
     loop {
         let mut buffer = [0; 1];
 
-        // read up to 10 bytes
         let n = stdin.read(&mut buffer[..])?;
 
         stdin_writer.write_all(format!("{}", String::from_utf8((&buffer[..n]).to_vec()).unwrap()).as_bytes()).await?;
@@ -128,13 +133,13 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
 }
 
-async fn get_exec_command_output(mut attached: AttachedProcess) -> String {
-    let stdout = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
-    let out = stdout
-        .filter_map(|r| async { r.ok().and_then(|v| String::from_utf8(v.to_vec()).ok()) })
-        .collect::<Vec<_>>()
-        .await
-        .join("");
-    attached.join().await.unwrap();
-    out
-}
+// async fn get_exec_command_output(mut attached: AttachedProcess) -> String {
+//     let stdout = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
+//     let out = stdout
+//         .filter_map(|r| async { r.ok().and_then(|v| String::from_utf8(v.to_vec()).ok()) })
+//         .collect::<Vec<_>>()
+//         .await
+//         .join("");
+//     attached.join().await.unwrap();
+//     out
+// }
