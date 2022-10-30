@@ -36,8 +36,8 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
     let console_pod_name = output_json["podname"].as_str().unwrap();
 
-    // let command = vec!["conman", "-j", xname];
-    let command = vec!["bash"];
+    let command = vec!["conman", "-j", xname];
+    // let command = vec!["bash"];
 
     log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| x.to_string() + " ").collect::<String>());
 
