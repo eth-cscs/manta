@@ -152,7 +152,7 @@ Power off a node
 $ manta apply node off --xnames "x1004c1s4b0n1" --force
 ```
 
-Shutdown a node
+Power on a node
 
 ```
 $ manta apply node on --xnames "x1004c1s4b0n1"
