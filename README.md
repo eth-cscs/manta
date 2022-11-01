@@ -24,7 +24,7 @@ Manta is aggregates information from multiple sources:
 - Create CFS session out of a repository
 - Watch logs of a CFS session
 - Open an interactive session to a node console using remote's terminal and shell
-- Power On/Off nodes
+- Power On/Off individual nodes or per cluster
 
 ## Configuration
 
