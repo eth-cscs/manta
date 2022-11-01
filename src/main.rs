@@ -1,9 +1,9 @@
 mod shasta;
 mod shasta_cfs_session_logs;
-mod shasta_vcs_utils;
+mod gitea;
 mod manta_cfs;
 mod node_console;
-mod git2_rs_utils;
+mod local_git_repo;
 mod create_cfs_session_from_repo;
 mod vault;
 mod cli_struct;
@@ -84,7 +84,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         let mut layers: Vec<ConfigLayer> = vec![];
                         for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
 
-                            let gitea_commit_details = shasta_vcs_utils::http_client::get_commit_details(
+                            let gitea_commit_details = gitea::http_client::get_commit_details(
                                 layer["cloneUrl"].as_str().unwrap(), 
                                 layer["commit"].as_str().unwrap(), 
                                 &gitea_token).await?;
@@ -165,7 +165,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
         
                     // Get repo on current dir (pwd)
-                    let repo = git2_rs_utils::local::get_repo(apply_session_params.repo_path.clone());
+                    let repo = local_git_repo::local::get_repo(apply_session_params.repo_path.clone());
 
                     log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
         

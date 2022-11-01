@@ -10,10 +10,10 @@ Manta's goals:
 Manta is aggregates information from multiple sources:
 
  - Shasta API
- - K8s API, 
- - local git repo, 
- - Gitlab API, 
- - Gitea API and Hashicorp Vault). 
+ - K8s API
+ - local git repo
+ - Gitlab API
+ - Gitea API and Hashicorp Vault)
 
 ## Features
 

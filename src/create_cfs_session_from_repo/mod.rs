@@ -9,7 +9,7 @@ use crate::shasta::cfs::configuration;
 use crate::shasta::hsm;
 use crate::{session, component};
 
-use crate::{git2_rs_utils, shasta_vcs_utils};
+use crate::{local_git_repo, gitea};
 
 pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
@@ -25,11 +25,11 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     }
 
     // Get last (most recent) commit
-    let local_last_commit = git2_rs_utils::local::get_last_commit(&repo).unwrap();
+    let local_last_commit = local_git_repo::local::get_last_commit(&repo).unwrap();
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
-    if !git2_rs_utils::local::untracked_changed_local_files(&repo).unwrap() {
+    if !local_git_repo::local::untracked_changed_local_files(&repo).unwrap() {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Your local repo has changes not commited. Do you want to continue?")
             .interact()
@@ -64,7 +64,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     log::debug!("Repo name: {}", repo_name);
 
     // Check if repo and local commit id exists in Shasta cvs
-    let shasta_commitid_details_resp = shasta_vcs_utils::http_client::get_commit_details(
+    let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
         &format!("cray/{}", repo_name),
         &local_last_commit.id().to_string(),
         &gitea_token,
