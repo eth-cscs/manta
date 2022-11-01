@@ -17,6 +17,7 @@ Manta's goals:
 
 - List and filter CFS configurations based on cluster name or configuration name
 - List and filter CFS sessions based on cluster name or session name
+- List and filter BOS session templates based on cluster name or session name
 - Create CFS session out of a repository
 - Watch logs of a CFS session
 - Open an interactive session to a node console using remote's terminal and shell
