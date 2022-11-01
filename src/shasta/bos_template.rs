@@ -190,8 +190,6 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    use super::BosTemplate;
-
     // pub async fn post(shasta_token: &str, shasta_base_url: &str, bos_template: BosTemplate) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
     //     log::debug!("Bos template:\n{:#?}", bos_template);

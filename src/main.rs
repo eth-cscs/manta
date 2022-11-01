@@ -1,13 +1,6 @@
-// pub mod cfs_utils;
-mod shasta_authentication;
-mod shasta_cfs_configuration;
-mod shasta_cfs_session;
+mod shasta;
 mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
-mod shasta_cfs_component;
-mod shasta_bos_template;
-mod shasta_capmc;
-mod shasta_hsm;
 mod manta_cfs;
 mod node_console;
 mod git2_rs_utils;
@@ -20,6 +13,7 @@ use cli_struct::{Cli, MainSubcommand, MainGetSubcommand, MainApplySubcommand, Ma
 use config::Config;
 use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 use node_console::connect_to_console;
+use shasta::{authentication, cfs::{session, configuration, component}, bos_template, capmc};
 
 use clap_complete::{generate, Generator, Shell};
 
@@ -55,7 +49,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => log::info!("socks proxy not provided")
     }
     
-    shasta_token = shasta_authentication::get_api_token().await?;
+    shasta_token = authentication::get_api_token().await?;
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
 
     // Parse input params
@@ -78,7 +72,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     }
 
                     // Get CFS configurations
-                    let cfs_configurations = crate::shasta_cfs_configuration::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
+                    let cfs_configurations = crate::configuration::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
 
                     if cfs_configurations.is_empty() {
                         println!("No CFS configuration found!");
@@ -115,7 +109,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         );
                     } else {
 
-                        shasta_cfs_configuration::utils::print_table(cfs_configurations);
+                        configuration::utils::print_table(cfs_configurations);
                     }
                 },
                 MainGetSubcommand::Session(session) => {
@@ -130,14 +124,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         limit_number = session.limit_number;
                     }
 
-                    let cfs_sessions = crate::shasta_cfs_session::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
+                    let cfs_sessions = session::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
 
                     if cfs_sessions.is_empty() {
                         log::info!("No CFS session found!");
                         return Ok(())
                     } else {
 
-                        shasta_cfs_session::utils::print_table(cfs_sessions);
+                        session::utils::print_table(cfs_sessions);
                     }
                 },
                 MainGetSubcommand::Template(template) => {
@@ -152,14 +146,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         limit_number = template.limit_number;
                     }
 
-                    let bos_templates = crate::shasta_bos_template::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &template_name, &limit_number).await?;
+                    let bos_templates = crate::bos_template::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &template_name, &limit_number).await?;
 
                     if bos_templates.is_empty() {
                         log::info!("No BOS template found!");
                         return Ok(())
                     } else {
 
-                        shasta_bos_template::utils::print_table(bos_templates);
+                        bos_template::utils::print_table(bos_templates);
                     }
                 }
             }
@@ -415,17 +409,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
                             let xnames = main_apply_node_off_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("Servers to turn off: {:?}", xnames);
-                            shasta_capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
+                            capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
                         },
                         MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
                             let xnames = main_apply_node_on_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("Servers to turn on: {:?}", xnames);
-                            shasta_capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
+                            capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
                         },
                         MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
                             let xnames = main_apply_node_reset_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
                             log::info!("Servers to reboot: {:?}", xnames);
-                            shasta_capmc::http_client::node_restart::post(shasta_token.to_string(), main_apply_node_reset_subcommand.reason, xnames, main_apply_node_reset_subcommand.force).await?;
+                            capmc::http_client::node_restart::post(shasta_token.to_string(), main_apply_node_reset_subcommand.reason, xnames, main_apply_node_reset_subcommand.force).await?;
                         }
                     }
                 }

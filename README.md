@@ -2,16 +2,18 @@
 
 Another CLI tool for [Alps](https://confluence.cscs.ch/display/ALPSINFRA/Alps+Home).
 
-Manta is an aggregator from multiple sources:
+Manta's goals:
+
+ - release operators from repetitive tasks.
+ - provide quick system feedback.
+
+Manta is aggregates information from multiple sources:
+
  - Shasta API
  - K8s API, 
  - local git repo, 
  - Gitlab API, 
  - Gitea API and Hashicorp Vault). 
-
-Manta's goals:
- - release operators from repetitive tasks.
- - provide quick system feedback.
 
 ## Features
 

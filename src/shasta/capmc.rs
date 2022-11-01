@@ -73,7 +73,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::shasta_capmc::PowerStatus;
+        use crate::capmc::PowerStatus;
 
         pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
 
@@ -131,7 +131,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::shasta_capmc::PowerStatus;
+        use crate::capmc::PowerStatus;
 
         pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
@@ -189,7 +189,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::shasta_capmc::PowerStatus;
+        use crate::capmc::PowerStatus;
 
         pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
@@ -247,7 +247,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::shasta_capmc::NodeStatus;
+        use crate::capmc::NodeStatus;
 
         pub async fn post(shasta_token: String, xnames: Vec<String>)  -> core::result::Result<Vec<Value>, Box<dyn Error>> {
             

@@ -5,14 +5,16 @@ use git2::Repository;
 use k8s_openapi::chrono;
 use serde_json::Value;
 use substring::Substring;
-use crate::{shasta_cfs_session, shasta_cfs_component, shasta_hsm};
+use crate::shasta::cfs::configuration;
+use crate::shasta::hsm;
+use crate::{session, component};
 
-use crate::{git2_rs_utils, shasta_vcs_utils, shasta_cfs_configuration};
+use crate::{git2_rs_utils, shasta_vcs_utils};
 
 pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
-    let component_status = shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &limit).await?;
-    let hsm_configuration_state = &shasta_hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &limit).await?["State"];
+    let component_status = component::http_client::get(&shasta_token, &shasta_base_url, &limit).await?;
+    let hsm_configuration_state = &hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &limit).await?["State"];
     log::info!("HSM component state for component {}: {}", limit, hsm_configuration_state.as_str().unwrap());
     log::info!("Is component enabled for batched CFS: {}", component_status["enabled"]);
     log::info!("Error count: {}", component_status["errorCount"]);
@@ -95,7 +97,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     // log::debug!("No conflicts");
 
     // Create CFS layer
-    let cfs_layer = shasta_cfs_configuration::Layer::new(
+    let cfs_layer = configuration::Layer::new(
         String::from(format!(  // git repo url in shasta faced VCS
             "https://api-gw-service-nmn.local/vcs/cray/{}",
             repo_name
@@ -111,16 +113,16 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     );
 
     // Create CFS configuration
-    let mut cfs_configuration = shasta_cfs_configuration::CfsConfiguration::new();
+    let mut cfs_configuration = configuration::CfsConfiguration::new();
 
-    cfs_configuration = shasta_cfs_configuration::add_layer(cfs_layer, cfs_configuration);
+    cfs_configuration = configuration::add_layer(cfs_layer, cfs_configuration);
 
     log::debug!("CFS configuration:\n{:#?}", cfs_configuration);
 
     // Update/PUT CFS configuration
     log::debug!("Replacing '_' with '-' in repo name and create configuration and session name.");
     let cfs_object_name = format!("m-{}", str::replace(repo_name, "_", "-"));
-    let cfs_configuration_resp = shasta_cfs_configuration::http_client::put(
+    let cfs_configuration_resp = configuration::http_client::put(
         &shasta_token,
         &shasta_base_url,
         cfs_configuration,
@@ -148,7 +150,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         cfs_object_name,
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
-    let session = shasta_cfs_session::CfsSession::new(
+    let session = session::CfsSession::new(
         cfs_session_name,
         cfs_object_name,
         Some(limit),
@@ -157,7 +159,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
 
     log::debug!("Session:\n{:#?}", session);
     let cfs_session_resp =
-        shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
+        session::http_client::post(&shasta_token, &shasta_base_url, session).await;
 
     let cfs_session_name;
     match cfs_session_resp {

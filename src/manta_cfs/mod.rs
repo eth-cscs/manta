@@ -68,7 +68,7 @@ pub mod configuration {
             for i in 1..cfs_configuration.config_layers.len() {
                 
                 let layer = &cfs_configuration.config_layers[i];
-                layers = format!("{}\nCOMMIT: {} DATE: {} NAME: {} AUTOR: {}", layers, layer.commit_id, layer.commit_date, layer.name, layer.author);
+                layers = format!("{}\nCOMMIT: {} DATE: {} NAME: {} AUTHOR: {}", layers, layer.commit_id, layer.commit_date, layer.name, layer.author);
             }
         }
 
