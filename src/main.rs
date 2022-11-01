@@ -1,10 +1,11 @@
-pub mod cfs_utils;
+// pub mod cfs_utils;
 mod shasta_authentication;
 mod shasta_cfs_configuration;
 mod shasta_cfs_session;
 mod shasta_cfs_session_logs;
 mod shasta_vcs_utils;
 mod shasta_cfs_component;
+mod shasta_bos_template;
 mod shasta_capmc;
 mod shasta_hsm;
 mod manta_cfs;
@@ -20,6 +21,8 @@ use config::Config;
 use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 use node_console::connect_to_console;
 
+use clap_complete::{generate, Generator, Shell};
+
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
@@ -30,6 +33,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let most_recent;
     let configuration_name;
     let session_name;
+    let template_name;
     let limit_number;
     let logging_session_name;
     let xname;
@@ -134,6 +138,28 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     } else {
 
                         shasta_cfs_session::utils::print_table(cfs_sessions);
+                    }
+                },
+                MainGetSubcommand::Template(template) => {
+
+                    template_name = template.name;
+                    cluster_name = template.cluster_name;
+                    most_recent = template.most_recent;
+                    
+                    if most_recent {
+                        limit_number = Some(1);
+                    } else {
+                        limit_number = template.limit_number;
+                    }
+
+                    let bos_templates = crate::shasta_bos_template::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &template_name, &limit_number).await?;
+
+                    if bos_templates.is_empty() {
+                        log::info!("No BOS template found!");
+                        return Ok(())
+                    } else {
+
+                        shasta_bos_template::utils::print_table(bos_templates);
                     }
                 }
             }

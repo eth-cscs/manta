@@ -14,16 +14,16 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
     let client = get_k8s_client_programmatically().await?;
 
-    let pods_api: Api<Pod> = Api::namespaced(client, "services");
+    let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 
     let params = kube::api::ListParams::default().limit(1).labels("app.kubernetes.io/name=cray-console-operator");
         
-    let pods = pods_api.list(&params).await?;
+    let pods_objects = pods_fabric.list(&params).await?;
 
-    let console_operator_pod = &pods.items[0];
+    let console_operator_pod = &pods_objects.items[0];
     let console_operator_pod_name = console_operator_pod.metadata.name.clone().unwrap();
     
-    let mut attached = pods_api.exec(
+    let mut attached = pods_fabric.exec(
         &console_operator_pod_name, 
         vec!["sh", "-c", &format!("/app/get-node {}", xname)], 
         &AttachParams::default().container("cray-console-operator").stderr(false)
@@ -43,7 +43,7 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
     log::info!("Connecting to console {}", xname);
     
-    let mut attached = pods_api.exec(
+    let mut attached = pods_fabric.exec(
         &console_pod_name, 
         command,
         &AttachParams::default()

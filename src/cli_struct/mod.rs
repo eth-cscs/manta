@@ -54,10 +54,12 @@ pub struct MainConsoleArg {
 
 #[derive(Debug, Subcommand)]
 pub enum MainGetSubcommand {
-    /// Get configuration details
+    /// Get cfs configuration details
     Configuration(MainGetConfigurationOptions),
-    /// Get session details
+    /// Get cfs session details
     Session(MainGetSessionOptions),
+    /// Get bos template details
+    Template(MainGetTemplateOptions),
 }
 
 #[derive(Debug, Subcommand)]
@@ -90,7 +92,7 @@ pub enum MainApplyNodeSubcommand {
 #[clap(group(ArgGroup::new("config-type").args(&["name", "cluster_name"]),))]
 #[clap(group(ArgGroup::new("config-limit").args(&["most_recent", "limit_number"]),))]
 pub struct MainGetConfigurationOptions {
-    /// Configuration name
+    /// Cfs configuration name
     #[clap(short, long, value_parser)]
     pub name: Option<String>,
     /// Cluster name
@@ -99,7 +101,7 @@ pub struct MainGetConfigurationOptions {
     /// Most recent (equivalent to --limit 1)
     #[clap(short, long, action)]
     pub most_recent: bool,
-    /// Number of configurations to show on screen
+    /// Number of cfs configurations to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
 }
@@ -109,7 +111,7 @@ pub struct MainGetConfigurationOptions {
 #[clap(group(ArgGroup::new("session-type").args(&["name", "cluster_name"]),))]
 #[clap(group(ArgGroup::new("session-limit").args(&["most_recent", "limit_number"]),))]
 pub struct MainGetSessionOptions {
-    /// Session name
+    /// Cfs session name
     #[clap(short, long, value_parser)]
     pub name: Option<String>,
     /// Cluster name
@@ -118,7 +120,26 @@ pub struct MainGetSessionOptions {
     /// Most recent (equivalent to --limit 1)
     #[clap(short, long, action)]
     pub most_recent: bool,
-    /// Number of configurations to show on screen
+    /// Number of cfs configurations to show on screen
+    #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
+    pub limit_number: Option<u8>
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+#[clap(group(ArgGroup::new("config-type").args(&["name", "cluster_name"]),))]
+#[clap(group(ArgGroup::new("config-limit").args(&["most_recent", "limit_number"]),))]
+pub struct MainGetTemplateOptions {
+    /// Bos template name
+    #[clap(short, long, value_parser)]
+    pub name: Option<String>,
+    /// Cluster name
+    #[clap(short, long, value_parser)]
+    pub cluster_name: Option<String>,
+    /// Most recent (equivalent to --limit 1)
+    #[clap(short, long, action)]
+    pub most_recent: bool,
+    /// Number of bos templates to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
 }

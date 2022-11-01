@@ -30,7 +30,7 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     path.push("http");
 
-    log::info!("Cache file: {:?}", path);
+    log::debug!("Cache file: {:?}", path);
 
     if path.exists() {
         shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
@@ -46,7 +46,7 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
         match get_token_from_shasta_endpoint(&username, &password).await {
             Ok(shasta_token_aux) => {
-                log::info!("Shasta token received");
+                log::debug!("Shasta token received");
                 file = File::create(&path).expect("Error encountered while creating file!");
                 file.write_all(shasta_token_aux.as_bytes())
                     .expect("Error while writing to file");
@@ -100,7 +100,7 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
         .await?;
     
     if resp.status().is_success() {
-        log::info!("Token is valid");
+        log::debug!("Token is valid");
         Ok(true)
     } else {
         log::warn!("Token is not valid - {}", resp.text().await?);

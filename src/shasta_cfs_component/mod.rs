@@ -1,17 +1,3 @@
-pub mod operations {
-
-    use std::error::Error;
-
-    use crate::shasta_cfs_component::http_client::get;
-
-    pub async fn is_component_scheduled_for_configuration(shasta_token: &str, shasta_base_url: &str, component_id: &String) -> Result<bool, Box<dyn Error>> {
-
-        let json_response = get(shasta_token, shasta_base_url, component_id).await?;
-
-        Ok(json_response["enabled"].as_bool().unwrap())
-    }
-}
-
 pub mod http_client {
 
     use std::error::Error;

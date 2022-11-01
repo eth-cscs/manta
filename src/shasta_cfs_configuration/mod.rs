@@ -10,7 +10,7 @@ pub struct Layer {
 }
 
 #[derive(Debug, Serialize)] // TODO: investigate why serde can Deserialize dynamically syzed structs `Vec<Layer>`
-pub struct Configuration {
+pub struct CfsConfiguration {
     layers: Vec<Layer>
 }
 
@@ -25,25 +25,25 @@ impl Layer {
     }
 }
 
-impl Configuration {
+impl CfsConfiguration {
     pub fn new() -> Self {
-        Configuration {
+        CfsConfiguration {
             layers: vec![]
         }
     }
 }
 
-pub fn add_layer(layer: Layer, mut configuration: Configuration) -> Configuration {
+pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfiguration {
     configuration.layers.push(layer);
     configuration
 }
 
 pub mod http_client {
 
-    use super::Configuration;
+    use super::CfsConfiguration;
     use serde_json::Value;
 
-    pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: Configuration, configuration_name: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: CfsConfiguration, configuration_name: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
         // // socks5 proxy
         // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;

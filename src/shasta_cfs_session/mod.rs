@@ -29,7 +29,7 @@ impl Default for Target {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Session {
+pub struct CfsSession {
     name: String,
     #[serde(rename = "configurationName")]
     configuration_name: String,
@@ -53,9 +53,9 @@ pub struct Session {
     tags: Option<Tag>
 }
 
-impl Default for Session {
-    fn default() -> Session {
-        Session {
+impl Default for CfsSession {
+    fn default() -> CfsSession {
+        CfsSession {
             name: String::from(""),
             configuration_name: String::from(""),
             configuration_limit: None,
@@ -69,9 +69,9 @@ impl Default for Session {
     }
 }
 
-impl Session {
+impl CfsSession {
     pub fn new(name: String, configuration_name: String, ansible_limit: Option<String>, ansible_verbosity: u8) -> Self {
-        Session {
+        CfsSession {
             name,
             configuration_name,
             ansible_limit,
@@ -85,9 +85,9 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    use super::Session;
+    use super::CfsSession;
 
-    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: Session) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
         log::debug!("Session:\n{:#?}", session);
         
@@ -191,9 +191,7 @@ pub mod http_client {
             }
         } else if session_name.is_some() {
             for cfs_session in json_response.as_array().unwrap() {
-                if cfs_session
-                    .get("name")
-                    .unwrap()
+                if cfs_session["name"]
                     .as_str()
                     .unwrap()
                     .eq(session_name.as_ref().unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'

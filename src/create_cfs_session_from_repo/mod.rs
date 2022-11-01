@@ -111,7 +111,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     );
 
     // Create CFS configuration
-    let mut cfs_configuration = shasta_cfs_configuration::Configuration::new();
+    let mut cfs_configuration = shasta_cfs_configuration::CfsConfiguration::new();
 
     cfs_configuration = shasta_cfs_configuration::add_layer(cfs_layer, cfs_configuration);
 
@@ -148,7 +148,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         cfs_object_name,
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
-    let session = shasta_cfs_session::Session::new(
+    let session = shasta_cfs_session::CfsSession::new(
         cfs_session_name,
         cfs_object_name,
         Some(limit),

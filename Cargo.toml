@@ -26,6 +26,7 @@ tower = "0.4.13"
 native-tls = "0.2.10"
 futures-util = "0.3.24"
 clap = { version = "4.0.18", features = ["derive"] }
+clap_complete = "4.0.3"
 git2 = "0.15.0"
 # walkdir = "2.3.2"
 dialoguer = "0.10.2"
@@ -37,5 +38,9 @@ comfy-table = "6.1.1" # used to print output std as tables
 secrecy = "0.8.0"
 openssl-sys = { version = "0.9.77",features = ["vendored"] }
 tracing-subscriber = "0.3.16"
-bytes = { version = "1", features = ["serde"] }
+# bytes = { version = "1", features = ["serde"] }
 termion = "2.0.1" # used by manta_console to enable terminal raw
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

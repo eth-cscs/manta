@@ -1,16 +1,25 @@
 # MANTA
 
-Another CLI tool for [Shasta](https://apidocs.giuv.cscs.ch/)
+Another CLI tool for [Alps](https://confluence.cscs.ch/display/ALPSINFRA/Alps+Home).
 
-Manta is an aggregator from multiple sources (Shasta API, K8s API, local git repo, Gitlab API and Gitea API). Manta's goal is to simplify daily Shasta operations.
+Manta is an aggregator from multiple sources:
+ - Shasta API
+ - K8s API, 
+ - local git repo, 
+ - Gitlab API, 
+ - Gitea API and Hashicorp Vault). 
+
+Manta's goals:
+ - release operators from repetitive tasks.
+ - provide quick system feedback.
 
 ## Features
 
 - List and filter CFS configurations based on cluster name or configuration name
 - List and filter CFS sessions based on cluster name or session name
-- Watch logs of a CFS session
-- Open an interactive session to a node console
 - Create CFS session out of a repository
+- Watch logs of a CFS session
+- Open an interactive session to a node console using remote's terminal and shell
 - Power On/Off nodes
 
 ## Configuration
@@ -18,17 +27,15 @@ Manta is an aggregator from multiple sources (Shasta API, K8s API, local git rep
 |Name|Type|Description|Example|
 |----|----|-----------|-------|
 |RUST_LOG|env|log details/verbosity|info|
-|socks5_proxy|config file|socks proxy to access the services|ssocks5h://127.0.0.1:1080|
+|socks5_proxy|config file|socks proxy to access the services|socks5h://127.0.0.1:1080|
 |shasta_base_url|config file|Shasta base URL|https://api-gw-service-nmn.local/apis|
 
 ## Example
 
-Get lastest (most recent) session
+##### Get lastest (most recent) session
 
 ```shell
 $ manta get session --most-recent
-[2022-10-30T02:12:43Z INFO  manta::shasta_authentication] Cache file: "/home/msopena/.cache/manta/http"
-[2022-10-30T02:12:44Z INFO  manta::shasta_authentication] Token is valid
 +----------------------------------------------+-------------------------+---------+---------------+---------------+---------------------+----------+-----------+------------------------------------------+
 | Name                                         | Configuration           | Target  | Target groups | Ansible limit | Start               | Status   | Succeeded | Job                                      |
 +==========================================================================================================================================================================================================+
@@ -36,7 +43,7 @@ $ manta get session --most-recent
 +----------------------------------------------+-------------------------+---------+---------------+---------------+---------------------+----------+-----------+------------------------------------------+
 ```
 
-Get logs for a session/layer
+##### Get logs for a session/layer
 
 ```shell
 $ manta log --session-name batcher-cef892ee-39af-444a-b32c-89478a100e4d --layer-id 0
@@ -77,7 +84,7 @@ PLAY RECAP *********************************************************************
 x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0   
 ```
 
-Create a CFS session and watch logs
+##### Create a CFS session and watch logs
 
 ```
 $ manta apply session --repo-path /home/msopena/ownCloud/Documents/ALPSINFRA/vcluster_shasta_scripts/muttler/muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n1
@@ -116,12 +123,10 @@ PLAY RECAP *********************************************************************
 x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-Create an interactive session to a node
+##### Create an interactive session to a node
 
 ```
 $ manta console -x x1500c2s4b0n1
-[2022-10-30T02:14:40Z INFO  manta::shasta_authentication] Cache file: "/home/msopena/.cache/manta/http"
-[2022-10-30T02:14:40Z INFO  manta::shasta_authentication] Token is valid
 [2022-10-30T02:14:44Z INFO  manta::node_console] Alternatively run - kubectl -n services exec -it cray-console-node-2 -c cray-console-node -- conman -j x1500c2s4b0n1 
 [2022-10-30T02:14:44Z INFO  manta::node_console] Connecting to console x1500c2s4b0n1
 Connected to x1500c2s4b0n1!
@@ -146,13 +151,13 @@ Use &. key combination to exit the console.
 nid003129 login: 
 ```
 
-Power off a node
+##### Power off a node
 
 ```
 $ manta apply node off --xnames "x1004c1s4b0n1" --force
 ```
 
-Power on a node
+##### Power on a node
 
 ```
 $ manta apply node on --xnames "x1004c1s4b0n1"
@@ -160,17 +165,20 @@ $ manta apply node on --xnames "x1004c1s4b0n1"
 
 ## Deployment
 
-Build container image
+##### Build container image
+
+This repo contains a Dockerfile to build a Container with manta cli.
+
+##### Build container image 
 
 ```
 docker build -t manta .
 ```
 
-Run
+##### Run
 
 ```
 $ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
-[2022-10-24T17:04:50Z INFO  manta::shasta_authentication] Token is valid
 Another CLI for basic/simple Shasta operations
 
 Usage: manta <COMMAND>
