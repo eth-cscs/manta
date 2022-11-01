@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand, Args, ArgGroup};
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
     #[clap(subcommand)]
@@ -60,6 +60,8 @@ pub enum MainGetSubcommand {
     Session(MainGetSessionOptions),
     /// Get bos template details
     Template(MainGetTemplateOptions),
+    /// Get HSM nodes
+    Node(MainGetNodeOptions),
 }
 
 #[derive(Debug, Subcommand)]
@@ -142,6 +144,14 @@ pub struct MainGetTemplateOptions {
     /// Number of bos templates to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+pub struct MainGetNodeOptions {
+    /// Cluster name
+    #[clap(short, long, value_parser)]
+    pub cluster_name: Option<String>,
 }
 
 #[derive(Debug, Args)]

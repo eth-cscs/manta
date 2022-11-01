@@ -25,11 +25,11 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
     }
 
     // Get last (most recent) commit
-    let local_last_commit = local_git_repo::local::get_last_commit(&repo).unwrap();
+    let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
-    if !local_git_repo::local::untracked_changed_local_files(&repo).unwrap() {
+    if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Your local repo has changes not commited. Do you want to continue?")
             .interact()

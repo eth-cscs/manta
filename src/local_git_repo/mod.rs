@@ -1,7 +1,5 @@
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 
-pub mod local {
-
     use std::path::{Path, PathBuf};
     use std::io::{self, Write};
 
@@ -280,4 +278,3 @@ pub mod local {
 
         Ok(())
     }
-}

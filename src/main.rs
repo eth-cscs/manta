@@ -9,21 +9,22 @@ mod create_cfs_session_from_repo;
 mod vault;
 mod cli_struct;
 
-use clap::{Parser};
-use cli_struct::{Cli, MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand};
+use clap::Parser;
+use cli_struct::{MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand, Cli};
 use config::Config;
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 use manta::cfs::configuration as manta_cfs_configuration;
 use node_console::connect_to_console;
 use shasta::{authentication, cfs::{session as shasta_cfs_session, configuration as shasta_cfs_configuration, component as shasta_cfs_component}, bos_template, capmc};
 
-use clap_complete::{generate, Generator, Shell};
-
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
-
+    
     // Init logger
     env_logger::init();
+
+    // Parse input params
+    let args = Cli::parse();
 
     let cluster_name;
     let most_recent;
@@ -53,9 +54,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     
     shasta_token = authentication::get_api_token().await?;
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
-
-    // Parse input params
-    let args = Cli::parse();
 
     // Process input params
     match args.command {
@@ -157,6 +155,19 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                         bos_template::utils::print_table(bos_templates);
                     }
+                },
+                MainGetSubcommand::Node(node) => {
+
+                    let cluster_name = node.cluster_name;
+
+                    let nodes = crate::shasta::hsm::http_client::get_cluster_nodes(&shasta_token, &shasta_base_url, cluster_name).await?;
+
+                    if nodes.is_empty() {
+                        log::info!("No nodes found!");
+                        return Ok(())
+                    } else {
+                        crate::shasta::hsm::utils::print_table(nodes);
+                    }
                 }
             }
         }
@@ -167,7 +178,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
         
                     // Get repo on current dir (pwd)
-                    let repo = local_git_repo::local::get_repo(apply_session_params.repo_path.clone());
+                    let repo = local_git_repo::get_repo(apply_session_params.repo_path.clone());
 
                     log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
         

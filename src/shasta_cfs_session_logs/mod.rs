@@ -12,49 +12,49 @@ pub mod client {
 
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
-    pub async fn get_k8s_client_from_env() -> Result<kube::Client, Box<dyn Error>> {
+    // pub async fn get_k8s_client_from_env() -> Result<kube::Client, Box<dyn Error>> {
 
-        let config = kube::Config::infer().await?;
-        // log::info!("{:#?}", config);
+    //     let config = kube::Config::infer().await?;
+    //     // log::info!("{:#?}", config);
     
-        let client;
+    //     let client;
 
-        if std::env::var("SOCKS5").is_ok() {
-            let connector = {
-                let mut http = HttpConnector::new();
-                http.enforce_http(false);
-                let proxy = hyper_socks2::SocksConnector {
-                    proxy_addr: std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap(),
-                    auth: None,
-                    connector: http,
-                };
-                let mut native_tls_builder = native_tls::TlsConnector::builder();
-                native_tls_builder.danger_accept_invalid_certs(true);
-                native_tls_builder.danger_accept_invalid_hostnames(true);
-                native_tls_builder.use_sni(false);
+    //     if std::env::var("SOCKS5").is_ok() {
+    //         let connector = {
+    //             let mut http = HttpConnector::new();
+    //             http.enforce_http(false);
+    //             let proxy = hyper_socks2::SocksConnector {
+    //                 proxy_addr: std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap(),
+    //                 auth: None,
+    //                 connector: http,
+    //             };
+    //             let mut native_tls_builder = native_tls::TlsConnector::builder();
+    //             native_tls_builder.danger_accept_invalid_certs(true);
+    //             native_tls_builder.danger_accept_invalid_hostnames(true);
+    //             native_tls_builder.use_sni(false);
         
-                // let native_tls_connector = native_tls_builder.build().unwrap();
+    //             // let native_tls_connector = native_tls_builder.build().unwrap();
         
-                // let tls = tokio_native_tls::TlsConnector::from(native_tls_connector);
-                let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
-                hyper_tls::HttpsConnector::from((proxy, tls))
-            };
+    //             // let tls = tokio_native_tls::TlsConnector::from(native_tls_connector);
+    //             let tls = tokio_native_tls::TlsConnector::from(config.native_tls_connector()?);
+    //             hyper_tls::HttpsConnector::from((proxy, tls))
+    //         };
 
-            let service = tower::ServiceBuilder::new()
-            .layer(config.base_uri_layer())
-            .option_layer(config.auth_layer()?)
-            .service(hyper::Client::builder().build(connector));
+    //         let service = tower::ServiceBuilder::new()
+    //         .layer(config.base_uri_layer())
+    //         .option_layer(config.auth_layer()?)
+    //         .service(hyper::Client::builder().build(connector));
     
-            client = kube::Client::new(service, config.default_namespace);
+    //         client = kube::Client::new(service, config.default_namespace);
 
-        } else {
+    //     } else {
 
-            client = Client::try_default().await?;
+    //         client = Client::try_default().await?;
 
-        }
+    //     }
     
-        Ok(client)
-    }
+    //     Ok(client)
+    // }
 
     pub async fn get_k8s_client_programmatically() -> Result<kube::Client, Box<dyn Error>> {
 

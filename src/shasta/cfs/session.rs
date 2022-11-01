@@ -87,7 +87,7 @@ pub mod http_client {
 
     use super::CfsSession;
 
-    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> Result<Value, Box<dyn std::error::Error>> {
 
         log::debug!("Session:\n{:#?}", session);
         
@@ -131,7 +131,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, limit_number: &Option<u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, limit_number: &Option<u8>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_cfs_sessions: Vec<Value> = Vec::new();
 
