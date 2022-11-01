@@ -185,10 +185,11 @@ Another CLI for basic/simple Shasta operations
 Usage: manta <COMMAND>
 
 Commands:
-  get    Get information from Shasta system
-  apply  Make changes to Shata clusters/nodes
-  log    Print session logs
-  help   Print this message or the help of the given subcommand(s)
+  get      Get information from Shasta system
+  apply    Make changes to Shata clusters/nodes
+  log      Print session logs
+  console  WIP Access node console
+  help     Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help information
