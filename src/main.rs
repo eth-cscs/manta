@@ -12,9 +12,11 @@ mod cli_struct;
 use clap::Parser;
 use cli_struct::{MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand, Cli};
 use config::Config;
+use futures_util::TryFutureExt;
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 use manta::cfs::configuration as manta_cfs_configuration;
 use node_console::connect_to_console;
+use openssl_sys::exit;
 use shasta::{authentication, cfs::{session as shasta_cfs_session, configuration as shasta_cfs_configuration, component as shasta_cfs_component}, bos_template, capmc};
 
 #[tokio::main]
@@ -160,7 +162,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                     let cluster_name = node.cluster_name;
 
-                    let nodes = crate::shasta::hsm::http_client::get_cluster_nodes(&shasta_token, &shasta_base_url, cluster_name).await?;
+                    let nodes = crate::shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, cluster_name).await?;
 
                     if nodes.is_empty() {
                         log::info!("No nodes found!");
@@ -420,17 +422,35 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 MainApplySubcommand::Node(main_apply_subcommand) => {
                     match main_apply_subcommand.main_apply_node_subcommand {
                         MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
-                            let xnames = main_apply_node_off_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            let xnames;
+                            if main_apply_node_off_subcommand.xnames.is_some() { // user provides a list of xnames
+                                xnames = main_apply_node_off_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                            } else { // user provides a cluster name
+                                let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_off_subcommand.cluster_name).await?;
+                                xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
+                            }
                             log::info!("Servers to turn off: {:?}", xnames);
                             capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
                         },
                         MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
-                            let xnames = main_apply_node_on_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            let xnames;
+                            if main_apply_node_on_subcommand.xnames.is_some() { // user provides a list of xnames
+                                xnames = main_apply_node_on_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                            } else { // user provides a cluster name
+                                let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_on_subcommand.cluster_name).await?;
+                                xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
+                            }
                             log::info!("Servers to turn on: {:?}", xnames);
                             capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
                         },
                         MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
-                            let xnames = main_apply_node_reset_subcommand.xnames.split(",").map(|xname| String::from(xname.trim())).collect();
+                            let xnames;
+                            if main_apply_node_reset_subcommand.xnames.is_some() { // user provides a list of xnames
+                                xnames = main_apply_node_reset_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                            } else { // user provides a cluster name
+                                let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_reset_subcommand.cluster_name).await?;
+                                xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
+                            }
                             log::info!("Servers to reboot: {:?}", xnames);
                             capmc::http_client::node_restart::post(shasta_token.to_string(), main_apply_node_reset_subcommand.reason, xnames, main_apply_node_reset_subcommand.force).await?;
                         }

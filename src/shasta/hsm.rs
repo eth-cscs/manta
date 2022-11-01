@@ -6,7 +6,7 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    pub async fn get_cluster_nodes(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<String>) -> Result<Vec<Value>, Box<dyn Error>> {
+    pub async fn get_hsm_groups(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<String>) -> Result<Vec<Value>, Box<dyn Error>> {
 
         let mut hsm_groups: Vec<Value> = Vec::new();
 
@@ -116,9 +116,9 @@ pub mod utils {
 
         table.set_header(vec!["Label", "Description", "Tags", "Exclusive group", "Members"]);
     
-        for node in hsm_groups {
+        for hsm_group in hsm_groups {
 
-            let list_members = node["members"]["ids"].as_array().unwrap();
+            let list_members = hsm_group["members"]["ids"].as_array().unwrap();
 
             let mut members: String = String::new();
 
@@ -136,17 +136,17 @@ pub mod utils {
                         members = format!("{}, ", members);
                     }
     
-                    members = format!("{}{}", members, member);
+                    members = format!("{}{}", members, member.as_str().unwrap());
     
                     i += 1;
                 }
             }
 
             table.add_row(vec![
-                node["label"].as_str().unwrap(),
-                node["description"].as_str().unwrap(),
-                node["tags"].as_str().unwrap_or_default(),
-                node["exclusiveGroup"].as_str().unwrap_or_default(),
+                hsm_group["label"].as_str().unwrap(),
+                hsm_group["description"].as_str().unwrap(),
+                hsm_group["tags"].as_str().unwrap_or_default(),
+                hsm_group["exclusiveGroup"].as_str().unwrap_or_default(),
                 &members
             ]);
         }

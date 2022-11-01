@@ -177,13 +177,17 @@ pub struct ApplySessionOptions {
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
+#[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
 pub struct MainApplyNodeOffOptions {
     /// Reason to shutdown
     #[clap(short, long, value_parser)]
     pub reason: Option<String>,   
     /// List of xnames to power off
     #[clap(short, long, value_parser)]
-    pub xnames: String,
+    pub xnames: Option<String>,
+    /// All nodes belonging to this cluster will power off
+    #[clap(short, long, value_parser)]
+    pub cluster_name: Option<String>,
     /// Force node operation
     #[clap(short, long, value_parser)]
     pub force: bool
@@ -191,24 +195,32 @@ pub struct MainApplyNodeOffOptions {
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
+#[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
 pub struct MainApplyNodeOnOptions {
     /// Reason to power on
     #[clap(short, long, value_parser)]
     pub reason: Option<String>, 
     /// List of xnames to power on
     #[clap(short, long, value_parser)]
-    pub xnames: String,
+    pub xnames:Option<String>,
+    /// All nodes belonging to this cluster will power on
+    #[clap(short, long, value_parser)]
+    pub cluster_name: Option<String>,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
+#[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
 pub struct MainApplyNodeResetOptions {
     /// Reason to reboot
     #[clap(short, long, value_parser)]
     pub reason: Option<String>, 
     /// List of xnames to reboot
     #[clap(short, long, value_parser)]
-    pub xnames: String,
+    pub xnames: Option<String>,
+    /// All nodes belonging to this cluster will reboot
+    #[clap(short, long, value_parser)]
+    pub cluster_name: Option<String>,
     /// Force node operation
     #[clap(short, long, value_parser)]
     pub force: bool
