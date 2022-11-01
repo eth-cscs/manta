@@ -5,12 +5,12 @@ pub mod client {
 
     use hyper::{client::HttpConnector, Uri};
     use k8s_openapi::api::core::v1::{Pod, ContainerState};
-    use kube::{client::ConfigExt, Api, Client, config::{KubeConfigOptions, Cluster, NamedCluster, NamedAuthInfo, AuthInfo, Kubeconfig, NamedContext, Context}, Resource};
+    use kube::{client::ConfigExt, Api, Client, config::{KubeConfigOptions, Cluster, NamedCluster, NamedAuthInfo, AuthInfo, Kubeconfig, NamedContext, Context}};
 
     use futures_util::{StreamExt, TryStreamExt};
     use secrecy::SecretString;
 
-    use crate::{session, vault::http_client::fetch_shasta_k8s_secrets};
+    use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
     pub async fn get_k8s_client_from_env() -> Result<kube::Client, Box<dyn Error>> {
 
@@ -170,7 +170,7 @@ pub mod client {
     pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: u8) -> Result<(), Box<dyn Error>> {
         
         // Get CFS sessions
-        let cfs_sessions = session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
+        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
 
         // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
 
@@ -184,7 +184,7 @@ pub mod client {
         let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
-        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
+        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?;
 
         Ok(())
     }
@@ -194,7 +194,7 @@ pub mod client {
         let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
-        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?; // TODO: do we need this method to be async?
+        get_pod_logs(client, cfs_session_name, &layer_id.to_string()).await?;
 
         Ok(())
     }

@@ -335,7 +335,7 @@ pub mod utils {
         
         let mut table = Table::new();
 
-        table.set_header(vec!["Name", "cfs", "enable_cfs", "Type", "Etag", "Path"]);
+        table.set_header(vec!["Name", "Cfs configuration", "Cfs enabled", "Type", "Etag", "Path"]);
     
         for bos_template in bos_templates {
 

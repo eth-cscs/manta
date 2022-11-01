@@ -7,13 +7,13 @@ use serde_json::Value;
 use substring::Substring;
 use crate::shasta::cfs::configuration;
 use crate::shasta::hsm;
-use crate::{session, component};
+use crate::{shasta_cfs_session, shasta_cfs_component};
 
 use crate::{local_git_repo, gitea};
 
 pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
-    let component_status = component::http_client::get(&shasta_token, &shasta_base_url, &limit).await?;
+    let component_status = shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &limit).await?;
     let hsm_configuration_state = &hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &limit).await?["State"];
     log::info!("HSM component state for component {}: {}", limit, hsm_configuration_state.as_str().unwrap());
     log::info!("Is component enabled for batched CFS: {}", component_status["enabled"]);
@@ -150,7 +150,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
         cfs_object_name,
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
-    let session = session::CfsSession::new(
+    let session = shasta_cfs_session::CfsSession::new(
         cfs_session_name,
         cfs_object_name,
         Some(limit),
@@ -159,7 +159,7 @@ pub async fn run(repo: Repository, gitea_token: String, shasta_token:String, sha
 
     log::debug!("Session:\n{:#?}", session);
     let cfs_session_resp =
-        session::http_client::post(&shasta_token, &shasta_base_url, session).await;
+    shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
 
     let cfs_session_name;
     match cfs_session_resp {

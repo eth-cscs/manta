@@ -1,7 +1,8 @@
 mod shasta;
 mod shasta_cfs_session_logs;
 mod gitea;
-mod manta_cfs;
+// mod manta_cfs;
+mod manta;
 mod node_console;
 mod local_git_repo;
 mod create_cfs_session_from_repo;
@@ -11,9 +12,10 @@ mod cli_struct;
 use clap::{Parser};
 use cli_struct::{Cli, MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand};
 use config::Config;
-use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
+// use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
+use manta::cfs::configuration as manta_cfs_configuration;
 use node_console::connect_to_console;
-use shasta::{authentication, cfs::{session, configuration, component}, bos_template, capmc};
+use shasta::{authentication, cfs::{session as shasta_cfs_session, configuration as shasta_cfs_configuration, component as shasta_cfs_component}, bos_template, capmc};
 
 use clap_complete::{generate, Generator, Shell};
 
@@ -72,7 +74,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     }
 
                     // Get CFS configurations
-                    let cfs_configurations = crate::configuration::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
+                    let cfs_configurations = shasta_cfs_configuration::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &configuration_name, &limit_number).await?;
 
                     if cfs_configurations.is_empty() {
                         println!("No CFS configuration found!");
@@ -81,7 +83,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                         let most_recent_cfs_configuration = &cfs_configurations[0];
 
-                        let mut layers: Vec<ConfigLayer> = vec![];
+                        let mut layers: Vec<manta_cfs_configuration::Layer> = vec![];
                         for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
 
                             let gitea_commit_details = gitea::http_client::get_commit_details(
@@ -90,7 +92,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                                 &gitea_token).await?;
 
                             layers.push(
-                                manta_cfs::layer::ConfigLayer::new(
+                                manta_cfs_configuration::Layer::new(
                                     layer["name"].as_str().unwrap(), 
                                     layer["cloneUrl"].as_str().unwrap().trim_start_matches("https://api-gw-service-nmn.local/vcs/").trim_end_matches(".git"), 
                                     layer["commit"].as_str().unwrap(),
@@ -100,8 +102,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                             );
                         }
 
-                        print_table(
-                            manta_cfs::configuration::Config::new(
+                        manta_cfs_configuration::print_table(
+                            manta::cfs::configuration::Configuration::new(
                                 most_recent_cfs_configuration["name"].as_str().unwrap(), 
                                 most_recent_cfs_configuration["lastUpdated"].as_str().unwrap(), 
                                 layers
@@ -109,7 +111,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         );
                     } else {
 
-                        configuration::utils::print_table(cfs_configurations);
+                        shasta_cfs_configuration::utils::print_table(cfs_configurations);
                     }
                 },
                 MainGetSubcommand::Session(session) => {
@@ -124,14 +126,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         limit_number = session.limit_number;
                     }
 
-                    let cfs_sessions = session::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
+                    let cfs_sessions = shasta_cfs_session::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
 
                     if cfs_sessions.is_empty() {
                         log::info!("No CFS session found!");
                         return Ok(())
                     } else {
 
-                        session::utils::print_table(cfs_sessions);
+                        shasta_cfs_session::utils::print_table(cfs_sessions);
                     }
                 },
                 MainGetSubcommand::Template(template) => {
