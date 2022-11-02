@@ -126,9 +126,7 @@ pub mod utils {
                 
                 members = list_members[0].as_str().unwrap().to_string();
 
-                let mut i = 1;
-
-                for member in list_members {
+                for i in 1..list_members.len() {
 
                     if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
                         members = format!("{},\n", members);
@@ -136,9 +134,7 @@ pub mod utils {
                         members = format!("{}, ", members);
                     }
     
-                    members = format!("{}{}", members, member.as_str().unwrap());
-    
-                    i += 1;
+                    members = format!("{}{}", members, list_members[i].as_str().unwrap());    
                 }
             }
 

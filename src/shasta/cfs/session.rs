@@ -238,7 +238,7 @@ pub mod utils {
 
             let mut target_groups: String = String::new();
 
-            if cfs_session["target"]["groups"].as_array().is_some() {
+            if cfs_session["target"]["groups"].as_array().is_some() && (cfs_session["target"]["groups"].as_array().unwrap().iter().len() > 0) {
 
                 let target_groups_json = cfs_session["target"]["groups"].as_array().unwrap();
 

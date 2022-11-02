@@ -12,11 +12,11 @@ mod cli_struct;
 use clap::Parser;
 use cli_struct::{MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand, Cli};
 use config::Config;
-use futures_util::TryFutureExt;
+
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 use manta::cfs::configuration as manta_cfs_configuration;
 use node_console::connect_to_console;
-use openssl_sys::exit;
+
 use shasta::{authentication, cfs::{session as shasta_cfs_session, configuration as shasta_cfs_configuration, component as shasta_cfs_component}, bos_template, capmc};
 
 #[tokio::main]
