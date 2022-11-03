@@ -332,30 +332,64 @@ pub mod utils {
     use serde_json::Value;
 
     pub fn print_table(bos_templates: Vec<Value>) {
+
+        println!("\n{:#?}", bos_templates);
         
         let mut table = Table::new();
 
-        table.set_header(vec!["Name", "Cfs configuration", "Cfs enabled", "Type", "Etag", "Path"]);
+        table.set_header(vec!["Name", "Cfs configuration", "Cfs enabled","Compute Node groups", "Compute Etag", "Compute Path", "UAN Node groups", "UAN Etag", "UAN Path"]);
     
         for bos_template in bos_templates {
 
-            let mut type_template = "";
+            let mut compute_target_groups = String::new();
+            let mut uan_target_groups = String::new();
 
             if bos_template["boot_sets"].get("uan").is_some() {
-                type_template = "uan";
+
+                let uan_node_groups_json = bos_template["boot_sets"]["uan"]["node_groups"].as_array().unwrap();
+
+                uan_target_groups = String::from(uan_node_groups_json[0].as_str().unwrap());
+
+                for i in 1..uan_node_groups_json.len() {
+
+                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
+                        uan_target_groups = format!("{},\n", uan_target_groups);
+                    } else {
+                        uan_target_groups = format!("{}, ", uan_target_groups);
+                    }
+                    
+                    uan_target_groups = format!("{}{}", uan_target_groups, uan_node_groups_json[i].as_str().unwrap());
+                }
             }
 
             if bos_template["boot_sets"].get("compute").is_some() {
-                type_template = "compute";
+                
+                let compute_node_groups_json = bos_template["boot_sets"]["compute"]["node_groups"].as_array().unwrap();
+
+                compute_target_groups = String::from(compute_node_groups_json[0].as_str().unwrap());
+
+                for i in 1..compute_node_groups_json.len() {
+
+                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
+                        compute_target_groups = format!("{},\n", compute_target_groups);
+                    } else {
+                        compute_target_groups = format!("{}, ", compute_target_groups);
+                    }
+                    
+                    compute_target_groups = format!("{}{}", compute_target_groups, compute_node_groups_json[i].as_str().unwrap());
+                }
             }
 
             table.add_row(vec![
                 bos_template["name"].as_str().unwrap(),
                 bos_template["cfs"]["configuration"].as_str().unwrap(),
                 &bos_template["enable_cfs"].as_bool().unwrap().to_string(),
-                type_template,
-                bos_template["boot_sets"][type_template]["etag"].as_str().unwrap_or_default(),
-                bos_template["boot_sets"][type_template]["path"].as_str().unwrap_or_default()
+                &compute_target_groups,
+                bos_template["boot_sets"]["compute"]["etag"].as_str().unwrap_or_default(),
+                bos_template["boot_sets"]["compute"]["path"].as_str().unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["node_groups"].as_str().unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["etag"].as_str().unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["path"].as_str().unwrap_or_default()
             ]);
         }
     
