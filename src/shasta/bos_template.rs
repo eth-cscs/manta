@@ -332,8 +332,6 @@ pub mod utils {
     use serde_json::Value;
 
     pub fn print_table(bos_templates: Vec<Value>) {
-
-        println!("\n{:#?}", bos_templates);
         
         let mut table = Table::new();
 

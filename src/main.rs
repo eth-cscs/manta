@@ -61,7 +61,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     match args.command {
         MainSubcommand::Get(main_subcommand) => {
             match main_subcommand.main_get_subcommand {
-                MainGetSubcommand::Configuration(configuration) => {
+                MainGetSubcommand::CfsConfiguration(configuration) => {
 
                     configuration_name = configuration.name;
                     cluster_name = configuration.cluster_name;
@@ -114,7 +114,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         shasta_cfs_configuration::utils::print_table(cfs_configurations);
                     }
                 },
-                MainGetSubcommand::Session(session) => {
+                MainGetSubcommand::CfsSession(session) => {
 
                     session_name = session.name;
                     cluster_name = session.cluster_name;
@@ -136,7 +136,29 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         shasta_cfs_session::utils::print_table(cfs_sessions);
                     }
                 },
-                MainGetSubcommand::Template(template) => {
+                // MainGetSubcommand::BosSession(session) => {
+
+                //     session_name = session.name;
+                //     cluster_name = session.cluster_name;
+                //     most_recent = session.most_recent;
+                    
+                //     if most_recent {
+                //         limit_number = Some(1);
+                //     } else {
+                //         limit_number = session.limit_number;
+                //     }
+
+                //     let bos_sessions = bos_session::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &session_name, &limit_number).await?;
+
+                //     if bos_sessions.is_empty() {
+                //         log::info!("No BOS session found!");
+                //         return Ok(())
+                //     } else {
+
+                //         bos_session::utils::print_table(bos_sessions);
+                //     }                   
+                // },
+                MainGetSubcommand::BosTemplate(template) => {
 
                     template_name = template.name;
                     cluster_name = template.cluster_name;
@@ -148,7 +170,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         limit_number = template.limit_number;
                     }
 
-                    let bos_templates = crate::bos_template::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &template_name, &limit_number).await?;
+                    let bos_templates = bos_template::http_client::get(&shasta_token, &shasta_base_url, &cluster_name, &template_name, &limit_number).await?;
 
                     if bos_templates.is_empty() {
                         log::info!("No BOS template found!");
@@ -162,13 +184,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                     let cluster_name = node.cluster_name;
 
-                    let nodes = crate::shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, cluster_name).await?;
+                    let nodes = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, cluster_name).await?;
 
                     if nodes.is_empty() {
                         log::info!("No nodes found!");
                         return Ok(())
                     } else {
-                        crate::shasta::hsm::utils::print_table(nodes);
+                        shasta::hsm::utils::print_table(nodes);
                     }
                 }
             }
@@ -473,4 +495,3 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

@@ -54,12 +54,12 @@ pub struct MainConsoleArg {
 
 #[derive(Debug, Subcommand)]
 pub enum MainGetSubcommand {
-    /// Get cfs configuration details
-    Configuration(MainGetConfigurationOptions),
-    /// Get cfs session details
-    Session(MainGetSessionOptions),
-    /// Get bos template details
-    Template(MainGetTemplateOptions),
+    /// Get CFS configuration details
+    CfsConfiguration(MainGetConfigurationOptions),
+    /// Get CFS session details
+    CfsSession(MainGetSessionOptions),
+    /// Get BOS template details
+    BosTemplate(MainGetTemplateOptions),
     /// Get HSM nodes
     Node(MainGetNodeOptions),
 }
@@ -103,7 +103,7 @@ pub struct MainGetConfigurationOptions {
     /// Most recent (equivalent to --limit 1)
     #[clap(short, long, action)]
     pub most_recent: bool,
-    /// Number of cfs configurations to show on screen
+    /// Number of CFS configurations to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
 }
@@ -122,7 +122,7 @@ pub struct MainGetSessionOptions {
     /// Most recent (equivalent to --limit 1)
     #[clap(short, long, action)]
     pub most_recent: bool,
-    /// Number of cfs configurations to show on screen
+    /// Number of CFS configurations to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
 }
@@ -141,7 +141,7 @@ pub struct MainGetTemplateOptions {
     /// Most recent (equivalent to --limit 1)
     #[clap(short, long, action)]
     pub most_recent: bool,
-    /// Number of bos templates to show on screen
+    /// Number of BOS templates to show on screen
     #[clap(short, long, action, value_parser = clap::value_parser!(u8).range(1..))]
     pub limit_number: Option<u8>
 }
