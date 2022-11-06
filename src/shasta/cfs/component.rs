@@ -4,7 +4,7 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, component_id: &String) -> Result<Value, Box<dyn Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, component_id: &str) -> Result<Value, Box<dyn Error>> {
     
         // // socks5 proxy
         // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;

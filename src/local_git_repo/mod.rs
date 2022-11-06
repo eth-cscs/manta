@@ -1,5 +1,6 @@
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 
+    use std::error::Error;
     use std::path::{Path, PathBuf};
     use std::io::{self, Write};
 
@@ -8,24 +9,22 @@
     // use git2::{ObjectType, Repository, PushOptions};
 
 
-    pub fn get_repo(repo_path: String) -> Repository {
+    pub fn get_repo(repo_path: String) -> Result<Repository, git2::Error> {
         
         let mut repo_root = PathBuf::new();
         repo_root.push(repo_path);
 
         log::debug!("Checking repo on {}", repo_root.display());
         
-        let repo = Repository::open(repo_root.as_os_str()).expect("Couldn't open repository");
-
-        repo
+        Repository::open(repo_root.as_os_str())
     }
 
-    pub fn get_last_commit(repo: &Repository) -> core::result::Result<Commit<'_>, git2::Error> {
+    pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
         let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
         obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
     }
 
-    pub fn untracked_changed_local_files(repo: &Repository) -> core::result::Result<bool, Box<dyn std::error::Error>> {
+    pub fn untracked_changed_local_files(repo: &Repository) -> Result<bool, Box<dyn std::error::Error>> {
         
         // use walkdir::WalkDir;
 

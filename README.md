@@ -9,6 +9,7 @@ Manta's goals:
 
 Manta is aggregates information from multiple sources:
 
+ - Keycloak
  - Shasta API
  - K8s API
  - local git repo

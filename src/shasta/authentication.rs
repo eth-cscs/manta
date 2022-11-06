@@ -92,6 +92,8 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
     } else {
         client = client_builder.build()?;
     }
+
+    log::debug!("Check token against apis/cfs/healthz api");
     
     let resp = client
         .get("https://api-gw-service-nmn.local/apis/cfs/healthz")
@@ -159,9 +161,10 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
         json_response = serde_json::from_str(&resp.text().await?)?;
         Ok(json_response["access_token"].as_str().unwrap().to_string())
     } else {
-        Err(resp.json::<Value>().await?
-            .as_str()
-            .unwrap()
-            .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        Err(resp.json::<Value>().await?["error_description"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        // Err(resp.json::<Value>().await?
+        //     .as_str()
+        //     .unwrap()
+        //     .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
     }
 }

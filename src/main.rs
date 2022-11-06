@@ -10,7 +10,7 @@ mod vault;
 mod cli_struct;
 
 use clap::Parser;
-use cli_struct::{MainSubcommand, MainGetSubcommand, MainApplySubcommand, MainApplyNodeSubcommand, Cli};
+use cli_struct::{MainSubcommand, GetSubcommand, ApplySubcommand, ApplyNodeSubcommand, Cli};
 use config::Config;
 
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
@@ -55,13 +55,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     }
     
     shasta_token = authentication::get_api_token().await?;
+
     gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
 
     // Process input params
     match args.command {
         MainSubcommand::Get(main_subcommand) => {
             match main_subcommand.main_get_subcommand {
-                MainGetSubcommand::CfsConfiguration(configuration) => {
+                GetSubcommand::Configuration(configuration) => {
 
                     configuration_name = configuration.name;
                     cluster_name = configuration.cluster_name;
@@ -114,7 +115,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         shasta_cfs_configuration::utils::print_table(cfs_configurations);
                     }
                 },
-                MainGetSubcommand::CfsSession(session) => {
+                GetSubcommand::Session(session) => {
 
                     session_name = session.name;
                     cluster_name = session.cluster_name;
@@ -158,7 +159,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                 //         bos_session::utils::print_table(bos_sessions);
                 //     }                   
                 // },
-                MainGetSubcommand::BosTemplate(template) => {
+                GetSubcommand::Template(template) => {
 
                     template_name = template.name;
                     cluster_name = template.cluster_name;
@@ -180,7 +181,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         bos_template::utils::print_table(bos_templates);
                     }
                 },
-                MainGetSubcommand::Node(node) => {
+                GetSubcommand::Node(node) => {
 
                     let cluster_name = node.cluster_name;
 
@@ -197,17 +198,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         }
         MainSubcommand::Apply(main_subcommand ) => {
             match main_subcommand.main_apply_subcommand {
-                MainApplySubcommand::Session(apply_session_params) => {
+                ApplySubcommand::Session(apply_session_params) => {
                     
                     // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
         
-                    // Get repo on current dir (pwd)
-                    let repo = local_git_repo::get_repo(apply_session_params.repo_path.clone());
-
-                    log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
-        
                     let cfs_session_name = create_cfs_session_from_repo::run(
-                        repo
+                        &apply_session_params.session_name,
+                        apply_session_params.repo_path
                         , gitea_token
                         , String::from(shasta_token)
                         , String::from(shasta_base_url)
@@ -217,7 +214,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
                     if apply_session_params.watch_logs {
                         log::info!("Fetching logs ...");
-                        shasta_cfs_session_logs::client::session_logs(cfs_session_name.unwrap().as_str(), 0).await?;
+                        shasta_cfs_session_logs::client::session_logs(cfs_session_name.unwrap().as_str(), None).await?;
                     }
 
                     // match session_logs_result {
@@ -441,9 +438,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                     //     log::info!("reference target: {:?}", refer.target());
                     // }
                 },
-                MainApplySubcommand::Node(main_apply_subcommand) => {
+                ApplySubcommand::Node(main_apply_subcommand) => {
                     match main_apply_subcommand.main_apply_node_subcommand {
-                        MainApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
+                        ApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
                             let xnames;
                             if main_apply_node_off_subcommand.xnames.is_some() { // user provides a list of xnames
                                 xnames = main_apply_node_off_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
@@ -454,7 +451,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                             log::info!("Servers to turn off: {:?}", xnames);
                             capmc::http_client::node_power_off::post(shasta_token.to_string(), main_apply_node_off_subcommand.reason, xnames, main_apply_node_off_subcommand.force).await?;
                         },
-                        MainApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
+                        ApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
                             let xnames;
                             if main_apply_node_on_subcommand.xnames.is_some() { // user provides a list of xnames
                                 xnames = main_apply_node_on_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
@@ -465,7 +462,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                             log::info!("Servers to turn on: {:?}", xnames);
                             capmc::http_client::node_power_on::post(shasta_token.to_string(), main_apply_node_on_subcommand.reason, xnames, false).await?; // TODO: idk why power on does not seems to work when forced
                         },
-                        MainApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
+                        ApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
                             let xnames;
                             if main_apply_node_reset_subcommand.xnames.is_some() { // user provides a list of xnames
                                 xnames = main_apply_node_reset_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();

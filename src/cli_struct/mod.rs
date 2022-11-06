@@ -10,90 +10,90 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum MainSubcommand {
     /// Get information from Shasta system
-    Get(MainGetArgs),
+    Get(GetArgs),
     /// Make changes to Shata clusters/nodes 
-    Apply(MainApplyArgs),
+    Apply(ApplyArgs),
     /// Print session logs
-    Log(MainLogArgs),
+    Log(LogArgs),
     /// WIP Access node console
-    Console(MainConsoleArg)
+    Console(ConsoleArg)
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainGetArgs {
+pub struct GetArgs {
     #[clap(subcommand)]
-    pub main_get_subcommand: MainGetSubcommand,
+    pub main_get_subcommand: GetSubcommand,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainApplyArgs {
+pub struct ApplyArgs {
     #[clap(subcommand)]
-    pub main_apply_subcommand: MainApplySubcommand,
+    pub main_apply_subcommand: ApplySubcommand,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainLogArgs {
+pub struct LogArgs {
     /// Session name
     #[clap(short, long, value_parser)]
     pub session_name: String,
     #[clap(short, long, value_parser)]
     /// Layer id to target. 0 => ansible-0; 1 => ansible-1 ...
-    pub layer_id: u8,
+    pub layer_id: Option<u8>,
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainConsoleArg {
+pub struct ConsoleArg {
     /// xname of the node to connect to
     #[clap(short, long, value_parser)]
     pub xname: String,
 }
 
 #[derive(Debug, Subcommand)]
-pub enum MainGetSubcommand {
+pub enum GetSubcommand {
     /// Get CFS configuration details
-    CfsConfiguration(MainGetConfigurationOptions),
+    Configuration(GetConfigurationOptions),
     /// Get CFS session details
-    CfsSession(MainGetSessionOptions),
+    Session(GetSessionOptions),
     /// Get BOS template details
-    BosTemplate(MainGetTemplateOptions),
+    Template(GetTemplateOptions),
     /// Get HSM nodes
-    Node(MainGetNodeOptions),
+    Node(GetNodeOptions),
 }
 
 #[derive(Debug, Subcommand)]
-pub enum MainApplySubcommand {
+pub enum ApplySubcommand {
     /// Create new CFS session
     Session(ApplySessionOptions),
     /// Restart Power on/off a node
-    Node(MainApplyNodeArgs)
+    Node(ApplyNodeArgs)
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainApplyNodeArgs {
+pub struct ApplyNodeArgs {
     #[clap(subcommand)]
-    pub main_apply_node_subcommand: MainApplyNodeSubcommand,
+    pub main_apply_node_subcommand: ApplyNodeSubcommand,
 }
 
 #[derive(Debug, Subcommand)]
-pub enum MainApplyNodeSubcommand {
+pub enum ApplyNodeSubcommand {
     /// Start a node
-    On(MainApplyNodeOnOptions),
+    On(ApplyNodeOnOptions),
     /// Shutdown a node
-    Off(MainApplyNodeOffOptions),
+    Off(ApplyNodeOffOptions),
     /// Restart a node
-    Reset(MainApplyNodeResetOptions)
+    Reset(ApplyNodeResetOptions)
 }
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["name", "cluster_name"]),))]
 #[clap(group(ArgGroup::new("config-limit").args(&["most_recent", "limit_number"]),))]
-pub struct MainGetConfigurationOptions {
+pub struct GetConfigurationOptions {
     /// Cfs configuration name
     #[clap(short, long, value_parser)]
     pub name: Option<String>,
@@ -112,7 +112,7 @@ pub struct MainGetConfigurationOptions {
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("session-type").args(&["name", "cluster_name"]),))]
 #[clap(group(ArgGroup::new("session-limit").args(&["most_recent", "limit_number"]),))]
-pub struct MainGetSessionOptions {
+pub struct GetSessionOptions {
     /// Cfs session name
     #[clap(short, long, value_parser)]
     pub name: Option<String>,
@@ -131,7 +131,7 @@ pub struct MainGetSessionOptions {
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["name", "cluster_name"]),))]
 #[clap(group(ArgGroup::new("config-limit").args(&["most_recent", "limit_number"]),))]
-pub struct MainGetTemplateOptions {
+pub struct GetTemplateOptions {
     /// Bos template name
     #[clap(short, long, value_parser)]
     pub name: Option<String>,
@@ -148,7 +148,7 @@ pub struct MainGetTemplateOptions {
 
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
-pub struct MainGetNodeOptions {
+pub struct GetNodeOptions {
     /// Cluster name
     #[clap(short, long, value_parser)]
     pub cluster_name: Option<String>,
@@ -159,10 +159,10 @@ pub struct MainGetNodeOptions {
 pub struct ApplySessionOptions {
     /// Session name
     #[clap(short, long, value_parser)]
-    pub session_name: Option<String>,
+    pub session_name: String,
     /// Repo path. The path with a git repo and an ansible-playbook to configure the CFS image.
     #[clap(short, long, value_parser)]
-    pub repo_path: String,
+    pub repo_path: Vec<String>,
     /// Watch logs. Hooks stdout to aee container running ansible scripts
     #[clap(short, long, value_parser)]
     pub watch_logs: bool,
@@ -178,7 +178,7 @@ pub struct ApplySessionOptions {
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
-pub struct MainApplyNodeOffOptions {
+pub struct ApplyNodeOffOptions {
     /// Reason to shutdown
     #[clap(short, long, value_parser)]
     pub reason: Option<String>,   
@@ -196,7 +196,7 @@ pub struct MainApplyNodeOffOptions {
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
-pub struct MainApplyNodeOnOptions {
+pub struct ApplyNodeOnOptions {
     /// Reason to power on
     #[clap(short, long, value_parser)]
     pub reason: Option<String>, 
@@ -211,7 +211,7 @@ pub struct MainApplyNodeOnOptions {
 #[derive(Debug, Args)]
 #[clap(args_conflicts_with_subcommands = true)]
 #[clap(group(ArgGroup::new("config-type").args(&["xnames", "cluster_name"]).required(true),))]
-pub struct MainApplyNodeResetOptions {
+pub struct ApplyNodeResetOptions {
     /// Reason to reboot
     #[clap(short, long, value_parser)]
     pub reason: Option<String>, 
