@@ -1,6 +1,4 @@
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
-
-    use std::error::Error;
     use std::path::{Path, PathBuf};
     use std::io::{self, Write};
 

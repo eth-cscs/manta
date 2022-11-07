@@ -9,6 +9,7 @@ pub mod client {
 
     use futures_util::{StreamExt, TryStreamExt};
     use secrecy::SecretString;
+    use termion::color;
 
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
@@ -298,8 +299,10 @@ pub mod client {
                 
                 let container_name = format!("ansible-{}", layer);
 
-                log::info!("Printing logs for container {}", container_name);
-                
+                println!("");
+                println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = container_name, color_reset = color::Fg(color::Reset));
+                println!("");
+
                 // Check if container exists in pod
                 let container_exists = cfs_session_pod.spec.as_ref().unwrap().containers.iter().find(|x| x.name.eq(&container_name));
         
