@@ -119,8 +119,8 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
     let mut params = HashMap::new();
     params.insert("grant_type", "password");
     params.insert("client_id", "shasta");
-    params.insert("username", &username);
-    params.insert("password", &password);
+    params.insert("username", username);
+    params.insert("password", password);
     // params.insert("grant_type", "client_credentials");
     // params.insert("client_id", "admin-client");
     // params.insert("client_secret", shasta_admin_pwd);

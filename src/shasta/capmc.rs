@@ -12,7 +12,7 @@ struct PowerStatus {
 
 impl PowerStatus {
     pub fn new(reason: Option<String>, xnames: Vec<String>, force: bool, recursive: Option<bool>) -> Self {
-        PowerStatus {
+        Self {
             reason,
             xnames,
             force,
@@ -26,8 +26,8 @@ impl PowerStatus {
 }
 
 impl Default for PowerStatus {
-    fn default() -> PowerStatus {
-        PowerStatus{
+    fn default() -> Self {
+        Self{
             reason: None,
             xnames: vec![],
             force: false,
@@ -48,17 +48,13 @@ struct NodeStatus {
 
 impl NodeStatus {
     pub fn new(filter: Option<String>, xnames: Option<Vec<String>>, source: Option<String>) -> Self {
-        NodeStatus {
-            filter,
-            xnames,
-            source
-        }
+        Self { filter, source, xnames }
     }
 }
 
 impl Default for NodeStatus {
-    fn default() -> NodeStatus {
-        NodeStatus{
+    fn default() -> Self {
+        Self{
             filter: None,
             xnames: None,
             source: None,

@@ -9,7 +9,7 @@ pub struct Configuration {
 
 impl Configuration {
     pub fn new(name: &str, last_updated: &str, config_layers: Vec<Layer>) -> Self {
-        Configuration {
+        Self {
             name: String::from(name),
             last_updated: String::from(last_updated),
             config_layers
@@ -43,7 +43,7 @@ pub struct Layer {
 
 impl Layer {
     pub fn new(name: &str, repo_name: &str, commit_id: &str, author: &str, commit_date: &str) -> Self {
-        Layer {
+        Self {
             name: String::from(name),
             repo_name: String::from(repo_name),
             commit_id: String::from(commit_id),

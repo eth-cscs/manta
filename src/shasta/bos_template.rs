@@ -9,8 +9,8 @@ pub struct Link {
 }
 
 impl Default for Link {
-    fn default() -> Link {
-        Link {
+    fn default() -> Self {
+        Self {
             rel: None,
             href: None
         }
@@ -49,8 +49,8 @@ pub struct Property1 {
 }
 
 impl Default for Property1 {
-    fn default() -> Property1 {
-        Property1 {
+    fn default() -> Self {
+        Self {
             name: None,
             boot_ordinal: None,
             shutdown_ordinal: None,
@@ -100,8 +100,8 @@ pub struct Property2 {
 }
 
 impl Default for Property2 {
-    fn default() -> Property2 {
-        Property2 {
+    fn default() -> Self {
+        Self {
             name: None,
             boot_ordinal: None,
             shutdown_ordinal: None,
@@ -128,8 +128,8 @@ pub struct BootSet {
 }
 
 impl Default for BootSet {
-    fn default() -> BootSet {
-        BootSet {
+    fn default() -> Self {
+        Self {
             property1: None,
             property2: None
         }
@@ -151,8 +151,8 @@ pub struct Cfs {
 }
 
 impl Default for Cfs {
-    fn default() -> Cfs {
-        Cfs {
+    fn default() -> Self {
+        Self {
             clone_url: None,
             branch: None,
             commit: None,
@@ -303,7 +303,7 @@ pub mod http_client {
                 }
             }
         } else { // Returning all results
-            cluster_bos_tempalte = json_response.as_array().unwrap().to_vec();
+            cluster_bos_tempalte = json_response.as_array().unwrap().clone();
 
             // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
         }

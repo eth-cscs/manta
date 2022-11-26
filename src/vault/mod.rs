@@ -6,8 +6,8 @@ pub struct Auth {
 }
 
 impl Auth {
-    pub fn new(role_id: &str) -> Auth {
-        Auth {
+    pub fn new(role_id: &str) -> Self {
+        Self {
             role_id: String::from(role_id)
         }
     }
@@ -28,7 +28,7 @@ pub mod http_client {
         // let role_id = std::env::var("VAULT_ROLE_ID").expect("vault role id not defined. Please check your configuration");
         let role_id = "f9a867ff-2a05-cfda-10b1-bbae7591ff58"; // TODO: move this to an env (which is readden from a config file?)
 
-        let auth_payload = Auth::new(&role_id);
+        let auth_payload = Auth::new(role_id);
 
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;

@@ -14,7 +14,7 @@ use crate::{local_git_repo, gitea};
 pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
 
     // Cheack nodes are ready to run a CFS layer
-    let xnames: Vec<String> = limit.split(",").map(|xname| String::from(xname.trim())).collect();
+    let xnames: Vec<String> = limit.split(',').map(|xname| String::from(xname.trim())).collect();
 
     for xname in xnames {
 
@@ -178,17 +178,17 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
 
         // Create CFS layer
         let cfs_layer = configuration::Layer::new(
-            String::from(format!(  // git repo url in shasta faced VCS
+            format!(  // git repo url in shasta faced VCS
                 "https://api-gw-service-nmn.local/vcs/cray/{}",
                 repo_name
-            )),
+            ),
             // String::from(repo_ref_origin_url), // git repo url in user faced VCS
             String::from(shasta_commitid_details["sha"].as_str().unwrap()),
-            String::from(format!(
+            format!(
                 "{}-{}",
                 repo_name.substring(1, repo_name.len()),
                 chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-            )),
+            ),
             String::from("site.yml"),
         );
 

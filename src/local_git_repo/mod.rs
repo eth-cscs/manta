@@ -58,15 +58,15 @@ use std::error::Error;
 
             let status = repo.status_file(path).unwrap();
     
-            let ret = if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
+            
+
+            if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
                 log::debug!("File not included in git index. Aborting process. Please run 'git status' to get list of file to work on");
 
                 -1
             } else {
                 0
-            };
-
-            ret
+            }
         })) {
             Ok(()) => Ok(true),
             Err(_) => Ok(false)
@@ -83,7 +83,9 @@ use std::error::Error;
 
             let status = repo.status_file(path).unwrap();
     
-            let ret = if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW)
+            
+
+            if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW)
             {
                 log::debug!(" - Adding file: '{}' with status {:?}", path.display(), status);
 
@@ -92,9 +94,7 @@ use std::error::Error;
                 log::debug!(" - NOT adding file: '{}' with status {:?}", path.display(), status);
 
                 1
-            };
-
-            ret
+            }
         })).unwrap();
 
         // Persists index

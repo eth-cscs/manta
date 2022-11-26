@@ -10,7 +10,7 @@ pub mod client {
     use futures_util::{StreamExt, TryStreamExt};
     use secrecy::SecretString;
     use termion::color;
-    use tokio_util::io::StreamReader;
+    
 
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
@@ -204,8 +204,7 @@ pub mod client {
 
     fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
         let container_status = pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
-        .iter().filter(|container_status| container_status.name.eq(container_name))
-        .next();
+        .iter().find(|container_status| container_status.name.eq(container_name));
 
         match container_status {
             Some(container_status_aux) => container_status_aux.state.clone(),
@@ -257,7 +256,7 @@ pub mod client {
                 std::process::exit(0);
             }
     
-            let mut container_state = get_container_state(&cfs_session_pod, &container_name);
+            let mut container_state = get_container_state(cfs_session_pod, &container_name);
     
             let mut i = 0;
     
@@ -300,9 +299,9 @@ pub mod client {
                 
                 let container_name = format!("ansible-{}", layer);
 
-                println!("");
+                println!();
                 println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = container_name, color_reset = color::Fg(color::Reset));
-                println!("");
+                println!();
 
                 // Check if container exists in pod
                 let container_exists = cfs_session_pod.spec.as_ref().unwrap().containers.iter().find(|x| x.name.eq(&container_name));
@@ -312,7 +311,7 @@ pub mod client {
                     std::process::exit(0);
                 }
         
-                let mut container_state = get_container_state(&cfs_session_pod, &container_name);
+                let mut container_state = get_container_state(cfs_session_pod, &container_name);
         
                 let mut i = 0;
         

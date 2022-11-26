@@ -32,19 +32,19 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
     let mut stdout_stream = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
     let next_stdout = stdout_stream.next().await.unwrap().unwrap();
     let stdout_str = std::str::from_utf8(&next_stdout).unwrap();
-    let output_json: Value = serde_json::from_str(&stdout_str)?;
+    let output_json: Value = serde_json::from_str(stdout_str)?;
 
     let console_pod_name = output_json["podname"].as_str().unwrap();
 
     let command = vec!["conman", "-j", xname];
     // let command = vec!["bash"];
 
-    log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| x.to_string() + " ").collect::<String>());
+    log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| (*x).to_string() + " ").collect::<String>());
 
     log::info!("Connecting to console {}", xname);
     
     let mut attached = pods_fabric.exec(
-        &console_pod_name, 
+        console_pod_name, 
         command,
         &AttachParams::default()
             .container("cray-console-node")
@@ -113,7 +113,7 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
 
         let n = stdin.read(&mut buffer[..])?;
 
-        stdin_writer.write_all(format!("{}", String::from_utf8((&buffer[..n]).to_vec()).unwrap()).as_bytes()).await?;
+        stdin_writer.write_all(String::from_utf8(buffer[..n].to_vec()).unwrap().to_string().as_bytes()).await?;
     }
 
     // let mut stdin_writer = attached.stdin().unwrap();

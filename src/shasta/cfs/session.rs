@@ -20,8 +20,8 @@ pub struct Target {
 }
 
 impl Default for Target {
-    fn default() -> Target {
-        Target {
+    fn default() -> Self {
+        Self {
             definition: String::from("dynamic"),
             groups: None
         }
@@ -54,8 +54,8 @@ pub struct CfsSession {
 }
 
 impl Default for CfsSession {
-    fn default() -> CfsSession {
-        CfsSession {
+    fn default() -> Self {
+        Self {
             name: String::from(""),
             configuration_name: String::from(""),
             configuration_limit: None,
@@ -71,7 +71,7 @@ impl Default for CfsSession {
 
 impl CfsSession {
     pub fn new(name: String, configuration_name: String, ansible_limit: Option<String>, ansible_verbosity: u8) -> Self {
-        CfsSession {
+        Self {
             name,
             configuration_name,
             ansible_limit,
@@ -186,7 +186,7 @@ pub mod http_client {
                     cluster_cfs_sessions.push(cfs_session.clone());
                 }
 
-                cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
+                cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
 
             }
         } else if session_name.is_some() {
@@ -200,16 +200,16 @@ pub mod http_client {
                 }
             }
         } else { // Returning all results
-            cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
+            cluster_cfs_sessions = json_response.as_array().unwrap().clone();
 
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
+            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
         }
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
             // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
     
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
+            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
     
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             
@@ -256,7 +256,7 @@ pub mod utils {
                 }
             }
 
-            let mut list_ansible_limit = cfs_session["ansible"]["limit"].as_str().unwrap_or_default().split(",");
+            let mut list_ansible_limit = cfs_session["ansible"]["limit"].as_str().unwrap_or_default().split(',');
 
             let mut ansible_limits: String = String::new();
 

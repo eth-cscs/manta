@@ -41,16 +41,16 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let logging_session_name;
     let xname;
     let layer_id;
-    let shasta_token;
-    let gitea_token;
-    let shasta_base_url;
+    
+    
+    
 
     let settings = Config::builder()
         .add_source(config::File::with_name("config.toml"))
         .build()
         .unwrap();
 
-    shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
+    let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     // std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
     // std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
     match settings.get::<String>("socks5_proxy") {
@@ -58,9 +58,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => log::info!("socks proxy not provided")
     }
     
-    shasta_token = authentication::get_api_token().await?;
+    let shasta_token = authentication::get_api_token().await?;
 
-    gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
+    let gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
 
     // Process input params
     match args.command {
@@ -237,7 +237,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         println!("     - succeeded: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["succeeded"].as_str().unwrap_or_default());
                         println!("     - job: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["job"].as_str().unwrap_or_default());
                         println!("     - start: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["startTime"].as_str().unwrap_or_default());             
-                        println!("   - tags: {}", cluster.most_recent_cfs_session_name_created["tags"].to_string());
+                        println!("   - tags: {}", cluster.most_recent_cfs_session_name_created["tags"]);
 
                         println!(" * members: {}", nodes::nodes_to_string(&cluster.members));
                     }
@@ -254,8 +254,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         &apply_session_params.session_name,
                         apply_session_params.repo_path
                         , gitea_token
-                        , String::from(shasta_token)
-                        , String::from(shasta_base_url)
+                        , shasta_token
+                        , shasta_base_url
                         , apply_session_params.ansible_limit
                         , apply_session_params.ansible_verbosity
                     ).await;
@@ -491,7 +491,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         ApplyNodeSubcommand::Off(main_apply_node_off_subcommand) => {
                             let xnames;
                             if main_apply_node_off_subcommand.xnames.is_some() { // user provides a list of xnames
-                                xnames = main_apply_node_off_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                                xnames = main_apply_node_off_subcommand.xnames.unwrap().split(',').map(|xname| String::from(xname.trim())).collect();
                             } else { // user provides a cluster name
                                 let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_off_subcommand.cluster_name).await?;
                                 xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
@@ -502,7 +502,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         ApplyNodeSubcommand::On(main_apply_node_on_subcommand) => {
                             let xnames;
                             if main_apply_node_on_subcommand.xnames.is_some() { // user provides a list of xnames
-                                xnames = main_apply_node_on_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                                xnames = main_apply_node_on_subcommand.xnames.unwrap().split(',').map(|xname| String::from(xname.trim())).collect();
                             } else { // user provides a cluster name
                                 let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_on_subcommand.cluster_name).await?;
                                 xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
@@ -513,7 +513,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         ApplyNodeSubcommand::Reset(main_apply_node_reset_subcommand) => {
                             let xnames;
                             if main_apply_node_reset_subcommand.xnames.is_some() { // user provides a list of xnames
-                                xnames = main_apply_node_reset_subcommand.xnames.unwrap().split(",").map(|xname| String::from(xname.trim())).collect();
+                                xnames = main_apply_node_reset_subcommand.xnames.unwrap().split(',').map(|xname| String::from(xname.trim())).collect();
                             } else { // user provides a cluster name
                                 let hsm_groups = shasta::hsm::http_client::get_hsm_groups(&shasta_token, &shasta_base_url, main_apply_node_reset_subcommand.cluster_name).await?;
                                 xnames = hsm_groups[0]["members"]["ids"].as_array().unwrap().iter().map(|xname_value| String::from(xname_value.as_str().unwrap())).collect();
