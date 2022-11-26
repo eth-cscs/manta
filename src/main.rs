@@ -9,6 +9,8 @@ mod create_cfs_session_from_repo;
 mod vault;
 mod cli_struct;
 
+mod cluster_ops;
+
 use clap::Parser;
 use cli_struct::{MainSubcommand, GetSubcommand, ApplySubcommand, ApplyNodeSubcommand, Cli};
 use config::Config;
@@ -18,6 +20,8 @@ use manta::cfs::configuration as manta_cfs_configuration;
 use node_console::connect_to_console;
 
 use shasta::{authentication, cfs::{session as shasta_cfs_session, configuration as shasta_cfs_configuration, component as shasta_cfs_component}, bos_template, capmc};
+
+use crate::shasta::nodes;
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -192,6 +196,50 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
                         return Ok(())
                     } else {
                         shasta::hsm::utils::print_table(nodes);
+                    }
+                },
+                GetSubcommand::Cluster(get_cluster_args) => {
+
+                    let cluster_name = get_cluster_args.cluster_name;
+
+                    let clusters = cluster_ops::get_details(&shasta_token, &shasta_base_url, &cluster_name).await;
+
+                    // println!("{:#?}", clusters);
+
+                    for cluster in clusters {
+
+                        println!("************************* CLUSTER *************************");
+
+                        println!(" * HSM group label: {}", cluster.hsm_group_label);
+                        println!(" * CFS configuration details:");
+                        println!("   - name: {}", cluster.most_recent_cfs_configuration_name_created["name"].as_str().unwrap_or_default());
+                        println!("   - last updated: {}", cluster.most_recent_cfs_configuration_name_created["lastUpdated"].as_str().unwrap_or_default());
+
+                        let mut i = 0;
+                        for layer in cluster.most_recent_cfs_configuration_name_created["layers"].as_array().unwrap() {
+                            println!("   + Layer {}", i);
+                            println!("     - name: {}", layer["name"].as_str().unwrap_or_default());
+                            println!("     - url: {}", layer["cloneUrl"].as_str().unwrap_or_default());
+                            println!("     - commit: {}", layer["commit"].as_str().unwrap_or_default());
+                            println!("     - playbook: {}", layer["playbook"].as_str().unwrap_or_default());
+                            i += 1;
+                        }
+
+                        println!(" * CFS session details:");
+                        println!("   - Name: {}", cluster.most_recent_cfs_session_name_created["name"].as_str().unwrap_or_default());
+                        println!("   - Configuration name: {}", cluster.most_recent_cfs_session_name_created["configuration"]["name"].as_str().unwrap_or_default());
+                        println!("   - Target: {}", cluster.most_recent_cfs_session_name_created["target"]["definition"].as_str().unwrap_or_default());
+                        println!("   + Ansible details:");
+                        println!("     - name: {}", cluster.most_recent_cfs_session_name_created["ansible"]["config"].as_str().unwrap_or_default());
+                        println!("     - limit: {}", cluster.most_recent_cfs_session_name_created["ansible"]["limit"].as_str().unwrap_or_default());
+                        println!("   + Status:");
+                        println!("     - status: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["status"].as_str().unwrap_or_default());
+                        println!("     - succeeded: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["succeeded"].as_str().unwrap_or_default());
+                        println!("     - job: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["job"].as_str().unwrap_or_default());
+                        println!("     - start: {}", cluster.most_recent_cfs_session_name_created["status"]["session"]["startTime"].as_str().unwrap_or_default());             
+                        println!("   - tags: {}", cluster.most_recent_cfs_session_name_created["tags"].to_string());
+
+                        println!(" * members: {}", nodes::nodes_to_string(&cluster.members));
                     }
                 }
             }

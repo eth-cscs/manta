@@ -74,8 +74,31 @@ pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
             next_stdout = stdout_stream.next().await;
             match next_stdout {
                 Some(next_from_remote_stdout) => { // Print stream to stdout while steam lives
-                    print!("{}", std::str::from_utf8(&next_from_remote_stdout.unwrap()).unwrap());
-                    stdout.flush().unwrap();
+                    match next_from_remote_stdout {
+                        Ok(remote_stdout) => {
+                            print!("{}", String::from_utf8_lossy(&remote_stdout));
+                            stdout.flush().unwrap();
+                            // match String::from_utf8_lossy(&remote_stdout) {
+                            //     Ok(remote_stdout_str) => {
+                            //         print!("{}", remote_stdout_str);
+                            //         stdout.flush().unwrap();
+                            //     },
+                            //     Err(e) => {
+                            //         // log::warn!("There was an error converting from utf8 to str:\n{:?}", &remote_stdout);
+                            //         // log::error!("{:?}", e);
+                            //         // stdout.suspend_raw_mode().unwrap();
+                            //         // std::process::exit(1);
+                            //     }
+                            // }
+                        },
+                        Err(e) => {
+                            log::warn!("There was an error reading stream input");
+                            log::error!("{:?}", e);
+                            stdout.suspend_raw_mode().unwrap();
+                            // std::process::exit(1);
+                        }
+                    }
+                    
                 }
                 None => { // Stream has finished. Reseting terminal and Exiting application.
                     stdout.suspend_raw_mode().unwrap();

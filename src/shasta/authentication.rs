@@ -101,6 +101,8 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
         .send()
         .await?;
     
+    log::debug!("Check call apis/cfs/healthz api status");
+
     if resp.status().is_success() {
         log::debug!("Token is valid");
         Ok(true)

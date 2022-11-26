@@ -15,7 +15,7 @@ pub enum MainSubcommand {
     Apply(ApplyArgs),
     /// Print session logs
     Log(LogArgs),
-    /// WIP Access node console
+    /// Access node console
     Console(ConsoleArg)
 }
 
@@ -62,6 +62,8 @@ pub enum GetSubcommand {
     Template(GetTemplateOptions),
     /// Get HSM nodes
     Node(GetNodeOptions),
+    /// Get Cluster details
+    Cluster(GetClusterArg),
 }
 
 #[derive(Debug, Subcommand)]
@@ -152,6 +154,13 @@ pub struct GetNodeOptions {
     /// Cluster name
     #[clap(short, long, value_parser)]
     pub cluster_name: Option<String>,
+}
+
+#[derive(Debug, Args)]
+#[clap(args_conflicts_with_subcommands = true)]
+pub struct GetClusterArg {
+    /// Cluster name
+    pub cluster_name: String,
 }
 
 #[derive(Debug, Args)]

@@ -43,6 +43,7 @@ pub mod http_client {
         };
 
         if cluster_name.is_some() {
+
             for hsm_group in json_response.as_array().unwrap() {
     
                 if hsm_group["label"]
@@ -110,6 +111,8 @@ pub mod utils {
     use comfy_table::Table;
     use serde_json::Value;
 
+    use crate::shasta::nodes::nodes_to_string;
+
     pub fn print_table(hsm_groups: Vec<Value>) {
         
         let mut table = Table::new();
@@ -120,23 +123,25 @@ pub mod utils {
 
             let list_members = hsm_group["members"]["ids"].as_array().unwrap();
 
-            let mut members: String = String::new();
+            let members = nodes_to_string(list_members);
 
-            if !list_members.is_empty() {
+            // let mut members: String = String::new();
+
+            // if !list_members.is_empty() {
                 
-                members = list_members[0].as_str().unwrap().to_string();
+            //     members = list_members[0].as_str().unwrap().to_string();
 
-                for i in 1..list_members.len() {
+            //     for i in 1..list_members.len() {
 
-                    if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
-                        members = format!("{},\n", members);
-                    } else {
-                        members = format!("{}, ", members);
-                    }
+            //         if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
+            //             members = format!("{},\n", members);
+            //         } else {
+            //             members = format!("{},", members);
+            //         }
     
-                    members = format!("{}{}", members, list_members[i].as_str().unwrap());    
-                }
-            }
+            //         members = format!("{}{}", members, list_members[i].as_str().unwrap());    
+            //     }
+            // }
 
             table.add_row(vec![
                 hsm_group["label"].as_str().unwrap(),

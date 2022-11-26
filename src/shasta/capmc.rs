@@ -81,7 +81,7 @@ pub mod http_client {
 
             let power_off = PowerStatus::new(reason, xnames, force, None);
 
-            log::debug!("Payload:\n{:#?}", power_off);
+            // log::debug!("Payload:\n{:#?}", power_off);
 
             // // socks5 proxy
             // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
@@ -116,7 +116,7 @@ pub mod http_client {
                 .send()
                 .await?;
 
-            log::info!("{:#?}", resp);
+            // log::info!("{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
@@ -139,7 +139,7 @@ pub mod http_client {
 
             let power_on = PowerStatus::new(reason, xnames, force, None);
             
-            log::debug!("Payload:\n{:#?}", power_on);
+            // log::debug!("Payload:\n{:#?}", power_on);
 
             // // socks5 proxy
             // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
@@ -174,7 +174,7 @@ pub mod http_client {
                 .send()
                 .await?;
 
-            log::debug!("\n{:#?}", resp);
+            // log::debug!("\n{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
@@ -197,7 +197,7 @@ pub mod http_client {
 
             let node_restart = PowerStatus::new(reason, xnames, force, None);
             
-            log::debug!("Payload:\n{:#?}", node_restart);
+            // log::debug!("Payload:\n{:#?}", node_restart);
 
             // // socks5 proxy
             // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
@@ -232,7 +232,7 @@ pub mod http_client {
                 .send()
                 .await?;
 
-            log::debug!("\n{:#?}", resp);
+            // log::debug!("\n{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)

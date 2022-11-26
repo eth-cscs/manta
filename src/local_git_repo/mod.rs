@@ -1,3 +1,4 @@
+use std::error::Error;
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
     use std::path::{Path, PathBuf};
     use std::io::{self, Write};
@@ -162,7 +163,7 @@
 
     }
 
-    pub fn fetch<'a>(repo: &'a git2::Repository, refs: &[&str], remote: &'a mut git2::Remote,) -> Result<git2::AnnotatedCommit<'a>, Box<dyn std::error::Error>> {
+    pub fn fetch<'a>(repo: &'a git2::Repository, refs: &[&str], remote: &'a mut git2::Remote,) -> Result<git2::AnnotatedCommit<'a>, Box<dyn Error>> {
 
         let mut cb = git2::RemoteCallbacks::new();
     
@@ -248,7 +249,7 @@
     }
     
 
-    pub fn has_conflicts(repo: &Repository, local: &git2::AnnotatedCommit, remote: &git2::AnnotatedCommit) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn has_conflicts(repo: &Repository, local: &git2::AnnotatedCommit, remote: &git2::AnnotatedCommit) -> Result<(), Box<dyn Error>> {
 
         let local_tree = repo.find_commit(local.id())?.tree()?;
         let remote_tree = repo.find_commit(remote.id())?.tree()?;
@@ -266,7 +267,7 @@
         Ok(())
     }
 
-    pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), Box<dyn Error>> {
         let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
         let mut remote_aux = repo.find_remote("origin")?;
         let remote_branch = "apply-dynamic-target-session";

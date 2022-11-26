@@ -10,6 +10,7 @@ pub mod client {
     use futures_util::{StreamExt, TryStreamExt};
     use secrecy::SecretString;
     use termion::color;
+    use tokio_util::io::StreamReader;
 
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
 
@@ -186,7 +187,7 @@ pub mod client {
         let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
-        get_pod_logs(client, cfs_session_name, layer_id).await?;
+        get_container_logs(client, cfs_session_name, layer_id).await?;
 
         Ok(())
     }
@@ -196,7 +197,7 @@ pub mod client {
         let client = get_k8s_client_programmatically().await?;
 
         // Get CFS session logs
-        get_pod_logs(client, cfs_session_name, layer_id).await?;
+        get_container_logs(client, cfs_session_name, layer_id).await?;
 
         Ok(())
     }
@@ -212,7 +213,7 @@ pub mod client {
         }
     }
 
-    pub async fn get_pod_logs(client: kube::Client, cfs_session_name: &str, layer_id: Option<u8>) -> Result<(), Box<dyn Error>> {
+    pub async fn get_container_logs(client: kube::Client, cfs_session_name: &str, layer_id: Option<u8>) -> Result<(), Box<dyn Error>> {
     
         let pods_api: Api<Pod> = Api::namespaced(client, "services");
 
