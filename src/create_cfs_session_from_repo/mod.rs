@@ -1,31 +1,89 @@
+use std::ops::Deref;
 use std::path::Path;
 
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
+use crate::shasta::cfs::configuration;
+use crate::shasta::cfs::session::http_client;
+use crate::shasta::hsm;
+use crate::{shasta_cfs_component, shasta_cfs_session};
 use k8s_openapi::chrono;
 use serde_json::Value;
 use substring::Substring;
-use crate::shasta::cfs::configuration;
-use crate::shasta::hsm;
-use crate::{shasta_cfs_session, shasta_cfs_component};
 
-use crate::{local_git_repo, gitea};
+use crate::{gitea, local_git_repo};
 
-pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, shasta_token:String, shasta_base_url: String, limit: String, ansible_verbosity: u8) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn run(
+    config_name: &str,
+    repos: Vec<String>,
+    gitea_token: String,
+    shasta_token: String,
+    shasta_base_url: String,
+    limit: String,
+    ansible_verbosity: u8,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // Get sessions
+    let cfs_sessions = http_client::get(
+        &shasta_token,
+        &shasta_base_url,
+        &None,
+        &None,
+        &None,
+    )
+    .await?;
 
-    // Cheack nodes are ready to run a CFS layer
-    let xnames: Vec<String> = limit.split(',').map(|xname| String::from(xname.trim())).collect();
+    let nodes_with_cfs_session: Vec<&str> = cfs_sessions
+        .iter()
+        .flat_map(|cfs_session| {
+            cfs_session["ansible"]["limit"]
+                .as_str()
+                .map(|limit| limit.split(','))
+        })
+        .flatten()
+        .collect();
+
+    println!("{:?}", nodes_with_cfs_session);
+
+    // NOTE: nodes can be a list of xnames or hsm group name
+
+    // Convert limit (String with list of target nodes for new CFS session) into list of String
+    let nodes_list: Vec<&str> = limit.split(",").map(|node| node.trim()).collect();
+
+    // Check each node if it has a CFS session already running
+    for node in nodes_list {
+        if nodes_with_cfs_session.contains(&node) {
+            log::info!(
+                "Node {} is currently running a CFS session. Please try again latter. Exitting", node
+            );
+            std::process::exit(0);
+        }
+    }
+
+    // Check nodes are ready to run a CFS layer
+    let xnames: Vec<String> = limit
+        .split(',')
+        .map(|xname| String::from(xname.trim()))
+        .collect();
 
     for xname in xnames {
-
         log::info!("Checking status of component {}", xname);
 
-        let component_status = shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &xname).await?;
-        let hsm_configuration_state = &hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &xname).await?["State"];
-        log::info!("HSM component state for component {}: {}", xname, hsm_configuration_state.as_str().unwrap());
-        log::info!("Is component enabled for batched CFS: {}", component_status["enabled"]);
+        let component_status =
+            shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &xname).await?;
+        let hsm_configuration_state =
+            &hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &xname)
+                .await?["State"];
+        log::info!(
+            "HSM component state for component {}: {}",
+            xname,
+            hsm_configuration_state.as_str().unwrap()
+        );
+        log::info!(
+            "Is component enabled for batched CFS: {}",
+            component_status["enabled"]
+        );
         log::info!("Error count: {}", component_status["errorCount"]);
-    
+
         if hsm_configuration_state.eq("On") || hsm_configuration_state.eq("Standby") {
             log::info!("There is an CFS session scheduled to run on this node. Pleas try again later. Aborting");
             std::process::exit(0);
@@ -36,7 +94,6 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
     let mut layers_summary = vec![];
 
     for i in 0..repos.len() {
-
         // log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
         // TODO: check each folder has a real git repo
         // TODO: check each folder has expected file name manta/shasta expects to find the main ansible playbook
@@ -76,37 +133,46 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
 
         // Check site.yml file exists inside repo folder
         if !Path::new(repo.path()).exists() {
-            log::error!("site.yaml file does not exists in {}", repo.path().display());
+            log::error!(
+                "site.yaml file does not exists in {}",
+                repo.path().display()
+            );
             std::process::exit(1);
         }
-    
+
         // Get repo name
         let repo_ref_origin = repo.find_remote("origin").unwrap();
         log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-            repo_ref_origin_url.len()
-            // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+            repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
         );
-        
+
         let timestamp = local_last_commit.time().seconds();
         let tm = chrono::NaiveDateTime::from_timestamp(timestamp, 0);
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
-    
+
         let mut layer_summary = vec![];
-        
+
         layer_summary.push(i.to_string());
         layer_summary.push(repo_name.to_string());
-        layer_summary.push(local_git_repo::untracked_changed_local_files(&repo).unwrap().to_string());
+        layer_summary.push(
+            local_git_repo::untracked_changed_local_files(&repo)
+                .unwrap()
+                .to_string(),
+        );
 
-        layers_summary.push(layer_summary);    
+        layers_summary.push(layer_summary);
     }
 
     // Print CFS session/configuration layers summary on screen
     println!("A new CFS session is going to be created with the following layers:");
-    for  layer_summary in layers_summary {
-        println!(" - Layer-{}, repo name: {}, are all changes commited: {}", layer_summary[0], layer_summary[1], layer_summary[2]);
+    for layer_summary in layers_summary {
+        println!(
+            " - Layer-{}, repo name: {}, are all changes commited: {}",
+            layer_summary[0], layer_summary[1], layer_summary[2]
+        );
     }
 
     if Confirm::with_theme(&ColorfulTheme::default())
@@ -128,7 +194,6 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
     let mut cfs_configuration = configuration::CfsConfiguration::new();
 
     for i in 0..repos.len() {
-
         // Get repo from path
         let repo = match local_git_repo::get_repo(repos[i].clone()) {
             Ok(repo) => repo,
@@ -147,8 +212,7 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-            repo_ref_origin_url.len()
-            // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+            repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
         );
 
         // Check if repo and local commit id exists in Shasta cvs
@@ -169,7 +233,7 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
                     repo_name
                 );
                 shasta_commitid_details = shasta_commitid_details_resp.unwrap();
-            },
+            }
             Err(e) => {
                 log::error!("{}", e);
                 std::process::exit(1);
@@ -178,7 +242,8 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
 
         // Create CFS layer
         let cfs_layer = configuration::Layer::new(
-            format!(  // git repo url in shasta faced VCS
+            format!(
+                // git repo url in shasta faced VCS
                 "https://api-gw-service-nmn.local/vcs/cray/{}",
                 repo_name
             ),
@@ -211,8 +276,10 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
     let cfs_configuration_name;
     match cfs_configuration_resp {
         Ok(_) => {
-            cfs_configuration_name = cfs_configuration_resp.as_ref().unwrap()["name"].as_str().unwrap();
-        },
+            cfs_configuration_name = cfs_configuration_resp.as_ref().unwrap()["name"]
+                .as_str()
+                .unwrap();
+        }
         Err(e) => {
             log::error!("{}", e);
             std::process::exit(1);
@@ -232,18 +299,18 @@ pub async fn run(config_name: &str, repos: Vec<String>, gitea_token: String, sha
         cfs_session_name,
         cfs_configuration_name_formatted,
         Some(limit),
-        ansible_verbosity
+        ansible_verbosity,
     );
 
     log::debug!("Session:\n{:#?}", session);
     let cfs_session_resp =
-    shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
+        shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
 
     let cfs_session_name;
     match cfs_session_resp {
         Ok(_) => {
             cfs_session_name = cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap();
-        },
+        }
         Err(e) => {
             log::error!("{}", e);
             std::process::exit(1);
