@@ -257,7 +257,9 @@ pub struct Cluster {
     pub name: Option<String>,
 }
 
-pub async fn process_command(args: Cli, shasta_token: String, shasta_base_url: String, gitea_token: String) -> core::result::Result<(), Box<dyn std::error::Error>> {
+pub async fn process_command(shasta_token: String, shasta_base_url: String, gitea_token: String) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    
+    let args = Cli::parse();
     
     let cluster_name;
     let most_recent;

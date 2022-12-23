@@ -8,6 +8,7 @@ mod manta;
 mod node_console;
 mod vault;
 mod cli_derive;
+mod cli_programmatic;
 
 mod cluster_ops;
 
@@ -34,19 +35,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // Init logger
     env_logger::init();
 
-    // Parse input params
-    let args = Cli::parse();
-
-    // let cluster_name;
-    // let most_recent;
-    // let configuration_name;
-    // let session_name;
-    // let template_name;
-    // let limit_number;
-    // let logging_session_name;
-    // let xname;
-    // let layer_id;
-
     let settings = Config::builder()
         .add_source(config::File::with_name("config.toml"))
         .build()
@@ -64,8 +52,23 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
 
+    // Parse input params
+
+    // let cluster_name;
+    // let most_recent;
+    // let configuration_name;
+    // let session_name;
+    // let template_name;
+    // let limit_number;
+    // let logging_session_name;
+    // let xname;
+    // let layer_id;
+
     // Process input params
-    cli_derive::process_command(args, shasta_token, shasta_base_url, gitea_token);
+    let matches = cli_programmatic::get_matches();
+    cli_programmatic::process_command(shasta_token, shasta_base_url, gitea_token).await;
+    // cli_derive::process_command(shasta_token, shasta_base_url, gitea_token);
+    
     // match args.command {
     //     MainSubcommand::Get(main_subcommand) => {
     //         match main_subcommand.main_get_subcommand {
