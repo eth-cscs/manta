@@ -3,123 +3,237 @@ use crate::cli_derive::{MainSubcommand, ApplySubcommand, GetSubcommand, Cli, App
 use crate::shasta::nodes;
 use crate::{gitea, manta, shasta, create_cfs_session_from_repo, shasta_cfs_session_logs, cluster_ops};
 
-use clap::{Parser, Subcommand, Args, ArgGroup, ArgMatches};
+use clap::{Parser, ArgGroup, ArgMatches};
 
 use crate::manta::cfs::configuration as manta_cfs_configuration;
 use crate::node_console::connect_to_console;
 
 use crate::shasta::{
-    authentication, bos_template, capmc,
+    bos_template, capmc,
     cfs::{
-        component as shasta_cfs_component, configuration as shasta_cfs_configuration,
+        configuration as shasta_cfs_configuration,
         session as shasta_cfs_session,
     },
 };
 
-pub fn get_matches() -> ArgMatches {
+pub fn subcommand_get_cfs_session(hsm_group: &Option<String>) -> Command {
+        
+    let mut get_cfs_session = Command::new("session");
+    get_cfs_session = get_cfs_session.arg_required_else_help(true);
+    
+    get_cfs_session = get_cfs_session.arg(arg!(-n --name <VALUE> "session name"));
+    get_cfs_session = get_cfs_session.arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue));
+    get_cfs_session = get_cfs_session.arg(
+        arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
+            .value_parser(value_parser!(u8).range(1..)),
+    );
+
+    let about_msg = "Get information from Shasta CFS session";
+
+    match hsm_group {
+        None => get_cfs_session = get_cfs_session
+        .arg(arg!(-c --cluster <VALUE> "cluster name"))
+        .group(ArgGroup::new("cluster_or_session").args(["cluster", "name"]))
+        .about(about_msg),
+        Some(hsm_group_value) => get_cfs_session = get_cfs_session.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+
+    get_cfs_session = get_cfs_session.group(ArgGroup::new("session_limit").args(["most_recent", "limit"]));
+
+    get_cfs_session
+}
+
+pub fn subcommand_get_cfs_configuration(hsm_group: &Option<String>) -> Command {
+
+    let mut get_cfs_configuration = Command::new("configuration");
+    get_cfs_configuration = get_cfs_configuration.arg_required_else_help(true);
+    get_cfs_configuration = get_cfs_configuration.about("Get information from Shasta CFS configuration");
+
+    get_cfs_configuration = get_cfs_configuration.arg(arg!(-n --name <VALUE> "configuration name"));
+    get_cfs_configuration = get_cfs_configuration.arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue));
+    get_cfs_configuration = get_cfs_configuration.arg(
+        arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
+            .value_parser(value_parser!(u8).range(1..)),
+    );
+
+    let about_msg = "Get information from Shasta BOS template";
+
+    match hsm_group {
+        None => get_cfs_configuration = get_cfs_configuration
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .group(ArgGroup::new("cluster_or_configuration").args(["cluster", "name"]))
+            .about(about_msg),
+        Some(hsm_group_value) => get_cfs_configuration = get_cfs_configuration.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+    
+    get_cfs_configuration = get_cfs_configuration.group(ArgGroup::new("configuration_limit").args(["most_recent", "limit"]));
+
+    get_cfs_configuration
+}
+
+pub fn subcommand_get_bos_template(hsm_group: &Option<String>) -> Command {
+
+    let mut get_bos_template = Command::new("template");
+    get_bos_template = get_bos_template.arg_required_else_help(true);
+
+    get_bos_template = get_bos_template.arg(arg!(-n --name <VALUE> "template name"));
+    get_bos_template = get_bos_template.arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue));
+    get_bos_template = get_bos_template.arg(
+        arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
+            .value_parser(value_parser!(u8).range(1..)),
+    );
+
+    let about_msg = "Get information from Shasta BOS template";
+
+    match hsm_group {
+        None => get_bos_template = get_bos_template
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .group(ArgGroup::new("cluster_or_template").args(["cluster", "name"]))
+            .about(about_msg),
+        Some(hsm_group_value) => get_bos_template = get_bos_template.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+    
+    get_bos_template = get_bos_template.group(ArgGroup::new("template_limit").args(["most_recent", "limit"]));
+
+    get_bos_template
+}
+
+pub fn subcommand_get_node(hsm_group: &Option<String>) -> Command {
+
+    let mut get_node = Command::new("node");
+    get_node = get_node.arg_required_else_help(true);
+    
+    let about_msg = "Get members of a cluster";
+
+    match hsm_group {
+        None => get_node = get_node.arg(arg!(<VALUE> "cluster name")).about(about_msg),
+        Some(hsm_group_value) => get_node = get_node.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+
+    get_node
+}
+
+pub fn subcommand_get_cluster(hsm_group: &Option<String>) -> Command {
+    
+    let mut get_cluster = Command::new("cluster");
+    get_cluster = get_cluster.arg_required_else_help(true);
+    
+    let about_msg = "Get cluster details";
+
+    match hsm_group {
+        None => get_cluster = get_cluster.arg(arg!(<VALUE> "cluster name")).about(about_msg),
+        Some(hsm_group_value) => get_cluster = get_cluster.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+
+    get_cluster
+}
+
+pub fn subcommand_get(hsm_group: &Option<String>) -> Command {
+
+    let get = Command::new("get")
+    .arg_required_else_help(true)
+    .about("Get information from Shasta system")
+    .subcommand(subcommand_get_cfs_session(&hsm_group))
+    .subcommand(subcommand_get_cfs_configuration(&hsm_group))
+    .subcommand(subcommand_get_bos_template(&hsm_group))
+    .subcommand(subcommand_get_node(&hsm_group))
+    .subcommand(subcommand_get_cluster(&hsm_group));
+
+    get
+}
+
+pub fn subcommand_apply_session(hsm_group: &Option<String>) -> Command {
+    let mut apply_session = Command::new("session")
+    .arg(arg!(-n --name <VALUE> "session name"))
+    .group(ArgGroup::new("session").args(["cluster", "name"]));
+
+    let about_msg = "apply session about";
+
+    match hsm_group {
+        None => apply_session = apply_session
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .about(about_msg),
+        Some(hsm_group_value) => apply_session = apply_session.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+
+    apply_session
+}
+
+pub fn subcommand_apply_node_on(hsm_group: &Option<String>) -> Command {
+    let mut apply_node_on = Command::new("on")
+    .arg(arg!(-r --reason <VALUE> "reason to power on"))
+    .arg(arg!(-x --xnames <VALUE> "nodes xname"))
+    .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+
+    let about_msg = "Start a node";
+
+    match hsm_group {
+        None => apply_node_on = apply_node_on
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .about(about_msg),
+        Some(hsm_group_value) => apply_node_on = apply_node_on.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+    
+    apply_node_on
+}
+
+pub fn subcommand_apply_node_off(hsm_group: &Option<String>) -> Command {
+    let mut apply_node_off = Command::new("off")
+    .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+    .arg(arg!(-r --reason <VALUE> "reason to power off"))
+    .arg(arg!(-x --xnames <VALUE> "nodes xname"))
+    .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+
+    let about_msg = "Shutdown a node";
+
+    match hsm_group {
+        None => apply_node_off = apply_node_off
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .about(about_msg),
+        Some(hsm_group_value) => apply_node_off = apply_node_off.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+    
+    apply_node_off
+}
+
+pub fn subcommand_apply_node_reset(hsm_group: &Option<String>) -> Command {
+    let mut apply_node_reset = Command::new("reset")
+    .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+    .arg(arg!(-r --reason <VALUE> "reason to reset"))
+    .arg(arg!(-x --xnames <VALUE> "nodes xname"))
+    .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+
+    let about_msg = "Shutdown a node";
+
+    match hsm_group {
+        None => apply_node_reset = apply_node_reset
+            .arg(arg!(-c --cluster <VALUE> "cluster name"))
+            .about(about_msg),
+        Some(hsm_group_value) => apply_node_reset = apply_node_reset.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+    }
+    
+    apply_node_reset
+}
+
+pub fn get_matches(hsm_group: &Option<String>) -> ArgMatches {
 
     command!()
         .arg_required_else_help(true) 
         .subcommand(
-            Command::new("get")
-                .arg_required_else_help(true)
-                .about("Get information from Shasta system")
-                .subcommand(
-                    Command::new("session")
-                        .arg_required_else_help(true)
-                        .about("Get information from Shasta CFS session")
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-n --name <VALUE> "session name"))
-                        .arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue))
-                        .arg(
-                            arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
-                                .value_parser(value_parser!(u8).range(1..)),
-                        )
-                        .group(ArgGroup::new("cluster_or_session").args(["cluster", "name"]))
-                        .group(ArgGroup::new("session_limit").args(["most_recent", "limit"]))
-                )
-                .subcommand(
-                    Command::new("configuration")
-                        .arg_required_else_help(true)
-                        .about("Get information from Shasta CFS configuration")
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-n --name <VALUE> "configuration name"))
-                        .arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue))
-                        .arg(
-                            arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
-                                .value_parser(value_parser!(u8).range(1..)),
-                        )
-                        .group(ArgGroup::new("cluster_or_configuration").args(["cluster", "name"]))
-                        .group(ArgGroup::new("configuration_limit").args(["most_recent", "limit"]))
-                )
-                .subcommand(
-                    Command::new("template")
-                        .arg_required_else_help(true)
-                        .about("Get information from Shasta BOS template")
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-n --name <VALUE> "template name"))
-                        .arg(arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)").action(ArgAction::SetTrue))
-                        .arg(
-                            arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
-                                .value_parser(value_parser!(u8).range(1..)),
-                        )
-                        .group(ArgGroup::new("cluster_or_template").args(["cluster", "name"]))
-                        .group(ArgGroup::new("template_limit").args(["most_recent", "limit"]))
-                )
-                .subcommand(
-                    Command::new("node")
-                        .arg_required_else_help(true)
-                        .about("Get members of a cluster")
-                        .arg(arg!(<VALUE> "cluster name"))
-                )
-                .subcommand(
-                    Command::new("cluster")
-                    .arg_required_else_help(true)
-                    .about("Get cluster details")
-                    .arg(arg!(<VALUE> "cluster name"))
-                )
+            subcommand_get(hsm_group)
         )
         .subcommand(
             Command::new("apply")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta cluster/nodes")
-                .subcommand(
-                    Command::new("session")
-                        .about("apply session about")
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-n --name <VALUE> "session name"))
-                        .group(ArgGroup::new("session").args(["cluster", "name"])),
-                )
+                .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
             Command::new("node")
                 .arg_required_else_help(true)
                 .about("Make changes to nodes")
-                .subcommand(
-                    Command::new("on")
-                        .about("Start a node")
-                        .arg(arg!(-r --reason <VALUE> "reason to power on"))
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
-                        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]))
-                    .subcommand(Command::new("off")
-                        .arg_required_else_help(true)
-                        .about("Shutdown a node")
-                        .arg(arg!(-r --reason <VALUE> "reason to power shutdown"))
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]))
-                    )
-                    .subcommand(Command::new("reset")
-                        .arg_required_else_help(true)
-                        .about("Restart a node")
-                        .arg(arg!(-r --reason <VALUE> "reason to restart"))
-                        .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]))
-                    )
-                )
+                .subcommand(subcommand_apply_node_on(hsm_group))
+                .subcommand(subcommand_apply_node_off(hsm_group))
+                .subcommand(subcommand_apply_node_reset(hsm_group))
             )
         )
         .subcommand(
@@ -138,7 +252,7 @@ pub fn get_matches() -> ArgMatches {
         .get_matches()
 }
 
-pub async fn process_command(shasta_token: String, shasta_base_url: String, gitea_token: String) -> core::result::Result<(), Box<dyn std::error::Error>> {
+pub async fn process_command(shasta_token: String, shasta_base_url: String, gitea_token: String, hsm_group: Option<String>) -> core::result::Result<(), Box<dyn std::error::Error>> {
     
     let args = Cli::parse();
     
@@ -156,8 +270,14 @@ pub async fn process_command(shasta_token: String, shasta_base_url: String, gite
         MainSubcommand::Get(main_subcommand) => {
             match main_subcommand.main_get_subcommand {
                 GetSubcommand::Configuration(configuration) => {
+                    
                     configuration_name = configuration.name;
-                    cluster_name = configuration.cluster_name;
+                    
+                    match hsm_group {
+                        None => cluster_name = configuration.cluster_name,
+                        Some(_) => cluster_name = hsm_group
+                    }
+                    
                     most_recent = configuration.most_recent;
 
                     if most_recent {
@@ -222,8 +342,14 @@ pub async fn process_command(shasta_token: String, shasta_base_url: String, gite
                     }
                 }
                 GetSubcommand::Session(session) => {
+
                     session_name = session.name;
-                    cluster_name = session.cluster_name;
+
+                    match hsm_group {
+                        None => cluster_name = session.cluster_name,
+                        Some(_) => cluster_name = hsm_group
+                    }
+
                     most_recent = session.most_recent;
 
                     if most_recent {
@@ -272,7 +398,12 @@ pub async fn process_command(shasta_token: String, shasta_base_url: String, gite
                 // },
                 GetSubcommand::Template(template) => {
                     template_name = template.name;
-                    cluster_name = template.cluster_name;
+                    
+                    match hsm_group {
+                        None => cluster_name = template.cluster_name,
+                        Some(_) => cluster_name = hsm_group
+                    }
+
                     most_recent = template.most_recent;
 
                     if most_recent {
@@ -298,7 +429,11 @@ pub async fn process_command(shasta_token: String, shasta_base_url: String, gite
                     }
                 }
                 GetSubcommand::Node(node) => {
-                    let cluster_name = node.cluster_name;
+                    
+                    match hsm_group {
+                        None => cluster_name = node.cluster_name,
+                        Some(_) => cluster_name = hsm_group
+                    }
 
                     let nodes = shasta::hsm::http_client::get_hsm_groups(
                         &shasta_token,
@@ -315,7 +450,13 @@ pub async fn process_command(shasta_token: String, shasta_base_url: String, gite
                     }
                 }
                 GetSubcommand::Cluster(get_cluster_args) => {
-                    let cluster_name = get_cluster_args.cluster_name;
+                    
+                    let cluster_name;
+                    
+                    match hsm_group {
+                        None => cluster_name = get_cluster_args.cluster_name,
+                        Some(cluster_name_value) => cluster_name = cluster_name_value
+                    }
 
                     let clusters =
                         cluster_ops::get_details(&shasta_token, &shasta_base_url, &cluster_name)

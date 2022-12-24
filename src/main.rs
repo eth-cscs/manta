@@ -12,23 +12,17 @@ mod cli_programmatic;
 
 mod cluster_ops;
 
-use clap::Parser;
-use cli_derive::{ApplyNodeSubcommand, ApplySubcommand, Cli, GetSubcommand, MainSubcommand};
 use config::Config;
 
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
-use manta::cfs::configuration as manta_cfs_configuration;
-use node_console::connect_to_console;
 
 use shasta::{
-    authentication, bos_template, capmc,
+    authentication, capmc,
     cfs::{
-        component as shasta_cfs_component, configuration as shasta_cfs_configuration,
+        component as shasta_cfs_component, 
         session as shasta_cfs_session,
     },
 };
-
-use crate::shasta::nodes;
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -48,6 +42,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => log::info!("socks proxy not provided"),
     }
 
+    let mut hsm_group = None;
+
+    match settings.get::<String>("hsm_group") {
+        Ok(val) => hsm_group = Some(val),
+        Err(_) => log::info!("hsm group not provided"),
+    }
+
     let shasta_token = authentication::get_api_token().await?;
 
     let gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
@@ -65,8 +66,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // let layer_id;
 
     // Process input params
-    let matches = cli_programmatic::get_matches();
-    cli_programmatic::process_command(shasta_token, shasta_base_url, gitea_token).await;
+    let matches = cli_programmatic::get_matches(&hsm_group);
+    cli_programmatic::process_command(shasta_token, shasta_base_url, gitea_token, hsm_group).await;
     // cli_derive::process_command(shasta_token, shasta_base_url, gitea_token);
     
     // match args.command {

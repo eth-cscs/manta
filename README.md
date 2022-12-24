@@ -34,6 +34,7 @@ Manta is aggregates information from multiple sources:
 |RUST_LOG|env|log details/verbosity|info|
 |socks5_proxy|config file|socks proxy to access the services|socks5h://127.0.0.1:1080|
 |shasta_base_url|config file|Shasta base URL|https://api-gw-service-nmn.local/apis|
+|hsm_group|config|HSM group running the commands|psi-dev|
 
 ## Example
 
