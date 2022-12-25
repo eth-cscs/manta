@@ -71,11 +71,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
 
             log::info!("Shutting down {:?}", xnames);
 
-            let power_off = PowerStatus::new(reason, xnames, force, None);
+            let power_off = PowerStatus::new(reason.cloned(), xnames, force, None);
 
             // log::debug!("Payload:\n{:#?}", power_off);
 
@@ -129,11 +129,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
             log::info!("Starting {:?}", xnames);
 
-            let power_on = PowerStatus::new(reason, xnames, force, None);
+            let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
             
             // log::debug!("Payload:\n{:#?}", power_on);
 
@@ -187,11 +187,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
             log::info!("Restarting {:?}", xnames);
 
-            let node_restart = PowerStatus::new(reason, xnames, force, None);
+            let node_restart = PowerStatus::new(reason.cloned(), xnames, force, None);
             
             // log::debug!("Payload:\n{:#?}", node_restart);
 

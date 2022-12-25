@@ -15,12 +15,12 @@ pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name
     let mut clusters_details = vec!();
 
     // Get HSM groups matching cluster name
-    let hsm_groups = get_hsm_groups(shasta_token, shasta_base_url, Some(cluster_name.to_string())).await.unwrap();
+    let hsm_groups = get_hsm_groups(shasta_token, shasta_base_url, Some(&cluster_name.to_string())).await.unwrap();
 
     for hsm_group in hsm_groups {
 
         // Get most recent CFS configuration
-        let mut cfs_configurations= configuration::http_client::get(shasta_token, shasta_base_url, &Some(cluster_name.to_string()), &None, &Some(1)).await.unwrap_or_else(|_| vec!());
+        let mut cfs_configurations= configuration::http_client::get(shasta_token, shasta_base_url, Some(&cluster_name.to_string()), None, Some(&1)).await.unwrap_or_else(|_| vec!());
 
         let most_recept_cfs_configuration_created;
 
@@ -31,7 +31,7 @@ pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name
         }
 
         // Get most recent CFS session
-        let mut cfs_sessions = session::http_client::get(shasta_token, shasta_base_url, &Some(cluster_name.to_string()), &None, &Some(1)).await.unwrap_or_else(|_| vec!());
+        let mut cfs_sessions = session::http_client::get(shasta_token, shasta_base_url, Some(&cluster_name.to_string()), None, Some(&1)).await.unwrap_or_else(|_| vec!());
 
         let most_recept_cfs_session_created;
 

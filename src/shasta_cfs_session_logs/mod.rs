@@ -170,10 +170,10 @@ pub mod client {
         Ok(client)
     }
     
-    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, session_name: &Option<String>, layer_id: Option<u8>) -> Result<(), Box<dyn Error>> {
+    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, session_name: Option<&String>, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
         
         // Get CFS sessions
-        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, &None).await?;
+        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, None).await?;
 
         // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
 
@@ -192,7 +192,7 @@ pub mod client {
         Ok(())
     }
 
-    pub async fn session_logs(cfs_session_name: &str, layer_id: Option<u8>) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    pub async fn session_logs(cfs_session_name: &str, layer_id: Option<&u8>) -> core::result::Result<(), Box<dyn std::error::Error>> {
         
         let client = get_k8s_client_programmatically().await?;
 
@@ -212,7 +212,7 @@ pub mod client {
         }
     }
 
-    pub async fn get_container_logs(client: kube::Client, cfs_session_name: &str, layer_id: Option<u8>) -> Result<(), Box<dyn Error>> {
+    pub async fn get_container_logs(client: kube::Client, cfs_session_name: &str, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
     
         let pods_api: Api<Pod> = Api::namespaced(client, "services");
 

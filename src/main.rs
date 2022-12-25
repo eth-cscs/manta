@@ -42,12 +42,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => log::info!("socks proxy not provided"),
     }
 
-    let mut hsm_group = None;
-
-    match settings.get::<String>("hsm_group") {
-        Ok(val) => hsm_group = Some(val),
-        Err(_) => log::info!("hsm group not provided"),
-    }
+    let settings_hsm_group = settings.get::<String>("hsm_group");
+    
+    let hsm_group = match &settings_hsm_group {
+        Ok(val) => Some(val),
+        Err(_) => None,
+    };
 
     let shasta_token = authentication::get_api_token().await?;
 
@@ -66,8 +66,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // let layer_id;
 
     // Process input params
-    let matches = cli_programmatic::get_matches(&hsm_group);
-    cli_programmatic::process_command(shasta_token, shasta_base_url, gitea_token, hsm_group).await;
+    let matches = cli_programmatic::get_matches(hsm_group);
+    cli_programmatic::process_command(matches, shasta_token, shasta_base_url, gitea_token, hsm_group).await;
     // cli_derive::process_command(shasta_token, shasta_base_url, gitea_token);
     
     // match args.command {

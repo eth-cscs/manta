@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::path::Path;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -26,9 +25,9 @@ pub async fn run(
     let cfs_sessions = http_client::get(
         &shasta_token,
         &shasta_base_url,
-        &None,
-        &None,
-        &None,
+        None,
+        None,
+        None,
     )
     .await?;
 

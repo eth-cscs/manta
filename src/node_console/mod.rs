@@ -10,7 +10,7 @@ use tokio_util::io::ReaderStream;
 
 use crate::shasta_cfs_session_logs::client::get_k8s_client_programmatically;
 
-pub async fn connect_to_console(xname: &str) -> Result<(), Box<dyn Error>> {
+pub async fn connect_to_console(xname: &String) -> Result<(), Box<dyn Error>> {
 
     let client = get_k8s_client_programmatically().await?;
 

@@ -6,7 +6,7 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    pub async fn get_hsm_groups(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<String>) -> Result<Vec<Value>, Box<dyn Error>> {
+    pub async fn get_hsm_groups(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>) -> Result<Vec<Value>, Box<dyn Error>> {
 
         let mut hsm_groups: Vec<Value> = Vec::new();
 
@@ -49,7 +49,7 @@ pub mod http_client {
                 if hsm_group["label"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.as_ref().unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(cluster_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     hsm_groups.push(hsm_group.clone());
                 }

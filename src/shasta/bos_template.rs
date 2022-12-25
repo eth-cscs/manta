@@ -234,7 +234,7 @@ pub mod http_client {
     //     }
     // }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, bos_template_name: &Option<String>, limit_number: &Option<u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, bos_template_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
 
@@ -284,7 +284,7 @@ pub mod http_client {
                 if bos_template["name"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.as_ref().unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(cluster_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
@@ -297,7 +297,7 @@ pub mod http_client {
                 if bos_template["name"]
                     .as_str()
                     .unwrap()
-                    .eq(bos_template_name.as_ref().unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
+                    .eq(bos_template_name.unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
                 {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
@@ -317,7 +317,7 @@ pub mod http_client {
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             
             // cluster_cfs_sessions.truncate(limit_number.unwrap().into());
-            cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte.len().saturating_sub(limit_number.unwrap().into())..].to_vec();
+            cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
             
             // cluster_cfs_sessions = vec![cluster_cfs_sessions]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         } 

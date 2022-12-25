@@ -40,6 +40,8 @@ pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfig
 
 pub mod http_client {
 
+    use std::ops::Deref;
+
     use super::CfsConfiguration;
     use serde_json::Value;
 
@@ -85,7 +87,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: &Option<String>, configuration_name: &Option<String>, limit_number: &Option<u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_cfs_configs: Vec<Value> = Vec::new();
     
@@ -137,7 +139,7 @@ pub mod http_client {
                 if cfs_configuration["name"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.as_ref().unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(cluster_name.unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }
@@ -151,7 +153,7 @@ pub mod http_client {
                 if cfs_configuration["name"]
                     .as_str()
                     .unwrap()
-                    .eq(configuration_name.as_ref().unwrap()) // TODO: investigate why I ned to use this ugly 'as_ref'
+                    .eq(configuration_name.unwrap()) // TODO: investigate why I ned to use this ugly 'as_ref'
                 {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }
@@ -172,7 +174,7 @@ pub mod http_client {
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             
             // cluster_cfs_configs.truncate(limit_number.unwrap().into());
-            cluster_cfs_configs = cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(limit_number.unwrap().into())..].to_vec();
+            cluster_cfs_configs = cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
 
             // cluster_cfs_configs = vec![cluster_cfs_configs.last().unwrap().clone()]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         }
