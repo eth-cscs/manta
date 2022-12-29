@@ -14,6 +14,8 @@ mod cluster_ops;
 
 use config::Config;
 
+use termion::color;
+
 // use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 
 use shasta::{
@@ -45,7 +47,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let settings_hsm_group = settings.get::<String>("hsm_group");
     
     let hsm_group = match &settings_hsm_group {
-        Ok(val) => Some(val),
+        Ok(hsm_group_val) => {
+            println!("Working on cluster {}{}{}", color::Fg(color::Green), hsm_group_val, color::Fg(color::Reset));
+            Some(hsm_group_val)
+        },
         Err(_) => None,
     };
 

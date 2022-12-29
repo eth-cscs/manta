@@ -1,10 +1,12 @@
+use std::collections::HashSet;
+
 use crate::shasta::nodes;
 use crate::{
     cluster_ops, create_cfs_session_from_repo, gitea, manta, shasta, shasta_cfs_session_logs,
 };
 use clap::{arg, command, value_parser, ArgAction, Command};
 
-use clap::{ArgGroup, ArgMatches, Parser};
+use clap::{ArgGroup, ArgMatches};
 
 use crate::manta::cfs::configuration as manta_cfs_configuration;
 use crate::node_console::connect_to_console;
@@ -115,8 +117,8 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
         }
     }
 
-    get_bos_template =
-        get_bos_template.group(ArgGroup::new("template_limit").args(["most_recent", "limit"]));
+    // get_bos_template =
+    //     get_bos_template.group(ArgGroup::new("template-limit").args(["most_recent", "limit"]));
 
     get_bos_template
 }
@@ -174,15 +176,25 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
-        .arg(arg!(-n --name <VALUE> "session name"))
-        .group(ArgGroup::new("session").args(["cluster", "name"]));
+        .arg_required_else_help(true)
+        .arg(arg!(-n --name <VALUE> "Session name").required(true))
+        .arg(arg!(-r --"Repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
+            .required(true))
+        .arg(arg!(-l --"snsible-limit" <VALUE> "Ansible limit")
+            .required(true))
+        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to aee container running ansible scripts"))
+        .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
+            .value_parser(["1", "2", "3", "4", "5"])
+            .num_args(1)
+            .require_equals(true)
+            .default_value("2")
+            .default_missing_value("2"));
 
-    let about_msg = "apply session about";
+    let about_msg = "Create a CFS configuration and a session against hsm_group/nodes";
 
     match hsm_group {
         None => {
             apply_session = apply_session
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
                 .about(about_msg)
         }
         Some(hsm_group_value) => {
@@ -196,16 +208,15 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
+        .arg_required_else_help(true)
         .arg(arg!(-r --reason <VALUE> "reason to power on"))
-        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
-        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+        .arg(arg!(-x --xnames <VALUE> "nodes xname"));
 
     let about_msg = "Start a node";
 
     match hsm_group {
         None => {
             apply_node_on = apply_node_on
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
                 .about(about_msg)
         }
         Some(hsm_group_value) => {
@@ -219,9 +230,10 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
+        .arg_required_else_help(true)
+        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to power off"))
-        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
         .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
 
     let about_msg = "Shutdown a node";
@@ -243,6 +255,7 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
+        .arg_required_else_help(true)
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to reset"))
         .arg(arg!(-x --xnames <VALUE> "nodes xname"))
@@ -590,24 +603,53 @@ pub async fn process_command(
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
+            // Check limit matches the nodes in hsm_group
+            if hsm_group.is_some() {
+                let hsm_groups =
+                cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap()).await;
 
+                // Take all nodes for all clusters found and put them in a Set
+                let nodes: HashSet<&str> = hsm_groups.iter().flat_map(|cluster| cluster.members.iter().map(|member| member.as_str().unwrap())).collect();
+
+                // Get Vec with all nodes from ansible-limit param
+                let limit: Vec<&str> = cli_apply_session
+                    .get_one::<String>("ansible-limit")
+                    .unwrap()
+                   // .clone()
+                    .split(",")
+                    .collect();
+
+                // println!("Nodes:\n{:#?}", nodes);
+                // println!("Limit:\n{:#?}", limit);
+
+                if limit.iter().all(|limit_node| nodes.contains(limit_node)) {
+                    // all nodes in limit-ansible included in hsm_groups
+                    println!("Limit members belongs to hsm nodes");
+                } else {
+                    println!("One or more nodes in limit-ansible param are not member of hsm group {:?}", hsm_groups);
+                    std::process::exit(-1);
+                }
+            }
+            
             let cfs_session_name = create_cfs_session_from_repo::run(
-                cli_apply_session.get_one::<String>("session_name").unwrap(),
+                cli_apply_session.get_one::<String>("name").unwrap(),
                 vec![cli_apply_session
-                    .get_one::<String>("repo_path")
+                    .get_one::<String>("repo-path")
                     .unwrap()
                     .to_string()],
                 gitea_token,
                 shasta_token,
                 shasta_base_url,
                 cli_apply_session
-                    .get_one::<String>("ansible_limit")
+                    .get_one::<String>("ansible-limit")
                     .unwrap()
                     .clone(),
                 cli_apply_session
-                    .get_one::<u8>("ansible_verbosity")
+                    .get_one::<String>("ansible-verbosity")
                     .unwrap()
-                    .clone(),
+                    // .clone()
+                    .parse()
+                    .unwrap(),
             )
             .await;
 
@@ -631,7 +673,7 @@ pub async fn process_command(
                         .map(|xname| String::from(xname.trim()))
                         .collect();
                 } else {
-                    // user provides a cluster name
+                    // hsm_group value provided
                     match hsm_group {
                         None => cluster_name = cli_apply_node_on.get_one::<String>("cluster_name"),
                         Some(_) => cluster_name = hsm_group,
