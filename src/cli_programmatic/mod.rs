@@ -16,9 +16,10 @@ use crate::shasta::{
     cfs::{configuration as shasta_cfs_configuration, session as shasta_cfs_session},
 };
 
+use crate::node_ops;
+
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session");
-    get_cfs_session = get_cfs_session.arg_required_else_help(true);
 
     get_cfs_session = get_cfs_session.arg(arg!(-n --name <VALUE> "session name"));
     get_cfs_session = get_cfs_session.arg(
@@ -53,7 +54,6 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_configuration = Command::new("configuration");
-    get_cfs_configuration = get_cfs_configuration.arg_required_else_help(true);
     get_cfs_configuration =
         get_cfs_configuration.about("Get information from Shasta CFS configuration");
 
@@ -90,7 +90,6 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
     let mut get_bos_template = Command::new("template");
-    get_bos_template = get_bos_template.arg_required_else_help(true);
 
     get_bos_template = get_bos_template.arg(arg!(-n --name <VALUE> "template name"));
     get_bos_template = get_bos_template.arg(
@@ -178,9 +177,9 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
         .arg_required_else_help(true)
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
-        .arg(arg!(-r --"Repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
+        .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
             .required(true))
-        .arg(arg!(-l --"snsible-limit" <VALUE> "Ansible limit")
+        .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS sesion")
             .required(true))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to aee container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -604,33 +603,48 @@ pub async fn process_command(
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
             // Check limit matches the nodes in hsm_group
+            let hsm_groups;
+            let hsm_groups_nodes;
+            // Get Vec with all nodes from ansible-limit param
+            let ansible_limit_nodes = cli_apply_session
+                           .get_one::<String>("ansible-limit")
+                           .unwrap()
+                          // .clone()
+                           .split(",")
+                           .collect();
+
+            let included: HashSet<&str>;
+            let excluded: HashSet<&str>;
+
             if hsm_group.is_some() {
-                let hsm_groups =
+                hsm_groups =
                 cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap()).await;
-
-                // Take all nodes for all clusters found and put them in a Set
-                let nodes: HashSet<&str> = hsm_groups.iter().flat_map(|cluster| cluster.members.iter().map(|member| member.as_str().unwrap())).collect();
-
-                // Get Vec with all nodes from ansible-limit param
-                let limit: Vec<&str> = cli_apply_session
-                    .get_one::<String>("ansible-limit")
-                    .unwrap()
-                   // .clone()
-                    .split(",")
-                    .collect();
 
                 // println!("Nodes:\n{:#?}", nodes);
                 // println!("Limit:\n{:#?}", limit);
 
-                if limit.iter().all(|limit_node| nodes.contains(limit_node)) {
-                    // all nodes in limit-ansible included in hsm_groups
-                    println!("Limit members belongs to hsm nodes");
-                } else {
-                    println!("One or more nodes in limit-ansible param are not member of hsm group {:?}", hsm_groups);
-                    std::process::exit(-1);
-                }
+                // if ansible_limit_nodes.iter().all(|limit_node| hsm_groups_nodes.contains(limit_node)) {
+                //     // all nodes in limit-ansible included in hsm_groups
+                //     println!("Limit members belongs to hsm nodes");
+                // } else {
+                //     println!("One or more nodes in limit-ansible param are not member of hsm group {:?}", hsm_groups);
+                //     std::process::exit(-1);
+                // }
+            } else {
+                hsm_groups =
+                cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
             }
             
+            // Take all nodes for all clusters found and put them in a Set
+            hsm_groups_nodes = hsm_groups.iter().flat_map(|cluster| cluster.members.iter().map(|member| member.as_str().unwrap())).collect();
+
+            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(hsm_groups_nodes, ansible_limit_nodes);
+
+            if !excluded.is_empty() {
+                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?}", excluded, hsm_groups);
+                std::process::exit(-1);
+            }
+
             let cfs_session_name = create_cfs_session_from_repo::run(
                 cli_apply_session.get_one::<String>("name").unwrap(),
                 vec![cli_apply_session
@@ -640,10 +654,7 @@ pub async fn process_command(
                 gitea_token,
                 shasta_token,
                 shasta_base_url,
-                cli_apply_session
-                    .get_one::<String>("ansible-limit")
-                    .unwrap()
-                    .clone(),
+                included.into_iter().collect::<Vec<&str>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
                 cli_apply_session
                     .get_one::<String>("ansible-verbosity")
                     .unwrap()
@@ -653,7 +664,7 @@ pub async fn process_command(
             )
             .await;
 
-            if cli_apply_session.get_one::<bool>("watch_logs").is_some() {
+            if cli_apply_session.get_one::<bool>("watch-logs").is_some() {
                 log::info!("Fetching logs ...");
                 shasta_cfs_session_logs::client::session_logs(
                     cfs_session_name.unwrap().as_str(),

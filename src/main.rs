@@ -11,6 +11,7 @@ mod cli_derive;
 mod cli_programmatic;
 
 mod cluster_ops;
+mod node_ops;
 
 use config::Config;
 

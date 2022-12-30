@@ -21,7 +21,7 @@ pub async fn run(
     limit: String,
     ansible_verbosity: u8,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    // Get sessions
+    // Get ALL sessions
     let cfs_sessions = http_client::get(
         &shasta_token,
         &shasta_base_url,
@@ -31,8 +31,9 @@ pub async fn run(
     )
     .await?;
 
-    let nodes_with_cfs_session: Vec<&str> = cfs_sessions
+    let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
+        .filter(|cfs_session| cfs_session["status"]["session"]["status"].eq("pending") || cfs_session["status"]["session"]["status"].eq("running"))
         .flat_map(|cfs_session| {
             cfs_session["ansible"]["limit"]
                 .as_str()
@@ -41,7 +42,8 @@ pub async fn run(
         .flatten()
         .collect();
 
-    println!("{:?}", nodes_with_cfs_session);
+    log::info!("all CFS sessions:\n{:#?}", cfs_sessions);
+    log::info!("nodes with cfs session running or pending:\n{:?}", nodes_in_running_or_pending_cfs_session);
 
     // NOTE: nodes can be a list of xnames or hsm group name
 
@@ -50,7 +52,7 @@ pub async fn run(
 
     // Check each node if it has a CFS session already running
     for node in nodes_list {
-        if nodes_with_cfs_session.contains(&node) {
+        if nodes_in_running_or_pending_cfs_session.contains(&node) {
             log::info!(
                 "Node {} is currently running a CFS session. Please try again latter. Exitting", node
             );
@@ -169,7 +171,7 @@ pub async fn run(
     println!("A new CFS session is going to be created with the following layers:");
     for layer_summary in layers_summary {
         println!(
-            " - Layer-{}, repo name: {}, are all changes commited: {}",
+            " - Layer-{}; repo name: {}; local changes committed: {}",
             layer_summary[0], layer_summary[1], layer_summary[2]
         );
     }
