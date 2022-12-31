@@ -192,10 +192,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let about_msg = "Create a CFS configuration and a session against hsm_group/nodes";
 
     match hsm_group {
-        None => {
-            apply_session = apply_session
-                .about(about_msg)
-        }
+        None => apply_session = apply_session.about(about_msg),
         Some(hsm_group_value) => {
             apply_session =
                 apply_session.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
@@ -214,10 +211,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let about_msg = "Start a node";
 
     match hsm_group {
-        None => {
-            apply_node_on = apply_node_on
-                .about(about_msg)
-        }
+        None => apply_node_on = apply_node_on.about(about_msg),
         Some(hsm_group_value) => {
             apply_node_on =
                 apply_node_on.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
@@ -602,43 +596,45 @@ pub async fn process_command(
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
-            // Check limit matches the nodes in hsm_group
+            // Check andible limit matches the nodes in hsm_group
             let hsm_groups;
             let hsm_groups_nodes;
             // Get Vec with all nodes from ansible-limit param
-            let ansible_limit_nodes = cli_apply_session
-                           .get_one::<String>("ansible-limit")
-                           .unwrap()
-                          // .clone()
-                           .split(",")
-                           .collect();
+            let ansible_limit_nodes_in_cfs_sessions = cli_apply_session
+                .get_one::<String>("ansible-limit")
+                .unwrap()
+                .replace(" ", "") // trim xnames by removing white spaces
+                .split(",")
+                .map(|xname| xname.to_string())
+                .collect();
 
-            let included: HashSet<&str>;
-            let excluded: HashSet<&str>;
+            let included: HashSet<String>;
+            let excluded: HashSet<String>;
 
             if hsm_group.is_some() {
                 hsm_groups =
-                cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap()).await;
-
-                // println!("Nodes:\n{:#?}", nodes);
-                // println!("Limit:\n{:#?}", limit);
-
-                // if ansible_limit_nodes.iter().all(|limit_node| hsm_groups_nodes.contains(limit_node)) {
-                //     // all nodes in limit-ansible included in hsm_groups
-                //     println!("Limit members belongs to hsm nodes");
-                // } else {
-                //     println!("One or more nodes in limit-ansible param are not member of hsm group {:?}", hsm_groups);
-                //     std::process::exit(-1);
-                // }
+                    cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap())
+                        .await;
             } else {
-                hsm_groups =
-                cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
+                hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
             }
-            
-            // Take all nodes for all clusters found and put them in a Set
-            hsm_groups_nodes = hsm_groups.iter().flat_map(|cluster| cluster.members.iter().map(|member| member.as_str().unwrap())).collect();
 
-            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(hsm_groups_nodes, ansible_limit_nodes);
+            // Take all nodes for all clusters found and put them in a Set
+            hsm_groups_nodes = hsm_groups
+                .iter()
+                .flat_map(|cluster| {
+                    cluster
+                        .members
+                        .iter()
+                        .map(|xname| xname.as_str().unwrap())
+                })
+                .map(|xname| xname.to_string())
+                .collect();
+
+            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
+                hsm_groups_nodes,
+                ansible_limit_nodes_in_cfs_sessions,
+            );
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?}", excluded, hsm_groups);
@@ -654,11 +650,10 @@ pub async fn process_command(
                 gitea_token,
                 shasta_token,
                 shasta_base_url,
-                included.into_iter().collect::<Vec<&str>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
+                included.into_iter().collect::<Vec<String>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
                 cli_apply_session
                     .get_one::<String>("ansible-verbosity")
                     .unwrap()
-                    // .clone()
                     .parse()
                     .unwrap(),
             )
@@ -674,121 +669,179 @@ pub async fn process_command(
             }
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
             if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                let xnames;
-                if cli_apply_node_on.get_one::<String>("xnames").is_some() {
-                    // user provides a list of xnames
-                    xnames = cli_apply_node_on
-                        .get_one::<String>("xnames")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| String::from(xname.trim()))
-                        .collect();
-                } else {
-                    // hsm_group value provided
-                    match hsm_group {
-                        None => cluster_name = cli_apply_node_on.get_one::<String>("cluster_name"),
-                        Some(_) => cluster_name = hsm_group,
-                    }
+                
+                let included: HashSet<String>;
+                let excluded: HashSet<String>;
 
-                    let hsm_groups = shasta::hsm::http_client::get_hsm_groups(
+                // User provided list of xnames to powre on
+                let xnames: Vec<String> = cli_apply_node_on
+                    .get_one::<String>("xnames")
+                    .unwrap()
+                    .replace(" ", "") // trim xnames by removing white spaces
+                    .split(',')
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                let hsm_groups;
+                if hsm_group.is_some() {
+                    // hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(
                         &shasta_token,
                         &shasta_base_url,
-                        cluster_name,
+                        hsm_group.unwrap(),
                     )
-                    .await?;
-                    xnames = hsm_groups[0]["members"]["ids"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|xname_value| String::from(xname_value.as_str().unwrap()))
-                        .collect();
+                    .await;
+                } else {
+                    // no hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
                 }
-                log::info!("Servers to turn on: {:?}", xnames);
+
+                // Take all nodes for all clusters found and put them in a Set
+                let hsm_groups_nodes = hsm_groups
+                    .iter()
+                    .flat_map(|cluster| {
+                        cluster
+                            .members
+                            .iter()
+                            .map(|xname| xname.as_str().unwrap())
+                    })
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                (included, excluded) =
+                    node_ops::check_hsm_group_and_ansible_limit(hsm_groups_nodes, xnames);
+
+                if !excluded.is_empty() {
+                    println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?}", excluded, hsm_groups);
+                    std::process::exit(-1);
+                }
+
+                log::info!("Servers to turn on: {:?}", included);
+
                 capmc::http_client::node_power_on::post(
                     shasta_token.to_string(),
                     cli_apply_node_on.get_one::<String>("reason"),
-                    xnames,
+                    included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
                     false,
                 )
                 .await?; // TODO: idk why power on does not seems to work when forced
-            } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                let xnames;
-                if cli_apply_node_off.get_one::<String>("xnames").is_some() {
-                    // user provides a list of xnames
-                    xnames = cli_apply_node_off
-                        .get_one::<String>("xnames")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| String::from(xname.trim()))
-                        .collect();
-                } else {
-                    // user provides a cluster name
-                    match hsm_group {
-                        None => cluster_name = cli_apply_node_off.get_one::<String>("cluster_name"),
-                        Some(_) => cluster_name = hsm_group,
-                    }
 
-                    let hsm_groups = shasta::hsm::http_client::get_hsm_groups(
+            } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
+
+                let included: HashSet<String>;
+                let excluded: HashSet<String>;
+
+                // User provided list of xnames to powre on
+                let xnames: Vec<String> = cli_apply_node_off
+                    .get_one::<String>("xnames")
+                    .unwrap()
+                    .replace(" ", "") // trim xnames by removing white spaces
+                    .split(',')
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                let hsm_groups;
+                if hsm_group.is_some() {
+                    // hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(
                         &shasta_token,
                         &shasta_base_url,
-                        cluster_name,
+                        hsm_group.unwrap(),
                     )
-                    .await?;
-                    xnames = hsm_groups[0]["members"]["ids"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|xname_value| String::from(xname_value.as_str().unwrap()))
-                        .collect();
+                    .await;
+                } else {
+                    // no hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
                 }
-                log::info!("Servers to turn off: {:?}", xnames);
+
+                // Take all nodes for all clusters found and put them in a Set
+                let hsm_groups_nodes = hsm_groups
+                    .iter()
+                    .flat_map(|cluster| {
+                        cluster
+                            .members
+                            .iter()
+                            .map(|xname| xname.as_str().unwrap())
+                    })
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                (included, excluded) =
+                    node_ops::check_hsm_group_and_ansible_limit(hsm_groups_nodes, xnames);
+
+                if !excluded.is_empty() {
+                    println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?}", excluded, hsm_groups);
+                    std::process::exit(-1);
+                }
+
+                log::info!("Servers to power off: {:?}", included);
+
                 capmc::http_client::node_power_off::post(
                     shasta_token.to_string(),
                     cli_apply_node_off.get_one::<String>("reason"),
-                    xnames,
-                    *cli_apply_node_off.get_one::<bool>("force").unwrap(),
+                    included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
+                    false,
                 )
-                .await?;
-            } else if let Some(cli_apply_node_reset) = cli_apply_node.subcommand_matches("reset") {
-                let xnames;
-                if cli_apply_node_reset.get_one::<String>("xnames").is_some() {
-                    // user provides a list of xnames
-                    xnames = cli_apply_node_reset
-                        .get_one::<String>("xnames")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| String::from(xname.trim()))
-                        .collect();
-                } else {
-                    // user provides a cluster name
-                    match hsm_group {
-                        None => {
-                            cluster_name = cli_apply_node_reset.get_one::<String>("cluster_name")
-                        }
-                        Some(_) => cluster_name = hsm_group,
-                    }
+                .await?; // TODO: idk why power on does not seems to work when forced
 
-                    let hsm_groups = shasta::hsm::http_client::get_hsm_groups(
+            } else if let Some(cli_apply_node_reset) = cli_apply_node.subcommand_matches("reset") {
+
+                let included: HashSet<String>;
+                let excluded: HashSet<String>;
+
+                // User provided list of xnames to powre on
+                let xnames: Vec<String> = cli_apply_node_reset
+                    .get_one::<String>("xnames")
+                    .unwrap()
+                    .replace(" ", "") // trim xnames by removing white spaces
+                    .split(',')
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                let hsm_groups;
+                if hsm_group.is_some() {
+                    // hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(
                         &shasta_token,
                         &shasta_base_url,
-                        cluster_name,
+                        hsm_group.unwrap(),
                     )
-                    .await?;
-                    xnames = hsm_groups[0]["members"]["ids"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|xname_value| String::from(xname_value.as_str().unwrap()))
-                        .collect();
+                    .await;
+                } else {
+                    // no hsm_group value provided
+                    hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
                 }
-                log::info!("Servers to reboot: {:?}", xnames);
-                capmc::http_client::node_restart::post(
+
+                // Take all nodes for all clusters found and put them in a Set
+                let hsm_groups_nodes = hsm_groups
+                    .iter()
+                    .flat_map(|cluster| {
+                        cluster
+                            .members
+                            .iter()
+                            .map(|xname| xname.as_str().unwrap())
+                    })
+                    .map(|xname| xname.to_string())
+                    .collect();
+
+                (included, excluded) =
+                    node_ops::check_hsm_group_and_ansible_limit(hsm_groups_nodes, xnames);
+
+                if !excluded.is_empty() {
+                    println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?}", excluded, hsm_groups);
+                    std::process::exit(-1);
+                }
+
+                log::info!("Servers to power off: {:?}", included);
+
+                capmc::http_client::node_power_off::post(
                     shasta_token.to_string(),
                     cli_apply_node_reset.get_one::<String>("reason"),
-                    xnames,
-                    *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
+                    included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
+                    false,
                 )
-                .await?;
+                .await?; // TODO: idk why power on does not seems to work when forced
+
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
@@ -803,9 +856,9 @@ pub async fn process_command(
         )
         .await?;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-            xname = cli_console.get_one::<String>("xname");
+        xname = cli_console.get_one::<String>("xname");
 
-            connect_to_console(xname.unwrap()).await?;
+        connect_to_console(xname.unwrap()).await?;
     }
 
     Ok(())

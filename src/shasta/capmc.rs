@@ -129,9 +129,9 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool) -> Result<Value, Box<dyn Error>> {
             
-            log::info!("Starting {:?}", xnames);
+            log::info!("Powering on nodes {:?}", xnames);
 
             let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
             
