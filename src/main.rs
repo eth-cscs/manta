@@ -37,6 +37,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
+    log::info!("Config:\n{:?}", settings);
+
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     // std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
     // std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());

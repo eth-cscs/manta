@@ -245,7 +245,8 @@ pub async fn run(
         let cfs_layer = configuration::Layer::new(
             format!(
                 // git repo url in shasta faced VCS
-                "https://api-gw-service-nmn.local/vcs/cray/{}",
+                "{}/{}",
+                shasta_base_url,
                 repo_name
             ),
             // String::from(repo_ref_origin_url), // git repo url in user faced VCS

@@ -96,7 +96,7 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
     log::debug!("Check token against apis/cfs/healthz api");
     
     let resp = client
-        .get("https://api-gw-service-nmn.local/apis/cfs/healthz")
+        .get("https://api.cmn.alps.cscs.ch/apis/cfs/healthz")
         .bearer_auth(shasta_token)
         .send()
         .await?;
@@ -153,7 +153,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
 
     let resp = client
         .post(
-            "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token",
+            "https://api.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
         )
         .form(&params)
         .send()

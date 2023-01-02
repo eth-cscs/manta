@@ -106,7 +106,7 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_off")
+                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_off")
                 .bearer_auth(shasta_token)
                 .json(&power_off)
                 .send()
@@ -164,7 +164,7 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_on")
+                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_on")
                 .bearer_auth(shasta_token)
                 .json(&power_on)
                 .send()
@@ -222,7 +222,7 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/xname_reinit")
+                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_reinit")
                 .bearer_auth(shasta_token)
                 .json(&node_restart)
                 .send()
@@ -276,7 +276,7 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api-gw-service-nmn.local/apis/capmc/capmc/v1/get_xname_status")
+                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/get_xname_status")
                 .bearer_auth(shasta_token)
                 .json(&node_status)
                 .send()

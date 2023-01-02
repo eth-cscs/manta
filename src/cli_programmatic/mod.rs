@@ -371,7 +371,7 @@ pub async fn process_command(
                         layer["cloneUrl"]
                             .as_str()
                             .unwrap()
-                            .trim_start_matches("https://api-gw-service-nmn.local/vcs/")
+                            .trim_start_matches("https://api.cmn.alps.cscs.ch")
                             .trim_end_matches(".git"),
                         layer["commit"].as_str().unwrap(),
                         gitea_commit_details["commit"]["committer"]["name"]
