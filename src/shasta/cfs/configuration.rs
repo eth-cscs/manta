@@ -87,7 +87,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_cfs_configs: Vec<Value> = Vec::new();
     
@@ -133,13 +133,13 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     
-        if cluster_name.is_some() {
+        if hsm_group_name.is_some() {
 
             for cfs_configuration in json_response.as_array().unwrap() {
                 if cfs_configuration["name"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(hsm_group_name.unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_cfs_configs.push(cfs_configuration.clone());
                 }

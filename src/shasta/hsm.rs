@@ -6,7 +6,7 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    pub async fn get_hsm_groups(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>) -> Result<Vec<Value>, Box<dyn Error>> {
+    pub async fn get_hsm_groups(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>) -> Result<Vec<Value>, Box<dyn Error>> {
 
         let mut hsm_groups: Vec<Value> = Vec::new();
 
@@ -42,14 +42,14 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         };
 
-        if cluster_name.is_some() {
+        if hsm_group_name.is_some() {
 
             for hsm_group in json_response.as_array().unwrap() {
     
                 if hsm_group["label"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(hsm_group_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     hsm_groups.push(hsm_group.clone());
                 }

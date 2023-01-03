@@ -117,22 +117,9 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
     let json_response: Value;
 
     let mut params = HashMap::new();
-    params.insert("grant_type", "password");
     params.insert("client_id", "shasta");
     params.insert("username", username);
     params.insert("password", password);
-    // params.insert("grant_type", "client_credentials");
-    // params.insert("client_id", "admin-client");
-    // params.insert("client_secret", shasta_admin_pwd);
-
-    // // socks5 proxy
-    // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-    // // rest client to authenticate
-    // let client = reqwest::Client::builder()
-    //     .danger_accept_invalid_certs(true)
-    //     .proxy(socks5proxy)
-    //     .build()?;
 
     let client;
 
@@ -153,7 +140,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
 
     let resp = client
         .post(
-            "https://api.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
+            "https://auth.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
         )
         .form(&params)
         .send()

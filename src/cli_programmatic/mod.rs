@@ -20,6 +20,7 @@ use crate::shasta::{
 use crate::node_ops;
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
+
     let mut get_cfs_session = Command::new("session");
 
     get_cfs_session = get_cfs_session.arg(arg!(-n --name <VALUE> "session name"));
@@ -51,9 +52,11 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
         get_cfs_session.group(ArgGroup::new("session_limit").args(["most_recent", "limit"]));
 
     get_cfs_session
+
 }
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
+
     let mut get_cfs_configuration = Command::new("configuration");
     get_cfs_configuration =
         get_cfs_configuration.about("Get information from Shasta CFS configuration");
@@ -87,6 +90,7 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
         .group(ArgGroup::new("configuration_limit").args(["most_recent", "limit"]));
 
     get_cfs_configuration
+
 }
 
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
@@ -313,7 +317,7 @@ pub async fn process_command(
     gitea_token: String,
     hsm_group: Option<&String>,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-    let cluster_name;
+    let hsm_group_name;
     let most_recent;
     let configuration_name;
     let session_name;
@@ -327,7 +331,7 @@ pub async fn process_command(
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
             configuration_name = cli_get_configuration.get_one::<String>("name");
 
-            cluster_name = match hsm_group {
+            hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
                 None => cli_get_configuration.get_one::<String>("cluster_name"),
                 Some(hsm_group_val) => Some(hsm_group_val),
@@ -345,7 +349,7 @@ pub async fn process_command(
             let cfs_configurations = shasta_cfs_configuration::http_client::get(
                 &shasta_token,
                 &shasta_base_url,
-                cluster_name,
+                hsm_group_name,
                 configuration_name,
                 limit_number,
             )
@@ -395,10 +399,12 @@ pub async fn process_command(
             } else {
                 shasta_cfs_configuration::utils::print_table(cfs_configurations);
             }
+
         } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
+
             session_name = cli_get_session.get_one::<String>("name");
 
-            cluster_name = match hsm_group {
+            hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
                 None => cli_get_session.get_one::<String>("cluster_name"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
@@ -415,7 +421,7 @@ pub async fn process_command(
             let cfs_sessions = shasta_cfs_session::http_client::get(
                 &shasta_token,
                 &shasta_base_url,
-                cluster_name,
+                hsm_group_name,
                 session_name,
                 limit_number,
             )
@@ -427,10 +433,12 @@ pub async fn process_command(
             } else {
                 shasta_cfs_session::utils::print_table(cfs_sessions);
             }
+
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
+
             template_name = cli_get_template.get_one::<String>("name");
 
-            cluster_name = match &hsm_group {
+            hsm_group_name = match &hsm_group {
                 None => cli_get_template.get_one::<String>("cluster_name"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
             };
@@ -446,7 +454,7 @@ pub async fn process_command(
             let bos_templates = bos_template::http_client::get(
                 &shasta_token,
                 &shasta_base_url,
-                cluster_name,
+                hsm_group_name,
                 template_name,
                 limit_number,
             )
@@ -458,8 +466,10 @@ pub async fn process_command(
             } else {
                 bos_template::utils::print_table(bos_templates);
             }
+
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
-            cluster_name = match hsm_group {
+
+            hsm_group_name = match hsm_group {
                 None => cli_get_node.get_one::<String>("cluster_name"),
                 Some(_) => hsm_group,
             };
@@ -467,7 +477,7 @@ pub async fn process_command(
             let nodes = shasta::hsm::http_client::get_hsm_groups(
                 &shasta_token,
                 &shasta_base_url,
-                cluster_name,
+                hsm_group_name,
             )
             .await?;
 
@@ -477,7 +487,9 @@ pub async fn process_command(
             } else {
                 shasta::hsm::utils::print_table(nodes);
             }
+
         } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
+
             let cluster_name = match hsm_group {
                 None => cli_get_cluster.get_one::<String>("cluster_name").unwrap(),
                 Some(cluster_name_value) => cluster_name_value,
@@ -594,6 +606,7 @@ pub async fn process_command(
                 println!(" * members: {}", nodes::nodes_to_string(&cluster.members));
             }
         }
+        
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             

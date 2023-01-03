@@ -234,18 +234,9 @@ pub mod http_client {
     //     }
     // }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, bos_template_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, bos_template_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-        // // rest client get cfs sessions
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 
@@ -278,13 +269,13 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     
-        if cluster_name.is_some() {
+        if hsm_group_name.is_some() {
             for bos_template in json_response.as_array().unwrap() {
     
                 if bos_template["name"]
                     .as_str()
                     .unwrap()
-                    .contains(cluster_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(hsm_group_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
