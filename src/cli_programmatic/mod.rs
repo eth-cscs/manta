@@ -25,8 +25,7 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
 
     get_cfs_session = get_cfs_session.arg(arg!(-n --name <VALUE> "session name"));
     get_cfs_session = get_cfs_session.arg(
-        arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)")
-            .action(ArgAction::SetTrue),
+        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
     );
     get_cfs_session = get_cfs_session.arg(
         arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
@@ -49,7 +48,7 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     }
 
     get_cfs_session =
-        get_cfs_session.group(ArgGroup::new("session_limit").args(["most_recent", "limit"]));
+        get_cfs_session.group(ArgGroup::new("session_limit").args(["most-recent", "limit"]));
 
     get_cfs_session
 
@@ -63,8 +62,7 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
 
     get_cfs_configuration = get_cfs_configuration.arg(arg!(-n --name <VALUE> "configuration name"));
     get_cfs_configuration = get_cfs_configuration.arg(
-        arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)")
-            .action(ArgAction::SetTrue),
+        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
     );
     get_cfs_configuration = get_cfs_configuration.arg(
         arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
@@ -87,7 +85,7 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     }
 
     get_cfs_configuration = get_cfs_configuration
-        .group(ArgGroup::new("configuration_limit").args(["most_recent", "limit"]));
+        .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
 
     get_cfs_configuration
 
@@ -98,8 +96,7 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 
     get_bos_template = get_bos_template.arg(arg!(-n --name <VALUE> "template name"));
     get_bos_template = get_bos_template.arg(
-        arg!(-m --most_recent <VALUE> "most recent (equivalent to --limit 1)")
-            .action(ArgAction::SetTrue),
+        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
     );
     get_bos_template = get_bos_template.arg(
         arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
@@ -122,7 +119,7 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
     }
 
     // get_bos_template =
-    //     get_bos_template.group(ArgGroup::new("template-limit").args(["most_recent", "limit"]));
+    //     get_bos_template.group(ArgGroup::new("template-limit").args(["most-recent", "limit"]));
 
     get_bos_template
 }
@@ -194,7 +191,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             .default_value("2")
             .default_missing_value("2"));
 
-    let about_msg = "Create a CFS configuration and a session against hsm_group/nodes";
+    let about_msg = "Create a CFS configuration and a session against hsm group or xnames";
 
     match hsm_group {
         None => apply_session = apply_session.about(about_msg),
@@ -298,8 +295,8 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
             Command::new("log")
                 .arg_required_else_help(true)
                 .about("log about")
-                .arg(arg!(-s --session_name <VALUE> "session name"))
-                .arg(arg!(-l --layer_id <VALUE> "layer id").required(false)),
+                .arg(arg!(<SESSION> "session name"))
+                .arg(arg!(-l --"layer-id" <VALUE> "layer id").required(false)),
         )
         .subcommand(
             Command::new("console")
@@ -333,16 +330,18 @@ pub async fn process_command(
 
             hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
-                None => cli_get_configuration.get_one::<String>("cluster_name"),
+                None => cli_get_configuration.get_one::<String>("cluster-name"),
                 Some(hsm_group_val) => Some(hsm_group_val),
             };
 
-            most_recent = cli_get_configuration.get_one::<bool>("most_recent");
+            most_recent = cli_get_configuration.get_one::<bool>("most-recent");
 
-            if most_recent.is_some() {
+            if let Some(true) = most_recent {
                 limit_number = Some(&1);
+            } else if let Some(false) = most_recent {
+                limit_number = cli_get_configuration.get_one::<u8>("limit");
             } else {
-                limit_number = cli_get_configuration.get_one::<u8>("limit_number");
+                limit_number = None;
             }
 
             // Get CFS configurations
@@ -362,7 +361,9 @@ pub async fn process_command(
                 let most_recent_cfs_configuration = &cfs_configurations[0];
 
                 let mut layers: Vec<manta_cfs_configuration::Layer> = vec![];
+
                 for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
+                    
                     let gitea_commit_details = gitea::http_client::get_commit_details(
                         layer["cloneUrl"].as_str().unwrap(),
                         layer["commit"].as_str().unwrap(),
@@ -406,16 +407,18 @@ pub async fn process_command(
 
             hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
-                None => cli_get_session.get_one::<String>("cluster_name"),
+                None => cli_get_session.get_one::<String>("cluster-name"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
             };
 
-            most_recent = cli_get_session.get_one::<bool>("most_recent");
+            most_recent = cli_get_session.get_one::<bool>("most-recent");
 
-            if most_recent.is_some() {
+            if let Some(true) = most_recent {
                 limit_number = Some(&1);
+            } else if let Some(false) = most_recent {
+                limit_number = cli_get_session.get_one::<u8>("limit");
             } else {
-                limit_number = cli_get_session.get_one::<u8>("limit_number");
+                limit_number = None;
             }
 
             let cfs_sessions = shasta_cfs_session::http_client::get(
@@ -439,16 +442,18 @@ pub async fn process_command(
             template_name = cli_get_template.get_one::<String>("name");
 
             hsm_group_name = match &hsm_group {
-                None => cli_get_template.get_one::<String>("cluster_name"),
+                None => cli_get_template.get_one::<String>("cluster-name"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
             };
 
-            most_recent = cli_get_template.get_one::<bool>("most_recent");
+            most_recent = cli_get_template.get_one::<bool>("most-recent");
 
-            if most_recent.is_some() {
+            if let Some(true) = most_recent {
                 limit_number = Some(&1);
+            } else if let Some(false) = most_recent {
+                limit_number = cli_get_template.get_one::<u8>("limit");
             } else {
-                limit_number = cli_get_template.get_one::<u8>("limit_number");
+                limit_number = None;
             }
 
             let bos_templates = bos_template::http_client::get(
@@ -470,7 +475,7 @@ pub async fn process_command(
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
 
             hsm_group_name = match hsm_group {
-                None => cli_get_node.get_one::<String>("cluster_name"),
+                None => cli_get_node.get_one::<String>("cluster-name"),
                 Some(_) => hsm_group,
             };
 
@@ -491,7 +496,7 @@ pub async fn process_command(
         } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
 
             let cluster_name = match hsm_group {
-                None => cli_get_cluster.get_one::<String>("cluster_name").unwrap(),
+                None => cli_get_cluster.get_one::<String>("cluster-name").unwrap(),
                 Some(cluster_name_value) => cluster_name_value,
             };
 
@@ -810,8 +815,8 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-        logging_session_name = cli_log.get_one::<String>("session_name");
-        layer_id = cli_log.get_one::<u8>("layer_id");
+        logging_session_name = cli_log.get_one::<String>("SESSION");
+        layer_id = cli_log.get_one::<u8>("layer-id");
         shasta_cfs_session_logs::client::session_logs_proxy(
             &shasta_token,
             &shasta_base_url,

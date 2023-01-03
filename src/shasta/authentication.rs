@@ -117,6 +117,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
     let json_response: Value;
 
     let mut params = HashMap::new();
+    params.insert("grant_type", "password");
     params.insert("client_id", "shasta");
     params.insert("username", username);
     params.insert("password", password);
@@ -140,7 +141,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
 
     let resp = client
         .post(
-            "https://auth.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
+            "https://api.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
         )
         .form(&params)
         .send()

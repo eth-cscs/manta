@@ -1,4 +1,3 @@
-
 pub mod http_client {
     
     use serde_json::Value;
@@ -6,20 +5,12 @@ pub mod http_client {
     pub async fn get_commit_details(repo_url: &str, commitid: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
         let gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
+        let clone_base_url = "https://api-gw-service-nmn.local/vcs/";
         let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
 
         log::debug!("Repo URL: {}", repo_url);
 
-        let repo_name = repo_url.trim_start_matches(gitea_base_url).trim_end_matches(".git");
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-        // // rest client get commit details
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
+        let repo_name = repo_url.trim_start_matches(clone_base_url).trim_end_matches(".git");
 
         let client;
 
@@ -47,9 +38,15 @@ pub mod http_client {
             .await?;
 
         if resp.status().is_success() {
-            Ok(serde_json::from_str(&resp.text().await?)?)
+
+            let json_response = &resp.text().await?;
+
+            Ok(serde_json::from_str(json_response)?)
         } else {
-             Err(resp.json::<Value>().await?.as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+            
+            log::error!("ERROR: {:?}", &resp);
+
+            Err(resp.json::<Value>().await?.as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     }
 
@@ -57,15 +54,6 @@ pub mod http_client {
 
         let gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
         let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-        // // rest client get commit details
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 

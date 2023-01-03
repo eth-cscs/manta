@@ -40,21 +40,10 @@ pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfig
 
 pub mod http_client {
 
-    use std::ops::Deref;
-
     use super::CfsConfiguration;
     use serde_json::Value;
 
     pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: CfsConfiguration, configuration_name: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-        // // rest client update cfs configurations
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 
@@ -90,15 +79,6 @@ pub mod http_client {
     pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let mut cluster_cfs_configs: Vec<Value> = Vec::new();
-    
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-        // // rest client get cfs configurations
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 
@@ -123,8 +103,6 @@ pub mod http_client {
             .send()
             .await?;
     
-        // let json_response: Value = serde_json::from_str(&resp)?;
-
         let json_response: Value;
 
         if resp.status().is_success() {
@@ -170,7 +148,7 @@ pub mod http_client {
             // cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
     
             cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
-    
+
             // cfs_utils::print_cfs_configurations(&cfs_configurations);
             
             // cluster_cfs_configs.truncate(limit_number.unwrap().into());
