@@ -173,7 +173,7 @@ pub mod http_client {
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
+            cluster_cfs_configs = cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
 
         }
     
