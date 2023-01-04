@@ -241,7 +241,7 @@ pub mod client {
             std::process::exit(1);
         }
 
-        let mut cfs_session_pod = &pods.items[0].clone();
+        let cfs_session_pod = &pods.items[0].clone();
 
         let cfs_session_pod_name = cfs_session_pod.metadata.name.clone().unwrap();
         log::info!("Pod name: {}", cfs_session_pod_name);
