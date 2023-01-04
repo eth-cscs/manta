@@ -241,12 +241,12 @@ pub mod client {
             std::process::exit(1);
         }
 
-        let mut cfs_session_pod = &pods.items[0];
+        let mut cfs_session_pod = &pods.items[0].clone();
 
         let cfs_session_pod_name = cfs_session_pod.metadata.name.clone().unwrap();
         log::info!("Pod name: {}", cfs_session_pod_name);
 
-        if layer_id.is_some() { // Printing logs of 1 CFS session layer
+        if layer_id.is_some() { // Printing a CFS session layer logs
 
             let layer = layer_id.unwrap().to_string();
 
@@ -270,8 +270,7 @@ pub mod client {
                 i += 1;
                 thread::sleep(time::Duration::from_secs(2));
                 pods = pods_api.list(&params).await?;
-                cfs_session_pod = &pods.items[0];
-                container_state = get_container_state(cfs_session_pod, &container_name);
+                container_state = get_container_state(&pods.items[0], &container_name);
                 log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
             }
     
@@ -299,39 +298,38 @@ pub mod client {
             // Get ansible-x containers
             let ansible_containers = cfs_session_pod.spec.as_ref().unwrap().containers.iter().filter(|x| x.name.contains("ansible-"));
 
-            for layer in 0..ansible_containers.count() {
+            for ansible_container in ansible_containers {
                 
-                let container_name = format!("ansible-{}", layer);
+                // let container_name = ansible_container.name;
 
                 println!();
-                println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = container_name, color_reset = color::Fg(color::Reset));
+                println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = ansible_container.name, color_reset = color::Fg(color::Reset));
                 println!();
 
                 // Check if container exists in pod
-                let container_exists = cfs_session_pod.spec.as_ref().unwrap().containers.iter().find(|x| x.name.eq(&container_name));
+                let container_exists = cfs_session_pod.spec.as_ref().unwrap().containers.iter().find(|x| x.name.eq(&ansible_container.name));
         
                 if container_exists.is_none() {
-                    println!("Container {} (layer {}) does not exists. Aborting", container_name, layer);
+                    println!("Container {} does not exists. Aborting", ansible_container.name);
                     std::process::exit(0);
                 }
         
-                let mut container_state = get_container_state(cfs_session_pod, &container_name);
+                let mut container_state = get_container_state(cfs_session_pod, &ansible_container.name);
         
                 let mut i = 0;
         
                 // Waiting for container ansible-x to start
                 while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
-                    log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", container_name, i + 1);
+                    log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", ansible_container.name, i + 1);
                     i += 1;
                     thread::sleep(time::Duration::from_secs(2));
                     pods = pods_api.list(&params).await?;
-                    cfs_session_pod = &pods.items[0];
-                    container_state = get_container_state(cfs_session_pod, &container_name);
+                    container_state = get_container_state(&pods.items[0], &ansible_container.name);
                     log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
                 }
         
                 if container_state.as_ref().unwrap().waiting.is_some() {
-                    log::info!("Container {} not ready. Aborting operation", container_name);
+                    log::info!("Container {} not ready. Aborting operation", ansible_container.name);
                     std::process::exit(1);
                 }
         
@@ -341,7 +339,7 @@ pub mod client {
                     &kube::api::LogParams {
                         follow: true,
                         // tail_lines: Some(1),
-                        container: Some(container_name),
+                        container: Some(ansible_container.name.clone()),
                         ..kube::api::LogParams::default()
                     }
                 ).await?.boxed();
