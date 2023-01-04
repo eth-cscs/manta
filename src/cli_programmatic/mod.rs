@@ -122,14 +122,14 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("node")
         .alias("n")
-        .arg_required_else_help(true)
         .about("Get members of a hsm group");
 
     // let about_msg = "Get members of a hsm group";
 
     match hsm_group {
-        None => get_node = get_node.arg(arg!(<HSMGROUP> "hsm group name")),
-            // .about(about_msg),
+        None => get_node = get_node.arg_required_else_help(true)
+                .arg(arg!(<HSMGROUP> "hsm group name")),
+            // .about(about_msg)
         Some(_) => {
             // get_node = get_node.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
