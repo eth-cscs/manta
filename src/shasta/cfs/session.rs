@@ -83,11 +83,13 @@ impl CfsSession {
 
 pub mod http_client {
 
+    use std::error::Error;
+
     use serde_json::Value;
 
     use super::CfsSession;
 
-    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> Result<Value, Box<dyn std::error::Error>> {
+    pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> Result<Value, Box<dyn Error>> {
 
         log::debug!("Session:\n{:#?}", session);
 
@@ -156,49 +158,68 @@ pub mod http_client {
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
+
+        cluster_cfs_sessions = json_response.as_array().unwrap().clone();
     
         if hsm_group_name.is_some() {
-            for cfs_session in json_response.as_array().unwrap() {
-    
-                if cfs_session["configuration"]["name"]
+
+            cluster_cfs_sessions = cluster_cfs_sessions
+                .into_iter()
+                .filter(|cfs_session| {
+                    cfs_session["configuration"]["name"]
                     .as_str()
                     .unwrap()
                     .contains(hsm_group_name.unwrap())
-                {
-                    cluster_cfs_sessions.push(cfs_session.clone());
-                }
+                })
+                .collect();
 
-                cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
+            // for cfs_session in json_response.as_array().unwrap() {
+    
+            //     if cfs_session["configuration"]["name"]
+            //         .as_str()
+            //         .unwrap()
+            //         .contains(hsm_group_name.unwrap())
+            //     {
+            //         cluster_cfs_sessions.push(cfs_session.clone());
+            //     }
 
-            }
-        } else if session_name.is_some() {
-            for cfs_session in json_response.as_array().unwrap() {
-                if cfs_session["name"]
+            // }
+
+        }
+        
+        if session_name.is_some() {
+
+            cluster_cfs_sessions = cluster_cfs_sessions
+                .into_iter()
+                .filter(|cfs_session| {
+                    cfs_session["name"]
                     .as_str()
                     .unwrap()
-                    .eq(session_name.unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
-                {
-                    cluster_cfs_sessions.push(cfs_session.clone());
-                }
-            }
-        } else { // Returning all results
-            cluster_cfs_sessions = json_response.as_array().unwrap().clone();
+                    .eq(session_name.unwrap())
+                })
+                .collect();
 
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
+            // for cfs_session in json_response.as_array().unwrap() {
+            //     if cfs_session["name"]
+            //         .as_str()
+            //         .unwrap()
+            //         .eq(session_name.unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
+            //     {
+            //         cluster_cfs_sessions.push(cfs_session.clone());
+            //     }
+            // }
+
         }
+        //  else { // Returning all results
+        //     cluster_cfs_sessions = json_response.as_array().unwrap().clone();
+        // }
+
+        cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
-    
-            cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
-    
-            // cfs_utils::print_cfs_configurations(&cfs_configurations);
-            
-            // cluster_cfs_sessions.truncate(limit_number.unwrap().into());
             cluster_cfs_sessions = cluster_cfs_sessions[cluster_cfs_sessions.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
             
-            // cluster_cfs_sessions = vec![cluster_cfs_sessions]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         } 
 
         Ok(cluster_cfs_sessions)

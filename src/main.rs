@@ -49,7 +49,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     
     let hsm_group = match &settings_hsm_group {
         Ok(hsm_group_val) => {
-            println!("Working on nodes related to *{}{}{}* hsm groups", color::Fg(color::Green), hsm_group_val, color::Fg(color::Reset));
+            println!("\nWorking on nodes related to *{}{}{}* hsm groups\n", color::Fg(color::Green), hsm_group_val, color::Fg(color::Reset));
             Some(hsm_group_val)
         },
         Err(_) => None,

@@ -21,6 +21,7 @@ pub async fn run(
     limit: String,
     ansible_verbosity: u8,
 ) -> Result<String, Box<dyn std::error::Error>> {
+    
     // Get ALL sessions
     let cfs_sessions = http_client::get(
         &shasta_token,
@@ -40,10 +41,9 @@ pub async fn run(
                 .map(|limit| limit.split(','))
         })
         .flatten()
-        .collect();
+        .collect(); // TODO: remove duplicates
 
-    log::info!("all CFS sessions:\n{:#?}", cfs_sessions);
-    log::info!("nodes with cfs session running or pending:\n{:?}", nodes_in_running_or_pending_cfs_session);
+    log::info!("Nodes with cfs session running or pending: {:?}", nodes_in_running_or_pending_cfs_session);
 
     // NOTE: nodes can be a list of xnames or hsm group name
 
@@ -53,10 +53,10 @@ pub async fn run(
     // Check each node if it has a CFS session already running
     for node in nodes_list {
         if nodes_in_running_or_pending_cfs_session.contains(&node) {
-            log::info!(
-                "Node {} is currently running a CFS session. Please try again latter. Exitting", node
+            eprintln!(
+                "The node {} from the list provided is already assigned to a running/pending CFS session. Please try again latter. Exitting", node
             );
-            std::process::exit(0);
+            std::process::exit(-1);
         }
     }
 
@@ -246,7 +246,7 @@ pub async fn run(
             format!(
                 // git repo url in shasta faced VCS
                 "{}/{}",
-                shasta_base_url,
+                "https://api-gw-service-nmn.local/vcs/cray", // TODO: refactor this and move it to gitea mod
                 repo_name
             ),
             // String::from(repo_ref_origin_url), // git repo url in user faced VCS

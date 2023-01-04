@@ -40,10 +40,12 @@ pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfig
 
 pub mod http_client {
 
+    use std::error::Error;
+
     use super::CfsConfiguration;
     use serde_json::Value;
 
-    pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: CfsConfiguration, configuration_name: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn put(shasta_token: &str, shasta_base_url: &str, configuration: CfsConfiguration, configuration_name: &str) -> Result<Value, Box<dyn Error>> {
 
         let client;
 
@@ -76,7 +78,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, configuration_name: Option<&String>, limit_number: Option<&u8>) -> Result<Vec<Value>, Box<dyn Error>> {
 
         let mut cluster_cfs_configs: Vec<Value> = Vec::new();
 
@@ -110,51 +112,69 @@ pub mod http_client {
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
+
+        cluster_cfs_configs = json_response.as_array().unwrap().clone();
+        // cluster_cfs_configs = Vec::new();
     
         if hsm_group_name.is_some() {
 
-            for cfs_configuration in json_response.as_array().unwrap() {
-                if cfs_configuration["name"]
+            cluster_cfs_configs = cluster_cfs_configs
+                .into_iter()
+                .filter(|cfs_configuration| {
+                    cfs_configuration["name"]
                     .as_str()
                     .unwrap()
-                    .contains(hsm_group_name.unwrap()) //TODO: investigate why I need to use this ugly 'as_ref'
-                {
-                    cluster_cfs_configs.push(cfs_configuration.clone());
-                }
+                    .contains(hsm_group_name.unwrap())
+                })
+                .collect();
 
-                cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
-            }
+            // for cfs_configuration in json_response.as_array().unwrap() {
+            //     if cfs_configuration["name"]
+            //         .as_str()
+            //         .unwrap()
+            //         .contains(hsm_group_name.unwrap())
+            //     {
+            //         cluster_cfs_configs.push(cfs_configuration.clone());
+            //     }
 
-        } else if configuration_name.is_some() {
+            //     // cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
+            // }
 
-            for cfs_configuration in json_response.as_array().unwrap() {
-                if cfs_configuration["name"]
-                    .as_str()
-                    .unwrap()
-                    .eq(configuration_name.unwrap()) // TODO: investigate why I ned to use this ugly 'as_ref'
-                {
-                    cluster_cfs_configs.push(cfs_configuration.clone());
-                }
-            }
-
-        } else { // Returning all results
-            cluster_cfs_configs = json_response.as_array().unwrap().clone();
-
-            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
         }
+        
+        if configuration_name.is_some() {
+
+            cluster_cfs_configs = cluster_cfs_configs
+                .into_iter()
+                .filter(|cfs_configuration| {
+                    cfs_configuration["name"]
+                    .as_str()
+                    .unwrap()
+                    .eq(configuration_name.unwrap())
+                })
+                .collect();
+
+            // for cfs_configuration in json_response.as_array().unwrap() {
+            //     if cfs_configuration["name"]
+            //         .as_str()
+            //         .unwrap()
+            //         .eq(configuration_name.unwrap())
+            //     {
+            //         cluster_cfs_configs.push(cfs_configuration.clone());
+            //     }
+            // }
+
+        } 
+        // else { // Returning all results
+        //     cluster_cfs_configs = json_response.as_array().unwrap().clone();
+        // }
+
+        cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            // cluster_cfs_configs = json_response.as_array().unwrap().to_vec();
-    
-            cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
+            cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
 
-            // cfs_utils::print_cfs_configurations(&cfs_configurations);
-            
-            // cluster_cfs_configs.truncate(limit_number.unwrap().into());
-            cluster_cfs_configs = cluster_cfs_configs[cluster_cfs_configs.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
-
-            // cluster_cfs_configs = vec![cluster_cfs_configs.last().unwrap().clone()]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         }
     
         Ok(cluster_cfs_configs)

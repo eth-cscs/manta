@@ -21,29 +21,28 @@ use crate::node_ops;
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
 
-    let mut get_cfs_session = Command::new("session");
+    let mut get_cfs_session = Command::new("session")
+        .aliases(["s", "se", "sess"])
+        .about("Get information from Shasta CFS session")
+        .arg(arg!(-n --name <VALUE> "session name"))
+        .arg(
+            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
+        )
+        .arg(
+            arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
 
-    get_cfs_session = get_cfs_session.arg(arg!(-n --name <VALUE> "session name"));
-    get_cfs_session = get_cfs_session.arg(
-        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-    );
-    get_cfs_session = get_cfs_session.arg(
-        arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
-            .value_parser(value_parser!(u8).range(1..)),
-    );
-
-    let about_msg = "Get information from Shasta CFS session";
+    // let about_msg = "Get information from Shasta CFS session";
 
     match hsm_group {
-        None => {
-            get_cfs_session = get_cfs_session
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                .group(ArgGroup::new("cluster_or_session").args(["cluster", "name"]))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            get_cfs_session =
-                get_cfs_session.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => get_cfs_session = get_cfs_session
+                    .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+                    .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"])),
+                    //.about(about_msg)
+        Some(_) => {
+            // get_cfs_session =
+            //     get_cfs_session.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -56,31 +55,28 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
 
-    let mut get_cfs_configuration = Command::new("configuration");
-    get_cfs_configuration =
-        get_cfs_configuration.about("Get information from Shasta CFS configuration");
+    let mut get_cfs_configuration = Command::new("configuration")
+        .aliases(["c", "cfg", "conf", "config"])
+        .about("Get information from Shasta CFS configuration")
+        .arg(arg!(-n --name <VALUE> "configuration name"))
+        .arg(
+            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
+        )
+        .arg(
+            arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
 
-    get_cfs_configuration = get_cfs_configuration.arg(arg!(-n --name <VALUE> "configuration name"));
-    get_cfs_configuration = get_cfs_configuration.arg(
-        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-    );
-    get_cfs_configuration = get_cfs_configuration.arg(
-        arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
-            .value_parser(value_parser!(u8).range(1..)),
-    );
-
-    let about_msg = "Get information from Shasta BOS template";
+    // let about_msg = "Get information from Shasta BOS template";
 
     match hsm_group {
-        None => {
-            get_cfs_configuration = get_cfs_configuration
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                .group(ArgGroup::new("cluster_or_configuration").args(["cluster", "name"]))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            get_cfs_configuration = get_cfs_configuration
-                .about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => get_cfs_configuration = get_cfs_configuration
+                .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+                .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"])),
+                // .about(about_msg)
+        Some(_) => {
+            // get_cfs_configuration = get_cfs_configuration
+            //     .about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -92,29 +88,28 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
-    let mut get_bos_template = Command::new("template");
+    let mut get_bos_template = Command::new("template")
+        .aliases(["t", "tplt", "templ"])
+        .about("Get information from Shasta BOS template")
+        .arg(arg!(-n --name <VALUE> "template name"))
+        .arg(
+            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
+        )
+        .arg(
+            arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
 
-    get_bos_template = get_bos_template.arg(arg!(-n --name <VALUE> "template name"));
-    get_bos_template = get_bos_template.arg(
-        arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-    );
-    get_bos_template = get_bos_template.arg(
-        arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
-            .value_parser(value_parser!(u8).range(1..)),
-    );
-
-    let about_msg = "Get information from Shasta BOS template";
+    // let about_msg = "Get information from Shasta BOS template";
 
     match hsm_group {
-        None => {
-            get_bos_template = get_bos_template
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                .group(ArgGroup::new("cluster_or_template").args(["cluster", "name"]))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            get_bos_template =
-                get_bos_template.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => get_bos_template = get_bos_template
+                .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+                .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"])),
+                // .about(about_msg),
+        Some(_) => {
+            // get_bos_template =
+            //     get_bos_template.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -125,64 +120,68 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
-    let mut get_node = Command::new("node");
-    get_node = get_node.arg_required_else_help(true);
+    let mut get_node = Command::new("node")
+        .alias("n")
+        .arg_required_else_help(true)
+        .about("Get members of a hsm group");
 
-    let about_msg = "Get members of a cluster";
+    // let about_msg = "Get members of a hsm group";
 
     match hsm_group {
-        None => get_node = get_node.arg(arg!(<VALUE> "cluster name")).about(about_msg),
-        Some(hsm_group_value) => {
-            get_node = get_node.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => get_node = get_node.arg(arg!(<HSMGROUP> "hsm group name")),
+            // .about(about_msg),
+        Some(_) => {
+            // get_node = get_node.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
     get_node
 }
 
-pub fn subcommand_get_cluster(hsm_group: Option<&String>) -> Command {
-    let mut get_cluster = Command::new("cluster");
+pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
+    let mut get_hsm_group = Command::new("hsm-groups")
+        .aliases(["h", "hsm"])
+        .about("Get hsm groups details");
 
-    let about_msg = "Get cluster details";
+    // let about_msg = "Get hsm groups details";
 
     match hsm_group {
-        None => {
-            get_cluster = get_cluster.arg_required_else_help(true);
-            get_cluster = get_cluster
-                .arg(arg!(<VALUE> "cluster name"))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            get_cluster = get_cluster.arg_required_else_help(false);
-            get_cluster =
-                get_cluster.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value));
+        None => get_hsm_group = get_hsm_group.arg_required_else_help(true)
+                .arg(arg!(<HSMGROUP> "hsm group name")),
+                // .about(about_msg),
+        Some(_) => {
+            get_hsm_group = get_hsm_group.arg_required_else_help(false);
+            // get_hsm_group =
+            //     get_hsm_group.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value));
         }
     }
 
-    get_cluster
+    get_hsm_group
 }
 
 pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
-    let get = Command::new("get")
+    let get = Command::new("get").alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
-        .subcommand(subcommand_get_cluster(hsm_group));
+        .subcommand(subcommand_get_hsm_groups_details(hsm_group));
 
     get
 }
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
-    let mut apply_session = Command::new("session")
+    let apply_session = Command::new("session")
+        .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
+        .about("Create a CFS configuration and a session against hsm group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
             .required(true))
-        .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS sesion")
-            .required(true))
+        .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. NOTE: ansible-limit must be a subset of hsm-group if both parameters are provided"))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to aee container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["1", "2", "3", "4", "5"])
@@ -191,32 +190,35 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             .default_value("2")
             .default_missing_value("2"));
 
-    let about_msg = "Create a CFS configuration and a session against hsm group or xnames";
+    // let about_msg = "Create a CFS configuration and a session against hsm group or xnames";
 
-    match hsm_group {
-        None => apply_session = apply_session.about(about_msg),
-        Some(hsm_group_value) => {
-            apply_session =
-                apply_session.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
-        }
-    }
+    // match hsm_group {
+    //     None => apply_session = apply_session.about(about_msg),
+    //     Some(hsm_group_value) => {
+    //         apply_session =
+    //             apply_session.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
+    //     }
+    // }
 
     apply_session
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
+        .about("Start a node")
         .arg_required_else_help(true)
-        .arg(arg!(-r --reason <VALUE> "reason to power on"))
-        .arg(arg!(-x --xnames <VALUE> "nodes xname"));
+        .arg(arg!(<XNAMES> "node's xnames"))
+        .arg(arg!(-r --reason <VALUE> "reason to power on"));
 
-    let about_msg = "Start a node";
+    // let about_msg = "Start a node";
 
     match hsm_group {
-        None => apply_node_on = apply_node_on.about(about_msg),
-        Some(hsm_group_value) => {
-            apply_node_on =
-                apply_node_on.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => apply_node_on = apply_node_on
+            .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+        // .about(about_msg),
+        Some(_) => {
+            // apply_node_on =
+            //     apply_node_on.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -226,22 +228,21 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
-        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
+        .about("Shutdown a node")
+        .arg(arg!(<XNAMES> "node's xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to power off"))
-        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+        .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "xnames"]));
 
-    let about_msg = "Shutdown a node";
+    // let about_msg = "Shutdown a node";
 
     match hsm_group {
-        None => {
-            apply_node_off = apply_node_off
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            apply_node_off =
-                apply_node_off.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => apply_node_off = apply_node_off
+                .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+                // .about(about_msg)
+        Some(_) => {
+            // apply_node_off =
+            //     apply_node_off.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -250,23 +251,23 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
+        .aliases(["r", "res"])
         .arg_required_else_help(true)
+        .about("Restart a node")
+        .arg(arg!(<XNAMES> "node's xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to reset"))
-        .arg(arg!(-x --xnames <VALUE> "nodes xname"))
-        .group(ArgGroup::new("cluster_or_xnames").args(["cluster", "xnames"]));
+        .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "xnames"]));
 
-    let about_msg = "Shutdown a node";
+    // let about_msg = "Restart a node";
 
     match hsm_group {
-        None => {
-            apply_node_reset = apply_node_reset
-                .arg(arg!(-c --cluster <VALUE> "cluster name"))
-                .about(about_msg)
-        }
-        Some(hsm_group_value) => {
-            apply_node_reset =
-                apply_node_reset.about(format!("{}\nCLUSTER NAME: {}", about_msg, hsm_group_value))
+        None => apply_node_reset = apply_node_reset
+                .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+                // .about(about_msg)
+        Some(_) => {
+            // apply_node_reset =
+            //     apply_node_reset.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
         }
     }
 
@@ -279,8 +280,9 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
         .subcommand(subcommand_get(hsm_group))
         .subcommand(
             Command::new("apply")
+                .alias("a")
                 .arg_required_else_help(true)
-                .about("Make changes to Shasta cluster/nodes")
+                .about("Make changes to Shasta hsm group or nodes")
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
                     Command::new("node")
@@ -293,16 +295,18 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
         )
         .subcommand(
             Command::new("log")
+                .alias("l")
                 .arg_required_else_help(true)
                 .about("log about")
                 .arg(arg!(<SESSION> "session name"))
-                .arg(arg!(-l --"layer-id" <VALUE> "layer id").required(false)),
+                .arg(arg!(-l --"layer-id" <VALUE> "layer id").required(false).value_parser(value_parser!(u8))),
         )
         .subcommand(
             Command::new("console")
+                .aliases(["c", "con", "cons", "conso"])
                 .arg_required_else_help(true)
                 .about("Access node's console")
-                .arg(arg!(<VALUE> "node xname")),
+                .arg(arg!(<XNAME> "node xname")),
         )
         .get_matches()
 }
@@ -330,7 +334,7 @@ pub async fn process_command(
 
             hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
-                None => cli_get_configuration.get_one::<String>("cluster-name"),
+                None => cli_get_configuration.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(hsm_group_val),
             };
 
@@ -407,7 +411,7 @@ pub async fn process_command(
 
             hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
-                None => cli_get_session.get_one::<String>("cluster-name"),
+                None => cli_get_session.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
             };
 
@@ -431,7 +435,7 @@ pub async fn process_command(
             .await?;
 
             if cfs_sessions.is_empty() {
-                log::info!("No CFS session found!");
+                println!("No CFS session found!");
                 return Ok(());
             } else {
                 shasta_cfs_session::utils::print_table(cfs_sessions);
@@ -442,7 +446,7 @@ pub async fn process_command(
             template_name = cli_get_template.get_one::<String>("name");
 
             hsm_group_name = match &hsm_group {
-                None => cli_get_template.get_one::<String>("cluster-name"),
+                None => cli_get_template.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(&hsm_group_val),
             };
 
@@ -466,7 +470,7 @@ pub async fn process_command(
             .await?;
 
             if bos_templates.is_empty() {
-                log::info!("No BOS template found!");
+                println!("No BOS template found!");
                 return Ok(());
             } else {
                 bos_template::utils::print_table(bos_templates);
@@ -475,7 +479,7 @@ pub async fn process_command(
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
 
             hsm_group_name = match hsm_group {
-                None => cli_get_node.get_one::<String>("cluster-name"),
+                None => cli_get_node.get_one::<String>("HSMGROUP"),
                 Some(_) => hsm_group,
             };
 
@@ -487,42 +491,42 @@ pub async fn process_command(
             .await?;
 
             if nodes.is_empty() {
-                log::info!("No nodes found!");
+                println!("No nodes found!");
                 return Ok(());
             } else {
                 shasta::hsm::utils::print_table(nodes);
             }
 
-        } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
+        } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
 
-            let cluster_name = match hsm_group {
-                None => cli_get_cluster.get_one::<String>("cluster-name").unwrap(),
-                Some(cluster_name_value) => cluster_name_value,
+            let hsm_group_name = match hsm_group {
+                None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
+                Some(hsm_group_name_value) => hsm_group_name_value,
             };
 
-            let clusters =
-                cluster_ops::get_details(&shasta_token, &shasta_base_url, cluster_name).await;
+            let hsm_groups =
+                cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name).await;
 
-            for cluster in clusters {
-                println!("************************* CLUSTER *************************");
+            for hsm_group in hsm_groups {
+                println!("************************* HSM GROUP *************************");
 
-                println!(" * HSM group label: {}", cluster.hsm_group_label);
+                println!(" * HSM group label: {}", hsm_group.hsm_group_label);
                 println!(" * CFS configuration details:");
                 println!(
                     "   - name: {}",
-                    cluster.most_recent_cfs_configuration_name_created["name"]
+                    hsm_group.most_recent_cfs_configuration_name_created["name"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "   - last updated: {}",
-                    cluster.most_recent_cfs_configuration_name_created["lastUpdated"]
+                    hsm_group.most_recent_cfs_configuration_name_created["lastUpdated"]
                         .as_str()
                         .unwrap_or_default()
                 );
 
                 let mut i = 0;
-                for layer in cluster.most_recent_cfs_configuration_name_created["layers"]
+                for layer in hsm_group.most_recent_cfs_configuration_name_created["layers"]
                     .as_array()
                     .unwrap()
                 {
@@ -549,66 +553,66 @@ pub async fn process_command(
                 println!(" * CFS session details:");
                 println!(
                     "   - Name: {}",
-                    cluster.most_recent_cfs_session_name_created["name"]
+                    hsm_group.most_recent_cfs_session_name_created["name"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "   - Configuration name: {}",
-                    cluster.most_recent_cfs_session_name_created["configuration"]["name"]
+                    hsm_group.most_recent_cfs_session_name_created["configuration"]["name"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "   - Target: {}",
-                    cluster.most_recent_cfs_session_name_created["target"]["definition"]
+                    hsm_group.most_recent_cfs_session_name_created["target"]["definition"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!("   + Ansible details:");
                 println!(
                     "     - name: {}",
-                    cluster.most_recent_cfs_session_name_created["ansible"]["config"]
+                    hsm_group.most_recent_cfs_session_name_created["ansible"]["config"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "     - limit: {}",
-                    cluster.most_recent_cfs_session_name_created["ansible"]["limit"]
+                    hsm_group.most_recent_cfs_session_name_created["ansible"]["limit"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!("   + Status:");
                 println!(
                     "     - status: {}",
-                    cluster.most_recent_cfs_session_name_created["status"]["session"]["status"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["status"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "     - succeeded: {}",
-                    cluster.most_recent_cfs_session_name_created["status"]["session"]["succeeded"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["succeeded"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "     - job: {}",
-                    cluster.most_recent_cfs_session_name_created["status"]["session"]["job"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["job"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "     - start: {}",
-                    cluster.most_recent_cfs_session_name_created["status"]["session"]["startTime"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["startTime"]
                         .as_str()
                         .unwrap_or_default()
                 );
                 println!(
                     "   - tags: {}",
-                    cluster.most_recent_cfs_session_name_created["tags"]
+                    hsm_group.most_recent_cfs_session_name_created["tags"]
                 );
 
-                println!(" * members: {}", nodes::nodes_to_string(&cluster.members));
+                println!(" * members: {}", nodes::nodes_to_string(&hsm_group.members));
             }
         }
         
@@ -621,49 +625,103 @@ pub async fn process_command(
             // Check andible limit matches the nodes in hsm_group
             let hsm_groups;
 
-            if hsm_group.is_some() {
-                hsm_groups =
-                    cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap())
-                        .await;
-            } else {
-                hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
-            }
+            let cfs_configuration_name;
 
-            // Take all nodes for all clusters found and put them in a Set
-            let hsm_groups_nodes = hsm_groups
-                .iter()
-                .flat_map(|cluster| {
-                    cluster
-                        .members
-                        .iter()
-                        .map(|xname| xname.as_str().unwrap().to_string())
-                })
-                .collect();
+            let ansible_limit = cli_apply_session.get_one::<String>("ansible-limit");
 
-            // Get Vec with all nodes from ansible-limit param
-            let ansible_limit_nodes_in_cfs_sessions: HashSet<String> = cli_apply_session
-                .get_one::<String>("ansible-limit")
-                .unwrap()
-                .replace(" ", "") // trim xnames by removing white spaces
-                .split(",")
-                .map(|xname| xname.to_string())
-                .collect();
+            let ansible_limit_nodes: HashSet<String>;
 
-            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                &hsm_groups_nodes,
-                ansible_limit_nodes_in_cfs_sessions,
-            );
+            let hsm_groups_nodes;
 
-            if !excluded.is_empty() {
-                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
-                    excluded,
-                    hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
-                    hsm_groups_nodes);
+            // * Validate input params
+            // Neither hsm_group (both config file or cli arg) nor ansible_limit provided --> ERROR since we don't know the target nodes to apply the session to
+            // NOTE: hsm group can be assigned either by config file or cli arg
+            if ansible_limit.is_none() && hsm_group.is_none() && cli_apply_session.get_one::<String>("hsm-group").is_none() { // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
+                eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
                 std::process::exit(-1);
             }
+            // * End validation input params
 
+            // * Parse input params
+            // Parse ansible limit
+            // Get ansible limit nodes from cli arg
+            if ansible_limit.is_some() {
+
+                // Get HashSet with all nodes from ansible-limit param
+                ansible_limit_nodes = ansible_limit
+                    .unwrap()
+                    .replace(" ", "") // trim xnames by removing white spaces
+                    .split(",")
+                    .map(|xname| xname.to_string())
+                    .collect();
+            
+            } else {
+                ansible_limit_nodes = HashSet::new();
+            }
+
+            // Parse hsm group
+            let mut hsm_group_value = None;
+
+            // Get hsm_group from cli arg
+            if cli_apply_session.get_one::<String>("hsm-group").is_some() {
+                hsm_group_value = cli_apply_session.get_one::<String>("hsm-group");
+            }
+
+            // Get hsm group from config file
+            if hsm_group.is_some() {
+
+                hsm_group_value = hsm_group;
+            }
+            // * End Parse input params
+
+            // * Process/validate hsm group value (and ansible limit)
+            if hsm_group_value.is_some() {
+
+                // Get all hsm groups related to hsm_group input
+                hsm_groups = 
+                    cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
+                        .await;
+        
+                cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
+        
+                // Take all nodes for all hsm_groups found and put them in a Vec
+                hsm_groups_nodes = hsm_groups
+                    .iter()
+                    .flat_map(|hsm_group| {
+                        hsm_group
+                            .members
+                            .iter()
+                            .map(|xname| xname.as_str().unwrap().to_string())
+                    })
+                    .collect();
+                    
+                if  !ansible_limit_nodes.is_empty() { // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+
+                    (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
+                        &hsm_groups_nodes,
+                        ansible_limit_nodes,
+                    );
+            
+                    if !excluded.is_empty() {
+                        println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
+                            excluded,
+                            hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
+                            hsm_groups_nodes);
+                        std::process::exit(-1);
+                    }
+                    
+                } else { // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
+                    included = hsm_groups_nodes
+                }
+            } else { // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
+                cfs_configuration_name = cli_apply_session.get_one::<String>("name").unwrap().to_string();
+                included = ansible_limit_nodes
+            }
+            // * End Process/validate hsm group value (and ansible limit)
+
+            // * Create CFS session
             let cfs_session_name = create_cfs_session_from_repo::run(
-                cli_apply_session.get_one::<String>("name").unwrap(),
+                &cfs_configuration_name,
                 vec![cli_apply_session
                     .get_one::<String>("repo-path")
                     .unwrap()
@@ -680,7 +738,9 @@ pub async fn process_command(
             )
             .await;
 
-            if cli_apply_session.get_one::<bool>("watch-logs").is_some() {
+            let watch_logs = cli_apply_session.get_one::<bool>("watch-logs");
+
+            if let Some(true) = watch_logs {
                 log::info!("Fetching logs ...");
                 shasta_cfs_session_logs::client::session_logs(
                     cfs_session_name.unwrap().as_str(),
@@ -688,6 +748,8 @@ pub async fn process_command(
                 )
                 .await?;
             }
+            // * End Create CFS session
+            
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
 
             let included: HashSet<String>;
@@ -705,11 +767,11 @@ pub async fn process_command(
                 hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
             }
 
-            // Take all nodes for all clusters found and put them in a Set
+            // Take all nodes for all hsm_groups found and put them in a Set
             let hsm_groups_nodes = hsm_groups
                 .iter()
-                .flat_map(|cluster| {
-                    cluster
+                .flat_map(|hsm_group| {
+                    hsm_group
                         .members
                         .iter()
                         .map(|xname| xname.as_str().unwrap().to_string())
@@ -720,7 +782,7 @@ pub async fn process_command(
 
                 // User provided list of xnames to power on
                 let xnames: HashSet<String> = cli_apply_node_on
-                    .get_one::<String>("xnames")
+                    .get_one::<String>("XNAMES")
                     .unwrap()
                     .replace(" ", "") // trim xnames by removing white spaces
                     .split(',')
@@ -752,7 +814,7 @@ pub async fn process_command(
 
                 // User provided list of xnames to power off
                 let xnames: HashSet<String> = cli_apply_node_off
-                    .get_one::<String>("xnames")
+                    .get_one::<String>("XNAMES")
                     .unwrap()
                     .replace(" ", "") // trim xnames by removing white spaces
                     .split(',')
@@ -770,7 +832,7 @@ pub async fn process_command(
                     std::process::exit(-1);
                 }
 
-                log::info!("Servers to power on: {:?}", included);
+                log::info!("Servers to power off: {:?}", included);
 
                 capmc::http_client::node_power_on::post(
                     shasta_token.to_string(),
@@ -784,7 +846,7 @@ pub async fn process_command(
                 
                 // User provided list of xnames to power reset
                 let xnames: HashSet<String> = cli_apply_node_reset
-                    .get_one::<String>("xnames")
+                    .get_one::<String>("XNAMES")
                     .unwrap()
                     .replace(" ", "") // trim xnames by removing white spaces
                     .split(',')
@@ -815,8 +877,11 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
+
         logging_session_name = cli_log.get_one::<String>("SESSION");
+
         layer_id = cli_log.get_one::<u8>("layer-id");
+        
         shasta_cfs_session_logs::client::session_logs_proxy(
             &shasta_token,
             &shasta_base_url,
@@ -825,15 +890,15 @@ pub async fn process_command(
             layer_id,
         )
         .await?;
-    } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-        // xname = cli_console.get_one::<String>("xname");
 
+    } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
+        
         let included: HashSet<String>;
         let excluded: HashSet<String>;
 
         // User provided list of xnames to power reset
         let xnames: HashSet<String> = cli_console
-            .get_one::<String>("xname")
+            .get_one::<String>("XNAME")
             .unwrap()
             .replace(" ", "") // trim xnames by removing white spaces
             .split(',')
@@ -841,36 +906,37 @@ pub async fn process_command(
             .collect();
 
         let hsm_groups: Vec<ClusterDetails>;
-            
+        
         if hsm_group.is_some() {
             // hsm_group value provided
             hsm_groups =
                 cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group.unwrap()).await;
+
+            // Take all nodes for all hsm_groups found and put them in a Set
+            let hsm_groups_nodes = hsm_groups
+                .iter()
+                .flat_map(|hsm_group| {
+                    hsm_group
+                        .members
+                        .iter()
+                        .map(|xname| xname.as_str().unwrap().to_string())
+                })
+                .collect();
+
+            (included, excluded) =
+                node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+
+            if !excluded.is_empty() {
+                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
+                    excluded,
+                    hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
+                    hsm_groups_nodes);
+                std::process::exit(-1);
+            }
+
         } else {
             // no hsm_group value provided
-            hsm_groups = cluster_ops::get_details(&shasta_token, &shasta_base_url, "").await;
-        }
-
-        // Take all nodes for all clusters found and put them in a Set
-        let hsm_groups_nodes = hsm_groups
-            .iter()
-            .flat_map(|cluster| {
-                cluster
-                    .members
-                    .iter()
-                    .map(|xname| xname.as_str().unwrap().to_string())
-            })
-            .collect();
-
-        (included, excluded) =
-            node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
-
-        if !excluded.is_empty() {
-            println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
-                excluded,
-                hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
-                hsm_groups_nodes);
-            std::process::exit(-1);
+            included = xnames.clone();
         }
 
         connect_to_console(included.iter().next().unwrap()).await?;
