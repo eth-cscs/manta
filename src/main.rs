@@ -16,7 +16,6 @@ mod local_git_repo;
 mod manta;
 mod node_console;
 mod vault;
-mod cli_derive;
 mod cli_programmatic;
 mod cluster_ops;
 mod node_ops;
@@ -26,7 +25,7 @@ use termion::color;
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
-    
+
     // Init logger
     env_logger::init();
 

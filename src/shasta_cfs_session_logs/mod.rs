@@ -69,7 +69,6 @@ pub mod client {
 
         let mut shasta_cluster = Cluster {
             server: String::from(k8s_api_url),
-            // server: String::from("https://api.alps.cscs.ch:6442"),
             insecure_skip_tls_verify: Some(true),
             certificate_authority: None,
             certificate_authority_data: Some(String::from(shasta_k8s_secrets["certificate-authority-data"].as_str().unwrap())),
