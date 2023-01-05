@@ -71,22 +71,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
 
             log::info!("Shutting down {:?}", xnames);
 
             let power_off = PowerStatus::new(reason.cloned(), xnames, force, None);
-
-            // log::debug!("Payload:\n{:#?}", power_off);
-
-            // // socks5 proxy
-            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-            // // rest client shutdown node
-            // let client = reqwest::Client::builder()
-            //     .danger_accept_invalid_certs(true)
-            //     .proxy(socks5proxy)
-            //     .build()?;
 
             let client;
 
@@ -106,13 +95,11 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_off")
+                .post(format!("{}/capmc/capmc/v1/xname_off", shasta_base_url))
                 .bearer_auth(shasta_token)
                 .json(&power_off)
                 .send()
                 .await?;
-
-            // log::info!("{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
@@ -129,22 +116,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool) -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool) -> Result<Value, Box<dyn Error>> {
             
             log::info!("Powering on nodes {:?}", xnames);
 
             let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
-            
-            // log::debug!("Payload:\n{:#?}", power_on);
-
-            // // socks5 proxy
-            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-            // // rest client start node
-            // let client = reqwest::Client::builder()
-            //     .danger_accept_invalid_certs(true)
-            //     .proxy(socks5proxy)
-            //     .build()?;
 
             let client;
 
@@ -164,13 +140,11 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_on")
+                .post(format!("{}/capmc/capmc/v1/xname_on", shasta_base_url))
                 .bearer_auth(shasta_token)
                 .json(&power_on)
                 .send()
                 .await?;
-
-            // log::debug!("\n{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
@@ -187,22 +161,11 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
             log::info!("Restarting {:?}", xnames);
 
             let node_restart = PowerStatus::new(reason.cloned(), xnames, force, None);
-            
-            // log::debug!("Payload:\n{:#?}", node_restart);
-
-            // // socks5 proxy
-            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-            // // rest client restart node
-            // let client = reqwest::Client::builder()
-            //     .danger_accept_invalid_certs(true)
-            //     .proxy(socks5proxy)
-            //     .build()?;
 
             let client;
 
@@ -222,13 +185,11 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/xname_reinit")
+                .post(format!("{}/capmc/capmc/v1/xname_reinit", shasta_base_url))
                 .bearer_auth(shasta_token)
                 .json(&node_restart)
                 .send()
                 .await?;
-
-            // log::debug!("\n{:#?}", resp);
 
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
@@ -245,18 +206,9 @@ pub mod http_client {
 
         use crate::capmc::NodeStatus;
 
-        pub async fn post(shasta_token: String, xnames: Vec<String>)  -> core::result::Result<Vec<Value>, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, shasta_base_url: String, xnames: Vec<String>)  -> core::result::Result<Vec<Value>, Box<dyn Error>> {
             
             let node_status = NodeStatus::new(None, Some(xnames), None);
-            
-            // // socks5 proxy
-            // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-            // // rest client get node status
-            // let client = reqwest::Client::builder()
-            //     .danger_accept_invalid_certs(true)
-            //     .proxy(socks5proxy)
-            //     .build()?;
 
             let client;
 
@@ -276,7 +228,7 @@ pub mod http_client {
             }
         
             let resp = client
-                .post("https://api.cmn.alps.cscs.ch/apis/capmc/capmc/v1/get_xname_status")
+                .post(format!("{}/capmc/capmc/v1/get_xname_status", shasta_base_url))
                 .bearer_auth(shasta_token)
                 .json(&node_status)
                 .send()

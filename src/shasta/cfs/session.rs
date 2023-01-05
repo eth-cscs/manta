@@ -173,18 +173,6 @@ pub mod http_client {
                 })
                 .collect();
 
-            // for cfs_session in json_response.as_array().unwrap() {
-    
-            //     if cfs_session["configuration"]["name"]
-            //         .as_str()
-            //         .unwrap()
-            //         .contains(hsm_group_name.unwrap())
-            //     {
-            //         cluster_cfs_sessions.push(cfs_session.clone());
-            //     }
-
-            // }
-
         }
         
         if session_name.is_some() {
@@ -199,20 +187,7 @@ pub mod http_client {
                 })
                 .collect();
 
-            // for cfs_session in json_response.as_array().unwrap() {
-            //     if cfs_session["name"]
-            //         .as_str()
-            //         .unwrap()
-            //         .eq(session_name.unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
-            //     {
-            //         cluster_cfs_sessions.push(cfs_session.clone());
-            //     }
-            // }
-
         }
-        //  else { // Returning all results
-        //     cluster_cfs_sessions = json_response.as_array().unwrap().clone();
-        // }
 
         cluster_cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(b["status"]["session"]["startTime"].as_str().unwrap()));
         

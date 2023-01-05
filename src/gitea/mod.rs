@@ -1,16 +1,17 @@
 pub mod http_client {
     
+    use crate::config;
     use serde_json::Value;
 
     pub async fn get_commit_details(repo_url: &str, commitid: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
-        let gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
-        let clone_base_url = "https://api-gw-service-nmn.local/vcs/";
-        let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
+        let settings = config::get("config");
+        let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
+        let gitea_api_base_url = format!("{}{}", gitea_base_url, "/api/v1");
 
         log::debug!("Repo URL: {}", repo_url);
 
-        let repo_name = repo_url.trim_start_matches(clone_base_url).trim_end_matches(".git");
+        let repo_name = repo_url.trim_start_matches(&gitea_base_url).trim_end_matches(".git");
 
         let client;
 
@@ -29,10 +30,10 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        log::debug!("Request to {}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid);
+        log::debug!("Request to {}/repos{}/git/commits/{}", gitea_api_base_url, repo_name, commitid);
 
         let resp = client
-            .get(format!("{}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid))
+            .get(format!("{}/repos{}/git/commits/{}", gitea_api_base_url, repo_name, commitid))
             .header("Authorization", format!("token {}", gitea_token))
             .send()
             .await?;
@@ -52,8 +53,9 @@ pub mod http_client {
 
     pub async fn get_last_commit(repo_name: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
-        let gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
-        let gitea_api_base_url = format!("{}{}", gitea_base_url, "api/v1");
+        let settings = config::get("config");
+        let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
+        let gitea_api_base_url = format!("{}{}", gitea_base_url, "/api/v1");
 
         let client;
 

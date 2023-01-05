@@ -13,7 +13,7 @@ use std::{
 
 /// docs --> https://cray-hpe.github.io/docs-csm/en-12/operations/security_and_authentication/api_authorization/
 ///      --> https://cray-hpe.github.io/docs-csm/en-12/operations/security_and_authentication/retrieve_an_authentication_token/
-pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
+pub async fn get_api_token(shasta_base_url: &str, keycloak_base_url: &str) -> Result<String, Box<dyn Error>> {
 
     let mut file;
     let mut shasta_token = String::new();
@@ -38,13 +38,13 @@ pub async fn get_api_token() -> Result<String, Box<dyn Error>> {
 
     let mut attempts = 0;
 
-    while !is_token_valid(&shasta_token).await.unwrap() && attempts < 3 {
+    while !is_token_valid(shasta_base_url, &shasta_token).await.unwrap() && attempts < 3 {
 
         println!("Please type your {}Keycloak credentials{}", color::Fg(color::Green), color::Fg(color::Reset));
         let username: String = Input::new().with_prompt("username").interact_text()?;
         let password = Password::new().with_prompt("password").interact()?;
 
-        match get_token_from_shasta_endpoint(&username, &password).await {
+        match get_token_from_shasta_endpoint(keycloak_base_url, &username, &password).await {
             Ok(shasta_token_aux) => {
                 log::debug!("Shasta token received");
                 file = File::create(&path).expect("Error encountered while creating file!");
@@ -74,7 +74,7 @@ pub fn get_token_from_local_file(path: &std::ffi::OsStr) -> Result<String, Box<d
     Ok(shasta_token.to_string())
 }
 
-pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> {
+pub async fn is_token_valid(shasta_base_url: &str, shasta_token: &str) -> Result<bool, Box<dyn Error>> {
 
     let client;
 
@@ -96,7 +96,7 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
     log::debug!("Check token against apis/cfs/healthz api");
     
     let resp = client
-        .get("https://api.cmn.alps.cscs.ch/apis/cfs/healthz")
+        .get(format!("{}/cfs/healthz", shasta_base_url))
         .bearer_auth(shasta_token)
         .send()
         .await?;
@@ -112,7 +112,7 @@ pub async fn is_token_valid(shasta_token: &str) -> Result<bool, Box<dyn Error>> 
     }
 }
 
-pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> Result<String, Box<dyn Error>> {
+pub async fn get_token_from_shasta_endpoint(keycloak_base_url: &str, username: &str, password: &str) -> Result<String, Box<dyn Error>> {
     
     let json_response: Value;
 
@@ -141,7 +141,7 @@ pub async fn get_token_from_shasta_endpoint(username: &str, password: &str) -> R
 
     let resp = client
         .post(
-            "https://api.cmn.alps.cscs.ch/keycloak/realms/shasta/protocol/openid-connect/token",
+            format!("{}/realms/shasta/protocol/openid-connect/token", keycloak_base_url),
         )
         .form(&params)
         .send()

@@ -1,23 +1,6 @@
 mod gitea;
+
 mod shasta;
-mod shasta_cfs_session_logs;
-// mod manta_cfs;
-mod create_cfs_session_from_repo;
-mod local_git_repo;
-mod manta;
-mod node_console;
-mod vault;
-mod cli_derive;
-mod cli_programmatic;
-
-mod cluster_ops;
-mod node_ops;
-
-use config::Config;
-
-use termion::color;
-
-// use manta_cfs::{configuration::{print_table}, layer::ConfigLayer};
 
 use shasta::{
     authentication, capmc,
@@ -27,17 +10,31 @@ use shasta::{
     },
 };
 
+mod shasta_cfs_session_logs;
+mod create_cfs_session_from_repo;
+mod local_git_repo;
+mod manta;
+mod node_console;
+mod vault;
+mod cli_derive;
+mod cli_programmatic;
+mod cluster_ops;
+mod node_ops;
+mod config;
+
+use termion::color;
+
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // Init logger
     env_logger::init();
 
-    let settings = Config::builder()
-        .add_source(config::File::with_name("config.toml"))
-        .build()
-        .unwrap();
+    let settings = config::get("config");
 
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
+    let vault_base_url = settings.get::<String>("vault_base_url").unwrap();
+    let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
+    let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     // std::env::set_var("KUBECONFIG", settings.get::<String>("kubeconfig").unwrap());
     // std::env::set_var("SOCKS5", settings.get::<String>("socks5_proxy").unwrap());
     match settings.get::<String>("socks5_proxy") {
@@ -55,9 +52,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => None,
     };
 
-    let shasta_token = authentication::get_api_token().await?;
+    let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
 
-    let gitea_token = vault::http_client::fetch_shasta_vcs_token().await.unwrap();
+    let gitea_token = vault::http_client::fetch_shasta_vcs_token(&vault_base_url).await.unwrap();
 
     // Parse input params
 
@@ -73,7 +70,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Process input params
     let matches = cli_programmatic::get_matches(hsm_group);
-    cli_programmatic::process_command(matches, shasta_token, shasta_base_url, gitea_token, hsm_group).await;
+    cli_programmatic::process_command(matches, shasta_token, shasta_base_url, vault_base_url, gitea_token, gitea_base_url, hsm_group).await;
     // cli_derive::process_command(shasta_token, shasta_base_url, gitea_token);
     
     // match args.command {

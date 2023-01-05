@@ -16,6 +16,7 @@ pub async fn run(
     config_name: &str,
     repos: Vec<String>,
     gitea_token: String,
+    gitea_base_url: String,
     shasta_token: String,
     shasta_base_url: String,
     limit: String,
@@ -143,8 +144,11 @@ pub async fn run(
 
         // Get repo name
         let repo_ref_origin = repo.find_remote("origin").unwrap();
+
         log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+        
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+        
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
@@ -209,8 +213,11 @@ pub async fn run(
 
         // Get repo name
         let repo_ref_origin = repo.find_remote("origin").unwrap();
+        
         log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+        
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+        
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
@@ -218,7 +225,7 @@ pub async fn run(
 
         // Check if repo and local commit id exists in Shasta cvs
         let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
-            &format!("cray/{}", repo_name),
+            &format!("/cray/{}", repo_name),
             &local_last_commit.id().to_string(),
             &gitea_token,
         )
@@ -245,15 +252,15 @@ pub async fn run(
         let cfs_layer = configuration::Layer::new(
             format!(
                 // git repo url in shasta faced VCS
-                "{}/{}",
-                "https://api-gw-service-nmn.local/vcs/cray", // TODO: refactor this and move it to gitea mod
+                "{}/cray/{}",
+                gitea_base_url, // TODO: refactor this and move it to gitea mod
                 repo_name
             ),
             // String::from(repo_ref_origin_url), // git repo url in user faced VCS
             String::from(shasta_commitid_details["sha"].as_str().unwrap()),
             format!(
                 "{}-{}",
-                repo_name.substring(1, repo_name.len()),
+                repo_name.substring(0, repo_name.len()),
                 chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
             ),
             String::from("site.yml"),
@@ -262,7 +269,7 @@ pub async fn run(
         cfs_configuration = configuration::add_layer(cfs_layer, cfs_configuration);
     }
 
-    log::debug!("CFS configuration:\n{:#?}", cfs_configuration);
+    log::info!("CFS configuration:\n{:#?}", cfs_configuration);
 
     // Update/PUT CFS configuration
     log::debug!("Replacing '_' with '-' in repo name and create configuration and session name.");

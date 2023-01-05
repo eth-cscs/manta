@@ -1,3 +1,0 @@
-socks5_proxy = "socks5h://127.0.0.1:1080"
-shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
-hsm_group = "psitds"

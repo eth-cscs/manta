@@ -1,0 +1,8 @@
+socks5_proxy = "socks5h://127.0.0.1:1080"
+shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
+keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
+gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
+k8s_api_url = "https://10.252.1.12:6442"
+vault_base_url = "https://vault.svc.cscs.ch"
+vault_role_id = "f9a867ff-2a05-cfda-10b1-bbae7591ff58"
+hsm_group = "psitds"

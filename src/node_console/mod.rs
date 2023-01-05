@@ -10,11 +10,11 @@ use tokio_util::io::ReaderStream;
 
 use crate::shasta_cfs_session_logs::client::get_k8s_client_programmatically;
 
-pub async fn connect_to_console(xname: &String) -> Result<(), Box<dyn Error>> {
+pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Result<(), Box<dyn Error>> {
 
     log::info!("xname: {}", xname);
 
-    let client = get_k8s_client_programmatically().await?;
+    let client = get_k8s_client_programmatically(vault_base_url).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 

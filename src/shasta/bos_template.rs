@@ -280,8 +280,6 @@ pub mod http_client {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
 
-                // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
-
             }
         } else if bos_template_name.is_some() {
             for bos_template in json_response.as_array().unwrap() {
@@ -294,23 +292,15 @@ pub mod http_client {
                 }
             }
         } else { // Returning all results
+
             cluster_bos_tempalte = json_response.as_array().unwrap().clone();
 
-            // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
         }
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
-    
-            // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
-    
-            // cfs_utils::print_cfs_configurations(&cfs_configurations);
-            
-            // cluster_cfs_sessions.truncate(limit_number.unwrap().into());
             cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
             
-            // cluster_cfs_sessions = vec![cluster_cfs_sessions]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         } 
 
         Ok(cluster_bos_tempalte)

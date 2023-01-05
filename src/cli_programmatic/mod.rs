@@ -317,7 +317,9 @@ pub async fn process_command(
     cli_root: ArgMatches,
     shasta_token: String,
     shasta_base_url: String,
+    vault_base_url: String,
     gitea_token: String,
+    gitea_base_url: String,
     hsm_group: Option<&String>,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     let hsm_group_name;
@@ -332,6 +334,7 @@ pub async fn process_command(
 
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
+
             configuration_name = cli_get_configuration.get_one::<String>("name");
 
             hsm_group_name = match hsm_group {
@@ -361,9 +364,12 @@ pub async fn process_command(
             .await?;
 
             if cfs_configurations.is_empty() {
+
                 println!("No CFS configuration found!");
                 return Ok(());
+                
             } else if cfs_configurations.len() == 1 {
+
                 let most_recent_cfs_configuration = &cfs_configurations[0];
 
                 let mut layers: Vec<manta_cfs_configuration::Layer> = vec![];
@@ -726,6 +732,7 @@ pub async fn process_command(
                     .unwrap()
                     .to_string()],
                 gitea_token,
+                gitea_base_url,
                 shasta_token,
                 shasta_base_url,
                 included.into_iter().collect::<Vec<String>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
@@ -742,6 +749,7 @@ pub async fn process_command(
             if let Some(true) = watch_logs {
                 log::info!("Fetching logs ...");
                 shasta_cfs_session_logs::client::session_logs(
+                    vault_base_url,
                     cfs_session_name.unwrap().as_str(),
                     None,
                 )
@@ -839,6 +847,7 @@ pub async fn process_command(
 
                 capmc::http_client::node_power_on::post(
                     shasta_token.to_string(),
+                    shasta_base_url,
                     cli_apply_node_on.get_one::<String>("reason"),
                     included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
                     false,
@@ -933,6 +942,7 @@ pub async fn process_command(
 
                 capmc::http_client::node_power_off::post(
                     shasta_token.to_string(),
+                    shasta_base_url,
                     cli_apply_node_off.get_one::<String>("reason"),
                     included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
                     *cli_apply_node_off.get_one::<bool>("force").unwrap(),
@@ -1027,6 +1037,7 @@ pub async fn process_command(
 
                 capmc::http_client::node_restart::post(
                     shasta_token.to_string(),
+                    shasta_base_url,
                     cli_apply_node_reset.get_one::<String>("reason"),
                     included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
                     *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
@@ -1044,6 +1055,7 @@ pub async fn process_command(
         shasta_cfs_session_logs::client::session_logs_proxy(
             &shasta_token,
             &shasta_base_url,
+            vault_base_url,
             None,
             logging_session_name,
             layer_id,
@@ -1098,7 +1110,7 @@ pub async fn process_command(
             included = xnames.clone();
         }
 
-        connect_to_console(included.iter().next().unwrap()).await?;
+        connect_to_console(included.iter().next().unwrap(), vault_base_url).await?;
     }
 
     Ok(())

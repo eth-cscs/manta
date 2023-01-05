@@ -114,7 +114,6 @@ pub mod http_client {
         }
 
         cluster_cfs_configs = json_response.as_array().unwrap().clone();
-        // cluster_cfs_configs = Vec::new();
     
         if hsm_group_name.is_some() {
 
@@ -127,18 +126,6 @@ pub mod http_client {
                     .contains(hsm_group_name.unwrap())
                 })
                 .collect();
-
-            // for cfs_configuration in json_response.as_array().unwrap() {
-            //     if cfs_configuration["name"]
-            //         .as_str()
-            //         .unwrap()
-            //         .contains(hsm_group_name.unwrap())
-            //     {
-            //         cluster_cfs_configs.push(cfs_configuration.clone());
-            //     }
-
-            //     // cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
-            // }
 
         }
         
@@ -154,20 +141,7 @@ pub mod http_client {
                 })
                 .collect();
 
-            // for cfs_configuration in json_response.as_array().unwrap() {
-            //     if cfs_configuration["name"]
-            //         .as_str()
-            //         .unwrap()
-            //         .eq(configuration_name.unwrap())
-            //     {
-            //         cluster_cfs_configs.push(cfs_configuration.clone());
-            //     }
-            // }
-
-        } 
-        // else { // Returning all results
-        //     cluster_cfs_configs = json_response.as_array().unwrap().clone();
-        // }
+        }
 
         cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].as_str().unwrap().cmp(b["lastUpdated"].as_str().unwrap()));
         

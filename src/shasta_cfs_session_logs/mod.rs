@@ -11,8 +11,9 @@ pub mod client {
     use secrecy::SecretString;
     use termion::color;
     
-
     use crate::{shasta_cfs_session, vault::http_client::fetch_shasta_k8s_secrets};
+
+    use crate::config;
 
     // pub async fn get_k8s_client_from_env() -> Result<kube::Client, Box<dyn Error>> {
 
@@ -58,13 +59,16 @@ pub mod client {
     //     Ok(client)
     // }
 
-    pub async fn get_k8s_client_programmatically() -> Result<kube::Client, Box<dyn Error>> {
+    pub async fn get_k8s_client_programmatically(vault_base_url: String) -> Result<kube::Client, Box<dyn Error>> {
 
-        let shasta_k8s_secrets = fetch_shasta_k8s_secrets().await?;
+        let settings = config::get("config");
+        let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
+
+        let shasta_k8s_secrets = fetch_shasta_k8s_secrets(&vault_base_url).await?;
         // log::info!("\n{:#?}", fetch_shasta_k8s_secrets().await);
 
         let mut shasta_cluster = Cluster {
-            server: String::from("https://10.252.1.12:6442"),
+            server: String::from(k8s_api_url),
             // server: String::from("https://api.alps.cscs.ch:6442"),
             insecure_skip_tls_verify: Some(true),
             certificate_authority: None,
@@ -170,7 +174,7 @@ pub mod client {
         Ok(client)
     }
     
-    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, cluster_name: Option<&String>, session_name: Option<&String>, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
+    pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, vault_base_url: String, cluster_name: Option<&String>, session_name: Option<&String>, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
         
         println!("cluster_name: {:?}", cluster_name);
         println!("session_name: {:?}", session_name);
@@ -188,7 +192,7 @@ pub mod client {
 
         let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-        let client = get_k8s_client_programmatically().await?;
+        let client = get_k8s_client_programmatically(vault_base_url).await?;
 
         // Get CFS session logs
         get_container_logs(client, cfs_session_name, layer_id).await?;
@@ -196,9 +200,9 @@ pub mod client {
         Ok(())
     }
 
-    pub async fn session_logs(cfs_session_name: &str, layer_id: Option<&u8>) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    pub async fn session_logs(vault_base_url: String, cfs_session_name: &str, layer_id: Option<&u8>) -> core::result::Result<(), Box<dyn std::error::Error>> {
         
-        let client = get_k8s_client_programmatically().await?;
+        let client = get_k8s_client_programmatically(vault_base_url).await?;
 
         // Get CFS session logs
         get_container_logs(client, cfs_session_name, layer_id).await?;
