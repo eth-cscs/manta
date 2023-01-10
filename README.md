@@ -45,7 +45,7 @@ vault_role_id|yes|config file|role id related to Hashicorp Vault base URL approl
 
 ## Example
 
-##### Get lastest (most recent) session
+### Get lastest (most recent) session
 
 ```shell
 $ manta get session --most-recent
@@ -56,7 +56,7 @@ $ manta get session --most-recent
 +----------------------------------------------+-------------------------+---------+---------------+---------------+---------------------+----------+-----------+------------------------------------------+
 ```
 
-##### Get logs for a session/layer
+### Get logs for a session/layer
 
 ```shell
 $ manta log --session-name batcher-cef892ee-39af-444a-b32c-89478a100e4d --layer-id 0
@@ -97,7 +97,7 @@ PLAY RECAP *********************************************************************
 x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0   
 ```
 
-##### Create a CFS session and watch logs
+### Create a CFS session and watch logs
 
 ```
 $ manta apply session --repo-path /home/msopena/ownCloud/Documents/ALPSINFRA/vcluster_shasta_scripts/muttler/muttler_orchestrator/ --watch-logs --ansible-limit x1500c3s4b0n1
@@ -136,7 +136,7 @@ PLAY RECAP *********************************************************************
 x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-##### Create an interactive session to a node
+### Create an interactive session to a node
 
 ```
 $ manta console -x x1500c2s4b0n1
@@ -164,13 +164,13 @@ Use &. key combination to exit the console.
 nid003129 login: 
 ```
 
-##### Power off a node
+### Power off a node
 
 ```
 $ manta apply node off --xnames "x1004c1s4b0n1" --force
 ```
 
-##### Power on a node
+### Power on a node
 
 ```
 $ manta apply node on --xnames "x1004c1s4b0n1"
@@ -178,17 +178,17 @@ $ manta apply node on --xnames "x1004c1s4b0n1"
 
 ## Deployment
 
-##### Build container image
+### Build container image
 
 This repo contains a Dockerfile to build a Container with manta cli.
 
-##### Build container image 
+### Build container image 
 
 ```
 docker build -t manta .
 ```
 
-##### Run
+#### Run
 
 ```
 $ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
