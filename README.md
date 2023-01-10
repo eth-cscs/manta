@@ -182,8 +182,6 @@ $ manta apply node on --xnames "x1004c1s4b0n1"
 
 This repo contains a Dockerfile to build a Container with manta cli.
 
-### Build container image 
-
 ```
 docker build -t manta .
 ```
@@ -207,3 +205,19 @@ Options:
   -h, --help     Print help information
   -V, --version  Print version information
 ```
+
+### Build from sources
+
+Install Rust toolchain https://www.rust-lang.org/tools/install
+
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Generate binary
+
+```shell
+git clone https://git.cscs.ch/msopena/manta.git && cd manta && cargo build
+```
+
+If everything went well, then binary should be located in `manta/target/release/manta`
