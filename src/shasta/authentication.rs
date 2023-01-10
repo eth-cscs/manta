@@ -152,9 +152,5 @@ pub async fn get_token_from_shasta_endpoint(keycloak_base_url: &str, username: &
         Ok(json_response["access_token"].as_str().unwrap().to_string())
     } else {
         Err(resp.json::<Value>().await?["error_description"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
-        // Err(resp.json::<Value>().await?
-        //     .as_str()
-        //     .unwrap()
-        //     .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
     }
 }

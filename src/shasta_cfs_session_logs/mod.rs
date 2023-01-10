@@ -65,7 +65,6 @@ pub mod client {
         let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
 
         let shasta_k8s_secrets = fetch_shasta_k8s_secrets(&vault_base_url).await?;
-        // log::info!("\n{:#?}", fetch_shasta_k8s_secrets().await);
 
         let mut shasta_cluster = Cluster {
             server: String::from(k8s_api_url),

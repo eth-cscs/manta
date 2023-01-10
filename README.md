@@ -36,10 +36,10 @@ Manta is aggregates information from multiple sources:
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
 |gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|
 |k8s_api_url|yes|config file|Shasta k8s API URL|https://10.252.1.12:6442|
-|vault_base_url|yes|config file|Hashicorp Vault base URL storing secrets to authenticate to external services|TBD|
+|vault_base_url|yes|config file|Hashicorp Vault base URL storing secrets to authenticate to external services|https://hashicorp-vault.cscs.ch|
 vault_role_id|yes|config file|role id related to Hashicorp Vault base URL approle authentication|yes|b15517de-cabb-06ba-af98-633d216c6d99|
 |shasta_base_url|yes|config file|Shasta API base URL for Shasta related jobs submission|https://api-gw-service-nmn.local/apis|
-|hsm_group|no|config|HSM group running the commands|psi-dev|
+|hsm_group|no|config|If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command|psi-dev|
 
 ## Example
 
