@@ -25,7 +25,9 @@ Manta is aggregates information from multiple sources:
 - Create CFS session out of a repository
 - Watch logs of a CFS session
 - Open an interactive session to a node console using remote's terminal and shell
-- Power On/Off individual nodes or per cluster
+- Power On/Off or restart nodes individually, in a list or per cluster
+- Restrict operations to nodes belonging to HSM group
+- Filter information to a HSM group
 
 ## Configuration
 
