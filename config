@@ -7,4 +7,4 @@ k8s_api_url = "https://10.252.1.12:6442"
 # vault_role_id = "f9a867ff-2a05-cfda-10b1-bbae7591ff58" # vault in fulen
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
-hsm_group = "psitds"
+# hsm_group = "psitds"

@@ -181,8 +181,6 @@ pub mod client {
         // Get CFS sessions
         let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, None).await?;
 
-        // cfs_sessions.sort_by(|a, b| a["status"]["session"]["startTime"].to_string().cmp(&b["status"]["session"]["startTime"].to_string()));
-
         if cfs_sessions.is_empty() {
             log::info!("No CFS session found");
             return Ok(())
@@ -232,14 +230,14 @@ pub mod client {
 
         // Waiting for pod to start
         while pods.items.is_empty() && i < 10 {
-            log::info!("Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10", cfs_session_name, i + 1);
+            println!("Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10", cfs_session_name, i + 1);
             i += 1;
             thread::sleep(time::Duration::from_secs(2));
             pods = pods_api.list(&params).await?;
         }
 
         if pods.items.is_empty() {
-            log::info!("Pod for cfs session {} not ready. Aborting operation", cfs_session_name);
+            eprintln!("Pod for cfs session {} not ready. Aborting operation", cfs_session_name);
             std::process::exit(1);
         }
 
@@ -268,7 +266,7 @@ pub mod client {
     
             // Waiting for container ansible-x to start
             while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
-                log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", container_name, i + 1);
+                println!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", container_name, i + 1);
                 i += 1;
                 thread::sleep(time::Duration::from_secs(2));
                 pods = pods_api.list(&params).await?;
@@ -277,7 +275,7 @@ pub mod client {
             }
     
             if container_state.as_ref().unwrap().waiting.is_some() {
-                log::info!("Container {} not ready. Aborting operation", container_name);
+                eprintln!("Container {} not ready. Aborting operation", container_name);
                 std::process::exit(1);
             }
     
@@ -302,8 +300,6 @@ pub mod client {
 
             for ansible_container in ansible_containers {
                 
-                // let container_name = ansible_container.name;
-
                 println!();
                 println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = ansible_container.name, color_reset = color::Fg(color::Reset));
                 println!();
@@ -322,16 +318,16 @@ pub mod client {
         
                 // Waiting for container ansible-x to start
                 while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
-                    log::info!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", ansible_container.name, i + 1);
+                    println!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", ansible_container.name, i + 1);
                     i += 1;
                     thread::sleep(time::Duration::from_secs(2));
                     pods = pods_api.list(&params).await?;
                     container_state = get_container_state(&pods.items[0], &ansible_container.name);
-                    log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
+                    println!("Container state:\n{:#?}", container_state.as_ref().unwrap());
                 }
         
                 if container_state.as_ref().unwrap().waiting.is_some() {
-                    log::info!("Container {} not ready. Aborting operation", ansible_container.name);
+                    eprintln!("Container {} not ready. Aborting operation", ansible_container.name);
                     std::process::exit(1);
                 }
         
