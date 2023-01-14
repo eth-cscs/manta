@@ -265,7 +265,6 @@ pub mod utils {
                 cfs_session["configuration"]["name"].as_str().unwrap(),
                 cfs_session["target"]["definition"].as_str().unwrap(),
                 &target_groups,
-                // cfs_session["ansible"]["limit"].as_str().unwrap_or_default(),
                 &ansible_limits,
                 cfs_session["status"]["session"]["startTime"].as_str().unwrap(),
                 cfs_session["status"]["session"]["status"].as_str().unwrap(),
