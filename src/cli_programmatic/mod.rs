@@ -33,17 +33,11 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
-    // let about_msg = "Get information from Shasta CFS session";
-
     match hsm_group {
         None => get_cfs_session = get_cfs_session
                     .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                     .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"])),
-                    //.about(about_msg)
-        Some(_) => {
-            // get_cfs_session =
-            //     get_cfs_session.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     get_cfs_session =
@@ -67,17 +61,11 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
-    // let about_msg = "Get information from Shasta BOS template";
-
     match hsm_group {
         None => get_cfs_configuration = get_cfs_configuration
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"])),
-                // .about(about_msg)
-        Some(_) => {
-            // get_cfs_configuration = get_cfs_configuration
-            //     .about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     get_cfs_configuration = get_cfs_configuration
@@ -100,21 +88,12 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
-    // let about_msg = "Get information from Shasta BOS template";
-
     match hsm_group {
         None => get_bos_template = get_bos_template
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"])),
-                // .about(about_msg),
-        Some(_) => {
-            // get_bos_template =
-            //     get_bos_template.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
-
-    // get_bos_template =
-    //     get_bos_template.group(ArgGroup::new("template-limit").args(["most-recent", "limit"]));
 
     get_bos_template
 }
@@ -124,15 +103,10 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
         .alias("n")
         .about("Get members of a hsm group");
 
-    // let about_msg = "Get members of a hsm group";
-
     match hsm_group {
         None => get_node = get_node.arg_required_else_help(true)
                 .arg(arg!(<HSMGROUP> "hsm group name")),
-            // .about(about_msg)
-        Some(_) => {
-            // get_node = get_node.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     get_node
@@ -143,16 +117,11 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
         .aliases(["h", "hg", "hsm"])
         .about("Get hsm groups details");
 
-    // let about_msg = "Get hsm groups details";
-
     match hsm_group {
         None => get_hsm_group = get_hsm_group.arg_required_else_help(true)
                 .arg(arg!(<HSMGROUP> "hsm group name")),
-                // .about(about_msg),
         Some(_) => {
             get_hsm_group = get_hsm_group.arg_required_else_help(false);
-            // get_hsm_group =
-            //     get_hsm_group.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value));
         }
     }
 
@@ -191,16 +160,6 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             .default_missing_value("2"))
         .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true));
 
-    // let about_msg = "Create a CFS configuration and a session against hsm group or xnames";
-
-    // match hsm_group {
-    //     None => apply_session = apply_session.about(about_msg),
-    //     Some(hsm_group_value) => {
-    //         apply_session =
-    //             apply_session.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-    //     }
-    // }
-
     apply_session
 }
 
@@ -211,17 +170,11 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
         .arg(arg!(<XNAMES> "node's xnames"))
         .arg(arg!(-r --reason <VALUE> "reason to power on"));
 
-    // let about_msg = "Start a node";
-
     match hsm_group {
         None => apply_node_on = apply_node_on
             .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
             .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-        // .about(about_msg),
-        Some(_) => {
-            // apply_node_on =
-            //     apply_node_on.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     apply_node_on
@@ -235,17 +188,11 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to power off"));
 
-    // let about_msg = "Shutdown a node";
-
     match hsm_group {
         None => apply_node_off = apply_node_off
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-                // .about(about_msg)
-        Some(_) => {
-            // apply_node_off =
-            //     apply_node_off.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     apply_node_off
@@ -260,17 +207,11 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to reset"));
 
-    // let about_msg = "Restart a node";
-
     match hsm_group {
         None => apply_node_reset = apply_node_reset
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-                // .about(about_msg)
-        Some(_) => {
-            // apply_node_reset =
-            //     apply_node_reset.about(format!("{}\nHSM GROUP NAME: {}", about_msg, hsm_group_value))
-        }
+        Some(_) => { }
     }
 
     apply_node_reset
@@ -288,6 +229,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
                     Command::new("node")
+                        .aliases(["n", "nod"])
                         .arg_required_else_help(true)
                         .about("Make changes to nodes")
                         .subcommand(subcommand_apply_node_on(hsm_group))
