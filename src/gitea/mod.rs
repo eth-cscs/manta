@@ -7,7 +7,6 @@ pub mod http_client {
 
     pub async fn get_commit_details(repo_url: &str, commitid: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
-        // let settings = config::get("config");
         let gitea_internal_base_url = "https://api-gw-service-nmn.local/vcs";
         let gitea_api_base_url = format!("{}{}", gitea_internal_base_url, "/api/v1");
 
@@ -88,7 +87,6 @@ pub mod http_client {
         
         let mut json_response: Vec<Value> = serde_json::from_str(&resp.text().await?)?;
 
-        // cluster_cfs_configs.sort_by(|a, b| a["lastUpdated"].to_string().cmp(&b["lastUpdated"].to_string()));
         json_response.sort_by(|a, b| a["commit"]["committer"]["date"].to_string().cmp(&b["commit"]["committer"]["date"].to_string()));
         
         Ok(json_response.last().unwrap().clone())

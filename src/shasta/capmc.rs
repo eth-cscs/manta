@@ -106,6 +106,7 @@ pub mod http_client {
     }
 
     pub mod node_power_on {
+
         use std::error::Error;
 
         use serde_json::Value;
@@ -151,6 +152,7 @@ pub mod http_client {
     }
 
     pub mod node_power_restart {
+
         use std::error::Error;
 
         use serde_json::Value;
@@ -196,6 +198,7 @@ pub mod http_client {
     }
 
     pub mod node_power_status {
+        
         use std::error::Error;
 
         use serde_json::Value;

@@ -256,7 +256,6 @@ pub async fn run(
                 gitea_base_url, // TODO: refactor this and move it to gitea mod
                 repo_name
             ),
-            // String::from(repo_ref_origin_url), // git repo url in user faced VCS
             String::from(shasta_commitid_details["sha"].as_str().unwrap()),
             format!(
                 "{}-{}",

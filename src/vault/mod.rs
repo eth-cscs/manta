@@ -18,7 +18,6 @@ pub mod http_client {
         
         let resp = client
             .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
-            // .json(&auth_payload)
             .json(&json!({ "role_id": String::from(role_id)}))
             .send()
             .await?;

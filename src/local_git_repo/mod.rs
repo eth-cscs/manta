@@ -7,8 +7,6 @@ use std::error::Error;
 
     use dialoguer::{Input, Password};
     use git2::{Repository, PushOptions, Remote, ObjectType, Commit};
-    // use git2::{ObjectType, Repository, PushOptions};
-
 
     pub fn get_repo(repo_path: String) -> Result<Repository, git2::Error> {
         
@@ -64,7 +62,6 @@ use std::error::Error;
 
             if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
                 log::debug!("File not included in git index. Aborting process. Please run 'git status' to get list of file to work on");
-
                 -1
             } else {
                 0
@@ -86,8 +83,6 @@ use std::error::Error;
 
             let status = repo.status_file(path).unwrap();
     
-            
-
             if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW)
             {
                 log::debug!(" - Adding file: '{}' with status {:?}", path.display(), status);
@@ -263,7 +258,6 @@ use std::error::Error;
     
         if idx.has_conflicts() {
             println!("Merge conficts detected...");
-            // repo.checkout_index(Some(&mut idx), None)?;
             return Err("Conflicts have been found while checking local and remote repos. Please fix conflicts and try again, Your local repo is instact.".into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     

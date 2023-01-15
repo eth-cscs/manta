@@ -45,7 +45,6 @@ pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name
             hsm_group_label: hsm_group["label"].as_str().unwrap_or_default().to_string(),
             most_recent_cfs_configuration_name_created: most_recept_cfs_configuration_created,
             most_recent_cfs_session_name_created: most_recept_cfs_session_created,
-            // members: hsm_group["members"]["ids"].as_array().unwrap().into_iter().map(|member| member.as_str().unwrap().to_string()).collect(),
             members: hsm_group["members"]["ids"].as_array().unwrap().clone(),
         };
 

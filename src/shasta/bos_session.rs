@@ -50,15 +50,6 @@ pub mod http_client {
 
         let mut cluster_bos_session: Vec<Value> = Vec::new();
 
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-        // // rest client get cfs sessions
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
-
         let client;
 
         let client_builder = reqwest::Client::builder()
@@ -103,8 +94,6 @@ pub mod http_client {
                     cluster_bos_session.push(bos_template.clone());
                 }
 
-                // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
-
             }
         } else if bos_session_name.is_some() {
             for bos_session in json_response.as_array().unwrap() {
@@ -118,22 +107,11 @@ pub mod http_client {
             }
         } else { // Returning all results
             cluster_bos_session = json_response.as_array().unwrap().to_vec();
-
-            // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
         }
         
         if limit_number.is_some() { // Limiting the number of results to return to client
 
-            // cluster_cfs_sessions = json_response.as_array().unwrap().to_vec();
-    
-            // cluster_bos_tempalte.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
-    
-            // cfs_utils::print_cfs_configurations(&cfs_configurations);
-            
-            // cluster_cfs_sessions.truncate(limit_number.unwrap().into());
             cluster_bos_session = cluster_bos_session[cluster_bos_session.len().saturating_sub(limit_number.unwrap().into())..].to_vec();
-            
-            // cluster_cfs_sessions = vec![cluster_cfs_sessions]; // vec! macro for vector initialization!!! https://doc.rust-lang.org/std/vec/struct.Vec.html
         } 
 
         Ok(cluster_bos_session)

@@ -5,15 +5,6 @@ pub mod http_client {
     use serde_json::Value;
 
     pub async fn get(shasta_token: &str, shasta_base_url: &str, component_id: &str) -> Result<Value, Box<dyn Error>> {
-    
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-    
-        // // rest client get cfs configurations
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 
