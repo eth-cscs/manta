@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)] // TODO: to avoid compiler from complaining about unused methods
+
 use std::error::Error;
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
     use std::path::{Path, PathBuf};
@@ -73,6 +75,7 @@ use std::error::Error;
         }
     }
 
+    /// equivalent to `git add .`
     pub fn add_all(repo: &Repository) {
 
         let mut index = repo.index().unwrap();

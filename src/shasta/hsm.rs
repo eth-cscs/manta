@@ -36,7 +36,6 @@ pub mod http_client {
             .await?;
 
         if resp.status().is_success() {
-            // Ok(serde_json::from_str(&resp.text().await?)?)
             json_response = serde_json::from_str(&resp.text().await?)?;
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
@@ -53,9 +52,6 @@ pub mod http_client {
                 {
                     hsm_groups.push(hsm_group.clone());
                 }
-
-                // hsm_groups.sort_by(|a, b| a["status"]["session"]["startTime"].as_str().unwrap().cmp(&b["status"]["session"]["startTime"].as_str().unwrap()));
-
             }
         }
 
@@ -65,15 +61,6 @@ pub mod http_client {
 
 
     pub async fn get_component_status(shasta_token: &str, shasta_base_url: &str, xname: &str) -> Result<Value, Box<dyn Error>> {
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-        // // rest client get commit details
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
 
         let client;
 
@@ -106,52 +93,34 @@ pub mod http_client {
     }
 }
 
-pub mod utils {
+// pub mod utils {
     
-    use comfy_table::Table;
-    use serde_json::Value;
+//     use comfy_table::Table;
+//     use serde_json::Value;
 
-    use crate::shasta::nodes::nodes_to_string;
+//     use crate::shasta::nodes::nodes_to_string;
 
-    pub fn print_table(hsm_groups: Vec<Value>) {
+//     pub fn print_table(hsm_groups: Vec<Value>) {
         
-        let mut table = Table::new();
+//         let mut table = Table::new();
 
-        table.set_header(vec!["Label", "Description", "Tags", "Exclusive group", "Members"]);
+//         table.set_header(vec!["Label", "Description", "Tags", "Exclusive group", "Members"]);
     
-        for hsm_group in hsm_groups {
+//         for hsm_group in hsm_groups {
 
-            let list_members = hsm_group["members"]["ids"].as_array().unwrap();
+//             let list_members = hsm_group["members"]["ids"].as_array().unwrap();
 
-            let members = nodes_to_string(list_members);
+//             let members = nodes_to_string(list_members);
 
-            // let mut members: String = String::new();
-
-            // if !list_members.is_empty() {
-                
-            //     members = list_members[0].as_str().unwrap().to_string();
-
-            //     for i in 1..list_members.len() {
-
-            //         if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
-            //             members = format!("{},\n", members);
-            //         } else {
-            //             members = format!("{},", members);
-            //         }
+//             table.add_row(vec![
+//                 hsm_group["label"].as_str().unwrap(),
+//                 hsm_group["description"].as_str().unwrap(),
+//                 hsm_group["tags"].as_str().unwrap_or_default(),
+//                 hsm_group["exclusiveGroup"].as_str().unwrap_or_default(),
+//                 &members
+//             ]);
+//         }
     
-            //         members = format!("{}{}", members, list_members[i].as_str().unwrap());    
-            //     }
-            // }
-
-            table.add_row(vec![
-                hsm_group["label"].as_str().unwrap(),
-                hsm_group["description"].as_str().unwrap(),
-                hsm_group["tags"].as_str().unwrap_or_default(),
-                hsm_group["exclusiveGroup"].as_str().unwrap_or_default(),
-                &members
-            ]);
-        }
-    
-        println!("{table}");
-    }
-}
+//         println!("{table}");
+//     }
+// }

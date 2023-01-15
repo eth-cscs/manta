@@ -155,7 +155,7 @@ pub async fn run(
         );
 
         let timestamp = local_last_commit.time().seconds();
-        let tm = chrono::NaiveDateTime::from_timestamp(timestamp, 0);
+        let tm = chrono::NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
         let mut layer_summary = vec![];

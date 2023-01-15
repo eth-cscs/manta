@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::cluster_ops::ClusterDetails;
 use crate::shasta::nodes;
 use crate::{
-    cluster_ops, create_cfs_session_from_repo, gitea, manta, shasta, shasta_cfs_session_logs,
+    cluster_ops, create_cfs_session_from_repo, gitea, manta, shasta_cfs_session_logs,
 };
 use clap::{arg, command, value_parser, ArgAction, Command};
 
@@ -141,7 +141,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
     get
 }
 
-pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
+pub fn subcommand_apply_session() -> Command {
     let apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
@@ -226,7 +226,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta hsm group or nodes")
-                .subcommand(subcommand_apply_session(hsm_group))
+                .subcommand(subcommand_apply_session())
                 .subcommand(
                     Command::new("node")
                         .aliases(["n", "nod"])
@@ -275,6 +275,7 @@ pub async fn process_command(
     let layer_id;
 
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
+
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
 
             configuration_name = cli_get_configuration.get_one::<String>("name");
@@ -433,18 +434,39 @@ pub async fn process_command(
                 Some(_) => hsm_group,
             };
 
-            let nodes = shasta::hsm::http_client::get_hsm_groups(
-                &shasta_token,
-                &shasta_base_url,
-                hsm_group_name,
-            )
-            .await?;
+            // Get nodes from HSM group
+            // let hsm_groups = shasta::hsm::http_client::get_hsm_groups(
+            //     &shasta_token,
+            //     &shasta_base_url,
+            //     hsm_group_name,
+            // )
+            // .await?;
 
-            if nodes.is_empty() {
+            // Get all hsm groups related to hsm_group input
+            let hsm_groups = 
+                cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name.unwrap())
+                .await;
+
+            // Take all nodes for all hsm_groups found and put them in a Vec
+            let hsm_groups_nodes: HashSet<String> = hsm_groups
+                .iter()
+                .flat_map(|hsm_group| {
+                    hsm_group
+                        .members
+                        .iter()
+                        .map(|xname| xname.as_str().unwrap().to_string())
+                })
+                .collect();
+
+            // Get node status from capmc
+            let nodes_power_status = capmc::http_client::node_power_status::post(shasta_token, shasta_base_url, Vec::from_iter(hsm_groups_nodes.into_iter())).await?;
+
+            if hsm_groups.is_empty() {
                 println!("No nodes found!");
                 return Ok(());
             } else {
-                shasta::hsm::utils::print_table(nodes);
+                // shasta::hsm::utils::print_table(hsm_groups);
+                node_ops::print_table(hsm_groups, nodes_power_status);
             }
 
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
@@ -567,6 +589,7 @@ pub async fn process_command(
         }
         
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
+
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             
             let included: HashSet<String>;
@@ -977,7 +1000,7 @@ pub async fn process_command(
 
                 log::info!("Servers to power reset: {:?}", included);
 
-                capmc::http_client::node_restart::post(
+                capmc::http_client::node_power_restart::post(
                     shasta_token.to_string(),
                     shasta_base_url,
                     cli_apply_node_reset.get_one::<String>("reason"),

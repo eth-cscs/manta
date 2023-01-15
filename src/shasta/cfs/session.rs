@@ -126,8 +126,6 @@ pub mod http_client {
 
     pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, session_name: Option<&String>, limit_number: Option<&u8>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
 
-        let mut cluster_cfs_sessions: Vec<Value> = Vec::new();
-
         let client;
 
         let client_builder = reqwest::Client::builder()
@@ -159,7 +157,7 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
 
-        cluster_cfs_sessions = json_response.as_array().unwrap().clone();
+        let mut cluster_cfs_sessions = json_response.as_array().unwrap().clone();
     
         if hsm_group_name.is_some() {
 

@@ -321,7 +321,7 @@ pub mod utils {
         for bos_template in bos_templates {
 
             let mut compute_target_groups = String::new();
-            let mut uan_target_groups = String::new();
+            let mut uan_target_groups;
 
             if bos_template["boot_sets"].get("uan").is_some() {
 

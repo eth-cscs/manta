@@ -56,7 +56,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Process input params
     let matches = cli_programmatic::get_matches(hsm_group);
-    cli_programmatic::process_command(matches, shasta_token, shasta_base_url, vault_base_url, gitea_token, gitea_base_url, hsm_group).await;
+    let cli_result = cli_programmatic::process_command(matches, shasta_token, shasta_base_url, vault_base_url, gitea_token, gitea_base_url, hsm_group).await;
 
-    Ok(())
+    match cli_result {
+        Ok(_) => Ok(()),
+        Err(e) => panic!("{}", e)
+    }
+
 }

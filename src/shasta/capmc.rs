@@ -19,10 +19,6 @@ impl PowerStatus {
             recursive
         }
     }
-
-    pub fn add_component_id(&mut self, xname: String) {
-        self.xnames.push(xname);
-    }
 }
 
 impl Default for PowerStatus {
@@ -73,7 +69,7 @@ pub mod http_client {
 
         pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
 
-            log::info!("Shutting down {:?}", xnames);
+            log::info!("Shutting down nodes: {:?}", xnames);
 
             let power_off = PowerStatus::new(reason.cloned(), xnames, force, None);
 
@@ -118,7 +114,7 @@ pub mod http_client {
 
         pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool) -> Result<Value, Box<dyn Error>> {
             
-            log::info!("Powering on nodes {:?}", xnames);
+            log::info!("Powering on nodes: {:?}", xnames);
 
             let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
 
@@ -154,7 +150,7 @@ pub mod http_client {
         }
     }
 
-    pub mod node_restart {
+    pub mod node_power_restart {
         use std::error::Error;
 
         use serde_json::Value;
@@ -163,7 +159,7 @@ pub mod http_client {
 
         pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
             
-            log::info!("Restarting {:?}", xnames);
+            log::info!("Restarting nodes: {:?}", xnames);
 
             let node_restart = PowerStatus::new(reason.cloned(), xnames, force, None);
 
@@ -199,16 +195,18 @@ pub mod http_client {
         }
     }
 
-    pub mod node_status {
+    pub mod node_power_status {
         use std::error::Error;
 
         use serde_json::Value;
 
         use crate::capmc::NodeStatus;
 
-        pub async fn post(shasta_token: String, shasta_base_url: String, xnames: Vec<String>)  -> core::result::Result<Vec<Value>, Box<dyn Error>> {
+        pub async fn post(shasta_token: String, shasta_base_url: String, xnames: Vec<String>)  -> core::result::Result<Value, Box<dyn Error>> {
             
-            let node_status = NodeStatus::new(None, Some(xnames), None);
+            log::info!("Checking nodes status: {:?}", xnames);
+
+            let node_status_payload = NodeStatus::new(None, Some(xnames), Some("hsm".to_string()));
 
             let client;
 
@@ -230,7 +228,7 @@ pub mod http_client {
             let resp = client
                 .post(format!("{}/capmc/capmc/v1/get_xname_status", shasta_base_url))
                 .bearer_auth(shasta_token)
-                .json(&node_status)
+                .json(&node_status_payload)
                 .send()
                 .await?;
 

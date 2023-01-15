@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)] // TODO: to avoid compiler from complaining about unused methods
+
 pub mod http_client {
     
     use crate::config;
