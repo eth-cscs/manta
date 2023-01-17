@@ -103,7 +103,7 @@ pub async fn run(
         // TODO: format logging on screen so it is more readable
 
         // Get repo from path
-        let repo = match local_git_repo::get_repo(repos[i].clone()) {
+        let repo = match local_git_repo::get_repo(repos.get(i).unwrap()) {
             Ok(repo) => repo,
             Err(_) => {
                 log::error!("Could not find a git repo in {}", repos[i]);
@@ -200,7 +200,7 @@ pub async fn run(
 
     for i in 0..repos.len() {
         // Get repo from path
-        let repo = match local_git_repo::get_repo(repos[i].clone()) {
+        let repo = match local_git_repo::get_repo(repos.get(i).unwrap()) {
             Ok(repo) => repo,
             Err(_) => {
                 log::error!("Could not find a git repo in {}", repos[i]);

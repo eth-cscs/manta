@@ -207,6 +207,7 @@ pub mod client {
     }
 
     fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
+        
         let container_status = pod.status.as_ref().unwrap().container_statuses.as_ref().unwrap()
         .iter().find(|container_status| container_status.name.eq(container_name));
 

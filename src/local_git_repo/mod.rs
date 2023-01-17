@@ -8,10 +8,9 @@ use std::error::Error;
     use dialoguer::{Input, Password};
     use git2::{Repository, PushOptions, Remote, ObjectType, Commit};
 
-    pub fn get_repo(repo_path: String) -> Result<Repository, git2::Error> {
+    pub fn get_repo(repo_path: &String) -> Result<Repository, git2::Error> {
         
-        let mut repo_root = PathBuf::new();
-        repo_root.push(repo_path);
+        let repo_root = PathBuf::from(repo_path);
 
         log::debug!("Checking repo on {}", repo_root.display());
         
