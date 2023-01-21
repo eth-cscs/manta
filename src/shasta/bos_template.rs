@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     rel: Option<String>,
@@ -8,16 +8,16 @@ pub struct Link {
     href: Option<String>
 }
 
-impl Default for Link {
-    fn default() -> Self {
-        Self {
-            rel: None,
-            href: None
-        }
-    }
-}
+// impl Default for Link {
+//     fn default() -> Self {
+//         Self {
+//             rel: None,
+//             href: None
+//         }
+//     }
+// }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Property1 {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -48,27 +48,27 @@ pub struct Property1 {
     rootfs_provider_passthrough: Option<String>
 }
 
-impl Default for Property1 {
-    fn default() -> Self {
-        Self {
-            name: None,
-            boot_ordinal: None,
-            shutdown_ordinal: None,
-            path: None,
-            type_prop: None,
-            etag: None,
-            kernel_parameters: None,
-            network: None,
-            node_list: None,
-            node_roles_groups: None,
-            node_groups: None,
-            rootfs_provider: None,
-            rootfs_provider_passthrough: None
-        }
-    }
-}
+// impl Default for Property1 {
+//     fn default() -> Self {
+//         Self {
+//             name: None,
+//             boot_ordinal: None,
+//             shutdown_ordinal: None,
+//             path: None,
+//             type_prop: None,
+//             etag: None,
+//             kernel_parameters: None,
+//             network: None,
+//             node_list: None,
+//             node_roles_groups: None,
+//             node_groups: None,
+//             rootfs_provider: None,
+//             rootfs_provider_passthrough: None
+//         }
+//     }
+// }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Property2 {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -99,27 +99,27 @@ pub struct Property2 {
     rootfs_provider_passthrough: Option<String>
 }
 
-impl Default for Property2 {
-    fn default() -> Self {
-        Self {
-            name: None,
-            boot_ordinal: None,
-            shutdown_ordinal: None,
-            path: None,
-            type_prop: None,
-            etag: None,
-            kernel_parameters: None,
-            network: None,
-            node_list: None,
-            node_roles_groups: None,
-            node_groups: None,
-            rootfs_provider: None,
-            rootfs_provider_passthrough: None
-        }
-    }
-}
+// impl Default for Property2 {
+//     fn default() -> Self {
+//         Self {
+//             name: None,
+//             boot_ordinal: None,
+//             shutdown_ordinal: None,
+//             path: None,
+//             type_prop: None,
+//             etag: None,
+//             kernel_parameters: None,
+//             network: None,
+//             node_list: None,
+//             node_roles_groups: None,
+//             node_groups: None,
+//             rootfs_provider: None,
+//             rootfs_provider_passthrough: None
+//         }
+//     }
+// }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct BootSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     property1: Option<Property1>,
@@ -127,16 +127,16 @@ pub struct BootSet {
     property2: Option<Property2>
 }
 
-impl Default for BootSet {
-    fn default() -> Self {
-        Self {
-            property1: None,
-            property2: None
-        }
-    }
-}
+// impl Default for BootSet {
+//     fn default() -> Self {
+//         Self {
+//             property1: None,
+//             property2: None
+//         }
+//     }
+// }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Cfs {
     #[serde(skip_serializing_if = "Option::is_none")]
     clone_url: Option<String>,
@@ -150,17 +150,17 @@ pub struct Cfs {
     configuration: Option<String>
 }
 
-impl Default for Cfs {
-    fn default() -> Self {
-        Self {
-            clone_url: None,
-            branch: None,
-            commit: None,
-            playbook: None,
-            configuration: None
-        }
-    }
-}
+// impl Default for Cfs {
+//     fn default() -> Self {
+//         Self {
+//             clone_url: None,
+//             branch: None,
+//             commit: None,
+//             playbook: None,
+//             configuration: None
+//         }
+//     }
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BosTemplate {
@@ -261,13 +261,11 @@ pub mod http_client {
             .send()
             .await?;
 
-        let json_response: Value;
-
-        if resp.status().is_success() {
-            json_response = serde_json::from_str(&resp.text().await?)?;
+        let json_response: Value = if resp.status().is_success() {
+            serde_json::from_str(&resp.text().await?)?
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
-        }
+        };
     
         if hsm_group_name.is_some() {
             for bos_template in json_response.as_array().unwrap() {
@@ -329,7 +327,7 @@ pub mod utils {
 
                 uan_target_groups = String::from(uan_node_groups_json[0].as_str().unwrap());
 
-                for i in 1..uan_node_groups_json.len() {
+                for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
                         uan_target_groups = format!("{},\n", uan_target_groups);
@@ -347,7 +345,7 @@ pub mod utils {
 
                 compute_target_groups = String::from(compute_node_groups_json[0].as_str().unwrap());
 
-                for i in 1..compute_node_groups_json.len() {
+                for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
                         compute_target_groups = format!("{},\n", compute_target_groups);

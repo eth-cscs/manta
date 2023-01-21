@@ -149,41 +149,35 @@ pub mod http_client {
             .send()
             .await?;
 
-        let json_response: Value;
-
-        if resp.status().is_success() {
-            json_response = serde_json::from_str(&resp.text().await?)?;
+        let json_response: Value = if resp.status().is_success() {
+            serde_json::from_str(&resp.text().await?)?
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
-        }
+        };
 
         let mut cluster_cfs_sessions = json_response.as_array().unwrap().clone();
     
         if hsm_group_name.is_some() {
 
-            cluster_cfs_sessions = cluster_cfs_sessions
-                .into_iter()
-                .filter(|cfs_session| {
+            cluster_cfs_sessions
+                .retain(|cfs_session| {
                     cfs_session["configuration"]["name"]
                     .as_str()
                     .unwrap()
                     .contains(hsm_group_name.unwrap())
-                })
-                .collect();
+                });
 
         }
         
         if session_name.is_some() {
 
-            cluster_cfs_sessions = cluster_cfs_sessions
-                .into_iter()
-                .filter(|cfs_session| {
+            cluster_cfs_sessions
+                .retain(|cfs_session| {
                     cfs_session["name"]
                     .as_str()
                     .unwrap()
                     .eq(session_name.unwrap())
-                })
-                .collect();
+                });
 
         }
 
@@ -220,7 +214,7 @@ pub mod utils {
 
                 target_groups = String::from(target_groups_json[0]["name"].as_str().unwrap());
 
-                for i in 1..target_groups_json.len() {
+                for (i, _) in target_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
                         target_groups = format!("{},\n", target_groups);
@@ -238,9 +232,9 @@ pub mod utils {
 
             let first = list_ansible_limit.next();
 
-            if first.is_some() {
+            if let Some(inner) = first {
                 
-                ansible_limits = String::from(first.unwrap());
+                ansible_limits = String::from(inner);
 
                 let mut i = 1;
 

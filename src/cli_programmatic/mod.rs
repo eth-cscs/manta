@@ -129,20 +129,19 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
 }
 
 pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
-    let get = Command::new("get").alias("g")
+    Command::new("get").alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
-        .subcommand(subcommand_get_hsm_groups_details(hsm_group));
-
-    get
+        .subcommand(subcommand_get_hsm_groups_details(hsm_group))
 }
 
 pub fn subcommand_apply_session() -> Command {
-    let apply_session = Command::new("session")
+    
+    Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration and a session against hsm group or xnames")
@@ -158,9 +157,7 @@ pub fn subcommand_apply_session() -> Command {
             .require_equals(true)
             .default_value("2")
             .default_missing_value("2"))
-        .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true));
-
-    apply_session
+        .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true))
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
@@ -363,7 +360,7 @@ pub async fn process_command(
             hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
                 None => cli_get_session.get_one::<String>("hsm-group"),
-                Some(hsm_group_val) => Some(&hsm_group_val),
+                Some(hsm_group_val) => Some(hsm_group_val),
             };
 
             most_recent = cli_get_session.get_one::<bool>("most-recent");
@@ -396,9 +393,9 @@ pub async fn process_command(
 
             template_name = cli_get_template.get_one::<String>("name");
 
-            hsm_group_name = match &hsm_group {
+            hsm_group_name = match hsm_group {
                 None => cli_get_template.get_one::<String>("hsm-group"),
-                Some(hsm_group_val) => Some(&hsm_group_val),
+                Some(hsm_group_val) => Some(hsm_group_val),
             };
 
             most_recent = cli_get_template.get_one::<bool>("most-recent");
@@ -497,11 +494,7 @@ pub async fn process_command(
                         .unwrap_or_default()
                 );
 
-                let mut i = 0;
-                for layer in hsm_group.most_recent_cfs_configuration_name_created["layers"]
-                    .as_array()
-                    .unwrap()
-                {
+                for (i, layer) in hsm_group.most_recent_cfs_configuration_name_created["layers"].as_array().unwrap().iter().enumerate() {
                     println!("   + Layer {}", i);
                     println!(
                         "     - name: {}",
@@ -519,7 +512,6 @@ pub async fn process_command(
                         "     - playbook: {}",
                         layer["playbook"].as_str().unwrap_or_default()
                     );
-                    i += 1;
                 }
 
                 println!(" * CFS session details:");
@@ -599,8 +591,6 @@ pub async fn process_command(
 
             let cfs_configuration_name;
 
-            let ansible_limit_nodes: HashSet<String>;
-
             let hsm_groups_nodes;
 
             // * Validate input params
@@ -615,19 +605,19 @@ pub async fn process_command(
             // * Parse input params
             // Parse ansible limit
             // Get ansible limit nodes from cli arg
-            if cli_apply_session.get_one::<String>("ansible-limit").is_some() {
+            let ansible_limit_nodes: HashSet<String> = if cli_apply_session.get_one::<String>("ansible-limit").is_some() {
 
                 // Get HashSet with all nodes from ansible-limit param
-                ansible_limit_nodes = cli_apply_session.get_one::<String>("ansible-limit")
+                cli_apply_session.get_one::<String>("ansible-limit")
                     .unwrap()
-                    .replace(" ", "") // trim xnames by removing white spaces
-                    .split(",")
+                    .replace(' ', "") // trim xnames by removing white spaces
+                    .split(',')
                     .map(|xname| xname.to_string())
-                    .collect();
+                    .collect()
             
             } else {
-                ansible_limit_nodes = HashSet::new();
-            }
+                HashSet::new()
+            };
 
             // Parse hsm group
             let mut hsm_group_value = None;
@@ -730,8 +720,6 @@ pub async fn process_command(
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-            
-                let xnames: HashSet<String>;
     
                 let hsm_groups_nodes;
     
@@ -748,10 +736,10 @@ pub async fn process_command(
                 // Parse xnames
                 // Get xnames nodes from cli arg
                 // User provided list of xnames to power on
-                xnames = cli_apply_node_on
+                let xnames: HashSet<String> = cli_apply_node_on
                     .get_one::<String>("XNAMES")
                     .unwrap()
-                    .replace(" ", "") // trim xnames by removing white spaces
+                    .replace(' ', "") // trim xnames by removing white spaces
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
@@ -825,8 +813,6 @@ pub async fn process_command(
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-            
-                let xnames: HashSet<String>;
     
                 let hsm_groups_nodes;
     
@@ -843,10 +829,10 @@ pub async fn process_command(
                 // Parse xnames
                 // Get xnames nodes from cli arg
                 // User provided list of xnames to power on
-                xnames = cli_apply_node_off
+                let xnames: HashSet<String> = cli_apply_node_off
                     .get_one::<String>("XNAMES")
                     .unwrap()
-                    .replace(" ", "") // trim xnames by removing white spaces
+                    .replace(' ', "") // trim xnames by removing white spaces
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
@@ -920,9 +906,7 @@ pub async fn process_command(
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-            
-                let xnames: HashSet<String>;
-    
+                
                 let hsm_groups_nodes;
     
                 // * Validate input params
@@ -938,10 +922,10 @@ pub async fn process_command(
                 // Parse xnames
                 // Get xnames nodes from cli arg
                 // User provided list of xnames to power on
-                xnames = cli_apply_node_reset
+                let xnames: HashSet<String> = cli_apply_node_reset
                     .get_one::<String>("XNAMES")
                     .unwrap()
-                    .replace(" ", "") // trim xnames by removing white spaces
+                    .replace(' ', "") // trim xnames by removing white spaces
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
@@ -1036,7 +1020,7 @@ pub async fn process_command(
         let xnames: HashSet<String> = cli_console
             .get_one::<String>("XNAME")
             .unwrap()
-            .replace(" ", "") // trim xnames by removing white spaces
+            .replace(' ', "") // trim xnames by removing white spaces
             .split(',')
             .map(|xname| xname.to_string())
             .collect();

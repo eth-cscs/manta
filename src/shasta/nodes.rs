@@ -8,7 +8,7 @@ pub fn nodes_to_string(nodes: &Vec<Value>) -> String {
 
         members = nodes[0].as_str().unwrap().to_string();
 
-        for i in 1..nodes.len() {
+        for (i, _) in nodes.iter().enumerate().skip(1) {
 
             if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
                 members = format!("{},\n", members);

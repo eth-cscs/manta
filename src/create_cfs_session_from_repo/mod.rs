@@ -49,7 +49,7 @@ pub async fn run(
     // NOTE: nodes can be a list of xnames or hsm group name
 
     // Convert limit (String with list of target nodes for new CFS session) into list of String
-    let nodes_list: Vec<&str> = limit.split(",").map(|node| node.trim()).collect();
+    let nodes_list: Vec<&str> = limit.split(',').map(|node| node.trim()).collect();
 
     // Check each node if it has a CFS session already running
     for node in nodes_list {
@@ -158,15 +158,17 @@ pub async fn run(
         let tm = chrono::NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
-        let mut layer_summary = vec![];
+        let layer_summary = vec![i.to_string(), repo_name.to_string(), local_git_repo::untracked_changed_local_files(&repo)
+        .unwrap()
+        .to_string()];
 
-        layer_summary.push(i.to_string());
-        layer_summary.push(repo_name.to_string());
-        layer_summary.push(
-            local_git_repo::untracked_changed_local_files(&repo)
-                .unwrap()
-                .to_string(),
-        );
+        // layer_summary.push(i.to_string());
+        // layer_summary.push(repo_name.to_string());
+        // layer_summary.push(
+        //     local_git_repo::untracked_changed_local_files(&repo)
+        //         .unwrap()
+        //         .to_string(),
+        // );
 
         layers_summary.push(layer_summary);
     }
@@ -232,21 +234,20 @@ pub async fn run(
         .await;
 
         // Check sync status between user face and shasta VCS
-        let shasta_commitid_details: Value;
-        match shasta_commitid_details_resp {
+        let shasta_commitid_details: Value = match shasta_commitid_details_resp {
             Ok(_) => {
                 log::debug!(
                     "Local latest commit id {} for repo {} exists in shasta",
                     local_last_commit.id(),
                     repo_name
                 );
-                shasta_commitid_details = shasta_commitid_details_resp.unwrap();
+                shasta_commitid_details_resp.unwrap()
             }
             Err(e) => {
                 log::error!("{}", e);
                 std::process::exit(1);
             }
-        }
+        };
 
         // Create CFS layer
         let cfs_layer = configuration::Layer::new(
@@ -281,12 +282,11 @@ pub async fn run(
     )
     .await;
 
-    let cfs_configuration_name;
-    match cfs_configuration_resp {
+    let cfs_configuration_name = match cfs_configuration_resp {
         Ok(_) => {
-            cfs_configuration_name = cfs_configuration_resp.as_ref().unwrap()["name"]
+            cfs_configuration_resp.as_ref().unwrap()["name"]
                 .as_str()
-                .unwrap();
+                .unwrap()
         }
         Err(e) => {
             log::error!("{}", e);
@@ -314,10 +314,9 @@ pub async fn run(
     let cfs_session_resp =
         shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
 
-    let cfs_session_name;
-    match cfs_session_resp {
+        let cfs_session_name = match cfs_session_resp {
         Ok(_) => {
-            cfs_session_name = cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap();
+            cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap()
         }
         Err(e) => {
             log::error!("{}", e);

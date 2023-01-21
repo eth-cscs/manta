@@ -102,42 +102,34 @@ pub mod http_client {
             .bearer_auth(shasta_token)
             .send()
             .await?;
-    
-        let json_response: Value;
 
-        if resp.status().is_success() {
-            json_response = serde_json::from_str(&resp.text().await?)?;
+        let json_response: Value = if resp.status().is_success() {
+            serde_json::from_str(&resp.text().await?)?
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
-        }
+        };
 
         let mut cluster_cfs_configs = json_response.as_array().unwrap().clone();
     
         if hsm_group_name.is_some() {
 
-            cluster_cfs_configs = cluster_cfs_configs
-                .into_iter()
-                .filter(|cfs_configuration| {
+            cluster_cfs_configs.retain(|cfs_configuration| {
                     cfs_configuration["name"]
                     .as_str()
                     .unwrap()
                     .contains(hsm_group_name.unwrap())
-                })
-                .collect();
+                });
 
         }
         
         if configuration_name.is_some() {
 
-            cluster_cfs_configs = cluster_cfs_configs
-                .into_iter()
-                .filter(|cfs_configuration| {
+            cluster_cfs_configs.retain(|cfs_configuration| {
                     cfs_configuration["name"]
                     .as_str()
                     .unwrap()
                     .eq(configuration_name.unwrap())
-                })
-                .collect();
+                });
 
         }
 
@@ -175,9 +167,8 @@ pub mod utils {
 
                 layers = format!("COMMIT: {} NAME: {}", layers_json[0]["commit"], layers_json[0]["name"]);
                 
-                for i in 1..layers_json.len() {
+                for layer in layers_json.iter().skip(1) {
 
-                    let layer = &layers_json[i];
                     layers = format!("{}\nCOMMIT: {} NAME: {}", layers, layer["commit"], layer["name"]);
                 }
             }

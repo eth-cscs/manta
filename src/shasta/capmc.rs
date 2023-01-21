@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 struct PowerStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     reason: Option<String>,
@@ -21,18 +21,18 @@ impl PowerStatus {
     }
 }
 
-impl Default for PowerStatus {
-    fn default() -> Self {
-        Self{
-            reason: None,
-            xnames: vec![],
-            force: false,
-            recursive: None
-        }
-    }
-}
+// impl Default for PowerStatus {
+//     fn default() -> Self {
+//         Self{
+//             reason: None,
+//             xnames: vec![],
+//             force: false,
+//             recursive: None
+//         }
+//     }
+// }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 struct NodeStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     filter: Option<String>,
@@ -48,15 +48,15 @@ impl NodeStatus {
     }
 }
 
-impl Default for NodeStatus {
-    fn default() -> Self {
-        Self{
-            filter: None,
-            xnames: None,
-            source: None,
-        }
-    }
-}
+// impl Default for NodeStatus {
+//     fn default() -> Self {
+//         Self{
+//             filter: None,
+//             xnames: None,
+//             source: None,
+//         }
+//     }
+// }
 
 pub mod http_client {
     pub mod node_power_off {

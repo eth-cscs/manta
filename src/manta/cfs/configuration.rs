@@ -21,12 +21,10 @@ impl fmt::Display for Configuration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
         write!(f, "\nConfig Details:\n - name: {}\n - last updated: {}\nLayers:", self.name, self.last_updated)?;
-        let mut cont = 0;
 
-        for config_layer in &self.config_layers {
+        for (i, config_layer) in self.config_layers.iter().enumerate() {
 
-            write!(f, "\n Layer {}:{}", cont, config_layer)?;
-            cont += 1;
+            write!(f, "\n Layer {}:{}", i, config_layer)?;
         }
 
         Ok(())

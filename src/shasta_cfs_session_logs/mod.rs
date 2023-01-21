@@ -67,7 +67,7 @@ pub mod client {
         let shasta_k8s_secrets = fetch_shasta_k8s_secrets(&vault_base_url).await?;
 
         let mut shasta_cluster = Cluster {
-            server: String::from(k8s_api_url),
+            server: k8s_api_url,
             insecure_skip_tls_verify: Some(true),
             certificate_authority: None,
             certificate_authority_data: Some(String::from(shasta_k8s_secrets["certificate-authority-data"].as_str().unwrap())),
@@ -136,9 +136,7 @@ pub mod client {
 
         let config = kube::Config::from_custom_kubeconfig(kube_config, &kube_config_options).await?;
     
-        let client;
-
-        if std::env::var("SOCKS5").is_ok() {
+        let client = if std::env::var("SOCKS5").is_ok() {
             let connector = {
                 let mut http = HttpConnector::new();
                 http.enforce_http(false);
@@ -161,13 +159,13 @@ pub mod client {
             .option_layer(config.auth_layer()?)
             .service(hyper::Client::builder().build(connector));
     
-            client = kube::Client::new(service, config.default_namespace);
+            kube::Client::new(service, config.default_namespace)
 
         } else {
 
-            client = Client::try_default().await?;
+            Client::try_default().await?
 
-        }
+        };
     
         Ok(client)
     }
