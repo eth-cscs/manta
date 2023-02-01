@@ -63,9 +63,14 @@ pub mod http_client {
         } else {
             client = client_builder.build()?;
         }
+
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/cfs/v2/configurations/");
+        api_url.push_str(configuration_name);
             
         let resp = client
-            .put(format!("{}{}{}", shasta_base_url, "/cfs/v2/configurations/", configuration_name))
+            .put(api_url)
+            // .put(format!("{}{}{}", shasta_base_url, "/cfs/v2/configurations/", configuration_name))
             .json(&configuration)
             .bearer_auth(shasta_token)
             .send()
@@ -96,9 +101,13 @@ pub mod http_client {
         } else {
             client = client_builder.build()?;
         }
+
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/cfs/v2/configurations");
     
         let resp = client
-            .get(format!("{}{}", shasta_base_url, "/cfs/v2/configurations"))
+            .get(api_url)
+            // .get(format!("{}{}", shasta_base_url, "/cfs/v2/configurations"))
             .bearer_auth(shasta_token)
             .send()
             .await?;

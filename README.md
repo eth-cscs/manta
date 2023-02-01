@@ -221,3 +221,60 @@ git clone https://git.cscs.ch/msopena/manta.git && cd manta && cargo build
 ```
 
 If everything went well, then binary should be located in `manta/target/release/manta`
+
+### Profiling
+
+#### Enable capabilities
+
+```bash
+sudo sysctl -w kernel.perf_event_paranoid=-1
+```
+
+#### Install perf
+
+```bash
+sudo apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r`
+```
+
+#### Grant access to kernel address map
+
+```bash
+sudo sh -c " echo 0 > /proc/sys/kernel/kptr_restrict"
+```
+
+#### Create perf data
+
+```bash
+perf stat -ad -r 100 target/release/manta get session
+```
+
+#### Identify bottlenecks and get hotspots for those events
+
+
+```bash
+perf record -g --call-graph=dwarf -F max target/release/manta get session
+```
+
+#### Convert perf data file to a format firefox profiles understands
+
+```bash
+perf script -F +pid > manta.perf
+```
+
+Go to https://profiler.firefox.com/ and open manta.perf file
+
+
+#### DHAT mem alloction profiling
+
+> https://docs.rs/dhat/latest/dhat/
+> NOTE: lto in Cargo.toml needs to be disabled 
+
+##### Run 
+
+```bash
+cargo run -r --features dhat-heap -- get session
+```
+
+##### View results (dhat-heap.json file)
+
+https://nnethercote.github.io/dh_view/dh_view.html

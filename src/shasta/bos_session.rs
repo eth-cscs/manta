@@ -67,8 +67,12 @@ pub mod http_client {
             client = client_builder.build()?;
         }
         
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/bos/v1/session");
+
         let resp = client
-            .get(format!("{}{}", shasta_base_url, "/bos/v1/session"))
+            .get(api_url)
+            // .get(format!("{}{}", shasta_base_url, "/bos/v1/session"))
             .bearer_auth(shasta_token)
             .send()
             .await?;

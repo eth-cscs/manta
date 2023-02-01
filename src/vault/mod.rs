@@ -16,8 +16,12 @@ pub mod http_client {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
         
+        let mut api_url = vault_base_url.clone();
+        api_url.push_str("/v1/auth/approle/login");
+
         let resp = client
-            .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
+            .post(api_url)
+            // .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
             .json(&json!({ "role_id": role_id}))
             .send()
             .await?;
@@ -35,8 +39,12 @@ pub mod http_client {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
+        let mut api_url = vault_base_url.clone().to_string();
+        api_url.push_str(secret_path);
+
         let resp = client
-            .get(format!("{}{}", vault_base_url, secret_path))
+            .get(api_url)
+            // .get(format!("{}{}", vault_base_url, secret_path))
             .header("X-Vault-Token", auth_token)
             .send()
             .await?;

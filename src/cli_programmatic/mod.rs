@@ -257,8 +257,8 @@ pub async fn process_command(
     shasta_token: String,
     shasta_base_url: String,
     vault_base_url: String,
-    gitea_token: String,
-    gitea_base_url: String,
+    gitea_token: &str,
+    gitea_base_url: &str,
     hsm_group: Option<&String>,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     let hsm_group_name;
@@ -319,7 +319,7 @@ pub async fn process_command(
                     let gitea_commit_details = gitea::http_client::get_commit_details(
                         layer["cloneUrl"].as_str().unwrap(),
                         layer["commit"].as_str().unwrap(),
-                        &gitea_token,
+                        gitea_token,
                     )
                     .await?;
 
@@ -682,14 +682,15 @@ pub async fn process_command(
             // * Create CFS session
             let cfs_session_name = create_cfs_session_from_repo::run(
                 &cfs_configuration_name,
-                vec![cli_apply_session
-                    .get_one::<String>("repo-path")
-                    .unwrap()
-                    .to_string()],
+                cli_apply_session.get_many("repo-path").unwrap().cloned().collect(),
+                // vec![cli_apply_session
+                //     .get_one::<String>("repo-path")
+                //     .unwrap()
+                //     .to_string()],
                 gitea_token,
                 gitea_base_url,
-                shasta_token,
-                shasta_base_url,
+                &shasta_token,
+                &shasta_base_url,
                 included.into_iter().collect::<Vec<String>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
                 cli_apply_session
                     .get_one::<String>("ansible-verbosity")

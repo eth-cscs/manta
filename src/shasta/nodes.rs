@@ -11,12 +11,20 @@ pub fn nodes_to_string(nodes: &Vec<Value>) -> String {
         for (i, _) in nodes.iter().enumerate().skip(1) {
 
             if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
-                members = format!("{},\n", members);
+                
+                members.push_str(",\n");
+                
+                //members = format!("{},\n", members);
             } else {
-                members = format!("{},", members);
+                
+                members.push_str(",");
+                
+                // members = format!("{},", members);
             }
 
-            members = format!("{}{}", members, nodes[i].as_str().unwrap());    
+            members.push_str(nodes[i].as_str().unwrap());
+
+            // members = format!("{}{}", members, nodes[i].as_str().unwrap());    
         }
     }
 

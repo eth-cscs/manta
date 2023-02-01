@@ -14,11 +14,11 @@ use crate::{gitea, local_git_repo};
 
 pub async fn run(
     config_name: &str,
-    repos: Vec<String>,
-    gitea_token: String,
-    gitea_base_url: String,
-    shasta_token: String,
-    shasta_base_url: String,
+    repos: Vec<&str>,
+    gitea_token: &str,
+    gitea_base_url: &str,
+    shasta_token: &str,
+    shasta_base_url: &str,
     limit: String,
     ansible_verbosity: u8,
 ) -> Result<String, Box<dyn std::error::Error>> {

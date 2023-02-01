@@ -109,9 +109,13 @@ pub mod http_client {
         } else {
             client = client_builder.build()?;
         }
+
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/cfs/v2/sessions");
     
         let resp = client
-            .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
+            .post(api_url)
+            // .post(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
             .bearer_auth(shasta_token)
             .json(&session)
             .send()
@@ -143,8 +147,12 @@ pub mod http_client {
             client = client_builder.build()?;
         }
         
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/cfs/v2/sessions");
+
         let resp = client
-            .get(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
+            .get(api_url)
+            // .get(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
             .bearer_auth(shasta_token)
             .send()
             .await?;
@@ -217,12 +225,16 @@ pub mod utils {
                 for (i, _) in target_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
-                        target_groups = format!("{},\n", target_groups);
+                        target_groups.push_str(",\n");
+                        // target_groups = format!("{},\n", target_groups);
                     } else {
-                        target_groups = format!("{}, ", target_groups);
+                        target_groups.push_str(", ");
+                        // target_groups = format!("{}, ", target_groups);
                     }
                     
-                    target_groups = format!("{}{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
+                    target_groups.push_str(target_groups_json[i]["name"].as_str().unwrap());
+
+                    // target_groups = format!("{}{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
                 }
             }
 
@@ -241,12 +253,15 @@ pub mod utils {
                 for ansible_limit in list_ansible_limit {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
-                        ansible_limits = format!("{},\n", ansible_limits);
+                        ansible_limits.push_str(", \n");
+                        // ansible_limits = format!("{},\n", ansible_limits);
                     } else {
-                        ansible_limits = format!("{}, ", ansible_limits);
+                        ansible_limits.push_str(", ");
+                        // ansible_limits = format!("{}, ", ansible_limits);
                     }
     
-                    ansible_limits = format!("{}{}", ansible_limits, ansible_limit);
+                    ansible_limits.push_str(ansible_limit);
+                    // ansible_limits = format!("{}{}", ansible_limits, ansible_limit);
     
                     i += 1;
                 }

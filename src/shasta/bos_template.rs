@@ -254,9 +254,13 @@ pub mod http_client {
         } else {
             client = client_builder.build()?;
         }
+
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/bos/v1/sessiontemplate");
         
         let resp = client
-            .get(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
+            .get(api_url)
+            // .get(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
             .bearer_auth(shasta_token)
             .send()
             .await?;
@@ -330,12 +334,16 @@ pub mod utils {
                 for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
-                        uan_target_groups = format!("{},\n", uan_target_groups);
+                        uan_target_groups.push_str(",\n");
+                        // uan_target_groups = format!("{},\n", uan_target_groups);
                     } else {
-                        uan_target_groups = format!("{}, ", uan_target_groups);
+                        uan_target_groups.push_str(", ");
+                        // uan_target_groups = format!("{}, ", uan_target_groups);
                     }
                     
-                    uan_target_groups = format!("{}{}", uan_target_groups, uan_node_groups_json[i].as_str().unwrap());
+                    uan_target_groups.push_str(uan_node_groups_json[i].as_str().unwrap());
+
+                    // uan_target_groups = format!("{}{}", uan_target_groups, uan_node_groups_json[i].as_str().unwrap());
                 }
             }
 
@@ -348,12 +356,20 @@ pub mod utils {
                 for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
-                        compute_target_groups = format!("{},\n", compute_target_groups);
+                        
+                        compute_target_groups.push_str(",\n");
+                        
+                        // compute_target_groups = format!("{},\n", compute_target_groups);
                     } else {
-                        compute_target_groups = format!("{}, ", compute_target_groups);
+                        
+                        compute_target_groups.push_str(", ");
+                        
+                        // compute_target_groups = format!("{}, ", compute_target_groups);
                     }
                     
-                    compute_target_groups = format!("{}{}", compute_target_groups, compute_node_groups_json[i].as_str().unwrap());
+                    compute_target_groups.push_str(compute_node_groups_json[i].as_str().unwrap());
+
+                    // compute_target_groups = format!("{}{}", compute_target_groups, compute_node_groups_json[i].as_str().unwrap());
                 }
             }
 

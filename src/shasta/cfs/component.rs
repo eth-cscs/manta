@@ -22,9 +22,14 @@ pub mod http_client {
         } else {
             client = client_builder.build()?;
         }
+
+        let mut api_url = shasta_base_url.clone().to_string();
+        api_url.push_str("/cfs/v2/components/");
+        api_url.push_str(component_id);
     
         let resp = client
-            .get(format!("{}{}{}", shasta_base_url, "/cfs/v2/components/", component_id))
+            .get(api_url)
+            // .get(format!("{}{}{}", shasta_base_url, "/cfs/v2/components/", component_id))
             .bearer_auth(shasta_token)
             .send()
             .await?

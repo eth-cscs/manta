@@ -23,8 +23,17 @@ mod config;
 
 use termion::color;
 
+// DHAT
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+
+    // DHAT
+    #[cfg(feature = "dhat-heap")]
+    let _profiler = dhat::Profiler::new_heap();
 
     // Init logger
     env_logger::init();
@@ -56,7 +65,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Process input params
     let matches = cli_programmatic::get_matches(hsm_group);
-    let cli_result = cli_programmatic::process_command(matches, shasta_token, shasta_base_url, vault_base_url, gitea_token, gitea_base_url, hsm_group).await;
+    let cli_result = cli_programmatic::process_command(matches, shasta_token, shasta_base_url, vault_base_url, &gitea_token, &gitea_base_url, hsm_group).await;
 
     match cli_result {
         Ok(_) => Ok(()),
