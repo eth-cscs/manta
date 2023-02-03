@@ -225,9 +225,13 @@ pub async fn run(
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
         );
 
+        let mut api_url = "/cray/".to_string();
+        api_url.push_str(repo_name);
+
         // Check if repo and local commit id exists in Shasta cvs
         let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
-            &format!("/cray/{}", repo_name),
+            &api_url,
+            // &format!("/cray/{}", repo_name),
             &local_last_commit.id().to_string(),
             &gitea_token,
         )
@@ -249,14 +253,19 @@ pub async fn run(
             }
         };
 
+        let mut clone_url = gitea_base_url.clone().to_string();
+        clone_url.push_str("/cray/");
+        clone_url.push_str(repo_name);
+
         // Create CFS layer
         let cfs_layer = configuration::Layer::new(
-            format!(
-                // git repo url in shasta faced VCS
-                "{}/cray/{}",
-                gitea_base_url, // TODO: refactor this and move it to gitea mod
-                repo_name
-            ),
+            // format!(
+            //     // git repo url in shasta faced VCS
+            //     "{}/cray/{}",
+            //     gitea_base_url, // TODO: refactor this and move it to gitea mod
+            //     repo_name
+            // ),
+            clone_url,
             String::from(shasta_commitid_details["sha"].as_str().unwrap()),
             format!(
                 "{}-{}",

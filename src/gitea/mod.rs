@@ -7,8 +7,9 @@ pub mod http_client {
 
     pub async fn get_commit_details(repo_url: &str, commitid: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
-        let gitea_internal_base_url = "https://api-gw-service-nmn.local/vcs".to_string();
-        let gitea_api_base_url = gitea_internal_base_url.push_str("/api/v1");
+        let gitea_internal_base_url = "https://api-gw-service-nmn.local/vcs";
+        let mut gitea_api_base_url = gitea_internal_base_url.to_string().clone();
+        gitea_api_base_url.push_str("/api/v1");
         // let gitea_api_base_url = format!("{}{}", gitea_internal_base_url, "/api/v1");
 
         log::debug!("Repo URL: {}", repo_url);
@@ -60,8 +61,9 @@ pub mod http_client {
     pub async fn get_last_commit(repo_name: &str, gitea_token: &str) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
         let settings = config::get("config");
-        let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
-        let gitea_api_base_url = gitea_base_url.push_str("/api/v1");
+        let mut gitea_api_base_url = settings.get::<String>("gitea_base_url").unwrap();
+        gitea_api_base_url.push_str("/api/v1");
+        // let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
         // let gitea_api_base_url = format!("{}{}", gitea_base_url, "/api/v1");
 
         let client;
