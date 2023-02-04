@@ -214,11 +214,19 @@ Install Rust toolchain https://www.rust-lang.org/tools/install
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
+Install cross to be able to complile on different platforms
+
+```shell
+cargo install cross
+```
+
 Generate binary
 
 ```shell
-git clone https://git.cscs.ch/msopena/manta.git && cd manta && cargo build
+git clone https://git.cscs.ch/msopena/manta.git && cd manta && cross build --target x86_64-unknown-linux-gnu -r
 ```
+
+Your binary is `manta/target/x86_64-unknown-linux-gnu/release/manta`
 
 If everything went well, then binary should be located in `manta/target/release/manta`
 

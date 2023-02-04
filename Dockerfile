@@ -16,7 +16,7 @@ RUN cargo build --release
 
 RUN cargo install --target x86_64-unknown-linux-musl --path .
 
-#FROM scratch
+# FROM scratch
 FROM rust:1.64.0-alpine
 COPY --from=build /usr/local/cargo/bin/manta /
 COPY --from=build /manta/config.toml /
