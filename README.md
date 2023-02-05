@@ -190,20 +190,6 @@ docker build -t manta .
 
 ```
 $ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
-Another CLI for basic/simple Shasta operations
-
-Usage: manta <COMMAND>
-
-Commands:
-  get      Get information from Shasta system
-  apply    Make changes to Shata clusters/nodes
-  log      Print session logs
-  console  WIP Access node console
-  help     Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help     Print help information
-  -V, --version  Print version information
 ```
 
 ### Build from sources
@@ -223,7 +209,7 @@ cargo install cross
 Generate binary
 
 ```shell
-git clone https://git.cscs.ch/msopena/manta.git && cd manta && cross build --target x86_64-unknown-linux-gnu -r
+git clone https://git.cscs.ch/msopena/manta.git && cd manta && cross build --target x86_64-unknown-linux-gnu --release
 ```
 
 Your binary is `manta/target/x86_64-unknown-linux-gnu/release/manta`
