@@ -23,7 +23,7 @@ mod config;
 
 use termion::color;
 
-// DHAT
+// DHAT (profiling)
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -31,7 +31,7 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
-    // DHAT
+    // DHAT (profiling)
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
 
