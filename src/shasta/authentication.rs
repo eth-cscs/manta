@@ -61,7 +61,6 @@ pub async fn get_api_token(shasta_base_url: &str, keycloak_base_url: &str) -> Re
     }
 
     if attempts < 3 {
-        log::debug!("Shasta token is OK");
         shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
         Ok(shasta_token)
     } else {
@@ -109,7 +108,7 @@ pub async fn is_token_valid(shasta_base_url: &str, shasta_token: &str) -> Result
     log::debug!("Check call apis/cfs/healthz api status");
 
     if resp.status().is_success() {
-        log::debug!("Token is valid");
+        log::debug!("Shasta token is valid");
         Ok(true)
     } else {
         log::warn!("Token is not valid - {}", resp.text().await?);

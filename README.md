@@ -209,7 +209,7 @@ cargo install cross
 Generate binary
 
 ```shell
-git clone https://git.cscs.ch/msopena/manta.git && cd manta && cross build --target x86_64-unknown-linux-gnu --release
+cross build --target x86_64-unknown-linux-gnu --release
 ```
 
 Your binary is `manta/target/x86_64-unknown-linux-gnu/release/manta`

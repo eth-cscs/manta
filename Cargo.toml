@@ -43,11 +43,11 @@ termion = "2.0.1" # used by manta_console to enable terminal raw
 dhat = "0.3.2"
 
 [profile.release]
-#opt-level = "s" # Tell `rustc` to optimize for small code size.
+opt-level = "s" # Tell `rustc` to optimize for small code size.
 #incremental = true
 debug = 1
 #lto = "fat"  # disable when using DHAT profiler
 
-[features]
-dhat-heap = []    # if you are doing heap profiling
-dhat-ad-hoc = []  # if you are doing ad hoc profiling
+#[features]
+#dhat-heap = []    # if you are doing heap profiling
+#dhat-ad-hoc = []  # if you are doing ad hoc profiling

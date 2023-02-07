@@ -90,8 +90,11 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
         
+            let mut api_url = shasta_base_url.clone();
+            api_url.push_str("/capmc/capmc/v1/xname_off");
+
             let resp = client
-                .post(format!("{}/capmc/capmc/v1/xname_off", shasta_base_url))
+                .post(api_url)
                 .bearer_auth(shasta_token)
                 .json(&power_off)
                 .send()
@@ -136,8 +139,11 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
         
+            let mut api_url = shasta_base_url.clone();
+            api_url.push_str("/capmc/capmc/v1/xname_on");
+
             let resp = client
-                .post(format!("{}/capmc/capmc/v1/xname_on", shasta_base_url))
+                .post(api_url)
                 .bearer_auth(shasta_token)
                 .json(&power_on)
                 .send()
@@ -182,8 +188,11 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
         
+            let mut api_url = shasta_base_url.clone();
+            api_url.push_str("/capmc/capmc/v1/xname_reinit");
+
             let resp = client
-                .post(format!("{}/capmc/capmc/v1/xname_reinit", shasta_base_url))
+                .post(api_url)
                 .bearer_auth(shasta_token)
                 .json(&node_restart)
                 .send()

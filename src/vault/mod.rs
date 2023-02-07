@@ -33,6 +33,7 @@ pub mod http_client {
             let resp_text: Value = serde_json::from_str(&resp.text().await?)?;
             Ok(String::from(resp_text["auth"]["client_token"].as_str().unwrap()))
         } else {
+            eprintln!("{:?}", resp);
             Err(resp.json::<Value>().await?["errors"][0].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     }
