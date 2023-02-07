@@ -16,17 +16,20 @@ pub mod http_client {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
         
-        let mut api_url = vault_base_url.clone();
+        let mut api_url = vault_base_url;
         api_url.push_str("/v1/auth/approle/login");
 
+        log::debug!("Accessing/login to {}", api_url);
+
         let resp = client
-            .post(api_url)
+            .post(api_url.clone())
             // .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
             .json(&json!({ "role_id": role_id}))
             .send()
             .await?;
 
         if resp.status().is_success() {
+            log::debug!("Login to {} successful", api_url);
             let resp_text: Value = serde_json::from_str(&resp.text().await?)?;
             Ok(String::from(resp_text["auth"]["client_token"].as_str().unwrap()))
         } else {

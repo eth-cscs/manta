@@ -61,6 +61,7 @@ pub async fn get_api_token(shasta_base_url: &str, keycloak_base_url: &str) -> Re
     }
 
     if attempts < 3 {
+        log::debug!("Shasta token is OK");
         shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
         Ok(shasta_token)
     } else {
@@ -93,10 +94,14 @@ pub async fn is_token_valid(shasta_base_url: &str, shasta_token: &str) -> Result
         client = client_builder.build()?;
     }
 
-    log::debug!("Check token against apis/cfs/healthz api");
+    let mut api_url = shasta_base_url.to_string();
+    api_url.push_str("/cfs/healthz");
+
+    log::debug!("Test Shasta token against {}", api_url);
     
     let resp = client
-        .get(format!("{}/cfs/healthz", shasta_base_url))
+        //.get(format!("{}/cfs/healthz", shasta_base_url))
+        .get(api_url)
         .bearer_auth(shasta_token)
         .send()
         .await?;
