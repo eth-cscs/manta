@@ -322,7 +322,7 @@ pub mod client {
                     thread::sleep(time::Duration::from_secs(2));
                     pods = pods_api.list(&params).await?;
                     container_state = get_container_state(&pods.items[0], &ansible_container.name);
-                    println!("Container state:\n{:#?}", container_state.as_ref().unwrap());
+                    log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
                 }
         
                 if container_state.as_ref().unwrap().waiting.is_some() {

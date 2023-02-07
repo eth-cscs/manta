@@ -52,9 +52,9 @@ pub mod http_client {
             Ok(serde_json::from_str(json_response)?)
         } else {
             
-            log::error!("ERROR: {:?}", &resp);
-
-            Err(resp.json::<Value>().await?.as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+            let error_msg = format!("ERROR: commit {} not found in Shasta CVS. Please check gitea admin or wait sync to finish.", commitid);
+            
+            Err(error_msg.into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
         }
     }
 

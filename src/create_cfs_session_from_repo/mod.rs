@@ -14,7 +14,7 @@ use crate::{gitea, local_git_repo};
 
 pub async fn run(
     config_name: &str,
-    repos: Vec<&str>,
+    repos: Vec<String>,
     gitea_token: &str,
     gitea_base_url: &str,
     shasta_token: &str,
@@ -173,8 +173,13 @@ pub async fn run(
         layers_summary.push(layer_summary);
     }
 
+    log::debug!("Replacing '_' with '-' in repo name.");
+    let cfs_configuration_name_formatted = format!("{}", str::replace(config_name, "_", "-"));
+
+    println!("A CFS session {} is scheduled to run.", cfs_configuration_name_formatted);
+
     // Print CFS session/configuration layers summary on screen
-    println!("A new CFS session is going to be created with the following layers:");
+    println!("Please review the following CFS layers:", );
     for layer_summary in layers_summary {
         println!(
             " - Layer-{}; repo name: {}; local changes committed: {}",
@@ -281,8 +286,7 @@ pub async fn run(
     log::info!("CFS configuration:\n{:#?}", cfs_configuration);
 
     // Update/PUT CFS configuration
-    log::debug!("Replacing '_' with '-' in repo name and create configuration and session name.");
-    let cfs_configuration_name_formatted = format!("m-{}", str::replace(config_name, "_", "-"));
+    log::debug!("Create configuration and session name.");
     let cfs_configuration_resp = configuration::http_client::put(
         &shasta_token,
         &shasta_base_url,
