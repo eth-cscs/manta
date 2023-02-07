@@ -139,16 +139,16 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
 }
 
-pub fn subcommand_apply_session() -> Command {
+pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     
-    Command::new("session")
+    let mut apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration and a session against hsm group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
             .required(true))
-        .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        // .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
         .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. NOTE: ansible-limit must be a subset of hsm-group if both parameters are provided"))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to aee container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -157,7 +157,14 @@ pub fn subcommand_apply_session() -> Command {
             .require_equals(true)
             .default_value("2")
             .default_missing_value("2"))
-        .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true))
+        .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true));
+
+    match hsm_group {
+        Some(_) => { },
+        None => apply_session = apply_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
+    };
+
+    apply_session
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
@@ -172,7 +179,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
             .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
             .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
         Some(_) => { }
-    }
+    };
 
     apply_node_on
 }
@@ -190,7 +197,7 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
         Some(_) => { }
-    }
+    };
 
     apply_node_off
 }
@@ -209,7 +216,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
         Some(_) => { }
-    }
+    };
 
     apply_node_reset
 }
@@ -223,7 +230,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta hsm group or nodes")
-                .subcommand(subcommand_apply_session())
+                .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
                     Command::new("node")
                         .aliases(["n", "nod"])
