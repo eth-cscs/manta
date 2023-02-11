@@ -172,10 +172,6 @@ pub mod client {
     
     pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, vault_base_url: String, cluster_name: Option<&String>, session_name: Option<&String>, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
         
-        println!("cluster_name: {:?}", cluster_name);
-        println!("session_name: {:?}", session_name);
-        println!("layer_id: {:?}", layer_id);
-
         // Get CFS sessions
         let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, None).await?;
 
