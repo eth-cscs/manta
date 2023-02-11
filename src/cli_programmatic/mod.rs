@@ -101,7 +101,7 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("node")
         .alias("n")
-        .about("Get members of a hsm group");
+        .about("Get members of a HSM group");
 
     match hsm_group {
         None => get_node = get_node.arg_required_else_help(true)
@@ -115,7 +115,7 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
     let mut get_hsm_group = Command::new("hsm-groups")
         .aliases(["h", "hg", "hsm"])
-        .about("Get hsm groups details");
+        .about("Get HSM groups details");
 
     match hsm_group {
         None => get_hsm_group = get_hsm_group.arg_required_else_help(true)
@@ -144,7 +144,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
-        .about("Create a CFS configuration and a session against hsm group or xnames")
+        .about("Create a CFS configuration and a session against HSM group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
             .required(true))
@@ -229,7 +229,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
             Command::new("apply")
                 .alias("a")
                 .arg_required_else_help(true)
-                .about("Make changes to Shasta hsm group or nodes")
+                .about("Make changes to Shasta HSM group or nodes")
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
                     Command::new("node")
@@ -245,7 +245,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
             Command::new("log")
                 .alias("l")
                 .arg_required_else_help(true)
-                .about("log about")
+                .about("Get CFS session logs")
                 .arg(arg!(<SESSION> "session name"))
                 .arg(arg!(-l --"layer-id" <VALUE> "layer id").required(false).value_parser(value_parser!(u8))),
         )
