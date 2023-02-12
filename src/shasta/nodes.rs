@@ -1,6 +1,16 @@
 use serde_json::Value;
 
-pub fn nodes_to_string(nodes: &Vec<Value>) -> String {
+pub fn nodes_to_string_format_mid(nodes: &Vec<Value>) -> String {
+    
+    nodes_to_string(nodes, 10)
+}
+
+pub fn nodes_to_string_format_unlimited(nodes: &Vec<Value>) -> String {
+
+    nodes_to_string(nodes, nodes.len()+1)
+}
+
+pub fn nodes_to_string(nodes: &Vec<Value>, limit: usize) -> String {
 
     let mut members: String = String::new();
 
@@ -10,21 +20,15 @@ pub fn nodes_to_string(nodes: &Vec<Value>) -> String {
 
         for (i, _) in nodes.iter().enumerate().skip(1) {
 
-            if i % 10 == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
+            if i % limit == 0 { // breaking the cell content into multiple lines (only 2 xnames per line)
                 
                 members.push_str(",\n");
-                
-                //members = format!("{},\n", members);
             } else {
                 
                 members.push_str(",");
-                
-                // members = format!("{},", members);
             }
 
             members.push_str(nodes[i].as_str().unwrap());
-
-            // members = format!("{}{}", members, nodes[i].as_str().unwrap());    
         }
     }
 

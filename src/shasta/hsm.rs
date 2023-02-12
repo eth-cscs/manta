@@ -56,7 +56,6 @@ pub mod http_client {
         }
 
         Ok(hsm_groups)
-
     }
 
 

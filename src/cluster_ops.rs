@@ -48,5 +48,4 @@ pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name
     }
 
     clusters_details
-
 }

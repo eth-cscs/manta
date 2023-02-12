@@ -84,9 +84,7 @@ impl CfsSession {
 pub mod http_client {
 
     use std::error::Error;
-
     use serde_json::Value;
-
     use super::CfsSession;
 
     pub async fn post(shasta_token: &str, shasta_base_url: &str, session: CfsSession) -> Result<Value, Box<dyn Error>> {

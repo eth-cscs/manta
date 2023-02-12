@@ -36,7 +36,8 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     match hsm_group {
         None => get_cfs_session = get_cfs_session
                     .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-                    .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"])),
+//                    .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"]))
+                    ,
         Some(_) => { }
     }
 
@@ -583,7 +584,7 @@ pub async fn process_command(
                     hsm_group.most_recent_cfs_session_name_created["tags"]
                 );
 
-                println!(" * members: {}", nodes::nodes_to_string(&hsm_group.members));
+                println!(" * members: {}", nodes::nodes_to_string_format_unlimited(&hsm_group.members));
             }
         }
         
