@@ -1,5 +1,3 @@
-
-
 pub mod http_client {
 
     use std::error::Error;
