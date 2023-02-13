@@ -139,7 +139,7 @@ x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    s
 ### Create an interactive session to a node
 
 ```
-$ manta console -x x1500c2s4b0n1
+$ manta console x1500c2s4b0n1
 [2022-10-30T02:14:44Z INFO  manta::node_console] Alternatively run - kubectl -n services exec -it cray-console-node-2 -c cray-console-node -- conman -j x1500c2s4b0n1 
 [2022-10-30T02:14:44Z INFO  manta::node_console] Connecting to console x1500c2s4b0n1
 Connected to x1500c2s4b0n1!
@@ -167,13 +167,13 @@ nid003129 login:
 ### Power off a node
 
 ```
-$ manta apply node off --xnames "x1004c1s4b0n1" --force
+$ manta apply node off --force "x1004c1s4b0n1"
 ```
 
 ### Power on a node
 
 ```
-$ manta apply node on --xnames "x1004c1s4b0n1"
+$ manta apply node on "x1004c1s4b0n1"
 ```
 
 ## Deployment
