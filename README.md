@@ -9,11 +9,11 @@ Manta's goals:
 
 Manta is aggregates information from multiple sources:
 
- - Keycloak
+ - Shasta Keycloak
  - Shasta API
- - K8s API
+ - Shasta K8s API
  - local git repo
- - Gitea API
+ - Gitea API (Shasta VCS)
  - Hashicorp Vault
 
 ## Features
