@@ -7,7 +7,7 @@ Manta's goals:
  - release operators from repetitive tasks.
  - provide quick system feedback.
 
-Manta is aggregates information from multiple sources:
+Manta aggregates information from multiple sources:
 
  - Shasta Keycloak
  - Shasta API
