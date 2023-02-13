@@ -212,9 +212,7 @@ Generate binary
 cross build --target x86_64-unknown-linux-gnu --release
 ```
 
-Your binary is `manta/target/x86_64-unknown-linux-gnu/release/manta`
-
-If everything went well, then binary should be located in `manta/target/release/manta`
+If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
 
 ### Profiling
 
