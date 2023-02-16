@@ -1308,7 +1308,7 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "0.1.0"
+version = "23.2.16"
 dependencies = [
  "clap",
  "clap_complete",
