@@ -34,7 +34,7 @@ Manta aggregates information from multiple sources:
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
 |RUST_LOG|no|env|log details/verbosity|info|
-|socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node, need VPN)|socks5h://127.0.0.1:1080|
+|socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
 |gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|
 |k8s_api_url|yes|config file|Shasta k8s API URL|https://10.252.1.12:6442|
@@ -45,7 +45,7 @@ vault_role_id|yes|config file|role id related to Hashicorp Vault base URL approl
 
 ## Example
 
-### Get lastest (most recent) session
+### Get latest (most recent) session
 
 ```shell
 $ manta get session --most-recent

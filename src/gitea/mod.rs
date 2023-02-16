@@ -14,7 +14,8 @@ pub mod http_client {
 
         log::debug!("Repo URL: {}", repo_url);
 
-        let repo_name = repo_url.trim_start_matches(&gitea_internal_base_url).trim_end_matches(".git");
+        // let repo_name = repo_url.trim_start_matches(&gitea_internal_base_url).trim_end_matches(".git");
+        let repo_name = repo_url.trim_start_matches("https://api.cmn.alps.cscs.ch/vcs/").trim_end_matches(".git");
 
         log::info!("repo_url: {}", repo_url);
         log::info!("gitea_base_url: {}", gitea_internal_base_url);
@@ -37,10 +38,12 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        log::debug!("Request to {}/repos{}/git/commits/{}", gitea_api_base_url, repo_name, commitid);
+        let api_url = format!("{}/repos/{}/git/commits/{}", gitea_api_base_url, repo_name, commitid);
+ 
+        log::info!("Request to {}", api_url);
 
         let resp = client
-            .get(format!("{}/repos{}/git/commits/{}", gitea_api_base_url, repo_name, commitid))
+            .get(api_url)
             .header("Authorization", format!("token {}", gitea_token))
             .send()
             .await?;
@@ -51,7 +54,7 @@ pub mod http_client {
 
             Ok(serde_json::from_str(json_response)?)
         } else {
-            
+
             let error_msg = format!("ERROR: commit {} not found in Shasta CVS. Please check gitea admin or wait sync to finish.", commitid);
             
             Err(error_msg.into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 

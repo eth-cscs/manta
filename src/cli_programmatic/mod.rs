@@ -650,8 +650,9 @@ pub async fn process_command(
                     cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
                         .await;
         
-                cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
-        
+                //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
+                cfs_configuration_name = cli_apply_session.get_one::<String>("name").unwrap().to_string();
+
                 // Take all nodes for all hsm_groups found and put them in a Vec
                 hsm_groups_nodes = hsm_groups
                     .iter()
