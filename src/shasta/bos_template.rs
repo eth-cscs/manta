@@ -327,10 +327,14 @@ pub mod utils {
 
             if bos_template["boot_sets"].get("uan").is_some() {
 
-                let uan_node_groups_json = bos_template["boot_sets"]["uan"]["node_groups"].as_array().unwrap();
+                let uan_node_groups_json = bos_template["boot_sets"]["uan"]["node_groups"].as_array();
 
-                uan_target_groups = String::from(uan_node_groups_json[0].as_str().unwrap());
-
+                if uan_node_groups_json.is_none() {
+                    uan_target_groups = "".to_string();
+                } else {
+                    uan_target_groups = String::from(uan_node_groups_json.unwrap()[0].as_str().unwrap());
+                }
+                
                 for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
@@ -341,18 +345,23 @@ pub mod utils {
                         // uan_target_groups = format!("{}, ", uan_target_groups);
                     }
                     
-                    uan_target_groups.push_str(uan_node_groups_json[i].as_str().unwrap());
+                    uan_target_groups.push_str(uan_node_groups_json.unwrap()[i].as_str().unwrap());
 
                     // uan_target_groups = format!("{}{}", uan_target_groups, uan_node_groups_json[i].as_str().unwrap());
                 }
             }
 
             if bos_template["boot_sets"].get("compute").is_some() {
+
+                let compute_node_groups_json = bos_template["boot_sets"]["compute"]["node_groups"].as_array();
+
+                if compute_node_groups_json.is_none() {
+                    compute_target_groups = "".to_string();  
+                } else {
+                    compute_target_groups = String::from(compute_node_groups_json.unwrap()[0].as_str().unwrap());
+                }
+                 
                 
-                let compute_node_groups_json = bos_template["boot_sets"]["compute"]["node_groups"].as_array().unwrap();
-
-                compute_target_groups = String::from(compute_node_groups_json[0].as_str().unwrap());
-
                 for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {
 
                     if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
@@ -367,7 +376,7 @@ pub mod utils {
                         // compute_target_groups = format!("{}, ", compute_target_groups);
                     }
                     
-                    compute_target_groups.push_str(compute_node_groups_json[i].as_str().unwrap());
+                    compute_target_groups.push_str(compute_node_groups_json.unwrap()[i].as_str().unwrap());
 
                     // compute_target_groups = format!("{}{}", compute_target_groups, compute_node_groups_json[i].as_str().unwrap());
                 }
