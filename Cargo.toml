@@ -1,7 +1,7 @@
 [package]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
-version = "0.1.0"
+version = "23.2.16"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
