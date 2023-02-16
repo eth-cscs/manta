@@ -13,8 +13,6 @@ pub mod http_client {
         gitea_api_base_url.push_str("api/v1");
         // let gitea_api_base_url = format!("{}{}", gitea_internal_base_url, "/api/v1");
 
-        log::debug!("Repo URL: {}", repo_url);
-
         let repo_name = repo_url.trim_start_matches(&gitea_internal_base_url).trim_end_matches(".git");
         let repo_name = repo_name.trim_start_matches(&gitea_internal_base_url_2).trim_end_matches(".git");
 

@@ -230,7 +230,7 @@ pub async fn run(
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
         );
 
-        let mut api_url = "/cray/".to_string();
+        let mut api_url = "cray/".to_string();
         api_url.push_str(repo_name);
 
         // Check if repo and local commit id exists in Shasta cvs
@@ -307,7 +307,7 @@ pub async fn run(
         }
     };
 
-    log::info!("CFS configuration name: {}", cfs_configuration_name);
+    println!("CFS configuration name: {}", cfs_configuration_name);
     log::debug!("CFS configuration response: {:#?}", cfs_configuration_resp);
 
     // Create CFS session
@@ -337,7 +337,7 @@ pub async fn run(
         }
     };
 
-    log::info!("CFS session name: {}", cfs_session_name);
+    println!("CFS session name: {}", cfs_session_name);
     log::debug!("CFS session response: {:#?}", cfs_session_resp);
 
     Ok(String::from(cfs_session_name))

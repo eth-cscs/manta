@@ -162,7 +162,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
 
     match hsm_group {
         Some(_) => { },
-        None => apply_session = apply_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
+        None => apply_session = apply_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
     };
 
     apply_session
