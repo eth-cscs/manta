@@ -208,7 +208,7 @@ pub mod utils {
         
         let mut table = Table::new();
 
-        table.set_header(vec!["Name", "Configuration", "Target", "Target groups", "Ansible limit", "Start", "Status", "Succeeded", "Job"]);
+        table.set_header(vec!["Name", "Configuration", "Target", "Target groups", "Ansible limit", "Start", "Status", "Succeeded"]);
     
         for cfs_session in cfs_sessions {
 
@@ -273,8 +273,7 @@ pub mod utils {
                 &ansible_limits,
                 cfs_session["status"]["session"]["startTime"].as_str().unwrap(),
                 cfs_session["status"]["session"]["status"].as_str().unwrap(),
-                cfs_session["status"]["session"]["succeeded"].as_str().unwrap(),
-                cfs_session["status"]["session"]["job"].as_str().unwrap()
+                cfs_session["status"]["session"]["succeeded"].as_str().unwrap()
             ]);
         }
     
