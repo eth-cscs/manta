@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use crate::cluster_ops::ClusterDetails;
 use crate::shasta::nodes;
 use crate::{
-    cluster_ops, create_cfs_session_from_repo, gitea, manta, shasta_cfs_session_logs,
+    check_nodes_have_most_recent_image, cluster_ops, create_cfs_session_from_repo, gitea, manta,
+    shasta_cfs_session_logs,
 };
 use clap::{arg, command, value_parser, ArgAction, Command};
 
@@ -20,60 +21,55 @@ use crate::shasta::{
 use crate::node_ops;
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
-
     let mut get_cfs_session = Command::new("session")
         .aliases(["s", "se", "sess"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <VALUE> "session name"))
-        .arg(
-            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-        )
+        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
         .arg(
             arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
     match hsm_group {
-        None => get_cfs_session = get_cfs_session
-                    .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-//                    .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"]))
-                    ,
-        Some(_) => { }
+        None => {
+            get_cfs_session = get_cfs_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        }
+        //                    .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"]))
+        ,
+        Some(_) => {}
     }
 
     get_cfs_session =
         get_cfs_session.group(ArgGroup::new("session_limit").args(["most-recent", "limit"]));
 
     get_cfs_session
-
 }
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
-
     let mut get_cfs_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <VALUE> "configuration name"))
-        .arg(
-            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-        )
+        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
         .arg(
             arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
     match hsm_group {
-        None => get_cfs_configuration = get_cfs_configuration
+        None => {
+            get_cfs_configuration = get_cfs_configuration
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"])),
-        Some(_) => { }
+                .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
+        }
+        Some(_) => {}
     }
 
     get_cfs_configuration = get_cfs_configuration
         .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
 
     get_cfs_configuration
-
 }
 
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
@@ -81,19 +77,19 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
         .aliases(["t", "tplt", "templ"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <VALUE> "template name"))
-        .arg(
-            arg!(-m --"most-recent" "most recent (equivalent to --limit 1)")
-        )
+        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
         .arg(
             arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
     match hsm_group {
-        None => get_bos_template = get_bos_template
+        None => {
+            get_bos_template = get_bos_template
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"])),
-        Some(_) => { }
+                .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"]))
+        }
+        Some(_) => {}
     }
 
     get_bos_template
@@ -105,9 +101,12 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
         .about("Get members of a HSM group");
 
     match hsm_group {
-        None => get_node = get_node.arg_required_else_help(true)
-                .arg(arg!(<HSMGROUP> "hsm group name")),
-        Some(_) => { }
+        None => {
+            get_node = get_node
+                .arg_required_else_help(true)
+                .arg(arg!(<HSMGROUP> "hsm group name"))
+        }
+        Some(_) => {}
     }
 
     get_node
@@ -119,8 +118,11 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
         .about("Get HSM groups details");
 
     match hsm_group {
-        None => get_hsm_group = get_hsm_group.arg_required_else_help(true)
-                .arg(arg!(<HSMGROUP> "hsm group name")),
+        None => {
+            get_hsm_group = get_hsm_group
+                .arg_required_else_help(true)
+                .arg(arg!(<HSMGROUP> "hsm group name"))
+        }
         Some(_) => {
             get_hsm_group = get_hsm_group.arg_required_else_help(false);
         }
@@ -130,7 +132,8 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
 }
 
 pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
-    Command::new("get").alias("g")
+    Command::new("get")
+        .alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
         .subcommand(subcommand_get_cfs_session(hsm_group))
@@ -141,7 +144,6 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
-    
     let mut apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
         .arg_required_else_help(true)
@@ -161,7 +163,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
         .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).multiple(true));
 
     match hsm_group {
-        Some(_) => { },
+        Some(_) => {}
         None => apply_session = apply_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
     };
 
@@ -176,10 +178,16 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-r --reason <VALUE> "reason to power on"));
 
     match hsm_group {
-        None => apply_node_on = apply_node_on
-            .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-            .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-        Some(_) => { }
+        None => {
+            apply_node_on = apply_node_on
+                .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+                .group(
+                    ArgGroup::new("hsm-group_or_xnames")
+                        .args(["hsm-group", "XNAMES"])
+                        .multiple(true),
+                )
+        }
+        Some(_) => {}
     };
 
     apply_node_on
@@ -194,10 +202,16 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-r --reason <VALUE> "reason to power off"));
 
     match hsm_group {
-        None => apply_node_off = apply_node_off
+        None => {
+            apply_node_off = apply_node_off
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-        Some(_) => { }
+                .group(
+                    ArgGroup::new("hsm-group_or_xnames")
+                        .args(["hsm-group", "XNAMES"])
+                        .multiple(true),
+                )
+        }
+        Some(_) => {}
     };
 
     apply_node_off
@@ -213,10 +227,16 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-r --reason <VALUE> "reason to reset"));
 
     match hsm_group {
-        None => apply_node_reset = apply_node_reset
+        None => {
+            apply_node_reset = apply_node_reset
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "XNAMES"]).multiple(true)),
-        Some(_) => { }
+                .group(
+                    ArgGroup::new("hsm-group_or_xnames")
+                        .args(["hsm-group", "XNAMES"])
+                        .multiple(true),
+                )
+        }
+        Some(_) => {}
     };
 
     apply_node_reset
@@ -248,7 +268,11 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .arg_required_else_help(true)
                 .about("Get CFS session logs")
                 .arg(arg!(<SESSION> "session name"))
-                .arg(arg!(-l --"layer-id" <VALUE> "layer id").required(false).value_parser(value_parser!(u8))),
+                .arg(
+                    arg!(-l --"layer-id" <VALUE> "layer id")
+                        .required(false)
+                        .value_parser(value_parser!(u8)),
+                ),
         )
         .subcommand(
             Command::new("console")
@@ -280,9 +304,7 @@ pub async fn process_command(
     let layer_id;
 
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
-
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
-
             configuration_name = cli_get_configuration.get_one::<String>("name");
 
             hsm_group_name = match hsm_group {
@@ -312,18 +334,14 @@ pub async fn process_command(
             .await?;
 
             if cfs_configurations.is_empty() {
-
                 println!("No CFS configuration found!");
                 return Ok(());
-                
             } else if cfs_configurations.len() == 1 {
-
                 let most_recent_cfs_configuration = &cfs_configurations[0];
 
                 let mut layers: Vec<manta_cfs_configuration::Layer> = vec![];
 
                 for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
-                    
                     let gitea_commit_details = gitea::http_client::get_commit_details(
                         layer["cloneUrl"].as_str().unwrap(),
                         layer["commit"].as_str().unwrap(),
@@ -360,9 +378,7 @@ pub async fn process_command(
             } else {
                 shasta_cfs_configuration::utils::print_table(cfs_configurations);
             }
-
         } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
-
             session_name = cli_get_session.get_one::<String>("name");
 
             hsm_group_name = match hsm_group {
@@ -387,6 +403,7 @@ pub async fn process_command(
                 hsm_group_name,
                 session_name,
                 limit_number,
+                None,
             )
             .await?;
 
@@ -396,9 +413,7 @@ pub async fn process_command(
             } else {
                 shasta_cfs_session::utils::print_table(cfs_sessions);
             }
-
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
-
             template_name = cli_get_template.get_one::<String>("name");
 
             hsm_group_name = match hsm_group {
@@ -431,51 +446,134 @@ pub async fn process_command(
             } else {
                 bos_template::utils::print_table(bos_templates);
             }
-
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
-
+            // Check of HSM group name provided y configuration file
             hsm_group_name = match hsm_group {
                 None => cli_get_node.get_one::<String>("HSMGROUP"),
                 Some(_) => hsm_group,
             };
 
-            // Get nodes from HSM group
-            // let hsm_groups = shasta::hsm::http_client::get_hsm_groups(
-            //     &shasta_token,
-            //     &shasta_base_url,
-            //     hsm_group_name,
-            // )
-            // .await?;
+            let hsm_group_resp = crate::shasta::hsm::http_client::get_hsm_group(
+                &shasta_token,
+                &shasta_base_url,
+                hsm_group_name.unwrap(),
+            )
+            .await;
 
-            // Get all hsm groups related to hsm_group input
-            let hsm_groups = 
-                cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name.unwrap())
-                .await;
+            // println!("hsm_groups: {:?}", hsm_groups);
 
-            // Take all nodes for all hsm_groups found and put them in a Vec
-            let hsm_groups_nodes: HashSet<String> = hsm_groups
-                .iter()
-                .flat_map(|hsm_group| {
-                    hsm_group
-                        .members
-                        .iter()
-                        .map(|xname| xname.as_str().unwrap().to_string())
-                })
-                .collect();
+            let hsm_group;
 
-            // Get node status from capmc
-            let nodes_power_status = capmc::http_client::node_power_status::post(shasta_token, shasta_base_url, Vec::from_iter(hsm_groups_nodes.into_iter())).await?;
-
-            if hsm_groups.is_empty() {
+            // Exit if no hsm groups found
+            if hsm_group_resp.is_err() {
                 println!("No nodes found!");
                 return Ok(());
             } else {
-                // shasta::hsm::utils::print_table(hsm_groups);
-                node_ops::print_table(hsm_groups, nodes_power_status);
+                hsm_group = hsm_group_resp.unwrap();
             }
 
-        } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
+            // Take all nodes for all hsm_groups found and put them in a Vec
+            let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|xname| xname.as_str().unwrap().to_string())
+                .collect();
 
+            // Get node most recent CFS session with target image
+            // Get all CFS sessions matching hsm_group value
+            let mut cfs_sessions = crate::shasta::cfs::session::http_client::get(
+                &shasta_token,
+                &shasta_base_url,
+                hsm_group_name,
+                None,
+                None,
+                Some(true),
+            )
+            .await
+            .unwrap();
+
+            // Sort CFS sessions by start time
+            cfs_sessions.sort_by(|a, b| {
+                a["status"]["session"]["completionTime"]
+                    .as_str()
+                    .unwrap()
+                    .cmp(b["status"]["session"]["startTime"].as_str().unwrap())
+            });
+
+            // println!("cfs_sessions: {:#?}", cfs_sessions);
+
+            // Filter CFS sessions with target = "image" and succeded = "true"
+            let cfs_sessions_target_image: Vec<_> = cfs_sessions
+                .iter()
+                .filter(|cfs_session| {
+                    cfs_session["target"]["definition"]
+                        .as_str()
+                        .unwrap()
+                        .eq("image")
+                        && cfs_session["status"]["session"]["succeeded"]
+                            .as_str()
+                            .unwrap()
+                            .eq("true")
+                })
+                .collect();
+
+            // println!("cfs_sessions_target_image: {:#?}", cfs_sessions_target_image);
+
+            // Get most recent CFS session with target = "image" and succeded = "true"
+            let cfs_session_most_recent = cfs_sessions_target_image
+                [cfs_sessions_target_image.len().saturating_sub(1)..]
+                .to_vec();
+
+            // Exit if no CFS session found!
+            if cfs_session_most_recent.is_empty() {
+                println!("CFS session target image not found!");
+                std::process::exit(0);
+            }
+
+            // Extract image id from session
+            let image_id = cfs_session_most_recent.iter().next().unwrap()["status"]["artifacts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|artifact| artifact["image_id"].as_str().unwrap())
+                .next()
+                .unwrap()
+                .to_string();
+
+            log::info!(
+                "image_id from most recent CFS session (target = image and successful = true): {}",
+                image_id
+            );
+
+            // println!("Images found in CFS sessions for HSM group {}:", hsm_group_name.unwrap());
+            //            for cfs_session_target_image in cfs_sessions_target_image {
+            //                println!(
+            //                    "start time: {}; image_id: {}",
+            //                    cfs_session_target_image["status"]["session"]["startTime"],
+            //                    cfs_session_target_image["status"]["artifacts"]
+            //                        .as_array()
+            //                        .unwrap()
+            //                        .iter()
+            //                        .next()
+            //                        .unwrap()["image_id"]
+            //                        .as_str()
+            //                        .unwrap()
+            //                );
+            //            }
+
+            // Check nodes have latest image in bootparam
+            let nodes_status = check_nodes_have_most_recent_image::get_node_details(
+                &shasta_token,
+                &shasta_base_url,
+                &hsm_group_name.unwrap(),
+                &hsm_groups_nodes,
+            )
+            .await;
+
+            // shasta::hsm::utils::print_table(hsm_groups);
+            node_ops::print_table(nodes_status);
+        } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
             let hsm_group_name = match hsm_group {
                 None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
                 Some(hsm_group_name_value) => hsm_group_name_value,
@@ -502,7 +600,12 @@ pub async fn process_command(
                         .unwrap_or_default()
                 );
 
-                for (i, layer) in hsm_group.most_recent_cfs_configuration_name_created["layers"].as_array().unwrap().iter().enumerate() {
+                for (i, layer) in hsm_group.most_recent_cfs_configuration_name_created["layers"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .enumerate()
+                {
                     println!("   + Layer {}", i);
                     println!(
                         "     - name: {}",
@@ -563,7 +666,8 @@ pub async fn process_command(
                 );
                 println!(
                     "     - succeeded: {}",
-                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["succeeded"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]
+                        ["succeeded"]
                         .as_str()
                         .unwrap_or_default()
                 );
@@ -575,7 +679,8 @@ pub async fn process_command(
                 );
                 println!(
                     "     - start: {}",
-                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]["startTime"]
+                    hsm_group.most_recent_cfs_session_name_created["status"]["session"]
+                        ["startTime"]
                         .as_str()
                         .unwrap_or_default()
                 );
@@ -584,14 +689,14 @@ pub async fn process_command(
                     hsm_group.most_recent_cfs_session_name_created["tags"]
                 );
 
-                println!(" * members: {}", nodes::nodes_to_string_format_unlimited(&hsm_group.members));
+                println!(
+                    " * members: {}",
+                    nodes::nodes_to_string_format_unlimited(&hsm_group.members)
+                );
             }
         }
-        
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
-            
             let included: HashSet<String>;
             let excluded: HashSet<String>;
             // Check andible limit matches the nodes in hsm_group
@@ -604,7 +709,13 @@ pub async fn process_command(
             // * Validate input params
             // Neither hsm_group (both config file or cli arg) nor ansible_limit provided --> ERROR since we don't know the target nodes to apply the session to
             // NOTE: hsm group can be assigned either by config file or cli arg
-            if cli_apply_session.get_one::<String>("ansible-limit").is_none() && hsm_group.is_none() && cli_apply_session.get_one::<String>("hsm-group").is_none() { // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
+            if cli_apply_session
+                .get_one::<String>("ansible-limit")
+                .is_none()
+                && hsm_group.is_none()
+                && cli_apply_session.get_one::<String>("hsm-group").is_none()
+            {
+                // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
                 eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
                 std::process::exit(-1);
             }
@@ -613,16 +724,18 @@ pub async fn process_command(
             // * Parse input params
             // Parse ansible limit
             // Get ansible limit nodes from cli arg
-            let ansible_limit_nodes: HashSet<String> = if cli_apply_session.get_one::<String>("ansible-limit").is_some() {
-
+            let ansible_limit_nodes: HashSet<String> = if cli_apply_session
+                .get_one::<String>("ansible-limit")
+                .is_some()
+            {
                 // Get HashSet with all nodes from ansible-limit param
-                cli_apply_session.get_one::<String>("ansible-limit")
+                cli_apply_session
+                    .get_one::<String>("ansible-limit")
                     .unwrap()
                     .replace(' ', "") // trim xnames by removing white spaces
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect()
-            
             } else {
                 HashSet::new()
             };
@@ -637,21 +750,25 @@ pub async fn process_command(
 
             // Get hsm group from config file
             if hsm_group.is_some() {
-
                 hsm_group_value = hsm_group;
             }
             // * End Parse input params
 
             // * Process/validate hsm group value (and ansible limit)
             if hsm_group_value.is_some() {
-
                 // Get all hsm groups related to hsm_group input
-                hsm_groups = 
-                    cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
-                        .await;
-        
+                hsm_groups = cluster_ops::get_details(
+                    &shasta_token,
+                    &shasta_base_url,
+                    hsm_group_value.unwrap(),
+                )
+                .await;
+
                 //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
-                cfs_configuration_name = cli_apply_session.get_one::<String>("name").unwrap().to_string();
+                cfs_configuration_name = cli_apply_session
+                    .get_one::<String>("name")
+                    .unwrap()
+                    .to_string();
 
                 // Take all nodes for all hsm_groups found and put them in a Vec
                 hsm_groups_nodes = hsm_groups
@@ -663,14 +780,15 @@ pub async fn process_command(
                             .map(|xname| xname.as_str().unwrap().to_string())
                     })
                     .collect();
-                    
-                if  !ansible_limit_nodes.is_empty() { // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+
+                if !ansible_limit_nodes.is_empty() {
+                    // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
                     (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
                         &hsm_groups_nodes,
                         ansible_limit_nodes,
                     );
-            
+
                     if !excluded.is_empty() {
                         println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
                             excluded,
@@ -678,12 +796,16 @@ pub async fn process_command(
                             hsm_groups_nodes);
                         std::process::exit(-1);
                     }
-                    
-                } else { // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
+                } else {
+                    // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
                     included = hsm_groups_nodes
                 }
-            } else { // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
-                cfs_configuration_name = cli_apply_session.get_one::<String>("name").unwrap().to_string();
+            } else {
+                // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
+                cfs_configuration_name = cli_apply_session
+                    .get_one::<String>("name")
+                    .unwrap()
+                    .to_string();
                 included = ansible_limit_nodes
             }
             // * End Process/validate hsm group value (and ansible limit)
@@ -691,7 +813,11 @@ pub async fn process_command(
             // * Create CFS session
             let cfs_session_name = create_cfs_session_from_repo::run(
                 &cfs_configuration_name,
-                cli_apply_session.get_many("repo-path").unwrap().cloned().collect(),
+                cli_apply_session
+                    .get_many("repo-path")
+                    .unwrap()
+                    .cloned()
+                    .collect(),
                 // vec![cli_apply_session
                 //     .get_one::<String>("repo-path")
                 //     .unwrap()
@@ -721,27 +847,28 @@ pub async fn process_command(
                 .await?;
             }
             // * End Create CFS session
-            
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
-
             if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-
                 let included: HashSet<String>;
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-    
+
                 let hsm_groups_nodes;
-    
+
                 // * Validate input params
                 // Neither hsm_group (both config file or cli arg) nor xnames provided --> ERROR since we don't know the target nodes to apply the session to
                 // NOTE: hsm group can be assigned either by config file or cli arg
-                if cli_apply_node_on.get_one::<String>("XNAMES").is_none() && hsm_group.is_none() && cli_apply_node_on.get_one::<String>("hsm-group").is_none() { // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
+                if cli_apply_node_on.get_one::<String>("XNAMES").is_none()
+                    && hsm_group.is_none()
+                    && cli_apply_node_on.get_one::<String>("hsm-group").is_none()
+                {
+                    // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
                     eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
                     std::process::exit(-1);
                 }
                 // * End validation input params
-    
+
                 // * Parse input params
                 // Parse xnames
                 // Get xnames nodes from cli arg
@@ -753,25 +880,26 @@ pub async fn process_command(
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
-    
+
                 // Parse hsm group
                 let mut hsm_group_value = None;
-    
+
                 // Get hsm group from config file
                 if hsm_group.is_some() {
-    
                     hsm_group_value = hsm_group;
                 }
                 // * End Parse input params
-    
+
                 // * Process/validate hsm group value (and ansible limit)
                 if hsm_group_value.is_some() {
-    
                     // Get all hsm groups related to hsm_group input
-                    hsm_groups = 
-                        cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
-                            .await;
-                        
+                    hsm_groups = cluster_ops::get_details(
+                        &shasta_token,
+                        &shasta_base_url,
+                        hsm_group_value.unwrap(),
+                    )
+                    .await;
+
                     // Take all nodes for all hsm_groups found and put them in a Vec
                     hsm_groups_nodes = hsm_groups
                         .iter()
@@ -782,14 +910,13 @@ pub async fn process_command(
                                 .map(|xname| xname.as_str().unwrap().to_string())
                         })
                         .collect();
-                        
-                    if  !xnames.is_empty() { // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
-    
-                        (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                            &hsm_groups_nodes,
-                            xnames,
-                        );
-                
+
+                    if !xnames.is_empty() {
+                        // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+
+                        (included, excluded) =
+                            node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+
                         if !excluded.is_empty() {
                             println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
                                 excluded,
@@ -797,11 +924,12 @@ pub async fn process_command(
                                 hsm_groups_nodes);
                             std::process::exit(-1);
                         }
-                        
-                    } else { // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
+                    } else {
+                        // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
                         included = hsm_groups_nodes
                     }
-                } else { // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
+                } else {
+                    // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
                     included = xnames
                 }
                 // * End Process/validate hsm group value (and ansible limit)
@@ -816,25 +944,27 @@ pub async fn process_command(
                     false,
                 )
                 .await?;
-
             } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-
                 let included: HashSet<String>;
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-    
+
                 let hsm_groups_nodes;
-    
+
                 // * Validate input params
                 // Neither hsm_group (both config file or cli arg) nor xnames provided --> ERROR since we don't know the target nodes to apply the session to
                 // NOTE: hsm group can be assigned either by config file or cli arg
-                if cli_apply_node_off.get_one::<String>("XNAMES").is_none() && hsm_group.is_none() && cli_apply_node_off.get_one::<String>("hsm-group").is_none() { // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
+                if cli_apply_node_off.get_one::<String>("XNAMES").is_none()
+                    && hsm_group.is_none()
+                    && cli_apply_node_off.get_one::<String>("hsm-group").is_none()
+                {
+                    // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
                     eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
                     std::process::exit(-1);
                 }
                 // * End validation input params
-    
+
                 // * Parse input params
                 // Parse xnames
                 // Get xnames nodes from cli arg
@@ -846,25 +976,26 @@ pub async fn process_command(
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
-    
+
                 // Parse hsm group
                 let mut hsm_group_value = None;
-    
+
                 // Get hsm group from config file
                 if hsm_group.is_some() {
-    
                     hsm_group_value = hsm_group;
                 }
                 // * End Parse input params
-    
+
                 // * Process/validate hsm group value (and ansible limit)
                 if hsm_group_value.is_some() {
-    
                     // Get all hsm groups related to hsm_group input
-                    hsm_groups = 
-                        cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
-                            .await;
-                        
+                    hsm_groups = cluster_ops::get_details(
+                        &shasta_token,
+                        &shasta_base_url,
+                        hsm_group_value.unwrap(),
+                    )
+                    .await;
+
                     // Take all nodes for all hsm_groups found and put them in a Vec
                     hsm_groups_nodes = hsm_groups
                         .iter()
@@ -875,14 +1006,13 @@ pub async fn process_command(
                                 .map(|xname| xname.as_str().unwrap().to_string())
                         })
                         .collect();
-                        
-                    if  !xnames.is_empty() { // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
-    
-                        (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                            &hsm_groups_nodes,
-                            xnames,
-                        );
-                
+
+                    if !xnames.is_empty() {
+                        // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+
+                        (included, excluded) =
+                            node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+
                         if !excluded.is_empty() {
                             println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
                                 excluded,
@@ -890,11 +1020,12 @@ pub async fn process_command(
                                 hsm_groups_nodes);
                             std::process::exit(-1);
                         }
-                        
-                    } else { // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
+                    } else {
+                        // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
                         included = hsm_groups_nodes
                     }
-                } else { // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
+                } else {
+                    // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
                     included = xnames
                 }
                 // * End Process/validate hsm group value (and ansible limit)
@@ -909,25 +1040,29 @@ pub async fn process_command(
                     *cli_apply_node_off.get_one::<bool>("force").unwrap(),
                 )
                 .await?;
-
             } else if let Some(cli_apply_node_reset) = cli_apply_node.subcommand_matches("reset") {
-                
                 let included: HashSet<String>;
                 let excluded: HashSet<String>;
                 // Check andible limit matches the nodes in hsm_group
                 let hsm_groups;
-                
+
                 let hsm_groups_nodes;
-    
+
                 // * Validate input params
                 // Neither hsm_group (both config file or cli arg) nor xnames provided --> ERROR since we don't know the target nodes to apply the session to
                 // NOTE: hsm group can be assigned either by config file or cli arg
-                if cli_apply_node_reset.get_one::<String>("XNAMES").is_none() && hsm_group.is_none() && cli_apply_node_reset.get_one::<String>("hsm-group").is_none() { // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
+                if cli_apply_node_reset.get_one::<String>("XNAMES").is_none()
+                    && hsm_group.is_none()
+                    && cli_apply_node_reset
+                        .get_one::<String>("hsm-group")
+                        .is_none()
+                {
+                    // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
                     eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
                     std::process::exit(-1);
                 }
                 // * End validation input params
-    
+
                 // * Parse input params
                 // Parse xnames
                 // Get xnames nodes from cli arg
@@ -939,25 +1074,26 @@ pub async fn process_command(
                     .split(',')
                     .map(|xname| xname.to_string())
                     .collect();
-    
+
                 // Parse hsm group
                 let mut hsm_group_value = None;
-    
+
                 // Get hsm group from config file
                 if hsm_group.is_some() {
-    
                     hsm_group_value = hsm_group;
                 }
                 // * End Parse input params
-    
+
                 // * Process/validate hsm group value (and ansible limit)
                 if hsm_group_value.is_some() {
-    
                     // Get all hsm groups related to hsm_group input
-                    hsm_groups = 
-                        cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
-                            .await;
-                        
+                    hsm_groups = cluster_ops::get_details(
+                        &shasta_token,
+                        &shasta_base_url,
+                        hsm_group_value.unwrap(),
+                    )
+                    .await;
+
                     // Take all nodes for all hsm_groups found and put them in a Vec
                     hsm_groups_nodes = hsm_groups
                         .iter()
@@ -968,14 +1104,13 @@ pub async fn process_command(
                                 .map(|xname| xname.as_str().unwrap().to_string())
                         })
                         .collect();
-                        
-                    if  !xnames.is_empty() { // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
-    
-                        (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                            &hsm_groups_nodes,
-                            xnames,
-                        );
-                
+
+                    if !xnames.is_empty() {
+                        // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+
+                        (included, excluded) =
+                            node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+
                         if !excluded.is_empty() {
                             println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
                                 excluded,
@@ -983,11 +1118,12 @@ pub async fn process_command(
                                 hsm_groups_nodes);
                             std::process::exit(-1);
                         }
-                        
-                    } else { // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
+                    } else {
+                        // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
                         included = hsm_groups_nodes
                     }
-                } else { // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
+                } else {
+                    // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
                     included = xnames
                 }
                 // * End Process/validate hsm group value (and ansible limit)
@@ -1002,15 +1138,13 @@ pub async fn process_command(
                     *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
                 )
                 .await?; // TODO: idk why power on does not seems to work when forced
-
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-
         logging_session_name = cli_log.get_one::<String>("SESSION");
 
         layer_id = cli_log.get_one::<u8>("layer-id");
-        
+
         shasta_cfs_session_logs::client::session_logs_proxy(
             &shasta_token,
             &shasta_base_url,
@@ -1020,9 +1154,7 @@ pub async fn process_command(
             layer_id,
         )
         .await?;
-
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-        
         let included: HashSet<String>;
         let excluded: HashSet<String>;
 
@@ -1036,7 +1168,7 @@ pub async fn process_command(
             .collect();
 
         let hsm_groups: Vec<ClusterDetails>;
-        
+
         if hsm_group.is_some() {
             // hsm_group value provided
             hsm_groups =
@@ -1063,7 +1195,6 @@ pub async fn process_command(
                     hsm_groups_nodes);
                 std::process::exit(-1);
             }
-
         } else {
             // no hsm_group value provided
             included = xnames.clone();

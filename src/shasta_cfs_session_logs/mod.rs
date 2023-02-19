@@ -173,7 +173,7 @@ pub mod client {
     pub async fn session_logs_proxy(shasta_token: &str, shasta_base_url: &str, vault_base_url: String, cluster_name: Option<&String>, session_name: Option<&String>, layer_id: Option<&u8>) -> Result<(), Box<dyn Error>> {
         
         // Get CFS sessions
-        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, None).await?;
+        let cfs_sessions = shasta_cfs_session::http_client::get(shasta_token, shasta_base_url, cluster_name, session_name, None, None).await?;
 
         if cfs_sessions.is_empty() {
             log::info!("No CFS session found");

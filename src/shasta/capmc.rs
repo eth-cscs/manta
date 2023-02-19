@@ -21,17 +21,6 @@ impl PowerStatus {
     }
 }
 
-// impl Default for PowerStatus {
-//     fn default() -> Self {
-//         Self{
-//             reason: None,
-//             xnames: vec![],
-//             force: false,
-//             recursive: None
-//         }
-//     }
-// }
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct NodeStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -48,17 +37,8 @@ impl NodeStatus {
     }
 }
 
-// impl Default for NodeStatus {
-//     fn default() -> Self {
-//         Self{
-//             filter: None,
-//             xnames: None,
-//             source: None,
-//         }
-//     }
-// }
-
 pub mod http_client {
+
     pub mod node_power_off {
 
         use std::error::Error;
@@ -214,11 +194,11 @@ pub mod http_client {
 
         use crate::capmc::NodeStatus;
 
-        pub async fn post(shasta_token: String, shasta_base_url: String, xnames: Vec<String>)  -> core::result::Result<Value, Box<dyn Error>> {
+        pub async fn post(shasta_token: &String, shasta_base_url: &String, xnames: &Vec<String>)  -> core::result::Result<Value, Box<dyn Error>> {
             
             log::info!("Checking nodes status: {:?}", xnames);
 
-            let node_status_payload = NodeStatus::new(None, Some(xnames), Some("hsm".to_string()));
+            let node_status_payload = NodeStatus::new(None, Some(xnames.clone()), Some("hsm".to_string()));
 
             let client;
 
@@ -236,16 +216,20 @@ pub mod http_client {
             } else {
                 client = client_builder.build()?;
             }
+
+            let mut url_api = shasta_base_url.clone();
+            url_api.push_str("/capmc/capmc/v1/get_xname_status");
         
             let resp = client
-                .post(format!("{}/capmc/capmc/v1/get_xname_status", shasta_base_url))
+                .post(url_api)
                 .bearer_auth(shasta_token)
                 .json(&node_status_payload)
                 .send()
                 .await?;
 
             if resp.status().is_success() {
-                Ok(serde_json::from_str(&resp.text().await?)?)
+                let resp_json = &resp.json::<Value>().await?;
+                Ok(resp_json.clone())
             } else {
                 Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
             }

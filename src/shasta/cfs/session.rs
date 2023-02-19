@@ -126,7 +126,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, session_name: Option<&String>, limit_number: Option<&u8>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, session_name: Option<&String>, limit_number: Option<&u8>, succeded: Option<bool>) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
 
         let client;
 
@@ -148,9 +148,15 @@ pub mod http_client {
         let mut api_url = shasta_base_url.clone().to_string();
         api_url.push_str("/cfs/v2/sessions");
 
+        let mut params = Vec::new();
+
+        if succeded.is_some() {
+            params.push(("succeced", succeded));
+        }
+
         let resp = client
             .get(api_url)
-            // .get(format!("{}{}", shasta_base_url, "/cfs/v2/sessions"))
+            .query(&params)
             .bearer_auth(shasta_token)
             .send()
             .await?;

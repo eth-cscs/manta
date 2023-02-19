@@ -4,3 +4,4 @@ pub mod bos_template;
 pub mod capmc;
 pub mod hsm;
 pub mod nodes;
+pub mod bss;

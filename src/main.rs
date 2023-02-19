@@ -20,6 +20,7 @@ mod cli_programmatic;
 mod cluster_ops;
 mod node_ops;
 mod config;
+mod check_nodes_have_most_recent_image;
 
 use termion::color;
 
