@@ -410,7 +410,7 @@ pub async fn process_command(
             .await?;
 
             if cfs_sessions.is_empty() {
-                println!("No CFS session found!");
+                println!("CFS session not found!");
                 return Ok(());
             } else {
                 shasta_cfs_session::utils::print_table(cfs_sessions);
@@ -475,12 +475,13 @@ pub async fn process_command(
             }
 
             // Take all nodes for all hsm_groups found and put them in a Vec
-            let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
-                .as_array()
-                .unwrap_or(&Vec::new())
-                .iter()
-                .map(|xname| xname.as_str().unwrap().to_string())
-                .collect();
+            let hsm_groups_nodes: Vec<String> = crate::shasta::hsm::utils::get_member_ids(&hsm_group);
+//            let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
+//                .as_array()
+//                .unwrap_or(&Vec::new())
+//                .iter()
+//                .map(|xname| xname.as_str().unwrap().to_string())
+//                .collect();
 
             // Get node most recent CFS session with target image
             // Get all CFS sessions matching hsm_group value
@@ -497,10 +498,15 @@ pub async fn process_command(
 
             // Sort CFS sessions by start time
             cfs_sessions.sort_by(|a, b| {
-                a["status"]["session"]["completionTime"]
+                a["status"]["session"]["startTime"] // don't be tempted to use completionTime
+                                                    // because this field is NULL is CFS session
+                                                    // failed. Plus lastest CFS session should be
+                                                    // considered the latest to start since is the
+                                                    // last one ran by the user (with latest
+                                                    // changes)
                     .as_str()
                     .unwrap()
-                    .cmp(b["status"]["session"]["completionTime"].as_str().unwrap())
+                    .cmp(b["status"]["session"]["startTime"].as_str().unwrap())
             });
 
             // println!("cfs_sessions: {:#?}", cfs_sessions);

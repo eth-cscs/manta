@@ -1,3 +1,44 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct HsmGroup {
+    label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    members: Option<Vec<Member>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct Member {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ids: Option<Vec<String>>,
+}
+
+impl HsmGroup {
+    pub fn new(
+        label: String,
+        description: Option<String>,
+        tags: Option<Vec<String>>,
+        members: Option<Vec<Member>>,
+    ) -> Self {
+        Self {
+            label,
+            description,
+            tags,
+            members,
+        }
+    }
+}
+
+impl Member {
+    pub fn new(ids: Option<Vec<String>>) -> Self {
+        Self { ids }
+    }
+}
+
 pub mod http_client {
 
     use std::error::Error;
@@ -67,7 +108,6 @@ pub mod http_client {
         shasta_base_url: &str,
         hsm_group_name: &String,
     ) -> Result<Value, Box<dyn Error>> {
-
         let client;
 
         let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
@@ -173,3 +213,20 @@ pub mod http_client {
 //         println!("{table}");
 //     }
 // }
+
+pub mod utils {
+
+    use serde_json::Value;
+
+    pub fn get_member_ids(hsm_group: &Value) -> Vec<String> {
+        // Take all nodes for all hsm_groups found and put them in a Vec
+        let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .map(|xname| xname.as_str().unwrap().to_string())
+            .collect();
+
+        hsm_groups_nodes
+    }
+}
