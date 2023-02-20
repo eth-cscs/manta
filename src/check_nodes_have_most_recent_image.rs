@@ -3,7 +3,7 @@ use std::collections::HashMap;
 pub async fn get_node_details(
     shasta_token: &String,
     shasta_base_url: &String,
-    image_id: &String,
+    image_id: Option<String>,
     xnames: &Vec<String>,
 ) -> Vec<Vec<String>> {
     let mut nodes_status: Vec<Vec<String>> = Vec::new();
@@ -109,8 +109,12 @@ pub async fn get_node_details(
         node_status.push(node_image_id.clone());
 
         // Has node latest image?
-        node_status.push(node_image_id.eq(image_id).to_string());
-        
+        if image_id.is_some() {
+            node_status.push(node_image_id.eq(&image_id.clone().unwrap()).to_string());
+        } else {
+            node_status.push("N/A".to_string());
+        }
+
         nodes_status.push(node_status);
     }
 

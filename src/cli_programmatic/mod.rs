@@ -498,7 +498,7 @@ pub async fn process_command(
                 a["status"]["session"]["completionTime"]
                     .as_str()
                     .unwrap()
-                    .cmp(b["status"]["session"]["startTime"].as_str().unwrap())
+                    .cmp(b["status"]["session"]["completionTime"].as_str().unwrap())
             });
 
             // println!("cfs_sessions: {:#?}", cfs_sessions);
@@ -525,48 +525,52 @@ pub async fn process_command(
                 [cfs_sessions_target_image.len().saturating_sub(1)..]
                 .to_vec();
 
+            let image_id;
+
             // Exit if no CFS session found!
             if cfs_session_most_recent.is_empty() {
-                println!("CFS session target image not found!");
-                std::process::exit(0);
+                log::warn!("CFS session with target == image and succeeded == true not found!");
+                image_id = None;
+            } else {
+                // Extract image id from session
+                image_id = Some(
+                    cfs_session_most_recent.iter().next().unwrap()["status"]["artifacts"]
+                        .as_array()
+                        .unwrap()
+                        .into_iter()
+                        .map(|artifact| artifact["image_id"].as_str().unwrap())
+                        .next()
+                        .unwrap()
+                        .to_string(),
+                );
+
+                log::info!(
+                    "Image_id from most recent CFS session (target = image and successful = true): {}",
+                    image_id.to_owned().unwrap()
+                );
+
+                // println!("Images found in CFS sessions for HSM group {}:", hsm_group_name.unwrap());
+                //            for cfs_session_target_image in cfs_sessions_target_image {
+                //                println!(
+                //                    "start time: {}; image_id: {}",
+                //                    cfs_session_target_image["status"]["session"]["startTime"],
+                //                    cfs_session_target_image["status"]["artifacts"]
+                //                        .as_array()
+                //                        .unwrap()
+                //                        .iter()
+                //                        .next()
+                //                        .unwrap()["image_id"]
+                //                        .as_str()
+                //                        .unwrap()
+                //                );
+                //            }
             }
 
-            // Extract image id from session
-            let image_id = cfs_session_most_recent.iter().next().unwrap()["status"]["artifacts"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|artifact| artifact["image_id"].as_str().unwrap())
-                .next()
-                .unwrap()
-                .to_string();
-
-            log::info!(
-                "image_id from most recent CFS session (target = image and successful = true): {}",
-                image_id
-            );
-
-            // println!("Images found in CFS sessions for HSM group {}:", hsm_group_name.unwrap());
-            //            for cfs_session_target_image in cfs_sessions_target_image {
-            //                println!(
-            //                    "start time: {}; image_id: {}",
-            //                    cfs_session_target_image["status"]["session"]["startTime"],
-            //                    cfs_session_target_image["status"]["artifacts"]
-            //                        .as_array()
-            //                        .unwrap()
-            //                        .iter()
-            //                        .next()
-            //                        .unwrap()["image_id"]
-            //                        .as_str()
-            //                        .unwrap()
-            //                );
-            //            }
-
-            // Check nodes have latest image in bootparam
+            // Get nodes details
             let nodes_status = check_nodes_have_most_recent_image::get_node_details(
                 &shasta_token,
                 &shasta_base_url,
-                &hsm_group_name.unwrap(),
+                image_id,
                 &hsm_groups_nodes,
             )
             .await;
