@@ -67,7 +67,6 @@ pub mod http_client {
         shasta_base_url: &str,
         hsm_group_name: &String,
     ) -> Result<Value, Box<dyn Error>> {
-        let mut hsm_groups: Vec<Value> = Vec::new();
 
         let client;
 
