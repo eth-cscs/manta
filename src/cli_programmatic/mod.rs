@@ -20,6 +20,8 @@ use crate::shasta::{
 
 use crate::node_ops;
 
+use termion::color;
+
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
         .aliases(["s", "se", "sess"])
@@ -466,7 +468,7 @@ pub async fn process_command(
 
             // Exit if no hsm groups found
             if hsm_group_resp.is_err() {
-                println!("No nodes found!");
+                eprintln!("No HSM group {}{}{} found!", color::Fg(color::Red), hsm_group_name.unwrap(), color::Fg(color::Reset));
                 return Ok(());
             } else {
                 hsm_group = hsm_group_resp.unwrap();
