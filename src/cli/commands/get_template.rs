@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::shasta::bos_template;
+use crate::shasta::bos::template as bos_template;
 
 pub async fn exec(
     hsm_group: Option<&String>,
