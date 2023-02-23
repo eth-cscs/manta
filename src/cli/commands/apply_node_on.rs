@@ -52,7 +52,7 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups related to hsm_group input
-        hsm_groups = crate::cluster_ops::get_details(
+        hsm_groups = crate::common::cluster_ops::get_details(
             &shasta_token,
             &shasta_base_url,
             hsm_group_value.unwrap(),
@@ -74,7 +74,7 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
             (included, excluded) =
-                crate::node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+                crate::common::node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 

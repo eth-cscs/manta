@@ -142,7 +142,7 @@ pub async fn exec(
         get_nodes_details(&shasta_token, &shasta_base_url, image_id, &hsm_groups_nodes).await;
 
     // shasta::hsm::utils::print_table(hsm_groups);
-    crate::node_ops::print_table(nodes_status);
+    crate::common::node_ops::print_table(nodes_status);
 }
 
 pub async fn get_nodes_details(

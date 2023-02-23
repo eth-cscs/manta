@@ -1,15 +1,8 @@
-mod gitea;
 mod shasta;
-mod cluster_ops;
 mod config;
-mod create_cfs_session_from_repo;
 mod cli;
-mod local_git_repo;
+mod common;
 mod manta;
-mod node_console;
-mod node_ops;
-mod shasta_cfs_session_logs;
-mod vault;
 use termion::color;
 
 use shasta::{
@@ -59,7 +52,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
 
-    let gitea_token = vault::http_client::fetch_shasta_vcs_token(&vault_base_url)
+    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url)
         .await
         .unwrap();
 

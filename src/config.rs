@@ -1,5 +1,6 @@
 use config::{Config, File, FileFormat};
 
+/// Reads configuration file with manta parameters
 pub fn get(config_path: &str) -> Config {
     
     Config::builder()

@@ -7,7 +7,7 @@ pub async fn exec(hsm_group: Option<&String>, cli_get_hsm_groups: &ArgMatches, s
     };
 
     let hsm_groups =
-        crate::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name).await;
+        crate::common::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name).await;
 
     for hsm_group in hsm_groups {
         println!("************************* HSM GROUP *************************");

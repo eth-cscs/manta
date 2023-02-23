@@ -47,7 +47,7 @@ pub async fn exec(
         let mut layers: Vec<crate::manta::cfs::configuration::Layer> = vec![];
 
         for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
-            let gitea_commit_details = crate::gitea::http_client::get_commit_details(
+            let gitea_commit_details = crate::common::gitea::http_client::get_commit_details(
                 layer["cloneUrl"].as_str().unwrap(),
                 layer["commit"].as_str().unwrap(),
                 gitea_token,
