@@ -9,6 +9,8 @@ use termion::color;
 
 use crate::shasta_cfs_session;
 
+use crate::shasta::kubernetes as shasta_k8s;
+
 use clap::ArgMatches;
 
 pub async fn exec(
@@ -59,7 +61,7 @@ pub async fn session_logs_proxy(
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-    let client = crate::shasta::kubernetes::get_k8s_client_programmatically(vault_base_url).await?;
+    let client = shasta_k8s::get_k8s_client_programmatically(vault_base_url).await?;
 
     // Get CFS session logs
     get_container_logs(client, cfs_session_name, layer_id).await?;
@@ -72,7 +74,7 @@ pub async fn session_logs(
     cfs_session_name: &str,
     layer_id: Option<&u8>,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-    let client = crate::shasta::kubernetes::get_k8s_client_programmatically(vault_base_url).await?;
+    let client = shasta_k8s::get_k8s_client_programmatically(vault_base_url).await?;
 
     // Get CFS session logs
     get_container_logs(client, cfs_session_name, layer_id).await?;

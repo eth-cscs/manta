@@ -1,5 +1,9 @@
 use clap::ArgMatches;
 
+use crate::common::cluster_ops;
+
+use crate::shasta::nodes;
+
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_hsm_groups: &ArgMatches,
@@ -12,7 +16,7 @@ pub async fn exec(
     };
 
     let hsm_groups =
-        crate::common::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name)
+        cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name)
             .await;
 
     for hsm_group in hsm_groups {
@@ -122,7 +126,7 @@ pub async fn exec(
 
         println!(
             " * members: {}",
-            crate::shasta::nodes::nodes_to_string_format_unlimited(&hsm_group.members)
+            nodes::nodes_to_string_format_unlimited(&hsm_group.members)
         );
     }
 }

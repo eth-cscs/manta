@@ -1,6 +1,12 @@
 use clap::ArgMatches;
+
 use std::collections::HashMap;
+
 use termion::color;
+
+use crate::shasta::{bss, capmc, cfs, hsm};
+
+use crate::common::node_ops;
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -14,12 +20,9 @@ pub async fn exec(
         Some(_) => hsm_group,
     };
 
-    let hsm_group_resp = crate::shasta::hsm::http_client::get_hsm_group(
-        &shasta_token,
-        &shasta_base_url,
-        hsm_group_name.unwrap(),
-    )
-    .await;
+    let hsm_group_resp =
+        hsm::http_client::get_hsm_group(&shasta_token, &shasta_base_url, hsm_group_name.unwrap())
+            .await;
 
     // println!("hsm_groups: {:?}", hsm_groups);
 
@@ -39,7 +42,7 @@ pub async fn exec(
     }
 
     // Take all nodes for all hsm_groups found and put them in a Vec
-    let hsm_groups_nodes: Vec<String> = crate::shasta::hsm::utils::get_member_ids(&hsm_group);
+    let hsm_groups_nodes: Vec<String> = hsm::utils::get_member_ids(&hsm_group);
     //            let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
     //                .as_array()
     //                .unwrap_or(&Vec::new())
@@ -49,7 +52,7 @@ pub async fn exec(
 
     // Get node most recent CFS session with target image
     // Get all CFS sessions matching hsm_group value
-    let mut cfs_sessions = crate::shasta::cfs::session::http_client::get(
+    let mut cfs_sessions = cfs::session::http_client::get(
         &shasta_token,
         &shasta_base_url,
         hsm_group_name,
@@ -142,7 +145,7 @@ pub async fn exec(
         get_nodes_details(&shasta_token, &shasta_base_url, image_id, &hsm_groups_nodes).await;
 
     // shasta::hsm::utils::print_table(hsm_groups);
-    crate::common::node_ops::print_table(nodes_status);
+    node_ops::print_table(nodes_status);
 }
 
 pub async fn get_nodes_details(
@@ -154,17 +157,14 @@ pub async fn get_nodes_details(
     let mut nodes_status: Vec<Vec<String>> = Vec::new();
 
     // Get power node status from capmc
-    let nodes_power_status_resp = crate::shasta::capmc::http_client::node_power_status::post(
-        &shasta_token,
-        &shasta_base_url,
-        xnames,
-    )
-    .await
-    .unwrap();
+    let nodes_power_status_resp =
+        capmc::http_client::node_power_status::post(&shasta_token, &shasta_base_url, xnames)
+            .await
+            .unwrap();
 
     // Get nodes boot params
     let nodes_boot_params =
-        crate::shasta::bss::http_client::get_boot_params(shasta_token, shasta_base_url, xnames)
+        bss::http_client::get_boot_params(shasta_token, shasta_base_url, xnames)
             .await
             .unwrap();
 

@@ -13,6 +13,8 @@ use tokio_util::io::ReaderStream;
 
 use crate::shasta::kubernetes::get_k8s_client_programmatically;
 
+use crate::common::{cluster_ops, node_ops};
+
 use std::collections::HashSet;
 
 use clap::ArgMatches;
@@ -36,11 +38,11 @@ pub async fn exec(
         .map(|xname| xname.to_string())
         .collect();
 
-    let hsm_groups: Vec<crate::common::cluster_ops::ClusterDetails>;
+    let hsm_groups: Vec<cluster_ops::ClusterDetails>;
 
     if hsm_group.is_some() {
         // hsm_group value provided
-        hsm_groups = crate::common::cluster_ops::get_details(
+        hsm_groups = cluster_ops::get_details(
             &shasta_token,
             shasta_base_url,
             hsm_group.unwrap(),
@@ -59,7 +61,7 @@ pub async fn exec(
             .collect();
 
         (included, excluded) =
-            crate::common::node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+            node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
 
         if !excluded.is_empty() {
             println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 

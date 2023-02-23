@@ -1,5 +1,7 @@
 use clap::ArgMatches;
 
+use crate::shasta::bos_template;
+
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_template: &ArgMatches,
@@ -25,7 +27,7 @@ pub async fn exec(
         limit_number = None;
     }
 
-    let bos_templates = crate::shasta::bos_template::http_client::get(
+    let bos_templates = bos_template::http_client::get(
         &shasta_token,
         &shasta_base_url,
         hsm_group_name,
@@ -39,6 +41,6 @@ pub async fn exec(
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
-        crate::shasta::bos_template::utils::print_table(bos_templates);
+        bos_template::utils::print_table(bos_templates);
     }
 }

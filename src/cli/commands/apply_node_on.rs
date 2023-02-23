@@ -2,6 +2,10 @@ use std::collections::HashSet;
 
 use clap::ArgMatches;
 
+use crate::common::{cluster_ops, node_ops};
+
+use crate::shasta::capmc;
+
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_apply_node_on: &ArgMatches,
@@ -52,7 +56,7 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups related to hsm_group input
-        hsm_groups = crate::common::cluster_ops::get_details(
+        hsm_groups = cluster_ops::get_details(
             &shasta_token,
             &shasta_base_url,
             hsm_group_value.unwrap(),
@@ -73,7 +77,7 @@ pub async fn exec(
         if !xnames.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
-            (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
+            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
                 &hsm_groups_nodes,
                 xnames,
             );
@@ -97,7 +101,7 @@ pub async fn exec(
 
     log::info!("Servers to power on: {:?}", included);
 
-    crate::capmc::http_client::node_power_on::post(
+    capmc::http_client::node_power_on::post(
         shasta_token.to_string(),
         shasta_base_url,
         cli_apply_node_on.get_one::<String>("reason"),

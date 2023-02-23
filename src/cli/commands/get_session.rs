@@ -1,5 +1,7 @@
 use clap::ArgMatches;
 
+use crate::shasta::cfs::session as shasta_cfs_session;
+
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_session: &ArgMatches,
@@ -26,7 +28,7 @@ pub async fn exec(
         limit_number = None;
     }
 
-    let cfs_sessions = crate::shasta::cfs::session::http_client::get(
+    let cfs_sessions = shasta_cfs_session::http_client::get(
         &shasta_token,
         &shasta_base_url,
         hsm_group_name,
@@ -41,6 +43,6 @@ pub async fn exec(
         println!("CFS session not found!");
         std::process::exit(0);
     } else {
-        crate::shasta::cfs::session::utils::print_table(cfs_sessions);
+        shasta_cfs_session::utils::print_table(cfs_sessions);
     }
 }

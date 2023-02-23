@@ -1,5 +1,11 @@
 use clap::ArgMatches;
 
+use crate::shasta::cfs::configuration as shasta_cfs_configuration;
+
+use crate::manta::cfs::configuration as manta_cfs_configuration;
+
+use crate::common::gitea;
+
 pub async fn exec(
     gitea_token: &str,
     hsm_group: Option<&String>,
@@ -28,7 +34,7 @@ pub async fn exec(
     }
 
     // Get CFS configurations
-    let cfs_configurations = crate::shasta::cfs::configuration::http_client::get(
+    let cfs_configurations = shasta_cfs_configuration::http_client::get(
         &shasta_token,
         &shasta_base_url,
         hsm_group_name,
@@ -44,10 +50,10 @@ pub async fn exec(
     } else if cfs_configurations.len() == 1 {
         let most_recent_cfs_configuration = &cfs_configurations[0];
 
-        let mut layers: Vec<crate::manta::cfs::configuration::Layer> = vec![];
+        let mut layers: Vec<manta_cfs_configuration::Layer> = vec![];
 
         for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
-            let gitea_commit_details = crate::common::gitea::http_client::get_commit_details(
+            let gitea_commit_details = gitea::http_client::get_commit_details(
                 layer["cloneUrl"].as_str().unwrap(),
                 layer["commit"].as_str().unwrap(),
                 gitea_token,
@@ -55,7 +61,7 @@ pub async fn exec(
             .await
             .unwrap();
 
-            layers.push(crate::manta::cfs::configuration::Layer::new(
+            layers.push(manta_cfs_configuration::Layer::new(
                 layer["name"].as_str().unwrap(),
                 layer["cloneUrl"]
                     .as_str()
@@ -72,8 +78,8 @@ pub async fn exec(
             ));
         }
 
-        crate::manta::cfs::configuration::print_table(
-            crate::manta::cfs::configuration::Configuration::new(
+        manta_cfs_configuration::print_table(
+            manta_cfs_configuration::Configuration::new(
                 most_recent_cfs_configuration["name"].as_str().unwrap(),
                 most_recent_cfs_configuration["lastUpdated"]
                     .as_str()
@@ -82,6 +88,6 @@ pub async fn exec(
             ),
         );
     } else {
-        crate::shasta::cfs::configuration::utils::print_table(cfs_configurations);
+        shasta_cfs_configuration::utils::print_table(cfs_configurations);
     }
 }
