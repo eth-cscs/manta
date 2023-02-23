@@ -1,8 +1,10 @@
 use clap::{arg, command, value_parser, ArgAction, ArgGroup, ArgMatches, Command};
 
+use std::path::PathBuf;
+
 use crate::cli::commands::{
-    apply_node_off, apply_node_on, apply_node_reset, apply_session, console, get_configuration,
-    get_hsm, get_nodes, get_session, get_template, log,
+    apply_configuration, apply_node_off, apply_node_on, apply_node_reset, apply_session, console,
+    get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
@@ -129,6 +131,27 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
 }
 
+pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
+    let mut apply_configuration = Command::new("configuration")
+        .aliases(["c", "config", "configure"])
+        .arg_required_else_help(true)
+        .about("Create a CFS configuration against a HSM group")
+        .arg(arg!(-f --file <VALUE> "File with configuration details"))
+        .arg(arg!(-n --name <VALUE> "Configuration name").required(true))
+        .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
+        .group(ArgGroup::new("req_flags").arg("name").arg("repo"));
+
+    match hsm_group {
+        Some(_) => {}
+        None => {
+            apply_configuration =
+                apply_configuration.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        }
+    };
+
+    apply_configuration
+}
+
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess"])
@@ -136,7 +159,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
         .about("Create a CFS configuration and a session against HSM group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
-            .required(true))
+            .required(true).value_parser(value_parser!(PathBuf)))
         // .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
         .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. NOTE: ansible-limit must be a subset of hsm-group if both parameters are provided"))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to aee container running ansible scripts"))
@@ -237,6 +260,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta HSM group or nodes")
+                .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(
                     Command::new("node")
@@ -305,7 +329,15 @@ pub async fn process_command(
             .await;
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-        if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
+        if let Some(cli_apply_configuration) = cli_root.subcommand_matches("configuration") {
+            apply_configuration::exec(
+                hsm_group,
+                cli_apply_configuration,
+                &shasta_token,
+                &shasta_base_url,
+            )
+            .await;
+        } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             apply_session::exec(
                 gitea_token,
                 gitea_base_url,
