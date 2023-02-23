@@ -4,19 +4,20 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, component_id: &str) -> Result<Value, Box<dyn Error>> {
-
+    pub async fn get(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        component_id: &str,
+    ) -> Result<Value, Box<dyn Error>> {
         let client;
 
-        let client_builder = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true);
-    
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
         // Build client
         if std::env::var("SOCKS5").is_ok() {
-            
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-    
+
             // rest client to authenticate
             client = client_builder.proxy(socks5proxy).build()?;
         } else {
@@ -26,7 +27,7 @@ pub mod http_client {
         let mut api_url = shasta_base_url.clone().to_string();
         api_url.push_str("/cfs/v2/components/");
         api_url.push_str(component_id);
-    
+
         let resp = client
             .get(api_url)
             // .get(format!("{}{}{}", shasta_base_url, "/cfs/v2/components/", component_id))
@@ -35,9 +36,10 @@ pub mod http_client {
             .await?
             .text()
             .await?;
-    
+
         let json_response: Value = serde_json::from_str(&resp)?;
-    
+
         Ok(json_response)
     }
 }
+

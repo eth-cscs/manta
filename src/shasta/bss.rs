@@ -12,7 +12,6 @@ pub mod http_client {
         shasta_base_url: &String,
         xnames: &Vec<String>,
     ) -> Result<Vec<Value>, Box<dyn Error>> {
-
         let client;
 
         let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
@@ -29,7 +28,7 @@ pub mod http_client {
         }
 
         let url_api = format!("{}/bss/boot/v1/bootparameters", shasta_base_url);
-        
+
         let params: Vec<_> = xnames.iter().map(|xname| ("name", xname)).collect();
 
         let resp = client

@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct PowerStatus {
@@ -7,16 +7,21 @@ struct PowerStatus {
     xnames: Vec<String>,
     force: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    recursive: Option<bool>
+    recursive: Option<bool>,
 }
 
 impl PowerStatus {
-    pub fn new(reason: Option<String>, xnames: Vec<String>, force: bool, recursive: Option<bool>) -> Self {
+    pub fn new(
+        reason: Option<String>,
+        xnames: Vec<String>,
+        force: bool,
+        recursive: Option<bool>,
+    ) -> Self {
         Self {
             reason,
             xnames,
             force,
-            recursive
+            recursive,
         }
     }
 }
@@ -28,12 +33,20 @@ struct NodeStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     source: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    xnames: Option<Vec<String>>
+    xnames: Option<Vec<String>>,
 }
 
 impl NodeStatus {
-    pub fn new(filter: Option<String>, xnames: Option<Vec<String>>, source: Option<String>) -> Self {
-        Self { filter, source, xnames }
+    pub fn new(
+        filter: Option<String>,
+        xnames: Option<Vec<String>>,
+        source: Option<String>,
+    ) -> Self {
+        Self {
+            filter,
+            source,
+            xnames,
+        }
     }
 }
 
@@ -47,29 +60,32 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
-
+        pub async fn post(
+            shasta_token: String,
+            shasta_base_url: String,
+            reason: Option<&String>,
+            xnames: Vec<String>,
+            force: bool,
+        ) -> Result<Value, Box<dyn Error>> {
             log::info!("Shutting down nodes: {:?}", xnames);
 
             let power_off = PowerStatus::new(reason.cloned(), xnames, force, None);
 
             let client;
 
-            let client_builder = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true);
-        
+            let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
             // Build client
             if std::env::var("SOCKS5").is_ok() {
-                
                 // socks5 proxy
                 let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-        
+
                 // rest client to authenticate
                 client = client_builder.proxy(socks5proxy).build()?;
             } else {
                 client = client_builder.build()?;
             }
-        
+
             let mut api_url = shasta_base_url.clone();
             api_url.push_str("/capmc/capmc/v1/xname_off");
 
@@ -83,7 +99,10 @@ pub mod http_client {
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
             } else {
-                Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+                Err(resp.json::<Value>().await?["detail"]
+                    .as_str()
+                    .unwrap()
+                    .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
             }
         }
     }
@@ -96,29 +115,32 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool) -> Result<Value, Box<dyn Error>> {
-            
+        pub async fn post(
+            shasta_token: String,
+            shasta_base_url: String,
+            reason: Option<&String>,
+            xnames: Vec<String>,
+            force: bool,
+        ) -> Result<Value, Box<dyn Error>> {
             log::info!("Powering on nodes: {:?}", xnames);
 
             let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
 
             let client;
 
-            let client_builder = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true);
-        
+            let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
             // Build client
             if std::env::var("SOCKS5").is_ok() {
-                
                 // socks5 proxy
                 let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-        
+
                 // rest client to authenticate
                 client = client_builder.proxy(socks5proxy).build()?;
             } else {
                 client = client_builder.build()?;
             }
-        
+
             let mut api_url = shasta_base_url.clone();
             api_url.push_str("/capmc/capmc/v1/xname_on");
 
@@ -132,7 +154,10 @@ pub mod http_client {
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
             } else {
-                Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+                Err(resp.json::<Value>().await?["detail"]
+                    .as_str()
+                    .unwrap()
+                    .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
             }
         }
     }
@@ -145,29 +170,32 @@ pub mod http_client {
 
         use crate::capmc::PowerStatus;
 
-        pub async fn post(shasta_token: String, shasta_base_url: String, reason: Option<&String>, xnames: Vec<String>, force: bool)  -> Result<Value, Box<dyn Error>> {
-            
+        pub async fn post(
+            shasta_token: String,
+            shasta_base_url: String,
+            reason: Option<&String>,
+            xnames: Vec<String>,
+            force: bool,
+        ) -> Result<Value, Box<dyn Error>> {
             log::info!("Restarting nodes: {:?}", xnames);
 
             let node_restart = PowerStatus::new(reason.cloned(), xnames, force, None);
 
             let client;
 
-            let client_builder = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true);
-        
+            let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
             // Build client
             if std::env::var("SOCKS5").is_ok() {
-                
                 // socks5 proxy
                 let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-        
+
                 // rest client to authenticate
                 client = client_builder.proxy(socks5proxy).build()?;
             } else {
                 client = client_builder.build()?;
             }
-        
+
             let mut api_url = shasta_base_url.clone();
             api_url.push_str("/capmc/capmc/v1/xname_reinit");
 
@@ -181,36 +209,41 @@ pub mod http_client {
             if resp.status().is_success() {
                 Ok(resp.json::<Value>().await?)
             } else {
-                Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+                Err(resp.json::<Value>().await?["detail"]
+                    .as_str()
+                    .unwrap()
+                    .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
             }
         }
     }
 
     pub mod node_power_status {
-        
+
         use std::error::Error;
 
         use serde_json::Value;
 
         use crate::capmc::NodeStatus;
 
-        pub async fn post(shasta_token: &String, shasta_base_url: &String, xnames: &Vec<String>)  -> core::result::Result<Value, Box<dyn Error>> {
-            
+        pub async fn post(
+            shasta_token: &String,
+            shasta_base_url: &String,
+            xnames: &Vec<String>,
+        ) -> core::result::Result<Value, Box<dyn Error>> {
             log::info!("Checking nodes status: {:?}", xnames);
 
-            let node_status_payload = NodeStatus::new(None, Some(xnames.clone()), Some("hsm".to_string()));
+            let node_status_payload =
+                NodeStatus::new(None, Some(xnames.clone()), Some("hsm".to_string()));
 
             let client;
 
-            let client_builder = reqwest::Client::builder()
-                .danger_accept_invalid_certs(true);
-        
+            let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
             // Build client
             if std::env::var("SOCKS5").is_ok() {
-                
                 // socks5 proxy
                 let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-        
+
                 // rest client to authenticate
                 client = client_builder.proxy(socks5proxy).build()?;
             } else {
@@ -219,7 +252,7 @@ pub mod http_client {
 
             let mut url_api = shasta_base_url.clone();
             url_api.push_str("/capmc/capmc/v1/get_xname_status");
-        
+
             let resp = client
                 .post(url_api)
                 .bearer_auth(shasta_token)
@@ -231,7 +264,10 @@ pub mod http_client {
                 let resp_json = &resp.json::<Value>().await?;
                 Ok(resp_json.clone())
             } else {
-                Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+                Err(resp.json::<Value>().await?["detail"]
+                    .as_str()
+                    .unwrap()
+                    .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
             }
         }
     }

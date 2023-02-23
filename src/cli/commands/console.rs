@@ -1,10 +1,13 @@
-use std::{error::Error, io::{Write, Read, stdout}};
+use std::{
+    error::Error,
+    io::{stdout, Read, Write},
+};
 
 use futures_util::StreamExt;
 use k8s_openapi::api::core::v1::Pod;
-use kube::{Api, api::AttachParams};
+use kube::{api::AttachParams, Api};
 use serde_json::Value;
-use termion::{raw::IntoRawMode, color};
+use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
@@ -19,7 +22,7 @@ pub async fn exec(
     cli_console: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-    vault_base_url: String
+    vault_base_url: String,
 ) -> () {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
@@ -37,8 +40,12 @@ pub async fn exec(
 
     if hsm_group.is_some() {
         // hsm_group value provided
-        hsm_groups =
-            crate::common::cluster_ops::get_details(&shasta_token, shasta_base_url, hsm_group.unwrap()).await;
+        hsm_groups = crate::common::cluster_ops::get_details(
+            &shasta_token,
+            shasta_base_url,
+            hsm_group.unwrap(),
+        )
+        .await;
 
         // Take all nodes for all hsm_groups found and put them in a Set
         let hsm_groups_nodes = hsm_groups
@@ -66,29 +73,39 @@ pub async fn exec(
         included = xnames.clone();
     }
 
-    connect_to_console(included.iter().next().unwrap(), vault_base_url).await.unwrap();
+    connect_to_console(included.iter().next().unwrap(), vault_base_url)
+        .await
+        .unwrap();
 }
 
-pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Result<(), Box<dyn Error>> {
-
+pub async fn connect_to_console(
+    xname: &String,
+    vault_base_url: String,
+) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
     let client = get_k8s_client_programmatically(vault_base_url).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 
-    let params = kube::api::ListParams::default().limit(1).labels("app.kubernetes.io/name=cray-console-operator");
-        
+    let params = kube::api::ListParams::default()
+        .limit(1)
+        .labels("app.kubernetes.io/name=cray-console-operator");
+
     let pods_objects = pods_fabric.list(&params).await?;
 
     let console_operator_pod = &pods_objects.items[0];
     let console_operator_pod_name = console_operator_pod.metadata.name.clone().unwrap();
-    
-    let mut attached = pods_fabric.exec(
-        &console_operator_pod_name, 
-        vec!["sh", "-c", &format!("/app/get-node {}", xname)], 
-        &AttachParams::default().container("cray-console-operator").stderr(false)
-    ).await?;
+
+    let mut attached = pods_fabric
+        .exec(
+            &console_operator_pod_name,
+            vec!["sh", "-c", &format!("/app/get-node {}", xname)],
+            &AttachParams::default()
+                .container("cray-console-operator")
+                .stderr(false),
+        )
+        .await?;
 
     let mut stdout_stream = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
     let next_stdout = stdout_stream.next().await.unwrap().unwrap();
@@ -100,24 +117,41 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
     let command = vec!["conman", "-j", xname];
     // let command = vec!["bash"];
 
-    log::info!("Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}", console_pod_name, command.iter().map(|x| (*x).to_string() + " ").collect::<String>());
+    log::info!(
+        "Alternatively run - kubectl -n services exec -it {} -c cray-console-node -- {}",
+        console_pod_name,
+        command
+            .iter()
+            .map(|x| (*x).to_string() + " ")
+            .collect::<String>()
+    );
 
     log::info!("Connecting to console {}", xname);
-    
-    let mut attached = pods_fabric.exec(
-        console_pod_name, 
-        command,
-        &AttachParams::default()
-            .container("cray-console-node")
-            .stdin(true)
-            .stdout(true)
-            .stderr(false) // Note to self: tty and stderr cannot both be true
-            .tty(true)
-    ).await?;
-    
-    println!("Connected to {}{}{}!", color::Fg(color::Blue), xname, color::Fg(color::Reset));
-    println!("Use {}&.{} key combination to exit the console.", color::Fg(color::Green), color::Fg(color::Reset));
 
+    let mut attached = pods_fabric
+        .exec(
+            console_pod_name,
+            command,
+            &AttachParams::default()
+                .container("cray-console-node")
+                .stdin(true)
+                .stdout(true)
+                .stderr(false) // Note to self: tty and stderr cannot both be true
+                .tty(true),
+        )
+        .await?;
+
+    println!(
+        "Connected to {}{}{}!",
+        color::Fg(color::Blue),
+        xname,
+        color::Fg(color::Reset)
+    );
+    println!(
+        "Use {}&.{} key combination to exit the console.",
+        color::Fg(color::Green),
+        color::Fg(color::Reset)
+    );
 
     let mut stdin_writer = attached.stdin().unwrap();
     let mut stdout_stream = ReaderStream::new(attached.stdout().unwrap());
@@ -127,14 +161,13 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
 
     let rt = Runtime::new().unwrap();
     rt.spawn(async move {
-
         let mut next_stdout;
 
         loop {
-
             next_stdout = stdout_stream.next().await;
             match next_stdout {
-                Some(next_from_remote_stdout) => { // Print stream to stdout while steam lives
+                Some(next_from_remote_stdout) => {
+                    // Print stream to stdout while steam lives
                     match next_from_remote_stdout {
                         Ok(remote_stdout) => {
                             print!("{}", String::from_utf8_lossy(&remote_stdout));
@@ -151,7 +184,7 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
                             //         // std::process::exit(1);
                             //     }
                             // }
-                        },
+                        }
                         Err(e) => {
                             log::warn!("There was an error reading stream input");
                             log::error!("{:?}", e);
@@ -159,9 +192,9 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
                             // std::process::exit(1);
                         }
                     }
-                    
                 }
-                None => { // Stream has finished. Reseting terminal and Exiting application.
+                None => {
+                    // Stream has finished. Reseting terminal and Exiting application.
                     stdout.suspend_raw_mode().unwrap();
                     std::process::exit(0);
                 }
@@ -174,12 +207,19 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
 
         let n = stdin.read(&mut buffer[..])?;
 
-        stdin_writer.write_all(String::from_utf8(buffer[..n].to_vec()).unwrap().to_string().as_bytes()).await?;
+        stdin_writer
+            .write_all(
+                String::from_utf8(buffer[..n].to_vec())
+                    .unwrap()
+                    .to_string()
+                    .as_bytes(),
+            )
+            .await?;
     }
 
     // let mut stdin_writer = attached.stdin().unwrap();
     // let mut stdout_stream = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
-    
+
     // let stdin = std::io::stdin(); // We get `Stdin` here.
     // let rt = Runtime::new().unwrap();
     // rt.spawn(async move {
@@ -214,7 +254,6 @@ pub async fn connect_to_console(xname: &String, vault_base_url: String) -> Resul
     //     print!("{}", stdout_str);
     //     std::io::stdout().flush().unwrap();
     // }
-
 }
 
 // async fn get_exec_command_output(mut attached: AttachedProcess) -> String {

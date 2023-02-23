@@ -73,8 +73,10 @@ pub async fn exec(
         if !xnames.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
-            (included, excluded) =
-                crate::common::node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
+            (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
+                &hsm_groups_nodes,
+                xnames,
+            );
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
@@ -102,5 +104,6 @@ pub async fn exec(
         included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
         false,
     )
-    .await.unwrap();
+    .await
+    .unwrap();
 }

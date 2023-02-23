@@ -1,8 +1,8 @@
-mod shasta;
-mod config;
 mod cli;
 mod common;
+mod config;
 mod manta;
+mod shasta;
 use termion::color;
 
 use shasta::{

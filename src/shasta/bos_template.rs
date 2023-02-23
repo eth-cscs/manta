@@ -1,11 +1,11 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     rel: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    href: Option<String>
+    href: Option<String>,
 }
 
 // impl Default for Link {
@@ -45,7 +45,7 @@ pub struct Property1 {
     #[serde(skip_serializing_if = "Option::is_none")]
     rootfs_provider: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rootfs_provider_passthrough: Option<String>
+    rootfs_provider_passthrough: Option<String>,
 }
 
 // impl Default for Property1 {
@@ -96,7 +96,7 @@ pub struct Property2 {
     #[serde(skip_serializing_if = "Option::is_none")]
     rootfs_provider: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rootfs_provider_passthrough: Option<String>
+    rootfs_provider_passthrough: Option<String>,
 }
 
 // impl Default for Property2 {
@@ -124,7 +124,7 @@ pub struct BootSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     property1: Option<Property1>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    property2: Option<Property2>
+    property2: Option<Property2>,
 }
 
 // impl Default for BootSet {
@@ -147,7 +147,7 @@ pub struct Cfs {
     #[serde(skip_serializing_if = "Option::is_none")]
     playbook: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    configuration: Option<String>
+    configuration: Option<String>,
 }
 
 // impl Default for Cfs {
@@ -183,7 +183,7 @@ pub struct BosTemplate {
     #[serde(skip_serializing_if = "Option::is_none")]
     boot_sets: Option<BootSet>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    links: Option<Vec<Link>>
+    links: Option<Vec<Link>>,
 }
 
 pub mod http_client {
@@ -193,7 +193,7 @@ pub mod http_client {
     // pub async fn post(shasta_token: &str, shasta_base_url: &str, bos_template: BosTemplate) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
     //     log::debug!("Bos template:\n{:#?}", bos_template);
-        
+
     //     // // socks5 proxy
     //     // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
@@ -207,19 +207,19 @@ pub mod http_client {
 
     //     let client_builder = reqwest::Client::builder()
     //         .danger_accept_invalid_certs(true);
-    
+
     //     // Build client
     //     if std::env::var("SOCKS5").is_ok() {
-            
+
     //         // socks5 proxy
     //         let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-    
+
     //         // rest client to authenticate
     //         client = client_builder.proxy(socks5proxy).build()?;
     //     } else {
     //         client = client_builder.build()?;
     //     }
-    
+
     //     let resp = client
     //         .post(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
     //         .bearer_auth(shasta_token)
@@ -230,25 +230,28 @@ pub mod http_client {
     //     if resp.status().is_success() {
     //         Ok(serde_json::from_str(&resp.text().await?)?)
     //     } else {
-    //         Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not 
+    //         Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
     //     }
     // }
 
-    pub async fn get(shasta_token: &str, shasta_base_url: &str, hsm_group_name: Option<&String>, bos_template_name: Option<&String>, limit_number: Option<&u8>) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
-
+    pub async fn get(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        hsm_group_name: Option<&String>,
+        bos_template_name: Option<&String>,
+        limit_number: Option<&u8>,
+    ) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
         let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
 
         let client;
 
-        let client_builder = reqwest::Client::builder()
-            .danger_accept_invalid_certs(true);
-    
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
         // Build client
         if std::env::var("SOCKS5").is_ok() {
-            
             // socks5 proxy
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
-    
+
             // rest client to authenticate
             client = client_builder.proxy(socks5proxy).build()?;
         } else {
@@ -257,7 +260,7 @@ pub mod http_client {
 
         let mut api_url = shasta_base_url.clone().to_string();
         api_url.push_str("/bos/v1/sessiontemplate");
-        
+
         let resp = client
             .get(api_url)
             // .get(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
@@ -268,42 +271,45 @@ pub mod http_client {
         let json_response: Value = if resp.status().is_success() {
             serde_json::from_str(&resp.text().await?)?
         } else {
-            return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not 
+            return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
         };
-    
+
         if hsm_group_name.is_some() {
             for bos_template in json_response.as_array().unwrap() {
-    
                 if bos_template["name"]
                     .as_str()
                     .unwrap()
-                    .contains(hsm_group_name.unwrap()) // TODO: investigate why I need to use this ugly 'as_ref'
+                    .contains(hsm_group_name.unwrap())
+                // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
-
             }
         } else if bos_template_name.is_some() {
             for bos_template in json_response.as_array().unwrap() {
                 if bos_template["name"]
                     .as_str()
                     .unwrap()
-                    .eq(bos_template_name.unwrap()) // TODO: investigate why I need to us this ugly 'as_ref'
+                    .eq(bos_template_name.unwrap())
+                // TODO: investigate why I need to us this ugly 'as_ref'
                 {
                     cluster_bos_tempalte.push(bos_template.clone());
                 }
             }
-        } else { // Returning all results
+        } else {
+            // Returning all results
 
             cluster_bos_tempalte = json_response.as_array().unwrap().clone();
-
         }
-        
-        if limit_number.is_some() { // Limiting the number of results to return to client
 
-            cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte.len().saturating_sub(*limit_number.unwrap() as usize)..].to_vec();
-            
-        } 
+        if limit_number.is_some() {
+            // Limiting the number of results to return to client
+
+            cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte
+                .len()
+                .saturating_sub(*limit_number.unwrap() as usize)..]
+                .to_vec();
+        }
 
         Ok(cluster_bos_tempalte)
     }
@@ -315,36 +321,45 @@ pub mod utils {
     use serde_json::Value;
 
     pub fn print_table(bos_templates: Vec<Value>) {
-        
         let mut table = Table::new();
 
-        table.set_header(vec!["Name", "Cfs configuration", "Cfs enabled","Compute Node groups", "Compute Etag", "Compute Path", "UAN Node groups", "UAN Etag", "UAN Path"]);
-    
-        for bos_template in bos_templates {
+        table.set_header(vec![
+            "Name",
+            "Cfs configuration",
+            "Cfs enabled",
+            "Compute Node groups",
+            "Compute Etag",
+            "Compute Path",
+            "UAN Node groups",
+            "UAN Etag",
+            "UAN Path",
+        ]);
 
+        for bos_template in bos_templates {
             let mut compute_target_groups = String::new();
             let mut uan_target_groups;
 
             if bos_template["boot_sets"].get("uan").is_some() {
-
-                let uan_node_groups_json = bos_template["boot_sets"]["uan"]["node_groups"].as_array();
+                let uan_node_groups_json =
+                    bos_template["boot_sets"]["uan"]["node_groups"].as_array();
 
                 if uan_node_groups_json.is_none() {
                     uan_target_groups = "".to_string();
                 } else {
-                    uan_target_groups = String::from(uan_node_groups_json.unwrap()[0].as_str().unwrap());
+                    uan_target_groups =
+                        String::from(uan_node_groups_json.unwrap()[0].as_str().unwrap());
                 }
-                
-                for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
 
-                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
+                for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
+                    if i % 2 == 0 {
+                        // breaking the cell content into multiple lines (only 2 target groups per line)
                         uan_target_groups.push_str(",\n");
                         // uan_target_groups = format!("{},\n", uan_target_groups);
                     } else {
                         uan_target_groups.push_str(", ");
                         // uan_target_groups = format!("{}, ", uan_target_groups);
                     }
-                    
+
                     uan_target_groups.push_str(uan_node_groups_json.unwrap()[i].as_str().unwrap());
 
                     // uan_target_groups = format!("{}{}", uan_target_groups, uan_node_groups_json[i].as_str().unwrap());
@@ -352,31 +367,31 @@ pub mod utils {
             }
 
             if bos_template["boot_sets"].get("compute").is_some() {
-
-                let compute_node_groups_json = bos_template["boot_sets"]["compute"]["node_groups"].as_array();
+                let compute_node_groups_json =
+                    bos_template["boot_sets"]["compute"]["node_groups"].as_array();
 
                 if compute_node_groups_json.is_none() {
-                    compute_target_groups = "".to_string();  
+                    compute_target_groups = "".to_string();
                 } else {
-                    compute_target_groups = String::from(compute_node_groups_json.unwrap()[0].as_str().unwrap());
+                    compute_target_groups =
+                        String::from(compute_node_groups_json.unwrap()[0].as_str().unwrap());
                 }
-                 
-                
-                for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {
 
-                    if i % 2 == 0 { // breaking the cell content into multiple lines (only 2 target groups per line)
-                        
+                for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {
+                    if i % 2 == 0 {
+                        // breaking the cell content into multiple lines (only 2 target groups per line)
+
                         compute_target_groups.push_str(",\n");
-                        
+
                         // compute_target_groups = format!("{},\n", compute_target_groups);
                     } else {
-                        
                         compute_target_groups.push_str(", ");
-                        
+
                         // compute_target_groups = format!("{}, ", compute_target_groups);
                     }
-                    
-                    compute_target_groups.push_str(compute_node_groups_json.unwrap()[i].as_str().unwrap());
+
+                    compute_target_groups
+                        .push_str(compute_node_groups_json.unwrap()[i].as_str().unwrap());
 
                     // compute_target_groups = format!("{}{}", compute_target_groups, compute_node_groups_json[i].as_str().unwrap());
                 }
@@ -387,14 +402,24 @@ pub mod utils {
                 bos_template["cfs"]["configuration"].as_str().unwrap(),
                 &bos_template["enable_cfs"].as_bool().unwrap().to_string(),
                 &compute_target_groups,
-                bos_template["boot_sets"]["compute"]["etag"].as_str().unwrap_or_default(),
-                bos_template["boot_sets"]["compute"]["path"].as_str().unwrap_or_default(),
-                bos_template["boot_sets"]["uan"]["node_groups"].as_str().unwrap_or_default(),
-                bos_template["boot_sets"]["uan"]["etag"].as_str().unwrap_or_default(),
-                bos_template["boot_sets"]["uan"]["path"].as_str().unwrap_or_default()
+                bos_template["boot_sets"]["compute"]["etag"]
+                    .as_str()
+                    .unwrap_or_default(),
+                bos_template["boot_sets"]["compute"]["path"]
+                    .as_str()
+                    .unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["node_groups"]
+                    .as_str()
+                    .unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["etag"]
+                    .as_str()
+                    .unwrap_or_default(),
+                bos_template["boot_sets"]["uan"]["path"]
+                    .as_str()
+                    .unwrap_or_default(),
             ]);
         }
-    
+
         println!("{table}");
     }
 }

@@ -78,7 +78,8 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
-    let mut get_node = Command::new("node")
+    let mut get_node = Command::new("nodes")
+        .alias("node")
         .alias("n")
         .about("Get members of a HSM group");
 
@@ -294,10 +295,21 @@ pub async fn process_command(
             )
             .await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
-            crate::cli::commands::get_template::exec(hsm_group, cli_get_template, &shasta_token, &shasta_base_url)
-                .await;
-        } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
-            crate::cli::commands::get_nodes::exec(hsm_group, cli_get_node, &shasta_token, &shasta_base_url).await;
+            crate::cli::commands::get_template::exec(
+                hsm_group,
+                cli_get_template,
+                &shasta_token,
+                &shasta_base_url,
+            )
+            .await;
+        } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
+            crate::cli::commands::get_nodes::exec(
+                hsm_group,
+                cli_get_node,
+                &shasta_token,
+                &shasta_base_url,
+            )
+            .await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
             crate::cli::commands::get_hsm::exec(
                 hsm_group,
@@ -347,7 +359,8 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-        crate::cli::commands::log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url).await;
+        crate::cli::commands::log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url)
+            .await;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
         crate::cli::commands::console::exec(
             hsm_group,

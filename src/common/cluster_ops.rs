@@ -1,26 +1,45 @@
 use serde_json::Value;
 
-use crate::shasta::{hsm::http_client::get_hsm_groups, cfs::{configuration, session}};
+use crate::shasta::{
+    cfs::{configuration, session},
+    hsm::http_client::get_hsm_groups,
+};
 
 #[derive(Debug)]
 pub struct ClusterDetails {
     pub hsm_group_label: String,
     pub most_recent_cfs_configuration_name_created: Value,
     pub most_recent_cfs_session_name_created: Value,
-    pub members: Vec<Value>
+    pub members: Vec<Value>,
 }
 
-pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name: &str) -> Vec<ClusterDetails> {
-    
-    let mut clusters_details = vec!();
+pub async fn get_details(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    cluster_name: &str,
+) -> Vec<ClusterDetails> {
+    let mut clusters_details = vec![];
 
     // Get HSM groups matching cluster name
-    let hsm_groups = get_hsm_groups(shasta_token, shasta_base_url, Some(&cluster_name.to_string())).await.unwrap();
+    let hsm_groups = get_hsm_groups(
+        shasta_token,
+        shasta_base_url,
+        Some(&cluster_name.to_string()),
+    )
+    .await
+    .unwrap();
 
     for hsm_group in hsm_groups {
-
         // Get most recent CFS configuration
-        let mut cfs_configurations= configuration::http_client::get(shasta_token, shasta_base_url, Some(&cluster_name.to_string()), None, Some(&1)).await.unwrap_or_else(|_| vec!());
+        let mut cfs_configurations = configuration::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            Some(&cluster_name.to_string()),
+            None,
+            Some(&1),
+        )
+        .await
+        .unwrap_or_else(|_| vec![]);
 
         let most_recept_cfs_configuration_created = if !cfs_configurations.is_empty() {
             cfs_configurations.swap_remove(0)
@@ -29,7 +48,16 @@ pub async fn get_details(shasta_token: &str, shasta_base_url: &str, cluster_name
         };
 
         // Get most recent CFS session
-        let mut cfs_sessions = session::http_client::get(shasta_token, shasta_base_url, Some(&cluster_name.to_string()), None, Some(&1), None).await.unwrap_or_else(|_| vec!());
+        let mut cfs_sessions = session::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            Some(&cluster_name.to_string()),
+            None,
+            Some(&1),
+            None,
+        )
+        .await
+        .unwrap_or_else(|_| vec![]);
 
         let most_recept_cfs_session_created = if !cfs_sessions.is_empty() {
             cfs_sessions.swap_remove(0)

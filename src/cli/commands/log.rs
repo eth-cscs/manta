@@ -16,7 +16,7 @@ use futures_util::{StreamExt, TryStreamExt};
 use secrecy::SecretString;
 use termion::color;
 
-use crate::{shasta_cfs_session, common::vault::http_client::fetch_shasta_k8s_secrets};
+use crate::{common::vault::http_client::fetch_shasta_k8s_secrets, shasta_cfs_session};
 
 use crate::config;
 

@@ -1,13 +1,19 @@
 use clap::ArgMatches;
 
-pub async fn exec(hsm_group: Option<&String>, cli_get_hsm_groups: &ArgMatches, shasta_token: &String, shasta_base_url: &String) -> () {
+pub async fn exec(
+    hsm_group: Option<&String>,
+    cli_get_hsm_groups: &ArgMatches,
+    shasta_token: &String,
+    shasta_base_url: &String,
+) -> () {
     let hsm_group_name = match hsm_group {
         None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
         Some(hsm_group_name_value) => hsm_group_name_value,
     };
 
     let hsm_groups =
-        crate::common::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name).await;
+        crate::common::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name)
+            .await;
 
     for hsm_group in hsm_groups {
         println!("************************* HSM GROUP *************************");

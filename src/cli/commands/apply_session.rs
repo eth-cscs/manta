@@ -85,9 +85,12 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups related to hsm_group input
-        hsm_groups =
-            crate::common::cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
-                .await;
+        hsm_groups = crate::common::cluster_ops::get_details(
+            &shasta_token,
+            &shasta_base_url,
+            hsm_group_value.unwrap(),
+        )
+        .await;
 
         //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
         cfs_configuration_name = cli_apply_session
@@ -109,8 +112,10 @@ pub async fn exec(
         if !ansible_limit_nodes.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
-            (included, excluded) =
-                crate::common::node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, ansible_limit_nodes);
+            (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
+                &hsm_groups_nodes,
+                ansible_limit_nodes,
+            );
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
@@ -167,7 +172,8 @@ pub async fn exec(
             cfs_session_name.unwrap().as_str(),
             None,
         )
-        .await.unwrap();
+        .await
+        .unwrap();
     }
     // * End Create CFS session
 }
@@ -182,21 +188,16 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
     limit: String,
     ansible_verbosity: u8,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    
     // Get ALL sessions
-    let cfs_sessions = http_client::get(
-        &shasta_token,
-        &shasta_base_url,
-        None,
-        None,
-        None,
-        None
-    )
-    .await?;
+    let cfs_sessions =
+        http_client::get(&shasta_token, &shasta_base_url, None, None, None, None).await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
-        .filter(|cfs_session| cfs_session["status"]["session"]["status"].eq("pending") || cfs_session["status"]["session"]["status"].eq("running"))
+        .filter(|cfs_session| {
+            cfs_session["status"]["session"]["status"].eq("pending")
+                || cfs_session["status"]["session"]["status"].eq("running")
+        })
         .flat_map(|cfs_session| {
             cfs_session["ansible"]["limit"]
                 .as_str()
@@ -205,7 +206,10 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
         .flatten()
         .collect(); // TODO: remove duplicates
 
-    log::info!("Nodes with cfs session running or pending: {:?}", nodes_in_running_or_pending_cfs_session);
+    log::info!(
+        "Nodes with cfs session running or pending: {:?}",
+        nodes_in_running_or_pending_cfs_session
+    );
 
     // NOTE: nodes can be a list of xnames or hsm group name
 
@@ -307,9 +311,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
         let repo_ref_origin = repo.find_remote("origin").unwrap();
 
         log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
-        
+
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
-        
+
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
@@ -319,9 +323,13 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
         let tm = chrono::NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
-        let layer_summary = vec![i.to_string(), repo_name.to_string(), local_git_repo::untracked_changed_local_files(&repo)
-        .unwrap()
-        .to_string()];
+        let layer_summary = vec![
+            i.to_string(),
+            repo_name.to_string(),
+            local_git_repo::untracked_changed_local_files(&repo)
+                .unwrap()
+                .to_string(),
+        ];
 
         // layer_summary.push(i.to_string());
         // layer_summary.push(repo_name.to_string());
@@ -337,10 +345,13 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
     log::debug!("Replacing '_' with '-' in repo name.");
     let cfs_configuration_name_formatted = format!("{}", str::replace(config_name, "_", "-"));
 
-    println!("A CFS session {} is scheduled to run.", cfs_configuration_name_formatted);
+    println!(
+        "A CFS session {} is scheduled to run.",
+        cfs_configuration_name_formatted
+    );
 
     // Print CFS session/configuration layers summary on screen
-    println!("Please review the following CFS layers:", );
+    println!("Please review the following CFS layers:",);
     for layer_summary in layers_summary {
         println!(
             " - Layer-{}; repo name: {}; local changes committed: {}",
@@ -381,11 +392,11 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
 
         // Get repo name
         let repo_ref_origin = repo.find_remote("origin").unwrap();
-        
+
         log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
-        
+
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
-        
+
         let repo_name = repo_ref_origin_url.substring(
             repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
             repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
@@ -457,11 +468,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
     .await;
 
     let cfs_configuration_name = match cfs_configuration_resp {
-        Ok(_) => {
-            cfs_configuration_resp.as_ref().unwrap()["name"]
-                .as_str()
-                .unwrap()
-        }
+        Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
+            .as_str()
+            .unwrap(),
         Err(e) => {
             log::error!("{}", e);
             std::process::exit(1);
@@ -488,10 +497,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_session_and_run_cfs_session(
     let cfs_session_resp =
         shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
 
-        let cfs_session_name = match cfs_session_resp {
-        Ok(_) => {
-            cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap()
-        }
+    let cfs_session_name = match cfs_session_resp {
+        Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),
         Err(e) => {
             log::error!("{}", e);
             std::process::exit(1);
