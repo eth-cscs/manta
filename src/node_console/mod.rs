@@ -5,7 +5,7 @@ use k8s_openapi::api::core::v1::Pod;
 use kube::{Api, api::AttachParams};
 use serde_json::Value;
 use termion::{raw::IntoRawMode, color};
-use tokio::{io::{AsyncWriteExt}, runtime::Runtime};
+use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
 use crate::shasta_cfs_session_logs::client::get_k8s_client_programmatically;
