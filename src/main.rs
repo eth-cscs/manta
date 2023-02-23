@@ -1,10 +1,9 @@
 mod gitea;
 mod shasta;
-mod cli_programmatic;
 mod cluster_ops;
 mod config;
 mod create_cfs_session_from_repo;
-mod cli_commands;
+mod cli;
 mod local_git_repo;
 mod manta;
 mod node_console;
@@ -65,8 +64,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     // Process input params
-    let matches = cli_programmatic::get_matches(hsm_group);
-    let cli_result = cli_programmatic::process_command(
+    let matches = crate::cli::entrypoint::get_matches(hsm_group);
+    let cli_result = crate::cli::entrypoint::process_command(
         matches,
         shasta_token,
         shasta_base_url,

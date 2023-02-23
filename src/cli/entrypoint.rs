@@ -277,7 +277,7 @@ pub async fn process_command(
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
-            crate::cli_commands::get_configuration::exec(
+            crate::cli::commands::get_configuration::exec(
                 gitea_token,
                 hsm_group,
                 cli_get_configuration,
@@ -286,7 +286,7 @@ pub async fn process_command(
             )
             .await;
         } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
-            crate::cli_commands::get_session::exec(
+            crate::cli::commands::get_session::exec(
                 hsm_group,
                 cli_get_session,
                 &shasta_token,
@@ -294,12 +294,12 @@ pub async fn process_command(
             )
             .await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
-            crate::cli_commands::get_template::exec(hsm_group, cli_get_template, &shasta_token, &shasta_base_url)
+            crate::cli::commands::get_template::exec(hsm_group, cli_get_template, &shasta_token, &shasta_base_url)
                 .await;
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("node") {
-            crate::cli_commands::get_nodes::exec(hsm_group, cli_get_node, &shasta_token, &shasta_base_url).await;
+            crate::cli::commands::get_nodes::exec(hsm_group, cli_get_node, &shasta_token, &shasta_base_url).await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
-            crate::cli_commands::get_hsm::exec(
+            crate::cli::commands::get_hsm::exec(
                 hsm_group,
                 cli_get_hsm_groups,
                 &shasta_token,
@@ -309,7 +309,7 @@ pub async fn process_command(
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
-            crate::cli_commands::apply_session::exec(
+            crate::cli::commands::apply_session::exec(
                 gitea_token,
                 gitea_base_url,
                 vault_base_url,
@@ -321,7 +321,7 @@ pub async fn process_command(
             .await;
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
             if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                crate::cli_commands::apply_node_on::exec(
+                crate::cli::commands::apply_node_on::exec(
                     hsm_group,
                     cli_apply_node_on,
                     shasta_token,
@@ -329,7 +329,7 @@ pub async fn process_command(
                 )
                 .await;
             } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                crate::cli_commands::apply_node_off::exec(
+                crate::cli::commands::apply_node_off::exec(
                     hsm_group,
                     cli_apply_node_off,
                     shasta_token,
@@ -337,7 +337,7 @@ pub async fn process_command(
                 )
                 .await;
             } else if let Some(cli_apply_node_reset) = cli_apply_node.subcommand_matches("reset") {
-                crate::cli_commands::apply_node_reset::exec(
+                crate::cli::commands::apply_node_reset::exec(
                     hsm_group,
                     cli_apply_node_reset,
                     shasta_token,
@@ -347,9 +347,9 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-        crate::cli_commands::log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url).await;
+        crate::cli::commands::log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url).await;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-        crate::cli_commands::console::exec(
+        crate::cli::commands::console::exec(
             hsm_group,
             cli_console,
             &shasta_token,
