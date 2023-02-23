@@ -11,7 +11,7 @@ use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
-use crate::cli::commands::log::get_k8s_client_programmatically;
+use crate::shasta::kubernetes::get_k8s_client_programmatically;
 
 use std::collections::HashSet;
 
