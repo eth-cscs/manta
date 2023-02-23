@@ -309,16 +309,6 @@ pub mod utils {
         )
         .await;
 
-        let cfs_configuration_name = match cfs_configuration_resp {
-            Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
-                .as_str()
-                .unwrap(),
-            Err(e) => {
-                log::error!("{}", e);
-                std::process::exit(1);
-            }
-        };
-
-        cfs_configuration
+         cfs_configuration
     }
 }
