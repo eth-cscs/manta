@@ -138,7 +138,7 @@ pub async fn exec(
     }
     // * End Process/validate hsm group value (and ansible limit)
 
-    // * Create CFS session
+    // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
         cli_apply_session

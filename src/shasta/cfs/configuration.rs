@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 pub struct Layer {
     #[serde(rename = "cloneUrl")]
     clone_url: String,
-    commit: String,
+    commit: Option<String>,
     name: String,
     playbook: String,
+    branch: Option<String>,
 }
 
 #[derive(Debug, Serialize)] // TODO: investigate why serde can Deserialize dynamically syzed structs `Vec<Layer>`
@@ -15,12 +16,55 @@ pub struct CfsConfiguration {
 }
 
 impl Layer {
-    pub fn new(clone_url: String, commit: String, name: String, playbook: String) -> Self {
+    pub fn new(
+        clone_url: String,
+        commit: Option<String>,
+        name: String,
+        playbook: String,
+        branch: Option<String>,
+    ) -> Self {
         Self {
             clone_url,
             commit,
             name,
             playbook,
+            branch,
+        }
+    }
+
+    pub fn new_from_product(
+        gitea_base_url: String,
+        repo_name: String,
+        name: String,
+        playbook: String,
+        branch: Option<String>,
+    ) -> Self {
+        let clone_url = format!("{}/cray/{}", gitea_base_url, repo_name);
+        let commit = None;
+        Self {
+            clone_url,
+            commit,
+            name,
+            playbook,
+            branch,
+        }
+    }
+
+    pub fn new_from_git(
+        gitea_base_url: String,
+        repo_name: String,
+        name: String,
+        playbook: String,
+        branch: Option<String>,
+    ) -> Self {
+        let clone_url = format!("{}/cray/{}", gitea_base_url, repo_name);
+        let commit = None;
+        Self {
+            clone_url,
+            commit,
+            name,
+            playbook,
+            branch,
         }
     }
 }
@@ -28,6 +72,10 @@ impl Layer {
 impl CfsConfiguration {
     pub fn new() -> Self {
         Self { layers: vec![] }
+    }
+
+    pub fn add_layer(&mut self, layer: Layer) {
+        self.layers.push(layer);
     }
 }
 
@@ -214,7 +262,7 @@ pub mod utils {
         shasta_token: &str,
         shasta_base_url: &str,
         repos: Vec<String>,
-        cfs_configuration_name_formatted: &String
+        cfs_configuration_name_formatted: &String,
     ) -> configuration::CfsConfiguration {
         // Create CFS configuration
         let mut cfs_configuration = configuration::CfsConfiguration::new();
@@ -278,20 +326,17 @@ pub mod utils {
 
             // Create CFS layer
             let cfs_layer = configuration::Layer::new(
-                // format!(
-                //     // git repo url in shasta faced VCS
-                //     "{}/cray/{}",
-                //     gitea_base_url, // TODO: refactor this and move it to gitea mod
-                //     repo_name
-                // ),
                 clone_url,
-                String::from(shasta_commitid_details["sha"].as_str().unwrap()),
+                Some(String::from(
+                    shasta_commitid_details["sha"].as_str().unwrap(),
+                )),
                 format!(
                     "{}-{}",
                     repo_name.substring(0, repo_name.len()),
                     chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
                 ),
                 String::from("site.yml"),
+                None,
             );
 
             cfs_configuration = configuration::add_layer(cfs_layer, cfs_configuration);
@@ -301,7 +346,7 @@ pub mod utils {
 
         // Update/PUT CFS configuration
         log::debug!("Create configuration and session name.");
-        let cfs_configuration_resp = configuration::http_client::put(
+        configuration::http_client::put(
             &shasta_token,
             &shasta_base_url,
             &cfs_configuration,
@@ -309,6 +354,14 @@ pub mod utils {
         )
         .await;
 
-         cfs_configuration
+        cfs_configuration
+    }
+
+    pub fn get_git_repo_url_for_layer(gitea_base_url: &String, repo_name: &String) -> String {
+        let mut clone_url = gitea_base_url.clone().to_string();
+        clone_url.push_str("/cray/");
+        clone_url.push_str(repo_name);
+
+        clone_url
     }
 }

@@ -96,25 +96,61 @@ pub async fn exec(
     // println!("cfs_sessions_target_image: {:#?}", cfs_sessions_target_image);
 
     // Get most recent CFS session with target = "image" and succeded = "true"
-    let cfs_session_most_recent =
-        cfs_sessions_target_image[cfs_sessions_target_image.len().saturating_sub(1)..].to_vec();
+    let most_recent_cfs_session = cfs_sessions_target_image
+        [cfs_sessions_target_image.len().saturating_sub(1)..]
+        .to_vec()
+        .iter()
+        .next()
+        .unwrap();
+
+    // Get CFS configurations for HSM group
+    let most_recent_cfs_configurations = crate::shasta::cfs::configuration::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        hsm_group_name,
+        None,
+        Some(&1),
+    )
+    .await
+    .unwrap();
+
+    // Get BOS session templates for HSM group
+    let most_recent_bos_sessiontemplates = crate::shasta::bos::template::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        hsm_group_name,
+        None,
+        Some(&1),
+    )
+    .await
+    .unwrap();
 
     let image_id;
 
-    // Exit if no CFS session found!
-    if cfs_session_most_recent.is_empty() {
-        log::warn!("CFS session with target == image and succeeded == true not found!");
+    // Check whether most recent CFS configuration is used in the most recent BOS sessiontemplate
+    // If False ==> No way image in node will use the most recent CFS configuration
+    // if True ==> check boot params on each node and see if image_id matches on both most recent
+    // BOS sessiontemplate and node boot params
+    if most_recent_bos_sessiontemplates.iter().next().unwrap()["cfs"]["configuration"]
+        .as_str()
+        .unwrap()
+        != most_recent_cfs_configurations.iter().next().unwrap()["name"]
+            .as_str()
+            .unwrap()
+    {
+        // Most recent BOS sessiontemplate does not use most recelt CFS configuration ==> image_id
+        // = None
         image_id = None;
     } else {
+        // Most recent BOS sessiontemplate uses most recent CFS configuration ==>
         // Extract image id from session
         image_id = Some(
-            cfs_session_most_recent.iter().next().unwrap()["status"]["artifacts"]
-                .as_array()
+            most_recent_bos_sessiontemplates.iter().next().unwrap()["boot_sets"]["compute"]["path"]
+                .as_str()
                 .unwrap()
-                .into_iter()
-                .map(|artifact| artifact["image_id"].as_str().unwrap())
-                .next()
-                .unwrap()
+                .to_string()
+                .trim_start_matches("s3://boot-images/")
+                .trim_end_matches("/manifest.json")
                 .to_string(),
         );
 
@@ -122,23 +158,16 @@ pub async fn exec(
             "Image_id from most recent CFS session (target = image and successful = true): {}",
             image_id.to_owned().unwrap()
         );
-
-        // println!("Images found in CFS sessions for HSM group {}:", hsm_group_name.unwrap());
-        //            for cfs_session_target_image in cfs_sessions_target_image {
-        //                println!(
-        //                    "start time: {}; image_id: {}",
-        //                    cfs_session_target_image["status"]["session"]["startTime"],
-        //                    cfs_session_target_image["status"]["artifacts"]
-        //                        .as_array()
-        //                        .unwrap()
-        //                        .iter()
-        //                        .next()
-        //                        .unwrap()["image_id"]
-        //                        .as_str()
-        //                        .unwrap()
-        //                );
-        //            }
     }
+
+    // Correlate last/most recent CFS session with CFS configuration with BOS sessiontemplate --> This
+    // will correlate the image id related to the CFS most recent
+
+    // Correlate last/most recent BOS sessontemplate with CFS configuration --> This will indicate
+    // whether the most recent image was created according to the most recent CFS configuration
+
+    // TODO: the image_id from the most recent CFS session is no longer representative of the image
+    // related to that configuration/session, this is because the script we use which uses SAT which overwrites the image after creation `sudo sat bootprep run -s --overwrite-configs --overwrite-images --overwrite-templates ${file}`, this new image has a different ID which no longer matches the result_id from the session. This means we need to list all images and get the one with name <HSM GROUP>-cos-template-<DATE> with date being the most recent one...????
 
     // Get nodes details
     let nodes_status =

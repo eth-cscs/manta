@@ -84,8 +84,7 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
-        .alias("node")
-        .alias("n")
+        .aliases(["n", "node"])
         .about("Get members of a HSM group");
 
     match hsm_group {
@@ -136,10 +135,11 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
         .aliases(["c", "config", "configure"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration against a HSM group")
-        .arg(arg!(-f --file <VALUE> "File with configuration details"))
-        .arg(arg!(-n --name <VALUE> "Configuration name").required(true))
+        .arg(arg!(-f --file <VALUE> "Sat file with configuration details").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-n --name <VALUE> "Configuration name"))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
-        .group(ArgGroup::new("req_flags").arg("name").arg("repo"));
+        .group(ArgGroup::new("req_flags_name_repo-path").arg("name").arg("repo-path"))
+        .group(ArgGroup::new("req_flag_file").arg("file"));
 
     match hsm_group {
         Some(_) => {}
@@ -329,12 +329,14 @@ pub async fn process_command(
             .await;
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-        if let Some(cli_apply_configuration) = cli_root.subcommand_matches("configuration") {
+        if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
             apply_configuration::exec(
                 hsm_group,
                 cli_apply_configuration,
                 &shasta_token,
                 &shasta_base_url,
+                &gitea_token.to_string(),
+                &gitea_base_url.to_string()
             )
             .await;
         } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
