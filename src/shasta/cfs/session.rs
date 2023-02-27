@@ -223,15 +223,14 @@ pub mod http_client {
                             .to_string()
                             .eq(hsm_group_name.unwrap())
                     })
-                    || HashSet::<String>::from_iter(
-                        cfs_session["ansible"]["limit"]
-                            .as_array()
-                            .unwrap_or(&Vec::new())
-                            .iter()
-                            .map(|node| node.as_str().unwrap().to_string())
-                            .collect::<Vec<_>>(),
-                    )
-                    .is_subset(&HashSet::from_iter(hsm_group_nodes.clone()))
+                    || cfs_session["ansible"]["limit"]
+                        .as_str()
+                        .unwrap_or("")
+                        .split(",")
+                        .into_iter()
+                        .map(|node| node.trim().to_string())
+                        .collect::<HashSet<_>>()
+                        .is_subset(&HashSet::from_iter(hsm_group_nodes.clone()))
             });
         }
 
