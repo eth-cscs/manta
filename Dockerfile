@@ -19,5 +19,5 @@ RUN cargo install --target x86_64-unknown-linux-gnu --path .
 # FROM scratch
 FROM rust:1.64.0-alpine
 COPY --from=build /usr/local/cargo/bin/manta /
-COPY --from=build /manta/config.toml /
+COPY --from=build /manta/config /
 ENTRYPOINT ["./manta"]

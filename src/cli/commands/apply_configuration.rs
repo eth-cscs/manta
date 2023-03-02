@@ -72,7 +72,7 @@ pub async fn exec(
                     None,
                     layer_json["name"].as_str().unwrap().to_string(),
                     layer_json["playbook"].as_str().unwrap().to_string(),
-                    Some(layer_json["git"]["branch"].as_str().unwrap().to_string()),
+                    Some(layer_json["product"]["branch"].as_str().unwrap().to_string()),
                 );
                 cfs_configuration.add_layer(layer);
             }
