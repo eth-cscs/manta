@@ -17,38 +17,41 @@ pub async fn exec(
     // * Parse input params
     let path_buf: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf.file_name().unwrap()).unwrap();
-    let sat_input_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
-
-    let mut cfs_configuration = configuration::CfsConfiguration::new();
+    let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     // println!("\n### sat_input_file_yaml:\n{:#?}", sat_input_file_yaml);
 
-    let configurations = sat_input_file_yaml["configurations"].as_sequence().unwrap();
+    let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
     // println!("\n### configurations:\n{:#?}", configurations);
 
-    for configuration in configurations {
-        let configuration_name = configuration["name"].as_str().unwrap().to_string().replace(
-            "__DATE__",
-            &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
-        );
-        for layer_json in configuration["layers"].as_sequence().unwrap() {
+    for configuration_yaml in configurations_yaml {
+        let mut cfs_configuration = configuration::CfsConfiguration::new();
+        let configuration_name = configuration_yaml["name"]
+            .as_str()
+            .unwrap()
+            .to_string()
+            .replace(
+                "__DATE__",
+                &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
+            );
+        for layer_yaml in configuration_yaml["layers"].as_sequence().unwrap() {
             // println!("\n\n### Layer:\n{:#?}\n", layer_json);
 
-            if layer_json.get("git").is_some() {
+            if layer_yaml.get("git").is_some() {
                 // Git layer
-                let repo_name = layer_json["name"].as_str().unwrap().to_string();
-                let repo_url = layer_json["git"]["url"].as_str().unwrap().to_string();
+                let repo_name = layer_yaml["name"].as_str().unwrap().to_string();
+                let repo_url = layer_yaml["git"]["url"].as_str().unwrap().to_string();
                 let layer = configuration::Layer::new(
                     repo_url,
                     // Some(layer_json["git"]["commit"].as_str().unwrap_or_default().to_string()),
                     None,
                     repo_name,
-                    layer_json["playbook"]
+                    layer_yaml["playbook"]
                         .as_str()
                         .unwrap_or_default()
                         .to_string(),
                     Some(
-                        layer_json["git"]["branch"]
+                        layer_yaml["git"]["branch"]
                             .as_str()
                             .unwrap_or_default()
                             .to_string(),
@@ -59,19 +62,19 @@ pub async fn exec(
                 // Product layer
                 let repo_url = format!(
                     "https://api-gw-service-nmn.local/vcs/cray/{}-config-management.git",
-                    layer_json["name"].as_str().unwrap()
+                    layer_yaml["name"].as_str().unwrap()
                 );
                 let layer = configuration::Layer::new(
                     repo_url,
                     // Some(layer_json["product"]["commit"].as_str().unwrap_or_default().to_string()),
                     None,
-                    layer_json["product"]["name"]
+                    layer_yaml["product"]["name"]
                         .as_str()
                         .unwrap_or_default()
                         .to_string(),
-                    layer_json["playbook"].as_str().unwrap().to_string(),
+                    layer_yaml["playbook"].as_str().unwrap().to_string(),
                     Some(
-                        layer_json["product"]["branch"]
+                        layer_yaml["product"]["branch"]
                             .as_str()
                             .unwrap_or_default()
                             .to_string(),

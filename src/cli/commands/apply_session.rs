@@ -159,6 +159,7 @@ pub async fn exec(
             .unwrap()
             .parse()
             .unwrap(),
+        *cli_apply_session.get_one::<bool>("image").unwrap()
     )
     .await;
 
@@ -186,6 +187,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     shasta_base_url: &str,
     limit: String,
     ansible_verbosity: u8,
+    image: bool,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
     let cfs_sessions =
@@ -415,6 +417,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         cfs_configuration_name,
         Some(limit),
         ansible_verbosity,
+        image,
     );
 
     log::debug!("Session:\n{:#?}", session);

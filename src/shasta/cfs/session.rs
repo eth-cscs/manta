@@ -75,14 +75,24 @@ impl CfsSession {
         configuration_name: String,
         ansible_limit: Option<String>,
         ansible_verbosity: u8,
+        image: bool
     ) -> Self {
-        Self {
+        // This code is fine... the fact that I put Self behind a variable is ok, since image param
+        // is not a default param, then doing things differently is not an issue. I checked with
+        // other Rust developers in their discord https://discord.com/channels/442252698964721669/448238009733742612/1081686300182188207
+        let mut cfs_session = Self {
             name,
             configuration_name,
             ansible_limit,
             ansible_verbosity,
             ..Default::default()
+        };
+
+        if image {
+            cfs_session.target.definition = "image".to_string();
         }
+
+        return cfs_session;
     }
 }
 
