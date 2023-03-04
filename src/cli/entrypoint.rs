@@ -331,12 +331,9 @@ pub async fn process_command(
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
             apply_configuration::exec(
-                hsm_group,
                 cli_apply_configuration,
                 &shasta_token,
                 &shasta_base_url,
-                &gitea_token.to_string(),
-                &gitea_base_url.to_string()
             )
             .await;
         } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {

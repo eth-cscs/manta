@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 pub struct Layer {
     #[serde(rename = "cloneUrl")]
     clone_url: String,
+    #[serde(skip_serializing_if = "Option::is_none")] // Either commit or branch is passed
     commit: Option<String>,
     name: String,
     playbook: String,
+    #[serde(skip_serializing_if = "Option::is_none")] // Either commit or branch is passed
     branch: Option<String>,
 }
 
@@ -23,42 +25,6 @@ impl Layer {
         playbook: String,
         branch: Option<String>,
     ) -> Self {
-        Self {
-            clone_url,
-            commit,
-            name,
-            playbook,
-            branch,
-        }
-    }
-
-    pub fn new_from_product(
-        gitea_base_url: String,
-        repo_name: String,
-        name: String,
-        playbook: String,
-        branch: Option<String>,
-    ) -> Self {
-        let clone_url = format!("{}/cray/{}", gitea_base_url, repo_name);
-        let commit = None;
-        Self {
-            clone_url,
-            commit,
-            name,
-            playbook,
-            branch,
-        }
-    }
-
-    pub fn new_from_git(
-        gitea_base_url: String,
-        repo_name: String,
-        name: String,
-        playbook: String,
-        branch: Option<String>,
-    ) -> Self {
-        let clone_url = format!("{}/cray/{}", gitea_base_url, repo_name);
-        let commit = None;
         Self {
             clone_url,
             commit,
@@ -125,12 +91,13 @@ pub mod http_client {
             .await?;
 
         if resp.status().is_success() {
-            Ok(serde_json::from_str(&resp.text().await?)?)
+            let response = &resp.text().await?;
+            Ok(serde_json::from_str(response)?)
         } else {
-            Err(resp.json::<Value>().await?["detail"]
-                .as_str()
-                .unwrap()
-                .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+            eprintln!("FAIL request: {:#?}", resp);
+            let response: String = resp.text().await?;
+            eprintln!("FAIL response: {:#?}", response);
+            Err(response.into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
         }
     }
 
@@ -214,6 +181,8 @@ pub mod http_client {
 
 pub mod utils {
 
+    use std::path::PathBuf;
+
     use crate::common::gitea;
     use crate::common::local_git_repo;
     use crate::shasta::cfs::configuration;
@@ -261,7 +230,7 @@ pub mod utils {
         gitea_base_url: &str,
         shasta_token: &str,
         shasta_base_url: &str,
-        repos: Vec<String>,
+        repos: Vec<PathBuf>,
         cfs_configuration_name_formatted: &String,
     ) -> configuration::CfsConfiguration {
         // Create CFS configuration
@@ -269,10 +238,10 @@ pub mod utils {
 
         for i in 0..repos.len() {
             // Get repo from path
-            let repo = match local_git_repo::get_repo(repos.get(i).unwrap()) {
+            let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
                 Ok(repo) => repo,
                 Err(_) => {
-                    log::error!("Could not find a git repo in {}", repos[i]);
+                    log::error!("Could not find a git repo in {}", repos[i].to_string_lossy());
                     std::process::exit(1);
                 }
             };
@@ -327,9 +296,7 @@ pub mod utils {
             // Create CFS layer
             let cfs_layer = configuration::Layer::new(
                 clone_url,
-                Some(String::from(
-                    shasta_commitid_details["sha"].as_str().unwrap(),
-                )),
+                Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
                 format!(
                     "{}-{}",
                     repo_name.substring(0, repo_name.len()),
@@ -355,13 +322,5 @@ pub mod utils {
         .await;
 
         cfs_configuration
-    }
-
-    pub fn get_git_repo_url_for_layer(gitea_base_url: &String, repo_name: &String) -> String {
-        let mut clone_url = gitea_base_url.clone().to_string();
-        clone_url.push_str("/cray/");
-        clone_url.push_str(repo_name);
-
-        clone_url
     }
 }

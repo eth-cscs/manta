@@ -1,91 +1,105 @@
 use clap::ArgMatches;
+use k8s_openapi::chrono;
 
 use crate::shasta::cfs::configuration;
 use serde_yaml::Value;
 use std::path::PathBuf;
 
+/// Creates a configuration from a sat file
+/// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
+/// match with a git repo name after concatenating it with "-config-management" (eg: layer name
+/// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 pub async fn exec(
-    hsm_group: Option<&String>,
     cli_apply_configuration: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-    gitea_token: &String,
-    gitea_base_url: &String,
 ) {
     // * Parse input params
     let path_buf: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf.file_name().unwrap()).unwrap();
     let sat_input_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-    //    let repos: Vec<PathBuf> = cli_apply_configuration
-    //        .get_many("repo-path")
-    //        .unwrap()
-    //        .cloned()
-    //        .collect();
-
-    // Parse hsm group
-    let mut hsm_group_value = None;
-
-    // Get hsm_group from cli arg
-    if cli_apply_configuration
-        .get_one::<String>("hsm-group")
-        .is_some()
-    {
-        hsm_group_value = cli_apply_configuration.get_one::<String>("hsm-group");
-    }
-
-    // Get hsm group from config file
-    if hsm_group.is_some() {
-        hsm_group_value = hsm_group;
-    }
-
     let mut cfs_configuration = configuration::CfsConfiguration::new();
 
-    println!("\n### sat_input_file_yaml:\n{:#?}", sat_input_file_yaml);
+    // println!("\n### sat_input_file_yaml:\n{:#?}", sat_input_file_yaml);
 
     let configurations = sat_input_file_yaml["configurations"].as_sequence().unwrap();
-    println!("\n### configurations:\n{:#?}", configurations);
+    // println!("\n### configurations:\n{:#?}", configurations);
 
     for configuration in configurations {
-        println!(
-            "### configuration name: {:#?}",
-            configuration["name"].as_str().unwrap()
+        let configuration_name = configuration["name"].as_str().unwrap().to_string().replace(
+            "__DATE__",
+            &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
         );
         for layer_json in configuration["layers"].as_sequence().unwrap() {
-            println!("layer: {:#?}", layer_json);
+            // println!("\n\n### Layer:\n{:#?}\n", layer_json);
 
             if layer_json.get("git").is_some() {
                 // Git layer
+                let repo_name = layer_json["name"].as_str().unwrap().to_string();
+                let repo_url = layer_json["git"]["url"].as_str().unwrap().to_string();
                 let layer = configuration::Layer::new(
-                    layer_json["git"]["url"].as_str().unwrap().to_string(),
+                    repo_url,
+                    // Some(layer_json["git"]["commit"].as_str().unwrap_or_default().to_string()),
                     None,
-                    layer_json["name"].as_str().unwrap().to_string(),
-                    layer_json["playbook"].as_str().unwrap().to_string(),
-                    Some(layer_json["git"]["branch"].as_str().unwrap().to_string()),
+                    repo_name,
+                    layer_json["playbook"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
+                    Some(
+                        layer_json["git"]["branch"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string(),
+                    ),
                 );
                 cfs_configuration.add_layer(layer);
             } else {
                 // Product layer
-                let git_repo_url = "".to_string();
+                let repo_url = format!(
+                    "https://api-gw-service-nmn.local/vcs/cray/{}-config-management.git",
+                    layer_json["name"].as_str().unwrap()
+                );
                 let layer = configuration::Layer::new(
-                    git_repo_url,
+                    repo_url,
+                    // Some(layer_json["product"]["commit"].as_str().unwrap_or_default().to_string()),
                     None,
-                    layer_json["name"].as_str().unwrap().to_string(),
+                    layer_json["product"]["name"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
                     layer_json["playbook"].as_str().unwrap().to_string(),
-                    Some(layer_json["product"]["branch"].as_str().unwrap().to_string()),
+                    Some(
+                        layer_json["product"]["branch"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string(),
+                    ),
                 );
                 cfs_configuration.add_layer(layer);
             }
         }
-    }
 
-    println!("\ncfs_configuration:\n{:#?}", cfs_configuration);
+        log::debug!("{:#?}", cfs_configuration);
 
-    let images = sat_input_file_yaml["images"].as_sequence().unwrap();
+        // println!("\n### images:\n{:#?}", images);
 
-    println!("\n### images:\n{:#?}", images);
+        let configuration = crate::shasta::cfs::configuration::http_client::put(
+            shasta_token,
+            shasta_base_url,
+            &cfs_configuration,
+            &configuration_name,
+        )
+        .await
+        .unwrap();
 
-    for image in images {
-        println!("### image name: {:#?}", image["name"].as_str().unwrap());
+        println!(
+            "{}",
+            configuration["name"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string()
+        );
     }
 }

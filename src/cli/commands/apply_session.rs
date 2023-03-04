@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use clap::ArgMatches;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
@@ -11,10 +11,9 @@ use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
 use crate::{shasta_cfs_component, shasta_cfs_session};
 use k8s_openapi::chrono;
-use serde_json::Value;
 use substring::Substring;
 
-use crate::common::{gitea, local_git_repo};
+use crate::common::local_git_repo;
 
 pub async fn exec(
     gitea_token: &str,
@@ -180,7 +179,7 @@ pub async fn exec(
 
 pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     config_name: &str,
-    repos: Vec<String>,
+    repos: Vec<PathBuf>,
     gitea_token: &str,
     gitea_base_url: &str,
     shasta_token: &str,
@@ -268,10 +267,10 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         // TODO: format logging on screen so it is more readable
 
         // Get repo from path
-        let repo = match local_git_repo::get_repo(repos.get(i).unwrap()) {
+        let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
             Ok(repo) => repo,
             Err(_) => {
-                log::error!("Could not find a git repo in {}", repos[i]);
+                log::error!("Could not find a git repo in {}", repos[i].to_string_lossy());
                 std::process::exit(1);
             }
         };
@@ -331,22 +330,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
                 .to_string(),
         ];
 
-        // layer_summary.push(i.to_string());
-        // layer_summary.push(repo_name.to_string());
-        // layer_summary.push(
-        //     local_git_repo::untracked_changed_local_files(&repo)
-        //         .unwrap()
-        //         .to_string(),
-        // );
-
         layers_summary.push(layer_summary);
     }
 
     log::debug!("Replacing '_' with '-' in repo name.");
     let cfs_configuration_name_formatted = format!("{}", str::replace(config_name, "_", "-"));
 
-    println!(
-        "A CFS session {} is scheduled to run.",
+    log::info!(
+        "Creating CFS configuration {}",
         cfs_configuration_name_formatted
     );
 
@@ -384,88 +375,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     )
     .await;
 
-    //    // Create CFS configuration
-    //    let mut cfs_configuration = configuration::CfsConfiguration::new();
-    //
-    //    for i in 0..repos.len() {
-    //        // Get repo from path
-    //        let repo = match local_git_repo::get_repo(repos.get(i).unwrap()) {
-    //            Ok(repo) => repo,
-    //            Err(_) => {
-    //                log::error!("Could not find a git repo in {}", repos[i]);
-    //                std::process::exit(1);
-    //            }
-    //        };
-    //
-    //        // Get last (most recent) commit
-    //        let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
-    //
-    //        // Get repo name
-    //        let repo_ref_origin = repo.find_remote("origin").unwrap();
-    //
-    //        log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
-    //
-    //        let repo_ref_origin_url = repo_ref_origin.url().unwrap();
-    //
-    //        let repo_name = repo_ref_origin_url.substring(
-    //            repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-    //            repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
-    //        );
-    //
-    //        let mut api_url = "cray/".to_string();
-    //        api_url.push_str(repo_name);
-    //
-    //        // Check if repo and local commit id exists in Shasta cvs
-    //        let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
-    //            &api_url,
-    //            // &format!("/cray/{}", repo_name),
-    //            &local_last_commit.id().to_string(),
-    //            &gitea_token,
-    //        )
-    //        .await;
-    //
-    //        // Check sync status between user face and shasta VCS
-    //        let shasta_commitid_details: Value = match shasta_commitid_details_resp {
-    //            Ok(_) => {
-    //                log::debug!(
-    //                    "Local latest commit id {} for repo {} exists in shasta",
-    //                    local_last_commit.id(),
-    //                    repo_name
-    //                );
-    //                shasta_commitid_details_resp.unwrap()
-    //            }
-    //            Err(e) => {
-    //                log::error!("{}", e);
-    //                std::process::exit(1);
-    //            }
-    //        };
-    //
-    //        let mut clone_url = gitea_base_url.clone().to_string();
-    //        clone_url.push_str("/cray/");
-    //        clone_url.push_str(repo_name);
-    //
-    //        // Create CFS layer
-    //        let cfs_layer = configuration::Layer::new(
-    //            // format!(
-    //            //     // git repo url in shasta faced VCS
-    //            //     "{}/cray/{}",
-    //            //     gitea_base_url, // TODO: refactor this and move it to gitea mod
-    //            //     repo_name
-    //            // ),
-    //            clone_url,
-    //            String::from(shasta_commitid_details["sha"].as_str().unwrap()),
-    //            format!(
-    //                "{}-{}",
-    //                repo_name.substring(0, repo_name.len()),
-    //                chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-    //            ),
-    //            String::from("site.yml"),
-    //        );
-    //
-    //        cfs_configuration = configuration::add_layer(cfs_layer, cfs_configuration);
-    //    }
-
-    log::info!("CFS configuration:\n{:#?}", cfs_configuration);
+    log::info!("CFS configuration {:#?} created", cfs_configuration);
 
     // Update/PUT CFS configuration
     log::debug!("Create configuration and session name.");
