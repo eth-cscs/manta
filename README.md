@@ -31,6 +31,20 @@ Manta aggregates information from multiple sources:
 
 ## Configuration
 
+Manta needs a configuration file in `$HOME/.config/manta/config` like shown below
+
+```bash
+shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
+keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
+gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
+k8s_api_url = "https://10.252.1.12:6442"
+vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
+vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+hsm_group = "psitds"
+```
+
+### Legend:
+
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
 |RUST_LOG|no|env|log details/verbosity|info|

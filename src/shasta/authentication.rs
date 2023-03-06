@@ -30,7 +30,8 @@ pub async fn get_api_token(
 
     create_dir_all(&path)?;
 
-    path.push("http");
+    path.push("http"); // ~/.cache/manta/http is the file containing the Shasta authentication
+                       // token
 
     log::debug!("Cache file: {:?}", path);
 

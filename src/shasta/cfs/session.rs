@@ -30,27 +30,27 @@ impl Default for Target {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfsSession {
-    name: String,
+    pub name: String,
     #[serde(rename = "configurationName")]
-    configuration_name: String,
+    pub configuration_name: String,
     #[serde(rename = "configurationLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    configuration_limit: Option<String>,
+    pub configuration_limit: Option<String>,
     #[serde(rename = "ansibleLimit")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ansible_limit: Option<String>,
+    pub ansible_limit: Option<String>,
     #[serde(rename = "ansibleConfig")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ansible_config: Option<String>,
+    pub ansible_config: Option<String>,
     #[serde(rename = "ansibleVerbosity")]
-    ansible_verbosity: u8,
+    pub ansible_verbosity: u8,
     #[serde(rename = "ansiblePassthrough")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ansible_passthrough: Option<String>,
+    pub ansible_passthrough: Option<String>,
     #[serde(default)]
-    target: Target,
+    pub target: Target,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tags: Option<Tag>,
+    pub tags: Option<Tag>,
 }
 
 impl Default for CfsSession {
@@ -108,7 +108,7 @@ pub mod http_client {
     pub async fn post(
         shasta_token: &str,
         shasta_base_url: &str,
-        session: CfsSession,
+        session: &CfsSession,
     ) -> Result<Value, Box<dyn Error>> {
         log::debug!("Session:\n{:#?}", session);
 

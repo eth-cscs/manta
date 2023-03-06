@@ -7,6 +7,8 @@ use crate::cli::commands::{
     get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
+use super::commands::apply_image;
+
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
         .aliases(["s", "se", "sess"])
@@ -194,7 +196,7 @@ pub fn subcommand_apply_image(hsm_group: Option<&String>) -> Command {
         .aliases(["i", "img", "imag"])
         .arg_required_else_help(true)
         .about("Creates a CFS image")
-        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration to use to create the image"))
+        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration to use to create the image").value_parser(value_parser!(PathBuf)))
         .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
             .value_parser(value_parser!(PathBuf)))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
@@ -372,6 +374,17 @@ pub async fn process_command(
                 vault_base_url,
                 hsm_group,
                 cli_apply_session,
+                &shasta_token,
+                &shasta_base_url,
+            )
+            .await;
+        } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
+            apply_image::exec(
+                gitea_token,
+                gitea_base_url,
+                vault_base_url,
+                hsm_group,
+                cli_apply_image,
                 &shasta_token,
                 &shasta_base_url,
             )

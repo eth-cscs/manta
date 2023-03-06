@@ -3,6 +3,9 @@ mod common;
 mod config;
 mod manta;
 mod shasta;
+use std::path::PathBuf;
+
+use directories::ProjectDirs;
 use termion::color;
 
 use shasta::{
@@ -24,7 +27,20 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // Init logger
     env_logger::init();
 
-    let settings = config::get("config");
+    let project_dirs = ProjectDirs::from(
+        "local", /*qualifier*/
+        "cscs",  /*organization*/
+        "manta", /*application*/
+    );
+
+    let mut path_to_manta_configuration_file = PathBuf::from(project_dirs.unwrap().config_dir());
+    
+    path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
+                                                     // containing the manta configuration 
+
+    log::debug!("Reading manta configuration from {}", &path_to_manta_configuration_file.to_string_lossy());
+
+    let settings = config::get(&path_to_manta_configuration_file.to_string_lossy());
 
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     let vault_base_url = settings.get::<String>("vault_base_url").unwrap();

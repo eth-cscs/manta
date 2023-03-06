@@ -159,7 +159,7 @@ pub async fn exec(
             .unwrap()
             .parse()
             .unwrap(),
-        *cli_apply_session.get_one::<bool>("image").unwrap()
+        *cli_apply_session.get_one::<bool>("image").unwrap(),
     )
     .await;
 
@@ -272,7 +272,10 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
             Ok(repo) => repo,
             Err(_) => {
-                log::error!("Could not find a git repo in {}", repos[i].to_string_lossy());
+                log::error!(
+                    "Could not find a git repo in {}",
+                    repos[i].to_string_lossy()
+                );
                 std::process::exit(1);
             }
         };
@@ -422,7 +425,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::debug!("Session:\n{:#?}", session);
     let cfs_session_resp =
-        shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, session).await;
+        shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, &session).await;
 
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),

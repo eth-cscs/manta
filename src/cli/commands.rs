@@ -1,4 +1,5 @@
 pub mod apply_configuration;
+pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
 pub mod apply_node_reset;

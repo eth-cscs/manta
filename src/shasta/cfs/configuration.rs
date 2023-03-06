@@ -1,4 +1,7 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
+use serde_yaml::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Layer {
@@ -42,6 +45,60 @@ impl CfsConfiguration {
 
     pub fn add_layer(&mut self, layer: Layer) {
         self.layers.push(layer);
+    }
+
+    pub fn from_serde_yaml(configuration_yaml: &Value) -> Self {
+        let mut cfs_configuration = Self::new();
+        for layer_yaml in configuration_yaml["layers"].as_sequence().unwrap() {
+            // println!("\n\n### Layer:\n{:#?}\n", layer_json);
+
+            if layer_yaml.get("git").is_some() {
+                // Git layer
+                let repo_name = layer_yaml["name"].as_str().unwrap().to_string();
+                let repo_url = layer_yaml["git"]["url"].as_str().unwrap().to_string();
+                let layer = Layer::new(
+                    repo_url,
+                    // Some(layer_json["git"]["commit"].as_str().unwrap_or_default().to_string()),
+                    None,
+                    repo_name,
+                    layer_yaml["playbook"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
+                    Some(
+                        layer_yaml["git"]["branch"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string(),
+                    ),
+                );
+                cfs_configuration.add_layer(layer);
+            } else {
+                // Product layer
+                let repo_url = format!(
+                    "https://api-gw-service-nmn.local/vcs/cray/{}-config-management.git",
+                    layer_yaml["name"].as_str().unwrap()
+                );
+                let layer = Layer::new(
+                    repo_url,
+                    // Some(layer_json["product"]["commit"].as_str().unwrap_or_default().to_string()),
+                    None,
+                    layer_yaml["product"]["name"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
+                    layer_yaml["playbook"].as_str().unwrap().to_string(),
+                    Some(
+                        layer_yaml["product"]["branch"]
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string(),
+                    ),
+                );
+                cfs_configuration.add_layer(layer);
+            }
+        }
+        cfs_configuration
     }
 }
 
@@ -241,7 +298,10 @@ pub mod utils {
             let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
                 Ok(repo) => repo,
                 Err(_) => {
-                    log::error!("Could not find a git repo in {}", repos[i].to_string_lossy());
+                    log::error!(
+                        "Could not find a git repo in {}",
+                        repos[i].to_string_lossy()
+                    );
                     std::process::exit(1);
                 }
             };
