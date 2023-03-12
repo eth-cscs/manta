@@ -7,8 +7,6 @@ use serde_yaml::Value;
 use crate::shasta::cfs::{configuration, session::CfsSession};
 
 pub async fn exec(
-    gitea_token: &str,
-    gitea_base_url: &str,
     vault_base_url: &String,
     cli_apply_image: &ArgMatches,
     shasta_token: &String,
@@ -17,7 +15,6 @@ pub async fn exec(
     // hsm_group: Option<&String>
 ) {
     let mut cfs_configuration;
-    let groups_name: Vec<String>;
 
     let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf).unwrap();

@@ -117,8 +117,6 @@ impl CfsConfiguration {
     pub async fn create_from_repos(
         gitea_token: &str,
         gitea_base_url: &str,
-        shasta_token: &str,
-        shasta_base_url: &str,
         repos: Vec<PathBuf>,
         cfs_configuration_name: &String,
     ) -> Self {
@@ -350,15 +348,8 @@ pub mod http_client {
 
 pub mod utils {
 
-    use std::path::PathBuf;
-
-    use crate::common::gitea;
-    use crate::common::local_git_repo;
-    use crate::shasta::cfs::configuration;
     use comfy_table::Table;
-    use k8s_openapi::chrono;
     use serde_json::Value;
-    use substring::Substring;
 
     pub fn print_table(cfs_configurations: Vec<Value>) {
         let mut table = Table::new();

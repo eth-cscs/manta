@@ -390,8 +390,6 @@ pub async fn process_command(
             .await;
         } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
             apply_image::exec(
-                gitea_token,
-                gitea_base_url,
                 vault_base_url,
                 cli_apply_image,
                 &shasta_token,
