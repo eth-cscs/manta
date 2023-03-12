@@ -433,10 +433,4 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     };
 
     Ok(String::from(cfs_session_name))
-
-    // Get pod name running the CFS session
-
-    // Get list of ansible containers in pod running CFS session
-
-    // Connect logs ????
 }
