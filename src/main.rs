@@ -78,7 +78,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         matches,
         shasta_token,
         shasta_base_url,
-        vault_base_url,
+        &vault_base_url,
         &gitea_token,
         &gitea_base_url,
         hsm_group,

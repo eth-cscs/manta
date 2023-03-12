@@ -1,7 +1,13 @@
 use std::path::PathBuf;
 
+use k8s_openapi::chrono;
 use serde::{Deserialize, Serialize};
-use serde_yaml::Value;
+use substring::Substring;
+
+use crate::{
+    common::{gitea, local_git_repo},
+    shasta::cfs::configuration,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Layer {
@@ -17,7 +23,8 @@ pub struct Layer {
 
 #[derive(Debug, Serialize)] // TODO: investigate why serde can Deserialize dynamically syzed structs `Vec<Layer>`
 pub struct CfsConfiguration {
-    layers: Vec<Layer>,
+    pub name: String,
+    pub layers: Vec<Layer>,
 }
 
 impl Layer {
@@ -40,15 +47,21 @@ impl Layer {
 
 impl CfsConfiguration {
     pub fn new() -> Self {
-        Self { layers: vec![] }
+        Self {
+            name: String::default(),
+            layers: Vec::default(),
+        }
     }
 
     pub fn add_layer(&mut self, layer: Layer) {
         self.layers.push(layer);
     }
 
-    pub fn from_serde_yaml(configuration_yaml: &Value) -> Self {
+    pub fn from_sat_file_serde_yaml(configuration_yaml: &serde_yaml::Value) -> Self {
         let mut cfs_configuration = Self::new();
+
+        cfs_configuration.name = configuration_yaml["name"].as_str().unwrap().to_string();
+
         for layer_yaml in configuration_yaml["layers"].as_sequence().unwrap() {
             // println!("\n\n### Layer:\n{:#?}\n", layer_json);
 
@@ -100,12 +113,103 @@ impl CfsConfiguration {
         }
         cfs_configuration
     }
+
+    pub async fn create_from_repos(
+        gitea_token: &str,
+        gitea_base_url: &str,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        repos: Vec<PathBuf>,
+        cfs_configuration_name: &String,
+    ) -> Self {
+        // Create CFS configuration
+        let mut cfs_configuration = configuration::CfsConfiguration::new();
+        cfs_configuration.name = cfs_configuration_name.to_string();
+
+        for i in 0..repos.len() {
+            // Get repo from path
+            let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
+                Ok(repo) => repo,
+                Err(_) => {
+                    log::error!(
+                        "Could not find a git repo in {}",
+                        repos[i].to_string_lossy()
+                    );
+                    std::process::exit(1);
+                }
+            };
+
+            // Get last (most recent) commit
+            let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
+
+            // Get repo name
+            let repo_ref_origin = repo.find_remote("origin").unwrap();
+
+            log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+
+            let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+
+            let repo_name = repo_ref_origin_url.substring(
+                repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
+                repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+            );
+
+            let mut api_url = "cray/".to_string();
+            api_url.push_str(repo_name);
+
+            // Check if repo and local commit id exists in Shasta cvs
+            let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
+                &api_url,
+                // &format!("/cray/{}", repo_name),
+                &local_last_commit.id().to_string(),
+                &gitea_token,
+            )
+            .await;
+
+            // Check sync status between user face and shasta VCS
+            let shasta_commitid_details: serde_json::Value = match shasta_commitid_details_resp {
+                Ok(_) => {
+                    log::debug!(
+                        "Local latest commit id {} for repo {} exists in shasta",
+                        local_last_commit.id(),
+                        repo_name
+                    );
+                    shasta_commitid_details_resp.unwrap()
+                }
+                Err(e) => {
+                    log::error!("{}", e);
+                    std::process::exit(1);
+                }
+            };
+
+            let mut clone_url = gitea_base_url.clone().to_string();
+            clone_url.push_str("/cray/");
+            clone_url.push_str(repo_name);
+
+            // Create CFS layer
+            let cfs_layer = configuration::Layer::new(
+                clone_url,
+                Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
+                format!(
+                    "{}-{}",
+                    repo_name.substring(0, repo_name.len()),
+                    chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                ),
+                String::from("site.yml"),
+                None,
+            );
+
+            CfsConfiguration::add_layer(&mut cfs_configuration, cfs_layer);
+        }
+
+        cfs_configuration
+    }
 }
 
-pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfiguration {
+/* pub fn add_layer(layer: Layer, mut configuration: CfsConfiguration) -> CfsConfiguration {
     configuration.layers.push(layer);
     configuration
-}
+} */
 
 pub mod http_client {
 
@@ -142,7 +246,15 @@ pub mod http_client {
         let resp = client
             .put(api_url)
             // .put(format!("{}{}{}", shasta_base_url, "/cfs/v2/configurations/", configuration_name))
-            .json(configuration)
+            .json(&serde_json::json!({"layers": configuration.layers})) // Encapsulating configuration.layers
+            // into an object as required by
+            // Shasta API https://apidocs.svc.cscs.ch/paas/cfs/operation/put_configuration/.
+            // This seems ugly but this is
+            // cleaner than defining
+            // configuration.layers as an object
+            // with an array inside for no reason
+            // other than this call which is
+            // encapsulated in this method
             .bearer_auth(shasta_token)
             .send()
             .await?;
@@ -280,107 +392,5 @@ pub mod utils {
         }
 
         println!("{table}");
-    }
-
-    pub async fn create_from_repos(
-        gitea_token: &str,
-        gitea_base_url: &str,
-        shasta_token: &str,
-        shasta_base_url: &str,
-        repos: Vec<PathBuf>,
-        cfs_configuration_name_formatted: &String,
-    ) -> configuration::CfsConfiguration {
-        // Create CFS configuration
-        let mut cfs_configuration = configuration::CfsConfiguration::new();
-
-        for i in 0..repos.len() {
-            // Get repo from path
-            let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
-                Ok(repo) => repo,
-                Err(_) => {
-                    log::error!(
-                        "Could not find a git repo in {}",
-                        repos[i].to_string_lossy()
-                    );
-                    std::process::exit(1);
-                }
-            };
-
-            // Get last (most recent) commit
-            let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
-
-            // Get repo name
-            let repo_ref_origin = repo.find_remote("origin").unwrap();
-
-            log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
-
-            let repo_ref_origin_url = repo_ref_origin.url().unwrap();
-
-            let repo_name = repo_ref_origin_url.substring(
-                repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-                repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
-            );
-
-            let mut api_url = "cray/".to_string();
-            api_url.push_str(repo_name);
-
-            // Check if repo and local commit id exists in Shasta cvs
-            let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
-                &api_url,
-                // &format!("/cray/{}", repo_name),
-                &local_last_commit.id().to_string(),
-                &gitea_token,
-            )
-            .await;
-
-            // Check sync status between user face and shasta VCS
-            let shasta_commitid_details: Value = match shasta_commitid_details_resp {
-                Ok(_) => {
-                    log::debug!(
-                        "Local latest commit id {} for repo {} exists in shasta",
-                        local_last_commit.id(),
-                        repo_name
-                    );
-                    shasta_commitid_details_resp.unwrap()
-                }
-                Err(e) => {
-                    log::error!("{}", e);
-                    std::process::exit(1);
-                }
-            };
-
-            let mut clone_url = gitea_base_url.clone().to_string();
-            clone_url.push_str("/cray/");
-            clone_url.push_str(repo_name);
-
-            // Create CFS layer
-            let cfs_layer = configuration::Layer::new(
-                clone_url,
-                Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
-                format!(
-                    "{}-{}",
-                    repo_name.substring(0, repo_name.len()),
-                    chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-                ),
-                String::from("site.yml"),
-                None,
-            );
-
-            cfs_configuration = configuration::add_layer(cfs_layer, cfs_configuration);
-        }
-
-        log::info!("CFS configuration:\n{:#?}", cfs_configuration);
-
-        // Update/PUT CFS configuration
-        log::debug!("Create configuration and session name.");
-        configuration::http_client::put(
-            &shasta_token,
-            &shasta_base_url,
-            &cfs_configuration,
-            &cfs_configuration_name_formatted,
-        )
-        .await;
-
-        cfs_configuration
     }
 }

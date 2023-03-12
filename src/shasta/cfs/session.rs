@@ -1,3 +1,4 @@
+use k8s_openapi::chrono;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,7 +44,8 @@ pub struct CfsSession {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ansible_config: Option<String>,
     #[serde(rename = "ansibleVerbosity")]
-    pub ansible_verbosity: u8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ansible_verbosity: Option<u8>,
     #[serde(rename = "ansiblePassthrough")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ansible_passthrough: Option<String>,
@@ -56,12 +58,12 @@ pub struct CfsSession {
 impl Default for CfsSession {
     fn default() -> Self {
         Self {
-            name: String::from(""),
-            configuration_name: String::from(""),
+            name: String::default(),
+            configuration_name: String::default(),
             configuration_limit: None,
             ansible_limit: None,
             ansible_config: None,
-            ansible_verbosity: 2,
+            ansible_verbosity: None,
             ansible_passthrough: None,
             target: Default::default(),
             tags: None,
@@ -74,8 +76,9 @@ impl CfsSession {
         name: String,
         configuration_name: String,
         ansible_limit: Option<String>,
-        ansible_verbosity: u8,
-        image: bool
+        ansible_verbosity: Option<u8>,
+        is_target_definition_image: bool,
+        groups_name: Option<Vec<String>>,
     ) -> Self {
         // This code is fine... the fact that I put Self behind a variable is ok, since image param
         // is not a default param, then doing things differently is not an issue. I checked with
@@ -88,11 +91,44 @@ impl CfsSession {
             ..Default::default()
         };
 
-        if image {
+        if is_target_definition_image {
+            let base_image = "a897aa21-0218-4d07-aefb-13a4c15ccb65"; // TODO: move this to config
+                                                                     // file ???
+
+            let target_groups: Vec<Group> = groups_name
+                .unwrap()
+                .into_iter()
+                .map(|group_name| Group {
+                    name: group_name,
+                    members: vec![base_image.to_string()],
+                })
+                .collect();
+
             cfs_session.target.definition = "image".to_string();
+            cfs_session.target.groups = Some(target_groups);
         }
 
         return cfs_session;
+    }
+
+    pub fn from_sat_file_serde_yaml(session_yaml: &serde_yaml::Value) -> Self {
+        let groups_name = session_yaml["configuration_group_names"]
+            .as_sequence()
+            .unwrap()
+            .iter()
+            .map(|group_name| group_name.as_str().unwrap().to_string())
+            .collect();
+
+
+        let cfs_session = crate::shasta::cfs::session::CfsSession::new(
+            session_yaml["name"].as_str().unwrap().to_string(),
+            session_yaml["configuration"].as_str().unwrap().to_string(),
+            None,
+            None,
+            true,
+            Some(groups_name),
+        );
+        cfs_session
     }
 }
 

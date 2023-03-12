@@ -24,7 +24,7 @@ pub async fn exec(
     cli_console: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-    vault_base_url: String,
+    vault_base_url: &String,
 ) -> () {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
@@ -82,11 +82,11 @@ pub async fn exec(
 
 pub async fn connect_to_console(
     xname: &String,
-    vault_base_url: String,
+    vault_base_url: &String,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let client = get_k8s_client_programmatically(vault_base_url).await?;
+    let client = get_k8s_client_programmatically(&vault_base_url).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 

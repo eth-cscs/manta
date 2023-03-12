@@ -15,7 +15,7 @@ use secrecy::SecretString;
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
 pub async fn get_k8s_client_programmatically(
-    vault_base_url: String,
+    vault_base_url: &String,
 ) -> Result<kube::Client, Box<dyn Error>> {
     let settings = crate::config::get("config");
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();

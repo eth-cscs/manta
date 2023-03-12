@@ -18,7 +18,7 @@ use crate::common::local_git_repo;
 pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
-    vault_base_url: String,
+    vault_base_url: &String,
     hsm_group: Option<&String>,
     cli_apply_session: &ArgMatches,
     shasta_token: &String,
@@ -83,7 +83,7 @@ pub async fn exec(
 
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
-        // Get all hsm groups related to hsm_group input
+        // Get all hsm groups details related to hsm_group input
         hsm_groups = crate::common::cluster_ops::get_details(
             &shasta_token,
             &shasta_base_url,
@@ -137,6 +137,9 @@ pub async fn exec(
     }
     // * End Process/validate hsm group value (and ansible limit)
 
+    log::info!("Replacing '_' with '-' in repo name.");
+    let cfs_configuration_name = str::replace(&cfs_configuration_name, "_", "-");
+
     // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
@@ -159,7 +162,6 @@ pub async fn exec(
             .unwrap()
             .parse()
             .unwrap(),
-        *cli_apply_session.get_one::<bool>("image").unwrap(),
     )
     .await;
 
@@ -179,7 +181,7 @@ pub async fn exec(
 }
 
 pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
-    config_name: &str,
+    cfs_configuration_name: &str,
     repos: Vec<PathBuf>,
     gitea_token: &str,
     gitea_base_url: &str,
@@ -187,7 +189,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     shasta_base_url: &str,
     limit: String,
     ansible_verbosity: u8,
-    image: bool,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
     let cfs_sessions =
@@ -338,14 +339,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         layers_summary.push(layer_summary);
     }
 
-    log::debug!("Replacing '_' with '-' in repo name.");
-    let cfs_configuration_name_formatted = format!("{}", str::replace(config_name, "_", "-"));
-
-    log::info!(
-        "Creating CFS configuration {}",
-        cfs_configuration_name_formatted
-    );
-
     // Print CFS session/configuration layers summary on screen
     println!("Please review the following CFS layers:",);
     for layer_summary in layers_summary {
@@ -370,25 +363,27 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     // git2_rs_utils::local::fetch_and_check_conflicts(&repo)?;
     // log::debug!("No conflicts");
 
-    let cfs_configuration = configuration::utils::create_from_repos(
+    log::info!("Creating CFS configuration {}", cfs_configuration_name);
+
+    let cfs_configuration = configuration::CfsConfiguration::create_from_repos(
         &gitea_token,
         &gitea_base_url,
         &shasta_token,
         &shasta_base_url,
         repos,
-        &cfs_configuration_name_formatted,
+        &cfs_configuration_name.to_string(),
     )
     .await;
 
-    log::info!("CFS configuration {:#?} created", cfs_configuration);
+    // Update/PUT CFS configuration
+    log::info!("CFS configuration payload {:#?}", cfs_configuration);
 
     // Update/PUT CFS configuration
-    log::debug!("Create configuration and session name.");
     let cfs_configuration_resp = configuration::http_client::put(
         &shasta_token,
         &shasta_base_url,
         &cfs_configuration,
-        &cfs_configuration_name_formatted,
+        &cfs_configuration_name,
     )
     .await;
 
@@ -403,11 +398,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         }
     };
 
-    println!(
-        "CFS configuration name: {}",
-        cfs_configuration_name_formatted
-    );
-    log::debug!("CFS configuration response: {:#?}", cfs_configuration_resp);
+    log::debug!("CFS configuration response:\n{:#?}", cfs_configuration_resp);
 
     // Create CFS session
     let cfs_session_name = format!(
@@ -415,15 +406,18 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         cfs_configuration_name,
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
+
     let session = shasta_cfs_session::CfsSession::new(
         cfs_session_name,
         cfs_configuration_name,
         Some(limit),
-        ansible_verbosity,
-        image,
+        Some(ansible_verbosity),
+        false,
+        None,
     );
 
     log::debug!("Session:\n{:#?}", session);
+
     let cfs_session_resp =
         shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, &session).await;
 
@@ -435,8 +429,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         }
     };
 
-    println!("CFS session name: {}", cfs_session_name);
-    log::debug!("CFS session response: {:#?}", cfs_session_resp);
+    log::debug!("CFS session response:\n {:#?}", cfs_session_resp);
 
     Ok(String::from(cfs_session_name))
 

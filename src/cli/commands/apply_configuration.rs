@@ -36,16 +36,13 @@ pub async fn exec(
 
     let configuration_yaml = &configurations_yaml[0];
 
-    let configuration_name = configuration_yaml["name"]
-        .as_str()
-        .unwrap()
-        .to_string()
-        .replace(
-            "__DATE__",
-            &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
-        );
+    let cfs_configuration =
+        configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
-    let cfs_configuration = configuration::CfsConfiguration::from_serde_yaml(configuration_yaml);
+    let configuration_name = cfs_configuration.name.replace(
+        "__DATE__",
+        &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
+    );
 
     log::debug!("{:#?}", cfs_configuration);
 

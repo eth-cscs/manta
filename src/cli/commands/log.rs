@@ -17,7 +17,7 @@ pub async fn exec(
     cli_log: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-    vault_base_url: String,
+    vault_base_url: &String,
 ) -> () {
     let logging_session_name = cli_log.get_one::<String>("SESSION");
 
@@ -38,7 +38,7 @@ pub async fn exec(
 pub async fn session_logs_proxy(
     shasta_token: &str,
     shasta_base_url: &str,
-    vault_base_url: String,
+    vault_base_url: &String,
     cluster_name: Option<&String>,
     session_name: Option<&String>,
     layer_id: Option<&u8>,
@@ -70,7 +70,7 @@ pub async fn session_logs_proxy(
 }
 
 pub async fn session_logs(
-    vault_base_url: String,
+    vault_base_url: &String,
     cfs_session_name: &str,
     layer_id: Option<&u8>,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
