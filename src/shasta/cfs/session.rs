@@ -1,4 +1,3 @@
-use k8s_openapi::chrono;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,6 +52,8 @@ pub struct CfsSession {
     pub target: Target,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Tag>,
+    #[serde(skip_serializing)]
+    pub base_image_id: Option<String>,
 }
 
 impl Default for CfsSession {
@@ -67,6 +68,7 @@ impl Default for CfsSession {
             ansible_passthrough: None,
             target: Default::default(),
             tags: None,
+            base_image_id: Some(String::default()),
         }
     }
 }
@@ -79,6 +81,7 @@ impl CfsSession {
         ansible_verbosity: Option<u8>,
         is_target_definition_image: bool,
         groups_name: Option<Vec<String>>,
+        base_image_id: Option<String>,
     ) -> Self {
         // This code is fine... the fact that I put Self behind a variable is ok, since image param
         // is not a default param, then doing things differently is not an issue. I checked with
@@ -92,15 +95,15 @@ impl CfsSession {
         };
 
         if is_target_definition_image {
-            let base_image = "a897aa21-0218-4d07-aefb-13a4c15ccb65"; // TODO: move this to config
-                                                                     // file ???
+            // let base_image_id = "a897aa21-0218-4d07-aefb-13a4c15ccb65"; // TODO: move this to config
+            // file ???
 
             let target_groups: Vec<Group> = groups_name
                 .unwrap()
                 .into_iter()
                 .map(|group_name| Group {
                     name: group_name,
-                    members: vec![base_image.to_string()],
+                    members: vec![base_image_id.as_ref().unwrap().to_string()],
                 })
                 .collect();
 
@@ -111,14 +114,16 @@ impl CfsSession {
         return cfs_session;
     }
 
-    pub fn from_sat_file_serde_yaml(session_yaml: &serde_yaml::Value) -> Self {
+    pub fn from_sat_file_serde_yaml(
+        session_yaml: &serde_yaml::Value,
+        base_image_id: &String,
+    ) -> Self {
         let groups_name = session_yaml["configuration_group_names"]
             .as_sequence()
             .unwrap()
             .iter()
             .map(|group_name| group_name.as_str().unwrap().to_string())
             .collect();
-
 
         let cfs_session = crate::shasta::cfs::session::CfsSession::new(
             session_yaml["name"].as_str().unwrap().to_string(),
@@ -127,6 +132,7 @@ impl CfsSession {
             None,
             true,
             Some(groups_name),
+            Some(base_image_id.to_string()),
         );
         cfs_session
     }

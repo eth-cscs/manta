@@ -346,6 +346,7 @@ pub async fn process_command(
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
+    base_image_id: &String,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
@@ -395,6 +396,7 @@ pub async fn process_command(
                 cli_apply_image,
                 &shasta_token,
                 &shasta_base_url,
+                base_image_id,
                 // hsm_group,
             )
             .await;

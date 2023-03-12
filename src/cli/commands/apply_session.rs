@@ -376,7 +376,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     .await;
 
     // Update/PUT CFS configuration
-    log::info!("CFS configuration payload {:#?}", cfs_configuration);
+    log::info!("Create CFS configuration payload:\n{:#?}", cfs_configuration);
 
     // Update/PUT CFS configuration
     let cfs_configuration_resp = configuration::http_client::put(
@@ -386,6 +386,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
     )
     .await;
+
+    log::info!("Create CFS configuration response:\n{:#?}", cfs_configuration_resp);
 
     let cfs_configuration_name = match cfs_configuration_resp {
         Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
@@ -397,8 +399,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             std::process::exit(1);
         }
     };
-
-    log::debug!("CFS configuration response:\n{:#?}", cfs_configuration_resp);
 
     // Create CFS session
     let cfs_session_name = format!(
@@ -414,12 +414,15 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         Some(ansible_verbosity),
         false,
         None,
+        None,
     );
 
-    log::debug!("Session:\n{:#?}", session);
+    log::info!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp =
         shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, &session).await;
+
+    log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),
@@ -428,8 +431,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             std::process::exit(1);
         }
     };
-
-    log::debug!("CFS session response:\n {:#?}", cfs_session_resp);
 
     Ok(String::from(cfs_session_name))
 

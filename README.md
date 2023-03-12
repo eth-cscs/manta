@@ -22,11 +22,12 @@ Manta aggregates information from multiple sources:
 - List and filter CFS sessions based on cluster name or session name
 - List and filter BOS session templates based on cluster name or session name
 - List nodes in HSM groups
-- Create CFS session out of a repository
+- Create CFS configuration and session (target dynamic) from local repository
+- Create CFS configuration and session (target image) from CSCS SAT input file
 - Watch logs of a CFS session
-- Open an interactive session to a node console using remote's terminal and shell
+- Connect to a node's console
 - Power On/Off or restart nodes individually, in a list or per cluster
-- Restrict operations to nodes belonging to HSM group
+- Restrict operations to nodes belonging to a specific HSM group
 - Filter information to a HSM group
 
 ## Configuration
@@ -48,6 +49,7 @@ hsm_group = "psitds"
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
 |RUST_LOG|no|env|log details/verbosity|info|
+|base_image_id|yes|config file|image id used as target group member for CFS sessions target definition image|a897aa21-0218-4d07-aefb-13a4c15ccb65|
 |socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
 |gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|

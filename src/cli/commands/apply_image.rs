@@ -13,6 +13,7 @@ pub async fn exec(
     cli_apply_image: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
+    base_image_id: &String,
     // hsm_group: Option<&String>
 ) {
     let mut cfs_configuration;
@@ -74,7 +75,7 @@ pub async fn exec(
 
     let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
 
-    let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
+    let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0], base_image_id);
 
     // Rename session name
     cfs_session.name = cfs_session.name.replace("__DATE__", &timestamp);
