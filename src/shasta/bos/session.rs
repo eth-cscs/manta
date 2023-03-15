@@ -1,50 +1,61 @@
 pub mod http_client {
 
-    use serde_json::Value;
+    use serde_json::{Value, json};
 
-    // pub async fn post(shasta_token: &str, shasta_base_url: &str, bos_template: BosTemplate) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    use crate::shasta::bos::template::BosTemplate;
 
-    //     log::debug!("Bos template:\n{:#?}", bos_template);
+    pub async fn post(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        bos_template_name: &String,
+        operation: &str,
+        limit: Option<&String>,
+    ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
 
-    //     // // socks5 proxy
-    //     // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-    //     // // rest client create new cfs sessions
-    //     // let client = reqwest::Client::builder()
-    //     //     .danger_accept_invalid_certs(true)
-    //     //     .proxy(socks5proxy)
-    //     //     .build()?;
+        // // rest client create new cfs sessions
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
 
-    //     let client;
+        let client;
 
-    //     let client_builder = reqwest::Client::builder()
-    //         .danger_accept_invalid_certs(true);
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
 
-    //     // Build client
-    //     if std::env::var("SOCKS5").is_ok() {
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
-    //         // socks5 proxy
-    //         let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
 
-    //         // rest client to authenticate
-    //         client = client_builder.proxy(socks5proxy).build()?;
-    //     } else {
-    //         client = client_builder.build()?;
-    //     }
+        let resp = client
+            .post(format!("{}{}", shasta_base_url, "/bos/v1/session"))
+            .bearer_auth(shasta_token)
+            .json(&json!({
+                "operation": operation,
+                "templateName": bos_template_name,
+                "limit": limit
+            }))
+            .send()
+            .await?;
 
-    //     let resp = client
-    //         .post(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
-    //         .bearer_auth(shasta_token)
-    //         .json(&bos_template)
-    //         .send()
-    //         .await?;
-
-    //     if resp.status().is_success() {
-    //         Ok(serde_json::from_str(&resp.text().await?)?)
-    //     } else {
-    //         Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
-    //     }
-    // }
+        if resp.status().is_success() {
+            Ok(serde_json::from_str(&resp.text().await?)?)
+        } else {
+            Err(resp.json::<Value>().await?["detail"]
+                .as_str()
+                .unwrap()
+                .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        }
+    }
 
     pub async fn get(
         shasta_token: &str,
@@ -152,4 +163,3 @@ pub mod utils {
         println!("{table}");
     }
 }
-

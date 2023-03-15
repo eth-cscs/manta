@@ -18,55 +18,35 @@ pub struct Link {
 // }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Property1 {
+pub struct Property {
     #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
+    pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    boot_ordinal: Option<String>,
+    pub boot_ordinal: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    shutdown_ordinal: Option<String>,
+    pub shutdown_ordinal: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    path: Option<String>,
+    pub path: Option<String>,
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    type_prop: Option<String>,
+    pub type_prop: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    etag: Option<String>,
+    pub etag: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    kernel_parameters: Option<String>,
+    pub kernel_parameters: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    network: Option<String>,
+    pub network: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    node_list: Option<Vec<String>>,
+    pub node_list: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    node_roles_groups: Option<Vec<String>>,
+    pub node_roles_groups: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    node_groups: Option<Vec<String>>,
+    pub node_groups: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rootfs_provider: Option<String>,
+    pub rootfs_provider: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    rootfs_provider_passthrough: Option<String>,
+    pub rootfs_provider_passthrough: Option<String>,
 }
-
-// impl Default for Property1 {
-//     fn default() -> Self {
-//         Self {
-//             name: None,
-//             boot_ordinal: None,
-//             shutdown_ordinal: None,
-//             path: None,
-//             type_prop: None,
-//             etag: None,
-//             kernel_parameters: None,
-//             network: None,
-//             node_list: None,
-//             node_roles_groups: None,
-//             node_groups: None,
-//             rootfs_provider: None,
-//             rootfs_provider_passthrough: None
-//         }
-//     }
-// }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Property2 {
@@ -99,140 +79,114 @@ pub struct Property2 {
     rootfs_provider_passthrough: Option<String>,
 }
 
-// impl Default for Property2 {
-//     fn default() -> Self {
-//         Self {
-//             name: None,
-//             boot_ordinal: None,
-//             shutdown_ordinal: None,
-//             path: None,
-//             type_prop: None,
-//             etag: None,
-//             kernel_parameters: None,
-//             network: None,
-//             node_list: None,
-//             node_roles_groups: None,
-//             node_groups: None,
-//             rootfs_provider: None,
-//             rootfs_provider_passthrough: None
-//         }
-//     }
-// }
-
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct BootSet {
     #[serde(skip_serializing_if = "Option::is_none")]
-    property1: Option<Property1>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    property2: Option<Property2>,
+    pub compute: Option<Property>,
+    /* #[serde(skip_serializing_if = "Option::is_none")]
+    property2: Option<Property2>, */
 }
-
-// impl Default for BootSet {
-//     fn default() -> Self {
-//         Self {
-//             property1: None,
-//             property2: None
-//         }
-//     }
-// }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Cfs {
     #[serde(skip_serializing_if = "Option::is_none")]
-    clone_url: Option<String>,
+    pub clone_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    branch: Option<String>,
+    pub branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    commit: Option<String>,
+    pub commit: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    playbook: Option<String>,
+    pub playbook: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    configuration: Option<String>,
+    pub configuration: Option<String>,
 }
-
-// impl Default for Cfs {
-//     fn default() -> Self {
-//         Self {
-//             clone_url: None,
-//             branch: None,
-//             commit: None,
-//             playbook: None,
-//             configuration: None
-//         }
-//     }
-// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BosTemplate {
-    name: String,
+    pub name: String,
     #[serde(rename = "templateUrl")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    template_url: Option<String>,
+    pub template_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    cfs_url: Option<String>,
+    pub cfs_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    cfs_branch: Option<String>,
+    pub cfs_branch: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    enable_cfs: Option<bool>,
+    pub enable_cfs: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    cfs: Option<Cfs>,
+    pub cfs: Option<Cfs>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    partition: Option<String>,
+    pub partition: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    boot_sets: Option<BootSet>,
+    pub boot_sets: Option<BootSet>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    links: Option<Vec<Link>>,
+    pub links: Option<Vec<Link>>,
+}
+
+impl BosTemplate {
+
+    /* pub fn from_sat_file_serde_yaml(bos_template_yaml: &serde_yaml::Value) -> Self {
+        
+        BosTemplate
+    } */
 }
 
 pub mod http_client {
 
     use serde_json::Value;
 
-    // pub async fn post(shasta_token: &str, shasta_base_url: &str, bos_template: BosTemplate) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    use super::BosTemplate;
 
-    //     log::debug!("Bos template:\n{:#?}", bos_template);
+    pub async fn post(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        bos_template: &BosTemplate,
+    ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+        log::debug!("Bos template:\n{:#?}", bos_template);
 
-    //     // // socks5 proxy
-    //     // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
+        // // socks5 proxy
+        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
 
-    //     // // rest client create new cfs sessions
-    //     // let client = reqwest::Client::builder()
-    //     //     .danger_accept_invalid_certs(true)
-    //     //     .proxy(socks5proxy)
-    //     //     .build()?;
+        // // rest client create new cfs sessions
+        // let client = reqwest::Client::builder()
+        //     .danger_accept_invalid_certs(true)
+        //     .proxy(socks5proxy)
+        //     .build()?;
 
-    //     let client;
+        let client;
 
-    //     let client_builder = reqwest::Client::builder()
-    //         .danger_accept_invalid_certs(true);
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
 
-    //     // Build client
-    //     if std::env::var("SOCKS5").is_ok() {
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
-    //         // socks5 proxy
-    //         let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
 
-    //         // rest client to authenticate
-    //         client = client_builder.proxy(socks5proxy).build()?;
-    //     } else {
-    //         client = client_builder.build()?;
-    //     }
+        let resp = client
+            .post(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
+            .bearer_auth(shasta_token)
+            .json(&bos_template)
+            .send()
+            .await?;
 
-    //     let resp = client
-    //         .post(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
-    //         .bearer_auth(shasta_token)
-    //         .json(&bos_template)
-    //         .send()
-    //         .await?;
-
-    //     if resp.status().is_success() {
-    //         Ok(serde_json::from_str(&resp.text().await?)?)
-    //     } else {
-    //         Err(resp.json::<Value>().await?["detail"].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
-    //     }
-    // }
+        if resp.status().is_success() {
+            let response = &resp.text().await?;
+            Ok(serde_json::from_str(response)?)
+        } else {
+            eprintln!("FAIL request: {:#?}", resp);
+            let response: String = resp.text().await?;
+            eprintln!("FAIL response: {:#?}", response);
+            Err(response.into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        }
+    }
 
     pub async fn get(
         shasta_token: &str,

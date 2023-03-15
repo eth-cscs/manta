@@ -9,20 +9,19 @@ use std::path::PathBuf;
 /// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
 /// match with a git repo name after concatenating it with "-config-management" (eg: layer name
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
+/// Return CFS configuration name
 pub async fn exec(
     cli_apply_configuration: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-) {
+    timestamp: &String,
+) -> String {
     // * Parse input params
     let path_buf: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf.file_name().unwrap()).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-    // println!("\n### sat_input_file_yaml:\n{:#?}", sat_input_file_yaml);
-
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
-    // println!("\n### configurations:\n{:#?}", configurations);
 
     if configurations_yaml.is_empty() {
         eprintln!("The input file has no configurations!");
@@ -36,32 +35,42 @@ pub async fn exec(
 
     let configuration_yaml = &configurations_yaml[0];
 
-    let cfs_configuration =
+    let mut create_cfs_configuration_payload =
         configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
-    let configuration_name = cfs_configuration.name.replace(
-        "__DATE__",
-        &chrono::Utc::now().format("%Y%m%d%H%M%S").to_string(),
+    create_cfs_configuration_payload.name = create_cfs_configuration_payload
+        .name
+        .replace("__DATE__", timestamp);
+
+    log::info!(
+        "CFS configuration creation payload:\n{:#?}",
+        create_cfs_configuration_payload
     );
 
-    log::debug!("{:#?}", cfs_configuration);
-
-    // println!("\n### images:\n{:#?}", images);
-
-    let configuration = crate::shasta::cfs::configuration::http_client::put(
+    let create_cfs_configuration_resp = crate::shasta::cfs::configuration::http_client::put(
         shasta_token,
         shasta_base_url,
-        &cfs_configuration,
-        &configuration_name,
+        &create_cfs_configuration_payload,
+        &create_cfs_configuration_payload.name,
     )
-    .await
-    .unwrap();
+    .await;
 
-    println!(
-        "{}",
-        configuration["name"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string()
+    log::info!(
+        "CFS configuration creation response:\n{:#?}",
+        create_cfs_configuration_resp
     );
+
+    if create_cfs_configuration_resp.is_err() {
+        log::error!("CFS configuration creation failed");
+        std::process::exit(1);
+    }
+
+    let cfs_configuration_name = create_cfs_configuration_resp.unwrap()["name"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    log::info!("CFS configuration name: {}", cfs_configuration_name);
+
+    cfs_configuration_name
 }

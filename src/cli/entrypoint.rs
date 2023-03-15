@@ -1,4 +1,5 @@
 use clap::{arg, command, value_parser, ArgAction, ArgGroup, ArgMatches, Command};
+use k8s_openapi::chrono;
 
 use std::path::PathBuf;
 
@@ -7,7 +8,7 @@ use crate::cli::commands::{
     get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
-use super::commands::apply_image;
+use super::commands::{apply_cluster, apply_image};
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
@@ -197,8 +198,8 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
     let apply_image = Command::new("image")
         .aliases(["i", "img", "imag"])
         .arg_required_else_help(true)
-        .about("Creates a CFS image")
-        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration to use to create the image").value_parser(value_parser!(PathBuf)))
+        .about("Create a CFS configuration and a CFS image")
+        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration and CFS image details").value_parser(value_parser!(PathBuf)))
         /* .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
            .value_parser(value_parser!(PathBuf))) */
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -220,6 +221,30 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
     }; */
 
     apply_image
+}
+
+pub fn subcommand_apply_cluster(hsm_group: Option<&String>) -> Command {
+    let mut apply_cluster = Command::new("cluster")
+        .aliases(["clus"])
+        .arg_required_else_help(true)
+        .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
+        .arg(arg!(-f --file <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
+            .value_parser(["1", "2", "3", "4"])
+            .num_args(1)
+            // .require_equals(true)
+            .default_value("2")
+            .default_missing_value("2"));
+
+    /* match hsm_group {
+        Some(_) => {}
+        None => {
+            apply_cluster =
+                apply_cluster.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true))
+        }
+    }; */
+
+    apply_cluster
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
@@ -306,6 +331,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
+                .subcommand(subcommand_apply_cluster(hsm_group))
                 .subcommand(
                     Command::new("node")
                         .aliases(["n", "nod"])
@@ -375,8 +401,14 @@ pub async fn process_command(
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
-            apply_configuration::exec(cli_apply_configuration, &shasta_token, &shasta_base_url)
-                .await;
+            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+            apply_configuration::exec(
+                cli_apply_configuration,
+                &shasta_token,
+                &shasta_base_url,
+                &timestamp,
+            )
+            .await;
         } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
             apply_session::exec(
                 gitea_token,
@@ -389,9 +421,22 @@ pub async fn process_command(
             )
             .await;
         } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
+            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
             apply_image::exec(
                 vault_base_url,
                 cli_apply_image,
+                &shasta_token,
+                &shasta_base_url,
+                base_image_id,
+                cli_apply_image.get_one::<bool>("watch-logs"),
+                &timestamp,
+                // hsm_group,
+            )
+            .await;
+        } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
+            apply_cluster::exec(
+                vault_base_url,
+                cli_apply_cluster,
                 &shasta_token,
                 &shasta_base_url,
                 base_image_id,

@@ -5,4 +5,5 @@ pub mod capmc;
 pub mod cfs;
 pub mod hsm;
 pub mod nodes;
+pub mod ims;
 pub mod kubernetes;
