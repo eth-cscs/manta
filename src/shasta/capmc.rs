@@ -51,14 +51,23 @@ impl NodeStatus {
 }
 
 pub mod http_client {
+    use core::time;
+    use std::{error::Error, thread};
+
+    use serde_json::Value;
+
+    use crate::shasta::hsm::http_client::get_components_status;
+
+    use self::node_power_off::post;
 
     pub mod node_power_off {
 
-        use std::error::Error;
+        use core::time;
+        use std::{error::Error, thread};
 
         use serde_json::Value;
 
-        use crate::capmc::PowerStatus;
+        use crate::{capmc::PowerStatus, shasta::hsm::http_client::get_components_status};
 
         pub async fn post(
             shasta_token: String,
@@ -105,10 +114,61 @@ pub mod http_client {
                     .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
             }
         }
+        /// Shut down a node
+        /// This is  sync call meaning it won't return untill the target is down
+        pub async fn post_sync(
+            shasta_token: String,
+            shasta_base_url: String,
+            reason: Option<&String>,
+            xnames: Vec<String>,
+            force: bool,
+        ) -> Result<Value, Box<dyn Error>> {
+            // Create CAPMC operation shutdown
+            let capmc_shutdown_nodes_resp = post(
+                shasta_token.clone(),
+                shasta_base_url.clone(),
+                reason,
+                xnames.clone(),
+                force,
+            )
+            .await;
+
+            log::info!("Shutdown nodes resp:\n{:#?}", capmc_shutdown_nodes_resp);
+
+            // Check Nodes are shutdown
+            let mut nodes_status =
+                get_components_status(&shasta_token, &shasta_base_url, &xnames).await;
+
+            log::info!("nodes_status:\n{:#?}", nodes_status);
+
+            // Check all nodes are OFF
+            let mut i = 0;
+            while i < 60
+                && !nodes_status.as_ref().unwrap()["Components"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|node| node["State"].as_str().unwrap().to_string().eq("Off"))
+            {
+                println!("Waititing nodes to shutdown ...",);
+                thread::sleep(time::Duration::from_secs(2));
+                i += 1;
+                log::info!("nodes_status:\n{:#?}", nodes_status);
+                nodes_status = crate::shasta::hsm::http_client::get_components_status(
+                    &shasta_token,
+                    &shasta_base_url,
+                    &xnames,
+                )
+                .await;
+            }
+
+            log::info!("node status resp:\n{:#?}", nodes_status);
+
+            capmc_shutdown_nodes_resp
+        }
     }
 
     pub mod node_power_on {
-
         use std::error::Error;
 
         use serde_json::Value;
