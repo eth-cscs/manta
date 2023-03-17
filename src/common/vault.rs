@@ -2,20 +2,14 @@ pub mod http_client {
 
     use serde_json::{json, Value};
 
-    use crate::config;
-
-    pub async fn auth() -> core::result::Result<String, Box<dyn std::error::Error>> {
-        let settings = config::get("config");
-
-        let vault_base_url = settings.get::<String>("vault_base_url").unwrap(); // TODO: move this to an env (which is readden from a config file?)
-
-        // to get role-id run cli --> vault read auth/approle/role/manta/role-id
-        let role_id = settings.get::<String>("vault_role_id").unwrap(); // TODO: move this to an env (which is readden from a config file?)
-
+    pub async fn auth(
+        vault_base_url: &String,
+        vault_role_id: &String,
+    ) -> core::result::Result<String, Box<dyn std::error::Error>> {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
-        let mut api_url = vault_base_url;
+        let mut api_url = vault_base_url.clone();
         api_url.push_str("/v1/auth/approle/login");
 
         log::debug!("Accessing/login to {}", api_url);
@@ -23,7 +17,7 @@ pub mod http_client {
         let resp = client
             .post(api_url.clone())
             // .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
-            .json(&json!({ "role_id": role_id }))
+            .json(&json!({ "role_id": vault_role_id }))
             .send()
             .await?;
 
@@ -70,9 +64,10 @@ pub mod http_client {
     }
 
     pub async fn fetch_shasta_vcs_token(
-        vault_base_url: &str,
+        vault_base_url: &String,
+        vault_role_id: &String
     ) -> core::result::Result<String, Box<dyn std::error::Error>> {
-        let vault_token = auth().await;
+        let vault_token = auth(vault_base_url, vault_role_id).await;
 
         match vault_token {
             Ok(_) => {
@@ -88,9 +83,10 @@ pub mod http_client {
     }
 
     pub async fn fetch_shasta_k8s_secrets(
-        vault_base_url: &str,
+        vault_base_url: &String,
+        vault_role_id: &String
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-        let vault_token = auth().await;
+        let vault_token = auth(vault_base_url, vault_role_id).await;
 
         match vault_token {
             Ok(_) => {

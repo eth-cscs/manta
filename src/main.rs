@@ -44,6 +44,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     let vault_base_url = settings.get::<String>("vault_base_url").unwrap();
+    let vault_role_id = settings.get::<String>("vault_role_id").unwrap();
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     match settings.get::<String>("socks5_proxy") {
@@ -69,7 +70,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
 
-    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url)
+    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url, &vault_role_id)
         .await
         .unwrap();
 
@@ -80,6 +81,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         shasta_token,
         shasta_base_url,
         &vault_base_url,
+        &vault_role_id,
         &gitea_token,
         &gitea_base_url,
         hsm_group,

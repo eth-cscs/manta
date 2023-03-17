@@ -12,6 +12,7 @@ use crate::shasta::cfs::{configuration, session::CfsSession};
 /// Return CFS session name
 pub async fn exec(
     vault_base_url: &String,
+    vault_role_id: &String,
     cli_apply_image: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
@@ -108,7 +109,7 @@ pub async fn exec(
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
-        crate::cli::commands::log::session_logs(vault_base_url, &cfs_session.name, None)
+        crate::cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None)
             .await
             .unwrap();
     }

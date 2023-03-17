@@ -369,6 +369,7 @@ pub async fn process_command(
     shasta_token: String,
     shasta_base_url: String,
     vault_base_url: &String,
+    vault_role_id: &String,
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
@@ -414,6 +415,7 @@ pub async fn process_command(
                 gitea_token,
                 gitea_base_url,
                 vault_base_url,
+                vault_role_id,
                 hsm_group,
                 cli_apply_session,
                 &shasta_token,
@@ -424,6 +426,7 @@ pub async fn process_command(
             let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
             apply_image::exec(
                 vault_base_url,
+                vault_role_id,
                 cli_apply_image,
                 &shasta_token,
                 &shasta_base_url,
@@ -436,6 +439,7 @@ pub async fn process_command(
         } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
             apply_cluster::exec(
                 vault_base_url,
+                vault_role_id,
                 cli_apply_cluster,
                 &shasta_token,
                 &shasta_base_url,
@@ -461,7 +465,7 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-        log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url).await;
+        log::exec(cli_log, &shasta_token, &shasta_base_url, vault_base_url, vault_role_id).await;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
         console::exec(
             hsm_group,
@@ -469,6 +473,7 @@ pub async fn process_command(
             &shasta_token,
             &shasta_base_url,
             vault_base_url,
+            vault_role_id,
         )
         .await;
     }

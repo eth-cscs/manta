@@ -25,6 +25,7 @@ pub async fn exec(
     shasta_token: &String,
     shasta_base_url: &String,
     vault_base_url: &String,
+    vault_role_id: &String,
 ) -> () {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
@@ -75,7 +76,7 @@ pub async fn exec(
         included = xnames.clone();
     }
 
-    connect_to_console(included.iter().next().unwrap(), vault_base_url)
+    connect_to_console(included.iter().next().unwrap(), vault_base_url, vault_role_id)
         .await
         .unwrap();
 }
@@ -83,10 +84,11 @@ pub async fn exec(
 pub async fn connect_to_console(
     xname: &String,
     vault_base_url: &String,
+    vault_role_id: &String,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let client = get_k8s_client_programmatically(&vault_base_url).await?;
+    let client = get_k8s_client_programmatically(vault_base_url, vault_role_id).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 

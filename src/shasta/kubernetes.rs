@@ -16,11 +16,12 @@ use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
 pub async fn get_k8s_client_programmatically(
     vault_base_url: &String,
+    vault_role_id: &String,
 ) -> Result<kube::Client, Box<dyn Error>> {
     let settings = crate::config::get("config");
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
 
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(&vault_base_url).await?;
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(&vault_base_url, vault_role_id).await?;
 
     let mut shasta_cluster = Cluster {
         server: k8s_api_url,

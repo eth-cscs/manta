@@ -19,6 +19,7 @@ pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
     vault_base_url: &String,
+    vault_role_id: &String,
     hsm_group: Option<&String>,
     cli_apply_session: &ArgMatches,
     shasta_token: &String,
@@ -171,6 +172,7 @@ pub async fn exec(
         log::info!("Fetching logs ...");
         crate::cli::commands::log::session_logs(
             vault_base_url,
+            vault_role_id,
             cfs_session_name.unwrap().as_str(),
             None,
         )

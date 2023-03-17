@@ -11,6 +11,7 @@ use super::apply_image;
 
 pub async fn exec(
     vault_base_url: &String,
+    vault_role_id: &String,
     cli_apply_image: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
@@ -39,6 +40,7 @@ pub async fn exec(
     // Create CFS configuration and image
     let cfs_session_name = apply_image::exec(
         vault_base_url,
+        vault_role_id,
         cli_apply_image,
         shasta_token,
         shasta_base_url,
@@ -90,16 +92,17 @@ pub async fn exec(
 
     // Wait for CFS session target image to finish
     let mut i = 0;
-    let max = 720; // Max ammount of attempts to check if CFS session has ended
+    let max = 1800; // Max ammount of attempts to check if CFS session has ended
     while !cfs_sessions_details.iter().next().unwrap()["status"]["session"]["status"].eq("complete")
         && i < max
     {
-        println!(
-            "CFS session {} running. Checking again in 5 secs ({}/{}) ...",
+        print!(
+            "\rCFS session {} running. Checking again in 2 secs ({}/{}) ...",
             cfs_session_name, i, max
         );
 
-        thread::sleep(time::Duration::from_secs(5));
+        thread::sleep(time::Duration::from_secs(2));
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
 
         cfs_sessions_details = session::http_client::get(
             shasta_token,
@@ -114,6 +117,8 @@ pub async fn exec(
 
         i += 1;
     }
+
+    println!("");
 
     log::info!("Get CFS session details:\n{:#?}", cfs_sessions_details);
 
@@ -152,16 +157,19 @@ pub async fn exec(
 
     // Wait till image details are available
     let mut i = 0;
-    let max = 20; // Max ammount of attempts to check if IMS image details are available
+    let max = 50; // Max ammount of attempts to check if IMS image details are available
     while image_details.is_err() && i < max {
-        eprintln!(
-            "Could not fetch image details for result_id {}. Trying again in 2 seconds ({}/{}) ...",
+        eprint!(
+            "\rCould not fetch image details for result_id {}. Trying again in 2 seconds ({}/{}) ...",
             cfs_session_result_id, i, max
         );
-        thread::sleep(time::Duration::from_secs(5));
+        thread::sleep(time::Duration::from_secs(2));
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
 
         i += 1;
     }
+
+    println!();
 
     if image_details.is_err() {
         eprintln!("Could not fetch image details. Exit");
