@@ -119,18 +119,21 @@ pub async fn get_container_logs(
     let mut pods = pods_api.list(&params).await?;
 
     let mut i = 0;
-
+    let max = 10;
     // Waiting for pod to start
-    while pods.items.is_empty() && i < 10 {
-        println!(
-            "Pod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of 10",
+    while pods.items.is_empty() && i <= max {
+        print!(
+            "\rPod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of {}",
             cfs_session_name,
-            i + 1
+            i + 1,
+            max
         );
         i += 1;
         thread::sleep(time::Duration::from_secs(2));
         pods = pods_api.list(&params).await?;
     }
+
+    println!();
 
     if pods.items.is_empty() {
         eprintln!(
@@ -172,13 +175,14 @@ pub async fn get_container_logs(
         let mut container_state = get_container_state(cfs_session_pod, &container_name);
 
         let mut i = 0;
+        let max = 10;
 
         // Waiting for container ansible-x to start
-        while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
-            println!(
-                "Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10",
+        while container_state.as_ref().unwrap().waiting.is_some() && i <= max {
+            print!(
+                "\rWaiting for container {} to be ready. Checking again in 2 seconds. Attempt {} of {}",
                 container_name,
-                i + 1
+                i + 1, max
             );
             i += 1;
             thread::sleep(time::Duration::from_secs(2));
@@ -186,6 +190,8 @@ pub async fn get_container_logs(
             container_state = get_container_state(&pods.items[0], &container_name);
             log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
         }
+
+        println!();
 
         if container_state.as_ref().unwrap().waiting.is_some() {
             eprintln!("Container {} not ready. Aborting operation", container_name);
@@ -245,16 +251,18 @@ pub async fn get_container_logs(
             let mut container_state = get_container_state(cfs_session_pod, &ansible_container.name);
 
             let mut i = 0;
-
+            let max = 10;
             // Waiting for container ansible-x to start
-            while container_state.as_ref().unwrap().waiting.is_some() && i < 10 {
-                println!("Waiting for container {} to be ready. Checking again in 2 secs. Attempt {} of 10", ansible_container.name, i + 1);
+            while container_state.as_ref().unwrap().waiting.is_some() && i <= max {
+                print!("\rWaiting for container {} to be ready. Checking again in 2 secs. Attempt {} of {}", ansible_container.name, i + 1, max);
                 i += 1;
                 thread::sleep(time::Duration::from_secs(2));
                 pods = pods_api.list(&params).await?;
                 container_state = get_container_state(&pods.items[0], &ansible_container.name);
                 log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
             }
+
+            println!();
 
             if container_state.as_ref().unwrap().waiting.is_some() {
                 eprintln!(

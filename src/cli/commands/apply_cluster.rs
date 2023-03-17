@@ -94,11 +94,11 @@ pub async fn exec(
     let mut i = 0;
     let max = 1800; // Max ammount of attempts to check if CFS session has ended
     while !cfs_sessions_details.iter().next().unwrap()["status"]["session"]["status"].eq("complete")
-        && i < max
+        && i <= max
     {
         print!(
-            "\rCFS session {} running. Checking again in 2 secs ({}/{}) ...",
-            cfs_session_name, i, max
+            "\rCFS session {} running. Checking again in 2 secs. Attempt {} of {}",
+            cfs_session_name, i + 1, max
         );
 
         thread::sleep(time::Duration::from_secs(2));
@@ -158,10 +158,10 @@ pub async fn exec(
     // Wait till image details are available
     let mut i = 0;
     let max = 50; // Max ammount of attempts to check if IMS image details are available
-    while image_details.is_err() && i < max {
+    while image_details.is_err() && i <= max {
         eprint!(
-            "\rCould not fetch image details for result_id {}. Trying again in 2 seconds ({}/{}) ...",
-            cfs_session_result_id, i, max
+            "\rCould not fetch image details for result_id {}. Trying again in 2 seconds. Attempt {} of {}",
+            cfs_session_result_id, i + 1, max
         );
         thread::sleep(time::Duration::from_secs(2));
         std::io::Write::flush(&mut std::io::stdout()).unwrap();
@@ -314,41 +314,6 @@ pub async fn exec(
         true,
     )
     .await;
-
-    /* log::info!("Shutdown nodes resp:\n{:#?}", capmc_shutdown_nodes_resp);
-
-    // Check Nodes are shutdown
-    let mut nodes_status = crate::shasta::hsm::http_client::get_components_status(
-        shasta_token,
-        shasta_base_url,
-        &nodes,
-    )
-    .await;
-
-    log::info!("nodes_status:\n{:#?}", nodes_status);
-
-    // Check all nodes are OFF
-    let mut i = 0;
-    while i < 60
-        && !nodes_status.as_ref().unwrap()["Components"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|node| node["State"].as_str().unwrap().to_string().eq("Off"))
-    {
-        println!("Waititing nodes to shutdown ...",);
-        thread::sleep(time::Duration::from_secs(2));
-        i += 1;
-        log::info!("nodes_status:\n{:#?}", nodes_status);
-        nodes_status = crate::shasta::hsm::http_client::get_components_status(
-            shasta_token,
-            shasta_base_url,
-            &nodes,
-        )
-        .await;
-    }
-
-    log::info!("node status resp:\n{:#?}", nodes_status); */
 
     // Create BOS session operation start
     let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(

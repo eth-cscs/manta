@@ -206,8 +206,6 @@ pub mod http_client {
         let url_params: Vec<_> = xnames.iter().map(|xname| ("id", xname)).collect();
         let api_url = Url::parse_with_params(&format!("{}/smd/hsm/v2/State/Components", shasta_base_url), &url_params)?;
 
-        println!("api_url: {}", api_url);
-
         let resp = client
             .get(api_url)
             .header("Authorization", format!("Bearer {}", shasta_token))

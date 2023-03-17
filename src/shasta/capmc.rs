@@ -143,14 +143,15 @@ pub mod http_client {
 
             // Check all nodes are OFF
             let mut i = 0;
-            while i < 60
+            let max = 60;
+            while i <= max
                 && !nodes_status.as_ref().unwrap()["Components"]
                     .as_array()
                     .unwrap()
                     .iter()
                     .all(|node| node["State"].as_str().unwrap().to_string().eq("Off"))
             {
-                println!("Waititing nodes to shutdown ...",);
+                print!("\rWaiting nodes to shutdown. Trying again in 2 seconds. Attempt {} of {}", i + 1, max);
                 thread::sleep(time::Duration::from_secs(2));
                 i += 1;
                 log::info!("nodes_status:\n{:#?}", nodes_status);
@@ -161,6 +162,8 @@ pub mod http_client {
                 )
                 .await;
             }
+
+            println!();
 
             log::info!("node status resp:\n{:#?}", nodes_status);
 

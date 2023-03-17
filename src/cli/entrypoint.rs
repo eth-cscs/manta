@@ -167,7 +167,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             .value_parser(value_parser!(PathBuf)))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
-            .value_parser(["1", "2", "3", "4"])
+            .value_parser(["0", "1", "2", "3", "4"])
             .num_args(1)
             // .require_equals(true)
             .default_value("2")
