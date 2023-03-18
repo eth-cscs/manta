@@ -5,8 +5,8 @@ use crate::shasta::cfs::session as shasta_cfs_session;
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_session: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
 ) {
     let session_name = cli_get_session.get_one::<String>("name");
 

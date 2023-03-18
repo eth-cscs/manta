@@ -24,7 +24,7 @@ pub async fn exec(
     cli_console: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
 ) {
     let included: HashSet<String>;
@@ -83,7 +83,7 @@ pub async fn exec(
 
 pub async fn connect_to_console(
     xname: &String,
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);

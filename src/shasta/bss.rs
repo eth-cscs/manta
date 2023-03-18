@@ -10,7 +10,7 @@ pub mod http_client {
     pub async fn get_boot_params(
         shasta_token: &String,
         shasta_base_url: &String,
-        xnames: &Vec<String>,
+        xnames: &[String],
     ) -> Result<Vec<Value>, Box<dyn Error>> {
         let client;
 

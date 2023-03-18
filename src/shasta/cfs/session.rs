@@ -111,7 +111,7 @@ impl CfsSession {
             cfs_session.target.groups = Some(target_groups);
         }
 
-        return cfs_session;
+        cfs_session
     }
 
     pub fn from_sat_file_serde_yaml(
@@ -169,7 +169,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/cfs/v2/sessions");
 
         let resp = client
@@ -214,7 +214,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/cfs/v2/sessions");
 
         let mut request_payload = Vec::new();
@@ -246,11 +246,8 @@ pub mod http_client {
             )
             .await;
 
-            let hsm_group_nodes;
-
-            if hsm_group_resp.is_ok() {
-                hsm_group_nodes =
-                    crate::shasta::hsm::utils::get_member_ids(&hsm_group_resp.unwrap());
+            let hsm_group_nodes = if hsm_group_resp.is_ok() {
+                crate::shasta::hsm::utils::get_member_ids(&hsm_group_resp.unwrap())
             } else {
                 eprintln!(
                     "No HSM group {}{}{} found!",
@@ -259,7 +256,7 @@ pub mod http_client {
                     color::Fg(color::Reset)
                 );
                 std::process::exit(1);
-            }
+            };
 
             // Checks either target.groups contains hsm_group_name or ansible.limit is a subset of
             // hsm_group.members.ids
@@ -278,7 +275,7 @@ pub mod http_client {
                     || cfs_session["ansible"]["limit"]
                         .as_str()
                         .unwrap_or("")
-                        .split(",")
+                        .split(',')
                         .into_iter()
                         .map(|node| node.trim().to_string())
                         .collect::<HashSet<_>>()

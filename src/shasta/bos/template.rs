@@ -126,9 +126,8 @@ pub struct BosTemplate {
 }
 
 impl BosTemplate {
-
     /* pub fn from_sat_file_serde_yaml(bos_template_yaml: &serde_yaml::Value) -> Self {
-        
+
         BosTemplate
     } */
 }
@@ -212,7 +211,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/bos/v1/sessiontemplate");
 
         let resp = client
@@ -297,11 +296,10 @@ pub mod utils {
                 let uan_node_groups_json =
                     bos_template["boot_sets"]["uan"]["node_groups"].as_array();
 
-                if uan_node_groups_json.is_none() {
-                    uan_target_groups = "".to_string();
+                if let Some(uan_node_groups_json_aux) = uan_node_groups_json {
+                    uan_target_groups = String::from(uan_node_groups_json_aux[0].as_str().unwrap());
                 } else {
-                    uan_target_groups =
-                        String::from(uan_node_groups_json.unwrap()[0].as_str().unwrap());
+                    uan_target_groups = "".to_string();
                 }
 
                 for (i, _) in uan_node_groups_json.iter().enumerate().skip(1) {
@@ -324,11 +322,11 @@ pub mod utils {
                 let compute_node_groups_json =
                     bos_template["boot_sets"]["compute"]["node_groups"].as_array();
 
-                if compute_node_groups_json.is_none() {
-                    compute_target_groups = "".to_string();
-                } else {
+                if let Some(compute_node_groups_json_aux) = compute_node_groups_json {
                     compute_target_groups =
-                        String::from(compute_node_groups_json.unwrap()[0].as_str().unwrap());
+                        String::from(compute_node_groups_json_aux[0].as_str().unwrap());
+                } else {
+                    compute_target_groups = "".to_string();
                 }
 
                 for (i, _) in compute_node_groups_json.iter().enumerate().skip(1) {

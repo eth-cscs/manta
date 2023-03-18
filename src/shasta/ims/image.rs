@@ -8,7 +8,7 @@ pub mod http_client {
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
-        image_id: &String,
+        image_id: &str,
     ) -> Result<Value, Box<dyn Error>> {
         let client;
 
@@ -25,7 +25,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/ims/v3/images/");
         api_url.push_str(image_id);
 

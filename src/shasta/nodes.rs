@@ -16,7 +16,7 @@ pub fn nodes_to_string(nodes: &Vec<Value>, limit: usize) -> String {
 
                 members.push_str(",\n");
             } else {
-                members.push_str(",");
+                members.push(',');
             }
 
             members.push_str(nodes[i].as_str().unwrap());

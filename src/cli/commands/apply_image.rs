@@ -10,7 +10,7 @@ use crate::shasta::cfs::{configuration, session::CfsSession};
 /// placeholder is missing in the session name
 /// Return CFS session name
 pub async fn exec(
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     cli_apply_image: &ArgMatches,
     shasta_token: &str,

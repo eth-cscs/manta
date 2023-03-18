@@ -5,8 +5,8 @@ use crate::shasta::bos::template as bos_template;
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_template: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
 ) {
     let limit_number;
 

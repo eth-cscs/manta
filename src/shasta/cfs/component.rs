@@ -24,7 +24,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/cfs/v2/components/");
         api_url.push_str(component_id);
 

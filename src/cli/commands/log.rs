@@ -15,9 +15,9 @@ use clap::ArgMatches;
 
 pub async fn exec(
     cli_log: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-    vault_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    vault_base_url: &str,
     vault_role_id: &String,
 ) {
     let logging_session_name = cli_log.get_one::<String>("SESSION");
@@ -40,7 +40,7 @@ pub async fn exec(
 pub async fn session_logs_proxy(
     shasta_token: &str,
     shasta_base_url: &str,
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     cluster_name: Option<&String>,
     session_name: Option<&String>,
@@ -73,7 +73,7 @@ pub async fn session_logs_proxy(
 }
 
 pub async fn session_logs(
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     cfs_session_name: &str,
     layer_id: Option<&u8>,

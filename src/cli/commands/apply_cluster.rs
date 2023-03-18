@@ -10,7 +10,7 @@ use crate::shasta::cfs::session;
 use super::apply_image;
 
 pub async fn exec(
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     cli_apply_image: &ArgMatches,
     shasta_token: &String,

@@ -286,7 +286,7 @@ pub mod http_client {
 
         pub async fn post(
             shasta_token: &String,
-            shasta_base_url: &String,
+            shasta_base_url: &str,
             xnames: &Vec<String>,
         ) -> core::result::Result<Value, Box<dyn Error>> {
             log::info!("Checking nodes status: {:?}", xnames);
@@ -309,7 +309,9 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
 
-            let mut url_api = shasta_base_url.clone();
+            let mut url_api = shasta_base_url.to_owned(); // I could also use to_string here, not
+                                                          // sure why to_owned is better (something
+                                                          // to do with serialization) need to read https://doc.rust-lang.org/std/fmt/trait.Display.html
             url_api.push_str("/capmc/capmc/v1/get_xname_status");
 
             let resp = client

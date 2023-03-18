@@ -212,7 +212,7 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
 }
 
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
-    let apply_cluster = Command::new("cluster")
+    Command::new("cluster")
         .aliases(["clus"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
@@ -222,17 +222,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
             .num_args(1)
             // .require_equals(true)
             .default_value("2")
-            .default_missing_value("2"));
-
-    /* match hsm_group {
-        Some(_) => {}
-        None => {
-            apply_cluster =
-                apply_cluster.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true))
-        }
-    }; */
-
-    apply_cluster
+            .default_missing_value("2"))
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
@@ -356,7 +346,7 @@ pub async fn process_command(
     cli_root: ArgMatches,
     shasta_token: String,
     shasta_base_url: String,
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     gitea_token: &str,
     gitea_base_url: &str,

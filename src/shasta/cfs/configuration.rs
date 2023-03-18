@@ -124,14 +124,14 @@ impl CfsConfiguration {
         let mut cfs_configuration = configuration::CfsConfiguration::new();
         cfs_configuration.name = cfs_configuration_name.to_string();
 
-        for i in 0..repos.len() {
+        for repo_path in &repos {
             // Get repo from path
-            let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
+            let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
                 Ok(repo) => repo,
                 Err(_) => {
                     log::error!(
                         "Could not find a git repo in {}",
-                        repos[i].to_string_lossy()
+                        repo_path.to_string_lossy()
                     );
                     std::process::exit(1);
                 }
@@ -160,7 +160,7 @@ impl CfsConfiguration {
                 &api_url,
                 // &format!("/cray/{}", repo_name),
                 &local_last_commit.id().to_string(),
-                &gitea_token,
+                gitea_token,
             )
             .await;
 
@@ -180,7 +180,7 @@ impl CfsConfiguration {
                 }
             };
 
-            let mut clone_url = gitea_base_url.clone().to_string();
+            let mut clone_url = gitea_base_url.to_string();
             clone_url.push_str("/cray/");
             clone_url.push_str(repo_name);
 
@@ -237,7 +237,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/cfs/v2/configurations/");
         api_url.push_str(configuration_name);
 
@@ -290,7 +290,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/cfs/v2/configurations");
 
         let resp = client

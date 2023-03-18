@@ -18,7 +18,7 @@ use crate::common::local_git_repo;
 pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
-    vault_base_url: &String,
+    vault_base_url: &str,
     vault_role_id: &String,
     hsm_group: Option<&String>,
     cli_apply_session: &ArgMatches,
