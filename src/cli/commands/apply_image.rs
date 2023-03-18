@@ -8,7 +8,7 @@ use crate::shasta::cfs::{configuration, session::CfsSession};
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
 /// placeholder is missing in the session name
-/// Return CFS session name
+/// Return a tuple (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
     vault_base_url: &str,
     vault_role_id: &String,
@@ -19,7 +19,7 @@ pub async fn exec(
     watch_logs: Option<&bool>,
     timestamp: &str,
     // hsm_group: Option<&String>
-) -> String {
+) -> (String, String) {
     let mut cfs_configuration;
 
     let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
@@ -124,5 +124,5 @@ pub async fn exec(
 
     log::info!("CFS session name: {}", cfs_session_name);
 
-    cfs_session_name
+    (cfs_configuration.name, cfs_session_name)
 }

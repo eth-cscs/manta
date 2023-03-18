@@ -15,6 +15,8 @@ use substring::Substring;
 
 use crate::common::local_git_repo;
 
+/// Creates a CFS session target dynamic
+/// Returns a tuple like (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
@@ -24,7 +26,7 @@ pub async fn exec(
     cli_apply_session: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
-) {
+) -> (String, String) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
     // Check andible limit matches the nodes in hsm_group
@@ -164,7 +166,7 @@ pub async fn exec(
             .parse()
             .unwrap(),
     )
-    .await;
+    .await.unwrap();
 
     let watch_logs = cli_apply_session.get_one::<bool>("watch-logs");
 
@@ -173,13 +175,15 @@ pub async fn exec(
         crate::cli::commands::log::session_logs(
             vault_base_url,
             vault_role_id,
-            cfs_session_name.unwrap().as_str(),
+            cfs_session_name.as_str(),
             None,
         )
         .await
         .unwrap();
     }
     // * End Create CFS session
+
+    (cfs_configuration_name, cfs_session_name)
 }
 
 pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(

@@ -37,7 +37,7 @@ pub async fn exec(
     let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
     // Create CFS configuration and image
-    let cfs_session_name = apply_image::exec(
+    let (_, cfs_session_name) = apply_image::exec(
         vault_base_url,
         vault_role_id,
         cli_apply_image,
