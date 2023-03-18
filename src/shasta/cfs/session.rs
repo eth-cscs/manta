@@ -323,18 +323,18 @@ pub mod utils {
         table.set_header(vec![
             "Name",
             "Configuration",
+            "Target Def",
+            // "Target groups",
+            // "Ansible limit",
             "Target",
-            "Target groups",
-            "Ansible limit",
             "Start",
             "Status",
             "Succeeded",
+            "Image ID",
         ]);
 
         for cfs_session in cfs_sessions {
-            let mut target_groups: String = String::new();
-
-            if cfs_session["target"]["groups"].as_array().is_some()
+            let target_groups = if cfs_session["target"]["groups"].as_array().is_some()
                 && (cfs_session["target"]["groups"]
                     .as_array()
                     .unwrap()
@@ -344,61 +344,86 @@ pub mod utils {
             {
                 let target_groups_json = cfs_session["target"]["groups"].as_array().unwrap();
 
-                target_groups = String::from(target_groups_json[0]["name"].as_str().unwrap());
+                let mut target_groups_aux = String::from(target_groups_json[0]["name"].as_str().unwrap());
 
                 for (i, _) in target_groups_json.iter().enumerate().skip(1) {
                     if i % 2 == 0 {
                         // breaking the cell content into multiple lines (only 2 target groups per line)
-                        target_groups.push_str(",\n");
+                        target_groups_aux.push_str(",\n");
                         // target_groups = format!("{},\n", target_groups);
                     } else {
-                        target_groups.push_str(", ");
+                        target_groups_aux.push_str(", ");
                         // target_groups = format!("{}, ", target_groups);
                     }
 
-                    target_groups.push_str(target_groups_json[i]["name"].as_str().unwrap());
-
-                    // target_groups = format!("{}{}", target_groups, target_groups_json[i]["name"].as_str().unwrap());
+                    target_groups_aux.push_str(target_groups_json[i]["name"].as_str().unwrap());
                 }
-            }
+
+                target_groups_aux
+            } else {
+                "".to_string()
+            };
 
             let mut list_ansible_limit = cfs_session["ansible"]["limit"]
                 .as_str()
                 .unwrap_or_default()
                 .split(',');
 
-            let mut ansible_limits: String = String::new();
-
             let first = list_ansible_limit.next();
 
-            if let Some(inner) = first {
-                ansible_limits = String::from(inner);
+            let ansible_limits = if let Some(first_xname) = first {
+                let mut ansible_limits_aux = String::from(first_xname);
 
                 let mut i = 1;
 
                 for ansible_limit in list_ansible_limit {
                     if i % 2 == 0 {
                         // breaking the cell content into multiple lines (only 2 xnames per line)
-                        ansible_limits.push_str(", \n");
+                        ansible_limits_aux.push_str(", \n");
                         // ansible_limits = format!("{},\n", ansible_limits);
                     } else {
-                        ansible_limits.push_str(", ");
+                        ansible_limits_aux.push_str(", ");
                         // ansible_limits = format!("{}, ", ansible_limits);
                     }
 
-                    ansible_limits.push_str(ansible_limit);
+                    ansible_limits_aux.push_str(ansible_limit);
                     // ansible_limits = format!("{}{}", ansible_limits, ansible_limit);
 
                     i += 1;
                 }
-            }
+
+                ansible_limits_aux
+            } else {
+                "".to_string()
+            };
+
+            let target_definition = cfs_session["target"]["definition"].as_str().unwrap();
+
+            let target = if !target_groups.is_empty() {
+                &target_groups
+            } else {
+                &ansible_limits
+            };
+
+            let result_id = if !cfs_session["status"]["artifacts"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+            {
+                cfs_session["status"]["artifacts"][0]["result_id"]
+                    .as_str()
+                    .unwrap()
+            } else {
+                ""
+            };
 
             table.add_row(vec![
                 cfs_session["name"].as_str().unwrap(),
                 cfs_session["configuration"]["name"].as_str().unwrap(),
-                cfs_session["target"]["definition"].as_str().unwrap(),
-                &target_groups,
-                &ansible_limits,
+                target_definition,
+                // &target_groups,
+                // &ansible_limits,
+                target,
                 cfs_session["status"]["session"]["startTime"]
                     .as_str()
                     .unwrap(),
@@ -406,6 +431,7 @@ pub mod utils {
                 cfs_session["status"]["session"]["succeeded"]
                     .as_str()
                     .unwrap(),
+                result_id,
             ]);
         }
 
