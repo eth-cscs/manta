@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use clap::ArgMatches;
-use k8s_openapi::chrono;
 use serde_yaml::Value;
 
 use crate::shasta::cfs::{configuration, session::CfsSession};
@@ -14,11 +13,11 @@ pub async fn exec(
     vault_base_url: &String,
     vault_role_id: &String,
     cli_apply_image: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
     base_image_id: &String,
     watch_logs: Option<&bool>,
-    timestamp: &String,
+    timestamp: &str,
     // hsm_group: Option<&String>
 ) -> String {
     let mut cfs_configuration;
@@ -46,10 +45,10 @@ pub async fn exec(
     let configuration_yaml = &configurations_yaml[0];
 
     cfs_configuration =
-        configuration::CfsConfiguration::from_sat_file_serde_yaml(&configuration_yaml);
+        configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
     // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", &timestamp);
+    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", timestamp);
 
     log::info!(
         "CFS configuration creation payload:\n{:#?}",
@@ -79,7 +78,7 @@ pub async fn exec(
     let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0], base_image_id);
 
     // Rename session name
-    cfs_session.name = cfs_session.name.replace("__DATE__", &timestamp);
+    cfs_session.name = cfs_session.name.replace("__DATE__", timestamp);
 
     // Rename session configuration name
     cfs_session.configuration_name = cfs_configuration.name.clone();
@@ -91,7 +90,7 @@ pub async fn exec(
             .await;
 
     log::info!(
-        "CFS creation session response:\n{:#?}",
+        "CFS session creation response:\n{:#?}",
         create_cfs_session_resp
     );
 

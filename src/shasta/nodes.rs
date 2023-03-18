@@ -1,9 +1,5 @@
 use serde_json::Value;
 
-pub fn nodes_to_string_format_mid(nodes: &Vec<Value>) -> String {
-    nodes_to_string(nodes, 10)
-}
-
 pub fn nodes_to_string_format_unlimited(nodes: &Vec<Value>) -> String {
     nodes_to_string(nodes, nodes.len() + 1)
 }

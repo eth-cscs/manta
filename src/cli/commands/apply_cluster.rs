@@ -16,9 +16,8 @@ pub async fn exec(
     shasta_token: &String,
     shasta_base_url: &String,
     base_image_id: &String,
-    // hsm_group: Option<&String>,
+    hsm_group_param: Option<&String>,
 ) {
-
     let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
@@ -50,7 +49,53 @@ pub async fn exec(
     )
     .await;
 
-    // Get groups from SAT images.configuration_group_names file
+    // Monitor CFS image creation process ends
+    let mut cfs_sessions_details = session::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        None,
+        Some(&cfs_session_name),
+        Some(&1),
+        Some(true),
+    )
+    .await
+    .unwrap();
+
+    // Wait for CFS session target image to finish
+    let mut i = 0;
+    let max = 1800; // Max ammount of attempts to check if CFS session has ended
+    while !cfs_sessions_details.first().unwrap()["status"]["session"]["status"].eq("complete")
+        && i <= max
+    {
+        print!(
+            "\rCFS session {} running. Checking again in 2 secs. Attempt {} of {}",
+            cfs_session_name,
+            i + 1,
+            max
+        );
+
+        thread::sleep(time::Duration::from_secs(2));
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+
+        cfs_sessions_details = session::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            None,
+            Some(&cfs_session_name),
+            Some(&1),
+            Some(true),
+        )
+        .await
+        .unwrap();
+
+        i += 1;
+    }
+
+    println!();
+
+    log::info!("Get CFS session details:\n{:#?}", cfs_sessions_details);
+
+    /* // Get groups from SAT images.configuration_group_names file
     let mut hsm_groups: Vec<String> = sat_file_yaml["images"]
         .as_sequence()
         .unwrap()
@@ -71,68 +116,39 @@ pub async fn exec(
         })
         .collect::<Vec<_>>();
 
-    let hsm_group = hsm_groups.iter().next();
+    let hsm_group;
 
-    if hsm_group.is_none() {
+    // let hsm_group = hsm_groups.iter().next();
+
+    /* if hsm_group.is_none() {
         eprintln!("SAT file images.configuration_group_names does not have valid HSM groups");
         std::process::exit(1);
+    } */
+
+    // Check hsm groups in SAT file includes the hsm group in params
+    if !hsm_groups.iter().any(|h_g| h_g.eq(hsm_group_param.unwrap())) {
+        eprintln!("HSM group in param does not matches with any HSM groups in SAT file under images.configuration_group_names section. Using HSM group in param as the default");
     }
 
-    // Monitor CFS image creation process ends
-    let mut cfs_sessions_details = session::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        hsm_group,
-        Some(&cfs_session_name),
-        Some(&1),
-        Some(true),
-    )
-    .await
-    .unwrap();
+    hsm_group = hsm_group_param.unwrap();
 
-    // Wait for CFS session target image to finish
-    let mut i = 0;
-    let max = 1800; // Max ammount of attempts to check if CFS session has ended
-    while !cfs_sessions_details.iter().next().unwrap()["status"]["session"]["status"].eq("complete")
-        && i <= max
-    {
-        print!(
-            "\rCFS session {} running. Checking again in 2 secs. Attempt {} of {}",
-            cfs_session_name, i + 1, max
-        );
+    if hsm_group.is_empty() {
+        eprintln!("No HSM group available. Exiting");
+        std::process::exit(1);
+    } */
 
-        thread::sleep(time::Duration::from_secs(2));
-        std::io::Write::flush(&mut std::io::stdout()).unwrap();
-
-        cfs_sessions_details = session::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            hsm_group,
-            Some(&cfs_session_name),
-            Some(&1),
-            Some(true),
-        )
-        .await
-        .unwrap();
-
-        i += 1;
-    }
-
-    println!("");
-
-    log::info!("Get CFS session details:\n{:#?}", cfs_sessions_details);
-
-    if !cfs_sessions_details.iter().next().unwrap()["status"]["session"]["status"].eq("complete") {
+    // Get data from yaml to create BOS session template
+    if !cfs_sessions_details.first().unwrap()["status"]["session"]["status"].eq("complete") {
         eprintln!("Session running for too long, exit");
         std::process::exit(1);
     }
 
-    if !cfs_sessions_details.iter().next().unwrap()["status"]["session"]["succeeded"].eq("true") {
+    if !cfs_sessions_details.first().unwrap()["status"]["session"]["succeeded"].eq("true") {
         eprintln!("Session failed, exit");
         std::process::exit(1);
     }
 
-    let cfs_session_result_id = cfs_sessions_details.iter().next().unwrap()["status"]["artifacts"]
+    let cfs_session_result_id = cfs_sessions_details.first().unwrap()["status"]["artifacts"]
         .as_array()
         .unwrap()
         .iter()
@@ -148,14 +164,13 @@ pub async fn exec(
     let image_details = crate::shasta::ims::image::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group,
         &cfs_session_result_id,
     )
     .await;
 
     log::info!("IMS image details:\n{:#?}", image_details);
 
-    // Wait till image details are available
+    /* // Wait till image details are available
     let mut i = 0;
     let max = 50; // Max ammount of attempts to check if IMS image details are available
     while image_details.is_err() && i <= max {
@@ -174,7 +189,7 @@ pub async fn exec(
     if image_details.is_err() {
         eprintln!("Could not fetch image details. Exit");
         std::process::exit(1);
-    }
+    } */
 
     let ims_image_name = image_details.as_ref().unwrap()["name"]
         .as_str()
@@ -207,22 +222,41 @@ pub async fn exec(
         .replace("__DATE__", &timestamp);
 
     // Create BOS sessiontemplate
+
     let bos_session_template_yaml = bos_session_templates_yaml.iter().next().unwrap();
 
-    let hsm_groups: Vec<String> = bos_session_template_yaml["bos_parameters"]
-        ["boot_sets"]["compute"]["node_groups"]
+    let bos_session_template_name = bos_session_template_yaml["name"]
+            .as_str()
+            .unwrap()
+            .to_string()
+            .replace("__DATE__", &timestamp);
+
+    let bos_session_template_hsm_groups: Vec<String> = bos_session_template_yaml["bos_parameters"]["boot_sets"]
+        ["compute"]["node_groups"]
         .as_sequence()
         .unwrap()
-        .into_iter()
+        .iter()
         .map(|node| node.as_str().unwrap().to_string())
         .collect();
+
+    // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups with
+    // Check hsm groups in SAT file includes the hsm_group_param
+    let hsm_group = if !bos_session_template_hsm_groups
+        .iter()
+        .any(|h_g| h_g.eq(hsm_group_param.unwrap()))
+    {
+        eprintln!("HSM group in param does not matches with any HSM groups in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Using HSM group in param as the default");
+        hsm_group_param.unwrap()
+    } else {
+        bos_session_template_hsm_groups.first().unwrap()
+    };
 
     let cfs = crate::shasta::bos::template::Cfs {
         clone_url: None,
         branch: None,
         commit: None,
         playbook: None,
-        configuration: Some(cfs_configuration_name), 
+        configuration: Some(cfs_configuration_name),
     };
 
     let compute_property = crate::shasta::bos::template::Property {
@@ -236,7 +270,7 @@ pub async fn exec(
         network: Some("nmn".to_string()),
         node_list: None,
         node_roles_groups: None,
-        node_groups: Some(hsm_groups),
+        node_groups: Some(vec!(hsm_group.to_string())),
         rootfs_provider: Some("cpss3".to_string()),
         rootfs_provider_passthrough: Some("dvs:api-gw-service-nmn.local:300:nmn0".to_string()),
     };
@@ -246,11 +280,7 @@ pub async fn exec(
     };
 
     let create_bos_session_template_payload = crate::shasta::bos::template::BosTemplate {
-        name: bos_session_template_yaml["name"]
-            .as_str()
-            .unwrap()
-            .to_string()
-            .replace("__DATE__", &timestamp),
+        name: bos_session_template_name,
         template_url: None,
         description: None,
         cfs_url: None,
@@ -289,19 +319,17 @@ pub async fn exec(
 
     // Get nodes members of HSM group
     // Get HSM group details
-    let hsm_group_details = crate::shasta::hsm::http_client::get_hsm_group(
-        shasta_token,
-        shasta_base_url,
-        hsm_group.unwrap(),
-    )
-    .await;
+    let hsm_group_details =
+        crate::shasta::hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group)
+            .await;
 
     log::info!("hsm_group_details:\n{:#?}", hsm_group_details);
 
+    // Get list of xnames in HSM group
     let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
         .as_array()
         .unwrap()
-        .into_iter()
+        .iter()
         .map(|node| node.as_str().unwrap().to_string())
         .collect();
 
@@ -314,6 +342,8 @@ pub async fn exec(
         true,
     )
     .await;
+
+    log::info!("CAPMC shutdown nodes response:\n{:#?}", capmc_shutdown_nodes_resp);
 
     // Create BOS session operation start
     let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(

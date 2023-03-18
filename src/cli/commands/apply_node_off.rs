@@ -11,7 +11,7 @@ pub async fn exec(
     cli_apply_node_off: &ArgMatches,
     shasta_token: String,
     shasta_base_url: String,
-) -> () {
+) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
     // Check andible limit matches the nodes in hsm_group

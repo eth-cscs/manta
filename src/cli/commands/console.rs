@@ -22,11 +22,11 @@ use clap::ArgMatches;
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_console: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
     vault_base_url: &String,
     vault_role_id: &String,
-) -> () {
+) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
 
@@ -44,7 +44,7 @@ pub async fn exec(
     if hsm_group.is_some() {
         // hsm_group value provided
         hsm_groups = cluster_ops::get_details(
-            &shasta_token,
+            shasta_token,
             shasta_base_url,
             hsm_group.unwrap(),
         )

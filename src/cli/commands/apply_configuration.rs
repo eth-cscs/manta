@@ -1,5 +1,4 @@
 use clap::ArgMatches;
-use k8s_openapi::chrono;
 
 use crate::shasta::cfs::configuration;
 use serde_yaml::Value;
@@ -12,9 +11,9 @@ use std::path::PathBuf;
 /// Return CFS configuration name
 pub async fn exec(
     cli_apply_configuration: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-    timestamp: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    timestamp: &str,
 ) -> String {
     // * Parse input params
     let path_buf: &PathBuf = cli_apply_configuration.get_one("file").unwrap();

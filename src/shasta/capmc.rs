@@ -51,14 +51,6 @@ impl NodeStatus {
 }
 
 pub mod http_client {
-    use core::time;
-    use std::{error::Error, thread};
-
-    use serde_json::Value;
-
-    use crate::shasta::hsm::http_client::get_components_status;
-
-    use self::node_power_off::post;
 
     pub mod node_power_off {
 
@@ -151,7 +143,11 @@ pub mod http_client {
                     .iter()
                     .all(|node| node["State"].as_str().unwrap().to_string().eq("Off"))
             {
-                print!("\rWaiting nodes to shutdown. Trying again in 2 seconds. Attempt {} of {}", i + 1, max);
+                print!(
+                    "\rWaiting nodes to shutdown. Trying again in 2 seconds. Attempt {} of {}",
+                    i + 1,
+                    max
+                );
                 thread::sleep(time::Duration::from_secs(2));
                 i += 1;
                 log::info!("nodes_status:\n{:#?}", nodes_status);

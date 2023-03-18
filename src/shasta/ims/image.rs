@@ -8,7 +8,6 @@ pub mod http_client {
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
-        hsm_group_name: Option<&String>,
         image_id: &String,
     ) -> Result<Value, Box<dyn Error>> {
         let client;

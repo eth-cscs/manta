@@ -197,7 +197,7 @@ pub mod http_client {
         hsm_group_name: Option<&String>,
         session_name: Option<&String>,
         limit_number: Option<&u8>,
-        succeded: Option<bool>,
+        is_succeded: Option<bool>,
     ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
         let client;
 
@@ -217,15 +217,15 @@ pub mod http_client {
         let mut api_url = shasta_base_url.clone().to_string();
         api_url.push_str("/cfs/v2/sessions");
 
-        let mut params = Vec::new();
+        let mut request_payload = Vec::new();
 
-        if succeded.is_some() {
-            params.push(("succeced", succeded));
+        if is_succeded.is_some() {
+            request_payload.push(("succeced", is_succeded));
         }
 
         let resp = client
             .get(api_url)
-            .query(&params)
+            .query(&request_payload)
             .bearer_auth(shasta_token)
             .send()
             .await?;

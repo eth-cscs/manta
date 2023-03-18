@@ -22,9 +22,9 @@ pub async fn exec(
     vault_role_id: &String,
     hsm_group: Option<&String>,
     cli_apply_session: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-) -> () {
+    shasta_token: &str,
+    shasta_base_url: &str,
+) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
     // Check andible limit matches the nodes in hsm_group
@@ -86,8 +86,8 @@ pub async fn exec(
     if hsm_group_value.is_some() {
         // Get all hsm groups details related to hsm_group input
         hsm_groups = crate::common::cluster_ops::get_details(
-            &shasta_token,
-            &shasta_base_url,
+            shasta_token,
+            shasta_base_url,
             hsm_group_value.unwrap(),
         )
         .await;
@@ -155,8 +155,8 @@ pub async fn exec(
         //     .to_string()],
         gitea_token,
         gitea_base_url,
-        &shasta_token,
-        &shasta_base_url,
+        shasta_token,
+        shasta_base_url,
         included.into_iter().collect::<Vec<String>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
         cli_apply_session
             .get_one::<String>("ansible-verbosity")
@@ -194,7 +194,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
     let cfs_sessions =
-        http_client::get(&shasta_token, &shasta_base_url, None, None, None, None).await?;
+        http_client::get(shasta_token, shasta_base_url, None, None, None, None).await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
@@ -240,10 +240,10 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         log::info!("Checking status of component {}", xname);
 
         let component_status =
-            shasta_cfs_component::http_client::get(&shasta_token, &shasta_base_url, &xname).await?;
+            shasta_cfs_component::http_client::get(shasta_token, shasta_base_url, &xname).await?;
         let hsm_configuration_state =
-            &hsm::http_client::get_component_status(&shasta_token, &shasta_base_url, &xname)
-                .await?["State"];
+            &hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
+                ["State"];
         log::info!(
             "HSM component state for component {}: {}",
             xname,
@@ -264,7 +264,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     // Check local repos
     let mut layers_summary = vec![];
 
-    for i in 0..repos.len() {
+    for (i, repo_path) in repos.iter().enumerate() {
         // log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
         // TODO: check each folder has a real git repo
         // TODO: check each folder has expected file name manta/shasta expects to find the main ansible playbook
@@ -272,7 +272,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         // TODO: format logging on screen so it is more readable
 
         // Get repo from path
-        let repo = match local_git_repo::get_repo(&repos[i].to_string_lossy()) {
+        let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
             Ok(repo) => repo,
             Err(_) => {
                 log::error!(
@@ -368,26 +368,32 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
     let cfs_configuration = configuration::CfsConfiguration::create_from_repos(
-        &gitea_token,
-        &gitea_base_url,
+        gitea_token,
+        gitea_base_url,
         repos,
         &cfs_configuration_name.to_string(),
     )
     .await;
 
     // Update/PUT CFS configuration
-    log::info!("Create CFS configuration payload:\n{:#?}", cfs_configuration);
+    log::info!(
+        "Create CFS configuration payload:\n{:#?}",
+        cfs_configuration
+    );
 
     // Update/PUT CFS configuration
     let cfs_configuration_resp = configuration::http_client::put(
-        &shasta_token,
-        &shasta_base_url,
+        shasta_token,
+        shasta_base_url,
         &cfs_configuration,
-        &cfs_configuration_name,
+        cfs_configuration_name,
     )
     .await;
 
-    log::info!("Create CFS configuration response:\n{:#?}", cfs_configuration_resp);
+    log::info!(
+        "Create CFS configuration response:\n{:#?}",
+        cfs_configuration_resp
+    );
 
     let cfs_configuration_name = match cfs_configuration_resp {
         Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
@@ -420,7 +426,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp =
-        shasta_cfs_session::http_client::post(&shasta_token, &shasta_base_url, &session).await;
+        shasta_cfs_session::http_client::post(shasta_token, shasta_base_url, &session).await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 

@@ -7,7 +7,7 @@ pub async fn exec(
     cli_get_template: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-) -> () {
+) {
     let limit_number;
 
     let template_name = cli_get_template.get_one::<String>("name");
@@ -28,14 +28,14 @@ pub async fn exec(
     }
 
     let bos_templates = bos_template::http_client::get(
-        &shasta_token,
-        &shasta_base_url,
+        shasta_token,
+        shasta_base_url,
         hsm_group_name,
         template_name,
         limit_number,
     )
     .await
-    .unwrap_or(Vec::new());
+    .unwrap_or_default();
 
     if bos_templates.is_empty() {
         println!("No BOS template found!");

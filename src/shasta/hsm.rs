@@ -17,7 +17,7 @@ struct Member {
     ids: Option<Vec<String>>,
 }
 
-impl HsmGroup {
+/* impl HsmGroup {
     pub fn new(
         label: String,
         description: Option<String>,
@@ -31,13 +31,13 @@ impl HsmGroup {
             members,
         }
     }
-}
+} */
 
-impl Member {
+/* impl Member {
     pub fn new(ids: Option<Vec<String>>) -> Self {
         Self { ids }
     }
-}
+} */
 
 pub mod http_client {
 

@@ -7,7 +7,7 @@ pub async fn exec(
     cli_get_session: &ArgMatches,
     shasta_token: &String,
     shasta_base_url: &String,
-) -> () {
+) {
     let session_name = cli_get_session.get_one::<String>("name");
 
     let hsm_group_name = match hsm_group {
@@ -29,15 +29,15 @@ pub async fn exec(
     }
 
     let cfs_sessions = shasta_cfs_session::http_client::get(
-        &shasta_token,
-        &shasta_base_url,
+        shasta_token,
+        shasta_base_url,
         hsm_group_name,
         session_name,
         limit_number,
         None,
     )
     .await
-    .unwrap_or(Vec::new());
+    .unwrap_or_default();
 
     if cfs_sessions.is_empty() {
         println!("CFS session not found!");

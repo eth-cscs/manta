@@ -19,7 +19,7 @@ pub async fn exec(
     shasta_base_url: &String,
     vault_base_url: &String,
     vault_role_id: &String,
-) -> () {
+) {
     let logging_session_name = cli_log.get_one::<String>("SESSION");
 
     let layer_id = cli_log.get_one::<u8>("layer-id");

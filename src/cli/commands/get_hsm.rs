@@ -7,16 +7,16 @@ use crate::shasta::nodes;
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_hsm_groups: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-) -> () {
+    shasta_token: &str,
+    shasta_base_url: &str,
+) {
     let hsm_group_name = match hsm_group {
         None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
         Some(hsm_group_name_value) => hsm_group_name_value,
     };
 
     let hsm_groups =
-        cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_name)
+        cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group_name)
             .await;
 
     for hsm_group in hsm_groups {

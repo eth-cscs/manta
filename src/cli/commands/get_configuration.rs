@@ -10,9 +10,9 @@ pub async fn exec(
     gitea_token: &str,
     hsm_group: Option<&String>,
     cli_get_configuration: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-) -> () {
+    shasta_token: &str,
+    shasta_base_url: &str,
+) {
     let configuration_name = cli_get_configuration.get_one::<String>("name");
 
     let hsm_group_name = match hsm_group {
@@ -35,14 +35,14 @@ pub async fn exec(
 
     // Get CFS configurations
     let cfs_configurations = shasta_cfs_configuration::http_client::get(
-        &shasta_token,
-        &shasta_base_url,
+        shasta_token,
+        shasta_base_url,
         hsm_group_name,
         configuration_name,
         limit_number,
     )
     .await
-    .unwrap_or(Vec::new());
+    .unwrap_or_default();
 
     if cfs_configurations.is_empty() {
         println!("No CFS configuration found!");
