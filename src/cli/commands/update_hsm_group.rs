@@ -6,31 +6,18 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     cli_update_node: &ArgMatches,
-    hsm_group_name: Option<&String>,
+    hsm_group_name: &String,
 ) {
-    let xnames_params = cli_update_node.get_one::<String>("XNAMES").unwrap();
+    let hsm_group_details =
+        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name).await;
 
-    // TODO: deal when user sends a string with multiple xnames... what should I do???
-    if xnames_params.split(',').count() != 1 {
-        // user has sent a string with multiple xnames!!!!
-    }
-
-    let xname = xnames_params;
-
-    let hsm_group_aux =
-        hsm::utils::get_hsm_group_from_xname(shasta_token, shasta_base_url, xname).await;
-
-    if hsm_group_aux.is_none()
-        || (hsm_group_name.is_some()
-            && !hsm_group_name.unwrap().eq(hsm_group_aux.as_ref().unwrap()))
-    {
-        eprintln!(
-            "xname {} does not belongs to HSM group {}. Exit",
-            xname,
-            hsm_group_name.unwrap()
-        );
-        std::process::exit(1);
-    }
+    let xnames = match hsm_group_details {
+        Err(_) => {
+            eprintln!("HSM group {} not found. Exit", hsm_group_name);
+            std::process::exit(1);
+        }
+        Ok(hsm_group_details) => hsm::utils::get_member_ids(&hsm_group_details),
+    };
 
     /* if hsm_group_name.is_some() {
         let hsm_group_details =
@@ -49,7 +36,7 @@ pub async fn exec(
     let cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
+        Some(hsm_group_name),
         None,
         Some(&1),
         Some(true),
@@ -82,12 +69,15 @@ pub async fn exec(
     let _update_node_boot_params_response = bss::http_client::put(
         shasta_base_url,
         shasta_token,
-        &vec!(xname.to_string()),
+        &xnames,
         &params,
         &kernel,
         &initrd,
     )
     .await;
 
-    println!("Node {} boot params have been updated to image_id {}", xname, result_id);
+    println!(
+        "Nodes {:?} boot params have been updated to image_id {}",
+        xnames, result_id
+    );
 }

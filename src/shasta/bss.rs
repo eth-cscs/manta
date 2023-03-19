@@ -10,7 +10,7 @@ pub mod http_client {
     pub async fn put(
         shasta_base_url: &str,
         shasta_token: &str,
-        xnames: &[&String],
+        xnames: &Vec<String>,
         params: &String,
         kernel: &String,
         initrd: &String,

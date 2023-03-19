@@ -8,7 +8,7 @@ use crate::cli::commands::{
     get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
-use super::commands::{apply_cluster, apply_image, update_node};
+use super::commands::{apply_cluster, apply_image, update_hsm_group, update_node};
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
@@ -299,7 +299,7 @@ pub fn subcommand_update_node(hsm_group: Option<&String>) -> Command {
     let mut update_node = Command::new("node")
         .alias("n")
         .arg_required_else_help(true)
-        .about("- ALPHA VERSION - Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
+        .about("Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
         .arg(arg!(<XNAMES> "node's xnames").required(true));
 
     update_node = match hsm_group {
@@ -309,6 +309,21 @@ pub fn subcommand_update_node(hsm_group: Option<&String>) -> Command {
 
     update_node
 }
+
+pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
+    let mut update_hsm_group = Command::new("hsm-group")
+        .aliases(["h", "hsm"])
+        // .arg_required_else_help(true)
+        .about("Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to");
+
+    update_hsm_group = match hsm_group {
+        Some(_) => update_hsm_group,
+        None => update_hsm_group.arg(arg!(<HSMGROUP> "HSM group name").required(true)),
+    };
+
+    update_hsm_group
+}
+
 pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
     command!()
         .arg_required_else_help(true)
@@ -337,7 +352,8 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .alias("u")
                 .arg_required_else_help(true)
                 .about("Update nodes boot params")
-                .subcommand(subcommand_update_node(hsm_group)),
+                .subcommand(subcommand_update_node(hsm_group))
+                .subcommand(subcommand_update_hsm_group(hsm_group)),
         )
         .subcommand(
             Command::new("log")
@@ -463,12 +479,15 @@ pub async fn process_command(
         }
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("node") {
-            update_node::exec(
+            update_node::exec(&shasta_token, &shasta_base_url, cli_update_node, hsm_group).await;
+        } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
+            update_hsm_group::exec(
                 &shasta_token,
                 &shasta_base_url,
-                cli_update_node,
-                hsm_group,
-            ).await;
+                cli_update_hsm_group,
+                hsm_group.unwrap(),
+            )
+            .await;
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
         log::exec(
