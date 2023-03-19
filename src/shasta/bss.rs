@@ -6,7 +6,51 @@ pub mod http_client {
 
     use core::result::Result;
 
-    /// Get node boot params, uses https://apidocs.svc.cscs.ch/iaas/bss/tag/bootparameters/paths/~1bootparameters/get/
+    /// Change nodes boot params, ref --> https://apidocs.svc.cscs.ch/iaas/bss/tag/bootparameters/paths/~1bootparameters/put/
+    pub async fn put(
+        shasta_base_url: &str,
+        shasta_token: &str,
+        xnames: &[&String],
+        params: &String,
+        kernel: &String,
+        initrd: &String,
+    ) -> Result<Vec<Value>, Box<dyn Error>> {
+        let client;
+
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
+
+        let api_url = format!("{}/bss/boot/v1/bootparameters", shasta_base_url);
+
+        let resp = client
+            .put(api_url)
+            .json(&serde_json::json!({"hosts": xnames, "params": params, "kernel": kernel, "initrd": initrd})) // Encapsulating configuration.layers
+            .bearer_auth(shasta_token)
+            .send()
+            .await?;
+
+        if resp.status().is_success() {
+            let response = &resp.text().await?;
+            Ok(serde_json::from_str(response)?)
+        } else {
+            eprintln!("FAIL request: {:#?}", resp);
+            let response: String = resp.text().await?;
+            eprintln!("FAIL response: {:#?}", response);
+            Err(response.into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        }
+    }
+
+    /// Get node boot params, ref --> https://apidocs.svc.cscs.ch/iaas/bss/tag/bootparameters/paths/~1bootparameters/get/
     pub async fn get_boot_params(
         shasta_token: &String,
         shasta_base_url: &String,

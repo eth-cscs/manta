@@ -46,15 +46,10 @@ pub mod http_client {
     use reqwest::Url;
     use serde_json::Value;
 
-    /// Get list of HSM groups using --> https://apidocs.svc.cscs.ch/iaas/hardware-state-manager/operation/doGroupsGet/
-    /// NOTE: this returns all HSM groups which name contains hsm_groupu_name param value
-    pub async fn get_hsm_groups(
+    pub async fn get_all_hsm_groups(
         shasta_token: &str,
         shasta_base_url: &str,
-        hsm_group_name: Option<&String>,
     ) -> Result<Vec<Value>, Box<dyn Error>> {
-        let mut hsm_groups: Vec<Value> = Vec::new();
-
         let client;
 
         let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
@@ -87,13 +82,26 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
         };
 
+        Ok(json_response.as_array().unwrap().to_owned())
+    }
+
+    /// Get list of HSM groups using --> https://apidocs.svc.cscs.ch/iaas/hardware-state-manager/operation/doGroupsGet/
+    /// NOTE: this returns all HSM groups which name contains hsm_groupu_name param value
+    pub async fn get_hsm_groups(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        hsm_group_name: Option<&String>,
+    ) -> Result<Vec<Value>, Box<dyn Error>> {
+        let json_response = get_all_hsm_groups(shasta_token, shasta_base_url).await?;
+
+        let mut hsm_groups: Vec<Value> = Vec::new();
+
         if hsm_group_name.is_some() {
-            for hsm_group in json_response.as_array().unwrap() {
+            for hsm_group in json_response {
                 if hsm_group["label"]
                     .as_str()
                     .unwrap()
                     .contains(hsm_group_name.unwrap())
-                // TODO: investigate why I need to use this ugly 'as_ref'
                 {
                     hsm_groups.push(hsm_group.clone());
                 }
@@ -204,7 +212,10 @@ pub mod http_client {
         }
 
         let url_params: Vec<_> = xnames.iter().map(|xname| ("id", xname)).collect();
-        let api_url = Url::parse_with_params(&format!("{}/smd/hsm/v2/State/Components", shasta_base_url), &url_params)?;
+        let api_url = Url::parse_with_params(
+            &format!("{}/smd/hsm/v2/State/Components", shasta_base_url),
+            &url_params,
+        )?;
 
         let resp = client
             .get(api_url)
@@ -259,6 +270,8 @@ pub mod utils {
 
     use serde_json::Value;
 
+    use crate::shasta::hsm::http_client::get_all_hsm_groups;
+
     pub fn get_member_ids(hsm_group: &Value) -> Vec<String> {
         // Take all nodes for all hsm_groups found and put them in a Vec
         let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
@@ -269,5 +282,32 @@ pub mod utils {
             .collect();
 
         hsm_groups_nodes
+    }
+
+    pub async fn get_hsm_group_from_xname(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        xname: &String,
+    ) -> Option<String> {
+        let hsm_groups_details = get_all_hsm_groups(shasta_token, shasta_base_url)
+            .await
+            .unwrap();
+
+        for hsm_group_details in hsm_groups_details.iter() {
+            if hsm_group_details["members"]["ids"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|value| value.as_str().unwrap() == xname)
+            {
+                /* println!(
+                    "hsm group seems to have the member:\n{:#?}",
+                    hsm_group_details
+                ); */
+                return Some(hsm_group_details["label"].as_str().unwrap().to_string());
+            }
+        }
+
+        None
     }
 }

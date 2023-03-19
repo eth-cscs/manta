@@ -8,7 +8,7 @@ use crate::cli::commands::{
     get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
-use super::commands::{apply_cluster, apply_image};
+use super::commands::{apply_cluster, apply_image, update_node};
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
@@ -25,8 +25,6 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
         None => {
             get_cfs_session = get_cfs_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
         }
-        // .group(ArgGroup::new("hsm-group_or_session").args(["hsm-group", "name"]))
-        ,
         Some(_) => {}
     }
 
@@ -297,6 +295,20 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     apply_node_reset
 }
 
+pub fn subcommand_update_node(hsm_group: Option<&String>) -> Command {
+    let mut update_node = Command::new("node")
+        .alias("n")
+        .arg_required_else_help(true)
+        .about("- ALPHA VERSION - Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
+        .arg(arg!(<XNAMES> "node's xnames").required(true));
+
+    update_node = match hsm_group {
+        Some(_) => update_node,
+        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+    };
+
+    update_node
+}
 pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
     command!()
         .arg_required_else_help(true)
@@ -319,6 +331,13 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                         .subcommand(subcommand_apply_node_off(hsm_group))
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
                 ),
+        )
+        .subcommand(
+            Command::new("update")
+                .alias("u")
+                .arg_required_else_help(true)
+                .about("Update nodes boot params")
+                .subcommand(subcommand_update_node(hsm_group)),
         )
         .subcommand(
             Command::new("log")
@@ -441,6 +460,15 @@ pub async fn process_command(
                 )
                 .await;
             }
+        }
+    } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
+        if let Some(cli_update_node) = cli_update.subcommand_matches("node") {
+            update_node::exec(
+                &shasta_token,
+                &shasta_base_url,
+                cli_update_node,
+                hsm_group,
+            ).await;
         }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
         log::exec(
