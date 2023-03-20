@@ -229,11 +229,19 @@ pub async fn get_nodes_details(
 ) -> Vec<Vec<String>> {
     let mut nodes_status: Vec<Vec<String>> = Vec::new();
 
-    // Get power node status from capmc
+    // Get power node status from CAPMC
     let nodes_power_status_resp =
         capmc::http_client::node_power_status::post(shasta_token, shasta_base_url, xnames)
             .await
             .unwrap();
+
+    // Get nodes nids from HSM
+    let nodes_hsm_info_resp =
+        hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames)
+            .await
+            .unwrap();
+
+    // println!("nodes_hsm_info_resp:\n{:#?}", nodes_hsm_info_resp);
 
     // Get nodes boot params
     let nodes_boot_params =
@@ -272,6 +280,19 @@ pub async fn get_nodes_details(
     // Merge nodes power status with boot params
     for xname in xnames {
         let mut node_status: Vec<String> = vec![xname.to_string()];
+
+        // Find node's nid
+        let node_nid = nodes_hsm_info_resp["Components"]
+            .as_array()
+            .unwrap()
+            .into_iter()
+            .find(|&hsm_node_details| hsm_node_details["ID"].eq(xname))
+            .unwrap()["NID"]
+            .as_u64()
+            .unwrap()
+            .to_string();
+
+        node_status.push(format!("nid{:0>6}", node_nid));
 
         // Get node power status
         let node_power_status = if nodes_power_status_resp["on"]

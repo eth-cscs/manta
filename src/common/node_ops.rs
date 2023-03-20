@@ -25,7 +25,8 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     let mut table = Table::new();
 
     table.set_header(vec![
-        "Node",
+        "XNAME",
+        "NID",
         "Status",
         "Image ID (Boot param)",
         "Image updated?",

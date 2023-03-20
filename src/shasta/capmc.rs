@@ -59,7 +59,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::{capmc::PowerStatus, shasta::hsm::http_client::get_components_status};
+        use crate::{capmc::PowerStatus, shasta::hsm};
 
         pub async fn post(
             shasta_token: String,
@@ -129,7 +129,7 @@ pub mod http_client {
 
             // Check Nodes are shutdown
             let mut nodes_status =
-                get_components_status(&shasta_token, &shasta_base_url, &xnames).await;
+                hsm::http_client::get_components_status(&shasta_token, &shasta_base_url, &xnames).await;
 
             log::info!("nodes_status:\n{:#?}", nodes_status);
 
@@ -151,7 +151,7 @@ pub mod http_client {
                 thread::sleep(time::Duration::from_secs(2));
                 i += 1;
                 log::info!("nodes_status:\n{:#?}", nodes_status);
-                nodes_status = crate::shasta::hsm::http_client::get_components_status(
+                nodes_status = hsm::http_client::get_components_status(
                     &shasta_token,
                     &shasta_base_url,
                     &xnames,
