@@ -17,14 +17,15 @@ use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 pub async fn get_k8s_client_programmatically(
     vault_base_url: &str,
     vault_role_id: &String,
+    k8s_api_url: &String,
 ) -> Result<kube::Client, Box<dyn Error>> {
-    let settings = crate::config::get("config");
-    let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
+    /* let settings = crate::config::get("config");
+    let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap(); */
 
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await?;
 
     let mut shasta_cluster = Cluster {
-        server: k8s_api_url,
+        server: k8s_api_url.to_string(),
         insecure_skip_tls_verify: Some(true),
         certificate_authority: None,
         certificate_authority_data: Some(String::from(
@@ -129,7 +130,13 @@ pub async fn get_k8s_client_programmatically(
 
         kube::Client::new(service, config.default_namespace)
     } else {
-        Client::try_default().await?
+        let https = config.openssl_https_connector()?;
+        let service = tower::ServiceBuilder::new()
+            .layer(config.base_uri_layer())
+            .service(hyper::Client::builder().build(https));
+        Client::new(service, config.default_namespace)
+
+        // Client::try_default().await?
     };
 
     Ok(client)

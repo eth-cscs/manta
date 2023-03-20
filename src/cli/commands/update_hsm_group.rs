@@ -5,7 +5,7 @@ use crate::shasta::{bss, cfs, hsm, ims};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_update_node: &ArgMatches,
+    _cli_update_node: &ArgMatches,
     hsm_group_name: &String,
 ) {
     let hsm_group_details =

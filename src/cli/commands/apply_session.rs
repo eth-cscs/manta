@@ -26,6 +26,7 @@ pub async fn exec(
     cli_apply_session: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
+    k8s_api_url: &String,
 ) -> (String, String) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
@@ -177,6 +178,7 @@ pub async fn exec(
             vault_role_id,
             cfs_session_name.as_str(),
             None,
+            k8s_api_url,
         )
         .await
         .unwrap();

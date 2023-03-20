@@ -17,6 +17,7 @@ pub async fn exec(
     shasta_base_url: &String,
     base_image_id: &String,
     hsm_group_param: Option<&String>,
+    k8s_api_url: &String,
 ) {
     let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf).unwrap();
@@ -46,6 +47,7 @@ pub async fn exec(
         base_image_id,
         Some(&false),
         &timestamp,
+        &k8s_api_url,
     )
     .await;
 

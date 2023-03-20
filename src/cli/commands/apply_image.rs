@@ -19,6 +19,7 @@ pub async fn exec(
     watch_logs: Option<&bool>,
     timestamp: &str,
     // hsm_group: Option<&String>
+    k8s_api_url: &String,
 ) -> (String, String) {
     let mut cfs_configuration;
 
@@ -108,7 +109,7 @@ pub async fn exec(
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
-        crate::cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None)
+        crate::cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None, k8s_api_url)
             .await
             .unwrap();
     }

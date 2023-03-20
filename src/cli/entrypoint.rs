@@ -387,6 +387,7 @@ pub async fn process_command(
     gitea_base_url: &str,
     hsm_group: Option<&String>,
     base_image_id: &String,
+    k8s_api_url: &String,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
@@ -433,6 +434,7 @@ pub async fn process_command(
                 cli_apply_session,
                 &shasta_token,
                 &shasta_base_url,
+                &k8s_api_url,
             )
             .await;
         } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
@@ -447,6 +449,7 @@ pub async fn process_command(
                 cli_apply_image.get_one::<bool>("watch-logs"),
                 &timestamp,
                 // hsm_group,
+                k8s_api_url,
             )
             .await;
         } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
@@ -458,6 +461,7 @@ pub async fn process_command(
                 &shasta_base_url,
                 base_image_id,
                 hsm_group,
+                k8s_api_url,
             )
             .await;
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
@@ -496,6 +500,7 @@ pub async fn process_command(
             &shasta_base_url,
             vault_base_url,
             vault_role_id,
+            k8s_api_url,
         )
         .await;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
@@ -506,6 +511,7 @@ pub async fn process_command(
             &shasta_base_url,
             vault_base_url,
             vault_role_id,
+            k8s_api_url,
         )
         .await;
     }

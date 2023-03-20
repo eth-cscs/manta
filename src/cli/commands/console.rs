@@ -26,6 +26,7 @@ pub async fn exec(
     shasta_base_url: &str,
     vault_base_url: &str,
     vault_role_id: &String,
+    k8s_api_url: &String,
 ) {
     let included: HashSet<String>;
     let excluded: HashSet<String>;
@@ -43,12 +44,8 @@ pub async fn exec(
 
     if hsm_group.is_some() {
         // hsm_group value provided
-        hsm_groups = cluster_ops::get_details(
-            shasta_token,
-            shasta_base_url,
-            hsm_group.unwrap(),
-        )
-        .await;
+        hsm_groups =
+            cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group.unwrap()).await;
 
         // Take all nodes for all hsm_groups found and put them in a Set
         let hsm_groups_nodes = hsm_groups
@@ -76,19 +73,26 @@ pub async fn exec(
         included = xnames.clone();
     }
 
-    connect_to_console(included.iter().next().unwrap(), vault_base_url, vault_role_id)
-        .await
-        .unwrap();
+    connect_to_console(
+        included.iter().next().unwrap(),
+        vault_base_url,
+        vault_role_id,
+        k8s_api_url,
+    )
+    .await
+    .unwrap();
 }
 
 pub async fn connect_to_console(
     xname: &String,
     vault_base_url: &str,
     vault_role_id: &String,
+    k8s_api_url: &String,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let client = get_k8s_client_programmatically(vault_base_url, vault_role_id).await?;
+    let client =
+        get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 
