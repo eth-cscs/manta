@@ -46,7 +46,7 @@ pub async fn exec(
     } */
 
     // Get most recent CFS session target image for the node
-    let cfs_sessions_details = cfs::session::http_client::get(
+    let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         hsm_group_name,
@@ -56,6 +56,19 @@ pub async fn exec(
     )
     .await
     .unwrap();
+
+    log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
+
+    // Filter CFS sessions of target definition "image"
+    cfs_sessions_details
+        .retain(|cfs_session_details| cfs_session_details["target"]["definition"].eq("image"));
+
+    log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
+
+    if cfs_sessions_details.is_empty() {
+        eprintln!("Can't continue can't find any CFS session target definition 'image' linked to this node. Exit");
+        std::process::exit(1);
+    }
 
     let result_id = cfs_sessions_details.first().unwrap()["status"]["artifacts"]
         .as_array()
@@ -82,12 +95,15 @@ pub async fn exec(
     let _update_node_boot_params_response = bss::http_client::put(
         shasta_base_url,
         shasta_token,
-        &vec!(xname.to_string()),
+        &vec![xname.to_string()],
         &params,
         &kernel,
         &initrd,
     )
     .await;
 
-    println!("Node {} boot params have been updated to image_id {}", xname, result_id);
+    println!(
+        "Node {} boot params have been updated to image_id {}",
+        xname, result_id
+    );
 }

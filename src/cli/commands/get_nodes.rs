@@ -129,7 +129,7 @@ pub async fn exec(
     // If False ==> No way image in node will use the most recent CFS configuration
     // if True ==> check boot params on each node and see if image_id matches on both most recent
     // BOS sessiontemplate and node boot params
-    if bos_sessiontemplates.first().unwrap()["cfs"]["configuration"]
+    if bos_sessiontemplates.first().is_some() && bos_sessiontemplates.first().unwrap()["cfs"]["configuration"]
         .as_str()
         .unwrap()
         != most_recent_cfs_configurations.first().unwrap()["name"]

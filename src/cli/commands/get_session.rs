@@ -39,6 +39,8 @@ pub async fn exec(
     .await
     .unwrap_or_default();
 
+    log::info!("CFS sessions:\n{:#?}", cfs_sessions);
+
     if cfs_sessions.is_empty() {
         println!("CFS session not found!");
         std::process::exit(0);
