@@ -110,5 +110,12 @@ pub async fn exec(
     .await
     .unwrap(); // TODO: idk why power on does not seems to work when forced
 
-    capmc::http_client::node_power_on::post(shasta_token, shasta_base_url, cli_apply_node_reset.get_one::<String>("reason"), target_nodes, false);
+    let _node_reset_response = capmc::http_client::node_power_on::post(
+        shasta_token,
+        shasta_base_url,
+        cli_apply_node_reset.get_one::<String>("reason"),
+        target_nodes,
+        false,
+    )
+    .await;
 }

@@ -434,7 +434,7 @@ pub async fn process_command(
                 cli_apply_session,
                 &shasta_token,
                 &shasta_base_url,
-                &k8s_api_url,
+                k8s_api_url,
             )
             .await;
         } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {

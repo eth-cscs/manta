@@ -47,7 +47,7 @@ pub async fn exec(
         base_image_id,
         Some(&false),
         &timestamp,
-        &k8s_api_url,
+        k8s_api_url,
     )
     .await;
 

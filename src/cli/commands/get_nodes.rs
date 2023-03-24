@@ -285,7 +285,7 @@ pub async fn get_nodes_details(
         let node_nid = nodes_hsm_info_resp["Components"]
             .as_array()
             .unwrap()
-            .into_iter()
+            .iter()
             .find(|&hsm_node_details| hsm_node_details["ID"].eq(xname))
             .unwrap()["NID"]
             .as_u64()

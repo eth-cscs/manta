@@ -109,18 +109,18 @@ pub mod http_client {
         /// Shut down a node
         /// This is  sync call meaning it won't return untill the target is down
         pub async fn post_sync(
-            shasta_token: &String,
-            shasta_base_url: &String,
+            shasta_token: &str,
+            shasta_base_url: &str,
             reason: Option<&String>,
-            xnames: &Vec<String>,
+            xnames: &[String],
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
             // Create CAPMC operation shutdown
             let capmc_shutdown_nodes_resp = post(
-                shasta_token.clone(),
-                shasta_base_url.clone(),
+                shasta_token.to_owned(),
+                shasta_base_url.to_owned(),
                 reason,
-                xnames.clone(),
+                xnames.to_owned(),
                 force,
             )
             .await;
@@ -129,7 +129,7 @@ pub mod http_client {
 
             // Check Nodes are shutdown
             let mut nodes_status =
-                hsm::http_client::get_components_status(&shasta_token, &shasta_base_url, &xnames).await;
+                hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames).await;
 
             log::info!("nodes_status:\n{:#?}", nodes_status);
 
@@ -152,9 +152,9 @@ pub mod http_client {
                 i += 1;
                 log::info!("nodes_status:\n{:#?}", nodes_status);
                 nodes_status = hsm::http_client::get_components_status(
-                    &shasta_token,
-                    &shasta_base_url,
-                    &xnames,
+                    shasta_token,
+                    shasta_base_url,
+                    xnames,
                 )
                 .await;
             }
