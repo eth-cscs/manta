@@ -1,0 +1,50 @@
+configurations:
+- name: zinal-cos-config-__DATE__
+  layers:
+  - name: ss11
+    playbook: shs_cassini_install.yml
+    git:
+      url: https://api-gw-service-nmn.local/vcs/cray/slingshot-host-software-config-management.git
+      branch: integration
+  - name: cos
+    playbook: site.yml
+    product:
+      name: cos
+      version: 2.3.101
+      branch: integration
+  - name: cscs
+    playbook: site.yml
+    git:
+      url: https://api-gw-service-nmn.local/vcs/cray/cscs-config-management.git
+      branch: integration
+  # - name: cpe
+  #   playbook: site.yml
+  #   git:
+  #     url: https://api-gw-service-nmn.local/vcs/cray/cpe-config-management.git
+  #     branch: integration
+#  - name: slurm
+#    playbook: site.yml
+#    git:
+#      url: https://api-gw-service-nmn.local/vcs/cray/slurm-config-management.git
+#      branch: integration
+
+images:
+- name: zinal-cos-__DATE__
+  ims:
+    is_recipe: false
+    id: c37fbd5f-0fe5-43ce-8cfe-337f3e78733e
+  configuration: zinal-cos-config-__DATE__
+  configuration_group_names:
+  - Compute
+  - zinal
+
+session_templates:
+- name: zinal-cos-template-__DATE__
+  image: zinal-cos-__DATE__
+  configuration: zinal-cos-config-__DATE__
+  bos_parameters:
+    boot_sets:
+      compute:
+        kernel_parameters: ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}
+        node_groups:
+        - zinal

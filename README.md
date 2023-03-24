@@ -51,7 +51,7 @@ hsm_group = "psitds"
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
 |RUST_LOG|no|env|log details/verbosity|info|
-|base_image_id|yes|config file|image id used as target group member for CFS sessions target definition image|a897aa21-0218-4d07-aefb-13a4c15ccb65|
+|base_image_id|yes|config file|image id used as target group member for CFS sessions target definition image|c37fbd5f-0fe5-43ce-8cfe-337f3e78733e|
 |socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
 |gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|

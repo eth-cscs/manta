@@ -367,7 +367,8 @@ pub mod utils {
             let mut list_ansible_limit = cfs_session["ansible"]["limit"]
                 .as_str()
                 .unwrap_or_default()
-                .split(',');
+                .split(',')
+                .map(|xname| xname.trim());
 
             let first = list_ansible_limit.next();
 

@@ -70,7 +70,7 @@ pub mod http_client {
         repo_name: &str,
         gitea_token: &str,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-        let settings = config::get("config");
+        let settings = config::get_configuration("config");
         let mut gitea_api_base_url = settings.get::<String>("gitea_base_url").unwrap();
         gitea_api_base_url.push_str("/api/v1");
 
@@ -120,7 +120,7 @@ pub mod http_client {
         repo_url: &str,
         gitea_token: &str,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-        let settings = config::get("config");
+        let settings = config::get_configuration("config");
         let mut gitea_api_base_url = settings.get::<String>("gitea_base_url").unwrap();
         gitea_api_base_url.push_str("/api/v1");
 

@@ -225,9 +225,9 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
-        .about("Start a node")
+        .about("Start nodes")
         .arg_required_else_help(true)
-        .arg(arg!(<XNAMES> "node's xnames"))
+        .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-r --reason <VALUE> "reason to power on"));
 
     match hsm_group {
@@ -249,8 +249,8 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
-        .about("Shutdown a node")
-        .arg(arg!(<XNAMES> "node's xnames"))
+        .about("Shutdown nodes")
+        .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to power off"));
 
@@ -274,8 +274,8 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
         .aliases(["r", "res"])
         .arg_required_else_help(true)
-        .about("Restart a node")
-        .arg(arg!(<XNAMES> "node's xnames"))
+        .about("Restart nodes")
+        .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <VALUE> "reason to reset"));
 
@@ -295,12 +295,12 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     apply_node_reset
 }
 
-pub fn subcommand_update_node(hsm_group: Option<&String>) -> Command {
-    let mut update_node = Command::new("node")
-        .alias("n")
+pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
+    let mut update_node = Command::new("nodes")
+        .aliases(["n", "node"])
         .arg_required_else_help(true)
-        .about("Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
-        .arg(arg!(<XNAMES> "node's xnames").required(true));
+        .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
+        .arg(arg!(<XNAMES> "nodes' xnames").required(true));
 
     update_node = match hsm_group {
         Some(_) => update_node,
@@ -352,7 +352,7 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
                 .alias("u")
                 .arg_required_else_help(true)
                 .about("Update nodes boot params")
-                .subcommand(subcommand_update_node(hsm_group))
+                .subcommand(subcommand_update_nodes(hsm_group))
                 .subcommand(subcommand_update_hsm_group(hsm_group)),
         )
         .subcommand(
@@ -482,7 +482,7 @@ pub async fn process_command(
             }
         }
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
-        if let Some(cli_update_node) = cli_update.subcommand_matches("node") {
+        if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             update_node::exec(&shasta_token, &shasta_base_url, cli_update_node, hsm_group).await;
         } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
             update_hsm_group::exec(

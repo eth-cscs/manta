@@ -38,9 +38,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
                                                      // containing the manta configuration 
 
-    log::debug!("Reading manta configuration from {}", &path_to_manta_configuration_file.to_string_lossy());
+    log::info!("Reading manta configuration from {}", &path_to_manta_configuration_file.to_string_lossy());
 
-    let settings = config::get(&path_to_manta_configuration_file.to_string_lossy());
+    let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
 
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     let vault_base_url = settings.get::<String>("vault_base_url").unwrap();
@@ -48,6 +48,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
+    let base_image_id = settings.get::<String>("base_image_id").unwrap();
 
     match settings.get::<String>("socks5_proxy") {
         Ok(socks_proxy) => std::env::set_var("SOCKS5", socks_proxy),

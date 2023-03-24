@@ -109,10 +109,10 @@ pub mod http_client {
         /// Shut down a node
         /// This is  sync call meaning it won't return untill the target is down
         pub async fn post_sync(
-            shasta_token: String,
-            shasta_base_url: String,
+            shasta_token: &String,
+            shasta_base_url: &String,
             reason: Option<&String>,
-            xnames: Vec<String>,
+            xnames: &Vec<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
             // Create CAPMC operation shutdown

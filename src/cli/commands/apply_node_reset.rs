@@ -43,7 +43,7 @@ pub async fn exec(
         .unwrap()
         .replace(' ', "") // trim xnames by removing white spaces
         .split(',')
-        .map(|xname| xname.to_string())
+        .map(|xname| xname.trim().to_string())
         .collect();
 
     // Parse hsm group
@@ -58,12 +58,9 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups related to hsm_group input
-        hsm_groups = cluster_ops::get_details(
-            &shasta_token,
-            &shasta_base_url,
-            hsm_group_value.unwrap(),
-        )
-        .await;
+        hsm_groups =
+            cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
+                .await;
 
         // Take all nodes for all hsm_groups found and put them in a Vec
         hsm_groups_nodes = hsm_groups
@@ -79,10 +76,8 @@ pub async fn exec(
         if !xnames.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
-            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                &hsm_groups_nodes,
-                xnames,
-            );
+            (included, excluded) =
+                node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
@@ -101,15 +96,19 @@ pub async fn exec(
     }
     // * End Process/validate hsm group value (and ansible limit)
 
-    log::info!("Servers to power reset: {:?}", included);
+    let target_nodes: Vec<String> = included.into_iter().collect();
 
-    capmc::http_client::node_power_restart::post(
-        shasta_token.to_string(),
-        shasta_base_url,
+    log::info!("Servers to power reset: {:?}", target_nodes);
+
+    capmc::http_client::node_power_off::post_sync(
+        &shasta_token.to_string(),
+        &shasta_base_url,
         cli_apply_node_reset.get_one::<String>("reason"),
-        included.into_iter().collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
+        &target_nodes, // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
         *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
     )
     .await
     .unwrap(); // TODO: idk why power on does not seems to work when forced
+
+    capmc::http_client::node_power_on::post(shasta_token, shasta_base_url, cli_apply_node_reset.get_one::<String>("reason"), target_nodes, false);
 }

@@ -41,7 +41,7 @@ pub async fn exec(
         .unwrap()
         .replace(' ', "") // trim xnames by removing white spaces
         .split(',')
-        .map(|xname| xname.to_string())
+        .map(|xname| xname.trim().to_string())
         .collect();
 
     // Parse hsm group
@@ -56,12 +56,9 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups related to hsm_group input
-        hsm_groups = cluster_ops::get_details(
-            &shasta_token,
-            &shasta_base_url,
-            hsm_group_value.unwrap(),
-        )
-        .await;
+        hsm_groups =
+            cluster_ops::get_details(&shasta_token, &shasta_base_url, hsm_group_value.unwrap())
+                .await;
 
         // Take all nodes for all hsm_groups found and put them in a Vec
         hsm_groups_nodes = hsm_groups
@@ -77,10 +74,8 @@ pub async fn exec(
         if !xnames.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
 
-            (included, excluded) = node_ops::check_hsm_group_and_ansible_limit(
-                &hsm_groups_nodes,
-                xnames,
-            );
+            (included, excluded) =
+                node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
 
             if !excluded.is_empty() {
                 println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 

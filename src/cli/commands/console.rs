@@ -37,7 +37,7 @@ pub async fn exec(
         .unwrap()
         .replace(' ', "") // trim xnames by removing white spaces
         .split(',')
-        .map(|xname| xname.to_string())
+        .map(|xname| xname.trim().to_string())
         .collect();
 
     let hsm_groups: Vec<cluster_ops::ClusterDetails>;

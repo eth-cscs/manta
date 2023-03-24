@@ -65,7 +65,7 @@ pub async fn exec(
             .unwrap()
             .replace(' ', "") // trim xnames by removing white spaces
             .split(',')
-            .map(|xname| xname.to_string())
+            .map(|xname| xname.trim().to_string())
             .collect()
     } else {
         HashSet::new()
@@ -167,7 +167,8 @@ pub async fn exec(
             .parse()
             .unwrap(),
     )
-    .await.unwrap();
+    .await
+    .unwrap();
 
     let watch_logs = cli_apply_session.get_one::<bool>("watch-logs");
 
@@ -214,6 +215,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
                 .map(|limit| limit.split(','))
         })
         .flatten()
+        .map(|xname| xname.trim())
         .collect(); // TODO: remove duplicates
 
     log::info!(

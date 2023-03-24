@@ -337,10 +337,10 @@ pub async fn exec(
 
     // Create CAPMC operation shutdown
     let capmc_shutdown_nodes_resp = crate::shasta::capmc::http_client::node_power_off::post_sync(
-        shasta_token.to_string(),
-        shasta_base_url.to_string(),
+        &shasta_token.to_string(),
+        &shasta_base_url.to_string(),
         Some(&"testing manta".to_string()),
-        nodes.clone(),
+        &nodes,
         true,
     )
     .await;
