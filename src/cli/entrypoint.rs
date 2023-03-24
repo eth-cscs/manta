@@ -10,33 +10,9 @@ use crate::cli::commands::{
 
 use super::commands::{apply_cluster, apply_image, update_hsm_group, update_node};
 
-pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_session = Command::new("session")
-        .aliases(["s", "se", "sess"])
-        .about("Get information from Shasta CFS session")
-        .arg(arg!(-n --name <VALUE> "session name"))
-        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
-        .arg(
-            arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
-                .value_parser(value_parser!(u8).range(1..)),
-        );
-
-    match hsm_group {
-        None => {
-            get_cfs_session = get_cfs_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-        }
-        Some(_) => {}
-    }
-
-    get_cfs_session =
-        get_cfs_session.group(ArgGroup::new("session_limit").args(["most-recent", "limit"]));
-
-    get_cfs_session
-}
-
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
-        .aliases(["c", "cfg", "conf", "config"])
+        .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <VALUE> "configuration name"))
         .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
@@ -60,9 +36,33 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     get_cfs_configuration
 }
 
+pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
+    let mut get_cfs_session = Command::new("session")
+        .aliases(["s", "se", "ses", "sess", "sssn"])
+        .about("Get information from Shasta CFS session")
+        .arg(arg!(-n --name <VALUE> "session name"))
+        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
+        .arg(
+            arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
+
+    match hsm_group {
+        None => {
+            get_cfs_session = get_cfs_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        }
+        Some(_) => {}
+    }
+
+    get_cfs_session =
+        get_cfs_session.group(ArgGroup::new("session_limit").args(["most-recent", "limit"]));
+
+    get_cfs_session
+}
+
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
     let mut get_bos_template = Command::new("template")
-        .aliases(["t", "tplt", "templ"])
+        .aliases(["t", "tplt", "templ", "tmplt"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <VALUE> "template name"))
         .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
@@ -85,7 +85,7 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
-        .aliases(["n", "node"])
+        .aliases(["n", "node", "nd"])
         .about("Get members of a HSM group");
 
     match hsm_group {
@@ -102,7 +102,7 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
     let mut get_hsm_group = Command::new("hsm-groups")
-        .aliases(["h", "hg", "hsm"])
+        .aliases(["h", "hg", "hsm", "hsmgrps"])
         .about("Get HSM groups details");
 
     match hsm_group {
@@ -133,7 +133,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     let mut apply_configuration = Command::new("configuration")
-        .aliases(["c", "config", "configure"])
+        .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration against a HSM group")
         .arg(arg!(-f --file <VALUE> "SAT file with configuration details").value_parser(value_parser!(PathBuf)))
@@ -156,7 +156,7 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
-        .aliases(["s", "se", "ses", "sess"])
+        .aliases(["s", "se", "ses", "sess", "sssn"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration and a session against HSM group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
@@ -211,7 +211,7 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
 
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
     Command::new("cluster")
-        .aliases(["clus"])
+        .aliases(["clus","clstr"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
         .arg(arg!(-f --file <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details").value_parser(value_parser!(PathBuf)))
@@ -272,7 +272,7 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
-        .aliases(["r", "res"])
+        .aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
         .about("Restart nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
@@ -297,7 +297,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
 
 pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_node = Command::new("nodes")
-        .aliases(["n", "node"])
+        .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
         .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
         .arg(arg!(<XNAMES> "nodes' xnames").required(true));
