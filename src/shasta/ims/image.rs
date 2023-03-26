@@ -47,3 +47,21 @@ pub mod http_client {
         }
     }
 }
+
+pub mod utils {
+    pub async fn get_image_etag_from_image_id(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        image_id: &str,
+    ) -> String {
+        let ims_image_etag =
+            crate::shasta::ims::image::http_client::get(shasta_token, shasta_base_url, image_id)
+                .await
+                .unwrap();
+
+        ims_image_etag["link"]["etag"]
+            .as_str()
+            .map(|etag| etag.to_string())
+            .unwrap()
+    }
+}

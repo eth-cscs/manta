@@ -300,11 +300,12 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
         .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
-        .arg(arg!(<XNAMES> "nodes' xnames").required(true));
+        .arg(arg!(<XNAMES> "Comman separated list of xnames which boot image will be updated").required(true))
+        .arg(arg!([CFS_CONFIG] "Most recent image successfully created for the provided configuration will be set to boot the nodes."));
 
     update_node = match hsm_group {
         Some(_) => update_node,
-        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
     };
 
     update_node

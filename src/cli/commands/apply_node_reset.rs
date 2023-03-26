@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use clap::ArgMatches;
+use regex::Regex;
 
 use crate::common::{cluster_ops, node_ops};
 
@@ -45,6 +46,14 @@ pub async fn exec(
         .split(',')
         .map(|xname| xname.trim().to_string())
         .collect();
+
+    // Check user has provided valid XNAMES
+    let xname_re = Regex::new(r"^x\d{4}c\ds\db\dn\d$").unwrap();
+
+    if xnames.iter().any(|xname| !xname_re.is_match(xname)) {
+        eprintln!("xname/s invalid. Exit");
+        std::process::exit(1);
+    }
 
     // Parse hsm group
     let mut hsm_group_value = None;

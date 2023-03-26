@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use comfy_table::Table;
+use regex::Regex;
 
 /// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
 /// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
@@ -37,4 +38,59 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     }
 
     println!("{table}");
+}
+
+/// Validates a list of xnames.
+/// Checks xnames strings are valid
+/// If hsm_group_name if provided, then checks all xnames belongs to that hsm_group
+pub async fn validate_xnames(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    xnames: &[&str],
+    hsm_group_name: Option<&String>,
+) -> bool {
+    let hsm_group_members: Vec<_> = if hsm_group_name.is_some() {
+        crate::shasta::hsm::http_client::get_hsm_group(
+            shasta_token,
+            shasta_base_url,
+            hsm_group_name.unwrap(),
+        )
+        .await
+        .unwrap()["members"]["ids"]
+            .as_array()
+            .unwrap()
+            .to_vec()
+            .iter()
+            .map(|xname| xname.as_str().unwrap().to_string())
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+
+    /* println!("hsm_group_members:\n{:#?}", hsm_group_members);
+    println!("xnames:\n{:#?}", xnames); */
+
+    let xname_re = Regex::new(r"^x\d{4}c\ds\db\dn\d$").unwrap();
+
+    if xnames.iter().any(|xname| {
+        !xname_re.is_match(xname)
+            || (!hsm_group_members.is_empty()
+                && !hsm_group_members.contains(&xname.to_string()))
+    }) {
+        eprintln!("xname/s invalid. Exit");
+
+        return false;
+    }
+
+    /* for xname in xnames {
+        if !xname_re.is_match(xname) {
+            println!("xname {} not a valid format", xname);
+        } 
+
+        if !hsm_group_members.contains(&xname.to_string()) {
+            println!("xname {} not a member of {:?}", xname, hsm_group_members)
+        }
+    } */
+
+    true
 }

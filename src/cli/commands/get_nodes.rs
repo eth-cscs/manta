@@ -224,7 +224,7 @@ pub async fn get_nodes_details(
     shasta_token: &String,
     shasta_base_url: &String,
     most_recent_compute_image_id: Option<String>,
-    _most_recent_uan_image_id: Option<String>,
+    most_recent_uan_image_id: Option<String>,
     xnames: &Vec<String>,
 ) -> Vec<Vec<String>> {
     let mut nodes_status: Vec<Vec<String>> = Vec::new();
@@ -359,6 +359,8 @@ pub async fn get_nodes_details(
 
         nodes_status.push(node_status);
     }
+
+    nodes_status.sort_by(|node_a, node_b| node_a[0].cmp(&node_b[0])); // Sort nodes by XNAME
 
     // println!("nodes_status: {:#?}", nodes_status);
 
