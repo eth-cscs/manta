@@ -46,7 +46,7 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
 pub async fn validate_xnames(
     shasta_token: &str,
     shasta_base_url: &str,
-    xnames: &[&str],
+    xnames: &Vec<&str>,
     hsm_group_name: Option<&String>,
 ) -> bool {
     let hsm_group_members: Vec<_> = if hsm_group_name.is_some() {
@@ -77,8 +77,6 @@ pub async fn validate_xnames(
             || (!hsm_group_members.is_empty()
                 && !hsm_group_members.contains(&xname.to_string()))
     }) {
-        eprintln!("xname/s invalid. Exit");
-
         return false;
     }
 

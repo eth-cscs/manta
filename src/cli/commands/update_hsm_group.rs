@@ -1,11 +1,13 @@
 use clap::ArgMatches;
 
-use crate::shasta::{bss, cfs, hsm, ims};
+use crate::shasta::hsm;
+
+use super::update_node;
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    _cli_update_node: &ArgMatches,
+    cli_update_node: &ArgMatches,
     hsm_group_name: &String,
 ) {
     let hsm_group_details =
@@ -19,20 +21,16 @@ pub async fn exec(
         Ok(hsm_group_details) => hsm::utils::get_member_ids(&hsm_group_details),
     };
 
-    /* if hsm_group_name.is_some() {
-        let hsm_group_details =
-            hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name.unwrap())
-            .await;
+    update_node::exec(
+        shasta_token,
+        shasta_base_url,
+        xnames.iter().map(|xname| xname as &str).collect(),
+        cli_update_node.get_one::<String>("CFS_CONFIG"),
+        Some(hsm_group_name),
+    )
+    .await;
 
-        let hsm_group_members = hsm::utils::get_member_ids(&hsm_group_details.unwrap());
-
-        if !hsm_group_members.iter().any(|x| x == "xname") {
-            eprintln!("xname {} does not belongs to HSM group {:?}. Exit", xname, hsm_group_members);
-            std::process::exit(1);
-        }
-    } */
-
-    // Get most recent CFS session target image for the node
+    /* // Get most recent CFS session target image for the node
     let cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -79,5 +77,5 @@ pub async fn exec(
     println!(
         "Nodes {:?} boot params have been updated to image_id {}",
         xnames, result_id
-    );
+    ); */
 }

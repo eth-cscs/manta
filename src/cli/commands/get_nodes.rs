@@ -237,7 +237,7 @@ pub async fn get_nodes_details(
 
     // Get nodes nids from HSM
     let nodes_hsm_info_resp =
-        hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames)
+        hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames.to_vec())
             .await
             .unwrap();
 

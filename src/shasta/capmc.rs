@@ -112,7 +112,7 @@ pub mod http_client {
             shasta_token: &str,
             shasta_base_url: &str,
             reason: Option<&String>,
-            xnames: &[String],
+            xnames: &Vec<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
             // Create CAPMC operation shutdown
@@ -129,7 +129,7 @@ pub mod http_client {
 
             // Check Nodes are shutdown
             let mut nodes_status =
-                hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames).await;
+                hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames.to_vec()).await;
 
             log::info!("nodes_status:\n{:#?}", nodes_status);
 
@@ -154,7 +154,7 @@ pub mod http_client {
                 nodes_status = hsm::http_client::get_components_status(
                     shasta_token,
                     shasta_base_url,
-                    xnames,
+                    xnames.to_vec(),
                 )
                 .await;
             }

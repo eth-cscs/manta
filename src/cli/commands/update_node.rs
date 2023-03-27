@@ -1,36 +1,22 @@
-use clap::ArgMatches;
-
 use crate::{
-    common::node_ops::validate_xnames,
+    common::node_ops,
     shasta::{bss, cfs, ims},
 };
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_update_node: &ArgMatches,
+    // cli_update_node: &ArgMatches,
+    xnames: Vec<&str>,
+    cfs_configuration: Option<&String>,
     hsm_group_name: Option<&String>,
 ) {
-    let xnames_params = cli_update_node.get_one::<String>("XNAMES").unwrap();
-
-    let cfs_configuration = cli_update_node.get_one::<String>("CFS_CONFIG");
-
-    let xnames: Vec<_> = xnames_params.split(',').collect();
-
     // Check user has provided valid XNAMES
-    validate_xnames(
-        shasta_token,
-        shasta_base_url,
-        &xnames,
-        hsm_group_name,
-    )
-    .await;
-    /* let xname_re = Regex::new(r"^x\d{4}c\ds\db\dn\d$").unwrap();
+    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await {
 
-    if xnames.iter().any(|xname| !xname_re.is_match(xname)) {
         eprintln!("xname/s invalid. Exit");
         std::process::exit(1);
-    } */
+    }
 
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(
