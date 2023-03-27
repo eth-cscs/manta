@@ -1,9 +1,6 @@
-use std::collections::HashSet;
-
 use clap::ArgMatches;
-use regex::Regex;
 
-use crate::common::{cluster_ops, node_ops};
+use crate::common::node_ops;
 
 use crate::shasta::capmc;
 
