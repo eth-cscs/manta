@@ -10,7 +10,7 @@ configurations:
         playbook: site.yml
         product:
           name: cos
-          version: 2.3.101
+          version: 2.3.110
           branch: integration
       - name: cscs
         playbook: site.yml
@@ -41,7 +41,7 @@ images:
   - name: psitds-cos-__DATE__
     ims:
       is_recipe: false
-      id: c37fbd5f-0fe5-43ce-8cfe-337f3e78733e
+      id: 4bf91021-8d99-4adf-945f-46de2ff50a3d
     configuration: psitds-cos-config-__DATE__
     configuration_group_names:
       - Compute

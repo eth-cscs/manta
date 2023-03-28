@@ -29,13 +29,14 @@ Manta aggregates information from multiple sources:
 - Power On/Off or restart nodes individually, in a list or per cluster
 - Restrict operations to nodes belonging to a specific HSM group
 - Filter information to a HSM group
+- Update node boot image based on CFS configuration name
 
 ## Configuration
 
 Manta needs a configuration file in `$HOME/.config/manta/config` like shown below
 
 ```bash
-base_image_id = "a897aa21-0218-4d07-aefb-13a4c15ccb65"
+base_image_id = "c37fbd5f-0fe5-43ce-8cfe-337f3e78733e"
 socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
 keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"

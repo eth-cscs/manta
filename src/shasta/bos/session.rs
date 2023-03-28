@@ -1,6 +1,6 @@
 pub mod http_client {
 
-    use serde_json::{Value, json};
+    use serde_json::{json, Value};
 
     pub async fn post(
         shasta_token: &str,
@@ -9,16 +9,6 @@ pub mod http_client {
         operation: &str,
         limit: Option<&String>,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-
-        // // socks5 proxy
-        // let socks5proxy = reqwest::Proxy::all("socks5h://127.0.0.1:1080")?;
-
-        // // rest client create new cfs sessions
-        // let client = reqwest::Client::builder()
-        //     .danger_accept_invalid_certs(true)
-        //     .proxy(socks5proxy)
-        //     .build()?;
-
         let client;
 
         let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);

@@ -114,10 +114,7 @@ impl CfsSession {
         cfs_session
     }
 
-    pub fn from_sat_file_serde_yaml(
-        session_yaml: &serde_yaml::Value,
-        base_image_id: &String,
-    ) -> Self {
+    pub fn from_sat_file_serde_yaml(session_yaml: &serde_yaml::Value, base_image_id: &str) -> Self {
         let groups_name = session_yaml["configuration_group_names"]
             .as_sequence()
             .unwrap()
@@ -169,8 +166,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.to_string();
-        api_url.push_str("/cfs/v2/sessions");
+        let api_url = shasta_base_url.to_owned() + "/cfs/v2/sessions";
 
         let resp = client
             .post(api_url)
@@ -214,8 +210,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.to_string();
-        api_url.push_str("/cfs/v2/sessions");
+        let api_url = shasta_base_url.to_owned() + "/cfs/v2/sessions";
 
         let mut request_payload = Vec::new();
 
@@ -344,7 +339,8 @@ pub mod utils {
             {
                 let target_groups_json = cfs_session["target"]["groups"].as_array().unwrap();
 
-                let mut target_groups_aux = String::from(target_groups_json[0]["name"].as_str().unwrap());
+                let mut target_groups_aux =
+                    String::from(target_groups_json[0]["name"].as_str().unwrap());
 
                 for (i, _) in target_groups_json.iter().enumerate().skip(1) {
                     if i % 2 == 0 {

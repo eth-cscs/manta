@@ -385,15 +385,15 @@ pub fn get_matches(hsm_group: Option<&String>) -> ArgMatches {
 
 pub async fn process_command(
     cli_root: ArgMatches,
-    shasta_token: String,
-    shasta_base_url: String,
+    shasta_token: &str,
+    shasta_base_url: &str,
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
-    base_image_id: &String,
-    k8s_api_url: &String,
+    base_image_id: &str,
+    k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
@@ -401,32 +401,26 @@ pub async fn process_command(
                 gitea_token,
                 hsm_group,
                 cli_get_configuration,
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
             )
             .await;
         } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
-            get_session::exec(hsm_group, cli_get_session, &shasta_token, &shasta_base_url).await;
+            get_session::exec(hsm_group, cli_get_session, shasta_token, shasta_base_url).await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
-            get_template::exec(hsm_group, cli_get_template, &shasta_token, &shasta_base_url).await;
+            get_template::exec(hsm_group, cli_get_template, shasta_token, shasta_base_url).await;
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
-            get_nodes::exec(hsm_group, cli_get_node, &shasta_token, &shasta_base_url).await;
+            get_nodes::exec(hsm_group, cli_get_node, shasta_token, shasta_base_url).await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
-            get_hsm::exec(
-                hsm_group,
-                cli_get_hsm_groups,
-                &shasta_token,
-                &shasta_base_url,
-            )
-            .await;
+            get_hsm::exec(hsm_group, cli_get_hsm_groups, shasta_token, shasta_base_url).await;
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
             let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
             apply_configuration::exec(
                 cli_apply_configuration,
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 &timestamp,
             )
             .await;
@@ -438,8 +432,8 @@ pub async fn process_command(
                 vault_role_id,
                 hsm_group,
                 cli_apply_session,
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 k8s_api_url,
             )
             .await;
@@ -449,8 +443,8 @@ pub async fn process_command(
                 vault_base_url,
                 vault_role_id,
                 cli_apply_image,
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 base_image_id,
                 cli_apply_image.get_one::<bool>("watch-logs"),
                 &timestamp,
@@ -463,8 +457,8 @@ pub async fn process_command(
                 vault_base_url,
                 vault_role_id,
                 cli_apply_cluster,
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 base_image_id,
                 hsm_group,
                 k8s_api_url,
@@ -490,12 +484,13 @@ pub async fn process_command(
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             update_node::exec(
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 cli_update_node
                     .get_one::<String>("XNAMES")
                     .unwrap()
                     .split(',')
+                    .map(|xname| xname.trim())
                     .collect(),
                 cli_update_node.get_one::<String>("CFS_CONFIG"),
                 hsm_group,
@@ -503,8 +498,8 @@ pub async fn process_command(
             .await;
         } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
             update_hsm_group::exec(
-                &shasta_token,
-                &shasta_base_url,
+                shasta_token,
+                shasta_base_url,
                 cli_update_hsm_group,
                 hsm_group.unwrap(),
             )
@@ -513,8 +508,8 @@ pub async fn process_command(
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
         log::exec(
             cli_log,
-            &shasta_token,
-            &shasta_base_url,
+            shasta_token,
+            shasta_base_url,
             vault_base_url,
             vault_role_id,
             k8s_api_url,
@@ -524,8 +519,8 @@ pub async fn process_command(
         console::exec(
             hsm_group,
             cli_console,
-            &shasta_token,
-            &shasta_base_url,
+            shasta_token,
+            shasta_base_url,
             vault_base_url,
             vault_role_id,
             k8s_api_url,

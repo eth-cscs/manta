@@ -106,8 +106,7 @@ pub async fn is_token_valid(
         client = client_builder.build()?;
     }
 
-    let mut api_url = shasta_base_url.to_string();
-    api_url.push_str("/cfs/healthz");
+    let api_url = shasta_base_url.to_owned() + "/cfs/healthz";
 
     log::debug!("Test Shasta token against {}", api_url);
 

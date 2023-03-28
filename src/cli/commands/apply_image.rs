@@ -11,15 +11,15 @@ use crate::shasta::cfs::{configuration, session::CfsSession};
 /// Return a tuple (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     cli_apply_image: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
-    base_image_id: &String,
+    base_image_id: &str,
     watch_logs: Option<&bool>,
     timestamp: &str,
     // hsm_group: Option<&String>
-    k8s_api_url: &String,
+    k8s_api_url: &str,
 ) -> (String, String) {
     let mut cfs_configuration;
 

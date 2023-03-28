@@ -4,16 +4,12 @@ pub mod http_client {
 
     pub async fn auth(
         vault_base_url: &str,
-        vault_role_id: &String,
+        vault_role_id: &str,
     ) -> core::result::Result<String, Box<dyn std::error::Error>> {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
-        let mut api_url = vault_base_url.to_owned(); // here I could also use .to_string() which
-                                                     // serializes... not sure the difference
-                                                     // between using to_owned or to_string here,
-                                                     // need to read https://doc.rust-lang.org/std/fmt/trait.Display.html again???
-        api_url.push_str("/v1/auth/approle/login");
+        let api_url = vault_base_url.to_owned() + "/v1/auth/approle/login";
 
         log::debug!("Accessing/login to {}", api_url);
 
@@ -47,8 +43,7 @@ pub mod http_client {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
-        let mut api_url = vault_base_url.to_string();
-        api_url.push_str(secret_path);
+        let api_url = vault_base_url.to_owned() + secret_path;
 
         let resp = client
             .get(api_url)
@@ -68,7 +63,7 @@ pub mod http_client {
 
     pub async fn fetch_shasta_vcs_token(
         vault_base_url: &str,
-        vault_role_id: &String
+        vault_role_id: &str
     ) -> core::result::Result<String, Box<dyn std::error::Error>> {
         let vault_token = auth(vault_base_url, vault_role_id).await;
 
@@ -87,7 +82,7 @@ pub mod http_client {
 
     pub async fn fetch_shasta_k8s_secrets(
         vault_base_url: &str,
-        vault_role_id: &String
+        vault_role_id: &str
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
         let vault_token = auth(vault_base_url, vault_role_id).await;
 

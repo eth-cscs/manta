@@ -211,8 +211,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.to_string();
-        api_url.push_str("/bos/v1/sessiontemplate");
+        let api_url = shasta_base_url.to_owned() + "/bos/v1/sessiontemplate";
 
         let resp = client
             .get(api_url)

@@ -18,8 +18,8 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
-    vault_role_id: &String,
-    k8s_api_url: &String,
+    vault_role_id: &str,
+    k8s_api_url: &str,
 ) {
     let logging_session_name = cli_log.get_one::<String>("SESSION");
 
@@ -43,11 +43,11 @@ pub async fn session_logs_proxy(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     cluster_name: Option<&String>,
     session_name: Option<&String>,
     layer_id: Option<&u8>,
-    k8s_api_url: &String,
+    k8s_api_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     // Get CFS sessions
     let cfs_sessions = shasta_cfs_session::http_client::get(
@@ -77,10 +77,10 @@ pub async fn session_logs_proxy(
 
 pub async fn session_logs(
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     cfs_session_name: &str,
     layer_id: Option<&u8>,
-    k8s_api_url: &String,
+    k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     let client = shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url).await?;
 

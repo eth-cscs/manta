@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use clap::ArgMatches;
 
 use std::path::{Path, PathBuf};
@@ -13,7 +11,7 @@ use crate::{shasta_cfs_component, shasta_cfs_session};
 use k8s_openapi::chrono;
 use substring::Substring;
 
-use crate::common::local_git_repo;
+use crate::common::{local_git_repo, node_ops};
 
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
@@ -21,15 +19,16 @@ pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     hsm_group: Option<&String>,
     cli_apply_session: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
-    k8s_api_url: &String,
+    k8s_api_url: &str,
 ) -> (String, String) {
-    let included: HashSet<String>;
-    let excluded: HashSet<String>;
+    /* let included: HashSet<String>;
+    let excluded: HashSet<String>; */
+    let xnames: Vec<&str>;
     // Check andible limit matches the nodes in hsm_group
     let hsm_groups;
 
@@ -55,7 +54,7 @@ pub async fn exec(
     // * Parse input params
     // Parse ansible limit
     // Get ansible limit nodes from cli arg
-    let ansible_limit_nodes: HashSet<String> = if cli_apply_session
+    let ansible_limit_nodes: Vec<&str> = if cli_apply_session
         .get_one::<String>("ansible-limit")
         .is_some()
     {
@@ -63,12 +62,11 @@ pub async fn exec(
         cli_apply_session
             .get_one::<String>("ansible-limit")
             .unwrap()
-            .replace(' ', "") // trim xnames by removing white spaces
             .split(',')
-            .map(|xname| xname.trim().to_string())
+            .map(|xname| xname.trim())
             .collect()
     } else {
-        HashSet::new()
+        Vec::new()
     };
 
     // Parse hsm group
@@ -108,28 +106,42 @@ pub async fn exec(
                 hsm_group
                     .members
                     .iter()
-                    .map(|xname| xname.as_str().unwrap().to_string())
+                    .map(|xname| xname.as_str().unwrap())
             })
             .collect();
 
         if !ansible_limit_nodes.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
+            xnames = hsm_groups_nodes;
+            // Check user has provided valid XNAMES
+            if !node_ops::validate_xnames(
+                shasta_token,
+                shasta_base_url,
+                &xnames,
+                hsm_group,
+            )
+            .await
+            {
+                eprintln!("xname/s invalid. Exit");
+                std::process::exit(1);
+            }
 
-            (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
+            /* (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
                 &hsm_groups_nodes,
                 ansible_limit_nodes,
             );
 
             if !excluded.is_empty() {
-                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
+                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}",
                             excluded,
                             hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
                             hsm_groups_nodes);
                 std::process::exit(-1);
-            }
+            } */
         } else {
             // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
-            included = hsm_groups_nodes
+            // included = hsm_groups_nodes
+            xnames = hsm_groups_nodes;
         }
     } else {
         // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
@@ -137,7 +149,8 @@ pub async fn exec(
             .get_one::<String>("name")
             .unwrap()
             .to_string();
-        included = ansible_limit_nodes
+        // included = ansible_limit_nodes
+        xnames = ansible_limit_nodes;
     }
     // * End Process/validate hsm group value (and ansible limit)
 
@@ -160,7 +173,7 @@ pub async fn exec(
         gitea_base_url,
         shasta_token,
         shasta_base_url,
-        included.into_iter().collect::<Vec<String>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
+        xnames.into_iter().collect::<Vec<_>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
         cli_apply_session
             .get_one::<String>("ansible-verbosity")
             .unwrap()

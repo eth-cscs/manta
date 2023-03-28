@@ -11,8 +11,8 @@ use crate::common::node_ops;
 pub async fn exec(
     hsm_group: Option<&String>,
     cli_get_node: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
 ) {
     // Check if HSM group name provided y configuration file
     let hsm_group_name = match hsm_group {
@@ -221,8 +221,8 @@ pub async fn exec(
 }
 
 pub async fn get_nodes_details(
-    shasta_token: &String,
-    shasta_base_url: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
     most_recent_compute_image_id: Option<String>,
     most_recent_uan_image_id: Option<String>,
     xnames: &Vec<String>,

@@ -67,8 +67,7 @@ pub mod http_client {
 
         let json_response: Value;
 
-        let mut url_api = shasta_base_url.to_string();
-        url_api.push_str("/smd/hsm/v2/groups");
+        let url_api = shasta_base_url.to_owned() + "/smd/hsm/v2/groups";
 
         let resp = client
             .get(url_api)
@@ -132,9 +131,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut url_api = shasta_base_url.to_string();
-        url_api.push_str("/smd/hsm/v2/groups/");
-        url_api.push_str(hsm_group_name);
+        let url_api = shasta_base_url.to_owned() + "/smd/hsm/v2/groups/" + hsm_group_name;
 
         let resp = client
             .get(url_api)

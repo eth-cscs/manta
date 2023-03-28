@@ -81,8 +81,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let matches = crate::cli::entrypoint::get_matches(hsm_group);
     let cli_result = crate::cli::entrypoint::process_command(
         matches,
-        shasta_token,
-        shasta_base_url,
+        &shasta_token,
+        &shasta_base_url,
         &vault_base_url,
         &vault_role_id,
         &gitea_token,

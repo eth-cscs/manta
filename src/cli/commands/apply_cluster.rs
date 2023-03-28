@@ -11,13 +11,13 @@ use super::apply_image;
 
 pub async fn exec(
     vault_base_url: &str,
-    vault_role_id: &String,
+    vault_role_id: &str,
     cli_apply_image: &ArgMatches,
-    shasta_token: &String,
-    shasta_base_url: &String,
-    base_image_id: &String,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    base_image_id: &str,
     hsm_group_param: Option<&String>,
-    k8s_api_url: &String,
+    k8s_api_url: &str,
 ) {
     let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_buf).unwrap();
@@ -337,8 +337,8 @@ pub async fn exec(
 
     // Create CAPMC operation shutdown
     let capmc_shutdown_nodes_resp = crate::shasta::capmc::http_client::node_power_off::post_sync(
-        &shasta_token.to_string(),
-        &shasta_base_url.to_string(),
+        shasta_token,
+        shasta_base_url,
         Some(&"testing manta".to_string()),
         &nodes,
         true,

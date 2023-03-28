@@ -52,9 +52,9 @@ pub mod http_client {
 
     /// Get node boot params, ref --> https://apidocs.svc.cscs.ch/iaas/bss/tag/bootparameters/paths/~1bootparameters/get/
     pub async fn get_boot_params(
-        shasta_token: &String,
-        shasta_base_url: &String,
-        xnames: &[String],
+        shasta_token: &str,
+        shasta_base_url: &str,
+        xnames: &[String]
     ) -> Result<Vec<Value>, Box<dyn Error>> {
         let client;
 

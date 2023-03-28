@@ -2,10 +2,12 @@ use std::collections::HashSet;
 
 use comfy_table::Table;
 use regex::Regex;
+use serde_json::Value;
 
 /// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
 /// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
 // TODO: improve by using HashSet::diferent to get excluded and HashSet::intersection to get "included"
+#[deprecated(note = "Use crate::common::node_ops::validate_xnames instead")]
 pub fn check_hsm_group_and_ansible_limit(
     hsm_groups_nodes: &HashSet<String>,
     ansible_limit_nodes: HashSet<String>,
@@ -38,6 +40,32 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     }
 
     println!("{table}");
+}
+
+pub fn nodes_to_string_format_one_line(nodes: &Vec<Value>) -> String {
+    nodes_to_string_format_discrete_columns(nodes, nodes.len() + 1)
+}
+
+pub fn nodes_to_string_format_discrete_columns(nodes: &Vec<Value>, limit: usize) -> String {
+    let mut members: String = String::new();
+
+    if !nodes.is_empty() {
+        members = nodes[0].as_str().unwrap().to_string(); // take first element
+
+        for (i, _) in nodes.iter().enumerate().skip(1) { // iterate for the rest of the list
+            if i % limit == 0 {
+                // breaking the cell content into multiple lines (only 2 xnames per line)
+
+                members.push_str(",\n");
+            } else {
+                members.push(',');
+            }
+
+            members.push_str(nodes[i].as_str().unwrap());
+        }
+    }
+
+    members
 }
 
 /// Validates a list of xnames.
@@ -74,8 +102,7 @@ pub async fn validate_xnames(
 
     if xnames.iter().any(|xname| {
         !xname_re.is_match(xname)
-            || (!hsm_group_members.is_empty()
-                && !hsm_group_members.contains(&xname.to_string()))
+            || (!hsm_group_members.is_empty() && !hsm_group_members.contains(&xname.to_string()))
     }) {
         return false;
     }
@@ -83,7 +110,7 @@ pub async fn validate_xnames(
     /* for xname in xnames {
         if !xname_re.is_match(xname) {
             println!("xname {} not a valid format", xname);
-        } 
+        }
 
         if !hsm_group_members.contains(&xname.to_string()) {
             println!("xname {} not a member of {:?}", xname, hsm_group_members)

@@ -62,8 +62,8 @@ pub mod http_client {
         use crate::{capmc::PowerStatus, shasta::hsm};
 
         pub async fn post(
-            shasta_token: String,
-            shasta_base_url: String,
+            shasta_token: &str,
+            shasta_base_url: &str,
             reason: Option<&String>,
             xnames: Vec<String>,
             force: bool,
@@ -87,8 +87,7 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
 
-            let mut api_url = shasta_base_url.clone();
-            api_url.push_str("/capmc/capmc/v1/xname_off");
+            let api_url = shasta_base_url.to_owned() + "/capmc/capmc/v1/xname_off";
 
             let resp = client
                 .post(api_url)
@@ -117,8 +116,8 @@ pub mod http_client {
         ) -> Result<Value, Box<dyn Error>> {
             // Create CAPMC operation shutdown
             let capmc_shutdown_nodes_resp = post(
-                shasta_token.to_owned(),
-                shasta_base_url.to_owned(),
+                shasta_token,
+                shasta_base_url,
                 reason,
                 xnames.to_owned(),
                 force,
@@ -175,8 +174,8 @@ pub mod http_client {
         use crate::capmc::PowerStatus;
 
         pub async fn post(
-            shasta_token: String,
-            shasta_base_url: String,
+            shasta_token: &str,
+            shasta_base_url: &str,
             reason: Option<&String>,
             xnames: Vec<String>,
             force: bool,
@@ -200,8 +199,7 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
 
-            let mut api_url = shasta_base_url.clone();
-            api_url.push_str("/capmc/capmc/v1/xname_on");
+            let api_url = shasta_base_url.to_owned() + "/capmc/capmc/v1/xname_on";
 
             let resp = client
                 .post(api_url)
@@ -230,8 +228,8 @@ pub mod http_client {
         use crate::capmc::PowerStatus;
 
         pub async fn post(
-            shasta_token: String,
-            shasta_base_url: String,
+            shasta_token: &str,
+            shasta_base_url: &str,
             reason: Option<&String>,
             xnames: Vec<String>,
             force: bool,
@@ -255,8 +253,7 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
 
-            let mut api_url = shasta_base_url.clone();
-            api_url.push_str("/capmc/capmc/v1/xname_reinit");
+            let api_url = shasta_base_url.to_owned() + "/capmc/capmc/v1/xname_reinit";
 
             let resp = client
                 .post(api_url)
@@ -285,7 +282,7 @@ pub mod http_client {
         use crate::capmc::NodeStatus;
 
         pub async fn post(
-            shasta_token: &String,
+            shasta_token: &str,
             shasta_base_url: &str,
             xnames: &Vec<String>,
         ) -> core::result::Result<Value, Box<dyn Error>> {
@@ -309,10 +306,7 @@ pub mod http_client {
                 client = client_builder.build()?;
             }
 
-            let mut url_api = shasta_base_url.to_owned(); // I could also use to_string here, not
-                                                          // sure why to_owned is better (something
-                                                          // to do with serialization) need to read https://doc.rust-lang.org/std/fmt/trait.Display.html
-            url_api.push_str("/capmc/capmc/v1/get_xname_status");
+            let url_api = shasta_base_url.to_owned() + "/capmc/capmc/v1/get_xname_status";
 
             let resp = client
                 .post(url_api)

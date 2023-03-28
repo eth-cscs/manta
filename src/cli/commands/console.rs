@@ -13,9 +13,7 @@ use tokio_util::io::ReaderStream;
 
 use crate::shasta::kubernetes::get_k8s_client_programmatically;
 
-use crate::common::{cluster_ops, node_ops};
-
-use std::collections::HashSet;
+use crate::common::node_ops;
 
 use clap::ArgMatches;
 
@@ -25,56 +23,62 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
-    vault_role_id: &String,
-    k8s_api_url: &String,
+    vault_role_id: &str,
+    k8s_api_url: &str,
 ) {
-    let included: HashSet<String>;
-    let excluded: HashSet<String>;
+    /* let included: HashSet<String>;
+    let excluded: HashSet<String>; */
 
     // User provided list of xnames to power reset
-    let xnames: HashSet<String> = cli_console
+    let xnames: Vec<&str> = cli_console
         .get_one::<String>("XNAME")
         .unwrap()
-        .replace(' ', "") // trim xnames by removing white spaces
         .split(',')
-        .map(|xname| xname.trim().to_string())
+        .map(|xname| xname.trim())
         .collect();
 
-    let hsm_groups: Vec<cluster_ops::ClusterDetails>;
+    // let hsm_groups: Vec<cluster_ops::ClusterDetails>;
 
     if hsm_group.is_some() {
-        // hsm_group value provided
+        /* // hsm_group value provided
         hsm_groups =
-            cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group.unwrap()).await;
+            cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group.unwrap()).await; */
 
-        // Take all nodes for all hsm_groups found and put them in a Set
-        let hsm_groups_nodes = hsm_groups
+        /* // Take all nodes for all hsm_groups found and put them in a Set
+        let hsm_groups_nodes: Vec<&str> = hsm_groups
             .iter()
             .flat_map(|hsm_group| {
                 hsm_group
                     .members
                     .iter()
-                    .map(|xname| xname.as_str().unwrap().to_string())
+                    .map(|xname| xname.as_str().unwrap())
             })
-            .collect();
+            .collect(); */
 
-        (included, excluded) =
+        // Check user has provided valid XNAMES
+        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {
+            eprintln!("xname/s invalid. Exit");
+            std::process::exit(1);
+        }
+
+        /* (included, excluded) =
             node_ops::check_hsm_group_and_ansible_limit(&hsm_groups_nodes, xnames);
 
         if !excluded.is_empty() {
-            println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}", 
+            println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}",
                     excluded,
                     hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
                     hsm_groups_nodes);
             std::process::exit(-1);
-        }
+        } */
     } else {
         // no hsm_group value provided
-        included = xnames.clone();
+        // included = xnames.clone();
     }
 
     connect_to_console(
-        included.iter().next().unwrap(),
+        // included.iter().next().unwrap(),
+        &xnames.first().unwrap().to_string(),
         vault_base_url,
         vault_role_id,
         k8s_api_url,
@@ -86,8 +90,8 @@ pub async fn exec(
 pub async fn connect_to_console(
     xname: &String,
     vault_base_url: &str,
-    vault_role_id: &String,
-    k8s_api_url: &String,
+    vault_role_id: &str,
+    k8s_api_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 

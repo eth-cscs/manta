@@ -25,9 +25,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.to_string();
-        api_url.push_str("/ims/v3/images/");
-        api_url.push_str(image_id);
+        let api_url = shasta_base_url.to_owned() + "/ims/v3/images/" + image_id;
 
         let resp = client
             .get(api_url)

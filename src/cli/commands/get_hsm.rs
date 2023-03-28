@@ -1,8 +1,6 @@
 use clap::ArgMatches;
 
-use crate::common::cluster_ops;
-
-use crate::shasta::nodes;
+use crate::common::{cluster_ops, node_ops};
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -126,7 +124,7 @@ pub async fn exec(
 
         println!(
             " * members: {}",
-            nodes::nodes_to_string_format_unlimited(&hsm_group.members)
+            node_ops::nodes_to_string_format_one_line(&hsm_group.members)
         );
     }
 }

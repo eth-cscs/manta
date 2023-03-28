@@ -12,9 +12,8 @@ pub mod http_client {
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
         let gitea_internal_base_url = "https://api-gw-service-nmn.local/vcs/";
         let gitea_external_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
-        let mut gitea_api_base_url = gitea_external_base_url.to_string().clone();
-        gitea_api_base_url.push_str("api/v1");
-        // let gitea_api_base_url = format!("{}{}", gitea_internal_base_url, "/api/v1");
+
+        let gitea_api_base_url = gitea_external_base_url.to_owned() + "api/v1";
 
         let repo_name = repo_url
             .trim_start_matches(&gitea_internal_base_url)
@@ -67,14 +66,11 @@ pub mod http_client {
     }
 
     pub async fn get_last_commit_from_repo_name(
+        gitea_api_base_url: &str,
         repo_name: &str,
         gitea_token: &str,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-        let settings = config::get_configuration("config");
-        let mut gitea_api_base_url = settings.get::<String>("gitea_base_url").unwrap();
-        gitea_api_base_url.push_str("/api/v1");
-
-        let repo_url = format!("{}/repos/{}/commits", gitea_api_base_url, repo_name);
+        let repo_url = gitea_api_base_url.to_owned() + "/api/v1/repos" + repo_name + "/commits";
 
         let client;
 
@@ -117,17 +113,14 @@ pub mod http_client {
     }
 
     pub async fn get_last_commit_from_url(
+        gitea_api_base_url: &str,
         repo_url: &str,
         gitea_token: &str,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
-        let settings = config::get_configuration("config");
-        let mut gitea_api_base_url = settings.get::<String>("gitea_base_url").unwrap();
-        gitea_api_base_url.push_str("/api/v1");
-
         let repo_name = repo_url
             .trim_start_matches("https://api-gw-service-nmn.local/vcs/")
             .trim_end_matches(".git");
 
-        get_last_commit_from_repo_name(repo_name, gitea_token).await
+        get_last_commit_from_repo_name(gitea_api_base_url, repo_name, gitea_token).await
     }
 }
