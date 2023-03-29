@@ -1,0 +1,45 @@
+configurations:
+- name: rosa-cos-config-__DATE__
+  layers:
+  - name: ss11
+    playbook: shs_cassini_install.yml
+    git:
+      url: https://api-gw-service-nmn.local/vcs/cray/slingshot-host-software-config-management.git
+      branch: integration
+  - name: cos
+    playbook: site.yml
+    product:
+      name: cos
+      version: 2.3.110
+      branch: integration
+  - name: cscs
+    playbook: site.yml
+    git:
+      url: https://api-gw-service-nmn.local/vcs/cray/cscs-config-management.git
+      branch: integration
+  - name: rancher
+    playbook: site.yml
+    git:
+      url: https://api-gw-service-nmn.local/vcs/cray/rancher-prep.git
+      branch: master
+
+images:
+- name: rosa-cos-__DATE__
+  ims:
+    is_recipe: false
+    id: 4bf91021-8d99-4adf-945f-46de2ff50a3d
+  configuration: rosa-cos-config-__DATE__
+  configuration_group_names:
+  - Compute
+  - rosa
+
+session_templates:
+- name: rosa-cos-template-__DATE__
+  image: rosa-cos-__DATE__
+  configuration: rosa-cos-config-__DATE__
+  bos_parameters:
+    boot_sets:
+      compute:
+        kernel_parameters: ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}
+        node_groups:
+        - rosa

@@ -69,7 +69,7 @@ pub async fn exec(
         .unwrap()
         .to_string();
 
-    log::info!("CFS configuration name: {}", cfs_configuration_name);
+    println!("CFS configuration created: {}", cfs_configuration_name);
 
     cfs_configuration_name
 }

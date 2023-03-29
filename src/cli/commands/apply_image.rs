@@ -123,7 +123,7 @@ pub async fn exec(
             .unwrap();
     } */
 
-    log::info!("CFS session name: {}", cfs_session_name);
+    println!("CFS session created: {}", cfs_session_name);
 
     (cfs_configuration.name, cfs_session_name)
 }
