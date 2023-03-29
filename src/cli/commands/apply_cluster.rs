@@ -95,7 +95,7 @@ pub async fn exec(
 
     println!();
 
-    log::info!("Get CFS session details:\n{:#?}", cfs_sessions_details);
+    log::debug!("CFS session response:\n{:#?}", cfs_sessions_details);
 
     /* // Get groups from SAT images.configuration_group_names file
     let mut hsm_groups: Vec<String> = sat_file_yaml["images"]
@@ -170,7 +170,7 @@ pub async fn exec(
     )
     .await;
 
-    log::info!("IMS image details:\n{:#?}", image_details);
+    log::debug!("IMS image response:\n{:#?}", image_details);
 
     /* // Wait till image details are available
     let mut i = 0;
@@ -294,7 +294,7 @@ pub async fn exec(
         links: None,
     };
 
-    log::info!(
+    log::debug!(
         "create BOS session template payload:\n{:#?}",
         create_bos_session_template_payload
     );
@@ -306,13 +306,13 @@ pub async fn exec(
     )
     .await;
 
-    log::info!(
+    log::debug!(
         "Create BOS session template response:\n{:#?}",
         create_bos_session_template_resp
     );
 
     if create_bos_session_template_resp.is_err() {
-        log::error!("BOS session template creation failed");
+        eprintln!("BOS session template creation failed");
         std::process::exit(1);
     }
 
@@ -325,7 +325,7 @@ pub async fn exec(
         crate::shasta::hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group)
             .await;
 
-    log::info!("hsm_group_details:\n{:#?}", hsm_group_details);
+    log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
     // Get list of xnames in HSM group
     let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
@@ -345,7 +345,7 @@ pub async fn exec(
     )
     .await;
 
-    log::info!("CAPMC shutdown nodes response:\n{:#?}", capmc_shutdown_nodes_resp);
+    log::debug!("CAPMC shutdown nodes response:\n{:#?}", capmc_shutdown_nodes_resp);
 
     // Create BOS session operation start
     let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(
@@ -357,8 +357,8 @@ pub async fn exec(
     )
     .await;
 
-    log::info!(
-        "Create BOS boot session resp:\n{:#?}",
+    log::debug!(
+        "Create BOS boot session response:\n{:#?}",
         create_bos_boot_session_resp
     );
 

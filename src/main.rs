@@ -34,11 +34,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut path_to_manta_configuration_file = PathBuf::from(project_dirs.unwrap().config_dir());
-    
-    path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
-                                                     // containing the manta configuration 
 
-    log::info!("Reading manta configuration from {}", &path_to_manta_configuration_file.to_string_lossy());
+    path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
+                                                     // containing the manta configuration
+
+    log::info!(
+        "Reading manta configuration from {}",
+        &path_to_manta_configuration_file.to_string_lossy()
+    );
 
     let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
 
@@ -73,9 +76,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
 
-    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url, &vault_role_id)
-        .await
-        .unwrap();
+    let gitea_token =
+        crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url, &vault_role_id)
+            .await
+            .unwrap();
 
     // Process input params
     let matches = crate::cli::entrypoint::get_matches(hsm_group);

@@ -296,7 +296,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
             Ok(repo) => repo,
             Err(_) => {
-                log::error!(
+                eprintln!(
                     "Could not find a git repo in {}",
                     repos[i].to_string_lossy()
                 );
@@ -328,7 +328,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
         // Check site.yml file exists inside repo folder
         if !Path::new(repo.path()).exists() {
-            log::error!(
+            eprintln!(
                 "site.yaml file does not exists in {}",
                 repo.path().display()
             );
@@ -422,7 +422,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             .unwrap()
             .to_string(),
         Err(e) => {
-            log::error!("{}", e);
+            eprintln!("{}", e);
             std::process::exit(1);
         }
     };
@@ -454,7 +454,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),
         Err(e) => {
-            log::error!("{}", e);
+            eprintln!("{}", e);
             std::process::exit(1);
         }
     };

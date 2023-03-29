@@ -74,7 +74,7 @@ pub mod http_client {
                 Ok(String::from(vault_secret["token"].as_str().unwrap())) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
             }
             Err(e) => {
-                log::error!("{}", e);
+                eprintln!("{}", e);
                 std::process::exit(1);
             }
         }
@@ -95,7 +95,7 @@ pub mod http_client {
                 )?) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["value"]
             }
             Err(e) => {
-                log::error!("{}", e);
+                eprintln!("{}", e);
                 std::process::exit(1);
             }
         }

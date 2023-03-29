@@ -129,7 +129,7 @@ impl CfsConfiguration {
             let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
                 Ok(repo) => repo,
                 Err(_) => {
-                    log::error!(
+                    eprintln!(
                         "Could not find a git repo in {}",
                         repo_path.to_string_lossy()
                     );
@@ -174,7 +174,7 @@ impl CfsConfiguration {
                     shasta_commitid_details_resp.unwrap()
                 }
                 Err(e) => {
-                    log::error!("{}", e);
+                    eprintln!("{}", e);
                     std::process::exit(1);
                 }
             };

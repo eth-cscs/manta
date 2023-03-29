@@ -60,7 +60,7 @@ pub async fn exec(
     );
 
     if create_cfs_configuration_resp.is_err() {
-        log::error!("CFS configuration creation failed");
+        eprintln!("CFS configuration creation failed");
         std::process::exit(1);
     }
 

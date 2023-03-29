@@ -191,7 +191,7 @@ pub async fn connect_to_console(
                             //     },
                             //     Err(e) => {
                             //         // log::warn!("There was an error converting from utf8 to str:\n{:?}", &remote_stdout);
-                            //         // log::error!("{:?}", e);
+                            //         // eprintln!("{:?}", e);
                             //         // stdout.suspend_raw_mode().unwrap();
                             //         // std::process::exit(1);
                             //     }
@@ -199,7 +199,7 @@ pub async fn connect_to_console(
                         }
                         Err(e) => {
                             log::warn!("There was an error reading stream input");
-                            log::error!("{:?}", e);
+                            eprintln!("{:?}", e);
                             stdout.suspend_raw_mode().unwrap();
                             // std::process::exit(1);
                         }

@@ -51,7 +51,7 @@ pub async fn exec(
     // Rename configuration name
     cfs_configuration.name = cfs_configuration.name.replace("__DATE__", timestamp);
 
-    log::info!(
+    log::debug!(
         "CFS configuration creation payload:\n{:#?}",
         cfs_configuration
     );
@@ -64,15 +64,17 @@ pub async fn exec(
     )
     .await;
 
-    log::info!(
+    log::debug!(
         "CFS configuration creation response:\n{:#?}",
         create_cfs_configuration_resp
     );
 
     if create_cfs_configuration_resp.is_err() {
-        log::error!("CFS configuration creation failed");
+        eprintln!("CFS configuration creation failed");
         std::process::exit(1);
     }
+
+    println!("CFS configuration created: {}", cfs_configuration.name);
 
     let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
 
@@ -84,19 +86,19 @@ pub async fn exec(
     // Rename session configuration name
     cfs_session.configuration_name = cfs_configuration.name.clone();
 
-    log::info!("CFS session creation payload:\n{:#?}", cfs_session);
+    log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
     let create_cfs_session_resp =
         crate::shasta::cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
             .await;
 
-    log::info!(
+    log::debug!(
         "CFS session creation response:\n{:#?}",
         create_cfs_session_resp
     );
 
     if create_cfs_session_resp.is_err() {
-        log::error!("CFS session creation failed");
+        eprintln!("CFS session creation failed");
         std::process::exit(1);
     }
 

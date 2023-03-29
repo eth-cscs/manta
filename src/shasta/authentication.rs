@@ -63,7 +63,7 @@ pub async fn get_api_token(
                 shasta_token = get_token_from_local_file(path.as_os_str()).unwrap();
             }
             Err(_) => {
-                log::error!("Failed in getting token from Shasta API");
+                eprintln!("Failed in getting token from Shasta API");
             }
         }
 
