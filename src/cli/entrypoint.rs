@@ -501,7 +501,7 @@ pub async fn process_command(
                 shasta_token,
                 shasta_base_url,
                 cli_update_hsm_group,
-                hsm_group.unwrap(),
+                hsm_group,
             )
             .await;
         }

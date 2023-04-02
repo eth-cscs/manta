@@ -17,7 +17,8 @@ pub async fn exec(
 ) -> String {
     // * Parse input params
     let path_buf: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
-    let file_content = std::fs::read_to_string(path_buf.file_name().unwrap()).unwrap();
+    println!("file config: {:#?}", path_buf.file_name());
+    let file_content = std::fs::read_to_string(path_buf.as_path()).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();

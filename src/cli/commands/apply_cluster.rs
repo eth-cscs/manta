@@ -228,13 +228,13 @@ pub async fn exec(
     let bos_session_template_yaml = bos_session_templates_yaml.iter().next().unwrap();
 
     let bos_session_template_name = bos_session_template_yaml["name"]
-            .as_str()
-            .unwrap()
-            .to_string()
-            .replace("__DATE__", &timestamp);
+        .as_str()
+        .unwrap()
+        .to_string()
+        .replace("__DATE__", &timestamp);
 
-    let bos_session_template_hsm_groups: Vec<String> = bos_session_template_yaml["bos_parameters"]["boot_sets"]
-        ["compute"]["node_groups"]
+    let bos_session_template_hsm_groups: Vec<String> = bos_session_template_yaml["bos_parameters"]
+        ["boot_sets"]["compute"]["node_groups"]
         .as_sequence()
         .unwrap()
         .iter()
@@ -243,9 +243,10 @@ pub async fn exec(
 
     // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups with
     // Check hsm groups in SAT file includes the hsm_group_param
-    let hsm_group = if !bos_session_template_hsm_groups
-        .iter()
-        .any(|h_g| h_g.eq(hsm_group_param.unwrap()))
+    let hsm_group = if hsm_group_param.is_some()
+        && !bos_session_template_hsm_groups
+            .iter()
+            .any(|h_g| h_g.eq(hsm_group_param.unwrap()))
     {
         eprintln!("HSM group in param does not matches with any HSM groups in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Using HSM group in param as the default");
         hsm_group_param.unwrap()
@@ -272,7 +273,7 @@ pub async fn exec(
         network: Some("nmn".to_string()),
         node_list: None,
         node_roles_groups: None,
-        node_groups: Some(vec!(hsm_group.to_string())),
+        node_groups: Some(vec![hsm_group.to_string()]),
         rootfs_provider: Some("cpss3".to_string()),
         rootfs_provider_passthrough: Some("dvs:api-gw-service-nmn.local:300:nmn0".to_string()),
     };
@@ -345,7 +346,10 @@ pub async fn exec(
     )
     .await;
 
-    log::debug!("CAPMC shutdown nodes response:\n{:#?}", capmc_shutdown_nodes_resp);
+    log::debug!(
+        "CAPMC shutdown nodes response:\n{:#?}",
+        capmc_shutdown_nodes_resp
+    );
 
     // Create BOS session operation start
     let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(

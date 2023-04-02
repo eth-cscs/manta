@@ -82,7 +82,7 @@ pub async fn exec(
         ims::image::utils::get_image_etag_from_image_id(shasta_token, shasta_base_url, result_id)
             .await;
 
-    let boot_params = format!("console=ttyS0,115200 bad_page=panic crashkernel=360M hugepagelist=2m-2g intel_iommu=off intel_pstate=disable iommu.passthrough=on numa_interleave_omit=headless oops=panic pageblock_order=14 rd.neednet=1 rd.retry=10 rd.shell ip=dhcp quiet spire_join_token=${{SPIRE_JOIN_TOKEN}} root=craycps-s3:s3://boot-images/{image_id}/rootfs:{etag}-226:dvs:api-gw-service-nmn.local:300:nmn0 nmd_data=url=s3://boot-images/{image_id}/rootfs,etag={etag}-226", image_id=result_id, etag=ims_image_etag );
+    let boot_params = format!("console=ttyS0,115200 bad_page=panic crashkernel=360M hugepagelist=2m-2g intel_iommu=off intel_pstate=disable iommu.passthrough=on numa_interleave_omit=headless oops=panic pageblock_order=14 rd.neednet=1 rd.retry=10 rd.shell ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${{SPIRE_JOIN_TOKEN}} root=craycps-s3:s3://boot-images/{image_id}/rootfs:{etag}-226:dvs:api-gw-service-nmn.local:300:nmn0 nmd_data=url=s3://boot-images/{image_id}/rootfs,etag={etag}-226", image_id=result_id, etag=ims_image_etag );
 
     let kernel = format!("s3://boot-images/{image_id}/kernel", image_id = result_id);
 
