@@ -305,7 +305,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
 
     update_node = match hsm_group {
         Some(_) => update_node,
-        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
+        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
     };
 
     update_node
@@ -490,7 +490,7 @@ pub async fn process_command(
                     .get_one::<String>("XNAMES")
                     .unwrap()
                     .split(',')
-                    .map(|xname| xname.trim())
+                    .map(|xname| xname.trim().to_string())
                     .collect(),
                 cli_update_node.get_one::<String>("CFS_CONFIG"),
                 hsm_group,

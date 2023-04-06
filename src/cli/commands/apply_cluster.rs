@@ -5,7 +5,7 @@ use clap::ArgMatches;
 use k8s_openapi::chrono;
 use serde_yaml::Value;
 
-use crate::shasta::cfs::session;
+use crate::shasta::{bos, cfs::session};
 
 use super::apply_image;
 
@@ -96,48 +96,6 @@ pub async fn exec(
     println!();
 
     log::debug!("CFS session response:\n{:#?}", cfs_sessions_details);
-
-    /* // Get groups from SAT images.configuration_group_names file
-    let mut hsm_groups: Vec<String> = sat_file_yaml["images"]
-        .as_sequence()
-        .unwrap()
-        .into_iter()
-        .next()
-        .unwrap()["configuration_group_names"]
-        .as_sequence()
-        .unwrap()
-        .into_iter()
-        .map(|member| member.as_str().unwrap().to_string())
-        .collect();
-
-    // Filter groups from SAT file to hsm groups only
-    hsm_groups = hsm_groups
-        .into_iter()
-        .filter(|member| {
-            !member.to_lowercase().eq(&"compute") && !member.to_lowercase().eq(&"application")
-        })
-        .collect::<Vec<_>>();
-
-    let hsm_group;
-
-    // let hsm_group = hsm_groups.iter().next();
-
-    /* if hsm_group.is_none() {
-        eprintln!("SAT file images.configuration_group_names does not have valid HSM groups");
-        std::process::exit(1);
-    } */
-
-    // Check hsm groups in SAT file includes the hsm group in params
-    if !hsm_groups.iter().any(|h_g| h_g.eq(hsm_group_param.unwrap())) {
-        eprintln!("HSM group in param does not matches with any HSM groups in SAT file under images.configuration_group_names section. Using HSM group in param as the default");
-    }
-
-    hsm_group = hsm_group_param.unwrap();
-
-    if hsm_group.is_empty() {
-        eprintln!("No HSM group available. Exiting");
-        std::process::exit(1);
-    } */
 
     // Get data from yaml to create BOS session template
     if !cfs_sessions_details.first().unwrap()["status"]["session"]["status"].eq("complete") {
@@ -241,7 +199,7 @@ pub async fn exec(
         .map(|node| node.as_str().unwrap().to_string())
         .collect();
 
-    // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups with
+    // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups matches with
     // Check hsm groups in SAT file includes the hsm_group_param
     let hsm_group = if hsm_group_param.is_some()
         && !bos_session_template_hsm_groups
@@ -254,7 +212,7 @@ pub async fn exec(
         bos_session_template_hsm_groups.first().unwrap()
     };
 
-    let cfs = crate::shasta::bos::template::Cfs {
+    /* let cfs = crate::shasta::bos::template::Cfs {
         clone_url: None,
         branch: None,
         commit: None,
@@ -293,7 +251,17 @@ pub async fn exec(
         partition: None,
         boot_sets: Some(boot_set),
         links: None,
-    };
+    }; */
+
+    let create_bos_session_template_payload = bos::template::BosTemplate::new_for_hsm_group(
+        cfs_configuration_name,
+        bos_session_template_name,
+        ims_image_name,
+        ims_image_path,
+        ims_image_type,
+        ims_image_etag,
+        hsm_group,
+    );
 
     log::debug!(
         "create BOS session template payload:\n{:#?}",

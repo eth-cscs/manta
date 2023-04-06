@@ -1,23 +1,13 @@
-use crate::{
-    common::node_ops,
-    shasta::{bss, cfs, ims},
-};
+use crate::shasta::{bos, cfs, ims};
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     // cli_update_node: &ArgMatches,
-    xnames: Vec<&str>,
-    cfs_configuration: Option<&String>,
+    xnames: Vec<String>,
+    cfs_configuration_name: Option<&String>,
     hsm_group_name: Option<&String>,
 ) {
-    // Check user has provided valid XNAMES
-    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await {
-
-        eprintln!("xname/s invalid. Exit");
-        std::process::exit(1);
-    }
-
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
@@ -30,35 +20,16 @@ pub async fn exec(
     .await
     .unwrap();
 
-    cfs_sessions_details
-        .retain(|cfs_session_details| cfs_session_details["target"]["definition"].eq("image")); // We
-                                                                                                // could
-                                                                                                // also
-                                                                                                // do
-                                                                                                // filter(...)
-                                                                                                // and
-                                                                                                // collect() here
-
-    if cfs_configuration.is_some() {
-        // Filter CFS sessions of target definition "image" and configuration
-        cfs_sessions_details.retain(|cfs_session_details| {
-            // println!("cfs_session_details:\n{:#?}", cfs_session_details);
-            cfs_session_details["configuration"]["name"]
-                .as_str()
-                .unwrap()
-                .to_string()
-                .eq(cfs_configuration.unwrap())
-        });
-
-        // log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
-
-        if cfs_sessions_details.is_empty() {
-            eprintln!("No image found related to the CFS configuration provided. Exit",);
-            std::process::exit(1);
-        }
-    } else {
-        cfs_sessions_details = vec![cfs_sessions_details.last().unwrap().to_owned()];
-    }
+    cfs_sessions_details.retain(|cfs_session_details| {
+        cfs_session_details["target"]["definition"].eq("image")
+            && cfs_session_details["configuration"]["name"].eq(cfs_configuration_name.unwrap())
+    }); // We
+        // could
+        // also
+        // do
+        // filter(...)
+        // and
+        // collect() here
 
     log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
 
@@ -70,46 +41,130 @@ pub async fn exec(
         .as_str()
         .unwrap();
 
-    /* let image_details =
+    let image_details =
         ims::image::http_client::get(shasta_token, shasta_base_url, result_id).await;
 
+    log::info!("image_details:\n{:#?}", image_details);
+
+    let ims_image_name = image_details.as_ref().unwrap()["name"]
+        .as_str()
+        .unwrap()
+        .to_string();
     let ims_image_etag = image_details.as_ref().unwrap()["link"]["etag"]
         .as_str()
         .unwrap()
-        .to_string(); */
+        .to_string();
+    let ims_image_path = image_details.as_ref().unwrap()["link"]["path"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let ims_image_type = image_details.as_ref().unwrap()["link"]["type"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
-    let ims_image_etag =
-        ims::image::utils::get_image_etag_from_image_id(shasta_token, shasta_base_url, result_id)
-            .await;
+    // Create BOS sessiontemplate
 
-    let boot_params = format!("console=ttyS0,115200 bad_page=panic crashkernel=360M hugepagelist=2m-2g intel_iommu=off intel_pstate=disable iommu.passthrough=on numa_interleave_omit=headless oops=panic pageblock_order=14 rd.neednet=1 rd.retry=10 rd.shell ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${{SPIRE_JOIN_TOKEN}} root=craycps-s3:s3://boot-images/{image_id}/rootfs:{etag}-226:dvs:api-gw-service-nmn.local:300:nmn0 nmd_data=url=s3://boot-images/{image_id}/rootfs,etag={etag}-226", image_id=result_id, etag=ims_image_etag );
+    let bos_session_template_name = cfs_configuration_name.clone();
 
-    let kernel = format!("s3://boot-images/{image_id}/kernel", image_id = result_id);
+    let create_bos_session_template_payload = bos::template::BosTemplate::new_for_node_list(
+        cfs_configuration_name.unwrap().to_string(),
+        bos_session_template_name.unwrap().to_string(),
+        ims_image_name,
+        ims_image_path,
+        ims_image_type,
+        ims_image_etag,
+        xnames.clone(),
+    );
 
-    let initrd = format!("s3://boot-images/{image_id}/initrd", image_id = result_id);
+    let create_bos_session_template_resp = crate::shasta::bos::template::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        &create_bos_session_template_payload,
+    )
+    .await;
 
-    for xname in xnames {
-        // let xname = xnames_params;
+    log::debug!(
+        "Create BOS session template response:\n{:#?}",
+        create_bos_session_template_resp
+    );
 
-        let xname = xname.trim().to_string();
+    if create_bos_session_template_resp.is_err() {
+        eprintln!("BOS session template creation failed");
+        std::process::exit(1);
+    }
 
-        /* let hsm_group_aux =
-        hsm::utils::get_hsm_group_from_xname(shasta_token, shasta_base_url, &xname.to_string())
-            .await; */
+    log::info!(
+        "create_bos_session_template_resp:
+        \n{:#?}",
+        create_bos_session_template_resp
+    );
 
-        let _update_node_boot_params_response = bss::http_client::put(
-            shasta_base_url,
+    println!(
+        "BOS sessiontemplate created: {}",
+        create_bos_session_template_resp.unwrap()
+    );
+
+    // Create BOS session. Note: reboot operation shuts down the nodes and don't bring them back
+    // up... hence we will split the reboot into 2 operations shutdown and start
+
+    let nodes;
+
+    if hsm_group_name.is_some() {
+        // Get nodes members of HSM group
+        // Get HSM group details
+        let hsm_group_details = crate::shasta::hsm::http_client::get_hsm_group(
             shasta_token,
-            &vec![xname.to_string()],
-            &boot_params,
-            &kernel,
-            &initrd,
+            shasta_base_url,
+            hsm_group_name.unwrap(),
         )
         .await;
 
-        println!(
-            "Node {} boot params have been updated to image_id {}",
-            xname, result_id
-        );
+        log::debug!("HSM group response:\n{:#?}", hsm_group_details);
+
+        // Get list of xnames in HSM group
+        nodes = hsm_group_details.unwrap()["members"]["ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|node| node.as_str().unwrap().to_string())
+            .collect();
+    } else {
+        nodes = xnames;
+    }
+
+    // Create CAPMC operation shutdown
+    let capmc_shutdown_nodes_resp = crate::shasta::capmc::http_client::node_power_off::post_sync(
+        shasta_token,
+        shasta_base_url,
+        Some(&"testing manta".to_string()),
+        &nodes,
+        true,
+    )
+    .await;
+
+    log::debug!(
+        "CAPMC shutdown nodes response:\n{:#?}",
+        capmc_shutdown_nodes_resp
+    );
+
+    // Create BOS session operation start
+    let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        &create_bos_session_template_payload.name,
+        "boot",
+        Some(&nodes.join(",")),
+    )
+    .await;
+
+    log::debug!(
+        "Create BOS boot session response:\n{:#?}",
+        create_bos_boot_session_resp
+    );
+
+    if create_bos_boot_session_resp.is_err() {
+        eprintln!("Error creating BOS boot session. Exit");
+        std::process::exit(1);
     }
 }

@@ -51,7 +51,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
-    let base_image_id = settings.get::<String>("base_image_id").unwrap();
+    // let base_image_id = settings.get::<String>("base_image_id").unwrap();
 
     match settings.get::<String>("socks5_proxy") {
         Ok(socks_proxy) => std::env::set_var("SOCKS5", socks_proxy),

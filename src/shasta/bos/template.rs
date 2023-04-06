@@ -130,6 +130,112 @@ impl BosTemplate {
 
         BosTemplate
     } */
+
+    pub fn new_for_node_list(
+        cfs_configuration_name: String,
+        bos_session_template_name: String,
+        ims_image_name: String,
+        ims_image_path: String,
+        ims_image_type: String,
+        ims_image_etag: String,
+        limit: Vec<String>,
+    ) -> Self {
+        let cfs = crate::shasta::bos::template::Cfs {
+            clone_url: None,
+            branch: None,
+            commit: None,
+            playbook: None,
+            configuration: Some(cfs_configuration_name),
+        };
+
+        let compute_property = crate::shasta::bos::template::Property {
+            name: Some(ims_image_name),
+            boot_ordinal: Some(2),
+            shutdown_ordinal: None,
+            path: Some(ims_image_path),
+            type_prop: Some(ims_image_type),
+            etag: Some(ims_image_etag),
+            kernel_parameters: Some(
+                "ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}".to_string(),
+            ),
+            network: Some("nmn".to_string()),
+            node_list: Some(limit),
+            node_roles_groups: None,
+            node_groups: None,
+            rootfs_provider: Some("cpss3".to_string()),
+            rootfs_provider_passthrough: Some("dvs:api-gw-service-nmn.local:300:nmn0".to_string()),
+        };
+
+        let boot_set = crate::shasta::bos::template::BootSet {
+            compute: Some(compute_property),
+        };
+
+        crate::shasta::bos::template::BosTemplate {
+            name: bos_session_template_name,
+            template_url: None,
+            description: None,
+            cfs_url: None,
+            cfs_branch: None,
+            enable_cfs: Some(true),
+            cfs: Some(cfs),
+            partition: None,
+            boot_sets: Some(boot_set),
+            links: None,
+        }
+    }
+
+    pub fn new_for_hsm_group(
+        cfs_configuration_name: String,
+        bos_session_template_name: String,
+        ims_image_name: String,
+        ims_image_path: String,
+        ims_image_type: String,
+        ims_image_etag: String,
+        hsm_group: &String,
+    ) -> Self {
+        let cfs = crate::shasta::bos::template::Cfs {
+            clone_url: None,
+            branch: None,
+            commit: None,
+            playbook: None,
+            configuration: Some(cfs_configuration_name),
+        };
+
+        let compute_property = crate::shasta::bos::template::Property {
+            name: Some(ims_image_name),
+            boot_ordinal: Some(2),
+            shutdown_ordinal: None,
+            path: Some(ims_image_path),
+            type_prop: Some(ims_image_type),
+            etag: Some(ims_image_etag),
+            kernel_parameters: Some(
+                "ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}".to_string(),
+            ),
+            network: Some("nmn".to_string()),
+            node_list: None,
+            node_roles_groups: None,
+            node_groups: Some(vec![hsm_group.to_string()]),
+            rootfs_provider: Some("cpss3".to_string()),
+            rootfs_provider_passthrough: Some("dvs:api-gw-service-nmn.local:300:nmn0".to_string()),
+        };
+
+        let boot_set = crate::shasta::bos::template::BootSet {
+            compute: Some(compute_property),
+        };
+
+        crate::shasta::bos::template::BosTemplate {
+            name: bos_session_template_name,
+            template_url: None,
+            description: None,
+            cfs_url: None,
+            cfs_branch: None,
+            enable_cfs: Some(true),
+            cfs: Some(cfs),
+            partition: None,
+            boot_sets: Some(boot_set),
+            links: None,
+        }
+    }
 }
 
 pub mod http_client {
