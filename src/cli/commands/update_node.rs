@@ -1,18 +1,24 @@
 use clap::ArgMatches;
 
-use crate::shasta::{bos, cfs, ims};
+use crate::{shasta::{bos, cfs, ims}, common::node_ops};
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     cli_update_node: &ArgMatches,
-    xnames: Vec<String>,
+    xnames: Vec<&str>,
     cfs_configuration_name: Option<&String>,
     hsm_group: Option<&String>,
 ) {
+    // Check user has provided valid XNAMES
+    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {
+        eprintln!("xname/s invalid. Exit");
+        std::process::exit(1);
+    }
+
     let hsm_group_name = match hsm_group {
         None => cli_update_node.get_one("HSM_GROUP"),
-        Some(hsm_group_value) => hsm_group,
+        Some(_) => hsm_group,
     };
 
     // Get most recent CFS session target image for the node
@@ -37,6 +43,11 @@ pub async fn exec(
         // filter(...)
         // and
         // collect() here
+
+    if cfs_sessions_details.is_empty() {
+        eprintln!("No CFS session found for the nodes and CFS configuration name provided. Exit");
+        std::process::exit(1);
+    }
 
     log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
 
@@ -72,7 +83,7 @@ pub async fn exec(
 
     // Create BOS sessiontemplate
 
-    let bos_session_template_name = cfs_configuration_name.clone();
+    let bos_session_template_name = cfs_configuration_name;
 
     let create_bos_session_template_payload = bos::template::BosTemplate::new_for_node_list(
         cfs_configuration_name.unwrap().to_string(),
@@ -81,7 +92,7 @@ pub async fn exec(
         ims_image_path,
         ims_image_type,
         ims_image_etag,
-        xnames.clone(),
+        xnames.iter().map(|xname| xname.to_string()).collect(),
     );
 
     let create_bos_session_template_resp = crate::shasta::bos::template::http_client::post(
@@ -137,7 +148,7 @@ pub async fn exec(
             .map(|node| node.as_str().unwrap().to_string())
             .collect();
     } else {
-        nodes = xnames;
+        nodes = xnames.iter().map(|xname| xname.to_string()).collect();
     }
 
     // Create CAPMC operation shutdown

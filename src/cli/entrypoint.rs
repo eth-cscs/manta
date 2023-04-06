@@ -315,7 +315,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Update node's boot image with the one created by the most recent CFS session for the HSM group the node belongs to");
+        .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to");
 
     update_hsm_group = match hsm_group {
         Some(_) => update_hsm_group,
@@ -491,7 +491,7 @@ pub async fn process_command(
                     .get_one::<String>("XNAMES")
                     .unwrap()
                     .split(',')
-                    .map(|xname| xname.trim().to_string())
+                    .map(|xname| xname.trim())
                     .collect(),
                 cli_update_node.get_one::<String>("CFS_CONFIG"),
                 hsm_group,

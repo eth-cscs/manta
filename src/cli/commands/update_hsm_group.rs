@@ -13,26 +13,6 @@ pub async fn exec(
         Some(hsm_group_value) => hsm_group_value,
     };
 
-    /* let hsm_group_details =
-    hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name).await; */
-
-    /* let xnames = match hsm_group_details {
-        Err(_) => {
-            eprintln!("HSM group {} not found. Exit", hsm_group_name);
-            std::process::exit(1);
-        }
-        Ok(hsm_group_details) => hsm::utils::get_member_ids(&hsm_group_details),
-    }; */
-
-    /* update_node::exec(
-        shasta_token,
-        shasta_base_url,
-        xnames.iter().map(|xname| xname as &str).collect(),
-        cli_update_node.get_one::<String>("CFS_CONFIG"),
-        Some(hsm_group_name),
-    )
-    .await; */
-
     let cfs_configuration_name = cli_update_hsm.get_one::<String>("CFS_CONFIG").unwrap();
 
     // Get most recent CFS session target image for the node
@@ -58,20 +38,12 @@ pub async fn exec(
         // and
         // collect() here
 
-    log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
+    if cfs_sessions_details.is_empty() {
+        eprintln!("No CFS session found for the nodes and CFS configuration name provided. Exit");
+        std::process::exit(1);
+    }
 
-    /*
-    // Get most recent CFS session target image for the node
-    let cfs_sessions_details = cfs::session::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        Some(hsm_group_name),
-        None,
-        Some(&1),
-        Some(true),
-    )
-    .await
-    .unwrap(); */
+    log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
 
     let result_id = cfs_sessions_details.first().unwrap()["status"]["artifacts"]
         .as_array()
