@@ -305,7 +305,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
 
     update_node = match hsm_group {
         Some(_) => update_node,
-        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name")),
+        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
     };
 
     update_node
@@ -486,6 +486,7 @@ pub async fn process_command(
             update_node::exec(
                 shasta_token,
                 shasta_base_url,
+                cli_update_node,
                 cli_update_node
                     .get_one::<String>("XNAMES")
                     .unwrap()

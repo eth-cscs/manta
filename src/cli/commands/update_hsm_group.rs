@@ -5,11 +5,11 @@ use crate::shasta::{bos, cfs, ims};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_update_node: &ArgMatches,
+    cli_update_hsm: &ArgMatches,
     hsm_group: Option<&String>,
 ) {
     let hsm_group_name = match hsm_group {
-        None => cli_update_node.get_one("HSM_GROUP").unwrap(),
+        None => cli_update_hsm.get_one("HSM_GROUP").unwrap(),
         Some(hsm_group_value) => hsm_group_value,
     };
 
@@ -33,7 +33,7 @@ pub async fn exec(
     )
     .await; */
 
-    let cfs_configuration_name = cli_update_node.get_one::<String>("CFS_CONFIG").unwrap();
+    let cfs_configuration_name = cli_update_hsm.get_one::<String>("CFS_CONFIG").unwrap();
 
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(

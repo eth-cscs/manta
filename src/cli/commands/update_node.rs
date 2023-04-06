@@ -1,13 +1,20 @@
+use clap::ArgMatches;
+
 use crate::shasta::{bos, cfs, ims};
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    // cli_update_node: &ArgMatches,
+    cli_update_node: &ArgMatches,
     xnames: Vec<String>,
     cfs_configuration_name: Option<&String>,
-    hsm_group_name: Option<&String>,
+    hsm_group: Option<&String>,
 ) {
+    let hsm_group_name = match hsm_group {
+        None => cli_update_node.get_one("HSM_GROUP"),
+        Some(hsm_group_value) => hsm_group,
+    };
+
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
