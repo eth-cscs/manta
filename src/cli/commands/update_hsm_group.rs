@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::shasta::{bos, cfs, ims};
+use crate::shasta::{bos, capmc, cfs, hsm, ims};
 
 pub async fn exec(
     shasta_token: &str,
@@ -30,13 +30,7 @@ pub async fn exec(
     cfs_sessions_details.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
             && cfs_session_details["configuration"]["name"].eq(cfs_configuration_name)
-    }); // We
-        // could
-        // also
-        // do
-        // filter(...)
-        // and
-        // collect() here
+    });
 
     if cfs_sessions_details.is_empty() {
         eprintln!("No CFS session found for the nodes and CFS configuration name provided. Exit");
@@ -89,7 +83,7 @@ pub async fn exec(
         hsm_group_name,
     );
 
-    let create_bos_session_template_resp = crate::shasta::bos::template::http_client::post(
+    let create_bos_session_template_resp = bos::template::http_client::post(
         shasta_token,
         shasta_base_url,
         &create_bos_session_template_payload,
@@ -121,12 +115,8 @@ pub async fn exec(
 
     // Get nodes members of HSM group
     // Get HSM group details
-    let hsm_group_details = crate::shasta::hsm::http_client::get_hsm_group(
-        shasta_token,
-        shasta_base_url,
-        hsm_group_name,
-    )
-    .await;
+    let hsm_group_details =
+        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name).await;
 
     log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
@@ -139,7 +129,7 @@ pub async fn exec(
         .collect();
 
     // Create CAPMC operation shutdown
-    let capmc_shutdown_nodes_resp = crate::shasta::capmc::http_client::node_power_off::post_sync(
+    let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
         shasta_token,
         shasta_base_url,
         Some(&"testing manta".to_string()),
@@ -154,7 +144,7 @@ pub async fn exec(
     );
 
     // Create BOS session operation start
-    let create_bos_boot_session_resp = crate::shasta::bos::session::http_client::post(
+    let create_bos_boot_session_resp = bos::session::http_client::post(
         shasta_token,
         shasta_base_url,
         &create_bos_session_template_payload.name,
