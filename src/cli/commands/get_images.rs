@@ -20,8 +20,14 @@ pub async fn exec(
     let mut images_details = Vec::new();
 
     for bos_sessiontemplate in bos_sessiontemplates_resp {
+        let compute_type = if bos_sessiontemplate.pointer("/boot_sets/compute").is_some() {
+            "compute"
+        } else {
+            "uan"
+        };
+
         let image_id = bos_sessiontemplate
-            .pointer("/boot_sets/compute/path")
+            .pointer(&("/boot_sets/".to_owned() + compute_type + "/path"))
             .and_then(|image_id_value| image_id_value.as_str())
             .unwrap_or_default()
             .trim_start_matches("s3://boot-images/")
@@ -45,6 +51,7 @@ pub async fn exec(
 
         images_details.push(vec![
             image_id.to_owned(),
+            compute_type.to_string(),
             cfs_configuration.to_owned(),
             hsm_groups,
             common::node_ops::nodes_to_string_format_discrete_columns(node_list, 4),
@@ -53,7 +60,7 @@ pub async fn exec(
 
     let mut table = Table::new();
 
-    table.set_header(vec!["Image ID", "CFS configuration", "HSM groups", "Nodes"]);
+    table.set_header(vec!["Image ID", "Type", "CFS configuration", "HSM groups", "Nodes"]);
 
     for image in images_details {
         table.add_row(image);

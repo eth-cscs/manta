@@ -293,6 +293,7 @@ pub mod http_client {
         }
     }
 
+    /// Get BOS session templates. Ref --> https://apidocs.svc.cscs.ch/paas/bos/operation/get_v1_sessiontemplates/
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
