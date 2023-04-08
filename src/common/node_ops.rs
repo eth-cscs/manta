@@ -42,18 +42,22 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     println!("{table}");
 }
 
-pub fn nodes_to_string_format_one_line(nodes: &Vec<Value>) -> String {
-    nodes_to_string_format_discrete_columns(nodes, nodes.len() + 1)
+pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<Value>>) -> String {
+    if nodes.is_some() {
+        nodes_to_string_format_discrete_columns(nodes, nodes.unwrap().len() + 1)
+    } else {
+        "".to_string()
+    }
 }
 
-pub fn nodes_to_string_format_discrete_columns(nodes: &Vec<Value>, limit: usize) -> String {
+pub fn nodes_to_string_format_discrete_columns(nodes: Option<&Vec<Value>>, num_columns: usize) -> String {
     let mut members: String = String::new();
 
-    if !nodes.is_empty() {
-        members = nodes[0].as_str().unwrap().to_string(); // take first element
+    if nodes.is_some() && !nodes.unwrap().is_empty() {
+        members = nodes.unwrap()[0].as_str().unwrap().to_string(); // take first element
 
-        for (i, _) in nodes.iter().enumerate().skip(1) { // iterate for the rest of the list
-            if i % limit == 0 {
+        for (i, _) in nodes.unwrap().iter().enumerate().skip(1) { // iterate for the rest of the list
+            if i % num_columns == 0 {
                 // breaking the cell content into multiple lines (only 2 xnames per line)
 
                 members.push_str(",\n");
@@ -61,7 +65,7 @@ pub fn nodes_to_string_format_discrete_columns(nodes: &Vec<Value>, limit: usize)
                 members.push(',');
             }
 
-            members.push_str(nodes[i].as_str().unwrap());
+            members.push_str(nodes.unwrap()[i].as_str().unwrap());
         }
     }
 

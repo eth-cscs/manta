@@ -296,7 +296,7 @@ pub mod http_client {
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
-        hsm_group_name: Option<&str>,
+        hsm_group_name: Option<&String>,
         bos_template_name: Option<&String>,
         limit_number: Option<&u8>,
     ) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {

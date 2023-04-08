@@ -40,7 +40,7 @@ pub async fn exec(
     let mut bos_sessiontemplates = shasta::bos::template::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name.map(|x| &**x),
+        hsm_group_name,
         None,
         None,
     )

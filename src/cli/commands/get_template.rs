@@ -30,7 +30,7 @@ pub async fn exec(
     let bos_templates = bos_template::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name.map(|x| &**x),
+        hsm_group_name,
         template_name,
         limit_number,
     )

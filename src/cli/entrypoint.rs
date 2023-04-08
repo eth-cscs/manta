@@ -8,7 +8,7 @@ use crate::cli::commands::{
     get_configuration, get_hsm, get_nodes, get_session, get_template, log,
 };
 
-use super::commands::{apply_cluster, apply_image, update_hsm_group, update_node};
+use super::commands::{apply_cluster, apply_image, update_hsm_group, update_node, get_images};
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
@@ -119,6 +119,21 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
     get_hsm_group
 }
 
+pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
+    let mut get_cfs_session = Command::new("images")
+        .aliases(["i", "img", "imag", "image"])
+        .about("Get image information");
+
+    match hsm_group {
+        None => {
+            get_cfs_session = get_cfs_session.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+        }
+        Some(_) => {}
+    }
+
+    get_cfs_session
+}
+
 pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
     Command::new("get")
         .alias("g")
@@ -129,6 +144,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
+        .subcommand(subcommand_get_images(hsm_group))
 }
 
 pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
@@ -413,6 +429,8 @@ pub async fn process_command(
             get_nodes::exec(hsm_group, cli_get_node, shasta_token, shasta_base_url).await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
             get_hsm::exec(hsm_group, cli_get_hsm_groups, shasta_token, shasta_base_url).await;
+        } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
+            get_images::exec(shasta_token, shasta_base_url, cli_get_images, None, None, hsm_group).await;
         }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {

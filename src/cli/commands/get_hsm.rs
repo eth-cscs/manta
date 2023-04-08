@@ -13,9 +13,7 @@ pub async fn exec(
         Some(hsm_group_name_value) => hsm_group_name_value,
     };
 
-    let hsm_groups =
-        cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group_name)
-            .await;
+    let hsm_groups = cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group_name).await;
 
     for hsm_group in hsm_groups {
         println!("************************* HSM GROUP *************************");
@@ -124,7 +122,7 @@ pub async fn exec(
 
         println!(
             " * members: {}",
-            node_ops::nodes_to_string_format_one_line(&hsm_group.members)
+            node_ops::nodes_to_string_format_one_line(Some(&hsm_group.members))
         );
     }
 }
