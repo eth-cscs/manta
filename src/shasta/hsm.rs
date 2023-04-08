@@ -269,16 +269,30 @@ pub mod utils {
 
     use crate::shasta::hsm::http_client::get_all_hsm_groups;
 
-    pub fn get_member_ids(hsm_group: &Value) -> Vec<String> {
+    use super::http_client;
+
+    pub fn get_members_ids_from_serde_value(hsm_group: &Value) -> Vec<String> {
         // Take all nodes for all hsm_groups found and put them in a Vec
-        let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
+        hsm_group["members"]["ids"]
             .as_array()
             .unwrap_or(&Vec::new())
             .iter()
             .map(|xname| xname.as_str().unwrap().to_string())
-            .collect();
+            .collect()
+    }
 
-        hsm_groups_nodes
+    pub async fn get_members_ids(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        hsm_group: &str,
+    ) -> Vec<String> {
+        // Take all nodes for all hsm_groups found and put them in a Vec
+        http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group).await.unwrap()["members"]["ids"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .map(|xname| xname.as_str().unwrap().to_string())
+            .collect()
     }
 
     pub async fn get_hsm_group_from_xname(

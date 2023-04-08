@@ -242,7 +242,7 @@ pub mod http_client {
             .await;
 
             let hsm_group_nodes = if hsm_group_resp.is_ok() {
-                crate::shasta::hsm::utils::get_member_ids(&hsm_group_resp.unwrap())
+                crate::shasta::hsm::utils::get_members_ids_from_serde_value(&hsm_group_resp.unwrap())
             } else {
                 eprintln!(
                     "No HSM group {}{}{} found!",

@@ -32,7 +32,7 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
         "NID",
         "Status",
         "Image ID (Boot param)",
-        "Image updated?",
+        "CFS configuration (BOA)",
     ]);
 
     for node_status in nodes_status {

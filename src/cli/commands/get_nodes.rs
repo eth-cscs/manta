@@ -1,12 +1,7 @@
 use clap::ArgMatches;
-
-use std::collections::HashMap;
-
 use termion::color;
 
-use crate::shasta::{bss, capmc, cfs, hsm};
-
-use crate::common::node_ops;
+use crate::{common::node_ops, shasta::{hsm, self}};
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -14,7 +9,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
 ) {
-    // Check if HSM group name provided y configuration file
+    // Check HSM group name provided y configuration file
     let hsm_group_name = match hsm_group {
         None => cli_get_node.get_one::<String>("HSMGROUP"),
         Some(_) => hsm_group,
@@ -39,330 +34,169 @@ pub async fn exec(
     };
 
     // Take all nodes for all hsm_groups found and put them in a Vec
-    let hsm_groups_nodes: Vec<String> = hsm::utils::get_member_ids(&hsm_group);
-    //            let hsm_groups_nodes: Vec<String> = hsm_group["members"]["ids"]
-    //                .as_array()
-    //                .unwrap_or(&Vec::new())
-    //                .iter()
-    //                .map(|xname| xname.as_str().unwrap().to_string())
-    //                .collect();
+    let hsm_groups_nodes: Vec<String> = hsm::utils::get_members_ids_from_serde_value(&hsm_group);
 
-    // Get node most recent CFS session with target image
-    // Get all CFS sessions matching hsm_group value
-    let mut cfs_sessions = cfs::session::http_client::get(
+    // Get all BOS session templates for HSM group
+    let mut bos_sessiontemplates = shasta::bos::template::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
+        hsm_group_name.map(|x| &**x),
         None,
         None,
-        Some(true),
     )
     .await
     .unwrap();
 
-    // Sort CFS sessions by start time
-    cfs_sessions.sort_by(|a, b| {
-        a["status"]["session"]["startTime"] // don't be tempted to use completionTime
-            // because this field is NULL is CFS session
-            // failed. Plus lastest CFS session should be
-            // considered the latest to start since is the
-            // last one ran by the user (with latest
-            // changes)
-            .as_str()
-            .unwrap()
-            .cmp(b["status"]["session"]["startTime"].as_str().unwrap())
-    });
+    bos_sessiontemplates.reverse();
 
-    // println!("cfs_sessions: {:#?}", cfs_sessions);
+    let compute_hsm_group_bos_sessiontemplate = bos_sessiontemplates
+        .iter()
+        .find(|&bos_sessiontemplate| bos_sessiontemplate.pointer("/boot_sets/compute").is_some());
 
-    // Filter CFS sessions with target = "image" and succeded = "true"
-    /* let cfs_sessions_target_image: Vec<_> = cfs_sessions
-    .iter()
-    .filter(|cfs_session| {
-        cfs_session["target"]["definition"]
-            .as_str()
-            .unwrap()
-            .eq("image")
-            && cfs_session["status"]["session"]["succeeded"]
-                .as_str()
-                .unwrap()
-                .eq("true")
-    })
-    .collect(); */
+    let uan_hsm_group_bos_sessiontemplate = bos_sessiontemplates
+        .iter()
+        .find(|&bos_sessiontemplate| bos_sessiontemplate.pointer("/boot_sets/uan").is_some());
 
-    // println!("cfs_sessions_target_image: {:#?}", cfs_sessions_target_image);
-
-    // Get most recent CFS session with target = "image" and succeded = "true"
-    /* let most_recent_cfs_session = cfs_sessions_target_image
-    [cfs_sessions_target_image.len().saturating_sub(1)..]
-    .to_vec()
-    .iter()
-    .next()
-    .unwrap(); */
-
-    // Get CFS configurations for HSM group
-    let most_recent_cfs_configurations = crate::shasta::cfs::configuration::http_client::get(
+    // Get nodes details (nids) from HSM
+    let nodes_hsm_info_resp = hsm::http_client::get_components_status(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
-        None,
-        Some(&1),
+        hsm_groups_nodes.to_vec(),
     )
     .await
     .unwrap();
 
-    // Get BOS session templates for HSM group
-    let bos_sessiontemplates = crate::shasta::bos::template::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        hsm_group_name,
-        None,
-        Some(&1),
-    )
-    .await
-    .unwrap();
+    // match node with bot_sessiontemplate and put them in a list
+    let mut nodes_details = Vec::new();
 
-    let most_recent_compute_image_id: Option<String>;
-    let most_recent_uan_image_id: Option<String>;
-
-    // Check whether most recent CFS configuration is used in the most recent BOS sessiontemplate
-    // If False ==> No way image in node will use the most recent CFS configuration
-    // if True ==> check boot params on each node and see if image_id matches on both most recent
-    // BOS sessiontemplate and node boot params
-    if bos_sessiontemplates.first().is_some() && bos_sessiontemplates.first().unwrap()["cfs"]["configuration"]
-        .as_str()
-        .unwrap()
-        != most_recent_cfs_configurations.first().unwrap()["name"]
-            .as_str()
-            .unwrap()
-    {
-        // Most recent BOS sessiontemplate does not use most recelt CFS configuration ==> image_id
-        // = None
-        most_recent_compute_image_id = None;
-        most_recent_uan_image_id = None;
-    } else {
-        /* println!(
-            "most_recent_bos_sessiontemplate: {:#?}",
-            bos_sessiontemplates
-        ); */
-
-        let most_recent_bos_sessiontemplate_compute = bos_sessiontemplates
-            .iter()
-            .find(|bos_sessiontemplate| bos_sessiontemplate["boot_sets"].get("compute").is_some());
-
-        // Most recent BOS sessiontemplate uses most recent CFS configuration ==>
-        // Extract most recent image id for a compute node from BOS session template
-        if most_recent_bos_sessiontemplate_compute.is_some() {
-            most_recent_compute_image_id = Some(
-                most_recent_bos_sessiontemplate_compute.unwrap()["boot_sets"]["compute"]["path"]
-                    .as_str()
-                    .unwrap()
-                    .to_string()
-                    .trim_start_matches("s3://boot-images/")
-                    .trim_end_matches("/manifest.json")
-                    .to_string(),
-            );
-        } else {
-            most_recent_compute_image_id = None;
-        }
-
-        let most_recent_bos_sessiontemplate_uan = bos_sessiontemplates
-            .iter()
-            .find(|bos_sessiontemplate| bos_sessiontemplate["boot_sets"].get("uan").is_some());
-
-        // Most recent BOS sessiontemplate uses most recent CFS configuration ==>
-        // Extract most recent image id for a UAN node from BOS session template
-        if most_recent_bos_sessiontemplate_uan.is_some() {
-            most_recent_uan_image_id = Some(
-                bos_sessiontemplates
-                    .iter()
-                    .find(|bos_sessiontemplate| {
-                        bos_sessiontemplate["boot_sets"].get("uan").is_some()
-                    })
-                    .unwrap()["boot_sets"]["uan"]["path"]
-                    .as_str()
-                    .unwrap()
-                    .to_string()
-                    .trim_start_matches("s3://boot-images/")
-                    .trim_end_matches("/manifest.json")
-                    .to_string(),
-            );
-        } else {
-            most_recent_uan_image_id = None;
-        }
-
-        log::info!(
-            "Image_id from most recent CFS session (target = image and successful = true): {}",
-            most_recent_compute_image_id.to_owned().unwrap()
-        );
-    }
-
-    // Correlate last/most recent CFS session with CFS configuration with BOS sessiontemplate --> This
-    // will correlate the image id related to the CFS most recent
-
-    // Correlate last/most recent BOS sessontemplate with CFS configuration --> This will indicate
-    // whether the most recent image was created according to the most recent CFS configuration
-
-    // TODO: the image_id from the most recent CFS session is no longer representative of the image
-    // related to that configuration/session, this is because the script we use which uses SAT which overwrites the image after creation `sudo sat bootprep run -s --overwrite-configs --overwrite-images --overwrite-templates ${file}`, this new image has a different ID which no longer matches the result_id from the session. This means we need to list all images and get the one with name <HSM GROUP>-cos-template-<DATE> with date being the most recent one...????
-
-    // Get nodes details
-    let nodes_status = get_nodes_details(
-        shasta_token,
-        shasta_base_url,
-        most_recent_compute_image_id,
-        most_recent_uan_image_id,
-        &hsm_groups_nodes,
-    )
-    .await;
-
-    // shasta::hsm::utils::print_table(hsm_groups);
-    node_ops::print_table(nodes_status);
-}
-
-pub async fn get_nodes_details(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    most_recent_compute_image_id: Option<String>,
-    most_recent_uan_image_id: Option<String>,
-    xnames: &Vec<String>,
-) -> Vec<Vec<String>> {
-    let mut nodes_status: Vec<Vec<String>> = Vec::new();
-
-    // Get power node status from CAPMC
-    let nodes_power_status_resp =
-        capmc::http_client::node_power_status::post(shasta_token, shasta_base_url, xnames)
-            .await
-            .unwrap();
-
-    // Get nodes nids from HSM
-    let nodes_hsm_info_resp =
-        hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames.to_vec())
-            .await
-            .unwrap();
-
-    // println!("nodes_hsm_info_resp:\n{:#?}", nodes_hsm_info_resp);
-
-    // Get nodes boot params
-    let nodes_boot_params =
-        bss::http_client::get_boot_params(shasta_token, shasta_base_url, xnames)
-            .await
-            .unwrap();
-
-    // println!("nodes_boot_params: {:#?}", nodes_boot_params);
-
-    let mut nodes_images: HashMap<String, String> = HashMap::new();
-
-    // Create dictionary of xname and image_id
-    for node_boot_params in nodes_boot_params {
-        let nodes: Vec<String> = node_boot_params["hosts"]
+    for node in &hsm_groups_nodes {
+        let mut image_id = None;
+        let mut cfs_configuration_name = None;
+        let mut combo = Vec::new();
+        // Get power status
+        // node_power_status = get_node_power_status(node, &nodes_power_status_resp);
+        let node_details = nodes_hsm_info_resp["Components"]
             .as_array()
             .unwrap()
             .iter()
-            .map(|node| node.as_str().unwrap().to_string())
-            .collect();
+            .find(|&component| component["ID"].as_str().unwrap().eq(node))
+            .unwrap();
 
-        let image_id = node_boot_params["kernel"]
+        let node_power_status = node_details["State"]
             .as_str()
             .unwrap()
             .to_string()
-            .trim_start_matches("s3://boot-images/")
-            .trim_end_matches("/kernel")
-            .to_string();
+            .to_uppercase();
 
-        for node in nodes {
-            nodes_images.insert(node, image_id.clone());
+        let node_nid = format!(
+            "nid{:0>6}",
+            node_details["NID"].as_u64().unwrap().to_string()
+        );
+
+        combo.push(node.to_string());
+        combo.push(node_nid);
+        combo.push(node_power_status);
+        // Set image and CFS configuration
+        for bos_sessiontemplate in &bos_sessiontemplates {
+            // find bos_sesstiontemplate in /boot_sets/compute/node_list
+            if bos_sessiontemplate
+                .pointer("/boot_sets/compute/node_list")
+                .unwrap_or(&serde_json::Value::Array(Vec::new()))
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|node_value| node_value.as_str().unwrap().eq(node))
+            {
+                image_id = Some(
+                    bos_sessiontemplate
+                        .pointer("/boot_sets/compute/path")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                        .trim_start_matches("s3://boot-images/")
+                        .trim_end_matches("/manifest.json")
+                        .to_string()
+                        .to_owned(),
+                );
+                cfs_configuration_name = Some(
+                    bos_sessiontemplate
+                        .pointer("/cfs/configuration")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                );
+                combo.push(image_id.to_owned().unwrap());
+                combo.push(cfs_configuration_name.to_owned().unwrap());
+
+                nodes_details.push(combo.to_owned());
+                break;
+            // find bos_sessiontemplate in /boot_sets/uan/node_list
+            } else if bos_sessiontemplate
+                .pointer("/boot_sets/uan/node_list")
+                .unwrap_or(&serde_json::Value::Array(Vec::new()))
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|node_value| node_value.as_str().unwrap().eq(node))
+            {
+                image_id = Some(
+                    bos_sessiontemplate
+                        .pointer("/boot_sets/compute/path")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string()
+                        .trim_start_matches("s3://boot-images/")
+                        .trim_end_matches("/manifest.json")
+                        .to_string()
+                        .to_owned(),
+                );
+                cfs_configuration_name = Some(
+                    bos_sessiontemplate
+                        .pointer("/cfs/configuration")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                );
+                combo.push(image_id.to_owned().unwrap());
+                combo.push(cfs_configuration_name.to_owned().unwrap());
+
+                nodes_details.push(combo.to_owned());
+                break;
+            }
         }
-    }
-
-    //    println!("node_images dictionary: {:#?}", nodes_images);
-
-    // Merge nodes power status with boot params
-    for xname in xnames {
-        let mut node_status: Vec<String> = vec![xname.to_string()];
-
-        // Find node's nid
-        let node_nid = nodes_hsm_info_resp["Components"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|&hsm_node_details| hsm_node_details["ID"].eq(xname))
-            .unwrap()["NID"]
-            .as_u64()
-            .unwrap()
-            .to_string();
-
-        node_status.push(format!("nid{:0>6}", node_nid));
-
-        // Get node power status
-        let node_power_status = if nodes_power_status_resp["on"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .any(|x| x == *xname)
-        {
-            "ON".to_string()
-        } else if nodes_power_status_resp["off"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .any(|x| x == *xname)
-        {
-            "OFF".to_string()
-        } else if nodes_power_status_resp["disabled"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .any(|x| x == *xname)
-        {
-            "DISABLED".to_string()
-        } else if nodes_power_status_resp["ready"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .any(|x| x == *xname)
-        {
-            "READY".to_string()
-        } else if nodes_power_status_resp["standby"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .any(|x| x == *xname)
-        {
-            "STANDBY".to_string()
-        } else {
-            "N/A".to_string()
-        };
-
-        node_status.push(node_power_status);
-
-        // Get node boot param image
-        let node_image_id = nodes_images.get(&xname.to_string()).unwrap().to_string();
-
-        node_status.push(node_image_id.clone());
-
-        // Has node latest image?
-        if most_recent_compute_image_id.is_some() {
-            node_status.push(
-                node_image_id
-                    .eq(&most_recent_compute_image_id.clone().unwrap())
+        // No bos_sessointemplate found in node_list param, using the most recent
+        // bos_sessiontemplate for node_groups
+        if image_id.is_none() && cfs_configuration_name.is_none() {
+            combo.push(
+                compute_hsm_group_bos_sessiontemplate
+                    .unwrap()
+                    .pointer("/boot_sets/compute/path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string()
+                    .trim_start_matches("s3://boot-images/")
+                    .trim_end_matches("/manifest.json")
+                    .to_string()
+                    .to_owned(),
+            );
+            combo.push(
+                bos_sessiontemplates
+                    .first()
+                    .unwrap()
+                    .pointer("/cfs/configuration")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
                     .to_string(),
             );
-        } else {
-            node_status.push("N/A".to_string());
+            nodes_details.push(combo);
         }
-
-        nodes_status.push(node_status);
     }
 
-    nodes_status.sort_by(|node_a, node_b| node_a[0].cmp(&node_b[0])); // Sort nodes by XNAME
-
-    // println!("nodes_status: {:#?}", nodes_status);
-
-    nodes_status
+    node_ops::print_table(nodes_details);
 }
