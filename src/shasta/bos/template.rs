@@ -242,13 +242,13 @@ pub mod http_client {
 
     use serde_json::Value;
 
-    use super::BosTemplate;
+    use super::{utils::check_hsms_or_xnames_belongs_to_bos_sessiontemplate, BosTemplate};
 
     pub async fn post(
         shasta_token: &str,
         shasta_base_url: &str,
         bos_template: &BosTemplate,
-    ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    ) -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Bos template:\n{:#?}", bos_template);
 
         // // socks5 proxy
@@ -300,7 +300,7 @@ pub mod http_client {
         hsm_group_name: Option<&String>,
         bos_template_name: Option<&String>,
         limit_number: Option<&u8>,
-    ) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
         let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
 
         let client;
@@ -372,12 +372,139 @@ pub mod http_client {
 
         Ok(cluster_bos_tempalte)
     }
+
+    /// Get BOS session templates. Ref --> https://apidocs.svc.cscs.ch/paas/bos/operation/get_v1_sessiontemplates/
+    /// It filters by boot_sets.<property>.node_list containing nodes param or
+    /// boot_sets.<property>.node_groups containing hsm_groups_names param
+    pub async fn get_for_multiple_hsm_groups(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        hsm_groups_names: Vec<String>,
+        nodes: Vec<String>,
+        bos_template_name: Option<&String>,
+        limit_number: Option<&u8>,
+    ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+        let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
+
+        let client;
+
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            // socks5 proxy
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
+
+        let api_url = shasta_base_url.to_owned() + "/bos/v1/sessiontemplate";
+
+        let resp = client
+            .get(api_url)
+            // .get(format!("{}{}", shasta_base_url, "/bos/v1/sessiontemplate"))
+            .bearer_auth(shasta_token)
+            .send()
+            .await?;
+
+        let json_response: Value = if resp.status().is_success() {
+            serde_json::from_str(&resp.text().await?)?
+        } else {
+            return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
+        };
+
+        if !hsm_groups_names.is_empty() {
+            for bos_template in json_response.as_array().unwrap() {
+                if check_hsms_or_xnames_belongs_to_bos_sessiontemplate(
+                    bos_template,
+                    hsm_groups_names.clone(),
+                    nodes.clone(),
+                ) {
+                    cluster_bos_tempalte.push(bos_template.clone());
+                }
+            }
+        } else if bos_template_name.is_some() {
+            for bos_template in json_response.as_array().unwrap() {
+                if bos_template["name"]
+                    .as_str()
+                    .unwrap()
+                    .eq(bos_template_name.unwrap())
+                // TODO: investigate why I need to us this ugly 'as_ref'
+                {
+                    cluster_bos_tempalte.push(bos_template.clone());
+                }
+            }
+        } else {
+            // Returning all results
+
+            cluster_bos_tempalte = json_response.as_array().unwrap().clone();
+        }
+
+        if limit_number.is_some() {
+            // Limiting the number of results to return to client
+
+            cluster_bos_tempalte = cluster_bos_tempalte[cluster_bos_tempalte
+                .len()
+                .saturating_sub(*limit_number.unwrap() as usize)..]
+                .to_vec();
+        }
+
+        Ok(cluster_bos_tempalte)
+    }
 }
 
 pub mod utils {
 
     use comfy_table::Table;
     use serde_json::Value;
+
+    pub fn check_hsms_or_xnames_belongs_to_bos_sessiontemplate(
+        bos_sessiontemplate: &Value,
+        hsm_groups_names: Vec<String>,
+        xnames: Vec<String>,
+    ) -> bool {
+        let boot_set_type; // uan or compute
+        if bos_sessiontemplate.pointer("/boot_sets/uan").is_some() {
+            boot_set_type = "uan";
+        } else {
+            boot_set_type = "compute";
+        }
+
+        let empty_array_value = &serde_json::Value::Array(Vec::new());
+
+        let bos_template_node_list = bos_sessiontemplate
+            .pointer(&("/boot_sets/".to_owned() + boot_set_type + "/node_list"))
+            .unwrap_or(empty_array_value)
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|node| node.as_str().unwrap().to_string());
+
+        for bos_template_node in bos_template_node_list {
+            if xnames.contains(&bos_template_node) {
+                return true;
+            }
+        }
+
+        let bos_template_node_groups = bos_sessiontemplate
+            .pointer(&("/boot_sets/".to_owned() + boot_set_type + "/node_list"))
+            .unwrap_or(empty_array_value)
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|node| node.as_str().unwrap().to_string());
+
+        for bos_template_node in bos_template_node_groups {
+            if hsm_groups_names.contains(&bos_template_node) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     pub fn print_table(bos_templates: Vec<Value>) {
         let mut table = Table::new();

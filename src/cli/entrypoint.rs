@@ -317,7 +317,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated").required(true))
-        .arg(arg!([CFS_CONFIG] "Most recent image successfully created for the provided configuration will be set to boot the nodes."));
+        .arg(arg!([CFS_CONFIG] "CFS configuration name."));
 
     update_node = match hsm_group {
         Some(_) => update_node,
@@ -339,7 +339,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group = update_hsm_group
-        .arg(arg!([CFS_CONFIG] "The most recent image related to this CFS configuration will be used to boot the nodes"))
+        .arg(arg!([CFS_CONFIG] "CFS configuration name."))
         .arg(arg!(-m --"most-recent" "Most recent CFS configuration will be used to greb the image to configure the nodes"))
         .group(ArgGroup::new("cfs-config_or_most-recent").args(["CFS_CONFIG", "most-recent"]));
 

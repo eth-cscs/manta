@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::shasta::{bos, capmc, cfs, hsm, ims};
+use crate::shasta::{self, bos, capmc, cfs, hsm, ims};
 
 pub async fn exec(
     shasta_token: &str,
@@ -12,8 +12,36 @@ pub async fn exec(
         None => cli_update_hsm.get_one("HSM_GROUP").unwrap(),
         Some(hsm_group_value) => hsm_group_value,
     };
+    // Get configuration name
+    let cfs_configuration_name;
 
-    let cfs_configuration_name = cli_update_hsm.get_one::<String>("CFS_CONFIG").unwrap();
+    cfs_configuration_name = if cli_update_hsm.get_one::<String>("CFS_CONFIG").is_some() {
+        cli_update_hsm
+            .get_one::<String>("CFS_CONFIG")
+            .unwrap()
+            .to_string()
+    } else {
+        // Find most recent CFS configuration for HSM group provided
+        let cfs_configuration_resp = shasta::cfs::configuration::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            Some(hsm_group_name),
+            None,
+            Some(&1),
+        )
+        .await
+        .unwrap();
+
+        if cfs_configuration_resp.is_empty() {
+            eprintln!("No CFS configuration found. Exit");
+            std::process::exit(1);
+        }
+
+        cfs_configuration_resp[0]["name"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
 
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(
@@ -29,7 +57,7 @@ pub async fn exec(
 
     cfs_sessions_details.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
-            && cfs_session_details["configuration"]["name"].eq(cfs_configuration_name)
+            && cfs_session_details["configuration"]["name"].eq(&cfs_configuration_name)
     });
 
     if cfs_sessions_details.is_empty() {

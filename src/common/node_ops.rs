@@ -33,6 +33,7 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
         "Status",
         "Image ID (Boot param)",
         "CFS configuration (BOA)",
+        "Image ID (BOS sessiontemplate)"
     ]);
 
     for node_status in nodes_status {

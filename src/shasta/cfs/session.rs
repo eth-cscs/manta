@@ -137,6 +137,8 @@ impl CfsSession {
 
 pub mod http_client {
 
+    use crate::shasta;
+
     use super::CfsSession;
     use serde_json::Value;
     use std::collections::HashSet;
@@ -242,7 +244,7 @@ pub mod http_client {
             .await;
 
             let hsm_group_nodes = if hsm_group_resp.is_ok() {
-                crate::shasta::hsm::utils::get_members_ids_from_serde_value(&hsm_group_resp.unwrap())
+                shasta::hsm::utils::get_members_from_hsm_group_serde_value(&hsm_group_resp.unwrap())
             } else {
                 eprintln!(
                     "No HSM group {}{}{} found!",
