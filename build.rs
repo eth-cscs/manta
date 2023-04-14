@@ -1,15 +1,15 @@
 use clap_complete::{generate_to, shells::Bash};
-use std::io::Error;
+use std::{io::Error, env};
 
 include!("src/cli/build.rs");
 
 fn main() -> Result<(), Error> {
-    let outdir = "target";
-
-    println!("0");
+    let outdir = match env::var_os("OUT_DIR") {
+        None => return Ok(()),
+        Some(outdir) => outdir,
+    };
 
     let mut cmd = build_cli(None);
-    println!("1");
     let path = generate_to(
         Bash, &mut cmd, // We need to specify what generator to use
         "manta",  // We need to specify the bin name manually
