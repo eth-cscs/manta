@@ -106,8 +106,8 @@ pub async fn exec(
     let mut node_details_list = Vec::new();
 
     for node in &hsm_groups_node_list {
-        let mut image_id_in_boot_params = None;
-        let mut image_id_in_bos_sessiontemplate = None;
+        let mut kernel_image_path_in_boot_params = None;
+        let mut manifest_image_path_in_bos_sessiontemplate = None;
         let mut cfs_configuration_name = None;
         let mut node_details = Vec::new();
         // Get power status
@@ -198,7 +198,7 @@ pub async fn exec(
                         })
                 // Check /boot_sets/<property>/node_groups contains any hsm group linked to "node"
                 {
-                    image_id_in_boot_params = Some(
+                    kernel_image_path_in_boot_params = Some(
                         node_boot_params.unwrap()["kernel"]
                             .as_str()
                             .unwrap()
@@ -209,7 +209,7 @@ pub async fn exec(
                             .to_owned(),
                     );
 
-                    image_id_in_bos_sessiontemplate = Some(
+                    manifest_image_path_in_bos_sessiontemplate = Some(
                         bos_sessiontemplate
                             .pointer(&("/boot_sets/".to_owned() + boot_set_property + "/path"))
                             .unwrap()
@@ -232,14 +232,14 @@ pub async fn exec(
                 }
             }
 
-            if image_id_in_bos_sessiontemplate.is_some() && cfs_configuration_name.is_some() {
+            if manifest_image_path_in_bos_sessiontemplate.is_some() && cfs_configuration_name.is_some() {
                 /* println!(
                     "\nnode:\n{}\ncfs_configuration:\n{:#?}\nbos_sessiontemplate\n{:#?}\n",
                     node, cfs_configuration, bos_sessiontemplate
                 ); */
-                node_details.push(image_id_in_boot_params.to_owned().unwrap());
+                node_details.push(kernel_image_path_in_boot_params.to_owned().unwrap());
                 node_details.push(cfs_configuration_name.to_owned().unwrap());
-                node_details.push(image_id_in_bos_sessiontemplate.to_owned().unwrap());
+                node_details.push(manifest_image_path_in_bos_sessiontemplate.to_owned().unwrap());
 
                 node_details_list.push(node_details.to_owned());
 
