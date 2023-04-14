@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::ArgMatches;
 use serde_yaml::Value;
 
-use crate::shasta::cfs::{configuration, session::CfsSession};
+use crate::{shasta::cfs::{configuration, session::CfsSession}, manta, cli};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -111,7 +111,7 @@ pub async fn exec(
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
-        crate::cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None, k8s_api_url)
+        cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None, k8s_api_url)
             .await
             .unwrap();
     }

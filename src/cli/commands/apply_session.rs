@@ -7,7 +7,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use crate::shasta::cfs::configuration;
 use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
-use crate::{shasta_cfs_component, shasta_cfs_session};
+use crate::{manta, shasta_cfs_component, shasta_cfs_session, cli};
 use k8s_openapi::chrono;
 use substring::Substring;
 
@@ -114,14 +114,7 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xnames = hsm_groups_nodes;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(
-                shasta_token,
-                shasta_base_url,
-                &xnames,
-                hsm_group,
-            )
-            .await
-            {
+            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {
                 eprintln!("xname/s invalid. Exit");
                 std::process::exit(1);
             }
@@ -187,7 +180,7 @@ pub async fn exec(
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
-        crate::cli::commands::log::session_logs(
+        cli::commands::log::session_logs(
             vault_base_url,
             vault_role_id,
             cfs_session_name.as_str(),

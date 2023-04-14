@@ -1,3 +1,5 @@
+build = "build.rs"
+
 [package]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
@@ -42,6 +44,10 @@ tracing-subscriber = "0.3.16"
 # bytes = { version = "1", features = ["serde"] }
 termion = "2.0.1" # used by manta_console to enable terminal raw
 dhat = "0.3.2"
+
+[build-dependencies]
+clap = "*"
+clap_complete = "*"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

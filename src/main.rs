@@ -14,9 +14,9 @@ use shasta::{
 };
 
 // DHAT (profiling)
-#[cfg(feature = "dhat-heap")]
-#[global_allocator]
-static ALLOC: dhat::Alloc = dhat::Alloc;
+// #[cfg(feature = "dhat-heap")]
+// #[global_allocator]
+// static ALOC: dhat::Alloc = dhat::Alloc;
 
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -82,8 +82,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             .unwrap();
 
     // Process input params
-    let matches = crate::cli::entrypoint::get_matches(hsm_group);
-    let cli_result = crate::cli::entrypoint::process_command(
+    let matches = crate::cli::build::build_cli(hsm_group).get_matches();
+    let cli_result = crate::cli::process::process_cli(
         matches,
         &shasta_token,
         &shasta_base_url,
