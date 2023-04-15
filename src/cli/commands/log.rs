@@ -216,7 +216,7 @@ pub async fn get_container_logs(
             .boxed();
 
         while let Some(line) = logs.try_next().await? {
-            print!("{}", std::str::from_utf8(&line).unwrap());
+            print!("{}", String::from_utf8_lossy(&line));
         }
     } else {
         // Printing logs of all CFS layers
