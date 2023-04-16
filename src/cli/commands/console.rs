@@ -15,27 +15,26 @@ use crate::shasta::kubernetes::get_k8s_client_programmatically;
 
 use crate::common::node_ops;
 
-use clap::ArgMatches;
-
 pub async fn exec(
     hsm_group: Option<&String>,
-    cli_console: &ArgMatches,
+    // cli_console: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
+    xnames: Vec<&str>
 ) {
     /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
 
     // User provided list of xnames to power reset
-    let xnames: Vec<&str> = cli_console
+    /* let xnames: Vec<&str> = cli_console
         .get_one::<String>("XNAME")
         .unwrap()
         .split(',')
         .map(|xname| xname.trim())
-        .collect();
+        .collect(); */
 
     // let hsm_groups: Vec<cluster_ops::ClusterDetails>;
 

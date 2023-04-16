@@ -139,7 +139,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_images(hsm_group))
 }
 
-pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
+/* pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     let mut apply_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .arg_required_else_help(true)
@@ -160,7 +160,7 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     };
 
     apply_configuration
-}
+} */
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
@@ -169,7 +169,7 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
         .about("Create a CFS configuration and a session against HSM group or xnames")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         // .arg(arg!(-i --image "If set, creates a CFS sesison of target image, otherwise it will create a CFS session target dynamic").action(ArgAction::SetTrue))
-        .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
+        .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").required(true)
             .value_parser(value_parser!(PathBuf)))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -347,7 +347,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta HSM group or nodes")
-                .subcommand(subcommand_apply_configuration(hsm_group))
+                // .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))

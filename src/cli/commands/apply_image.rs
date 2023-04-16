@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
-use clap::ArgMatches;
 use serde_yaml::Value;
 
-use crate::{shasta::cfs::{configuration, session::CfsSession}, manta, cli};
+use crate::{shasta::cfs::{configuration, session::CfsSession}, cli};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -12,7 +11,8 @@ use crate::{shasta::cfs::{configuration, session::CfsSession}, manta, cli};
 pub async fn exec(
     vault_base_url: &str,
     vault_role_id: &str,
-    cli_apply_image: &ArgMatches,
+    // cli_apply_image: &ArgMatches,
+    path_file: &PathBuf,
     shasta_token: &str,
     shasta_base_url: &str,
     base_image_id: &str,
@@ -23,8 +23,8 @@ pub async fn exec(
 ) -> (String, String) {
     let mut cfs_configuration;
 
-    let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
-    let file_content = std::fs::read_to_string(path_buf).unwrap();
+    // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
+    let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();

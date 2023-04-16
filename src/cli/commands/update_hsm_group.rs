@@ -160,8 +160,8 @@ pub async fn exec(
     let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
         shasta_token,
         shasta_base_url,
-        Some(&"testing manta".to_string()),
-        &nodes,
+        nodes.clone(),
+        Some("Update node boot params".to_string()),
         true,
     )
     .await;

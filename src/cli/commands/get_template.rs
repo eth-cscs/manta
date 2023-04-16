@@ -1,28 +1,30 @@
-use clap::ArgMatches;
-
 use crate::shasta::bos::template as bos_template;
 
 pub async fn exec(
-    hsm_group: Option<&String>,
-    cli_get_template: &ArgMatches,
+    // hsm_group: Option<&String>,
+    // cli_get_template: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
+    hsm_group_name: Option<&String>,
+    template_name: Option<&String>,
+    most_recent: Option<bool>,
+    limit: Option<&u8>,
 ) {
     let limit_number;
 
-    let template_name = cli_get_template.get_one::<String>("name");
+    // let template_name = cli_get_template.get_one::<String>("name");
 
-    let hsm_group_name = match hsm_group {
+    /* let hsm_group_name = match hsm_group {
         None => cli_get_template.get_one::<String>("hsm-group"),
         Some(hsm_group_val) => Some(hsm_group_val),
-    };
+    }; */
 
-    let most_recent = cli_get_template.get_one::<bool>("most-recent");
+    // let most_recent = cli_get_template.get_one::<bool>("most-recent");
 
     if let Some(true) = most_recent {
         limit_number = Some(&1);
     } else if let Some(false) = most_recent {
-        limit_number = cli_get_template.get_one::<u8>("limit");
+        limit_number = limit;
     } else {
         limit_number = None;
     }

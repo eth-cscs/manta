@@ -1,5 +1,3 @@
-use clap::ArgMatches;
-
 use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -7,7 +5,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use crate::shasta::cfs::configuration;
 use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
-use crate::{manta, shasta_cfs_component, shasta_cfs_session, cli};
+use crate::{cli, shasta_cfs_component, shasta_cfs_session};
 use k8s_openapi::chrono;
 use substring::Substring;
 
@@ -20,64 +18,49 @@ pub async fn exec(
     gitea_base_url: &str,
     vault_base_url: &str,
     vault_role_id: &str,
-    hsm_group: Option<&String>,
-    cli_apply_session: &ArgMatches,
+    // cli_apply_session: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     k8s_api_url: &str,
+    cfs_session_name: Option<String>,
+    hsm_group: Option<&String>,
+    repos_paths: Vec<PathBuf>,
+    ansible_limit: Option<String>,
+    ansible_verbosity: String,
+    watch_logs: bool,
 ) -> (String, String) {
     /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
-    let xnames: Vec<&str>;
+    let mut xname_list: Vec<&str>;
     // Check andible limit matches the nodes in hsm_group
-    let hsm_groups;
+    let hsm_group_list;
 
     let cfs_configuration_name;
 
-    let hsm_groups_nodes;
+    let hsm_groups_node_list;
 
     // * Validate input params
     // Neither hsm_group (both config file or cli arg) nor ansible_limit provided --> ERROR since we don't know the target nodes to apply the session to
     // NOTE: hsm group can be assigned either by config file or cli arg
-    if cli_apply_session
-        .get_one::<String>("ansible-limit")
-        .is_none()
-        && hsm_group.is_none()
-        && cli_apply_session.get_one::<String>("hsm-group").is_none()
-    {
+    if ansible_limit.is_none() && hsm_group.is_none() && hsm_group.is_none() {
         // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
         eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
         std::process::exit(-1);
     }
+
     // * End validation input params
 
     // * Parse input params
     // Parse ansible limit
     // Get ansible limit nodes from cli arg
-    let ansible_limit_nodes: Vec<&str> = if cli_apply_session
-        .get_one::<String>("ansible-limit")
-        .is_some()
-    {
-        // Get HashSet with all nodes from ansible-limit param
-        cli_apply_session
-            .get_one::<String>("ansible-limit")
-            .unwrap()
-            .split(',')
-            .map(|xname| xname.trim())
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let ansible_limit = ansible_limit.unwrap_or_default();
+    let ansible_limit_nodes: Vec<&str> =
+        ansible_limit.split(',').map(|xname| xname.trim()).collect();
 
     // Parse hsm group
     let mut hsm_group_value = None;
 
     // Get hsm_group from cli arg
-    if cli_apply_session.get_one::<String>("hsm-group").is_some() {
-        hsm_group_value = cli_apply_session.get_one::<String>("hsm-group");
-    }
-
-    // Get hsm group from config file
     if hsm_group.is_some() {
         hsm_group_value = hsm_group;
     }
@@ -86,7 +69,7 @@ pub async fn exec(
     // * Process/validate hsm group value (and ansible limit)
     if hsm_group_value.is_some() {
         // Get all hsm groups details related to hsm_group input
-        hsm_groups = crate::common::cluster_ops::get_details(
+        hsm_group_list = crate::common::cluster_ops::get_details(
             shasta_token,
             shasta_base_url,
             hsm_group_value.unwrap(),
@@ -94,13 +77,10 @@ pub async fn exec(
         .await;
 
         //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
-        cfs_configuration_name = cli_apply_session
-            .get_one::<String>("name")
-            .unwrap()
-            .to_string();
+        cfs_configuration_name = cfs_session_name.unwrap().to_string();
 
         // Take all nodes for all hsm_groups found and put them in a Vec
-        hsm_groups_nodes = hsm_groups
+        hsm_groups_node_list = hsm_group_list
             .iter()
             .flat_map(|hsm_group| {
                 hsm_group
@@ -112,40 +92,28 @@ pub async fn exec(
 
         if !ansible_limit_nodes.is_empty() {
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
-            xnames = hsm_groups_nodes;
+            xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {
+            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xname_list, hsm_group).await {
                 eprintln!("xname/s invalid. Exit");
                 std::process::exit(1);
             }
-
-            /* (included, excluded) = crate::common::node_ops::check_hsm_group_and_ansible_limit(
-                &hsm_groups_nodes,
-                ansible_limit_nodes,
-            );
-
-            if !excluded.is_empty() {
-                println!("Nodes in ansible-limit outside hsm groups members.\nNodes {:?} may be mistaken as they don't belong to hsm groups {:?} - {:?}",
-                            excluded,
-                            hsm_groups.iter().map(|hsm_group| hsm_group.hsm_group_label.clone()).collect::<Vec<String>>(),
-                            hsm_groups_nodes);
-                std::process::exit(-1);
-            } */
         } else {
             // hsm_group provided but no ansible_limit provided --> target nodes are the ones from hsm_group
             // included = hsm_groups_nodes
-            xnames = hsm_groups_nodes;
+            xname_list = hsm_groups_node_list;
         }
     } else {
         // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
-        cfs_configuration_name = cli_apply_session
-            .get_one::<String>("name")
-            .unwrap()
-            .to_string();
+        cfs_configuration_name = cfs_session_name.unwrap().to_string();
         // included = ansible_limit_nodes
-        xnames = ansible_limit_nodes;
+        xname_list = ansible_limit_nodes;
     }
     // * End Process/validate hsm group value (and ansible limit)
+    
+    // Remove duplicates in xname_list
+    xname_list.sort();
+    xname_list.dedup();
 
     log::info!("Replacing '_' with '-' in repo name.");
     let cfs_configuration_name = str::replace(&cfs_configuration_name, "_", "-");
@@ -153,32 +121,23 @@ pub async fn exec(
     // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
-        cli_apply_session
-            .get_many("repo-path")
-            .unwrap()
-            .cloned()
-            .collect(),
-        // vec![cli_apply_session
-        //     .get_one::<String>("repo-path")
-        //     .unwrap()
-        //     .to_string()],
+        /* cli_apply_session
+        .get_many("repo-path")
+        .unwrap()
+        .cloned()
+        .collect(), */
+        repos_paths,
         gitea_token,
         gitea_base_url,
         shasta_token,
         shasta_base_url,
-        xnames.into_iter().collect::<Vec<_>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
-        cli_apply_session
-            .get_one::<String>("ansible-verbosity")
-            .unwrap()
-            .parse()
-            .unwrap(),
+        xname_list.into_iter().collect::<Vec<_>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
+        ansible_verbosity.parse::<u8>().unwrap_or(0),
     )
     .await
     .unwrap();
 
-    let watch_logs = cli_apply_session.get_one::<bool>("watch-logs");
-
-    if let Some(true) = watch_logs {
+    if watch_logs {
         log::info!("Fetching logs ...");
         cli::commands::log::session_logs(
             vault_base_url,

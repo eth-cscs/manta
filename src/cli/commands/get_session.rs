@@ -1,5 +1,3 @@
-use std::{sync::mpsc, thread};
-
 use clap::ArgMatches;
 
 use crate::shasta::{self, cfs::session as shasta_cfs_session};
@@ -158,6 +156,7 @@ pub async fn exec(
         };
 
         // println!("{:#?}", cfs_session);
+
         let mut image_id_from_bos_sessiontemplate = "";
         if !cfs_session_status_artifacts_result_id.is_empty() {
             let bos_sessiontemplate =
@@ -187,17 +186,12 @@ pub async fn exec(
                             .trim_start_matches("s3://boot-images/")
                             .trim_end_matches("/manifest.json");
                         break;
-                    } else {
-                        image_id_from_bos_sessiontemplate = "";
                     }
                 }
             } else {
-                image_id_from_bos_sessiontemplate = "";
+                image_id_from_bos_sessiontemplate = cfs_session_status_artifacts_result_id;
             }
-        } else {
-            image_id_from_bos_sessiontemplate = "";
         }
-
         cfs_session_table_data.push(image_id_from_bos_sessiontemplate.to_string());
         // println!("{:#?}", ims_image_kernel_path);
         // println!("Hey! {:?}", cfs_session_table_data);

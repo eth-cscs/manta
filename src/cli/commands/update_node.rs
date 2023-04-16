@@ -129,14 +129,14 @@ pub async fn exec(
     // Create BOS session. Note: reboot operation shuts down the nodes and don't bring them back
     // up... hence we will split the reboot into 2 operations shutdown and start
 
-    let nodes = xnames.iter().map(|xname| xname.to_string()).collect();
+    let nodes: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
 
     // Create CAPMC operation shutdown
     let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
         shasta_token,
         shasta_base_url,
-        Some(&"testing manta".to_string()),
-        &nodes,
+        nodes.clone(),
+        Some("Update node boot params".to_string()),
         true,
     )
     .await;

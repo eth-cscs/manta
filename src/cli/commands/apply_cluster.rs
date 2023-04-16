@@ -1,7 +1,7 @@
 use core::time;
 use std::{path::PathBuf, thread};
 
-use clap::ArgMatches;
+// use clap::ArgMatches;
 use k8s_openapi::chrono;
 use serde_yaml::Value;
 
@@ -12,15 +12,16 @@ use super::apply_image;
 pub async fn exec(
     vault_base_url: &str,
     vault_role_id: &str,
-    cli_apply_image: &ArgMatches,
+    // cli_apply_image: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
+    path_file: &PathBuf,
     base_image_id: &str,
     hsm_group_param: Option<&String>,
     k8s_api_url: &str,
 ) {
-    let path_buf: &PathBuf = cli_apply_image.get_one("file").unwrap();
-    let file_content = std::fs::read_to_string(path_buf).unwrap();
+    // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
+    let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let bos_session_templates_yaml = sat_file_yaml["session_templates"].as_sequence().unwrap();
@@ -41,7 +42,8 @@ pub async fn exec(
     let (_, cfs_session_name) = apply_image::exec(
         vault_base_url,
         vault_role_id,
-        cli_apply_image,
+        // cli_apply_image,
+        path_file,
         shasta_token,
         shasta_base_url,
         base_image_id,
@@ -130,27 +132,6 @@ pub async fn exec(
 
     log::debug!("IMS image response:\n{:#?}", image_details);
 
-    /* // Wait till image details are available
-    let mut i = 0;
-    let max = 50; // Max ammount of attempts to check if IMS image details are available
-    while image_details.is_err() && i <= max {
-        eprint!(
-            "\rCould not fetch image details for result_id {}. Trying again in 2 seconds. Attempt {} of {}",
-            cfs_session_result_id, i + 1, max
-        );
-        thread::sleep(time::Duration::from_secs(2));
-        std::io::Write::flush(&mut std::io::stdout()).unwrap();
-
-        i += 1;
-    }
-
-    println!();
-
-    if image_details.is_err() {
-        eprintln!("Could not fetch image details. Exit");
-        std::process::exit(1);
-    } */
-
     let ims_image_name = image_details.as_ref().unwrap()["name"]
         .as_str()
         .unwrap()
@@ -212,47 +193,6 @@ pub async fn exec(
         bos_session_template_hsm_groups.first().unwrap()
     };
 
-    /* let cfs = crate::shasta::bos::template::Cfs {
-        clone_url: None,
-        branch: None,
-        commit: None,
-        playbook: None,
-        configuration: Some(cfs_configuration_name),
-    };
-
-    let compute_property = crate::shasta::bos::template::Property {
-        name: Some(ims_image_name),
-        boot_ordinal: Some(2),
-        shutdown_ordinal: None,
-        path: Some(ims_image_path),
-        type_prop: Some(ims_image_type),
-        etag: Some(ims_image_etag),
-        kernel_parameters: Some("ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}".to_string()),
-        network: Some("nmn".to_string()),
-        node_list: None,
-        node_roles_groups: None,
-        node_groups: Some(vec![hsm_group.to_string()]),
-        rootfs_provider: Some("cpss3".to_string()),
-        rootfs_provider_passthrough: Some("dvs:api-gw-service-nmn.local:300:nmn0".to_string()),
-    };
-
-    let boot_set = crate::shasta::bos::template::BootSet {
-        compute: Some(compute_property),
-    };
-
-    let create_bos_session_template_payload = crate::shasta::bos::template::BosTemplate {
-        name: bos_session_template_name,
-        template_url: None,
-        description: None,
-        cfs_url: None,
-        cfs_branch: None,
-        enable_cfs: Some(true),
-        cfs: Some(cfs),
-        partition: None,
-        boot_sets: Some(boot_set),
-        links: None,
-    }; */
-
     let create_bos_session_template_payload = bos::template::BosTemplate::new_for_hsm_group(
         cfs_configuration_name,
         bos_session_template_name,
@@ -308,8 +248,8 @@ pub async fn exec(
     let capmc_shutdown_nodes_resp = crate::shasta::capmc::http_client::node_power_off::post_sync(
         shasta_token,
         shasta_base_url,
-        Some(&"testing manta".to_string()),
-        &nodes,
+        nodes.clone(),
+        Some("Shut down cluster to apply changes".to_string()),
         true,
     )
     .await;

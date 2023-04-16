@@ -1,4 +1,3 @@
-use clap::ArgMatches;
 use termion::color;
 
 use crate::{
@@ -9,16 +8,17 @@ use crate::{
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 ///
 pub async fn exec(
-    hsm_group: Option<&String>,
-    cli_get_node: &ArgMatches,
+    // hsm_group: Option<&String>,
+    // cli_get_node: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
+    hsm_group_name: Option<&String>,
 ) {
-    // Check HSM group name provided and configuration file
+    /* // Check HSM group name provided and configuration file
     let hsm_group_name = match hsm_group {
         None => cli_get_node.get_one::<String>("HSMGROUP"),
         Some(_) => hsm_group,
-    };
+    }; */
 
     let hsm_groups_resp = hsm::http_client::get_hsm_groups(
         shasta_token,
@@ -57,10 +57,13 @@ pub async fn exec(
     // println!("node_hsm_groups_map:\n{:#?}", node_hsm_groups_map);
 
     // Get boot params
-    let nodes_boot_params_list =
-        shasta::bss::http_client::get_boot_params(shasta_token, shasta_base_url, &hsm_groups_node_list)
-            .await
-            .unwrap();
+    let nodes_boot_params_list = shasta::bss::http_client::get_boot_params(
+        shasta_token,
+        shasta_base_url,
+        &hsm_groups_node_list,
+    )
+    .await
+    .unwrap();
 
     // Get all BOS session templates for HSM group
     let bos_sessiontemplate_list = shasta::bos::template::http_client::get(
@@ -232,14 +235,20 @@ pub async fn exec(
                 }
             }
 
-            if manifest_image_path_in_bos_sessiontemplate.is_some() && cfs_configuration_name.is_some() {
+            if manifest_image_path_in_bos_sessiontemplate.is_some()
+                && cfs_configuration_name.is_some()
+            {
                 /* println!(
                     "\nnode:\n{}\ncfs_configuration:\n{:#?}\nbos_sessiontemplate\n{:#?}\n",
                     node, cfs_configuration, bos_sessiontemplate
                 ); */
                 node_details.push(kernel_image_path_in_boot_params.to_owned().unwrap());
                 node_details.push(cfs_configuration_name.to_owned().unwrap());
-                node_details.push(manifest_image_path_in_bos_sessiontemplate.to_owned().unwrap());
+                node_details.push(
+                    manifest_image_path_in_bos_sessiontemplate
+                        .to_owned()
+                        .unwrap(),
+                );
 
                 node_details_list.push(node_details.to_owned());
 

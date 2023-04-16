@@ -11,19 +11,19 @@ use crate::shasta_cfs_session;
 
 use crate::shasta::kubernetes as shasta_k8s;
 
-use clap::ArgMatches;
-
 pub async fn exec(
-    cli_log: &ArgMatches,
+    // cli_log: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
+    logging_session_name: Option<&String>,
+    layer_id: Option<&u8>,
 ) {
-    let logging_session_name = cli_log.get_one::<String>("SESSION");
+    // let logging_session_name = cli_log.get_one::<String>("SESSION");
 
-    let layer_id = cli_log.get_one::<u8>("layer-id");
+    // let layer_id = cli_log.get_one::<u8>("layer-id");
 
     session_logs_proxy(
         shasta_token,
@@ -67,7 +67,9 @@ pub async fn session_logs_proxy(
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-    let client = shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url).await?;
+    let client =
+        shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
+            .await?;
 
     // Get CFS session logs
     get_container_logs(client, cfs_session_name, layer_id).await?;
@@ -82,7 +84,9 @@ pub async fn session_logs(
     layer_id: Option<&u8>,
     k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-    let client = shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url).await?;
+    let client =
+        shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
+            .await?;
 
     // Get CFS session logs
     get_container_logs(client, cfs_session_name, layer_id).await?;

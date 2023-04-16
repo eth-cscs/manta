@@ -1,4 +1,3 @@
-use clap::ArgMatches;
 use comfy_table::Table;
 
 use crate::{common, shasta::bos};
@@ -6,9 +5,6 @@ use crate::{common, shasta::bos};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_get_image: &ArgMatches,
-    xnames: Option<Vec<&str>>,
-    cfs_configuration_name: Option<&String>,
     hsm_group: Option<&String>,
 ) {
     // Get BOS sessiontemplates for the hsm group

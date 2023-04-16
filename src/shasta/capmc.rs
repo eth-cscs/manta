@@ -64,13 +64,13 @@ pub mod http_client {
         pub async fn post(
             shasta_token: &str,
             shasta_base_url: &str,
-            reason: Option<&String>,
             xnames: Vec<String>,
+            reason: Option<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
             log::info!("Shutting down nodes: {:?}", xnames);
 
-            let power_off = PowerStatus::new(reason.cloned(), xnames, force, None);
+            let power_off = PowerStatus::new(reason, xnames, force, None);
 
             let client;
 
@@ -110,16 +110,18 @@ pub mod http_client {
         pub async fn post_sync(
             shasta_token: &str,
             shasta_base_url: &str,
-            reason: Option<&String>,
-            xnames: &Vec<String>,
+            xnames: Vec<String>,
+            reason: Option<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
+            let xname_list: Vec<String> =
+                xnames.into_iter().map(|xname| xname.to_string()).collect();
             // Create CAPMC operation shutdown
             let capmc_shutdown_nodes_resp = post(
                 shasta_token,
                 shasta_base_url,
+                xname_list.clone(),
                 reason,
-                xnames.to_owned(),
                 force,
             )
             .await;
@@ -127,8 +129,12 @@ pub mod http_client {
             log::info!("Shutdown nodes resp:\n{:#?}", capmc_shutdown_nodes_resp);
 
             // Check Nodes are shutdown
-            let mut nodes_status =
-                hsm::http_client::get_components_status(shasta_token, shasta_base_url, xnames.to_vec()).await;
+            let mut nodes_status = hsm::http_client::get_components_status(
+                shasta_token,
+                shasta_base_url,
+                xname_list.clone(),
+            )
+            .await;
 
             log::info!("nodes_status:\n{:#?}", nodes_status);
 
@@ -153,7 +159,7 @@ pub mod http_client {
                 nodes_status = hsm::http_client::get_components_status(
                     shasta_token,
                     shasta_base_url,
-                    xnames.to_vec(),
+                    xname_list.clone(),
                 )
                 .await;
             }
@@ -176,13 +182,13 @@ pub mod http_client {
         pub async fn post(
             shasta_token: &str,
             shasta_base_url: &str,
-            reason: Option<&String>,
             xnames: Vec<String>,
+            reason: Option<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
             log::info!("Powering on nodes: {:?}", xnames);
 
-            let power_on = PowerStatus::new(reason.cloned(), xnames, force, None);
+            let power_on = PowerStatus::new(reason, xnames, force, None);
 
             let client;
 
