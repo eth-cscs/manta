@@ -33,7 +33,7 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
         "Status",
         "Image ID (Boot param)",
         "CFS configuration (BOA)",
-        "Image ID (BOS sessiontemplate)"
+        "Image ID (BOS sessiontemplate)",
     ]);
 
     for node_status in nodes_status {
@@ -44,30 +44,37 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
 }
 
 pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<Value>>) -> String {
-    if nodes.is_some() {
-        nodes_to_string_format_discrete_columns(nodes, nodes.unwrap().len() + 1)
+    if let Some(nodes_content) = nodes {
+        nodes_to_string_format_discrete_columns(nodes, nodes_content.len() + 1)
     } else {
         "".to_string()
     }
 }
 
-pub fn nodes_to_string_format_discrete_columns(nodes: Option<&Vec<Value>>, num_columns: usize) -> String {
-    let mut members: String = String::new();
+pub fn nodes_to_string_format_discrete_columns(
+    nodes: Option<&Vec<Value>>,
+    num_columns: usize,
+) -> String {
+    let mut members: String;
 
-    if nodes.is_some() && !nodes.unwrap().is_empty() {
-        members = nodes.unwrap()[0].as_str().unwrap().to_string(); // take first element
+    match nodes {
+        Some(nodes) if !nodes.is_empty() => {
+            members = nodes[0].as_str().unwrap().to_string(); // take first element
 
-        for (i, _) in nodes.unwrap().iter().enumerate().skip(1) { // iterate for the rest of the list
-            if i % num_columns == 0 {
-                // breaking the cell content into multiple lines (only 2 xnames per line)
+            for (i, _) in nodes.iter().enumerate().skip(1) {
+                // iterate for the rest of the list
+                if i % num_columns == 0 {
+                    // breaking the cell content into multiple lines (only 2 xnames per line)
 
-                members.push_str(",\n");
-            } else {
-                members.push(',');
+                    members.push_str(",\n");
+                } else {
+                    members.push(',');
+                }
+
+                members.push_str(nodes[i].as_str().unwrap());
             }
-
-            members.push_str(nodes.unwrap()[i].as_str().unwrap());
-        }
+        },
+        _ => members = "".to_string()
     }
 
     members

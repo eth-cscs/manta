@@ -1,6 +1,6 @@
 use crate::shasta::cfs::configuration;
 use serde_yaml::Value;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// Creates a configuration from a sat file
 /// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
@@ -9,7 +9,7 @@ use std::path::PathBuf;
 /// Return CFS configuration name
 pub async fn exec(
     // cli_apply_configuration: &ArgMatches,
-    path_file: &PathBuf,
+    path_file: &Path,
     shasta_token: &str,
     shasta_base_url: &str,
     timestamp: &str,
@@ -17,7 +17,7 @@ pub async fn exec(
     // * Parse input params
     // let path_file: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
     println!("file config: {:#?}", path_file.file_name());
-    let file_content = std::fs::read_to_string(path_file.as_path()).unwrap();
+    let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();

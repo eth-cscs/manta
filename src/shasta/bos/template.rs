@@ -466,12 +466,11 @@ pub mod utils {
         hsm_groups_names: Vec<String>,
         xnames: Vec<String>,
     ) -> bool {
-        let boot_set_type; // uan or compute
-        if bos_sessiontemplate.pointer("/boot_sets/uan").is_some() {
-            boot_set_type = "uan";
+        let boot_set_type = if bos_sessiontemplate.pointer("/boot_sets/uan").is_some() {
+            "uan"
         } else {
-            boot_set_type = "compute";
-        }
+            "compute"
+        };
 
         let empty_array_value = &serde_json::Value::Array(Vec::new());
 
@@ -503,7 +502,7 @@ pub mod utils {
             }
         }
 
-        return false;
+        false
     }
 
     pub fn print_table(bos_templates: Vec<Value>) {

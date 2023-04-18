@@ -286,11 +286,10 @@ pub mod utils {
             .collect()
     }
 
-    pub fn get_members_from_hsm_groups_serde_value(hsm_groups: &Vec<Value>) -> HashSet<String> {
+    pub fn get_members_from_hsm_groups_serde_value(hsm_groups: &[Value]) -> HashSet<String> {
         hsm_groups
             .iter()
-            .map(|hsm_group| get_members_from_hsm_group_serde_value(hsm_group))
-            .flatten()
+            .flat_map(get_members_from_hsm_group_serde_value)
             .collect()
     }
 
@@ -306,7 +305,7 @@ pub mod utils {
                 member_hsm_map
                     .entry(member)
                     .and_modify(|hsm_groups| hsm_groups.push(hsm_group_name.clone()))
-                    .or_insert(vec![hsm_group_name.clone()]);
+                    .or_insert_with(|| vec![hsm_group_name.clone()]);
             }
         }
 

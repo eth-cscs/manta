@@ -13,9 +13,7 @@ pub async fn exec(
         Some(hsm_group_value) => hsm_group_value,
     };
     // Get configuration name
-    let cfs_configuration_name;
-
-    cfs_configuration_name = if cli_update_hsm.get_one::<String>("CFS_CONFIG").is_some() {
+    let cfs_configuration_name = if cli_update_hsm.get_one::<String>("CFS_CONFIG").is_some() {
         cli_update_hsm
             .get_one::<String>("CFS_CONFIG")
             .unwrap()

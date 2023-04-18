@@ -5,7 +5,7 @@ pub async fn exec(
     // cli_get_hsm_groups: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
-    hsm_group_name: &String,
+    hsm_group_name: &str,
 ) {
     /* let hsm_group_name = match hsm_group {
         None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),

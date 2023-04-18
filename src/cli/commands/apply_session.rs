@@ -77,7 +77,7 @@ pub async fn exec(
         .await;
 
         //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
-        cfs_configuration_name = cfs_session_name.unwrap().to_string();
+        cfs_configuration_name = cfs_session_name.unwrap();
 
         // Take all nodes for all hsm_groups found and put them in a Vec
         hsm_groups_node_list = hsm_group_list
@@ -105,7 +105,7 @@ pub async fn exec(
         }
     } else {
         // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
-        cfs_configuration_name = cfs_session_name.unwrap().to_string();
+        cfs_configuration_name = cfs_session_name.unwrap();
         // included = ansible_limit_nodes
         xname_list = ansible_limit_nodes;
     }
