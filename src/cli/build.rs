@@ -78,7 +78,8 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
-        .about("Get members of a HSM group");
+        .about("Get members of a HSM group")
+        .arg(arg!(-s --silent "Be more silent, produces less output by giving a list of nids like nidxxxxxx,nidyyyyyy,nidzzzzzz,..."));
 
     match hsm_group {
         None => {

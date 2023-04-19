@@ -2,9 +2,9 @@ use clap::ArgMatches;
 use k8s_openapi::chrono;
 
 use super::commands::{
-    apply_cluster, apply_image, apply_node_off, apply_node_on,
-    apply_node_reset, apply_session, console, get_configuration, get_hsm, get_images, get_nodes,
-    get_session, get_template, log, update_hsm_group, update_node,
+    apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
+    console, get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, log,
+    update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -61,7 +61,13 @@ pub async fn process_cli(
                 None => cli_get_node.get_one::<String>("HSMGROUP"),
                 Some(_) => hsm_group,
             };
-            get_nodes::exec(shasta_token, shasta_base_url, hsm_group_name).await;
+            get_nodes::exec(
+                shasta_token,
+                shasta_base_url,
+                hsm_group_name,
+                *cli_get_node.get_one::<bool>("silent").unwrap_or(&false),
+            )
+            .await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
             let hsm_group_name = match hsm_group {
                 None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
@@ -113,7 +119,8 @@ pub async fn process_cli(
                     .cloned(),
                 cli_apply_session
                     .get_one::<String>("ansible-verbosity")
-                    .unwrap().to_string(),
+                    .unwrap()
+                    .to_string(),
                 *cli_apply_session
                     .get_one::<bool>("watch-logs")
                     .unwrap_or(&false),

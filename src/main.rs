@@ -53,9 +53,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
     // let base_image_id = settings.get::<String>("base_image_id").unwrap();
 
-    match settings.get::<String>("socks5_proxy") {
-        Ok(socks_proxy) => std::env::set_var("SOCKS5", socks_proxy),
-        Err(_) => eprintln!("socks proxy not provided"),
+    if let Ok(socks_proxy) = settings.get::<String>("socks5_proxy") {
+        std::env::set_var("SOCKS5", socks_proxy);
     }
 
     let settings_hsm_group = settings.get::<String>("hsm_group");
@@ -63,12 +62,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let hsm_group = match &settings_hsm_group {
         Ok(hsm_group_val) => {
-            println!(
+            /* println!(
                 "\nWorking on nodes related to *{}{}{}* hsm groups\n",
                 color::Fg(color::Green),
                 hsm_group_val,
                 color::Fg(color::Reset)
-            );
+            ); */
             Some(hsm_group_val)
         }
         Err(_) => None,
