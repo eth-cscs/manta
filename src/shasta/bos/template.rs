@@ -357,7 +357,6 @@ pub mod http_client {
             }
         } else {
             // Returning all results
-
             cluster_bos_tempalte = json_response.as_array().unwrap().clone();
         }
 

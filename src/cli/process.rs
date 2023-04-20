@@ -39,7 +39,32 @@ pub async fn process_cli(
             )
             .await;
         } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
-            get_session::exec(hsm_group, cli_get_session, shasta_token, shasta_base_url).await;
+            let session_name = cli_get_session.get_one::<String>("name");
+
+            let hsm_group_name = match hsm_group {
+                // ref: https://stackoverflow.com/a/32487173/1918003
+                None => cli_get_session.get_one::<String>("hsm-group"),
+                Some(hsm_group_val) => Some(hsm_group_val),
+            };
+
+            let most_recent = cli_get_session.get_one::<bool>("most-recent");
+
+            let limit_number = if let Some(true) = most_recent {
+                Some(&1)
+            } else if let Some(false) = most_recent {
+                cli_get_session.get_one::<u8>("limit")
+            } else {
+                None
+            };
+
+            get_session::exec(
+                shasta_token,
+                shasta_base_url,
+                hsm_group_name,
+                session_name,
+                limit_number,
+            )
+            .await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
             let hsm_group_name = match hsm_group {
                 None => cli_get_template.get_one::<String>("hsm-group"),

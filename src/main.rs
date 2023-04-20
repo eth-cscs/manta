@@ -6,7 +6,6 @@ mod shasta;
 use std::path::PathBuf;
 
 use directories::ProjectDirs;
-use termion::color;
 
 use shasta::{
     authentication, capmc,

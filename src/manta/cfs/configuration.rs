@@ -1,5 +1,8 @@
 use std::fmt;
 use comfy_table::Table;
+use serde_json::Value;
+
+use crate::shasta;
 
 pub struct Configuration {
     name: String,
@@ -51,6 +54,48 @@ impl Layer {
     }
 }
     
+pub async fn get_configuration(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    configuration_name: Option<&String>,
+    hsm_group_name: Option<&String>,
+    most_recent: Option<bool>,
+    limit: Option<&u8>,
+) -> Vec<Value> {
+    // let configuration_name = cli_get_configuration.get_one::<String>("name");
+
+    /* let hsm_group_name = match hsm_group {
+        // ref: https://stackoverflow.com/a/32487173/1918003
+        None => cli_get_configuration.get_one::<String>("hsm-group"),
+        Some(hsm_group_val) => Some(hsm_group_val),
+    }; */
+
+    // let most_recent = cli_get_configuration.get_one::<bool>("most-recent");
+
+    let limit_number;
+
+    if let Some(true) = most_recent {
+        limit_number = Some(&1);
+    } else if let Some(false) = most_recent {
+        limit_number = limit;
+    } else {
+        limit_number = None;
+    }
+
+    // Get CFS configurations
+    let cfs_configurations = shasta::cfs::configuration::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        hsm_group_name,
+        configuration_name,
+        limit_number,
+    )
+    .await
+    .unwrap_or_default();
+
+    cfs_configurations
+}
+
 impl fmt::Display for Layer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n - name: {}\n - repo name: {}\n - commit id: {}\n - commit date: {}\n - author: {}", self.name, self.repo_name, self.commit_id, self.commit_date, self.author)
