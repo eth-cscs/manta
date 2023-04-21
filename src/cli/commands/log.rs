@@ -1,56 +1,29 @@
 use core::time;
+use std::pin::Pin;
 use std::{error::Error, thread};
 
 use k8s_openapi::api::core::v1::{ContainerState, Pod};
 use kube::Api;
 
-use futures_util::{StreamExt, TryStreamExt};
+use futures_util::{Stream, StreamExt, TryStreamExt};
 use termion::color;
 
-use crate::shasta_cfs_session;
+use crate::shasta;
 
 use crate::shasta::kubernetes as shasta_k8s;
 
 pub async fn exec(
-    // cli_log: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    logging_session_name: Option<&String>,
-    layer_id: Option<&u8>,
-) {
-    // let logging_session_name = cli_log.get_one::<String>("SESSION");
-
-    // let layer_id = cli_log.get_one::<u8>("layer-id");
-
-    session_logs_proxy(
-        shasta_token,
-        shasta_base_url,
-        vault_base_url,
-        vault_role_id,
-        None,
-        logging_session_name,
-        layer_id,
-        k8s_api_url,
-    )
-    .await
-    .unwrap();
-}
-
-pub async fn session_logs_proxy(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    vault_base_url: &str,
-    vault_role_id: &str,
     cluster_name: Option<&String>,
     session_name: Option<&String>,
     layer_id: Option<&u8>,
-    k8s_api_url: &str,
-) -> Result<(), Box<dyn Error>> {
+)  {
     // Get CFS sessions
-    let cfs_sessions = shasta_cfs_session::http_client::get(
+    let cfs_sessions = shasta::cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         cluster_name,
@@ -58,23 +31,25 @@ pub async fn session_logs_proxy(
         None,
         None,
     )
-    .await?;
+    .await.unwrap();
 
     if cfs_sessions.is_empty() {
-        log::info!("No CFS session found");
-        return Ok(());
+        println!("No CFS session found");
+        std::process::exit(0);
     }
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
     let client =
         shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
-            .await?;
+            .await.unwrap();
 
     // Get CFS session logs
-    get_container_logs(client, cfs_session_name, layer_id).await?;
+    let mut logs_stream = get_container_logs_stream(client, cfs_session_name, layer_id).await.unwrap();
 
-    Ok(())
+    while let Some(line) = logs_stream.try_next().await.unwrap() {
+        print!("{}", std::str::from_utf8(&line).unwrap());
+    }
 }
 
 pub async fn session_logs(
@@ -83,39 +58,30 @@ pub async fn session_logs(
     cfs_session_name: &str,
     layer_id: Option<&u8>,
     k8s_api_url: &str,
-) -> core::result::Result<(), Box<dyn std::error::Error>> {
+) -> Result<
+    Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
+    Box<dyn std::error::Error>,
+> {
     let client =
         shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
             .await?;
 
     // Get CFS session logs
-    get_container_logs(client, cfs_session_name, layer_id).await?;
+    Ok(get_container_logs_stream(client, cfs_session_name, layer_id).await?)
 
-    Ok(())
+    /* while let Some(line) = logs_stream.try_next().await? {
+        print!("{}", std::str::from_utf8(&line).unwrap());
+    } */
 }
 
-fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
-    let container_status = pod
-        .status
-        .as_ref()
-        .unwrap()
-        .container_statuses
-        .as_ref()
-        .unwrap()
-        .iter()
-        .find(|container_status| container_status.name.eq(container_name));
-
-    match container_status {
-        Some(container_status_aux) => container_status_aux.state.clone(),
-        None => None,
-    }
-}
-
-pub async fn get_container_logs(
+pub async fn get_container_logs_stream(
     client: kube::Client,
     cfs_session_name: &str,
     layer_id: Option<&u8>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<
+    Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
+    Box<dyn std::error::Error>,
+> {
     let pods_api: Api<Pod> = Api::namespaced(client, "services");
 
     log::debug!("cfs session: {}", cfs_session_name);
@@ -144,11 +110,11 @@ pub async fn get_container_logs(
     println!();
 
     if pods.items.is_empty() {
-        eprintln!(
+        return Err(format!(
             "Pod for cfs session {} not ready. Aborting operation",
             cfs_session_name
-        );
-        std::process::exit(1);
+        )
+        .into());
     }
 
     let cfs_session_pod = &pods.items[0].clone();
@@ -173,11 +139,11 @@ pub async fn get_container_logs(
             .find(|x| x.name.eq(&container_name));
 
         if container_exists.is_none() {
-            println!(
+            return Err(format!(
                 "Container {} (layer {}) does not exists. Aborting",
                 container_name, layer
-            );
-            std::process::exit(0);
+            )
+            .into());
         }
 
         let mut container_state = get_container_state(cfs_session_pod, &container_name);
@@ -202,11 +168,12 @@ pub async fn get_container_logs(
         println!();
 
         if container_state.as_ref().unwrap().waiting.is_some() {
-            eprintln!("Container {} not ready. Aborting operation", container_name);
-            std::process::exit(1);
+            return Err(
+                format!("Container {} not ready. Aborting operation", container_name).into(),
+            );
         }
 
-        let mut logs = pods_api
+        let logs_stream = pods_api
             .log_stream(
                 &cfs_session_pod_name,
                 &kube::api::LogParams {
@@ -219,9 +186,11 @@ pub async fn get_container_logs(
             .await?
             .boxed();
 
-        while let Some(line) = logs.try_next().await? {
+        return Ok(logs_stream);
+
+        /* while let Some(line) = logs_stream.try_next().await? {
             print!("{}", String::from_utf8_lossy(&line));
-        }
+        } */
     } else {
         // Printing logs of all CFS layers
 
@@ -249,11 +218,11 @@ pub async fn get_container_logs(
                 .find(|x| x.name.eq(&ansible_container.name));
 
             if container_exists.is_none() {
-                println!(
+                return Err(format!(
                     "Container {} does not exists. Aborting",
                     ansible_container.name
-                );
-                std::process::exit(0);
+                )
+                .into());
             }
 
             let mut container_state = get_container_state(cfs_session_pod, &ansible_container.name);
@@ -273,19 +242,18 @@ pub async fn get_container_logs(
             println!();
 
             if container_state.as_ref().unwrap().waiting.is_some() {
-                eprintln!(
+                return Err(format!(
                     "Container {} not ready. Aborting operation",
                     ansible_container.name
-                );
-                std::process::exit(1);
+                )
+                .into());
             }
 
-            let mut logs = pods_api
+            let logs_stream = pods_api
                 .log_stream(
                     &cfs_session_pod_name,
                     &kube::api::LogParams {
                         follow: true,
-                        // tail_lines: Some(1),
                         container: Some(ansible_container.name.clone()),
                         ..kube::api::LogParams::default()
                     },
@@ -293,11 +261,26 @@ pub async fn get_container_logs(
                 .await?
                 .boxed();
 
-            while let Some(line) = logs.try_next().await? {
-                print!("{}", std::str::from_utf8(&line).unwrap());
-            }
+            return Ok(logs_stream);
         }
     }
 
-    Ok(())
+    return Err("Not sure why but we did not get a log stream...".into());
+}
+
+fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {
+    let container_status = pod
+        .status
+        .as_ref()
+        .unwrap()
+        .container_statuses
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|container_status| container_status.name.eq(container_name));
+
+    match container_status {
+        Some(container_status_aux) => container_status_aux.state.clone(),
+        None => None,
+    }
 }

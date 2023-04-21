@@ -260,6 +260,7 @@ pub async fn process_cli(
             vault_base_url,
             vault_role_id,
             k8s_api_url,
+            None,
             cli_log.get_one::<String>("SESSION"),
             cli_log.get_one::<u8>("layer-id"),
         )

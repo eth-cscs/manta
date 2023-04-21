@@ -1,8 +1,12 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, pin::Pin};
 
+use futures_util::{Stream, StreamExt, TryStreamExt};
 use serde_yaml::Value;
 
-use crate::{shasta::cfs::{configuration, session::CfsSession}, cli};
+use crate::{
+    cli,
+    shasta::cfs::{configuration, session::CfsSession},
+};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -111,9 +115,20 @@ pub async fn exec(
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
-        cli::commands::log::session_logs(vault_base_url, vault_role_id, &cfs_session.name, None, k8s_api_url)
-            .await
-            .unwrap();
+
+        let mut logs_stream = cli::commands::log::session_logs(
+            vault_base_url,
+            vault_role_id,
+            &cfs_session.name,
+            None,
+            k8s_api_url,
+        )
+        .await
+        .unwrap();
+
+        while let Some(line) = logs_stream.try_next().await.unwrap() {
+            print!("{}", std::str::from_utf8(&line).unwrap());
+        }
     }
 
     // let watch_logs = cli_apply_image.get_one::<bool>("watch-logs");
