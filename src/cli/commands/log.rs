@@ -8,6 +8,7 @@ use kube::Api;
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use termion::color;
 
+use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 use crate::shasta;
 
 use crate::shasta::kubernetes as shasta_k8s;
@@ -21,7 +22,7 @@ pub async fn exec(
     cluster_name: Option<&String>,
     session_name: Option<&String>,
     layer_id: Option<&u8>,
-)  {
+) {
     // Get CFS sessions
     let cfs_sessions = shasta::cfs::session::http_client::get(
         shasta_token,
@@ -31,7 +32,8 @@ pub async fn exec(
         None,
         None,
     )
-    .await.unwrap();
+    .await
+    .unwrap();
 
     if cfs_sessions.is_empty() {
         println!("No CFS session found");
@@ -40,12 +42,16 @@ pub async fn exec(
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-    let client =
-        shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
-            .await.unwrap();
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
+
+    let client = shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
 
     // Get CFS session logs
-    let mut logs_stream = get_container_logs_stream(client, cfs_session_name, layer_id).await.unwrap();
+    let mut logs_stream = get_container_logs_stream(client, cfs_session_name, layer_id)
+        .await
+        .unwrap();
 
     while let Some(line) = logs_stream.try_next().await.unwrap() {
         print!("{}", std::str::from_utf8(&line).unwrap());
@@ -62,9 +68,10 @@ pub async fn session_logs(
     Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
     Box<dyn std::error::Error>,
 > {
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
+
     let client =
-        shasta_k8s::get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url)
-            .await?;
+        shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await?;
 
     // Get CFS session logs
     Ok(get_container_logs_stream(client, cfs_session_name, layer_id).await?)

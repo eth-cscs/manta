@@ -11,18 +11,16 @@ use kube::{
 };
 
 use secrecy::SecretString;
+use serde_json::Value;
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
 pub async fn get_k8s_client_programmatically(
-    vault_base_url: &str,
-    vault_role_id: &str,
     k8s_api_url: &str,
+    shasta_k8s_secrets: Value,
 ) -> Result<kube::Client, Box<dyn Error>> {
     /* let settings = crate::config::get("config");
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap(); */
-
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await?;
 
     let mut shasta_cluster = Cluster {
         server: k8s_api_url.to_string(),

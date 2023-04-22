@@ -11,7 +11,10 @@ use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
-use crate::shasta::kubernetes::get_k8s_client_programmatically;
+use crate::{
+    common::vault::http_client::fetch_shasta_k8s_secrets,
+    shasta::kubernetes::get_k8s_client_programmatically,
+};
 
 use crate::common::node_ops;
 
@@ -23,18 +26,18 @@ pub async fn exec(
     vault_base_url: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    xnames: Vec<&str>
+    xnames: Vec<&str>,
 ) {
     /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
 
     // User provided list of xnames to power reset
     /* let xnames: Vec<&str> = cli_console
-        .get_one::<String>("XNAME")
-        .unwrap()
-        .split(',')
-        .map(|xname| xname.trim())
-        .collect(); */
+    .get_one::<String>("XNAME")
+    .unwrap()
+    .split(',')
+    .map(|xname| xname.trim())
+    .collect(); */
 
     // let hsm_groups: Vec<cluster_ops::ClusterDetails>;
 
@@ -94,8 +97,9 @@ pub async fn connect_to_console(
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let client =
-        get_k8s_client_programmatically(vault_base_url, vault_role_id, k8s_api_url).await?;
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
+
+    let client = get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await?;
 
     let pods_fabric: Api<Pod> = Api::namespaced(client, "services");
 

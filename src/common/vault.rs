@@ -63,7 +63,7 @@ pub mod http_client {
 
     pub async fn fetch_shasta_vcs_token(
         vault_base_url: &str,
-        vault_role_id: &str
+        vault_role_id: &str,
     ) -> core::result::Result<String, Box<dyn std::error::Error>> {
         let vault_token = auth(vault_base_url, vault_role_id).await;
 
@@ -80,19 +80,19 @@ pub mod http_client {
         }
     }
 
-    pub async fn fetch_shasta_k8s_secrets(
-        vault_base_url: &str,
-        vault_role_id: &str
-    ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
+    pub async fn fetch_shasta_k8s_secrets(vault_base_url: &str, vault_role_id: &str) -> Value {
         let vault_token = auth(vault_base_url, vault_role_id).await;
 
         match vault_token {
             Ok(_) => {
                 let vault_secret =
-                    fetch_secret(&vault_token?, vault_base_url, "/v1/shasta/k8s").await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/k8s
-                Ok(serde_json::from_str(
+                    fetch_secret(&vault_token.unwrap(), vault_base_url, "/v1/shasta/k8s")
+                        .await
+                        .unwrap(); // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/k8s
+
+                serde_json::from_str::<Value>(
                     vault_secret["value"].as_str().unwrap(),
-                )?) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["value"]
+                ).unwrap() // this works for vault v1.12.0 for older versions may need vault_secret["data"]["value"]
             }
             Err(e) => {
                 eprintln!("{}", e);
