@@ -1,4 +1,5 @@
 use core::time;
+use std::error::Error;
 use std::pin::Pin;
 use std::thread;
 
@@ -68,12 +69,12 @@ pub async fn session_logs(
     k8s_api_url: &str,
 ) -> Result<
     Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
-    Box<dyn std::error::Error>,
+    Box<dyn Error + Sync + Send>,
 > {
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
 
     let client =
-        shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await?;
+        shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await.unwrap();
 
     // Get CFS session logs
     Ok(get_cfs_session_logs_stream(client, cfs_session_name, layer_id).await?)
@@ -86,7 +87,7 @@ pub async fn get_container_logs_stream(
     params: &ListParams,
 ) -> Result<
     Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
-    Box<dyn std::error::Error>,
+    Box<dyn Error + Sync + Send>,
 > {
     let mut container_log_stream: Pin<
         Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>,
@@ -188,7 +189,7 @@ pub async fn get_cfs_session_logs_stream(
     layer_id: Option<&u8>,
 ) -> Result<
     Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
-    Box<dyn std::error::Error>,
+    Box<dyn Error + Sync + Send>,
 > {
     let mut container_log_stream: Pin<
         Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>,

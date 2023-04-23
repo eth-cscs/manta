@@ -59,7 +59,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::{capmc::PowerStatus, shasta::hsm};
+        use crate::shasta::{capmc::PowerStatus, hsm};
 
         pub async fn post(
             shasta_token: &str,
@@ -177,7 +177,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::capmc::PowerStatus;
+        use crate::shasta::capmc::PowerStatus;
 
         pub async fn post(
             shasta_token: &str,
@@ -231,7 +231,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::capmc::PowerStatus;
+        use crate::shasta::capmc::PowerStatus;
 
         pub async fn post(
             shasta_token: &str,
@@ -285,7 +285,7 @@ pub mod http_client {
 
         use serde_json::Value;
 
-        use crate::capmc::NodeStatus;
+        use crate::shasta::capmc::NodeStatus;
 
         pub async fn post(
             shasta_token: &str,

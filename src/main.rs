@@ -7,9 +7,7 @@ use std::path::PathBuf;
 
 use directories::ProjectDirs;
 
-use shasta::{
-    authentication, capmc,
-};
+use shasta::authentication;
 
 // DHAT (profiling)
 // #[cfg(feature = "dhat-heap")]
