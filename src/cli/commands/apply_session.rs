@@ -2,10 +2,10 @@ use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
-use crate::shasta::cfs::configuration;
+use crate::shasta::{cfs::configuration, self};
 use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
-use crate::{cli, shasta_cfs_component, shasta_cfs_session};
+use crate::cli;
 use k8s_openapi::chrono;
 use substring::Substring;
 
@@ -213,7 +213,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         log::info!("Checking status of component {}", xname);
 
         let component_status =
-            shasta_cfs_component::http_client::get(shasta_token, shasta_base_url, &xname).await?;
+            shasta::cfs::component::http_client::get(shasta_token, shasta_base_url, &xname).await?;
         let hsm_configuration_state =
             &hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
                 ["State"];
@@ -386,7 +386,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = shasta_cfs_session::CfsSession::new(
+    let session = shasta::cfs::session::CfsSession::new(
         cfs_session_name,
         cfs_configuration_name,
         Some(limit),
@@ -399,7 +399,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp =
-        shasta_cfs_session::http_client::post(shasta_token, shasta_base_url, &session).await;
+        shasta::cfs::session::http_client::post(shasta_token, shasta_base_url, &session).await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 

@@ -13,8 +13,6 @@ use kube::{
 use secrecy::SecretString;
 use serde_json::Value;
 
-use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
-
 pub async fn get_k8s_client_programmatically(
     k8s_api_url: &str,
     shasta_k8s_secrets: Value,

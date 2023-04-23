@@ -9,7 +9,6 @@ use directories::ProjectDirs;
 
 use shasta::{
     authentication, capmc,
-    cfs::{component as shasta_cfs_component, session as shasta_cfs_session},
 };
 
 // DHAT (profiling)

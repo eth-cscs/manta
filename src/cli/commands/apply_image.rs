@@ -1,6 +1,6 @@
-use std::{path::PathBuf, pin::Pin};
+use std::path::PathBuf;
 
-use futures_util::{Stream, StreamExt, TryStreamExt};
+use futures_util::TryStreamExt;
 use serde_yaml::Value;
 
 use crate::{
