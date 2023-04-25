@@ -34,7 +34,7 @@ pub async fn exec(
 
         for (i, layer) in hsm_group.most_recent_cfs_configuration_name_created["layers"]
             .as_array()
-            .unwrap()
+            .unwrap_or(&Vec::new())
             .iter()
             .enumerate()
         {
