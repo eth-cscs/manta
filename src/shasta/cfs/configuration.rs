@@ -210,8 +210,10 @@ pub mod http_client {
 
     use std::error::Error;
 
+    use crate::shasta::{self, hsm};
+
     use super::CfsConfiguration;
-    use serde_json::Value;
+    use serde_json::{json, Value};
 
     pub async fn put(
         shasta_token: &str,
@@ -300,16 +302,69 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
         };
 
+        log::debug!("CFS sessions:\n{:#?}", json_response);
+
+        log::debug!("HSM group name:\n{:#?}", hsm_group_name);
+
         let mut cluster_cfs_configs = json_response.as_array().unwrap().clone();
 
         if hsm_group_name.is_some() {
-            cluster_cfs_configs.retain(|cfs_configuration| {
-                cfs_configuration["name"]
-                    .as_str()
-                    .unwrap()
-                    .contains(hsm_group_name.unwrap())
-            });
+            /* let hsm_groups_resp = hsm::http_client::get_hsm_groups(
+                shasta_token,
+                shasta_base_url,
+                Some(hsm_group_name.unwrap()),
+            )
+            .await;
+
+            // println!("hsm_groups_resp: {:#?}", hsm_groups_resp);
+
+            let hsm_group_list = hsm_groups_resp.unwrap();
+
+            // Take all nodes for all hsm_groups found and put them in a Vec
+            let mut hsm_groups_node_list: Vec<String> =
+                hsm::utils::get_members_from_hsm_groups_serde_value(&hsm_group_list)
+                    .into_iter()
+                    .collect();
+
+            hsm_groups_node_list.sort();
+
+            // Get all BOS session templates for HSM group
+            let bos_sessiontemplate_list = shasta::bos::template::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                hsm_group_name,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+            // Get all CFS configurations so we can link CFS configuration name with its counterpart in the
+            // BOS sessiontemplate, we are doing this because BOS sessiontemplate does not have
+            // creation/update time hence I can't sort by date to loop and find out most recent BOS
+            // sessiontemplate per node. Joining CFS configuration and BOS sessiontemplate will help to
+            // this
+            let mut cfs_configuration_list = shasta::cfs::configuration::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                None,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+            // reverse list in order to have most recent CFS configuration lastUpdate values at front
+            cfs_configuration_list.reverse();
+
+            for node in &hsm_groups_node_list {
+                for cfs_configuration in &cfs_configuration_list {
+
+                }
+            } */
         }
+
+        log::debug!("CFS sessions:\n{:#?}", cluster_cfs_configs);
 
         if configuration_name.is_some() {
             cluster_cfs_configs.retain(|cfs_configuration| {
@@ -319,6 +374,8 @@ pub mod http_client {
                     .eq(configuration_name.unwrap())
             });
         }
+
+        log::debug!("CFS sessions:\n{:#?}", cluster_cfs_configs);
 
         cluster_cfs_configs.sort_by(|a, b| {
             a["lastUpdated"]
@@ -335,6 +392,8 @@ pub mod http_client {
                 .saturating_sub(*limit_number.unwrap() as usize)..]
                 .to_vec();
         }
+
+        log::debug!("CFS sessions:\n{:#?}", cluster_cfs_configs);
 
         Ok(cluster_cfs_configs)
     }

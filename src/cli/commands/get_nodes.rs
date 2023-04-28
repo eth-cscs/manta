@@ -14,6 +14,7 @@ pub async fn exec(
     shasta_base_url: &str,
     hsm_group_name: Option<&String>,
     silent: bool,
+    silent_xname: bool,
 ) {
     /* // Check HSM group name provided and configuration file
     let hsm_group_name = match hsm_group {
@@ -262,6 +263,8 @@ pub async fn exec(
 
     if silent {
         println!("{}", node_details_list.iter().map(|node_details| node_details[1].clone()).collect::<Vec<String>>().join(","));
+    } else if silent_xname {
+        println!("{}", node_details_list.iter().map(|node_details| node_details[0].clone()).collect::<Vec<String>>().join(","));
     } else {
         node_ops::print_table(node_details_list);
     }

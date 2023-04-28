@@ -79,7 +79,8 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .about("Get members of a HSM group")
-        .arg(arg!(-s --silent "Be more silent, produces less output by giving a list of nids like nidxxxxxx,nidyyyyyy,nidzzzzzz,..."));
+        .arg(arg!(-s --silent "Be more silent, produces less output by giving a list of nids like nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
+        .arg(arg!(-x --"silent-xname" "Be more silent, produces less output by giving a list of xnames"));
 
     match hsm_group {
         None => {
