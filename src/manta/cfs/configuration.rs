@@ -83,7 +83,7 @@ pub async fn get_configuration(
     }
 
     // Get CFS configurations
-    let cfs_configurations = shasta::cfs::configuration::http_client::get(
+    shasta::cfs::configuration::http_client::get(
         shasta_token,
         shasta_base_url,
         hsm_group_name,
@@ -91,9 +91,7 @@ pub async fn get_configuration(
         limit_number,
     )
     .await
-    .unwrap_or_default();
-
-    cfs_configurations
+    .unwrap_or_default()
 }
 
 impl fmt::Display for Layer {

@@ -64,7 +64,7 @@ pub async fn get_container_attachment(
 
     log::info!("Connecting to console {}", xname);
 
-    let attached = pods_fabric
+    pods_fabric
         .exec(
             console_pod_name,
             command,
@@ -76,7 +76,5 @@ pub async fn get_container_attachment(
                 .tty(true),
         )
         .await
-        .unwrap();
-
-    attached
+        .unwrap()
 }

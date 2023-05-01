@@ -4,17 +4,12 @@ use std::{
 };
 
 use futures_util::StreamExt;
-use k8s_openapi::api::core::v1::Pod;
-use kube::{api::{AttachParams, AttachedProcess}, Api};
-use serde_json::Value;
+
 use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
-use crate::{
-    common::vault::http_client::fetch_shasta_k8s_secrets,
-    shasta::kubernetes::get_k8s_client_programmatically, manta::console::get_container_attachment,
-};
+use crate::manta::console::get_container_attachment;
 
 use crate::common::node_ops;
 

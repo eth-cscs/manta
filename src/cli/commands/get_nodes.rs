@@ -70,10 +70,10 @@ pub async fn exec(
         shasta_base_url,
         Some(&hsm_group_nodes_string),
         None,
+        // None,
+        /* None,
         None,
-        None,
-        None,
-        None,
+        None, */
     )
     .await
     .unwrap();

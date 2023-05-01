@@ -77,7 +77,7 @@ pub async fn session_logs(
         shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await.unwrap();
 
     // Get CFS session logs
-    Ok(get_cfs_session_logs_stream(client, cfs_session_name, layer_id).await?)
+    get_cfs_session_logs_stream(client, cfs_session_name, layer_id).await
 }
 
 pub async fn get_container_logs_stream(
@@ -140,7 +140,7 @@ pub async fn get_container_logs_stream(
         ); */
         i += 1;
         thread::sleep(time::Duration::from_secs(2));
-        let pods = pods_api.list(&params).await?;
+        let pods = pods_api.list(params).await?;
         container_state = get_container_state(&pods.items[0], &cfs_session_layer_container.name);
         log::debug!("Container state:\n{:#?}", container_state.as_ref().unwrap());
     }
@@ -248,9 +248,7 @@ pub async fn get_cfs_session_logs_stream(
     let cfs_session_pod_name = cfs_session_pod.metadata.name.clone().unwrap();
     log::info!("Pod name: {}", cfs_session_pod_name);
 
-    let ansible_containers: Vec<&Container>;
-
-    if layer_id.is_some() {
+    let ansible_containers: Vec<&Container> = if layer_id.is_some() {
         // Printing a CFS session layer logs
 
         let layer = layer_id.unwrap().to_string();
@@ -258,25 +256,25 @@ pub async fn get_cfs_session_logs_stream(
         let container_name = format!("ansible-{}", layer);
 
         // Get ansible-x containers
-        ansible_containers = cfs_session_pod
+        cfs_session_pod
             .spec
             .as_ref()
             .unwrap()
             .containers
             .iter()
             .filter(|container| container.name.eq(&container_name))
-            .collect();
+            .collect()
     } else {
         // Get ansible-x containers
-        ansible_containers = cfs_session_pod
+        cfs_session_pod
             .spec
             .as_ref()
             .unwrap()
             .containers
             .iter()
             .filter(|container| container.name.contains("ansible-"))
-            .collect();
-    }
+            .collect()
+    };
 
     for ansible_container in ansible_containers {
         container_log_stream = container_log_stream
@@ -298,7 +296,7 @@ pub async fn get_cfs_session_logs_stream(
         container_log_stream = container_log_stream.chain(logs_stream).boxed();
     }
 
-    return Ok(container_log_stream);
+    Ok(container_log_stream)
 }
 
 fn get_container_state(pod: &Pod, container_name: &String) -> Option<ContainerState> {

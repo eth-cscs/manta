@@ -45,10 +45,10 @@ pub mod http_client {
         shasta_base_url: &str,
         components_ids: Option<&str>,
         status: Option<&str>,
-        enabled: Option<bool>,
-        cfs_configuration_name: Option<&str>,
-        cfs_configuration_details: Option<bool>,
-        tags: Option<&str>,
+        // enabled: Option<bool>,
+        /* cfs_configuration_name: Option<&str>,
+        cfs_configuration_details: Option<bool>, */
+        // tags: Option<&str>,
     ) -> Result<Vec<Value>, Box<dyn Error>> {
         let client;
 

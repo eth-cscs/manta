@@ -210,10 +210,8 @@ pub mod http_client {
 
     use std::error::Error;
 
-    use crate::shasta::{self, hsm};
-
     use super::CfsConfiguration;
-    use serde_json::{json, Value};
+    use serde_json::Value;
 
     pub async fn put(
         shasta_token: &str,
