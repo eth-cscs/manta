@@ -30,10 +30,13 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     table.set_header(vec![
         "XNAME",
         "NID",
-        "Status",
+        "Power Status",
+        "Desired Configuration",
+        "Configuration Status",
+        "Enabled",
+        "Error Count",
+        // "Tags",
         "Image ID (Boot param)",
-        "CFS configuration (BOA)",
-        "Image ID (BOS sessiontemplate)",
     ]);
 
     for node_status in nodes_status {

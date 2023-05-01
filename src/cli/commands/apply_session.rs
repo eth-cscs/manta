@@ -213,7 +213,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         log::info!("Checking status of component {}", xname);
 
         let component_status =
-            shasta::cfs::component::http_client::get(shasta_token, shasta_base_url, &xname).await?;
+            shasta::cfs::component::http_client::get_single_component(shasta_token, shasta_base_url, &xname).await?;
         let hsm_configuration_state =
             &hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
                 ["State"];

@@ -150,16 +150,12 @@ pub async fn get_sessions(
                             .eq(cfs_session_configuration_name)
                     });
             if bos_sessiontemplate.is_some() {
-                for node_type in ["compute", "uan"] {
-                    if bos_sessiontemplate
-                        .unwrap()
-                        .pointer(&("/boot_sets/".to_owned() + node_type + "/path"))
-                        .is_some()
-                    {
-                        image_id_from_bos_sessiontemplate = bos_sessiontemplate
-                            .unwrap()
-                            .pointer(&("/boot_sets/".to_owned() + node_type + "/path"))
-                            .unwrap()
+                for (boot_sets_param, boot_sets_value) in bos_sessiontemplate.unwrap()["boot_sets"]
+                    .as_object()
+                    .unwrap()
+                {
+                    if boot_sets_value.get("path").is_some() {
+                        image_id_from_bos_sessiontemplate =boot_sets_value["path"] 
                             .as_str()
                             .unwrap()
                             .trim_start_matches("s3://boot-images/")

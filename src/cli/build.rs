@@ -309,9 +309,9 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to")
+        .about("Search for the most recent successful CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames provided")
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated").required(true))
-        .arg(arg!([CFS_CONFIG] "CFS configuration name."));
+        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided"));
 
     update_node = match hsm_group {
         Some(_) => update_node,
@@ -325,7 +325,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Update nodes' boot image with the one created by the most recent CFS session for the HSM group the node belongs to");
+        .about("Search for the provided CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames linked to the HSM group provided");
 
     update_hsm_group = match hsm_group {
         Some(_) => update_hsm_group,
@@ -333,8 +333,8 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group = update_hsm_group
-        .arg(arg!([CFS_CONFIG] "CFS configuration name."))
-        .arg(arg!(-m --"most-recent" "Most recent CFS configuration will be used to greb the image to configure the nodes"))
+        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided"))
+        .arg(arg!(-m --"most-recent" "Most recent CFS configuration will be used to grab the image to configure the nodes"))
         .group(ArgGroup::new("cfs-config_or_most-recent").args(["CFS_CONFIG", "most-recent"]));
 
     update_hsm_group

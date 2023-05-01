@@ -189,6 +189,7 @@ pub mod http_client {
     }
 
     /// Fetch CFS sessions ref --> https://apidocs.svc.cscs.ch/paas/cfs/operation/get_sessions/
+    /// Returns list of CFS sessions ordered by start time
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
@@ -289,6 +290,7 @@ pub mod http_client {
             });
         }
 
+        // Sort CFS sessions by start time order ASC
         cluster_cfs_sessions.sort_by(|a, b| {
             a["status"]["session"]["startTime"]
                 .as_str()

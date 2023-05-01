@@ -295,7 +295,7 @@ pub mod utils {
 
     /// Returns a Map with nodes and the list of hsm groups that node belongs to.
     /// eg "x1500b5c1n3 --> [ psi-dev, psi-dev_cn ]"
-    pub fn get_members_and_hsm_from_hsm_groups_serde_value(
+    pub fn group_members_by_hsm_group_from_hsm_groups_serde_value(
         hsm_groups: &Vec<Value>,
     ) -> HashMap<String, Vec<String>> {
         let mut member_hsm_map: HashMap<String, Vec<String>> = HashMap::new();

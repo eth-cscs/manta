@@ -25,7 +25,7 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Get most recent CFS session target image for the node
+    // Get all CFS session ended successfully
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -37,6 +37,7 @@ pub async fn exec(
     .await
     .unwrap();
 
+    // Filter CFS sessions by target image
     cfs_sessions_details.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
             && cfs_session_details["configuration"]["name"].eq(cfs_configuration_name.unwrap())
@@ -49,6 +50,7 @@ pub async fn exec(
 
     log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
 
+    // Get result_id value which is the image id generated from the most recent CFS session
     let result_id = cfs_sessions_details.first().unwrap()["status"]["artifacts"]
         .as_array()
         .unwrap()
