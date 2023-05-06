@@ -45,7 +45,8 @@ pub async fn exec(
             "{}",
             node_details_list
                 .iter()
-                .map(|node_details| node_details[1].clone())
+                // .map(|node_details| node_details[1].clone())
+                .map(|node_details| node_details.nid.clone())
                 .collect::<Vec<String>>()
                 .join(",")
         );
@@ -54,7 +55,8 @@ pub async fn exec(
             "{}",
             node_details_list
                 .iter()
-                .map(|node_details| node_details[0].clone())
+                // .map(|node_details| node_details[0].clone())
+                .map(|node_details| node_details.xname.clone())
                 .collect::<Vec<String>>()
                 .join(",")
         );

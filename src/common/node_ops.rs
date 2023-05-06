@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
-use comfy_table::Table;
+use comfy_table::{Cell, Table};
 use regex::Regex;
 use serde_json::Value;
+
+use crate::manta::get_nodes_status::NodeDetails;
 
 /// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
 /// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
@@ -24,7 +26,7 @@ pub fn check_hsm_group_and_ansible_limit(
     )
 }
 
-pub fn print_table(nodes_status: Vec<Vec<String>>) {
+pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();
 
     table.set_header(vec![
@@ -40,7 +42,16 @@ pub fn print_table(nodes_status: Vec<Vec<String>>) {
     ]);
 
     for node_status in nodes_status {
-        table.add_row(node_status);
+        table.add_row(vec![
+            Cell::new(node_status.xname),
+            Cell::new(node_status.nid),
+            Cell::new(node_status.power_status),
+            Cell::new(node_status.desired_configuration),
+            Cell::new(node_status.configuration_status),
+            Cell::new(node_status.enabled),
+            Cell::new(node_status.error_count),
+            Cell::new(node_status.boot_image_id),
+        ]);
     }
 
     println!("{table}");
@@ -76,8 +87,8 @@ pub fn nodes_to_string_format_discrete_columns(
 
                 members.push_str(nodes[i].as_str().unwrap());
             }
-        },
-        _ => members = "".to_string()
+        }
+        _ => members = "".to_string(),
     }
 
     members

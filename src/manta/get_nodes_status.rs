@@ -1,7 +1,22 @@
 use crate::shasta::{self, hsm};
 
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_list: Vec<String>) -> Vec<Vec<String>> {
+#[derive(Debug, Clone)]
+pub struct NodeDetails {
+    pub xname: String,
+    pub nid: String,
+    pub power_status: String,
+    pub desired_configuration: String,
+    pub configuration_status: String,
+    pub enabled: String,
+    pub error_count: String,
+    pub boot_image_id: String,
+}
 
+pub async fn exec(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    hsm_groups_node_list: Vec<String>,
+) -> Vec<NodeDetails> {
     let hsm_group_nodes_string = hsm_groups_node_list.join(",");
 
     let components_status = shasta::cfs::component::http_client::get_multiple_components(
@@ -55,10 +70,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
     let mut node_details_list = Vec::new();
 
     for node in &hsm_groups_node_list {
-        // let mut kernel_image_path_in_boot_params = none;
-        // let mut manifest_image_path_in_bos_sessiontemplate = none;
-        // let mut cfs_configuration_name = none;
-        let mut node_details = Vec::new();
+        // let mut node_details = Vec::new();
 
         // find component details
         let component_details = components_status
@@ -66,18 +78,16 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
             .find(|component_status| component_status["id"].as_str().unwrap().eq(node))
             .unwrap();
 
-        let desired_configuration = component_details["DesiredConfig"]
+        let desired_configuration = component_details["desiredConfig"]
             .as_str()
             .unwrap_or_default();
-        let configuration_status = component_details["ConfigurationStatus"]
+        let configuration_status = component_details["configurationStatus"]
             .as_str()
             .unwrap_or_default();
         let enabled = component_details["enabled"].as_bool().unwrap_or_default();
-        let error_count = component_details["ErrorCount"].as_i64().unwrap_or_default();
-        // let tags = component_details["tags"].to_string();
+        let error_count = component_details["errorCount"].as_i64().unwrap_or_default();
 
         // get power status
-        // node_power_status = get_node_power_status(node, &nodes_power_status_resp);
         let node_hsm_info = nodes_hsm_info_resp["Components"]
             .as_array()
             .unwrap()
@@ -96,14 +106,13 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
             node_hsm_info["NID"].as_u64().unwrap().to_string()
         );
 
-        node_details.push(node.to_string());
+        /* node_details.push(node.to_string());
         node_details.push(node_nid);
         node_details.push(node_power_status);
         node_details.push(desired_configuration.to_string());
         node_details.push(configuration_status.to_string());
         node_details.push(enabled.to_string());
-        node_details.push(error_count.to_string());
-        // node_details.push(tags);
+        node_details.push(error_count.to_string()); */
 
         // get node boot params (these are the boot params of the nodes with the image the node
         // boot with). the image in the bos sessiontemplate may be different i don't know why. need
@@ -131,9 +140,22 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
         )
         .unwrap_or_default();
 
-        node_details.push(kernel_image_path_in_boot_params);
+        // node_details.push(kernel_image_path_in_boot_params);
 
-        node_details_list.push(node_details.to_owned());
+        // node_details_list.push(node_details.to_owned());
+
+        let node_details = NodeDetails {
+            xname: node.to_string(),
+            nid: node_nid,
+            power_status: node_power_status,
+            desired_configuration: desired_configuration.to_owned(),
+            configuration_status: configuration_status.to_owned(),
+            enabled: enabled.to_string(),
+            error_count: error_count.to_string(),
+            boot_image_id: kernel_image_path_in_boot_params,
+        };
+
+        node_details_list.push(node_details);
     }
     let components_status = shasta::cfs::component::http_client::get_multiple_components(
         shasta_token,
@@ -186,10 +208,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
     let mut node_details_list = Vec::new();
 
     for node in &hsm_groups_node_list {
-        // let mut kernel_image_path_in_boot_params = none;
-        // let mut manifest_image_path_in_bos_sessiontemplate = none;
-        // let mut cfs_configuration_name = none;
-        let mut node_details = Vec::new();
+        // let mut node_details = Vec::new();
 
         // find component details
         let component_details = components_status
@@ -197,14 +216,14 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
             .find(|component_status| component_status["id"].as_str().unwrap().eq(node))
             .unwrap();
 
-        let desired_configuration = component_details["desiredconfig"]
+        let desired_configuration = component_details["desiredConfig"]
             .as_str()
             .unwrap_or_default();
-        let configuration_status = component_details["configurationstatus"]
+        let configuration_status = component_details["configurationStatus"]
             .as_str()
             .unwrap_or_default();
         let enabled = component_details["enabled"].as_bool().unwrap_or_default();
-        let error_count = component_details["errorcount"].as_i64().unwrap_or_default();
+        let error_count = component_details["errorCount"].as_i64().unwrap_or_default();
         // let tags = component_details["tags"].to_string();
 
         // get power status
@@ -227,14 +246,13 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
             node_hsm_info["NID"].as_u64().unwrap().to_string()
         );
 
-        node_details.push(node.to_string());
+        /* node_details.push(node.to_string());
         node_details.push(node_nid);
         node_details.push(node_power_status);
         node_details.push(desired_configuration.to_string());
         node_details.push(configuration_status.to_string());
         node_details.push(enabled.to_string());
-        node_details.push(error_count.to_string());
-        // node_details.push(tags);
+        node_details.push(error_count.to_string()); */
 
         // get node boot params (these are the boot params of the nodes with the image the node
         // boot with). the image in the bos sessiontemplate may be different i don't know why. need
@@ -262,9 +280,22 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_groups_node_lis
         )
         .unwrap_or_default();
 
-        node_details.push(kernel_image_path_in_boot_params);
+        // node_details.push(kernel_image_path_in_boot_params);
 
-        node_details_list.push(node_details.to_owned());
+        // node_details_list.push(node_details.to_owned());
+
+        let node_details = NodeDetails {
+            xname: node.to_string(),
+            nid: node_nid,
+            power_status: node_power_status,
+            desired_configuration: desired_configuration.to_string(),
+            configuration_status: configuration_status.to_string(),
+            enabled: enabled.to_string(),
+            error_count: error_count.to_string(),
+            boot_image_id: kernel_image_path_in_boot_params,
+        };
+
+        node_details_list.push(node_details);
     }
 
     node_details_list
