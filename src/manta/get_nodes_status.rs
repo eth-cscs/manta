@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::shasta::{self, hsm};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NodeDetails {
     pub xname: String,
     pub nid: String,
@@ -157,6 +159,7 @@ pub async fn exec(
 
         node_details_list.push(node_details);
     }
+
     let components_status = shasta::cfs::component::http_client::get_multiple_components(
         shasta_token,
         shasta_base_url,
