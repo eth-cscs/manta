@@ -34,7 +34,7 @@ pub async fn get_details(
         let mut cfs_configurations = configuration::http_client::get(
             shasta_token,
             shasta_base_url,
-            Some(&cluster_name.to_string()),
+            // Some(&cluster_name.to_string()),
             None,
             Some(&1),
         )

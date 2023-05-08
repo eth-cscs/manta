@@ -13,14 +13,14 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
-    match hsm_group {
+    /* match hsm_group {
         None => {
             get_cfs_configuration = get_cfs_configuration
                 .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
         }
         Some(_) => {}
-    }
+    } */
 
     get_cfs_configuration = get_cfs_configuration
         .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
@@ -207,7 +207,7 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
         .aliases(["i", "img", "imag"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration and a CFS image")
-        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration and CFS image details").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-f --file <VALUE> "SAT file with the CFS configuration and CFS image details").value_parser(value_parser!(PathBuf)).required(true))
         /* .arg(arg!(-r --"repo-path" <VALUE> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
            .value_parser(value_parser!(PathBuf))) */
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -333,9 +333,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group = update_hsm_group
-        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided"))
-        .arg(arg!(-m --"most-recent" "Most recent CFS configuration will be used to grab the image to configure the nodes"))
-        .group(ArgGroup::new("cfs-config_or_most-recent").args(["CFS_CONFIG", "most-recent"]));
+        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided").required(true));
 
     update_hsm_group
 }

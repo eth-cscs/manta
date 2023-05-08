@@ -58,7 +58,7 @@ pub async fn get_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
     configuration_name: Option<&String>,
-    hsm_group_name: Option<&String>,
+    contains: Option<&String>,
     most_recent: Option<bool>,
     limit: Option<&u8>,
 ) -> Vec<Value> {
@@ -86,7 +86,7 @@ pub async fn get_configuration(
     shasta::cfs::configuration::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
+        // hsm_group_name,
         configuration_name,
         limit_number,
     )

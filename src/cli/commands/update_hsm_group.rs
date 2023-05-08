@@ -23,7 +23,7 @@ pub async fn exec(
         let cfs_configuration_resp = shasta::cfs::configuration::http_client::get(
             shasta_token,
             shasta_base_url,
-            Some(hsm_group_name),
+            // Some(hsm_group_name),
             None,
             Some(&1),
         )

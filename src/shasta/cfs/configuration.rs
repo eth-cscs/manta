@@ -266,7 +266,7 @@ pub mod http_client {
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
-        hsm_group_name: Option<&String>,
+        // hsm_group_name: Option<&String>,
         configuration_name: Option<&String>,
         limit_number: Option<&u8>,
     ) -> Result<Vec<Value>, Box<dyn Error>> {
@@ -302,12 +302,12 @@ pub mod http_client {
 
         log::debug!("CFS sessions:\n{:#?}", json_response);
 
-        log::debug!("HSM group name:\n{:#?}", hsm_group_name);
+        // log::debug!("HSM group name:\n{:#?}", hsm_group_name);
 
         let mut cluster_cfs_configs = json_response.as_array().unwrap().clone();
 
-        if hsm_group_name.is_some() {
-            /* let hsm_groups_resp = hsm::http_client::get_hsm_groups(
+        /* if hsm_group_name.is_some() {
+            let hsm_groups_resp = hsm::http_client::get_hsm_groups(
                 shasta_token,
                 shasta_base_url,
                 Some(hsm_group_name.unwrap()),
@@ -359,8 +359,8 @@ pub mod http_client {
                 for cfs_configuration in &cfs_configuration_list {
 
                 }
-            } */
-        }
+            }
+        } */
 
         log::debug!("CFS sessions:\n{:#?}", cluster_cfs_configs);
 
