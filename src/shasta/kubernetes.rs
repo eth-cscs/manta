@@ -102,6 +102,7 @@ pub async fn get_k8s_client_programmatically(
     let config = kube::Config::from_custom_kubeconfig(kube_config, &kube_config_options).await?;
 
     let client = if std::env::var("SOCKS5").is_ok() {
+        log::debug!("SOCKS5 enabled");
         let connector = {
             let mut http = HttpConnector::new();
             http.enforce_http(false);

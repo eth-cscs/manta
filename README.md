@@ -208,7 +208,7 @@ docker build -t manta .
 #### Run
 
 ```
-$ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
+$ docker run -it --network=host -v ~:/root/ -v /etc/ssl/certs:/etc/ssl/certs:ro --env RUST_LOG=debug manta --help
 ```
 
 ### Build from sources

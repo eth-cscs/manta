@@ -1,5 +1,5 @@
 base_image_id = "4bf91021-8d99-4adf-945f-46de2ff50a3d"
-socks5_proxy = "socks5h://127.0.0.1:1080"
+# socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
 keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
 gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"

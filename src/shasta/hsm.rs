@@ -60,6 +60,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
@@ -126,6 +127,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
@@ -163,6 +165,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
@@ -203,6 +206,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate

@@ -156,7 +156,7 @@ impl BosTemplate {
             type_prop: Some(ims_image_type),
             etag: Some(ims_image_etag),
             kernel_parameters: Some(
-                "ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}".to_string(),
+                "ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.disable_default_svc=0 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}".to_string(),
             ),
             network: Some("nmn".to_string()),
             node_list: Some(limit),
@@ -209,7 +209,7 @@ impl BosTemplate {
             type_prop: Some(ims_image_type),
             etag: Some(ims_image_etag),
             kernel_parameters: Some(
-                "ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN} ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf".to_string(),
+                "ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.disable_default_svc=0 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}".to_string(),
             ),
             network: Some("nmn".to_string()),
             node_list: None,
@@ -267,6 +267,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
@@ -310,6 +311,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
@@ -392,6 +394,7 @@ pub mod http_client {
         // Build client
         if std::env::var("SOCKS5").is_ok() {
             // socks5 proxy
+            log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
             // rest client to authenticate
