@@ -114,7 +114,7 @@ impl CfsSession {
         cfs_session
     }
 
-    pub fn from_sat_file_serde_yaml(session_yaml: &serde_yaml::Value, base_image_id: &str) -> Self {
+    pub fn from_sat_file_serde_yaml(session_yaml: &serde_yaml::Value) -> Self {
         let groups_name = session_yaml["configuration_group_names"]
             .as_sequence()
             .unwrap()
@@ -129,7 +129,8 @@ impl CfsSession {
             None,
             true,
             Some(groups_name),
-            Some(base_image_id.to_string()),
+            // Some(base_image_id.to_string()),
+            Some(session_yaml["ims"]["id"].as_str().unwrap().to_string())
         );
         cfs_session
     }

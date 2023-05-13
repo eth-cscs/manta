@@ -27,6 +27,11 @@ pub async fn exec(
         hsm_groups_resp.unwrap()
     };
 
+    if hsm_group_list.is_empty() {
+        println!("No HSM group found");
+        std::process::exit(0);
+    }
+
     // println!("hsm_group_list:\n{:#?}", hsm_group_list);
 
     // Take all nodes for all hsm_groups found and put them in a Vec

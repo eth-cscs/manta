@@ -16,7 +16,7 @@ pub async fn process_cli(
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
-    base_image_id: &str,
+    // base_image_id: &str,
     k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
@@ -160,9 +160,10 @@ pub async fn process_cli(
                 cli_apply_image.get_one("file").unwrap(),
                 shasta_token,
                 shasta_base_url,
-                base_image_id,
+                // base_image_id,
                 cli_apply_image.get_one::<bool>("watch-logs"),
                 &timestamp,
+                hsm_group,
                 k8s_api_url,
             )
             .await;
@@ -174,7 +175,7 @@ pub async fn process_cli(
                 shasta_token,
                 shasta_base_url,
                 cli_apply_cluster.get_one("file").unwrap(),
-                base_image_id,
+                // base_image_id,
                 hsm_group,
                 k8s_api_url,
             )
@@ -264,6 +265,7 @@ pub async fn process_cli(
             None,
             cli_log.get_one::<String>("SESSION"),
             cli_log.get_one::<u8>("layer-id"),
+            hsm_group,
         )
         .await;
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {

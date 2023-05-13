@@ -54,7 +54,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     }
 
     let settings_hsm_group = settings.get::<String>("hsm_group");
-    let base_image_id = settings.get::<String>("base_image_id").unwrap();
+    // let base_image_id = settings.get::<String>("base_image_id").unwrap();
 
     let hsm_group = match &settings_hsm_group {
         Ok(hsm_group_val) => {
@@ -87,7 +87,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &gitea_token,
         &gitea_base_url,
         hsm_group,
-        &base_image_id,
+        // &base_image_id,
         &k8s_api_url,
     )
     .await;

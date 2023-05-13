@@ -1,6 +1,5 @@
 /// Refs:
 /// Member/node state --> https://apidocs.svc.cscs.ch/iaas/hardware-state-manager/overview/#section/Valid-State-Transistions
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -357,5 +356,71 @@ pub mod utils {
         }
 
         None
+    }
+
+    /// This method will verify the HSM group in user config file and the HSM group the user is
+    /// trying to access and it will verify if this access is granted.
+    /// config_hsm_group is the HSM group name in manta config file (~/.config/manta/config) and
+    /// hsm_group_accessed is the hsm group the user is trying to access (either trying to access a
+    /// CFS session or in a SAT file.)
+    pub async fn validate_config_hsm_group_and_hsm_group_accessed(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        hsm_group: Option<&String>,
+        session_name: Option<&String>,
+        cfs_sessions: &Vec<Value>,
+    ) {
+        if let Some(hsm_group_name) = hsm_group {
+            let hsm_group_details = crate::shasta::hsm::http_client::get_hsm_groups(
+                shasta_token,
+                shasta_base_url,
+                hsm_group,
+            )
+            .await
+            .unwrap();
+            let hsm_group_members =
+                crate::shasta::hsm::utils::get_members_from_hsm_groups_serde_value(
+                    &hsm_group_details,
+                    );
+            let cfs_session_hsm_groups: Vec<String> = cfs_sessions.last().unwrap()["target"]
+                ["groups"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|group| group["name"].as_str().unwrap().to_string())
+                .collect();
+            let cfs_session_members: Vec<String> = cfs_sessions.last().unwrap()["target"]["groups"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|group| {
+                    group["members"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|member| member.as_str().unwrap().to_string())
+                })
+                .flatten()
+                .collect();
+            if !cfs_session_hsm_groups.contains(hsm_group_name) {
+                println!(
+                    "CFS session {} does not apply to HSM group {}",
+                    session_name.unwrap(),
+                    hsm_group_name
+                );
+                std::process::exit(1);
+            }
+            if !cfs_session_members
+                .iter()
+                .all(|cfs_session_member| hsm_group_members.contains(cfs_session_member))
+            {
+                println!(
+                    "CFS session {} does not apply to HSM group {}",
+                    session_name.unwrap(),
+                    hsm_group_name
+                );
+                std::process::exit(1);
+            }
+        }
     }
 }

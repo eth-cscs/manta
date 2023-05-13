@@ -16,7 +16,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     path_file: &PathBuf,
-    base_image_id: &str,
+    // base_image_id: &str,
     hsm_group_param: Option<&String>,
     k8s_api_url: &str,
 ) {
@@ -46,9 +46,10 @@ pub async fn exec(
         path_file,
         shasta_token,
         shasta_base_url,
-        base_image_id,
+        // base_image_id,
         Some(&false),
         &timestamp,
+        hsm_group_param,
         k8s_api_url,
     )
     .await;

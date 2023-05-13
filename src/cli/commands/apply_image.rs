@@ -19,10 +19,10 @@ pub async fn exec(
     path_file: &PathBuf,
     shasta_token: &str,
     shasta_base_url: &str,
-    base_image_id: &str,
+    // base_image_id: &str,
     watch_logs: Option<&bool>,
     timestamp: &str,
-    // hsm_group: Option<&String>
+    hsm_group_config: Option<&String>,
     k8s_api_url: &str,
 ) -> (String, String) {
     let mut cfs_configuration;
@@ -31,6 +31,7 @@ pub async fn exec(
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
+    // Get CFS configurations from SAT YAML file
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
 
     if configurations_yaml.is_empty() {
@@ -41,6 +42,33 @@ pub async fn exec(
     if configurations_yaml.len() > 1 {
         eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
         std::process::exit(-1);
+    }
+
+    // Get CFS images from SAT YAML file
+    let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
+
+    // Check HSM groups in images section matches the HSM group in Manta configuration file
+    if let Some(hsm_group_config_value) = hsm_group_config {
+        let hsm_group_images: Vec<String> = images_yaml
+            .iter()
+            .map(|image_yaml| {
+                image_yaml["configuration_group_names"]
+                    .as_sequence()
+                    .unwrap()
+                    .iter()
+                    .map(|configuration_group_name| {
+                        configuration_group_name
+                            .as_str()
+                            .unwrap_or_default()
+                            .to_string()
+                    })
+            })
+        .flatten()
+            .collect();
+        if !hsm_group_images.contains(hsm_group_config_value) {
+            eprintln!("HSM group in configuration does not match with the one in SAT file images.configuration_group_names values");
+            std::process::exit(1);
+        }
     }
 
     // Used to uniquely identify cfs configuration name and cfs session name. This process follows
@@ -80,9 +108,7 @@ pub async fn exec(
 
     println!("CFS configuration created: {}", cfs_configuration.name);
 
-    let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
-
-    let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0], base_image_id);
+    let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
 
     // Rename session name
     cfs_session.name = cfs_session.name.replace("__DATE__", timestamp);

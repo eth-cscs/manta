@@ -9,11 +9,13 @@ use kube::Api;
 
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use kube::api::ListParams;
+use serde_json::Value;
 use tokio_stream::once;
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 use crate::shasta;
 
+use crate::shasta::hsm::utils::validate_config_hsm_group_and_hsm_group_accessed;
 use crate::shasta::kubernetes as shasta_k8s;
 
 pub async fn exec(
@@ -25,6 +27,7 @@ pub async fn exec(
     cluster_name: Option<&String>,
     session_name: Option<&String>,
     layer_id: Option<&u8>,
+    hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
     let cfs_sessions = shasta::cfs::session::http_client::get(
@@ -42,6 +45,15 @@ pub async fn exec(
         println!("No CFS session found");
         std::process::exit(0);
     }
+
+    // Check HSM group in configurarion file can access CFS session
+    validate_config_hsm_group_and_hsm_group_accessed(
+        shasta_token,
+        shasta_base_url,
+        hsm_group_config,
+        session_name,
+        &cfs_sessions,
+    ).await;
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
@@ -73,8 +85,9 @@ pub async fn session_logs(
 > {
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
 
-    let client =
-        shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets).await.unwrap();
+    let client = shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
 
     // Get CFS session logs
     get_cfs_session_logs_stream(client, cfs_session_name, layer_id).await
@@ -92,7 +105,11 @@ pub async fn get_container_logs_stream(
     let mut container_log_stream: Pin<
         Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>,
     > = once(Ok(Bytes::copy_from_slice(
-        format!("\nFetching logs for container {}\n", cfs_session_layer_container.name).as_bytes(),
+        format!(
+            "\nFetching logs for container {}\n",
+            cfs_session_layer_container.name
+        )
+        .as_bytes(),
     )))
     .boxed();
 
@@ -113,7 +130,8 @@ pub async fn get_container_logs_stream(
         .into());
     }
 
-    let mut container_state = get_container_state(cfs_session_pod, &cfs_session_layer_container.name);
+    let mut container_state =
+        get_container_state(cfs_session_pod, &cfs_session_layer_container.name);
 
     let mut i = 0;
     let max = 10;
