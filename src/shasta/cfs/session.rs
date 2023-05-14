@@ -277,7 +277,6 @@ pub mod http_client {
                         .as_str()
                         .unwrap_or("")
                         .split(',')
-                        .into_iter()
                         .map(|node| node.trim().to_string())
                         .collect::<HashSet<_>>()
                         .is_subset(&HashSet::from_iter(hsm_group_nodes.clone()))

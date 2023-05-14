@@ -51,7 +51,7 @@ pub async fn exec(
     if let Some(hsm_group_config_value) = hsm_group_config {
         let hsm_group_images: Vec<String> = images_yaml
             .iter()
-            .map(|image_yaml| {
+            .flat_map(|image_yaml| {
                 image_yaml["configuration_group_names"]
                     .as_sequence()
                     .unwrap()
@@ -63,7 +63,6 @@ pub async fn exec(
                             .to_string()
                     })
             })
-        .flatten()
             .collect();
         if !hsm_group_images.contains(hsm_group_config_value) {
             eprintln!("HSM group in configuration does not match with the one in SAT file images.configuration_group_names values");

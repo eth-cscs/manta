@@ -368,7 +368,7 @@ pub mod utils {
         shasta_base_url: &str,
         hsm_group: Option<&String>,
         session_name: Option<&String>,
-        cfs_sessions: &Vec<Value>,
+        cfs_sessions: &[Value],
     ) {
         if let Some(hsm_group_name) = hsm_group {
             let hsm_group_details = crate::shasta::hsm::http_client::get_hsm_groups(
@@ -393,14 +393,13 @@ pub mod utils {
                 .as_array()
                 .unwrap_or(&Vec::new())
                 .iter()
-                .map(|group| {
+                .flat_map(|group| {
                     group["members"]
                         .as_array()
                         .unwrap()
                         .iter()
                         .map(|member| member.as_str().unwrap().to_string())
                 })
-                .flatten()
                 .collect();
             if !cfs_session_hsm_groups.contains(hsm_group_name) {
                 println!(

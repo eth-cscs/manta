@@ -21,17 +21,17 @@ pub async fn process_cli(
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
-            let hsm_group_name = match hsm_group {
+     /*        let hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
                 None => cli_get_configuration.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(hsm_group_val),
-            };
+            }; */
             get_configuration::exec(
                 gitea_token,
                 shasta_token,
                 shasta_base_url,
                 cli_get_configuration.get_one::<String>("name"),
-                hsm_group_name,
+                // hsm_group_name,
                 cli_get_configuration
                     .get_one::<bool>("most-recent")
                     .cloned(),

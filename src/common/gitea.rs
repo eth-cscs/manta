@@ -16,10 +16,10 @@ pub mod http_client {
         let gitea_api_base_url = gitea_external_base_url.to_owned() + "api/v1";
 
         let repo_name = repo_url
-            .trim_start_matches(&gitea_internal_base_url)
+            .trim_start_matches(gitea_internal_base_url)
             .trim_end_matches(".git");
         let repo_name = repo_name
-            .trim_start_matches(&gitea_external_base_url)
+            .trim_start_matches(gitea_external_base_url)
             .trim_end_matches(".git");
 
         log::info!("repo_url: {}", repo_url);

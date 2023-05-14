@@ -9,7 +9,6 @@ use kube::Api;
 
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use kube::api::ListParams;
-use serde_json::Value;
 use tokio_stream::once;
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
@@ -53,7 +52,8 @@ pub async fn exec(
         hsm_group_config,
         session_name,
         &cfs_sessions,
-    ).await;
+    )
+    .await;
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 

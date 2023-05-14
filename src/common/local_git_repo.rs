@@ -53,7 +53,7 @@ use std::error::Error;
 
         log::debug!("Checking git index...");
 
-        match index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
+        match index.add_all(["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
 
             let status = repo.status_file(path).unwrap();
     
@@ -78,7 +78,7 @@ use std::error::Error;
 
         log::debug!("Running 'git add'");
 
-        index.add_all(&["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
+        index.add_all(["."], git2::IndexAddOption::DEFAULT, Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
 
             let status = repo.status_file(path).unwrap();
     

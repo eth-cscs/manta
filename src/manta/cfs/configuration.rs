@@ -58,7 +58,7 @@ pub async fn get_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
     configuration_name: Option<&String>,
-    contains: Option<&String>,
+    // contains: Option<&String>,
     most_recent: Option<bool>,
     limit: Option<&u8>,
 ) -> Vec<Value> {
