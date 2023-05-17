@@ -7,11 +7,13 @@ COPY . .
 # RUN cargo install --target x86_64-unknown-linux-gnu --path .
 RUN cargo install --path .
 
-# FROM debian:sid
+# FROM debian:bullseye
 FROM debian:sid-slim
 RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var/lib/apt/lists/*
 # FROM rust:1.64.0-alpine
 COPY --from=builder /usr/local/cargo/bin/manta /usr/local/bin/manta
 COPY --from=builder /usr/src/manta/config /root/.config/manta/
+# Copy CA files from linux host to the container. NOTE: this won't work on other OS different than MacOS
+COPY /etc/ssl/certs/DigiCert* /etc/ssl/certs/
 ENTRYPOINT ["manta"]
 

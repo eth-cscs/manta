@@ -381,7 +381,7 @@ pub mod utils {
             let hsm_group_members =
                 crate::shasta::hsm::utils::get_members_from_hsm_groups_serde_value(
                     &hsm_group_details,
-                    );
+                );
             let cfs_session_hsm_groups: Vec<String> = cfs_sessions.last().unwrap()["target"]
                 ["groups"]
                 .as_array()

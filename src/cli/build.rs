@@ -311,7 +311,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Search for the most recent successful CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames provided")
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated").required(true))
-        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided"));
+        .arg(arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes"));
 
     update_node = match hsm_group {
         Some(_) => update_node,
@@ -333,7 +333,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group = update_hsm_group
-        .arg(arg!([CFS_CONFIG] "CFS configuration name. This option overwrites default behaviour and instead of using the most recent CFS session, it will use the session related to the CFS configuration provided").required(true));
+        .arg(arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes").required(true));
 
     update_hsm_group
 }
