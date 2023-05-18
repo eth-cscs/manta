@@ -14,6 +14,10 @@ RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var
 COPY --from=builder /usr/local/cargo/bin/manta /usr/local/bin/manta
 COPY --from=builder /usr/src/manta/config /root/.config/manta/
 # Copy CA files from linux host to the container. NOTE: this won't work on other OS different than MacOS
-COPY /etc/ssl/certs/DigiCert* /etc/ssl/certs/
+RUN apt-get update
+RUN apt-get install -y ca-certificates
+RUN update-ca-certificates
+# RUN mkdir -p /etc/ssl/certs
+# COPY /etc/ssl/certs/DigiCert* /etc/ssl/certs/
 ENTRYPOINT ["manta"]
 

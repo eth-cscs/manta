@@ -30,13 +30,33 @@ pub async fn get_details(
     .unwrap();
 
     for hsm_group in hsm_groups {
+        let bos_sessiontemplate = crate::shasta::bos::template::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            Some(&cluster_name.to_string()),
+            None,
+            Some(&1),
+        )
+        .await
+        .unwrap_or_default();
+
+        // println!("bos_sessiontemplate:\n{:#?}", bos_sessiontemplate);
+
+        let cfs_configuration_name = bos_sessiontemplate[0]
+            .pointer("/cfs/configuration")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        // println!("cfs_configuration:\n{:#?}", cfs_configuration_name);
+
         // Get most recent CFS configuration
         let mut cfs_configurations = configuration::http_client::get(
             shasta_token,
             shasta_base_url,
-            // Some(&cluster_name.to_string()),
+            Some(&cfs_configuration_name),
             None,
-            Some(&1),
         )
         .await
         .unwrap_or_else(|_| vec![]);
