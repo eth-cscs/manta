@@ -5,7 +5,10 @@ use std::{path::PathBuf, thread};
 use k8s_openapi::chrono;
 use serde_yaml::Value;
 
-use crate::shasta::{bos, cfs::session};
+use crate::{
+    common::jwt_ops::get_claims_from_jwt_token,
+    shasta::{bos, cfs::session},
+};
 
 use super::apply_image;
 
@@ -279,4 +282,11 @@ pub async fn exec(
         eprintln!("Error creating BOS boot session. Exit");
         std::process::exit(1);
     }
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 }

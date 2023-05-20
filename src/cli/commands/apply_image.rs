@@ -5,7 +5,7 @@ use serde_yaml::Value;
 
 use crate::{
     cli,
-    shasta::cfs::{configuration, session::CfsSession},
+    shasta::cfs::{configuration, session::CfsSession}, common::jwt_ops::get_claims_from_jwt_token,
 };
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
@@ -164,6 +164,13 @@ pub async fn exec(
             .await
             .unwrap();
     } */
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
     println!("CFS session created: {}", cfs_session_name);
 

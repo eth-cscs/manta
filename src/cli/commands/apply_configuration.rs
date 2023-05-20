@@ -1,4 +1,4 @@
-use crate::shasta::cfs::configuration;
+use crate::{shasta::cfs::configuration, common::jwt_ops::get_claims_from_jwt_token};
 use serde_yaml::Value;
 use std::path::Path;
 
@@ -68,6 +68,13 @@ pub async fn exec(
         .as_str()
         .unwrap()
         .to_string();
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply configuration", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
     println!("CFS configuration created: {}", cfs_configuration_name);
 

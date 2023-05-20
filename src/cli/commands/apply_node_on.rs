@@ -1,3 +1,4 @@
+use crate::common::jwt_ops::get_claims_from_jwt_token;
 use crate::common::node_ops;
 
 use crate::shasta::capmc;
@@ -36,4 +37,11 @@ pub async fn exec(
     )
     .await
     .unwrap();
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xnames);
 }

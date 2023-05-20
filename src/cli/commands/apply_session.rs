@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
+use crate::common::jwt_ops::get_claims_from_jwt_token;
 use crate::shasta::{cfs::configuration, self};
 use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
@@ -150,6 +151,13 @@ pub async fn exec(
         .unwrap();
     }
     // * End Create CFS session
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
     (cfs_configuration_name, cfs_session_name)
 }

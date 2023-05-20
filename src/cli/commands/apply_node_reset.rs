@@ -1,3 +1,4 @@
+use crate::common::jwt_ops::get_claims_from_jwt_token;
 use crate::common::node_ops;
 
 use crate::shasta::capmc;
@@ -25,9 +26,9 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    let xname_list: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
+    // let xname_list: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
 
-    log::info!("Resetting servers: {:?}", xname_list);
+    log::info!("Resetting servers: {:?}", xnames);
 
     capmc::http_client::node_power_off::post_sync(
         shasta_token,
@@ -35,7 +36,7 @@ pub async fn exec(
         // cli_apply_node_reset.get_one::<String>("reason"),
         // &xnames.iter().map(|xname| xname.to_string()).collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
         // *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
-        xname_list.clone(),
+        xnames.iter().map(|xname| xname.to_string()).collect(),
         reason.cloned(),
         force,
     )
@@ -46,9 +47,16 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         // cli_apply_node_reset.get_one::<String>("reason"),
-        xname_list,
+        xnames.iter().map(|xname| xname.to_string()).collect(),
         reason.cloned(),
         false,
     )
     .await;
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]);
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes reset {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xnames);
 }

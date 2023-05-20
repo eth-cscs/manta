@@ -12,8 +12,9 @@ FROM debian:sid-slim
 RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var/lib/apt/lists/*
 # FROM rust:1.64.0-alpine
 COPY --from=builder /usr/local/cargo/bin/manta /usr/local/bin/manta
-COPY --from=builder /usr/src/manta/config /root/.config/manta/
-# Copy CA files from linux host to the container. NOTE: this won't work on other OS different than MacOS
+COPY --from=builder /usr/src/manta/config /root/.config/manta/config
+COPY --from=builder /usr/src/manta/log4rs.yml /log4rs.yml
+# Install CA files from linux host to the container
 RUN apt-get update
 RUN apt-get install -y ca-certificates
 RUN update-ca-certificates

@@ -21,8 +21,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let _profiler = dhat::Profiler::new_heap();
 
     // Init logger
-    env_logger::init();
+    // env_logger::init();
+    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
 
+    // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
         "cscs",  /*organization*/
@@ -47,7 +49,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
-    // let base_image_id = settings.get::<String>("base_image_id").unwrap();
 
     if let Ok(socks_proxy) = settings.get::<String>("socks5_proxy") {
         std::env::set_var("SOCKS5", socks_proxy);
