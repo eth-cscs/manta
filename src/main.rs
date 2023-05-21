@@ -9,6 +9,8 @@ use directories::ProjectDirs;
 
 use shasta::authentication;
 
+use crate::common::log_ops;
+
 // DHAT (profiling)
 // #[cfg(feature = "dhat-heap")]
 // #[global_allocator]
@@ -22,7 +24,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Init logger
     // env_logger::init();
-    log4rs::init_file("log4rs.yml", Default::default()).unwrap();
+    // log4rs::init_file("log4rs.yml", Default::default()).unwrap();
+    log_ops::configure();
 
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
