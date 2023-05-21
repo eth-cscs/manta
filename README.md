@@ -207,7 +207,7 @@ docker build -t manta .
 #### Run
 
 ```
-$ docker run -it --network=host -v ~:/root/ --env RUST_LOG=info manta --help
+$ docker run -it --network=host -v ~:/root/ manta --help
 ```
 
 ### Build from sources

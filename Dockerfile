@@ -1,4 +1,4 @@
-FROM rust:1.64.0 as builder
+FROM rust:1.69.0 as builder
 # RUN apt-get update -y
 # RUN apt-get upgrade -y
 # RUN apt-get install -y pkg-config libssl-dev musl-tools
