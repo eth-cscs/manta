@@ -13,7 +13,6 @@ RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var
 # FROM rust:1.64.0-alpine
 COPY --from=builder /usr/local/cargo/bin/manta /usr/local/bin/manta
 COPY --from=builder /usr/src/manta/config /root/.config/manta/config
-COPY --from=builder /usr/src/manta/log4rs.yml /log4rs.yml
 # Install CA files from linux host to the container
 RUN apt-get update
 RUN apt-get install -y ca-certificates
