@@ -7,11 +7,6 @@ pub async fn exec(
     shasta_base_url: &str,
     hsm_group_name: &str,
 ) {
-    /* let hsm_group_name = match hsm_group {
-        None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
-        Some(hsm_group_name_value) => hsm_group_name_value,
-    }; */
-
     let hsm_groups = cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group_name).await;
 
     for hsm_group in hsm_groups {

@@ -315,7 +315,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
 
     update_node = match hsm_group {
         Some(_) => update_node,
-        None => update_node.arg(arg!(-H --"hsm-group" <VALUE> "hsm group name").required(true)),
+        None => update_node.arg(arg!(-H --"hsm-group" <HSM_GROUP> "hsm group name").required(true)),
     };
 
     update_node

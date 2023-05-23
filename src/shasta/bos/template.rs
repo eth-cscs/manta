@@ -302,6 +302,8 @@ pub mod http_client {
         bos_template_name: Option<&String>,
         limit_number: Option<&u8>,
     ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+        // println!("Get BOS sessiontemplate from HSM group {:?}", hsm_group_name);
+
         let mut cluster_bos_tempalte: Vec<Value> = Vec::new();
 
         let client;
@@ -336,14 +338,18 @@ pub mod http_client {
         };
 
         if hsm_group_name.is_some() {
+            println!("json_response for HSM {}", hsm_group_name.unwrap());
             for bos_template in json_response.as_array().unwrap() {
-                if bos_template["name"]
-                    .as_str()
-                    .unwrap()
-                    .contains(hsm_group_name.unwrap())
-                // TODO: investigate why I need to use this ugly 'as_ref'
-                {
-                    cluster_bos_tempalte.push(bos_template.clone());
+                for (key, value) in bos_template["boot_sets"].as_object().unwrap() {
+                    if value["node_groups"]
+                        .as_array()
+                        .unwrap_or(&Vec::new())
+                        .iter()
+                        .any(|node_group| node_group.eq(hsm_group_name.unwrap()))
+                    {
+                        println!("BOS sessiontemplate:\n{:#?}", bos_template);
+                        cluster_bos_tempalte.push(bos_template.clone());
+                    }
                 }
             }
         } else if bos_template_name.is_some() {

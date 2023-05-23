@@ -2,25 +2,20 @@ use clap::ArgMatches;
 
 use crate::{
     common::node_ops,
-    shasta::{bos, capmc, cfs, ims},
+    shasta::{bos, capmc, cfs, ims, self},
 };
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_update_node: &ArgMatches,
+    hsm_group_name: &String,
     xnames: Vec<&str>,
     cfs_configuration_name: Option<&String>,
-    hsm_group: Option<&String>,
 ) {
-    // Get HSM group name
-    let hsm_group_name = match hsm_group {
-        None => cli_update_node.get_one("HSM_GROUP"),
-        Some(_) => hsm_group,
-    };
-
     // Check user has provided valid XNAMES
-    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await {
+    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, Some(hsm_group_name))
+        .await
+    {
         eprintln!("xname/s invalid. Exit");
         std::process::exit(1);
     }
@@ -29,7 +24,7 @@ pub async fn exec(
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
+        Some(hsm_group_name),
         None,
         None,
         Some(true),
@@ -41,6 +36,14 @@ pub async fn exec(
     cfs_sessions_details.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
             && cfs_session_details["configuration"]["name"].eq(cfs_configuration_name.unwrap())
+            && cfs_session_details
+                .pointer("/status/session/status")
+                .unwrap()
+                .eq("complete")
+            && cfs_session_details
+                .pointer("/status/session/succeeded")
+                .unwrap()
+                .eq("true")
     });
 
     if cfs_sessions_details.is_empty() {

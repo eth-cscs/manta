@@ -21,7 +21,7 @@ pub async fn process_cli(
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
-     /*        let hsm_group_name = match hsm_group {
+            /*        let hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
                 None => cli_get_configuration.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(hsm_group_val),
@@ -91,7 +91,9 @@ pub async fn process_cli(
                 shasta_base_url,
                 hsm_group_name,
                 *cli_get_node.get_one::<bool>("silent").unwrap_or(&false),
-                *cli_get_node.get_one::<bool>("silent-xname").unwrap_or(&false),
+                *cli_get_node
+                    .get_one::<bool>("silent-xname")
+                    .unwrap_or(&false),
             )
             .await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
@@ -231,10 +233,15 @@ pub async fn process_cli(
         }
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
+            let hsm_group_name = if hsm_group.is_none() {
+                cli_update_node.get_one::<String>("hsm-group")
+            } else {
+                hsm_group
+            };
             update_node::exec(
                 shasta_token,
                 shasta_base_url,
-                cli_update_node,
+                hsm_group_name.unwrap(),
                 cli_update_node
                     .get_one::<String>("XNAMES")
                     .unwrap()
@@ -242,7 +249,6 @@ pub async fn process_cli(
                     .map(|xname| xname.trim())
                     .collect(),
                 cli_update_node.get_one::<String>("CFS_CONFIG"),
-                hsm_group,
             )
             .await;
         } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {

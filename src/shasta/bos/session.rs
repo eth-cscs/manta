@@ -46,14 +46,14 @@ pub mod http_client {
         }
     }
 
-    /* pub async fn get(
+    pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
         cluster_name: &Option<String>,
         bos_session_name: &Option<String>,
         limit_number: &Option<u8>,
-    ) -> core::result::Result<Vec<Value>, Box<dyn std::error::Error>> {
-        let mut cluster_bos_session: Vec<Value> = Vec::new();
+    ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+        let cluster_bos_session: Vec<Value> = Vec::new();
 
         let client;
 
@@ -88,46 +88,10 @@ pub mod http_client {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
         }
 
-        println!("\nBOS SESSIONS:\n{:#?}", json_response);
-
-        if cluster_name.is_some() {
-            for bos_template in json_response.as_array().unwrap() {
-                if bos_template["name"]
-                    .as_str()
-                    .unwrap()
-                    .contains(cluster_name.as_ref().unwrap())
-                // TODO: investigate why I need to use this ugly 'as_ref'
-                {
-                    cluster_bos_session.push(bos_template.clone());
-                }
-            }
-        } else if bos_session_name.is_some() {
-            for bos_session in json_response.as_array().unwrap() {
-                if bos_session["name"]
-                    .as_str()
-                    .unwrap()
-                    .eq(bos_session_name.as_ref().unwrap())
-                // TODO: investigate why I need to us this ugly 'as_ref'
-                {
-                    cluster_bos_session.push(bos_session.clone());
-                }
-            }
-        } else {
-            // Returning all results
-            cluster_bos_session = json_response.as_array().unwrap().to_vec();
-        }
-
-        if limit_number.is_some() {
-            // Limiting the number of results to return to client
-
-            cluster_bos_session = cluster_bos_session[cluster_bos_session
-                .len()
-                .saturating_sub(limit_number.unwrap().into())..]
-                .to_vec();
-        }
-
-        Ok(cluster_bos_session)
-    } */
+        // println!("\nBOS SESSIONS:\n{:#?}", json_response);
+    
+        Ok(json_response.as_array().unwrap_or(&Vec::new()).to_vec())
+    }
 }
 
 /* pub mod utils {
