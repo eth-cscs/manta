@@ -30,6 +30,7 @@ Manta aggregates information from multiple sources:
 - Restrict operations to nodes belonging to a specific HSM group
 - Filter information to a HSM group
 - Update node boot image based on CFS configuration name
+- Audit/Log
 
 ## Configuration
 
@@ -45,6 +46,13 @@ k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 hsm_group = "psitds"
+```
+
+Manta logs user's operations in /var/log/manta/ folder, please make sure this folder exists and all users have rwx access to it
+
+```bash
+mkdir /var/log/manta
+chmod 777 -R /var/log/manta
 ```
 
 ### Legend:
