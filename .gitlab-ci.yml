@@ -1,3 +1,9 @@
+default:
+  tags:
+    - hashicorp-vault.cscs.ch
+    - rust
+    - manta
+
 build-job:
   stage: build
   script:
