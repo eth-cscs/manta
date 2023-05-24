@@ -4,6 +4,16 @@ default:
     - rust
     - manta
 
+cargo-clippy:
+  stage: test
+  script:
+    - cargo clippy
+
+cargo-audit:
+  stage: test
+  script:
+    - cargo audit
+
 build-job:
   stage: build
   script:
