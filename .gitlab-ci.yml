@@ -10,6 +10,7 @@ build-job:
     - echo "Hello, $GITLAB_USER_LOGIN!"
     - echo "I am $(whoami)"
     - source "$HOME/.cargo/env"
+    - cargo build
 
 cargo-clippy:
   stage: test
