@@ -9,6 +9,7 @@ build-job:
   script:
     - echo "Hello, $GITLAB_USER_LOGIN!"
     - echo "I am $(whoami)"
+    - cargo check
 
 test-job1:
   stage: test
