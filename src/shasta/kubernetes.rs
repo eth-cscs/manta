@@ -121,11 +121,11 @@ pub async fn get_k8s_client_programmatically(
         user: Some(String::from("kubernetes-admin")),
     };
 
-    let config = kube::Config::from_custom_kubeconfig(kube_config, &kube_config_options).await?;
+    let mut config = kube::Config::from_custom_kubeconfig(kube_config, &kube_config_options).await?;
 
     let client = if std::env::var("SOCKS5").is_ok() {
         log::debug!("SOCKS5 enabled");
-        let connector = {
+/*         let connector = {
             let mut http = HttpConnector::new();
             http.enforce_http(false);
             let proxy = hyper_socks2::SocksConnector {
@@ -148,7 +148,7 @@ pub async fn get_k8s_client_programmatically(
             .service(hyper::Client::builder().build(connector));
 
         kube::Client::new(service, config.default_namespace)
-
+ */
 /*         log::debug!("SOCKS5 enabled");
         let connector = {
             let mut http = HttpConnector::new();
@@ -159,14 +159,14 @@ pub async fn get_k8s_client_programmatically(
                 connector: http,
             };
 
-            let config = rustls::ClientConfig::builder()
+/*             let config = rustls::ClientConfig::builder()
                 .with_safe_defaults()
                 .with_custom_certificate_verifier(std::sync::Arc::new(NoCertificateVerification));
 
             let config2 = tokio_rustls::rustls::ClientConfig::builder();
-            config2.with_safe_defaults().with_custom_certificate_verifier(std::sync::Arc::new(NoCertificateVerification));
+            config2.with_safe_defaults().with_custom_certificate_verifier(std::sync::Arc::new(NoCertificateVerification)); */
 
-            let tls = tokio_rustls::TlsConnector::from(config2);
+            let tls = tokio_rustls::TlsConnector::from(config);
             hyper_tls::HttpsConnector::from((proxy, tls))
         };
 
@@ -183,9 +183,17 @@ pub async fn get_k8s_client_programmatically(
         let service = tower::ServiceBuilder::new()
             .layer(config.base_uri_layer())
             .option_layer(config.auth_layer()?)
-            .service(hyper::Client::builder().build(connector));
+            .service(hyper::Client::builder().build(connector)); 
 
         kube::Client::new(service, config.default_namespace) */
+
+        let https = config.openssl_https_connector()?;
+        config.proxy_url = Some(std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap());
+        println!("k8s client config:\n{:#?}", config);
+        let service = tower::ServiceBuilder::new()
+            .layer(config.base_uri_layer())
+            .service(hyper::Client::builder().build(https));
+        Client::new(service, config.default_namespace)
     } else {
         let https = config.openssl_https_connector()?;
         let service = tower::ServiceBuilder::new()
