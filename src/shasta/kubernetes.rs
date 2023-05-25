@@ -1,6 +1,7 @@
 use std::{error::Error, str::FromStr};
 
-use hyper::{client::HttpConnector, Uri};
+use hyper::{client::HttpConnector, Body, Uri};
+use hyper_socks2::SocksConnector;
 use kube::{
     client::ConfigExt,
     config::{
@@ -12,6 +13,27 @@ use kube::{
 
 use secrecy::SecretString;
 use serde_json::Value;
+
+use rustls::{
+    client::{ServerCertVerified, ServerCertVerifier},
+    Certificate, Error as TlsError, ServerName,
+};
+
+struct NoCertificateVerification;
+
+impl ServerCertVerifier for NoCertificateVerification {
+    fn verify_server_cert(
+        &self,
+        end_entity: &rustls::Certificate,
+        intermediates: &[rustls::Certificate],
+        server_name: &rustls::client::ServerName,
+        scts: &mut dyn Iterator<Item = &[u8]>,
+        ocsp_response: &[u8],
+        now: std::time::SystemTime,
+    ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
+        Ok(ServerCertVerified::assertion())
+    }
+}
 
 pub async fn get_k8s_client_programmatically(
     k8s_api_url: &str,
@@ -126,6 +148,44 @@ pub async fn get_k8s_client_programmatically(
             .service(hyper::Client::builder().build(connector));
 
         kube::Client::new(service, config.default_namespace)
+
+/*         log::debug!("SOCKS5 enabled");
+        let connector = {
+            let mut http = HttpConnector::new();
+            http.enforce_http(false);
+            let proxy = hyper_socks2::SocksConnector {
+                proxy_addr: std::env::var("SOCKS5").unwrap().parse::<Uri>().unwrap(), // scheme is required by HttpConnector
+                auth: None,
+                connector: http,
+            };
+
+            let config = rustls::ClientConfig::builder()
+                .with_safe_defaults()
+                .with_custom_certificate_verifier(std::sync::Arc::new(NoCertificateVerification));
+
+            let config2 = tokio_rustls::rustls::ClientConfig::builder();
+            config2.with_safe_defaults().with_custom_certificate_verifier(std::sync::Arc::new(NoCertificateVerification));
+
+            let tls = tokio_rustls::TlsConnector::from(config2);
+            hyper_tls::HttpsConnector::from((proxy, tls))
+        };
+
+        // // with TLS support
+        // let proxy = proxy.with_tls()?;
+        //
+        // let client = hyper::client::Client::builder().build::<_, Body>(proxy);
+        //
+        // let service = tower::ServiceBuilder::new()
+        //     .layer(config.base_uri_layer())
+        //     .option_layer(config.auth_layer()?)
+        //     .service(client);
+
+        let service = tower::ServiceBuilder::new()
+            .layer(config.base_uri_layer())
+            .option_layer(config.auth_layer()?)
+            .service(hyper::Client::builder().build(connector));
+
+        kube::Client::new(service, config.default_namespace) */
     } else {
         let https = config.openssl_https_connector()?;
         let service = tower::ServiceBuilder::new()
