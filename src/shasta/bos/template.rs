@@ -340,7 +340,7 @@ pub mod http_client {
         if hsm_group_name.is_some() {
             println!("json_response for HSM {}", hsm_group_name.unwrap());
             for bos_template in json_response.as_array().unwrap() {
-                for (key, value) in bos_template["boot_sets"].as_object().unwrap() {
+                for (_key, value) in bos_template["boot_sets"].as_object().unwrap() {
                     if value["node_groups"]
                         .as_array()
                         .unwrap_or(&Vec::new())

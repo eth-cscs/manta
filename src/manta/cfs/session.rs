@@ -150,7 +150,7 @@ pub async fn get_sessions(
                             .eq(cfs_session_configuration_name)
                     });
             if bos_sessiontemplate.is_some() {
-                for (boot_sets_param, boot_sets_value) in bos_sessiontemplate.unwrap()["boot_sets"]
+                for (_boot_sets_param, boot_sets_value) in bos_sessiontemplate.unwrap()["boot_sets"]
                     .as_object()
                     .unwrap()
                 {

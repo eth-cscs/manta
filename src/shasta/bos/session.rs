@@ -49,12 +49,7 @@ pub mod http_client {
     pub async fn get(
         shasta_token: &str,
         shasta_base_url: &str,
-        cluster_name: &Option<String>,
-        bos_session_name: &Option<String>,
-        limit_number: &Option<u8>,
     ) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
-        let cluster_bos_session: Vec<Value> = Vec::new();
-
         let client;
 
         let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
@@ -70,7 +65,7 @@ pub mod http_client {
             client = client_builder.build()?;
         }
 
-        let mut api_url = shasta_base_url.clone().to_string();
+        let mut api_url = shasta_base_url.to_string();
         api_url.push_str("/bos/v1/session");
 
         let resp = client
@@ -80,16 +75,14 @@ pub mod http_client {
             .send()
             .await?;
 
-        let json_response: Value;
-
-        if resp.status().is_success() {
-            json_response = serde_json::from_str(&resp.text().await?)?;
+        let json_response: Value = if resp.status().is_success() {
+            serde_json::from_str(&resp.text().await?)?
         } else {
             return Err(resp.text().await?.into()); // Black magic conversion from Err(Box::new("my error msg")) which does not
-        }
+        };
 
         // println!("\nBOS SESSIONS:\n{:#?}", json_response);
-    
+
         Ok(json_response.as_array().unwrap_or(&Vec::new()).to_vec())
     }
 }

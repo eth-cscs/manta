@@ -438,18 +438,16 @@ pub mod utils {
     ) -> Option<Vec<String>> {
         hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Processors"]
             .as_array()
-            .and_then(|processor_list: &Vec<Value>| {
-                Some(
-                    processor_list
-                        .iter()
-                        .map(|processor| {
-                            processor
-                                .pointer("/PopulatedFRU/ProcessorFRUInfo/Model")
-                                .unwrap()
-                                .to_string()
-                        })
-                        .collect::<Vec<String>>(),
-                )
+            .map(|processor_list: &Vec<Value>| {
+                processor_list
+                    .iter()
+                    .map(|processor| {
+                        processor
+                            .pointer("/PopulatedFRU/ProcessorFRUInfo/Model")
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect::<Vec<String>>()
             })
     }
 
@@ -458,18 +456,16 @@ pub mod utils {
     ) -> Option<Vec<String>> {
         hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["NodeAccels"]
             .as_array()
-            .and_then(|accelerator_list| {
-                Some(
-                    accelerator_list
-                        .iter()
-                        .map(|accelerator| {
-                            accelerator
-                                .pointer("/PopulatedFRU/NodeAccelFRUInfo/Model")
-                                .unwrap()
-                                .to_string()
-                        })
-                        .collect::<Vec<String>>(),
-                )
+            .map(|accelerator_list| {
+                accelerator_list
+                    .iter()
+                    .map(|accelerator| {
+                        accelerator
+                            .pointer("/PopulatedFRU/NodeAccelFRUInfo/Model")
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect::<Vec<String>>()
             })
     }
 
@@ -478,18 +474,16 @@ pub mod utils {
     ) -> Option<Vec<String>> {
         hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Memory"]
             .as_array()
-            .and_then(|memory_list| {
-                Some(
-                  memory_list 
-                        .iter()
-                        .map(|memory| {
-                            memory
-                                .pointer("/PopulatedFRU/MemoryFRUInfo/CapacityMiB")
-                                .unwrap()
-                                .to_string()
-                        })
-                        .collect::<Vec<String>>(),
-                )
+            .map(|memory_list| {
+                memory_list
+                    .iter()
+                    .map(|memory| {
+                        memory
+                            .pointer("/PopulatedFRU/MemoryFRUInfo/CapacityMiB")
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect::<Vec<String>>()
             })
     }
 }

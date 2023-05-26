@@ -1,8 +1,6 @@
-use clap::ArgMatches;
-
 use crate::{
     common::node_ops,
-    shasta::{bos, capmc, cfs, ims, self},
+    shasta::{bos, capmc, cfs, ims},
 };
 
 pub async fn exec(

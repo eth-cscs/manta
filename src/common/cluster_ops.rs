@@ -1,11 +1,6 @@
-use std::str::FromStr;
-
 use serde_json::Value;
 
-use crate::shasta::{
-    cfs::{configuration, session},
-    hsm::http_client::get_hsm_groups,
-};
+use crate::shasta::{cfs::configuration, hsm::http_client::get_hsm_groups};
 
 #[derive(Debug)]
 pub struct ClusterDetails {
@@ -79,7 +74,7 @@ pub async fn get_details(
             if target_groups
                 .iter()
                 .map(|target_group| target_group["name"].as_str().unwrap())
-                .collect::<Vec::<&str>>()
+                .collect::<Vec<&str>>()
                 .contains(&hsm_group_name)
                 || ansible_limit.contains(&hsm_group_members)
             {

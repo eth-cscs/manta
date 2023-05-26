@@ -2,7 +2,7 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
+pub fn subcommand_get_cfs_configuration() -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .about("Get information from Shasta CFS configuration")
@@ -134,7 +134,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
         .subcommand(subcommand_get_cfs_session(hsm_group))
-        .subcommand(subcommand_get_cfs_configuration(hsm_group))
+        .subcommand(subcommand_get_cfs_configuration())
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
@@ -306,13 +306,11 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_apply_hsm() -> Command {
-    let mut apply_hsm = Command::new("hsm-group")
+    Command::new("hsm-group")
         .aliases(["hsm"])
         .arg_required_else_help(true)
         .about("WIP - UNSTABLE!!! Rearange nodes in a HSM group based on pattern")
-        .arg(arg!(-p --pattern <VALUE> ... "Pattern to express the new HSM layout like `<hsm_group_name>[:<property>]*:<num_nodes>`. Where hsm_group_name (mandatory) is the target HSM group, property (optional) is the property (eg NVIDIA, A100, AMD, EPYC, etc) to filter nodes' components (Nodes[].Processors[].PopulatedFRU.ProcessorFRUInfo.Model or Nodes[].NodeAccels[].PopulatedFRU.NodeAccelFRUInfo.Model) and num_nodes (mandatory) is the number of nodes with those properties we need for the new HSM layout. Eg test:nvidia:a100:2 means `test` HSM group should have 2 nodes with NVIDIA A100, test:nvidia:2:amd:rome:3 means `test` HSM group will have 2 nvidia nodes and 3 AMD ROME nodes. NOTE: a single pattern may match multiple nodes therefore the total combination of num_nodes for a single HSM group does not accumulate.").required(true));
-
-    apply_hsm
+        .arg(arg!(-p --pattern <VALUE> ... "Pattern to express the new HSM layout like `<hsm_group_name>[:<property>]*:<num_nodes>`. Where hsm_group_name (mandatory) is the target HSM group, property (optional) is the property (eg NVIDIA, A100, AMD, EPYC, etc) to filter nodes' components (Nodes[].Processors[].PopulatedFRU.ProcessorFRUInfo.Model or Nodes[].NodeAccels[].PopulatedFRU.NodeAccelFRUInfo.Model) and num_nodes (mandatory) is the number of nodes with those properties we need for the new HSM layout. Eg test:nvidia:a100:2 means `test` HSM group should have 2 nodes with NVIDIA A100, test:nvidia:2:amd:rome:3 means `test` HSM group will have 2 nvidia nodes and 3 AMD ROME nodes. NOTE: a single pattern may match multiple nodes therefore the total combination of num_nodes for a single HSM group does not accumulate.").required(true))
 }
 
 pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
@@ -342,8 +340,10 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
         None => update_hsm_group.arg(arg!(<HSM_GROUP> "HSM group name").required(true)),
     };
 
-    update_hsm_group = update_hsm_group
-        .arg(arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes").required(true));
+    update_hsm_group = update_hsm_group.arg(
+        arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes")
+            .required(true),
+    );
 
     update_hsm_group
 }

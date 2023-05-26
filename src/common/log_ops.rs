@@ -38,7 +38,7 @@ pub fn configure() {
         .build(Root::builder().appender("stdout").build(LevelFilter::Error))
         .unwrap();
 
-    let handle = log4rs::init_config(config).unwrap();
+    let _handle = log4rs::init_config(config).unwrap();
 
     // use handle to change logger configuration at runtime
 }

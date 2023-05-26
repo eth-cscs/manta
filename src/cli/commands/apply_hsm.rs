@@ -1,4 +1,4 @@
-use crate::{cli::commands::apply_hsm, shasta::hsm};
+use crate::shasta::hsm;
 
 /// Manipulates HSM groups `apply hsm-group (<hsm group name>(:<prop>)*:<num nodes>(:<prop>*:<num nodes>))+ or <hsm_group1>:<prop111>:<prop112>:...:<num_nodes>:<prop121>:<prop122>:...:<num_nodes>:... <hsm_group2>:<prop21>:<prop22>:...:<num_nodes>: ...`
 /// each propX is a propery from https://api.cmn.alps.cscs.ch/apis/smd/hsm/v2/Inventory/Hardware/Query/{xname}
@@ -41,8 +41,8 @@ use crate::{cli::commands::apply_hsm, shasta::hsm};
 // afinity so we try to put similar components toghether in the same node??????
 
 pub async fn exec(
-    vault_base_url: &str,
-    vault_token: &str,
+    _vault_base_url: &str,
+    _vault_token: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     patterns: &str,
@@ -84,17 +84,23 @@ pub async fn exec(
 
             let processor_model = hsm::utils::get_list_processor_model_from_hw_inventory_value(
                 &node_hw_inventory_value,
-            ).unwrap_or_default();
+            )
+            .unwrap_or_default();
 
             let accelerator = hsm::utils::get_list_accelerator_model_from_hw_inventory_value(
                 &node_hw_inventory_value,
-            ).unwrap_or_default();
+            )
+            .unwrap_or_default();
 
             let memory_capacity = hsm::utils::get_list_memory_capacity_from_hw_inventory_value(
                 &node_hw_inventory_value,
-            ).unwrap_or_default();
+            )
+            .unwrap_or_default();
 
-            let mem_total_capacity = memory_capacity.iter().map(|mem_capacity| mem_capacity.parse::<u32>().unwrap_or(0)).sum::<u32>();
+            let mem_total_capacity = memory_capacity
+                .iter()
+                .map(|mem_capacity| mem_capacity.parse::<u32>().unwrap_or(0))
+                .sum::<u32>();
 
             println!("{} - Processor:\n{:#?}", xname, processor_model);
             println!("{} - Accelerators:\n{:#?}", xname, accelerator);
@@ -105,8 +111,6 @@ pub async fn exec(
             // 3) sort by hw inventroy type text alphabetically
             // 4) aggregate all numbers of same hw inventory type text from the text pattern provided
             // by the user
-            
-            
         }
     }
 }
@@ -118,7 +122,7 @@ pub mod utils {
 
         let mut hsm_group_pattern: Vec<String> = Vec::new();
 
-        for pattern in hsm_group_patterns.split(":") {
+        for pattern in hsm_group_patterns.split(':') {
             hsm_group_pattern.push(pattern.to_string());
 
             if pattern.parse::<u8>().is_ok() {
