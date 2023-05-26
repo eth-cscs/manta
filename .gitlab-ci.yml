@@ -6,6 +6,8 @@ default:
 
 build-job:
   stage: build
+  image:
+    name: rust:1.69.0-bullseye
   script:
     - echo "Hello, $GITLAB_USER_LOGIN!"
     - echo "I am $(whoami)"
