@@ -17,6 +17,7 @@ cargo-clippy:
   image:
     name: rust:1.69.0-bullseye
   script:
+    - cargo install clippy
     - cargo clippy
 
 cargo-audit:
@@ -24,6 +25,7 @@ cargo-audit:
   image:
     name: rust:1.69.0-bullseye
   script:
+    - cargo install cargo-audit
     - cargo audit
 
 test-job1:
