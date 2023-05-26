@@ -14,11 +14,15 @@ build-job:
 
 cargo-clippy:
   stage: test
+  image:
+    name: rust:1.69.0-bullseye
   script:
     - cargo clippy
 
 cargo-audit:
   stage: test
+  image:
+    name: rust:1.69.0-bullseye
   script:
     - cargo audit
 
