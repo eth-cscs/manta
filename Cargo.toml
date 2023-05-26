@@ -34,7 +34,7 @@ rustls = { version = "0.21.1", features = [ "dangerous_configuration" ] }
 futures-util = "0.3.24"
 clap = { version =  "4.0.32", features = ["derive","cargo"] }
 clap_complete = "4.0.3"
-git2 = "0.15.0"
+git2 = "0.17.0"
 # walkdir = "2.3.2"
 dialoguer = "0.10.2"
 substring = "1.4.5"
