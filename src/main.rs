@@ -24,8 +24,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // Init logger
     // env_logger::init();
-    // log4rs::init_file("log4rs.yml", Default::default()).unwrap();
-    log_ops::configure();
+    // log4rs::init_file("log4rs.yml", Default::default()).unwrap(); // log4rs file configuration
+    log_ops::configure(); // log4rs programatically configuration
 
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(

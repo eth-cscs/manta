@@ -4,7 +4,7 @@ use k8s_openapi::chrono;
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
     console, get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, log,
-    update_hsm_group, update_node,
+    update_hsm_group, update_node, apply_hsm,
 };
 
 pub async fn process_cli(
@@ -180,6 +180,16 @@ pub async fn process_cli(
                 // base_image_id,
                 hsm_group,
                 k8s_api_url,
+            )
+            .await;
+        } else if let Some(cli_apply_hsm) = cli_apply.subcommand_matches("hsm-group") {
+            apply_hsm::exec(
+                vault_base_url,
+                vault_role_id,
+                // cli_apply_cluster,
+                shasta_token,
+                shasta_base_url,
+                cli_apply_hsm.get_one::<String>("pattern").unwrap(),
             )
             .await;
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

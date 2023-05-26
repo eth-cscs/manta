@@ -1,6 +1,6 @@
 default:
   tags:
-    - hashicorp-vault.cscs.ch
+    - fulen
     - rust
     - manta
 

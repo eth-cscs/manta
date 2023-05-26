@@ -24,7 +24,11 @@ pub fn configure() {
     let config = Config::builder()
         .appender(Appender::builder().build("stdout", Box::new(stdout)))
         .appender(Appender::builder().build("requests", Box::new(requests)))
-        .logger(Logger::builder().build("app::backend", LevelFilter::Info))
+        .logger(
+            Logger::builder()
+                .appender("stdout")
+                .build("app::backend", LevelFilter::Info),
+        )
         .logger(
             Logger::builder()
                 .appender("requests")

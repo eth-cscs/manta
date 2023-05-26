@@ -305,6 +305,16 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     apply_node_reset
 }
 
+pub fn subcommand_apply_hsm() -> Command {
+    let mut apply_hsm = Command::new("hsm-group")
+        .aliases(["hsm"])
+        .arg_required_else_help(true)
+        .about("WIP - UNSTABLE!!! Rearange nodes in a HSM group based on pattern")
+        .arg(arg!(-p --pattern <VALUE> ... "Pattern to express the new HSM layout like `<hsm_group_name>[:<property>]*:<num_nodes>`. Where hsm_group_name (mandatory) is the target HSM group, property (optional) is the property (eg NVIDIA, A100, AMD, EPYC, etc) to filter nodes' components (Nodes[].Processors[].PopulatedFRU.ProcessorFRUInfo.Model or Nodes[].NodeAccels[].PopulatedFRU.NodeAccelFRUInfo.Model) and num_nodes (mandatory) is the number of nodes with those properties we need for the new HSM layout. Eg test:nvidia:a100:2 means `test` HSM group should have 2 nodes with NVIDIA A100, test:nvidia:2:amd:rome:3 means `test` HSM group will have 2 nvidia nodes and 3 AMD ROME nodes. NOTE: a single pattern may match multiple nodes therefore the total combination of num_nodes for a single HSM group does not accumulate.").required(true));
+
+    apply_hsm
+}
+
 pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
@@ -351,6 +361,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
+                .subcommand(subcommand_apply_hsm(/* hsm_group */))
                 .subcommand(
                     Command::new("node")
                         .aliases(["n", "nod"])

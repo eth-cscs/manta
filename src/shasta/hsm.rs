@@ -235,39 +235,49 @@ pub mod http_client {
                 .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
         }
     }
+
+    pub async fn get_hw_inventory(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        xname: &str,
+    ) -> Result<Value, Box<dyn Error>> {
+        let client;
+
+        let client_builder = reqwest::Client::builder().danger_accept_invalid_certs(true);
+
+        // Build client
+        if std::env::var("SOCKS5").is_ok() {
+            // socks5 proxy
+            log::debug!("SOCKS5 enabled");
+            let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
+
+            // rest client to authenticate
+            client = client_builder.proxy(socks5proxy).build()?;
+        } else {
+            client = client_builder.build()?;
+        }
+
+        let api_url = format!(
+            "{}/smd/hsm/v2/Inventory/Hardware/Query/{}",
+            shasta_base_url, xname
+        );
+
+        let resp = client
+            .get(api_url)
+            .header("Authorization", format!("Bearer {}", shasta_token))
+            .send()
+            .await?;
+
+        if resp.status().is_success() {
+            Ok(serde_json::from_str(&resp.text().await?)?)
+        } else {
+            Err(resp.json::<Value>().await?["detail"]
+                .as_str()
+                .unwrap()
+                .into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+        }
+    }
 }
-
-// pub mod utils {
-
-//     use comfy_table::Table;
-//     use serde_json::Value;
-
-//     use crate::shasta::nodes::nodes_to_string;
-
-//     pub fn print_table(hsm_groups: Vec<Value>) {
-
-//         let mut table = Table::new();
-
-//         table.set_header(vec!["Label", "Description", "Tags", "Exclusive group", "Members"]);
-
-//         for hsm_group in hsm_groups {
-
-//             let list_members = hsm_group["members"]["ids"].as_array().unwrap();
-
-//             let members = nodes_to_string(list_members);
-
-//             table.add_row(vec![
-//                 hsm_group["label"].as_str().unwrap(),
-//                 hsm_group["description"].as_str().unwrap(),
-//                 hsm_group["tags"].as_str().unwrap_or_default(),
-//                 hsm_group["exclusiveGroup"].as_str().unwrap_or_default(),
-//                 &members
-//             ]);
-//         }
-
-//         println!("{table}");
-//     }
-// }
 
 pub mod utils {
 
@@ -421,5 +431,65 @@ pub mod utils {
                 std::process::exit(1);
             }
         }
+    }
+
+    pub fn get_list_processor_model_from_hw_inventory_value(
+        hw_inventory: &Value,
+    ) -> Option<Vec<String>> {
+        hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Processors"]
+            .as_array()
+            .and_then(|processor_list: &Vec<Value>| {
+                Some(
+                    processor_list
+                        .iter()
+                        .map(|processor| {
+                            processor
+                                .pointer("/PopulatedFRU/ProcessorFRUInfo/Model")
+                                .unwrap()
+                                .to_string()
+                        })
+                        .collect::<Vec<String>>(),
+                )
+            })
+    }
+
+    pub fn get_list_accelerator_model_from_hw_inventory_value(
+        hw_inventory: &Value,
+    ) -> Option<Vec<String>> {
+        hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["NodeAccels"]
+            .as_array()
+            .and_then(|accelerator_list| {
+                Some(
+                    accelerator_list
+                        .iter()
+                        .map(|accelerator| {
+                            accelerator
+                                .pointer("/PopulatedFRU/NodeAccelFRUInfo/Model")
+                                .unwrap()
+                                .to_string()
+                        })
+                        .collect::<Vec<String>>(),
+                )
+            })
+    }
+
+    pub fn get_list_memory_capacity_from_hw_inventory_value(
+        hw_inventory: &Value,
+    ) -> Option<Vec<String>> {
+        hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Memory"]
+            .as_array()
+            .and_then(|memory_list| {
+                Some(
+                  memory_list 
+                        .iter()
+                        .map(|memory| {
+                            memory
+                                .pointer("/PopulatedFRU/MemoryFRUInfo/CapacityMiB")
+                                .unwrap()
+                                .to_string()
+                        })
+                        .collect::<Vec<String>>(),
+                )
+            })
     }
 }
