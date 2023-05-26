@@ -1,8 +1,6 @@
 default:
   tags:
     - fulen
-    - rust
-    - manta
 
 build-job:
   stage: build
