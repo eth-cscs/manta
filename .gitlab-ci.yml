@@ -17,7 +17,8 @@ cargo-clippy:
   image:
     name: rust:1.69.0-bullseye
   script:
-    - cargo install clippy
+    - rustup update 
+    - rustup component add clippy-preview
     - cargo clippy
 
 cargo-audit:
