@@ -155,7 +155,7 @@ pub async fn get_sessions(
                     .unwrap()
                 {
                     if boot_sets_value.get("path").is_some() {
-                        image_id_from_bos_sessiontemplate =boot_sets_value["path"] 
+                        image_id_from_bos_sessiontemplate = boot_sets_value["path"]
                             .as_str()
                             .unwrap()
                             .trim_start_matches("s3://boot-images/")

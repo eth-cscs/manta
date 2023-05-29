@@ -4,7 +4,7 @@ use k8s_openapi::chrono;
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
     console, get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, log,
-    update_hsm_group, update_node, 
+    update_hsm_group, update_node,
 };
 
 pub async fn process_cli(

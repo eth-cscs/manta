@@ -1,10 +1,16 @@
-use k8s_openapi::api::core::v1::Pod;
 use futures_util::StreamExt;
-use kube::{api::{AttachedProcess, AttachParams}, Api};
+use k8s_openapi::api::core::v1::Pod;
+use kube::{
+    api::{AttachParams, AttachedProcess},
+    Api,
+};
 use serde_json::Value;
 use tokio_util::io::ReaderStream;
 
-use crate::{common::vault::http_client::fetch_shasta_k8s_secrets, shasta::kubernetes::get_k8s_client_programmatically};
+use crate::{
+    common::vault::http_client::fetch_shasta_k8s_secrets,
+    shasta::kubernetes::get_k8s_client_programmatically,
+};
 
 pub async fn get_container_attachment(
     xname: &String,

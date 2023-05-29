@@ -152,7 +152,8 @@ pub async fn connect_to_console(
         )
         .await?; */
 
-    let mut attached = get_container_attachment(xname, vault_base_url, vault_role_id, k8s_api_url).await;
+    let mut attached =
+        get_container_attachment(xname, vault_base_url, vault_role_id, k8s_api_url).await;
 
     println!(
         "Connected to {}{}{}!",

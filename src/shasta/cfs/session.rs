@@ -130,7 +130,7 @@ impl CfsSession {
             true,
             Some(groups_name),
             // Some(base_image_id.to_string()),
-            Some(session_yaml["ims"]["id"].as_str().unwrap().to_string())
+            Some(session_yaml["ims"]["id"].as_str().unwrap().to_string()),
         );
         cfs_session
     }

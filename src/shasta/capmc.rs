@@ -115,8 +115,7 @@ pub mod http_client {
             reason: Option<String>,
             force: bool,
         ) -> Result<Value, Box<dyn Error>> {
-            let xname_list: Vec<String> =
-                xnames.into_iter().collect();
+            let xname_list: Vec<String> = xnames.into_iter().collect();
             // Create CAPMC operation shutdown
             let capmc_shutdown_nodes_resp = post(
                 shasta_token,

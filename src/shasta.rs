@@ -1,5 +1,5 @@
 pub mod authentication;
-pub mod bos; 
+pub mod bos;
 pub mod bss;
 pub mod capmc;
 pub mod cfs;

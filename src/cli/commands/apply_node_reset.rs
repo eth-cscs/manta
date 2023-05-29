@@ -55,6 +55,6 @@ pub async fn exec(
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-    
+
     log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes reset {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xnames);
 }

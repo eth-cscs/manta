@@ -21,7 +21,7 @@ pub mod http_client {
 
         // Build client
         if std::env::var("SOCKS5").is_ok() {
-            // socks5 proxy  
+            // socks5 proxy
             log::debug!("SOCKS5 enabled");
             let socks5proxy = reqwest::Proxy::all(std::env::var("SOCKS5").unwrap())?;
 
@@ -55,7 +55,7 @@ pub mod http_client {
     pub async fn get_boot_params(
         shasta_token: &str,
         shasta_base_url: &str,
-        xnames: &[String]
+        xnames: &[String],
     ) -> Result<Vec<Value>, Box<dyn Error>> {
         let client;
 

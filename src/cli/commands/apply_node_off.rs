@@ -9,16 +9,16 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     xnames: Vec<&str>,
-    reason: Option<String>, 
+    reason: Option<String>,
     force: bool,
 ) {
     // Get xnames from input param
     /* let xnames: Vec<&str> = cli_apply_node_off
-        .get_one::<String>("XNAMES")
-        .unwrap()
-        .split(',')
-        .map(|xname| xname.trim())
-        .collect(); */
+    .get_one::<String>("XNAMES")
+    .unwrap()
+    .split(',')
+    .map(|xname| xname.trim())
+    .collect(); */
 
     // Check user has provided valid XNAMES
     if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {

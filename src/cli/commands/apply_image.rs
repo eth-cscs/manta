@@ -5,7 +5,8 @@ use serde_yaml::Value;
 
 use crate::{
     cli,
-    shasta::cfs::{configuration, session::CfsSession}, common::jwt_ops::get_claims_from_jwt_token,
+    common::jwt_ops::get_claims_from_jwt_token,
+    shasta::cfs::{configuration, session::CfsSession},
 };
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.

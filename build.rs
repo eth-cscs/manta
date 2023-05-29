@@ -1,5 +1,5 @@
 use clap_complete::{generate_to, shells::Bash};
-use std::{io::Error, env};
+use std::{env, io::Error};
 
 include!("src/cli/build.rs");
 

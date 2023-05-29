@@ -2,11 +2,7 @@ use comfy_table::Table;
 
 use crate::{common, shasta::bos};
 
-pub async fn exec(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    hsm_group: Option<&String>,
-) {
+pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_group: Option<&String>) {
     // Get BOS sessiontemplates for the hsm group
     let bos_sessiontemplates_resp =
         bos::template::http_client::get(shasta_token, shasta_base_url, hsm_group, None, None)
@@ -56,7 +52,13 @@ pub async fn exec(
 
     let mut table = Table::new();
 
-    table.set_header(vec!["Image ID", "Type", "CFS configuration", "HSM groups", "Nodes"]);
+    table.set_header(vec![
+        "Image ID",
+        "Type",
+        "CFS configuration",
+        "HSM groups",
+        "Nodes",
+    ]);
 
     for image in images_details {
         table.add_row(image);

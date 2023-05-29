@@ -1,4 +1,4 @@
-use crate::{shasta::cfs::configuration, common::jwt_ops::get_claims_from_jwt_token};
+use crate::{common::jwt_ops::get_claims_from_jwt_token, shasta::cfs::configuration};
 use serde_yaml::Value;
 use std::path::Path;
 

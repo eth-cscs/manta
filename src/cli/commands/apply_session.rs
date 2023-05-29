@@ -2,11 +2,11 @@ use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
+use crate::cli;
 use crate::common::jwt_ops::get_claims_from_jwt_token;
-use crate::shasta::{cfs::configuration, self};
 use crate::shasta::cfs::session::http_client;
 use crate::shasta::hsm;
-use crate::cli;
+use crate::shasta::{self, cfs::configuration};
 use k8s_openapi::chrono;
 use substring::Substring;
 
@@ -95,7 +95,9 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xname_list, hsm_group).await {
+            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xname_list, hsm_group)
+                .await
+            {
                 eprintln!("xname/s invalid. Exit");
                 std::process::exit(1);
             }
@@ -111,7 +113,7 @@ pub async fn exec(
         xname_list = ansible_limit_nodes;
     }
     // * End Process/validate hsm group value (and ansible limit)
-    
+
     // Remove duplicates in xname_list
     xname_list.sort();
     xname_list.dedup();
@@ -220,8 +222,12 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status =
-            shasta::cfs::component::http_client::get_single_component(shasta_token, shasta_base_url, &xname).await?;
+        let component_status = shasta::cfs::component::http_client::get_single_component(
+            shasta_token,
+            shasta_base_url,
+            &xname,
+        )
+        .await?;
         let hsm_configuration_state =
             &hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
                 ["State"];

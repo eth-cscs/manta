@@ -10,7 +10,7 @@ pub fn get_configuration(config_path: &str) -> Config {
         Err(_) => {
             eprintln!("Configuration missing!. Exit");
             std::process::exit(1);
-        },
-        Ok(config_content) => config_content
+        }
+        Ok(config_content) => config_content,
     }
 }

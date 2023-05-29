@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::shasta::{ bos, capmc, cfs, hsm, ims};
+use crate::shasta::{bos, capmc, cfs, hsm, ims};
 
 pub async fn exec(
     shasta_token: &str,
@@ -36,7 +36,9 @@ pub async fn exec(
     });
 
     if cfs_sessions_details.is_empty() {
-        eprintln!("No CFS session target image found for the CFS configuration name provided. Exit");
+        eprintln!(
+            "No CFS session target image found for the CFS configuration name provided. Exit"
+        );
         std::process::exit(1);
     }
 
