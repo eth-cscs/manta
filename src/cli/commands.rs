@@ -1,6 +1,5 @@
 pub mod apply_cluster;
 pub mod apply_configuration;
-pub mod apply_hsm;
 pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
