@@ -7,6 +7,7 @@ build-job:
   image:
     name: rust:1.69.0-bullseye
   script:
+    - rustup component add rustfmt
     - cargo fmt
     - cargo build
 
