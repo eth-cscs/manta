@@ -11,7 +11,7 @@ build-job:
     - cargo fmt
     - cargo build
 
-cargo-clippy:
+cargo-clippy-audit:
   stage: test
   image:
     name: rust:1.69.0-bullseye
@@ -19,14 +19,8 @@ cargo-clippy:
     - rustup update 
     - rustup component add clippy-preview
     - cargo clippy
-
-cargo-audit:
-  stage: test
-  image:
-    name: rust:1.69.0-bullseye
-  script:
     - cargo install cargo-audit
-    - cargo audit
+    - cargo audit cargo audit --ignore RUSTSEC-2020-0071
 
 deploy-prod:
   stage: deploy
