@@ -156,8 +156,8 @@ pub async fn exec(
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-    println!("jwt_claims:\n{:#?}", jwt_claims);
-    println!("Name: {}", jwt_claims["name"]);
+    /* println!("jwt_claims:\n{:#?}", jwt_claims);
+    println!("Name: {}", jwt_claims["name"]); */
 
     log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
