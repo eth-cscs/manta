@@ -20,7 +20,7 @@ cargo-clippy-audit:
     - rustup component add clippy-preview
     - cargo clippy
     - cargo install cargo-audit
-    - cargo audit cargo audit --ignore RUSTSEC-2020-0071
+    - cargo audit --ignore RUSTSEC-2020-0071
 
 deploy-prod:
   stage: deploy
