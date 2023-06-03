@@ -2,27 +2,42 @@ default:
   tags:
     - Fulen
 
-build-job:
-  stage: build
-  image:
-    name: rust:1.69.0-bullseye
-  script:
-    - rustup component add rustfmt
-    - cargo fmt
-    - cargo build
+variables:
+  RUST_IMAGE: "rust:1.69.0-bullseye"
 
-cargo-clippy-audit:
+test-job:
   stage: test
   image:
-    name: rust:1.69.0-bullseye
+    name: '$RUST_IMAGE'
   script:
     - rustup update 
+    - rustup component add rustfmt
+    - cargo fmt
     - rustup component add clippy-preview
     - cargo clippy
     - cargo install cargo-audit
     - cargo audit --ignore RUSTSEC-2020-0071
 
-deploy-prod:
+build-job:
+  stage: build
+  image: '$RUST_IMAGE'
+  script:
+    - apt update -y
+    - rustup toolchain install stable-x86_64-unknown-linux-gnu
+    - rustup target add x86_64-unknown-linux-gnu
+    - cargo build --target x86_64-unknown-linux-gnu --release
+    # - rustup toolchain install stable-x86_64-unknown-linux-musl
+    # - rustup target add x86_64-unknown-linux-musl
+    # - cargo build --target x86_64-unknown-linux-musl --release
+    - cp target/x86_64-unknown-linux-gnu/release/manta .
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file target/x86_64-unknown-linux-gnu/release/manta "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/manta/0.0.1/manta"'
+
+  # artifacts:
+  #   name: manta
+  #   paths:
+  #     - manta
+
+deploy-job:
   stage: deploy
   script:
     - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
