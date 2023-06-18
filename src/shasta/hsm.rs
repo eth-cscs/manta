@@ -399,19 +399,17 @@ pub mod utils {
                 .iter()
                 .map(|group| group["name"].as_str().unwrap().to_string())
                 .collect();
-            let cfs_session_members: Vec<String> = cfs_sessions.last().unwrap()["target"]["groups"]
-                .as_array()
-                .unwrap_or(&Vec::new())
-                .iter()
-                .flat_map(|group| {
-                    group["members"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .map(|member| member.as_str().unwrap().to_string())
-                })
+            let cfs_session_members: Vec<String> = cfs_sessions.last().unwrap()["ansible"]["limit"]
+                .as_str()
+                .unwrap_or_default()
+                .split(",")
+                .map(|xname| xname.to_string())
                 .collect();
-            if !cfs_session_hsm_groups.contains(hsm_group_name) {
+            if !cfs_session_hsm_groups.contains(hsm_group_name)
+                && !cfs_session_members
+                    .iter()
+                    .all(|cfs_session_member| hsm_group_members.contains(cfs_session_member))
+            {
                 println!(
                     "CFS session {} does not apply to HSM group {}",
                     session_name.unwrap(),
@@ -419,7 +417,7 @@ pub mod utils {
                 );
                 std::process::exit(1);
             }
-            if !cfs_session_members
+            /* if !cfs_session_members
                 .iter()
                 .all(|cfs_session_member| hsm_group_members.contains(cfs_session_member))
             {
@@ -429,7 +427,7 @@ pub mod utils {
                     hsm_group_name
                 );
                 std::process::exit(1);
-            }
+            } */
         }
     }
 
