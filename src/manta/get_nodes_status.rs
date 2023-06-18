@@ -19,7 +19,37 @@ pub async fn exec(
     shasta_base_url: &str,
     hsm_groups_node_list: Vec<String>,
 ) -> Vec<NodeDetails> {
-    let hsm_group_nodes_string = hsm_groups_node_list.join(",");
+    let chunk_size = 30;
+
+    let mut components_status = Vec::new();
+
+    let mut tasks = tokio::task::JoinSet::new();
+
+    for sub_node_list in hsm_groups_node_list.chunks(chunk_size) {
+        let shasta_token_string = shasta_token.to_string();
+        let shasta_base_url_string = shasta_base_url.to_string();
+
+        let hsm_subgroup_nodes_string: String = sub_node_list.join(",");
+
+        tasks.spawn(async move {
+            shasta::cfs::component::http_client::get_multiple_components(
+                &shasta_token_string,
+                &shasta_base_url_string,
+                Some(&hsm_subgroup_nodes_string),
+                None,
+            )
+            .await
+            .unwrap()
+        });
+    }
+
+    while let Some(message) = tasks.join_next().await {
+        if let Ok(node_status_vec) = message {
+            components_status = [components_status, node_status_vec].concat();
+        }
+    }
+
+/*     let hsm_group_nodes_string = hsm_groups_node_list.join(",");
 
     let components_status = shasta::cfs::component::http_client::get_multiple_components(
         shasta_token,
@@ -28,7 +58,7 @@ pub async fn exec(
         None,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     // get boot params
     let nodes_boot_params_list = shasta::bss::http_client::get_boot_params(
@@ -160,14 +190,14 @@ pub async fn exec(
         node_details_list.push(node_details);
     }
 
-    let components_status = shasta::cfs::component::http_client::get_multiple_components(
+/*     let components_status = shasta::cfs::component::http_client::get_multiple_components(
         shasta_token,
         shasta_base_url,
         Some(&hsm_group_nodes_string),
         None,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     // get boot params
     let nodes_boot_params_list = shasta::bss::http_client::get_boot_params(
