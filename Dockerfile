@@ -8,8 +8,8 @@ COPY . .
 RUN cargo install --path .
 
 # FROM debian:bullseye
-FROM debian:sid-slim
-RUN apt-get update & apt-get install -y extra-runtime-dependencies & rm -rf /var/lib/apt/lists/*
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 # FROM rust:1.64.0-alpine
 COPY --from=builder /usr/local/cargo/bin/manta /usr/local/bin/manta
 COPY --from=builder /usr/src/manta/config /root/.config/manta/config
