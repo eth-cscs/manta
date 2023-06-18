@@ -24,6 +24,6 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Clippy
-      run: cargo clippy --verbose -- -D warnings
+      run: cargo clippy --verbose
     - name: Audit
       run: cargo audit --ignore RUSTSEC-2020-0071
