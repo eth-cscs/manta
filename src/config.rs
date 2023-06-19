@@ -8,7 +8,7 @@ pub fn get_configuration(config_path: &str) -> Config {
 
     match config {
         Err(_) => {
-            eprintln!("Configuration missing!. Exit");
+            eprintln!("Configuration missing or wrong format!. Exit");
             std::process::exit(1);
         }
         Ok(config_content) => config_content,

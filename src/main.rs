@@ -22,11 +22,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
 
-    // Init logger
-    // env_logger::init();
-    // log4rs::init_file("log4rs.yml", Default::default()).unwrap(); // log4rs file configuration
-    log_ops::configure(); // log4rs programatically configuration
-
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -37,7 +32,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let mut path_to_manta_configuration_file = PathBuf::from(project_dirs.unwrap().config_dir());
 
     path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
-                                                     // containing the manta configuration
 
     log::info!(
         "Reading manta configuration from {}",
@@ -52,6 +46,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
+    let log_level = settings.get::<String>("log").unwrap_or("info".to_string());
+
+    // Init logger
+    // env_logger::init();
+    // log4rs::init_file("log4rs.yml", Default::default()).unwrap(); // log4rs file configuration
+    log_ops::configure(log_level); // log4rs programatically configuration
 
     if let Ok(socks_proxy) = settings.get::<String>("socks5_proxy") {
         std::env::set_var("SOCKS5", socks_proxy);

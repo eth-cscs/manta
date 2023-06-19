@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use log::LevelFilter;
 use log4rs::{
     append::{console::ConsoleAppender, file::FileAppender},
@@ -7,7 +9,8 @@ use log4rs::{
 };
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
-pub fn configure() {
+pub fn configure(log_level: String) {
+
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} | {h({l}):5.5} | {f}:{L} — {m}{n}",
@@ -35,7 +38,7 @@ pub fn configure() {
                 .additive(false)
                 .build("app::audit", LevelFilter::Info),
         )
-        .build(Root::builder().appender("stdout").build(LevelFilter::Error))
+        .build(Root::builder().appender("stdout").build(LevelFilter::from_str(&log_level).unwrap_or(LevelFilter::Error)))
         .unwrap();
 
     let _handle = log4rs::init_config(config).unwrap();

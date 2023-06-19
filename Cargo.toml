@@ -3,7 +3,7 @@ build = "build.rs"
 [package]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
-version = "23.3.17"
+version = "23.6.19"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

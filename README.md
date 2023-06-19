@@ -1,6 +1,6 @@
 # MANTA
 
-Another CLI tool for [Alps](https://confluence.cscs.ch/display/ALPSINFRA/Alps+Home).
+Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
 Manta's goals:
 
@@ -37,6 +37,7 @@ Manta aggregates information from multiple sources:
 Manta needs a configuration file in `$HOME/.config/manta/config` like shown below
 
 ```bash
+log = "error"
 base_image_id = "c37fbd5f-0fe5-43ce-8cfe-337f3e78733e"
 socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
@@ -59,7 +60,7 @@ chmod 777 -R /var/log/manta
 
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
-|RUST_LOG|no|env|log details/verbosity|info|
+|log|no|config file|log details/verbosity|off/error/warn/info/debug/trace|
 |socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
 |gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|

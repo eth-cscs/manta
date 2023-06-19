@@ -1373,7 +1373,7 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "23.3.17"
+version = "23.6.19"
 dependencies = [
  "base64 0.13.1",
  "clap",
