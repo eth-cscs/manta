@@ -309,14 +309,22 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Search for the most recent successful CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames provided")
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated").required(true))
-        .arg(arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes"));
+        .about("Search for the most recent successful CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames provided");
 
     update_node = match hsm_group {
         Some(_) => update_node,
-        None => update_node.arg(arg!(-H --"hsm-group" <HSM_GROUP> "hsm group name").required(true)),
+        None => update_node.arg(arg!(<HSM_GROUP> "hsm group name").required(true)),
     };
+
+    update_node = update_node
+        .arg(
+            arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated")
+                .required(true),
+        )
+        .arg(
+            arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")
+                .required(true),
+        );
 
     update_node
 }

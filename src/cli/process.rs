@@ -234,7 +234,7 @@ pub async fn process_cli(
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             let hsm_group_name = if hsm_group.is_none() {
-                cli_update_node.get_one::<String>("hsm-group")
+                cli_update_node.get_one::<String>("HSM_GROUP")
             } else {
                 hsm_group
             };
