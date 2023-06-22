@@ -239,6 +239,26 @@ Generate binary
 cross build --target x86_64-unknown-linux-gnu --release
 ```
 
+### Development
+
+#### Prerequisites
+
+Install 'cargo dist' and 'cargo release'
+
+```
+cargo install cargo-dist
+cargo install cargo-release
+cargo dist init --yes
+```
+
+Then remove the assets for macos and windows
+
+Make sure a github workflow is created in `.github/workflows/release.yml`
+
+#### Deployment
+
+Cargo dist patch --execute
+
 If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
 
 ### Profiling
