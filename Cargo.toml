@@ -84,9 +84,8 @@ targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows
 ci = ["github"]
 # The installers to generate for each app
 installers = []
-#lto = "fat"  # disable when using DHAT profiler
-# cargo dist --> To create asset in github
-dist = true     
+# Whether to consider the binaries in a package for distribution (defaults true)
+dist = true
 
 #[features]
 #dhat-heap = []    # if you are doing heap profiling
