@@ -248,7 +248,12 @@ Install 'cargo dist' and 'cargo release'
 ```
 cargo install cargo-dist
 cargo install cargo-release
-cargo dist init --yes
+```
+
+Configure cargo-dist. Accept default options and only target linux assets
+
+```
+cargo dist init -t x86_64-unknown-linux-gnu
 ```
 
 Then remove the assets for macos and windows
