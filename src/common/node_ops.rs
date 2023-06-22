@@ -1,10 +1,9 @@
 use std::collections::HashSet;
 
 use comfy_table::{Cell, Table};
+use mesa::{shasta::hsm, manta::get_nodes_status::NodeDetails};
 use regex::Regex;
 use serde_json::Value;
-
-use crate::manta::get_nodes_status::NodeDetails;
 
 /// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
 /// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
@@ -104,7 +103,7 @@ pub async fn validate_xnames(
     hsm_group_name: Option<&String>,
 ) -> bool {
     let hsm_group_members: Vec<_> = if hsm_group_name.is_some() {
-        crate::shasta::hsm::http_client::get_hsm_group(
+        hsm::http_client::get_hsm_group(
             shasta_token,
             shasta_base_url,
             hsm_group_name.unwrap(),

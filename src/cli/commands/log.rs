@@ -9,13 +9,10 @@ use kube::Api;
 
 use futures_util::{Stream, StreamExt, TryStreamExt};
 use kube::api::ListParams;
+use mesa::shasta::{cfs, hsm, kubernetes};
 use tokio_stream::once;
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
-use crate::shasta;
-
-use crate::shasta::hsm::utils::validate_config_hsm_group_and_hsm_group_accessed;
-use crate::shasta::kubernetes as shasta_k8s;
 
 pub async fn exec(
     shasta_token: &str,
@@ -29,7 +26,7 @@ pub async fn exec(
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions = shasta::cfs::session::http_client::get(
+    let cfs_sessions = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         cluster_name,
@@ -46,7 +43,7 @@ pub async fn exec(
     }
 
     // Check HSM group in configurarion file can access CFS session
-    validate_config_hsm_group_and_hsm_group_accessed(
+    hsm::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,
         shasta_base_url,
         hsm_group_config,
@@ -59,7 +56,7 @@ pub async fn exec(
 
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
 
-    let client = shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+    let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
 
@@ -85,7 +82,7 @@ pub async fn session_logs(
 > {
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
 
-    let client = shasta_k8s::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+    let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
 

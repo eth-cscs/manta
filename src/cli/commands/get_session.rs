@@ -1,4 +1,7 @@
-use crate::{manta, shasta::cfs::session as shasta_cfs_session};
+use mesa::shasta::cfs;
+
+use mesa::manta;
+
 
 pub async fn exec(
     shasta_token: &str,
@@ -22,6 +25,6 @@ pub async fn exec(
         println!("CFS session not found!");
         std::process::exit(0);
     } else {
-        shasta_cfs_session::utils::print_table(cfs_session_table_data_list);
+        cfs::session::utils::print_table(cfs_session_table_data_list);
     }
 }

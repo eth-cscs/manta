@@ -1,13 +1,10 @@
 use std::path::PathBuf;
 
 use futures_util::TryStreamExt;
+use mesa::shasta::cfs::{self, configuration, session::CfsSession};
 use serde_yaml::Value;
 
-use crate::{
-    cli,
-    common::jwt_ops::get_claims_from_jwt_token,
-    shasta::cfs::{configuration, session::CfsSession},
-};
+use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -88,7 +85,7 @@ pub async fn exec(
         cfs_configuration
     );
 
-    let create_cfs_configuration_resp = crate::shasta::cfs::configuration::http_client::put(
+    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
         shasta_token,
         shasta_base_url,
         &cfs_configuration,
@@ -119,7 +116,7 @@ pub async fn exec(
     log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
     let create_cfs_session_resp =
-        crate::shasta::cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
+        cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
             .await;
 
     log::debug!(

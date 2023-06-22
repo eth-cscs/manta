@@ -1,4 +1,4 @@
-use crate::{manta, shasta};
+use mesa::{shasta::cfs, manta};
 
 use crate::common::gitea;
 
@@ -63,6 +63,6 @@ pub async fn exec(
             layers,
         ));
     } else {
-        shasta::cfs::configuration::utils::print_table(cfs_configurations);
+        cfs::configuration::utils::print_table(cfs_configurations);
     }
 }

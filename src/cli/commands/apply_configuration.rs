@@ -1,4 +1,5 @@
-use crate::{common::jwt_ops::get_claims_from_jwt_token, shasta::cfs::configuration};
+use crate::common::jwt_ops::get_claims_from_jwt_token;
+use mesa::{shasta::cfs::configuration, shasta::cfs};
 use serde_yaml::Value;
 use std::path::Path;
 
@@ -46,7 +47,7 @@ pub async fn exec(
         create_cfs_configuration_payload
     );
 
-    let create_cfs_configuration_resp = crate::shasta::cfs::configuration::http_client::put(
+    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
         shasta_token,
         shasta_base_url,
         &create_cfs_configuration_payload,

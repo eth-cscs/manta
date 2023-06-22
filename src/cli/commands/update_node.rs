@@ -1,7 +1,6 @@
-use crate::{
-    common::node_ops,
-    shasta::{bos, capmc, cfs, ims},
-};
+use crate::common::node_ops;
+
+use mesa::shasta::{bos, capmc, cfs, ims};
 
 pub async fn exec(
     shasta_token: &str,
