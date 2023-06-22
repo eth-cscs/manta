@@ -20,6 +20,7 @@ pub async fn exec(
     // base_image_id: &str,
     hsm_group_param: Option<&String>,
     k8s_api_url: &str,
+    tag: String
 ) {
     // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_file).unwrap();
@@ -37,8 +38,6 @@ pub async fn exec(
         std::process::exit(-1);
     }
 
-    let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
     // Create CFS configuration and image
     let (_, cfs_session_name) = apply_image::exec(
         vault_base_url,
@@ -49,7 +48,7 @@ pub async fn exec(
         shasta_base_url,
         // base_image_id,
         Some(&false),
-        &timestamp,
+        &tag,
         hsm_group_param,
         k8s_api_url,
     )
@@ -162,7 +161,7 @@ pub async fn exec(
         .as_str()
         .unwrap()
         .to_string()
-        .replace("__DATE__", &timestamp);
+        .replace("__DATE__", &tag);
 
     // Create BOS sessiontemplate
 
@@ -172,7 +171,7 @@ pub async fn exec(
         .as_str()
         .unwrap()
         .to_string()
-        .replace("__DATE__", &timestamp);
+        .replace("__DATE__", &tag);
 
     let bos_session_template_hsm_groups: Vec<String> = bos_session_template_yaml["bos_parameters"]
         ["boot_sets"]["compute"]["node_groups"]

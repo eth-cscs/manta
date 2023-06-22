@@ -155,7 +155,12 @@ pub async fn process_cli(
             )
             .await;
         } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
-            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+            let tag = if let Some(input_tag) = cli_apply_image.get_one::<String>("tag") {
+                input_tag.clone()
+            } else {
+                chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+            };
+
             apply_image::exec(
                 vault_base_url,
                 vault_role_id,
@@ -164,12 +169,17 @@ pub async fn process_cli(
                 shasta_base_url,
                 // base_image_id,
                 cli_apply_image.get_one::<bool>("watch-logs"),
-                &timestamp,
+                &tag,
                 hsm_group,
                 k8s_api_url,
             )
             .await;
         } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
+            let tag = if let Some(input_tag) = cli_apply_cluster.get_one::<String>("tag") {
+                input_tag.clone()
+            } else {
+                chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+            };
             apply_cluster::exec(
                 vault_base_url,
                 vault_role_id,
@@ -180,6 +190,7 @@ pub async fn process_cli(
                 // base_image_id,
                 hsm_group,
                 k8s_api_url,
+                tag,
             )
             .await;
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

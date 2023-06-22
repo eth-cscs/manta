@@ -19,7 +19,7 @@ pub async fn exec(
     shasta_base_url: &str,
     // base_image_id: &str,
     watch_logs: Option<&bool>,
-    timestamp: &str,
+    tag: &str,
     hsm_group_config: Option<&String>,
     k8s_api_url: &str,
 ) -> (String, String) {
@@ -78,7 +78,7 @@ pub async fn exec(
         configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
     // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", timestamp);
+    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
 
     log::debug!(
         "CFS configuration creation payload:\n{:#?}",
@@ -108,7 +108,7 @@ pub async fn exec(
     let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
 
     // Rename session name
-    cfs_session.name = cfs_session.name.replace("__DATE__", timestamp);
+    cfs_session.name = cfs_session.name.replace("__DATE__", tag);
 
     // Rename session configuration name
     cfs_session.configuration_name = cfs_configuration.name.clone();
