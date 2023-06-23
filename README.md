@@ -2,6 +2,8 @@
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
+Manta is a frontend cli to interact with Shasta, it uses [mesa](https://crates.io/crates/mesa) for all Shasta interaction.
+
 Manta's goals:
 
  - release operators from repetitive tasks.

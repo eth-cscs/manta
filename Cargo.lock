@@ -1428,7 +1428,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "mesa"
-version = "0.6.13"
+version = "0.6.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54d13cbeef21609c852f3f552ac14a428c0fe060bf3733306901942942d9f3b1"
 dependencies = [
  "base64 0.13.1",
  "clap",
