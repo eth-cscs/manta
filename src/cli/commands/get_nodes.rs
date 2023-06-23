@@ -1,6 +1,9 @@
+use mesa::shasta::hsm;
 use termion::color;
 
-use crate::{common::node_ops, manta::get_nodes_status, shasta::hsm};
+use crate::common::node_ops;
+
+use mesa::manta::get_nodes_status;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(

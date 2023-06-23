@@ -1,7 +1,7 @@
+use mesa::shasta::capmc;
+
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use crate::common::node_ops;
-
-use crate::shasta::capmc;
 
 pub async fn exec(
     hsm_group: Option<&String>,

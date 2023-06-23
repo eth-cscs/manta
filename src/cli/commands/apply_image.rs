@@ -1,13 +1,10 @@
 use std::path::PathBuf;
 
 use futures_util::TryStreamExt;
+use mesa::shasta::cfs::{self, configuration, session::CfsSession};
 use serde_yaml::Value;
 
-use crate::{
-    cli,
-    common::jwt_ops::get_claims_from_jwt_token,
-    shasta::cfs::{configuration, session::CfsSession},
-};
+use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -22,7 +19,7 @@ pub async fn exec(
     shasta_base_url: &str,
     // base_image_id: &str,
     watch_logs: Option<&bool>,
-    timestamp: &str,
+    tag: &str,
     hsm_group_config: Option<&String>,
     k8s_api_url: &str,
 ) -> (String, String) {
@@ -81,14 +78,14 @@ pub async fn exec(
         configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
     // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", timestamp);
+    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
 
     log::debug!(
         "CFS configuration creation payload:\n{:#?}",
         cfs_configuration
     );
 
-    let create_cfs_configuration_resp = crate::shasta::cfs::configuration::http_client::put(
+    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
         shasta_token,
         shasta_base_url,
         &cfs_configuration,
@@ -111,7 +108,7 @@ pub async fn exec(
     let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
 
     // Rename session name
-    cfs_session.name = cfs_session.name.replace("__DATE__", timestamp);
+    cfs_session.name = cfs_session.name.replace("__DATE__", tag);
 
     // Rename session configuration name
     cfs_session.configuration_name = cfs_configuration.name.clone();
@@ -119,7 +116,7 @@ pub async fn exec(
     log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
     let create_cfs_session_resp =
-        crate::shasta::cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
+        cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
             .await;
 
     log::debug!(

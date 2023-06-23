@@ -1378,7 +1378,59 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "0.6.13"
+version = "0.6.14"
+dependencies = [
+ "base64 0.13.1",
+ "clap",
+ "clap_complete",
+ "comfy-table",
+ "config",
+ "dhat",
+ "dialoguer",
+ "directories",
+ "futures-util",
+ "git2",
+ "hyper",
+ "hyper-rustls 0.24.0",
+ "hyper-socks2",
+ "hyper-tls",
+ "jsonwebtoken",
+ "k8s-openapi",
+ "kube",
+ "log",
+ "log4rs",
+ "mesa",
+ "native-tls",
+ "openssl-sys",
+ "regex",
+ "reqwest",
+ "rustls 0.21.2",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.21",
+ "substring",
+ "termion",
+ "tokio",
+ "tokio-native-tls",
+ "tokio-rustls 0.24.1",
+ "tokio-stream",
+ "tokio-util",
+ "tower",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "memchr"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+
+[[package]]
+name = "mesa"
+version = "0.6.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54d13cbeef21609c852f3f552ac14a428c0fe060bf3733306901942942d9f3b1"
 dependencies = [
  "base64 0.13.1",
  "clap",
@@ -1418,12 +1470,6 @@ dependencies = [
  "tower",
  "tracing-subscriber",
 ]
-
-[[package]]
-name = "memchr"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "mime"

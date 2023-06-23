@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 
-use crate::shasta::{bos, capmc, cfs, hsm, ims};
+use mesa::shasta::{bos, capmc, cfs, hsm, ims};
 
 pub async fn exec(
     shasta_token: &str,

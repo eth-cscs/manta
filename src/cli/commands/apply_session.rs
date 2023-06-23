@@ -1,12 +1,10 @@
 use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::shasta::cfs::{self, configuration};
 
 use crate::cli;
 use crate::common::jwt_ops::get_claims_from_jwt_token;
-use crate::shasta::cfs::session::http_client;
-use crate::shasta::hsm;
-use crate::shasta::{self, cfs::configuration};
 use k8s_openapi::chrono;
 use substring::Substring;
 
@@ -176,7 +174,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
     let cfs_sessions =
-        http_client::get(shasta_token, shasta_base_url, None, None, None, None).await?;
+        cfs::session::http_client::get(shasta_token, shasta_base_url, None, None, None, None).await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
@@ -222,14 +220,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = shasta::cfs::component::http_client::get_single_component(
+        let component_status = cfs::component::http_client::get_single_component(
             shasta_token,
             shasta_base_url,
             &xname,
         )
         .await?;
         let hsm_configuration_state =
-            &hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
+            &mesa::shasta::hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
                 ["State"];
         log::info!(
             "HSM component state for component {}: {}",
@@ -354,7 +352,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = configuration::CfsConfiguration::create_from_repos(
+    let cfs_configuration = cfs::configuration::CfsConfiguration::create_from_repos(
         gitea_token,
         gitea_base_url,
         repos,
@@ -400,7 +398,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = shasta::cfs::session::CfsSession::new(
+    let session = cfs::session::CfsSession::new(
         cfs_session_name,
         cfs_configuration_name,
         Some(limit),
@@ -413,7 +411,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp =
-        shasta::cfs::session::http_client::post(shasta_token, shasta_base_url, &session).await;
+        cfs::session::http_client::post(shasta_token, shasta_base_url, &session).await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 

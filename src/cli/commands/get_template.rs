@@ -1,4 +1,5 @@
-use crate::shasta::bos::template as bos_template;
+use mesa::shasta::bos;
+
 
 pub async fn exec(
     // hsm_group: Option<&String>,
@@ -29,7 +30,7 @@ pub async fn exec(
         limit_number = None;
     }
 
-    let bos_templates = bos_template::http_client::get(
+    let bos_templates = bos::template::http_client::get(
         shasta_token,
         shasta_base_url,
         hsm_group_name,
@@ -43,6 +44,6 @@ pub async fn exec(
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
-        bos_template::utils::print_table(bos_templates);
+        bos::template::utils::print_table(bos_templates);
     }
 }

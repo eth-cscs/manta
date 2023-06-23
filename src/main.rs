@@ -1,8 +1,8 @@
 mod cli;
 mod common;
 mod config;
-mod manta;
-mod shasta;
+
+use mesa::shasta;
 use std::path::PathBuf;
 
 use directories::ProjectDirs;
