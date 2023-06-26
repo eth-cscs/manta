@@ -224,7 +224,7 @@ pub async fn get_cfs_session_logs_stream(
     let mut pods = pods_api.list(&params).await?;
 
     let mut i = 0;
-    let max = 10;
+    let max = 60;
 
     // Waiting for pod to start
     while pods.items.is_empty() && i <= max {

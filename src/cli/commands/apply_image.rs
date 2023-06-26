@@ -116,8 +116,7 @@ pub async fn exec(
     log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
     let create_cfs_session_resp =
-        cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session)
-            .await;
+        cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session).await;
 
     log::debug!(
         "CFS session creation response:\n{:#?}",
@@ -135,6 +134,13 @@ pub async fn exec(
         .to_string();
 
     // let watch_logs = cli_apply_image.get_one::<bool>("watch-logs");
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
+
+    println!("CFS session created: {}", cfs_session_name);
 
     if let Some(true) = watch_logs {
         log::info!("Fetching logs ...");
@@ -162,13 +168,6 @@ pub async fn exec(
             .await
             .unwrap();
     } */
-
-    // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
-
-    println!("CFS session created: {}", cfs_session_name);
 
     (cfs_configuration.name, cfs_session_name)
 }

@@ -2,6 +2,59 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
+pub fn build_cli(hsm_group: Option<&String>) -> Command {
+    Command::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .arg_required_else_help(true)
+        .subcommand(subcommand_get(hsm_group))
+        .subcommand(
+            Command::new("apply")
+                .alias("a")
+                .arg_required_else_help(true)
+                .about("Make changes to Shasta HSM group or nodes")
+                // .subcommand(subcommand_apply_configuration(hsm_group))
+                .subcommand(subcommand_apply_session(hsm_group))
+                .subcommand(subcommand_apply_image(/* hsm_group */))
+                .subcommand(subcommand_apply_cluster(/* hsm_group */))
+                .subcommand(
+                    Command::new("node")
+                        .aliases(["n", "nod"])
+                        .arg_required_else_help(true)
+                        .about("Make changes to nodes")
+                        .subcommand(subcommand_apply_node_on(hsm_group))
+                        .subcommand(subcommand_apply_node_off(hsm_group))
+                        .subcommand(subcommand_apply_node_reset(hsm_group)),
+                ),
+        )
+        .subcommand(
+            Command::new("update")
+                .alias("u")
+                .arg_required_else_help(true)
+                .about("Update nodes boot params")
+                .subcommand(subcommand_update_nodes(hsm_group))
+                .subcommand(subcommand_update_hsm_group(hsm_group)),
+        )
+        .subcommand(
+            Command::new("log")
+                .alias("l")
+                .arg_required_else_help(true)
+                .about("Get CFS session logs")
+                .arg(arg!(<SESSION> "session name"))
+                .arg(
+                    arg!(-l --"layer-id" <VALUE> "layer id")
+                        .required(false)
+                        .value_parser(value_parser!(u8)),
+                ),
+        )
+        .subcommand(
+            Command::new("console")
+                .aliases(["c", "con", "cons", "conso"])
+                .arg_required_else_help(true)
+                .about("Access node's console")
+                .arg(arg!(<XNAME> "node xname")),
+        )
+}
+
 pub fn subcommand_get_cfs_configuration() -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
@@ -348,56 +401,4 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     );
 
     update_hsm_group
-}
-
-pub fn build_cli(hsm_group: Option<&String>) -> Command {
-    Command::new("manta")
-        .arg_required_else_help(true)
-        .subcommand(subcommand_get(hsm_group))
-        .subcommand(
-            Command::new("apply")
-                .alias("a")
-                .arg_required_else_help(true)
-                .about("Make changes to Shasta HSM group or nodes")
-                // .subcommand(subcommand_apply_configuration(hsm_group))
-                .subcommand(subcommand_apply_session(hsm_group))
-                .subcommand(subcommand_apply_image(/* hsm_group */))
-                .subcommand(subcommand_apply_cluster(/* hsm_group */))
-                .subcommand(
-                    Command::new("node")
-                        .aliases(["n", "nod"])
-                        .arg_required_else_help(true)
-                        .about("Make changes to nodes")
-                        .subcommand(subcommand_apply_node_on(hsm_group))
-                        .subcommand(subcommand_apply_node_off(hsm_group))
-                        .subcommand(subcommand_apply_node_reset(hsm_group)),
-                ),
-        )
-        .subcommand(
-            Command::new("update")
-                .alias("u")
-                .arg_required_else_help(true)
-                .about("Update nodes boot params")
-                .subcommand(subcommand_update_nodes(hsm_group))
-                .subcommand(subcommand_update_hsm_group(hsm_group)),
-        )
-        .subcommand(
-            Command::new("log")
-                .alias("l")
-                .arg_required_else_help(true)
-                .about("Get CFS session logs")
-                .arg(arg!(<SESSION> "session name"))
-                .arg(
-                    arg!(-l --"layer-id" <VALUE> "layer id")
-                        .required(false)
-                        .value_parser(value_parser!(u8)),
-                ),
-        )
-        .subcommand(
-            Command::new("console")
-                .aliases(["c", "con", "cons", "conso"])
-                .arg_required_else_help(true)
-                .about("Access node's console")
-                .arg(arg!(<XNAME> "node xname")),
-        )
 }
