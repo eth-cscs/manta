@@ -80,7 +80,7 @@ cargo-dist-version = "0.0.7"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "1.67.1"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-mussl"]
+targets = ["x86_64-unknown-linux-musl"]
 # CI backends to support (see 'cargo dist generate-ci')
 ci = ["github"]
 # The installers to generate for each app
