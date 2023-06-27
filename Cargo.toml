@@ -6,7 +6,6 @@ authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>"]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
 version = "0.6.23"
-license = "ETH Zurich"
 license-file = "LICENSE"
 documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
 homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
@@ -80,9 +79,9 @@ cargo-dist-version = "0.0.7"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "1.67.1"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-musl"]
+targets = ["x86_64-unknown-linux-gnu"]
 # CI backends to support (see 'cargo dist generate-ci')
-ci = ["github"]
+ci = [ "github" ]
 # The installers to generate for each app
 installers = []
 # Whether to consider the binaries in a package for distribution (defaults true)

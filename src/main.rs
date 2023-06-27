@@ -46,7 +46,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let gitea_base_url = settings.get::<String>("gitea_base_url").unwrap();
     let keycloak_base_url = settings.get::<String>("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get::<String>("k8s_api_url").unwrap();
-    let log_level = settings.get::<String>("log").unwrap_or("info".to_string());
+    let log_level = settings.get::<String>("log").unwrap_or("error".to_string());
 
     // Init logger
     // env_logger::init();
