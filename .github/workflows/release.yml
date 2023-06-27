@@ -43,7 +43,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: rust:1.69.0-bullseye
 
     steps:
     - name: Setup Rust environment
@@ -64,7 +64,7 @@ jobs:
   # Create the Github Release™ so the packages have something to be uploaded to
   create-release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: rust:1.69.0-bullseye
     outputs:
       has-releases: ${{ steps.create-release.outputs.has-releases }}
     env:
@@ -105,7 +105,7 @@ jobs:
       matrix:
         # For these target platforms
         include:
-        - os: ubuntu-latest
+        - os: rust:1.69.0-bullseye
           dist-args: --artifacts=local --target=x86_64-unknown-linux-gnu
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.7/cargo-dist-installer.sh | sh
 
@@ -126,7 +126,7 @@ jobs:
         run: |
           # Actually do builds and make zips and whatnot
           # cargo dist build --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
-          cargo dist build --target="x86_64-unknown-linux-gnu" --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
+          cargo dist build --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
           echo "dist ran successfully"
           cat dist-manifest.json
 
@@ -142,7 +142,7 @@ jobs:
     # Only run after all the other tasks, but it's ok if upload-artifacts was skipped
     needs: [create-release, upload-artifacts]
     if: ${{ always() && needs.create-release.result == 'success' && (needs.upload-artifacts.result == 'skipped' || needs.upload-artifacts.result == 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: rust:1.69.0-bullseye
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
