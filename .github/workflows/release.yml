@@ -50,6 +50,8 @@ jobs:
       uses: actions/checkout@v3
     - name: Install cargo audit
       run: cargo install cargo-audit
+    - name: Fmt
+      run: cargo fmt
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -123,7 +125,8 @@ jobs:
         # do agree on 'cat' and '$()' so we use that to marshal values between commands.
         run: |
           # Actually do builds and make zips and whatnot
-          cargo dist build --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
+          # cargo dist build --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
+          cargo dist build --target="x86_64-unknown-linux-gnu" --tag=${{ github.ref_name }} --output-format=json ${{ matrix.dist-args }} > dist-manifest.json
           echo "dist ran successfully"
           cat dist-manifest.json
 
