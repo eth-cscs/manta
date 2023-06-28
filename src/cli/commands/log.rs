@@ -131,7 +131,7 @@ pub async fn get_container_logs_stream(
         get_container_state(cfs_session_pod, &cfs_session_layer_container.name);
 
     let mut i = 0;
-    let max = 10;
+    let max = 60;
 
     // Waiting for container ansible-x to start
     while container_state.as_ref().unwrap().waiting.is_some() && i <= max {
