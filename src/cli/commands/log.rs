@@ -131,7 +131,7 @@ pub async fn get_container_logs_stream(
         get_container_state(cfs_session_pod, &cfs_session_layer_container.name);
 
     let mut i = 0;
-    let max = 60;
+    let max = 300;
 
     // Waiting for container ansible-x to start
     while container_state.as_ref().unwrap().waiting.is_some() && i <= max {
@@ -146,13 +146,6 @@ pub async fn get_container_logs_stream(
                 .as_bytes(),
             ))))
             .boxed();
-
-        /* print!(
-            "\rWaiting for container {} to be ready. Checking again in 2 secs. Attempt {} of {}",
-            ansible_container.name,
-            i + 1,
-            max
-        ); */
         i += 1;
         thread::sleep(time::Duration::from_secs(2));
         let pods = pods_api.list(params).await?;
@@ -167,19 +160,6 @@ pub async fn get_container_logs_stream(
         )
         .into());
     }
-
-    /* println!();
-    println!("{green}***{color_reset} Starting logs for container {green}{container_name}{color_reset}", green = color::Fg(color::Green), container_name = ansible_container.name, color_reset = color::Fg(color::Reset));
-    println!(); */
-
-    /* let mut container_log_stream = once(Ok(Bytes::copy_from_slice(
-        format!(
-            "\n\n*** Starting logs for container {}\n\n",
-            ansible_container.name
-        )
-        .as_bytes(),
-    )))
-    .boxed(); */
 
     let logs_stream = pods_api
         .log_stream(
@@ -224,7 +204,7 @@ pub async fn get_cfs_session_logs_stream(
     let mut pods = pods_api.list(&params).await?;
 
     let mut i = 0;
-    let max = 60;
+    let max = 300;
 
     // Waiting for pod to start
     while pods.items.is_empty() && i <= max {
@@ -239,12 +219,6 @@ pub async fn get_cfs_session_logs_stream(
                 .as_bytes(),
             ))))
             .boxed();
-        /* print!(
-            "\rPod for cfs session {} not ready. Trying again in 2 secs. Attempt {} of {}",
-            cfs_session_name,
-            i + 1,
-            max
-        ); */
         i += 1;
         thread::sleep(time::Duration::from_secs(2));
         pods = pods_api.list(&params).await?;

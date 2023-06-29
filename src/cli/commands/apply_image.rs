@@ -133,8 +133,6 @@ pub async fn exec(
         .unwrap()
         .to_string();
 
-    // let watch_logs = cli_apply_image.get_one::<bool>("watch-logs");
-
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
