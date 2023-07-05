@@ -264,7 +264,9 @@ Make sure a github workflow is created in `.github/workflows/release.yml`
 
 #### Deployment
 
-Cargo dist patch --execute
+```
+cargo dist patch --execute
+```
 
 If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
 
