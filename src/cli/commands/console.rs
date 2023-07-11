@@ -18,6 +18,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
     xnames: Vec<&str>,
@@ -40,6 +41,7 @@ pub async fn exec(
         // included.iter().next().unwrap(),
         &xnames.first().unwrap().to_string(),
         vault_base_url,
+        vault_secret_path,
         vault_role_id,
         k8s_api_url,
     )
@@ -50,13 +52,14 @@ pub async fn exec(
 pub async fn connect_to_console(
     xname: &String,
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
     let mut attached =
-        get_container_attachment(xname, vault_base_url, vault_role_id, k8s_api_url).await;
+        get_container_attachment(xname, vault_base_url, vault_secret_path, vault_role_id, k8s_api_url).await;
 
     println!(
         "Connected to {}{}{}!",

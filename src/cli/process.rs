@@ -12,6 +12,7 @@ pub async fn process_cli(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     gitea_token: &str,
     gitea_base_url: &str,
@@ -131,6 +132,7 @@ pub async fn process_cli(
                 gitea_token,
                 gitea_base_url,
                 vault_base_url,
+                vault_secret_path,
                 vault_role_id,
                 shasta_token,
                 shasta_base_url,
@@ -163,6 +165,7 @@ pub async fn process_cli(
 
             apply_image::exec(
                 vault_base_url,
+                vault_secret_path,
                 vault_role_id,
                 cli_apply_image.get_one("file").unwrap(),
                 shasta_token,
@@ -182,6 +185,7 @@ pub async fn process_cli(
             };
             apply_cluster::exec(
                 vault_base_url,
+                vault_secret_path,
                 vault_role_id,
                 // cli_apply_cluster,
                 shasta_token,
@@ -277,6 +281,7 @@ pub async fn process_cli(
             shasta_token,
             shasta_base_url,
             vault_base_url,
+            vault_secret_path,
             vault_role_id,
             k8s_api_url,
             None,
@@ -292,6 +297,7 @@ pub async fn process_cli(
             shasta_token,
             shasta_base_url,
             vault_base_url,
+            vault_secret_path,
             vault_role_id,
             k8s_api_url,
             cli_console

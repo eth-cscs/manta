@@ -10,6 +10,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
     cluster_name: Option<&String>,
@@ -46,7 +47,7 @@ pub async fn exec(
 
     let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
 
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
@@ -64,6 +65,7 @@ pub async fn exec(
 
 pub async fn session_logs(
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     cfs_session_name: &str,
     layer_id: Option<&u8>,
@@ -72,7 +74,7 @@ pub async fn session_logs(
     Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
     Box<dyn Error + Sync + Send>,
 > {
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_role_id).await;
+    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await

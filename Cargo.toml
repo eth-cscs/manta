@@ -15,7 +15,7 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.6.21"
+mesa = "0.7.0"
 reqwest = { version = "0.11", features = ["blocking", "json", "rustls-tls", "socks"] }
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0"

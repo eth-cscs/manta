@@ -65,14 +65,19 @@ pub mod http_client {
 
     pub async fn fetch_shasta_vcs_token(
         vault_base_url: &str,
+        vault_secret_path: &str,
         vault_role_id: &str,
     ) -> Result<String, Box<dyn Error>> {
         let vault_token_resp = auth(vault_base_url, vault_role_id).await;
 
         match vault_token_resp {
             Ok(vault_token) => {
-                let vault_secret =
-                    fetch_secret(&vault_token, vault_base_url, "/v1/shasta/vcs").await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
+                let vault_secret = fetch_secret(
+                    &vault_token,
+                    vault_base_url,
+                    &format!("/v1/{}/vcs", vault_secret_path),
+                )
+                .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
                 Ok(String::from(vault_secret["token"].as_str().unwrap())) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
             }
             Err(e) => {
@@ -82,14 +87,22 @@ pub mod http_client {
         }
     }
 
-    pub async fn fetch_shasta_k8s_secrets(vault_base_url: &str, vault_role_id: &str) -> Value {
+    pub async fn fetch_shasta_k8s_secrets(
+        vault_base_url: &str,
+        vault_secret_path: &str,
+        vault_role_id: &str,
+    ) -> Value {
         let vault_token_resp = auth(vault_base_url, vault_role_id).await;
 
         match vault_token_resp {
             Ok(vault_token) => {
-                let vault_secret = fetch_secret(&vault_token, vault_base_url, "/v1/shasta/k8s")
-                    .await
-                    .unwrap(); // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/k8s
+                let vault_secret = fetch_secret(
+                    &vault_token,
+                    vault_base_url,
+                    &format!("/v1/{}/k8s", vault_secret_path),
+                )
+                .await
+                .unwrap(); // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/k8s
 
                 serde_json::from_str::<Value>(vault_secret["value"].as_str().unwrap()).unwrap()
                 // this works for vault v1.12.0 for older versions may need vault_secret["data"]["value"]

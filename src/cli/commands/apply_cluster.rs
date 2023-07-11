@@ -11,6 +11,7 @@ use super::apply_image;
 
 pub async fn exec(
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     // cli_apply_image: &ArgMatches,
     shasta_token: &str,
@@ -40,6 +41,7 @@ pub async fn exec(
     // Create CFS configuration and image
     let (_, cfs_session_name) = apply_image::exec(
         vault_base_url,
+        vault_secret_path,
         vault_role_id,
         // cli_apply_image,
         path_file,

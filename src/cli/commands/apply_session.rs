@@ -16,6 +16,7 @@ pub async fn exec(
     gitea_token: &str,
     gitea_base_url: &str,
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     // cli_apply_session: &ArgMatches,
     shasta_token: &str,
@@ -142,6 +143,7 @@ pub async fn exec(
         log::info!("Fetching logs ...");
         cli::commands::log::session_logs(
             vault_base_url,
+            vault_secret_path,
             vault_role_id,
             cfs_session_name.as_str(),
             None,

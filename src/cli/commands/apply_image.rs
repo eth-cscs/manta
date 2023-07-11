@@ -12,6 +12,7 @@ use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
 /// Return a tuple (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
     vault_base_url: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
     // cli_apply_image: &ArgMatches,
     path_file: &PathBuf,
@@ -145,6 +146,7 @@ pub async fn exec(
 
         let mut logs_stream = cli::commands::log::session_logs(
             vault_base_url,
+            vault_secret_path,
             vault_role_id,
             &cfs_session.name,
             None,
