@@ -47,6 +47,8 @@ pub mod http_client {
 
         let api_url = vault_base_url.to_owned() + secret_path;
 
+        log::debug!("Vault url to fetch VCS secrets is '{}'", api_url);
+
         let resp = client
             .get(api_url)
             // .get(format!("{}{}", vault_base_url, secret_path))
@@ -59,6 +61,7 @@ pub mod http_client {
             Ok(resp_text["data"].clone()) // TODO: investigate why this ugly clone in here
         } else {
             let resp_text: Value = serde_json::from_str(&resp.text().await?)?;
+            log::error!("ERROR fetching vault secrets:\n{:#?}", resp_text);
             Err(resp_text["errors"][0].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
         }
     }

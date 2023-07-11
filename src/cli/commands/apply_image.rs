@@ -31,6 +31,16 @@ pub async fn exec(
     // Get CFS configurations from SAT YAML file
     let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
 
+    /* if configurations_yaml.is_empty() {
+        eprintln!("The input file has no configurations!");
+        std::process::exit(-1);
+    }
+
+    if configurations_yaml.len() > 1 {
+        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
+        std::process::exit(-1);
+    } */
+
     // Get CFS images from SAT YAML file
     let image_list_yaml = sat_file_yaml["images"].as_sequence();
 
