@@ -47,6 +47,8 @@ pub mod http_client {
 
         let api_url = vault_base_url.to_owned() + secret_path;
 
+        log::debug!("api_url to fetch secrets: {}", api_url);
+
         let resp = client
             .get(api_url)
             // .get(format!("{}{}", vault_base_url, secret_path))
