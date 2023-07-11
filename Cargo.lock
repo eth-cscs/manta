@@ -1905,7 +1905,7 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
  "base64 0.13.1",
  "cargo-dist",
