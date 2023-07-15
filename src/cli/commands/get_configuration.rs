@@ -3,6 +3,7 @@ use mesa::{shasta::cfs, manta};
 use crate::common::gitea;
 
 pub async fn exec(
+    gitea_base_url: &str,
     gitea_token: &str,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -33,6 +34,7 @@ pub async fn exec(
             let gitea_commit_details = gitea::http_client::get_commit_details(
                 layer["cloneUrl"].as_str().unwrap(),
                 layer["commit"].as_str().unwrap(),
+                gitea_base_url,
                 gitea_token,
             )
             .await

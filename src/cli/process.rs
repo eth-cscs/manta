@@ -28,6 +28,7 @@ pub async fn process_cli(
                 Some(hsm_group_val) => Some(hsm_group_val),
             }; */
             get_configuration::exec(
+                gitea_base_url,
                 gitea_token,
                 shasta_token,
                 shasta_base_url,

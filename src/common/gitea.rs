@@ -8,19 +8,21 @@ pub mod http_client {
     pub async fn get_commit_details(
         repo_url: &str,
         commitid: &str,
+        gitea_base_url: &str,
         gitea_token: &str,
     ) -> core::result::Result<Value, Box<dyn std::error::Error>> {
         let gitea_internal_base_url = "https://api-gw-service-nmn.local/vcs/";
-        let gitea_external_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
+        // let gitea_external_base_url = "https://api.cmn.alps.cscs.ch/vcs/";
 
-        let gitea_api_base_url = gitea_external_base_url.to_owned() + "api/v1";
+        // let gitea_api_base_url = gitea_external_base_url.to_owned() + "api/v1";
+        let gitea_api_base_url = format!("{}/api/v1", gitea_base_url);
 
         let repo_name = repo_url
             .trim_start_matches(gitea_internal_base_url)
             .trim_end_matches(".git");
-        let repo_name = repo_name
+        /* let repo_name = repo_name
             .trim_start_matches(gitea_external_base_url)
-            .trim_end_matches(".git");
+            .trim_end_matches(".git"); */
 
         log::info!("repo_url: {}", repo_url);
         log::info!("gitea_base_url: {}", gitea_internal_base_url);
