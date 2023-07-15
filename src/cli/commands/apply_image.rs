@@ -31,9 +31,9 @@ pub async fn exec(
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     // Get CFS configurations from SAT YAML file
-    let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
+    let configurations_yaml = sat_file_yaml["configurations"].as_sequence();
 
-    if configurations_yaml.is_empty() {
+    /* if configurations_yaml.is_empty() {
         eprintln!("The input file has no configurations!");
         std::process::exit(-1);
     }
@@ -41,7 +41,7 @@ pub async fn exec(
     if configurations_yaml.len() > 1 {
         eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
         std::process::exit(-1);
-    }
+    } */
 
     // Get CFS images from SAT YAML file
     let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
@@ -73,38 +73,43 @@ pub async fn exec(
     // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
     // let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-    let configuration_yaml = &configurations_yaml[0];
+    if configurations_yaml.is_some() {
+        let empty_vec = &Vec::new();
+        let configuration_yaml_list = configurations_yaml.unwrap_or(empty_vec);
 
-    cfs_configuration =
-        configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
+        for configuration_yaml in configuration_yaml_list {
+            cfs_configuration =
+                configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
 
-    // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
+            // Rename configuration name
+            cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
 
-    log::debug!(
-        "CFS configuration creation payload:\n{:#?}",
-        cfs_configuration
-    );
+            log::debug!(
+                "CFS configuration creation payload:\n{:#?}",
+                cfs_configuration
+            );
 
-    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
-        shasta_token,
-        shasta_base_url,
-        &cfs_configuration,
-        &cfs_configuration.name,
-    )
-    .await;
+            let create_cfs_configuration_resp = cfs::configuration::http_client::put(
+                shasta_token,
+                shasta_base_url,
+                &cfs_configuration,
+                &cfs_configuration.name,
+            )
+            .await;
 
-    log::debug!(
-        "CFS configuration creation response:\n{:#?}",
-        create_cfs_configuration_resp
-    );
+            log::debug!(
+                "CFS configuration creation response:\n{:#?}",
+                create_cfs_configuration_resp
+            );
 
-    if create_cfs_configuration_resp.is_err() {
-        eprintln!("CFS configuration creation failed");
-        std::process::exit(1);
+            if create_cfs_configuration_resp.is_err() {
+                eprintln!("CFS configuration creation failed");
+                std::process::exit(1);
+            }
+
+            println!("CFS configuration created: {}", cfs_configuration.name);
+        }
     }
-
-    println!("CFS configuration created: {}", cfs_configuration.name);
 
     let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
 
@@ -112,7 +117,7 @@ pub async fn exec(
     cfs_session.name = cfs_session.name.replace("__DATE__", tag);
 
     // Rename session configuration name
-    cfs_session.configuration_name = cfs_configuration.name.clone();
+    // cfs_session.configuration_name = cfs_configuration.name.clone();
 
     log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
@@ -126,6 +131,7 @@ pub async fn exec(
 
     if create_cfs_session_resp.is_err() {
         eprintln!("CFS session creation failed");
+        eprintln!("Reason:\n{:#?}", create_cfs_session_resp);
         std::process::exit(1);
     }
 
@@ -169,5 +175,5 @@ pub async fn exec(
             .unwrap();
     } */
 
-    (cfs_configuration.name, cfs_session_name)
+    (cfs_session.configuration_name, cfs_session_name)
 }
