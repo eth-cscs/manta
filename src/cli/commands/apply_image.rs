@@ -31,21 +31,7 @@ pub async fn exec(
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     // Get CFS configurations from SAT YAML file
-<<<<<<< Updated upstream
-    let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
-=======
     let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
->>>>>>> Stashed changes
-
-    if configurations_yaml.is_empty() {
-        eprintln!("The input file has no configurations!");
-        std::process::exit(-1);
-    }
-
-    if configurations_yaml.len() > 1 {
-        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
-        std::process::exit(-1);
-    }
 
     // Get CFS images from SAT YAML file
     let image_list_yaml = sat_file_yaml["images"].as_sequence();
@@ -78,86 +64,6 @@ pub async fn exec(
     // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
     // let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-<<<<<<< Updated upstream
-    let configuration_yaml = &configurations_yaml[0];
-
-    cfs_configuration =
-        configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
-
-    // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
-
-    log::debug!(
-        "CFS configuration creation payload:\n{:#?}",
-        cfs_configuration
-    );
-
-    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
-        shasta_token,
-        shasta_base_url,
-        &cfs_configuration,
-        &cfs_configuration.name,
-    )
-    .await;
-
-    log::debug!(
-        "CFS configuration creation response:\n{:#?}",
-        create_cfs_configuration_resp
-    );
-
-    if create_cfs_configuration_resp.is_err() {
-        eprintln!("CFS configuration creation failed");
-        std::process::exit(1);
-    }
-
-    println!("CFS configuration created: {}", cfs_configuration.name);
-
-    let mut cfs_session = CfsSession::from_sat_file_serde_yaml(&images_yaml[0]);
-
-    // Rename session name
-    cfs_session.name = cfs_session.name.replace("__DATE__", tag);
-
-    // Rename session configuration name
-    cfs_session.configuration_name = cfs_configuration.name.clone();
-
-    log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
-
-    let create_cfs_session_resp =
-        cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session).await;
-
-    log::debug!(
-        "CFS session creation response:\n{:#?}",
-        create_cfs_session_resp
-    );
-
-    if create_cfs_session_resp.is_err() {
-        eprintln!("CFS session creation failed");
-        std::process::exit(1);
-    }
-
-    let cfs_session_name = create_cfs_session_resp.unwrap()["name"]
-        .as_str()
-        .unwrap()
-        .to_string();
-
-    // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
-
-    println!("CFS session created: {}", cfs_session_name);
-
-    if let Some(true) = watch_logs {
-        log::info!("Fetching logs ...");
-
-        let mut logs_stream = cli::commands::log::session_logs(
-            vault_base_url,
-            vault_secret_path,
-            vault_role_id,
-            &cfs_session.name,
-            None,
-            k8s_api_url,
-=======
     let empty_vec = &Vec::new();
     let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
 
@@ -182,7 +88,6 @@ pub async fn exec(
             shasta_base_url,
             &cfs_configuration,
             &cfs_configuration.name,
->>>>>>> Stashed changes
         )
         .await;
 
@@ -249,9 +154,6 @@ pub async fn exec(
             .await
             .unwrap();
 
-<<<<<<< Updated upstream
-    (cfs_configuration.name, cfs_session_name)
-=======
             while let Some(line) = logs_stream.try_next().await.unwrap() {
                 print!("{}", std::str::from_utf8(&line).unwrap());
             }
@@ -259,5 +161,4 @@ pub async fn exec(
     }
 
     (cfs_configuration_name_list, cfs_session_name_list)
->>>>>>> Stashed changes
 }

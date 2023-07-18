@@ -32,13 +32,9 @@ pub async fn exec(
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-<<<<<<< Updated upstream
     let bos_session_templates_yaml = sat_file_yaml["session_templates"].as_sequence().unwrap();
 
     if bos_session_templates_yaml.is_empty() {
-=======
-    /* if bos_session_templates_yaml.is_empty() {
->>>>>>> Stashed changes
         eprintln!("The input file has no configurations!");
         std::process::exit(-1);
     }
