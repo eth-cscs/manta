@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use futures_util::TryStreamExt;
-use mesa::shasta::cfs::{self, configuration, session::CfsSession};
+use mesa::shasta::cfs::{self, configuration::{self, CfsConfiguration}, session::CfsSession};
 use serde_yaml::Value;
 
 use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
@@ -23,7 +23,7 @@ pub async fn exec(
     tag: &str,
     hsm_group_config: Option<&String>,
     k8s_api_url: &str,
-) -> (String, String) {
+) -> (Vec::<CfsConfiguration>, Vec::<CfsSession>) {
     let mut cfs_configuration;
 
     // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
@@ -31,7 +31,11 @@ pub async fn exec(
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     // Get CFS configurations from SAT YAML file
+<<<<<<< Updated upstream
     let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
+=======
+    let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
+>>>>>>> Stashed changes
 
     if configurations_yaml.is_empty() {
         eprintln!("The input file has no configurations!");
@@ -44,11 +48,12 @@ pub async fn exec(
     }
 
     // Get CFS images from SAT YAML file
-    let images_yaml = sat_file_yaml["images"].as_sequence().unwrap();
+    let image_list_yaml = sat_file_yaml["images"].as_sequence();
 
     // Check HSM groups in images section matches the HSM group in Manta configuration file
     if let Some(hsm_group_config_value) = hsm_group_config {
-        let hsm_group_images: Vec<String> = images_yaml
+        println!("image_list_yaml:\n{:#?}", image_list_yaml);
+        /* let hsm_group_images: Vec<String> = image_list_yaml
             .iter()
             .flat_map(|image_yaml| {
                 image_yaml["configuration_group_names"]
@@ -66,13 +71,14 @@ pub async fn exec(
         if !hsm_group_images.contains(hsm_group_config_value) {
             eprintln!("HSM group in configuration does not match with the one in SAT file images.configuration_group_names values");
             std::process::exit(1);
-        }
+        } */
     }
 
     // Used to uniquely identify cfs configuration name and cfs session name. This process follows
     // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
     // let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
+<<<<<<< Updated upstream
     let configuration_yaml = &configurations_yaml[0];
 
     cfs_configuration =
@@ -151,23 +157,107 @@ pub async fn exec(
             &cfs_session.name,
             None,
             k8s_api_url,
-        )
-        .await
-        .unwrap();
+=======
+    let empty_vec = &Vec::new();
+    let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
 
-        while let Some(line) = logs_stream.try_next().await.unwrap() {
-            print!("{}", std::str::from_utf8(&line).unwrap());
+    let mut cfs_configuration_name_list = Vec::new();
+
+    let mut cfs_session_name_list = Vec::new();
+
+    for configuration_yaml in configuration_yaml_list {
+        cfs_configuration =
+            configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
+
+        // Rename configuration name
+        cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
+
+        log::debug!(
+            "CFS configuration creation payload:\n{:#?}",
+            cfs_configuration
+        );
+
+        let create_cfs_configuration_resp = cfs::configuration::http_client::put(
+            shasta_token,
+            shasta_base_url,
+            &cfs_configuration,
+            &cfs_configuration.name,
+>>>>>>> Stashed changes
+        )
+        .await;
+
+        log::debug!(
+            "CFS configuration creation response:\n{:#?}",
+            create_cfs_configuration_resp
+        );
+
+        if create_cfs_configuration_resp.is_err() {
+            eprintln!("CFS configuration creation failed");
+            std::process::exit(1);
+        }
+
+        cfs_configuration_name_list.push(cfs_configuration.clone());
+
+        println!("CFS configuration created: {}", cfs_configuration.name);
+    }
+
+    for image_yaml in image_list_yaml.unwrap_or(empty_vec) {
+        let mut cfs_session = CfsSession::from_sat_file_serde_yaml(image_yaml);
+
+        // Rename session name
+        cfs_session.name = cfs_session.name.replace("__DATE__", tag);
+
+        // Rename session configuration name
+        // cfs_session.configuration_name = cfs_configuration.name.clone();
+
+        log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
+
+        let create_cfs_session_resp =
+            cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session).await;
+
+        log::debug!(
+            "CFS session creation response:\n{:#?}",
+            create_cfs_session_resp
+        );
+
+        if create_cfs_session_resp.is_err() {
+            eprintln!("CFS session creation failed");
+            eprintln!("Reason:\n{:#?}", create_cfs_session_resp);
+            std::process::exit(1);
+        }
+
+        cfs_session_name_list.push(cfs_session.clone());
+
+        println!("CFS session created: {}", cfs_session.name);
+
+        // Audit to file
+        let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
+
+        if let Some(true) = watch_logs {
+            log::info!("Fetching logs ...");
+
+            let mut logs_stream = cli::commands::log::session_logs(
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                &cfs_session.name,
+                None,
+                k8s_api_url,
+            )
+            .await
+            .unwrap();
+
+<<<<<<< Updated upstream
+    (cfs_configuration.name, cfs_session_name)
+=======
+            while let Some(line) = logs_stream.try_next().await.unwrap() {
+                print!("{}", std::str::from_utf8(&line).unwrap());
+            }
         }
     }
 
-    // let watch_logs = cli_apply_image.get_one::<bool>("watch-logs");
-
-    /* if let Some(true) = watch_logs {
-        log::info!("Fetching logs ...");
-        crate::cli::commands::log::session_logs(vault_base_url, &cfs_session.name, None)
-            .await
-            .unwrap();
-    } */
-
-    (cfs_configuration.name, cfs_session_name)
+    (cfs_configuration_name_list, cfs_session_name_list)
+>>>>>>> Stashed changes
 }
