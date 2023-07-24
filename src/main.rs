@@ -31,14 +31,27 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let mut path_to_manta_configuration_file = PathBuf::from(project_dirs.unwrap().config_dir());
 
-    path_to_manta_configuration_file.push("config"); // ~/.config/manta/config is the file
+    path_to_manta_configuration_file.push("config.toml"); // ~/.config/manta/config is the file
 
     log::info!(
         "Reading manta configuration from {}",
         &path_to_manta_configuration_file.to_string_lossy()
     );
 
-    let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
+    // let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
+    let settings = ::config::Config::builder()
+        .add_source(::config::File::from(PathBuf::from(
+            path_to_manta_configuration_file,
+        )))
+        .add_source(
+            ::config::Environment::with_prefix("MANTA")
+                .try_parsing(true)
+                .prefix_separator("_"),
+        )
+        .build()
+        .unwrap();
+
+    println!("setting:\n{:#?}", settings);
 
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     let vault_base_url = settings.get::<String>("vault_base_url").unwrap();
