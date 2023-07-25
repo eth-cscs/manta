@@ -51,8 +51,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .build()
         .unwrap();
 
-    println!("setting:\n{:#?}", settings);
-
     let shasta_base_url = settings.get::<String>("shasta_base_url").unwrap();
     let vault_base_url = settings.get::<String>("vault_base_url").unwrap();
     let vault_role_id = settings.get::<String>("vault_role_id").unwrap();
