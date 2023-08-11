@@ -232,7 +232,8 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             .num_args(1)
             // .require_equals(true)
             .default_value("2")
-            .default_missing_value("2"));
+            .default_missing_value("2"))
+        .arg(arg!(-p --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs."));
 
     apply_session = match hsm_group {
         Some(_) => {

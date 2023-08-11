@@ -1972,9 +1972,9 @@ dependencies = [
 
 [[package]]
 name = "mesa"
-version = "0.6.25"
+version = "0.6.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0734250d2d75a0bc7f89ca4604000e78d92da44da2e23662b1a8b6d0e14095b"
+checksum = "50f80a57173177843317021cf22428d62b24a2a352416730b08dd98cf2368e10"
 dependencies = [
  "base64 0.13.1",
  "clap",

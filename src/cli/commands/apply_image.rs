@@ -14,11 +14,9 @@ pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
-    // cli_apply_image: &ArgMatches,
     path_file: &PathBuf,
     shasta_token: &str,
     shasta_base_url: &str,
-    // base_image_id: &str,
     watch_logs: Option<&bool>,
     tag: &str,
     hsm_group_config: Option<&String>,
@@ -39,25 +37,6 @@ pub async fn exec(
     // Check HSM groups in images section matches the HSM group in Manta configuration file
     if let Some(hsm_group_config_value) = hsm_group_config {
         println!("image_list_yaml:\n{:#?}", image_list_yaml);
-        /* let hsm_group_images: Vec<String> = image_list_yaml
-            .iter()
-            .flat_map(|image_yaml| {
-                image_yaml["configuration_group_names"]
-                    .as_sequence()
-                    .unwrap()
-                    .iter()
-                    .map(|configuration_group_name| {
-                        configuration_group_name
-                            .as_str()
-                            .unwrap_or_default()
-                            .to_string()
-                    })
-            })
-            .collect();
-        if !hsm_group_images.contains(hsm_group_config_value) {
-            eprintln!("HSM group in configuration does not match with the one in SAT file images.configuration_group_names values");
-            std::process::exit(1);
-        } */
     }
 
     // Used to uniquely identify cfs configuration name and cfs session name. This process follows
