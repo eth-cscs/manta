@@ -123,7 +123,7 @@ pub async fn validate_xnames(
     /* println!("hsm_group_members:\n{:#?}", hsm_group_members);
     println!("xnames:\n{:#?}", xnames); */
 
-    let xname_re = Regex::new(r"^x\d{4}c\ds\db\dn\d$").unwrap();
+    let xname_re = Regex::new(r"^x\d{4}c[0-7]s[0-64]b[0-1]n[0-7]$").unwrap();
 
     if xnames.iter().any(|xname| {
         !xname_re.is_match(xname)
