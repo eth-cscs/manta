@@ -1,3 +1,4 @@
 /target
 /.vscode
 /sat-file
+Cargo.lock
