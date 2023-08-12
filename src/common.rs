@@ -1,4 +1,5 @@
 pub mod cluster_ops;
+pub mod ims_ops;
 pub mod gitea;
 pub mod jwt_ops;
 pub mod local_git_repo;

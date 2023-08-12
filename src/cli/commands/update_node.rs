@@ -1,14 +1,21 @@
-use crate::common::node_ops;
+use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
 
+use clap::ArgMatches;
 use mesa::shasta::{bos, capmc, cfs, ims};
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     hsm_group_name: &String,
+    cli_update_hsm: &ArgMatches,
     xnames: Vec<&str>,
-    cfs_configuration_name: Option<&String>,
 ) {
+    // Get configuration name
+    let cfs_configuration_name = cli_update_hsm
+        .get_one::<String>("CFS_CONFIG")
+        .unwrap()
+        .to_string();
+
     // Check user has provided valid XNAMES
     if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, Some(hsm_group_name))
         .await
@@ -17,7 +24,7 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Get all CFS session ended successfully
+    /* // Get all CFS session ended successfully
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -57,10 +64,17 @@ pub async fn exec(
         .first()
         .unwrap()["result_id"]
         .as_str()
-        .unwrap();
+        .unwrap(); */
+
+    let image_id = get_image_id_from_cfs_configuration_name(
+        shasta_token,
+        shasta_base_url,
+        cfs_configuration_name.clone(),
+    )
+    .await;
 
     let image_details =
-        ims::image::http_client::get(shasta_token, shasta_base_url, result_id).await;
+        ims::image::http_client::get(shasta_token, shasta_base_url, &image_id).await;
 
     log::info!("image_details:\n{:#?}", image_details);
 
@@ -83,11 +97,11 @@ pub async fn exec(
 
     // Create BOS sessiontemplate
 
-    let bos_session_template_name = cfs_configuration_name;
+    let bos_session_template_name = cfs_configuration_name.clone();
 
     let create_bos_session_template_payload = bos::template::BosTemplate::new_for_node_list(
-        cfs_configuration_name.unwrap().to_string(),
-        bos_session_template_name.unwrap().to_string(),
+        cfs_configuration_name,
+        bos_session_template_name,
         ims_image_name,
         ims_image_path,
         ims_image_type,

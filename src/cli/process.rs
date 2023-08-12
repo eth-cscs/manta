@@ -262,13 +262,13 @@ pub async fn process_cli(
                 shasta_token,
                 shasta_base_url,
                 hsm_group_name.unwrap(),
+                cli_update_node,
                 cli_update_node
                     .get_one::<String>("XNAMES")
                     .unwrap()
                     .split(',')
                     .map(|xname| xname.trim())
                     .collect(),
-                cli_update_node.get_one::<String>("CFS_CONFIG"),
             )
             .await;
         } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
