@@ -1,7 +1,10 @@
 use clap::ArgMatches;
 
-use mesa::shasta::{bos, capmc, cfs, hsm, ims};
+use mesa::shasta::{bos, capmc, hsm, ims};
 
+use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
+
+/// Updates boot params and dessired configuration for all nodes that belongs to a HSM group
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -12,13 +15,14 @@ pub async fn exec(
         None => cli_update_hsm.get_one("HSM_GROUP").unwrap(),
         Some(hsm_group_value) => hsm_group_value,
     };
+
     // Get configuration name
     let cfs_configuration_name = cli_update_hsm
         .get_one::<String>("CFS_CONFIG")
         .unwrap()
         .to_string();
 
-    // Get most recent CFS session target image for the node
+    /* // Get most recent CFS session target image for the node
     let mut cfs_sessions_details = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -33,27 +37,39 @@ pub async fn exec(
     cfs_sessions_details.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
             && cfs_session_details["configuration"]["name"].eq(&cfs_configuration_name)
-    });
+    }); */
 
-    if cfs_sessions_details.is_empty() {
+    // Get nodes members of HSM group
+    // Get HSM group details
+    let hsm_group_details =
+        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name).await;
+
+    log::debug!("HSM group response:\n{:#?}", hsm_group_details);
+
+    // Get list of xnames in HSM group
+    let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|node| node.as_str().unwrap().to_string())
+        .collect();
+
+    let image_id = get_image_id_from_cfs_configuration_name(
+        shasta_token,
+        shasta_base_url,
+        cfs_configuration_name.clone(),
+    )
+    .await;
+
+    if image_id.is_empty() {
         eprintln!(
             "No CFS session target image found for the CFS configuration name provided. Exit"
         );
         std::process::exit(1);
     }
 
-    log::info!("cfs_sessions_details:\n{:#?}", cfs_sessions_details);
-
-    let result_id = cfs_sessions_details.first().unwrap()["status"]["artifacts"]
-        .as_array()
-        .unwrap()
-        .first()
-        .unwrap()["result_id"]
-        .as_str()
-        .unwrap();
-
     let image_details =
-        ims::image::http_client::get(shasta_token, shasta_base_url, result_id).await;
+        ims::image::http_client::get(shasta_token, shasta_base_url, &image_id).await;
 
     log::info!("image_details:\n{:#?}", image_details);
 
@@ -115,23 +131,7 @@ pub async fn exec(
         create_bos_session_template_resp.unwrap()
     );
 
-    // Create BOS session. Note: reboot operation shuts down the nodes and don't bring them back
-    // up... hence we will split the reboot into 2 operations shutdown and start
-
-    // Get nodes members of HSM group
-    // Get HSM group details
-    let hsm_group_details =
-        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name).await;
-
-    log::debug!("HSM group response:\n{:#?}", hsm_group_details);
-
-    // Get list of xnames in HSM group
-    let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|node| node.as_str().unwrap().to_string())
-        .collect();
+    log::info!("Rebooting nodes {:?}", nodes);
 
     // Create CAPMC operation shutdown
     let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
@@ -168,3 +168,92 @@ pub async fn exec(
         std::process::exit(1);
     }
 }
+
+/* // TODO: move to mesa
+/// Finds image ID linked to a CFS configuration. It supports when image ID recreated or
+/// overwritten by SAT command
+pub async fn get_image_id_from_cfs_configuration_name(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    cfs_configuration_name: String,
+) -> String {
+    let bos_sessiontemplate_list = mesa::shasta::bos::template::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+
+    let bos_sessiontemplate = bos_sessiontemplate_list
+        .iter()
+        .find(|bos_session_template| {
+            bos_session_template
+                .pointer("/cfs/configuration")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .eq(&cfs_configuration_name)
+        });
+
+    log::debug!("BOS sessiontemplate details:\n{:#?}", bos_sessiontemplate);
+
+    let mut image_id_from_bos_sessiontemplate = "".to_string();
+
+    if bos_sessiontemplate.is_some() {
+        for (_boot_sets_param, boot_sets_value) in bos_sessiontemplate.unwrap()["boot_sets"]
+            .as_object()
+            .unwrap()
+        {
+            if boot_sets_value.get("path").is_some() {
+                image_id_from_bos_sessiontemplate = boot_sets_value["path"]
+                    .as_str()
+                    .unwrap()
+                    .trim_start_matches("s3://boot-images/")
+                    .trim_end_matches("/manifest.json")
+                    .to_string();
+                break;
+            }
+        }
+    } else {
+        // Get most recent CFS session target image for the node
+        let mut cfs_sessions_details = cfs::session::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            None,
+            None,
+            None,
+            Some(true),
+        )
+        .await
+        .unwrap();
+
+        cfs_sessions_details.retain(|cfs_session_details| {
+            cfs_session_details["target"]["definition"].eq("image")
+                && cfs_session_details["configuration"]["name"].eq(&cfs_configuration_name)
+        });
+
+        let cfs_session = cfs_sessions_details.first().unwrap().clone();
+
+        log::debug!("CFS session details:\n{:#?}", cfs_session);
+
+        let cfs_session_status_artifacts_result_id = if !cfs_session["status"]["artifacts"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+        {
+            cfs_session["status"]["artifacts"][0]["result_id"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        } else {
+            "".to_string()
+        };
+
+        image_id_from_bos_sessiontemplate = cfs_session_status_artifacts_result_id;
+    }
+
+    image_id_from_bos_sessiontemplate.to_string()
+} */
