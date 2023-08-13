@@ -1,6 +1,7 @@
 use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
 
 use clap::ArgMatches;
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::shasta::{bos, capmc, ims};
 
 pub async fn exec(
@@ -10,6 +11,19 @@ pub async fn exec(
     cli_update_hsm: &ArgMatches,
     xnames: Vec<&str>,
 ) {
+    if Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!("This operation will reboot nodes {:?}. Do you want to continue?", xnames))
+        .interact()
+        .unwrap()
+    {
+        log::info!(
+            "Continue",
+        );
+    } else {
+        println!("Cancelled by user. Aborting.");
+        std::process::exit(0);
+    }
+
     // Get boot-image configuration name
     let boot_image_cfs_configuration_name = cli_update_hsm
         .get_one::<String>("boot-image")
@@ -24,8 +38,7 @@ pub async fn exec(
 
     // Check user has provided valid XNAMES
     if hsm_group_name.is_some() {
-        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name)
-            .await
+        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await
         {
             eprintln!("xname/s invalid. Exit");
             std::process::exit(1);
@@ -113,40 +126,38 @@ pub async fn exec(
 
     let nodes: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
 
-    if let Some(true) = cli_update_hsm.get_one::<bool>("reboot") {
-        // Create CAPMC operation shutdown
-        let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
-            shasta_token,
-            shasta_base_url,
-            nodes.clone(),
-            Some("Update node boot params".to_string()),
-            true,
-        )
-        .await;
+    // Create CAPMC operation shutdown
+    let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
+        shasta_token,
+        shasta_base_url,
+        nodes.clone(),
+        Some("Update node boot params".to_string()),
+        true,
+    )
+    .await;
 
-        log::debug!(
-            "CAPMC shutdown nodes response:\n{:#?}",
-            capmc_shutdown_nodes_resp
-        );
+    log::debug!(
+        "CAPMC shutdown nodes response:\n{:#?}",
+        capmc_shutdown_nodes_resp
+    );
 
-        // Create BOS session operation start
-        let create_bos_boot_session_resp = bos::session::http_client::post(
-            shasta_token,
-            shasta_base_url,
-            &create_bos_session_template_payload.name,
-            "boot",
-            Some(&nodes.join(",")),
-        )
-        .await;
+    // Create BOS session operation start
+    let create_bos_boot_session_resp = bos::session::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        &create_bos_session_template_payload.name,
+        "boot",
+        Some(&nodes.join(",")),
+    )
+    .await;
 
-        log::debug!(
-            "Create BOS boot session response:\n{:#?}",
-            create_bos_boot_session_resp
-        );
+    log::debug!(
+        "Create BOS boot session response:\n{:#?}",
+        create_bos_boot_session_resp
+    );
 
-        if create_bos_boot_session_resp.is_err() {
-            eprintln!("Error creating BOS boot session. Exit");
-            std::process::exit(1);
-        }
+    if create_bos_boot_session_resp.is_err() {
+        eprintln!("Error creating BOS boot session. Exit");
+        std::process::exit(1);
     }
 }

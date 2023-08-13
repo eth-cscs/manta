@@ -1,5 +1,6 @@
 use clap::ArgMatches;
 
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::shasta::{bos, capmc, hsm, ims};
 
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
@@ -16,18 +17,6 @@ pub async fn exec(
         Some(hsm_group_value) => hsm_group_value,
     };
 
-    // Get boot-image configuration name
-    let boot_image_cfs_configuration_name = cli_update_hsm
-        .get_one::<String>("boot-image")
-        .unwrap()
-        .to_string();
-
-    // Get dessired-configuration CFS configurantion name
-    let dessired_configuration_cfs_configuration_name = cli_update_hsm
-        .get_one::<String>("dessired-configuration")
-        .unwrap()
-        .to_string();
-
     // Get nodes members of HSM group
     // Get HSM group details
     let hsm_group_details =
@@ -42,10 +31,37 @@ pub async fn exec(
         .iter()
         .map(|node| node.as_str().unwrap().to_string())
         .collect();
+
+    if Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!(
+            "This operation will reboot all nodes in HSM group {}. Do you want to continue?",
+            hsm_group_name
+        ))
+        .interact()
+        .unwrap()
+    {
+        log::info!("Continue",);
+    } else {
+        println!("Cancelled by user. Aborting.");
+        std::process::exit(0);
+    }
+
+    // Get boot-image configuration name
+    let boot_image_cfs_configuration_name = cli_update_hsm
+        .get_one::<String>("boot-image")
+        .unwrap()
+        .to_string();
+
     log::info!(
         "Looking for image ID related to CFS configuration {}",
         boot_image_cfs_configuration_name
     );
+
+    // Get dessired-configuration CFS configurantion name
+    let dessired_configuration_cfs_configuration_name = cli_update_hsm
+        .get_one::<String>("dessired-configuration")
+        .unwrap()
+        .to_string();
 
     let boot_image_id_opt = Some(
         get_image_id_from_cfs_configuration_name(
@@ -133,43 +149,41 @@ pub async fn exec(
         create_bos_session_template_resp.unwrap()
     );
 
-    if let Some(true) = cli_update_hsm.get_one::<bool>("reboot") {
-        log::info!("Rebooting nodes {:?}", nodes);
-        log::debug!("Rebooting nodes {:?} through CAPMC", nodes);
+    log::info!("Rebooting nodes {:?}", nodes);
+    log::debug!("Rebooting nodes {:?} through CAPMC", nodes);
 
-        // Create CAPMC operation shutdown
-        let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
-            shasta_token,
-            shasta_base_url,
-            nodes.clone(),
-            Some("Update node boot params".to_string()),
-            true,
-        )
-        .await;
+    // Create CAPMC operation shutdown
+    let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
+        shasta_token,
+        shasta_base_url,
+        nodes.clone(),
+        Some("Update node boot params".to_string()),
+        true,
+    )
+    .await;
 
-        log::debug!(
-            "CAPMC shutdown nodes response:\n{:#?}",
-            capmc_shutdown_nodes_resp
-        );
+    log::debug!(
+        "CAPMC shutdown nodes response:\n{:#?}",
+        capmc_shutdown_nodes_resp
+    );
 
-        // Create BOS session operation start
-        let create_bos_boot_session_resp = bos::session::http_client::post(
-            shasta_token,
-            shasta_base_url,
-            &create_bos_session_template_payload.name,
-            "boot",
-            Some(&nodes.join(",")),
-        )
-        .await;
+    // Create BOS session operation start
+    let create_bos_boot_session_resp = bos::session::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        &create_bos_session_template_payload.name,
+        "boot",
+        Some(&nodes.join(",")),
+    )
+    .await;
 
-        log::debug!(
-            "Create BOS boot session response:\n{:#?}",
-            create_bos_boot_session_resp
-        );
+    log::debug!(
+        "Create BOS boot session response:\n{:#?}",
+        create_bos_boot_session_resp
+    );
 
-        if create_bos_boot_session_resp.is_err() {
-            eprintln!("Error creating BOS boot session. Exit");
-            std::process::exit(1);
-        }
+    if create_bos_boot_session_resp.is_err() {
+        eprintln!("Error creating BOS boot session. Exit");
+        std::process::exit(1);
     }
 }
