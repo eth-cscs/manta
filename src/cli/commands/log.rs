@@ -19,7 +19,7 @@ pub async fn exec(
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions = cfs::session::http_client::get(
+    let cfs_sessions_resp = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         cluster_name,
@@ -30,7 +30,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    if cfs_sessions.is_empty() {
+    if cfs_sessions_resp.is_empty() {
         println!("No CFS session found");
         std::process::exit(0);
     }
@@ -41,11 +41,11 @@ pub async fn exec(
         shasta_base_url,
         hsm_group_config,
         session_name,
-        &cfs_sessions,
+        &cfs_sessions_resp,
     )
     .await;
 
-    let cfs_session_name: &str = cfs_sessions.last().unwrap()["name"].as_str().unwrap();
+    let cfs_session_name: &str = cfs_sessions_resp.last().unwrap()["name"].as_str().unwrap();
 
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
