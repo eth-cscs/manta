@@ -261,7 +261,7 @@ pub async fn process_cli(
             update_node::exec(
                 shasta_token,
                 shasta_base_url,
-                hsm_group_name.unwrap(),
+                hsm_group_name,
                 cli_update_node,
                 cli_update_node
                     .get_one::<String>("XNAMES")

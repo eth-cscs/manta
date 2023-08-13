@@ -133,7 +133,7 @@ pub async fn exec(
         create_bos_session_template_resp.unwrap()
     );
 
-    if cli_update_hsm.get_one::<bool>("reboot").is_some() {
+    if let Some(true) = cli_update_hsm.get_one::<bool>("reboot") {
         log::info!("Rebooting nodes {:?}", nodes);
         log::debug!("Rebooting nodes {:?} through CAPMC", nodes);
 
