@@ -6,7 +6,7 @@ use mesa::shasta::{bos, capmc, ims};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    hsm_group_name: &String,
+    hsm_group_name: Option<&String>,
     cli_update_hsm: &ArgMatches,
     xnames: Vec<&str>,
 ) {
@@ -23,11 +23,13 @@ pub async fn exec(
         .to_string();
 
     // Check user has provided valid XNAMES
-    if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, Some(hsm_group_name))
-        .await
-    {
-        eprintln!("xname/s invalid. Exit");
-        std::process::exit(1);
+    if hsm_group_name.is_some() {
+        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name)
+            .await
+        {
+            eprintln!("xname/s invalid. Exit");
+            std::process::exit(1);
+        }
     }
 
     let image_id = get_image_id_from_cfs_configuration_name(
@@ -101,7 +103,7 @@ pub async fn exec(
         create_bos_session_template_resp
     );
 
-    println!(
+    log::info!(
         "BOS sessiontemplate created: {}",
         create_bos_session_template_resp.unwrap()
     );
@@ -111,7 +113,7 @@ pub async fn exec(
 
     let nodes: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
 
-    if cli_update_hsm.get_one::<bool>("reboot").is_some() {
+    if let Some(true) = cli_update_hsm.get_one::<bool>("reboot") {
         // Create CAPMC operation shutdown
         let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
             shasta_token,
