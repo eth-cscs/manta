@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 pub fn build_cli(hsm_group: Option<&String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
+        .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
         .subcommand(subcommand_get(hsm_group))
@@ -362,44 +363,57 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
-    let mut update_node = Command::new("nodes")
+    let mut update_nodes = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Search for the most recent successful CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames provided");
+        .about("Updates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --dessired-configuration <dessired cfs configuration name>")
+        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes").required(true))
+        .arg(arg!(-d --"dessired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting").required(true))
+        .arg(arg!(-r --reboot "Reboots the nodes after updating the boot/configuration configuration").action(ArgAction::SetTrue));
 
-    update_node = match hsm_group {
-        Some(_) => update_node,
-        None => update_node.arg(arg!(<HSM_GROUP> "hsm group name").required(true)),
+    update_nodes = update_nodes
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
+
+    /* update_nodes = update_nodes
+        .arg(arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")); */
+
+    update_nodes = match hsm_group {
+        Some(_) => update_nodes,
+        None => update_nodes.arg(arg!([HSM_GROUP] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP")),
     };
 
-    update_node = update_node
-        .arg(
-            arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated")
+    /* update_nodes = update_nodes.groups([
+        ArgGroup::new("update-node-boot_or_update-node-dessired-configuration")
+            .args(["boot", "dessired-configuration"]),
+        ArgGroup::new("update-node-args").args(["XNAMES", "CFS_CONFIG"]),
+    ]); */
+
+    /* update_node = update_node
+        .group(
+            ArgGroup::new("boot_and_config")
+                .args(["boot-image", "configuration"])
                 .required(true),
         )
-        .arg(
-            arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")
-                .required(true),
-        );
+        .group(ArgGroup::new("config").args(["CFS_CONFIG"]));
 
-    update_node
+    update_node = update_node.group(ArgGroup::new("boot-config_or_config").args(["boot_and_config", "config"])); */
+
+    update_nodes
 }
 
 pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Search for the provided CFS session and assigns its image as a boot param and it's CFS configuration as BOS sessiontemplate for BOA to all the xnames linked to the HSM group provided");
+        .about("Updates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --dessired-configuration <dessired cfs configuration name>")
+        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes").required(true))
+        .arg(arg!(-d --"dessired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting").required(true))
+        .arg(arg!(-r --reboot "Reboots the nodes").action(ArgAction::SetTrue));
 
     update_hsm_group = match hsm_group {
         Some(_) => update_hsm_group,
         None => update_hsm_group.arg(arg!(<HSM_GROUP> "HSM group name").required(true)),
     };
-
-    update_hsm_group = update_hsm_group.arg(
-        arg!([CFS_CONFIG] "CFS configuration name used to boot and configure the nodes")
-            .required(true),
-    );
 
     update_hsm_group
 }

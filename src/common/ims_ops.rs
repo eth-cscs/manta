@@ -29,17 +29,16 @@ pub async fn get_image_id_from_cfs_configuration_name(
                 .eq(&cfs_configuration_name)
         });
 
-    log::debug!("BOS sessiontemplate details:\n{:#?}", bos_sessiontemplate);
-
-    let mut image_id_from_bos_sessiontemplate = "".to_string();
+    let mut image_id_related_to_cfs_configuration = "".to_string();
 
     if bos_sessiontemplate.is_some() {
+        log::debug!("BOS sessiontemplate details:\n{:#?}", bos_sessiontemplate);
         for (_boot_sets_param, boot_sets_value) in bos_sessiontemplate.unwrap()["boot_sets"]
             .as_object()
             .unwrap()
         {
             if boot_sets_value.get("path").is_some() {
-                image_id_from_bos_sessiontemplate = boot_sets_value["path"]
+                image_id_related_to_cfs_configuration = boot_sets_value["path"]
                     .as_str()
                     .unwrap()
                     .trim_start_matches("s3://boot-images/")
@@ -83,8 +82,14 @@ pub async fn get_image_id_from_cfs_configuration_name(
             "".to_string()
         };
 
-        image_id_from_bos_sessiontemplate = cfs_session_status_artifacts_result_id;
+        image_id_related_to_cfs_configuration = cfs_session_status_artifacts_result_id;
     }
 
-    image_id_from_bos_sessiontemplate.to_string()
+    log::info!(
+        "Image ID related to CFS configuration {} is {}",
+        cfs_configuration_name,
+        image_id_related_to_cfs_configuration
+    );
+
+    image_id_related_to_cfs_configuration.to_string()
 }

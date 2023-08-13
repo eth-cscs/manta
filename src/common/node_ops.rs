@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use comfy_table::{Cell, Table};
-use mesa::{shasta::hsm, manta::get_nodes_status::NodeDetails};
+use mesa::{manta::get_nodes_status::NodeDetails, shasta::hsm};
 use regex::Regex;
 use serde_json::Value;
 
@@ -103,13 +103,9 @@ pub async fn validate_xnames(
     hsm_group_name: Option<&String>,
 ) -> bool {
     let hsm_group_members: Vec<_> = if hsm_group_name.is_some() {
-        hsm::http_client::get_hsm_group(
-            shasta_token,
-            shasta_base_url,
-            hsm_group_name.unwrap(),
-        )
-        .await
-        .unwrap()["members"]["ids"]
+        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name.unwrap())
+            .await
+            .unwrap()["members"]["ids"]
             .as_array()
             .unwrap()
             .to_vec()
@@ -120,10 +116,7 @@ pub async fn validate_xnames(
         Vec::new()
     };
 
-    /* println!("hsm_group_members:\n{:#?}", hsm_group_members);
-    println!("xnames:\n{:#?}", xnames); */
-
-    let xname_re = Regex::new(r"^x\d{4}c[0-7]s[0-64]b[0-1]n[0-7]$").unwrap();
+    let xname_re = Regex::new(r"^x\d{4}c[0-7]s([0-9]|[1-5][0-9]|6[0-4])b[0-1]n[0-7]$").unwrap();
 
     if xnames.iter().any(|xname| {
         !xname_re.is_match(xname)
