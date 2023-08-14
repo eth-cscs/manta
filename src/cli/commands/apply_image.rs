@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use futures_util::TryStreamExt;
-use mesa::shasta::cfs::{self, configuration::{self, CfsConfiguration}, session::CfsSession};
+use mesa::shasta::cfs::{
+    self,
+    configuration::{self, CfsConfiguration},
+    session::CfsSession,
+};
 use serde_yaml::Value;
 
 use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
@@ -21,7 +25,7 @@ pub async fn exec(
     tag: &str,
     hsm_group_config: Option<&String>,
     k8s_api_url: &str,
-) -> (Vec::<CfsConfiguration>, Vec::<CfsSession>) {
+) -> (Vec<CfsConfiguration>, Vec<CfsSession>) {
     let mut cfs_configuration;
 
     // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
@@ -31,23 +35,8 @@ pub async fn exec(
     // Get CFS configurations from SAT YAML file
     let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
 
-    /* if configurations_yaml.is_empty() {
-        eprintln!("The input file has no configurations!");
-        std::process::exit(-1);
-    }
-
-    if configurations_yaml.len() > 1 {
-        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
-        std::process::exit(-1);
-    } */
-
     // Get CFS images from SAT YAML file
     let image_list_yaml = sat_file_yaml["images"].as_sequence();
-
-    // Check HSM groups in images section matches the HSM group in Manta configuration file
-    if let Some(hsm_group_config_value) = hsm_group_config {
-        println!("image_list_yaml:\n{:#?}", image_list_yaml);
-    }
 
     // Used to uniquely identify cfs configuration name and cfs session name. This process follows
     // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
@@ -96,13 +85,14 @@ pub async fn exec(
     }
 
     for image_yaml in image_list_yaml.unwrap_or(empty_vec) {
+
         let mut cfs_session = CfsSession::from_sat_file_serde_yaml(image_yaml);
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", tag);
 
         // Rename session configuration name
-        // cfs_session.configuration_name = cfs_configuration.name.clone();
+        cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
