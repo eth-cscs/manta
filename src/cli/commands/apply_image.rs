@@ -85,8 +85,35 @@ pub async fn exec(
     }
 
     for image_yaml in image_list_yaml.unwrap_or(empty_vec) {
-
         let mut cfs_session = CfsSession::from_sat_file_serde_yaml(image_yaml);
+
+        if let Some(hsm_group) = hsm_group_config {
+            let sat_file_imagen_groups = cfs_session.clone().target.groups.unwrap_or(Vec::new());
+
+            if sat_file_imagen_groups
+                .iter()
+                .all(|group| {
+                    group.name.contains(hsm_group)
+                        || group.name.eq_ignore_ascii_case("Application")
+                        || group.name.eq_ignore_ascii_case("Application_UAN")
+                        || group.name.eq_ignore_ascii_case("Compute")
+                })
+            {
+                log::info!(
+                    "Images groups {:?} validated against HSM group {}",
+                    sat_file_imagen_groups,
+                    hsm_group
+                );
+            } else {
+                eprintln!(
+                    "Images groups {:?} NOT validated against HSM group {}",
+                    sat_file_imagen_groups,
+                    hsm_group
+                );
+
+                std::process::exit(1);
+            }
+        }
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", tag);

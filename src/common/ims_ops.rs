@@ -57,7 +57,10 @@ pub async fn get_image_id_from_cfs_configuration_name(
                 )
                 .await;
 
-                log::debug!("Image details:\n{:#?}", image_details_rslt);
+                log::debug!(
+                    "Image related to BOS sessiontemplate details:\n{:#?}",
+                    image_details_rslt
+                );
 
                 if let Ok(image_details) = image_details_rslt {
                     image_detail_list.push(image_details);
@@ -67,7 +70,7 @@ pub async fn get_image_id_from_cfs_configuration_name(
     }
 
     // Get most recent CFS session target image for the node
-    let mut cfs_sessions_details = cfs::session::http_client::get(
+    let mut cfs_sessions_details_resp = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         None,
@@ -78,44 +81,51 @@ pub async fn get_image_id_from_cfs_configuration_name(
     .await
     .unwrap();
 
-    cfs_sessions_details.retain(|cfs_session_details| {
+    log::debug!(
+        "CFS session details resp:\n{:#?}",
+        cfs_sessions_details_resp
+    );
+
+    cfs_sessions_details_resp.retain(|cfs_session_details| {
         cfs_session_details["target"]["definition"].eq("image")
             && cfs_session_details["configuration"]["name"].eq(&cfs_configuration_name)
     });
 
-    let cfs_session = cfs_sessions_details.first().unwrap().clone();
+    if !cfs_sessions_details_resp.is_empty() {
+        let cfs_session = cfs_sessions_details_resp.first().unwrap();
 
-    log::debug!("CFS session details:\n{:#?}", cfs_session);
+        log::debug!("CFS session details:\n{:#?}", cfs_session);
 
-    let cfs_session_status_artifacts_result_id = if !cfs_session["status"]["artifacts"]
-        .as_array()
-        .unwrap()
-        .is_empty()
-    {
-        cfs_session["status"]["artifacts"][0]["result_id"]
-            .as_str()
+        let cfs_session_status_artifacts_result_id = if !cfs_session["status"]["artifacts"]
+            .as_array()
             .unwrap()
-            .to_string()
-    } else {
-        "".to_string()
-    };
+            .is_empty()
+        {
+            cfs_session["status"]["artifacts"][0]["result_id"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        } else {
+            "".to_string()
+        };
 
-    log::info!(
-        "Get image details for ID {}",
-        cfs_session_status_artifacts_result_id
-    );
+        log::info!(
+            "Get image details for ID {}",
+            cfs_session_status_artifacts_result_id
+        );
 
-    let image_details_rslt = ims::image::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        Some(&cfs_session_status_artifacts_result_id),
-    )
-    .await;
+        let image_details_rslt = ims::image::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            Some(&cfs_session_status_artifacts_result_id),
+        )
+        .await;
 
-    log::debug!("Image details:\n{:#?}", image_details_rslt);
+        log::debug!("Image details:\n{:#?}", image_details_rslt);
 
-    if let Ok(image_details) = image_details_rslt {
-        image_detail_list.push(image_details);
+        if let Ok(image_details) = image_details_rslt {
+            image_detail_list.push(image_details);
+        }
     }
 
     log::debug!("List of images:\n{:#?}", image_detail_list);
