@@ -10,7 +10,7 @@ use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
 
-use crate::common::node_ops;
+use mesa::common::node_ops;
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -21,25 +21,23 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    xnames: Vec<&str>,
+    xname: &str,
 ) {
-
     if hsm_group.is_some() {
-
         // Check user has provided valid XNAMES
-        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group).await {
+        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &[xname], hsm_group).await {
             eprintln!("xname/s invalid. Exit");
             std::process::exit(1);
         }
-
     } else {
         // no hsm_group value provided
         // included = xnames.clone();
+        node_ops::validate_xname_format(xname);
     }
 
     connect_to_console(
         // included.iter().next().unwrap(),
-        &xnames.first().unwrap().to_string(),
+        &xname.to_string(),
         vault_base_url,
         vault_secret_path,
         vault_role_id,
@@ -58,8 +56,14 @@ pub async fn connect_to_console(
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let mut attached =
-        get_container_attachment(xname, vault_base_url, vault_secret_path, vault_role_id, k8s_api_url).await;
+    let mut attached = get_container_attachment(
+        xname,
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+        k8s_api_url,
+    )
+    .await;
 
     println!(
         "Connected to {}{}{}!",
@@ -124,5 +128,4 @@ pub async fn connect_to_console(
             )
             .await?;
     }
-
 }

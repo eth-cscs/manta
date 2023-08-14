@@ -53,7 +53,7 @@ pub async fn exec(
     .await;
 
     let image_details_resp =
-        ims::image::http_client::get(shasta_token, shasta_base_url, &image_id).await;
+        ims::image::http_client::get(shasta_token, shasta_base_url, Some(&image_id)).await;
 
     log::debug!("image_details:\n{:#?}", image_details_resp);
 

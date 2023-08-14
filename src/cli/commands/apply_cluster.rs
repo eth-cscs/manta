@@ -169,7 +169,7 @@ pub async fn exec(
         let image_details = image::http_client::get(
             shasta_token,
             shasta_base_url,
-            &cfs_session_detail.unwrap()["name"].as_str().unwrap(),
+            Some(&cfs_session_detail.unwrap()["name"].as_str().unwrap()),
         )
         .await;
 
