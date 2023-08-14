@@ -305,9 +305,7 @@ pub async fn process_cli(
             vault_secret_path,
             vault_role_id,
             k8s_api_url,
-            cli_console
-                .get_one::<String>("XNAME")
-                .unwrap()
+            cli_console.get_one::<String>("XNAME").unwrap(),
         )
         .await;
     }
