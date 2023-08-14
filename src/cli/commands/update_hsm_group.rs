@@ -74,7 +74,7 @@ pub async fn exec(
 
     let image_details = if let Some(boot_image_id) = boot_image_id_opt {
         if let Ok(image_details) =
-            ims::image::http_client::get(shasta_token, shasta_base_url, &boot_image_id).await
+            ims::image::http_client::get(shasta_token, shasta_base_url, Some(&boot_image_id)).await
         {
             Some(image_details)
         } else {

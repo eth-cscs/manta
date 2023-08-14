@@ -308,9 +308,6 @@ pub async fn process_cli(
             cli_console
                 .get_one::<String>("XNAME")
                 .unwrap()
-                .split(',')
-                .map(|xname| xname.trim())
-                .collect(),
         )
         .await;
     }
