@@ -2,7 +2,13 @@ use mesa::shasta::{cfs, ims};
 
 // TODO: move to mesa
 /// Finds image ID linked to a CFS configuration. It supports when image ID recreated or
-/// overwritten by SAT command
+/// overwritten by SAT command.
+/// 1. Find most recent CFS session related to CFS configuration and get its resutl_id
+/// 2. Find image
+/// 2a. If image does not exists, assume image was renamed by a SAT process and fallback to BOS
+/// sessiontemplates
+/// 3. Find most recent BOS sessiontemplate related to CFS configuration
+/// 4. Extract iamge ID from boot_set.path in BOS sessiontemplate
 pub async fn get_image_id_from_cfs_configuration_name(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -63,7 +69,7 @@ pub async fn get_image_id_from_cfs_configuration_name(
                 .await;
 
                 log::debug!(
-                    "Image related to BOS sessiontemplate details:\n{:#?}",
+                    "Image details related to BOS sessiontemplate details:\n{:#?}",
                     image_details_rslt
                 );
 
@@ -128,7 +134,7 @@ pub async fn get_image_id_from_cfs_configuration_name(
         )
         .await;
 
-        log::debug!("Image details:\n{:#?}", image_details_rslt);
+        log::debug!("Image details related to CFS session:\n{:#?}", image_details_rslt);
 
         if let Ok(image_details) = image_details_rslt {
             image_detail_list.push(image_details);
