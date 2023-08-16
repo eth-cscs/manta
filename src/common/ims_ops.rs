@@ -8,6 +8,11 @@ pub async fn get_image_id_from_cfs_configuration_name(
     shasta_base_url: &str,
     cfs_configuration_name: String,
 ) -> String {
+    log::info!(
+        "Find images related to BOS sessiontemplate related to configuration {}",
+        cfs_configuration_name
+    );
+
     let bos_sessiontemplate_list_resp = mesa::shasta::bos::template::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -69,13 +74,15 @@ pub async fn get_image_id_from_cfs_configuration_name(
         }
     }
 
+    log::info!("Find images related to most recent CFS session");
+
     // Get most recent CFS session target image for the node
     let mut cfs_sessions_details_resp = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
         None,
         None,
-        Some(&1),
+        None,
         Some(true),
     )
     .await
