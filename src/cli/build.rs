@@ -366,24 +366,29 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_nodes = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --dessired-configuration <dessired cfs configuration name>")
-        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes").required(true))
-        .arg(arg!(-d --"dessired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting").required(true));
+        .about("Updates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
+        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
+        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
 
     update_nodes = update_nodes
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
 
     /* update_nodes = update_nodes
-        .arg(arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")); */
+    .arg(arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")); */
 
     update_nodes = match hsm_group {
         Some(_) => update_nodes,
         None => update_nodes.arg(arg!([HSM_GROUP] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP")),
     };
 
+    /* update_nodes = update_nodes.group(
+        ArgGroup::new("boot-image_or_desired-configuration")
+            .args(["boot-image", "desired-configuration"]),
+    ); */
+
     /* update_nodes = update_nodes.groups([
-        ArgGroup::new("update-node-boot_or_update-node-dessired-configuration")
-            .args(["boot", "dessired-configuration"]),
+        ArgGroup::new("update-node-boot_or_update-node-desired-configuration")
+            .args(["boot", "desired-configuration"]),
         ArgGroup::new("update-node-args").args(["XNAMES", "CFS_CONFIG"]),
     ]); */
 
@@ -404,9 +409,9 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --dessired-configuration <dessired cfs configuration name>")
+        .about("Updates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes").required(true))
-        .arg(arg!(-d --"dessired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting").required(true));
+        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting").required(true));
 
     update_hsm_group = match hsm_group {
         Some(_) => update_hsm_group,
