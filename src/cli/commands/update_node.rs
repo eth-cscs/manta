@@ -23,7 +23,7 @@ pub async fn exec(
         )
         .await
     {
-        log::info!("CFS configuration resp:\n{:#?}", desired_configuration_detail_list);
+        log::debug!("CFS configuration resp:\n{:#?}", desired_configuration_detail_list);
 
         desired_configuration_detail_list.first().unwrap()["name"]
             .as_str()
