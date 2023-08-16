@@ -12,6 +12,9 @@ pub async fn exec(
     cli_update_hsm: &ArgMatches,
     hsm_group: Option<&String>,
 ) {
+    // Get boot image configuration
+    let boot_image_configuration_opt = cli_update_hsm.get_one::<String>("boot-image");
+
     // Check desired configuration exists
     let desired_configuration_opt = cli_update_hsm.get_one::<String>("desired-configuration");
 
@@ -24,7 +27,10 @@ pub async fn exec(
         )
         .await
     {
-        log::debug!("CFS configuration resp:\n{:#?}", desired_configuration_detail_list);
+        log::debug!(
+            "CFS configuration resp:\n{:#?}",
+            desired_configuration_detail_list
+        );
 
         desired_configuration_detail_list.first().unwrap()["name"]
             .as_str()
@@ -58,6 +64,7 @@ pub async fn exec(
         .map(|node| node.as_str().unwrap().to_string())
         .collect();
 
+    // if boot_image_configuration_opt.is_some() {
     if Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt(format!(
             "This operation will reboot all nodes in HSM group {}. Do you want to continue?",
@@ -71,6 +78,7 @@ pub async fn exec(
         println!("Cancelled by user. Aborting.");
         std::process::exit(0);
     }
+    // }
 
     /* // Get boot-image configuration name
     let boot_image_cfs_configuration_name = cli_update_hsm
@@ -135,8 +143,7 @@ pub async fn exec(
         .to_string(); */
 
     // Process boot parameters
-    if let Some(boot_image_cfs_configuration_name) = cli_update_hsm.get_one::<String>("boot-image")
-    {
+    if let Some(boot_image_cfs_configuration_name) = boot_image_configuration_opt {
         let image_id = get_image_id_from_cfs_configuration_name(
             shasta_token,
             shasta_base_url,
@@ -277,15 +284,13 @@ pub async fn exec(
         // Vec<&str> instead of
         // Vec<String>
         &desired_configuration_name,
+        false,
     )
     .await;
     // }
 
-    if cli_update_hsm.get_one::<String>("boot-image").is_some()
-        || cli_update_hsm
-            .get_one::<String>("desired-configuration")
-            .is_some()
-    {
+    // Check if need to reboot
+    if boot_image_configuration_opt.is_some() || desired_configuration_opt.is_some() {
         // Create BOS session. Note: reboot operation shuts down the nodes and don't bring them back
         // up... hence we will split the reboot into 2 operations shutdown and start
 
@@ -293,8 +298,8 @@ pub async fn exec(
         let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
             shasta_token,
             shasta_base_url,
-            nodes,
-            Some("Update node boot params".to_string()),
+            nodes.clone(),
+            Some("Update node boot params and/or desired configuration".to_string()),
             true,
         )
         .await;
@@ -302,6 +307,21 @@ pub async fn exec(
         log::debug!(
             "CAPMC shutdown nodes response:\n{:#?}",
             capmc_shutdown_nodes_resp
+        );
+
+        // Create CAPMC operation to start
+        let capmc_start_nodes_resp = capmc::http_client::node_power_on::post(
+            shasta_token,
+            shasta_base_url,
+            nodes,
+            Some("Update node boot params and/or desired configuration".to_string()),
+            false,
+        )
+        .await;
+
+        log::debug!(
+            "CAPMC starting nodes response:\n{:#?}",
+            capmc_start_nodes_resp
         );
     }
 }
