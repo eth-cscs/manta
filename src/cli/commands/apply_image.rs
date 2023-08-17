@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use futures_util::TryStreamExt;
+use futures::TryStreamExt;
 use mesa::shasta::cfs::{
     self,
     configuration::{self, CfsConfiguration},
@@ -161,7 +161,7 @@ pub async fn exec(
             .unwrap();
 
             while let Some(line) = logs_stream.try_next().await.unwrap() {
-                print!("{}", std::str::from_utf8(&line).unwrap());
+                println!("{}", line);
             }
         }
     }

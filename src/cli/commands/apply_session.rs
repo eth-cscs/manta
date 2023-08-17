@@ -143,7 +143,7 @@ pub async fn exec(
 
     if watch_logs {
         log::info!("Fetching logs ...");
-        cli::commands::log::session_logs(
+        let _ = cli::commands::log::session_logs(
             vault_base_url,
             vault_secret_path,
             vault_role_id,

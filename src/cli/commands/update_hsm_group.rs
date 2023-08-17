@@ -138,7 +138,7 @@ pub async fn exec(
             // for this field so it accepts
             // Vec<&str> instead of
             // Vec<String>
-            &desired_configuration_name,
+            desired_configuration_name,
             !need_restart,
         )
         .await;

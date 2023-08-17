@@ -3,7 +3,7 @@ use std::{
     io::{stdout, Read, Write},
 };
 
-use futures_util::StreamExt;
+use futures::StreamExt;
 
 use mesa::manta::console::get_container_attachment;
 use termion::{color, raw::IntoRawMode};

@@ -155,11 +155,9 @@ pub async fn exec(
             .unwrap_or("")
             .to_string();
 
-        let cfs_session_detail = cfs_session_detail_list
-            .iter()
-            .find(|cfs_session_detail| {
-                cfs_session_detail["name"].eq(&bos_session_template_image_name)
-            });
+        let cfs_session_detail = cfs_session_detail_list.iter().find(|cfs_session_detail| {
+            cfs_session_detail["name"].eq(&bos_session_template_image_name)
+        });
 
         if cfs_session_detail.is_none() {
             eprintln!("ERROR: BOS session template image not found in SAT file image list.");
@@ -169,7 +167,7 @@ pub async fn exec(
         let image_details = image::http_client::get(
             shasta_token,
             shasta_base_url,
-            Some(&cfs_session_detail.unwrap()["name"].as_str().unwrap()),
+            Some(cfs_session_detail.unwrap()["name"].as_str().unwrap()),
         )
         .await;
 
@@ -192,18 +190,18 @@ pub async fn exec(
             .unwrap()
             .to_string();
 
-        let cfs_configuration_yaml = sat_file_yaml["configurations"]
+        /* let cfs_configuration_yaml = sat_file_yaml["configurations"]
             .as_sequence()
             .unwrap()
             .iter()
             .next()
-            .unwrap();
+            .unwrap(); */
 
-        let cfs_configuration_name = cfs_configuration_yaml["name"]
+        /* let cfs_configuration_name = cfs_configuration_yaml["name"]
             .as_str()
             .unwrap()
             .to_string()
-            .replace("__DATE__", &tag);
+            .replace("__DATE__", &tag); */
 
         let bos_session_template_name = bos_session_template_yaml["name"]
             .as_str()

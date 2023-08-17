@@ -1,7 +1,7 @@
 use std::error::Error;
-use std::pin::Pin;
 
-use futures_util::{Stream, TryStreamExt};
+use futures::{AsyncBufReadExt, TryStreamExt, io::Lines};
+
 use mesa::shasta::{cfs, hsm, kubernetes::{self, get_cfs_session_logs_stream}};
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
@@ -59,7 +59,7 @@ pub async fn exec(
         .unwrap();
 
     while let Some(line) = logs_stream.try_next().await.unwrap() {
-        print!("{}", std::str::from_utf8(&line).unwrap());
+        println!("{}", line);
     }
 }
 
@@ -71,7 +71,7 @@ pub async fn session_logs(
     layer_id: Option<&u8>,
     k8s_api_url: &str,
 ) -> Result<
-    Pin<Box<dyn Stream<Item = Result<hyper::body::Bytes, kube::Error>> + std::marker::Send>>,
+    Lines<impl AsyncBufReadExt>,
     Box<dyn Error + Sync + Send>,
 > {
     let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
