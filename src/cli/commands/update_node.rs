@@ -47,12 +47,11 @@ pub async fn exec(
     };
 
     // Check user has provided valid XNAMES
-    if hsm_group_name.is_some() {
-        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await
-        {
-            eprintln!("xname/s invalid. Exit");
-            std::process::exit(1);
-        }
+    if hsm_group_name.is_some()
+        && !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await
+    {
+        eprintln!("xname/s invalid. Exit");
+        std::process::exit(1);
     }
 
     if need_restart {
@@ -119,7 +118,10 @@ pub async fn exec(
     // Update desired configuration
 
     if let Some(desired_configuration_name) = desired_configuration_opt {
-        log::info!("Updating desired configuration. Need restart? {}", need_restart);
+        log::info!(
+            "Updating desired configuration. Need restart? {}",
+            need_restart
+        );
 
         mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
             shasta_token,
@@ -128,7 +130,7 @@ pub async fn exec(
             // for this field so it accepts
             // Vec<&str> instead of
             // Vec<String>
-            &desired_configuration_name,
+            desired_configuration_name,
             !need_restart,
         )
         .await;

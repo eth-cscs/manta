@@ -40,9 +40,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     // let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
     let settings = ::config::Config::builder()
-        .add_source(::config::File::from(PathBuf::from(
-            path_to_manta_configuration_file,
-        )))
+        .add_source(::config::File::from(path_to_manta_configuration_file))
         .add_source(
             ::config::Environment::with_prefix("MANTA")
                 .try_parsing(true)
@@ -87,10 +85,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
 
-    let gitea_token =
-        crate::common::vault::http_client::fetch_shasta_vcs_token(&vault_base_url, &vault_secret_path, &vault_role_id)
-            .await
-            .unwrap();
+    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+        &vault_base_url,
+        &vault_secret_path,
+        &vault_role_id,
+    )
+    .await
+    .unwrap();
 
     // Process input params
     let matches = crate::cli::build::build_cli(hsm_group).get_matches();
