@@ -135,7 +135,7 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
         .about("Get members of a HSM group")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
-        .arg(arg!(-o --output <OUTPUT_FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
     match hsm_group {
         None => {
