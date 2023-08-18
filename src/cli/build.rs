@@ -273,7 +273,8 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
             // .require_equals(true)
             .default_value("2")
             .default_missing_value("2"))
-       .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
+        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
 }
 
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
@@ -289,6 +290,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
             // .require_equals(true)
             .default_value("2")
             .default_missing_value("2"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
 }
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {

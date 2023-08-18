@@ -27,6 +27,7 @@ pub async fn exec(
     hsm_group_param: Option<&String>,
     k8s_api_url: &str,
     tag: String,
+    output_opt: Option<&String>,
 ) {
     // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_file).unwrap();
@@ -56,6 +57,7 @@ pub async fn exec(
         &tag,
         hsm_group_param,
         k8s_api_url,
+        output_opt,
     )
     .await;
 
@@ -191,17 +193,17 @@ pub async fn exec(
             .to_string();
 
         /* let cfs_configuration_yaml = sat_file_yaml["configurations"]
-            .as_sequence()
-            .unwrap()
-            .iter()
-            .next()
-            .unwrap(); */
+        .as_sequence()
+        .unwrap()
+        .iter()
+        .next()
+        .unwrap(); */
 
         /* let cfs_configuration_name = cfs_configuration_yaml["name"]
-            .as_str()
-            .unwrap()
-            .to_string()
-            .replace("__DATE__", &tag); */
+        .as_str()
+        .unwrap()
+        .to_string()
+        .replace("__DATE__", &tag); */
 
         let bos_session_template_name = bos_session_template_yaml["name"]
             .as_str()
