@@ -183,6 +183,7 @@ pub async fn process_cli(
                 &tag,
                 hsm_group,
                 k8s_api_url,
+                cli_apply_image.get_one::<String>("output"),
             )
             .await;
         } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
@@ -203,6 +204,7 @@ pub async fn process_cli(
                 hsm_group,
                 k8s_api_url,
                 tag,
+                cli_apply_cluster.get_one::<String>("output"),
             )
             .await;
         } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

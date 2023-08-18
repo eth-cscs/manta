@@ -8,7 +8,10 @@ use mesa::shasta::cfs::{
 };
 use serde_yaml::Value;
 
-use crate::{cli, common::jwt_ops::get_claims_from_jwt_token};
+use crate::{
+    cli,
+    common::{cfs_session_utils, jwt_ops::get_claims_from_jwt_token},
+};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -25,6 +28,7 @@ pub async fn exec(
     tag: &str,
     hsm_group_config: Option<&String>,
     k8s_api_url: &str,
+    output_opt: Option<&String>,
 ) -> (Vec<CfsConfiguration>, Vec<CfsSession>) {
     let mut cfs_configuration;
 
@@ -84,21 +88,20 @@ pub async fn exec(
         println!("CFS configuration created: {}", cfs_configuration.name);
     }
 
+    let mut cfs_session_resp_list = Vec::new();
+
     for image_yaml in image_list_yaml.unwrap_or(empty_vec) {
         let mut cfs_session = CfsSession::from_sat_file_serde_yaml(image_yaml);
 
         if let Some(hsm_group) = hsm_group_config {
             let sat_file_imagen_groups = cfs_session.clone().target.groups.unwrap_or(Vec::new());
 
-            if sat_file_imagen_groups
-                .iter()
-                .all(|group| {
-                    group.name.contains(hsm_group)
-                        || group.name.eq_ignore_ascii_case("Application")
-                        || group.name.eq_ignore_ascii_case("Application_UAN")
-                        || group.name.eq_ignore_ascii_case("Compute")
-                })
-            {
+            if sat_file_imagen_groups.iter().all(|group| {
+                group.name.contains(hsm_group)
+                    || group.name.eq_ignore_ascii_case("Application")
+                    || group.name.eq_ignore_ascii_case("Application_UAN")
+                    || group.name.eq_ignore_ascii_case("Compute")
+            }) {
                 log::info!(
                     "Images groups {:?} validated against HSM group {}",
                     sat_file_imagen_groups,
@@ -107,8 +110,7 @@ pub async fn exec(
             } else {
                 eprintln!(
                     "Images groups {:?} NOT validated against HSM group {}",
-                    sat_file_imagen_groups,
-                    hsm_group
+                    sat_file_imagen_groups, hsm_group
                 );
 
                 std::process::exit(1);
@@ -137,9 +139,18 @@ pub async fn exec(
             std::process::exit(1);
         }
 
+        cfs_session_resp_list.push(create_cfs_session_resp.unwrap());
+
         cfs_session_name_list.push(cfs_session.clone());
 
-        println!("CFS session created: {}", cfs_session.name);
+        log::info!("CFS session created: {}", cfs_session.name);
+
+        // Print output
+        if output_opt.is_some() && output_opt.unwrap().eq("json") {
+            println!("{}", serde_json::to_string_pretty(&cfs_session_resp_list).unwrap());
+        } else {
+            cfs_session_utils::print_table(&cfs_session_resp_list);
+        }
 
         // Audit to file
         let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
