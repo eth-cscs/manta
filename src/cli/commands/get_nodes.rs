@@ -12,11 +12,10 @@ pub async fn exec(
     hsm_group_name: Option<&String>,
     silent: bool,
     silent_xname: bool,
+    output_opt: Option<&String>,
 ) {
     let hsm_groups_resp =
         hsm::http_client::get_hsm_groups(shasta_token, shasta_base_url, hsm_group_name).await;
-
-    // println!("hsm_groups_resp: {:#?}", hsm_groups_resp);
 
     let hsm_group_list = if hsm_groups_resp.is_err() {
         eprintln!(
@@ -35,8 +34,6 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    // println!("hsm_group_list:\n{:#?}", hsm_group_list);
-
     // Take all nodes for all hsm_groups found and put them in a Vec
     let mut hsm_groups_node_list: Vec<String> =
         hsm::utils::get_members_from_hsm_groups_serde_value(&hsm_group_list)
@@ -49,28 +46,35 @@ pub async fn exec(
         get_nodes_status::exec(shasta_token, shasta_base_url, hsm_groups_node_list).await;
 
     if silent {
-        println!(
-            "{}",
-            node_details_list
-                .iter()
-                // .map(|node_details| node_details[1].clone())
-                .map(|node_details| node_details.nid.clone())
-                .collect::<Vec<String>>()
-                .join(",")
-        );
-    } else if silent_xname {
-        println!(
-            "{}",
-            node_details_list
-                .iter()
-                // .map(|node_details| node_details[0].clone())
-                .map(|node_details| node_details.xname.clone())
-                .collect::<Vec<String>>()
-                .join(",")
-        );
-    } else {
-        // println!("node_details_list:\n{:#?}", node_details_list);
+        let node_nid_list = node_details_list
+            .iter()
+            .map(|node_details| node_details.nid.clone())
+            .collect::<Vec<String>>();
 
-        node_ops::print_table(node_details_list);
+        if output_opt.is_some() && output_opt.unwrap().eq("json") {
+            println!("{}", serde_json::to_string(&node_nid_list).unwrap());
+        } else {
+            println!("{}", node_nid_list.join(","));
+        }
+    } else if silent_xname {
+        let node_xname_list = node_details_list
+            .iter()
+            .map(|node_details| node_details.xname.clone())
+            .collect::<Vec<String>>();
+
+        if output_opt.is_some() && output_opt.unwrap().eq("json") {
+            println!("{}", serde_json::to_string(&node_xname_list).unwrap());
+        } else {
+            println!("{}", node_xname_list.join(","));
+        }
+    } else {
+        if output_opt.is_some() && output_opt.unwrap().eq("json") {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&node_details_list).unwrap()
+            );
+        } else {
+            node_ops::print_table(node_details_list);
+        }
     }
 }

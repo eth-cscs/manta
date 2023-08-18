@@ -92,10 +92,13 @@ pub async fn process_cli(
                 shasta_token,
                 shasta_base_url,
                 hsm_group_name,
-                *cli_get_node.get_one::<bool>("silent").unwrap_or(&false),
                 *cli_get_node
-                    .get_one::<bool>("silent-xname")
+                    .get_one::<bool>("nids-only-one-line")
                     .unwrap_or(&false),
+                *cli_get_node
+                    .get_one::<bool>("xnames-only-one-line")
+                    .unwrap_or(&false),
+                cli_get_node.get_one::<String>("output"),
             )
             .await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {

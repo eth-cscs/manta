@@ -133,8 +133,9 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .about("Get members of a HSM group")
-        .arg(arg!(-s --silent "Be more silent, produces less output by giving a list of nids like nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
-        .arg(arg!(-x --"silent-xname" "Be more silent, produces less output by giving a list of xnames"));
+        .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
+        .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
+        .arg(arg!(-o --output <OUTPUT_FORMAT> "Output format, currently only supports 'json'").value_parser(["json"]));
 
     match hsm_group {
         None => {
