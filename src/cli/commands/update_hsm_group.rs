@@ -85,15 +85,19 @@ pub async fn exec(
 
     // Process boot parameters
     if let Some(boot_image_cfs_configuration_name) = boot_image_configuration_opt {
-        let image_id = get_image_id_from_cfs_configuration_name(
+        let image_id_opt = get_image_id_from_cfs_configuration_name(
             shasta_token,
             shasta_base_url,
             boot_image_cfs_configuration_name.clone(),
         )
         .await;
 
-        let image_details_resp =
-            ims::image::http_client::get(shasta_token, shasta_base_url, Some(&image_id)).await;
+        let image_details_resp = if let Some(image_id) = image_id_opt {
+            ims::image::http_client::get(shasta_token, shasta_base_url, Some(&image_id)).await
+        } else {
+            eprintln!("Image ID related to CFS configuration name {} not found. Exit", boot_image_cfs_configuration_name);
+            std::process::exit(1);
+        };
 
         log::debug!("image_details:\n{:#?}", image_details_resp);
 
