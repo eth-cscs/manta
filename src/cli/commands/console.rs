@@ -5,7 +5,7 @@ use std::{
 
 use futures::StreamExt;
 
-use mesa::manta::console::get_container_attachment;
+use mesa::manta::console;
 use termion::{color, raw::IntoRawMode};
 use tokio::{io::AsyncWriteExt, runtime::Runtime};
 use tokio_util::io::ReaderStream;
@@ -56,7 +56,7 @@ pub async fn connect_to_console(
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let mut attached = get_container_attachment(
+    let mut attached = console::get_container_attachment(
         xname,
         vault_base_url,
         vault_secret_path,

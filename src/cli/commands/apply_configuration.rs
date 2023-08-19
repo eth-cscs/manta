@@ -75,7 +75,7 @@ pub async fn exec(
 
     log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply configuration", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
-    println!("CFS configuration created: {}", cfs_configuration_name);
+    log::info!("CFS configuration created: {}", cfs_configuration_name);
 
     cfs_configuration_name
 }
