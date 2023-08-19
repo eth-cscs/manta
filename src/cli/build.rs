@@ -61,9 +61,9 @@ pub fn subcommand_get_cfs_configuration() -> Command {
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <VALUE> "configuration name"))
-        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
+        .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
         .arg(
-            arg!(-l --limit <VALUE> "number of CFS configurations to show on screen")
+            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
@@ -87,11 +87,12 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
         .aliases(["s", "se", "ses", "sess", "sssn"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <VALUE> "session name"))
-        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
+        .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
         .arg(
-            arg!(-l --limit <VALUE> "number of CFS sessions to show on screen")
+            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS sessions created")
                 .value_parser(value_parser!(u8).range(1..)),
-        );
+        )
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
     match hsm_group {
         None => {
@@ -111,9 +112,9 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
         .aliases(["t", "tplt", "templ", "tmplt"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <VALUE> "template name"))
-        .arg(arg!(-m --"most-recent" "most recent (equivalent to --limit 1)"))
+        .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
         .arg(
-            arg!(-l --limit <VALUE> "number of BOS templates to show on screen")
+            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of BOS templates created")
                 .value_parser(value_parser!(u8).range(1..)),
         );
 

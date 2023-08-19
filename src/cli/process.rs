@@ -65,6 +65,7 @@ pub async fn process_cli(
                 hsm_group_name,
                 session_name,
                 limit_number,
+                cli_get_session.get_one("output")
             )
             .await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
