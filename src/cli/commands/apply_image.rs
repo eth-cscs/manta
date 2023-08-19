@@ -85,7 +85,7 @@ pub async fn exec(
 
         cfs_configuration_name_list.push(cfs_configuration.clone());
 
-        println!("CFS configuration created: {}", cfs_configuration.name);
+        log::info!("CFS configuration created: {}", cfs_configuration.name);
     }
 
     let mut cfs_session_resp_list = Vec::new();
