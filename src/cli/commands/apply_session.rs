@@ -18,7 +18,6 @@ pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
-    // cli_apply_session: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     k8s_api_url: &str,
@@ -77,7 +76,6 @@ pub async fn exec(
         )
         .await;
 
-        //cfs_configuration_name = format!("{}-{}", hsm_group_value.unwrap(), cli_apply_session.get_one::<String>("name").unwrap());
         cfs_configuration_name = cfs_session_name.unwrap();
 
         // Take all nodes for all hsm_groups found and put them in a Vec
@@ -124,11 +122,6 @@ pub async fn exec(
     // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
-        /* cli_apply_session
-        .get_many("repo-path")
-        .unwrap()
-        .cloned()
-        .collect(), */
         repos_paths,
         gitea_token,
         gitea_base_url,

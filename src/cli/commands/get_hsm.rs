@@ -1,12 +1,6 @@
 use crate::common::{cluster_ops, node_ops};
 
-pub async fn exec(
-    // hsm_group: Option<&String>,
-    // cli_get_hsm_groups: &ArgMatches,
-    shasta_token: &str,
-    shasta_base_url: &str,
-    hsm_group_name: &str,
-) {
+pub async fn exec(shasta_token: &str, shasta_base_url: &str, hsm_group_name: &str) {
     let hsm_groups = cluster_ops::get_details(shasta_token, shasta_base_url, hsm_group_name).await;
 
     for hsm_group in hsm_groups {

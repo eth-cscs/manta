@@ -9,15 +9,10 @@ use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    cli_update_hsm: &ArgMatches,
-    hsm_group: Option<&String>,
+    boot_image_configuration_opt: Option<&String>,
+    desired_configuration_opt: Option<&String>,
+    hsm_group_name: &String,
 ) {
-    // Get boot image configuration
-    let boot_image_configuration_opt = cli_update_hsm.get_one::<String>("boot-image");
-
-    // Check desired configuration exists
-    let desired_configuration_opt = cli_update_hsm.get_one::<String>("desired-configuration");
-
     let need_restart = boot_image_configuration_opt.is_some();
 
     // Check desired configuration exists
@@ -45,11 +40,6 @@ pub async fn exec(
             desired_configuration_opt.unwrap()
         );
         std::process::exit(1);
-    };
-
-    let hsm_group_name = match hsm_group {
-        None => cli_update_hsm.get_one("HSM_GROUP").unwrap(),
-        Some(hsm_group_value) => hsm_group_value,
     };
 
     // Get nodes members of HSM group

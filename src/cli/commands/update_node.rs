@@ -1,6 +1,5 @@
 use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
 
-use clap::ArgMatches;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::shasta::{capmc, ims};
 
@@ -8,15 +7,10 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     hsm_group_name: Option<&String>,
-    cli_update_hsm: &ArgMatches,
+    boot_image_configuration_opt: Option<&String>,
+    desired_configuration_opt: Option<&String>,
     xnames: Vec<&str>,
 ) {
-    // Get boot image configuration
-    let boot_image_configuration_opt = cli_update_hsm.get_one::<String>("boot-image");
-
-    // Get desired configuration exists
-    let desired_configuration_opt = cli_update_hsm.get_one::<String>("desired-configuration");
-
     let need_restart = boot_image_configuration_opt.is_some();
 
     // Check desired configuration exists
@@ -82,7 +76,10 @@ pub async fn exec(
         let image_details_resp = if let Some(image_id) = image_id_opt {
             ims::image::http_client::get(shasta_token, shasta_base_url, Some(&image_id)).await
         } else {
-            eprintln!("Image ID related to CFS configuration name {} not found. Exit", boot_image_cfs_configuration_name);
+            eprintln!(
+                "Image ID related to CFS configuration name {} not found. Exit",
+                boot_image_cfs_configuration_name
+            );
             std::process::exit(1);
         };
 
