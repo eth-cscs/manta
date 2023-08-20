@@ -32,7 +32,6 @@ pub async fn exec(
 ) -> (Vec<CfsConfiguration>, Vec<CfsSession>) {
     let mut cfs_configuration;
 
-    // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
@@ -147,7 +146,10 @@ pub async fn exec(
 
         // Print output
         if output_opt.is_some() && output_opt.unwrap().eq("json") {
-            println!("{}", serde_json::to_string_pretty(&cfs_session_resp_list).unwrap());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&cfs_session_resp_list).unwrap()
+            );
         } else {
             cfs_session_utils::print_table(&cfs_session_resp_list);
         }

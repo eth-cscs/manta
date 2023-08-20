@@ -14,7 +14,6 @@ use mesa::common::node_ops;
 
 pub async fn exec(
     hsm_group: Option<&String>,
-    // cli_console: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
@@ -56,7 +55,7 @@ pub async fn connect_to_console(
 ) -> Result<(), Box<dyn Error>> {
     log::info!("xname: {}", xname);
 
-    let mut attached = console::get_container_attachment(
+    let mut attached = console::get_container_attachment_to_conman(
         xname,
         vault_base_url,
         vault_secret_path,

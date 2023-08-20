@@ -1,9 +1,6 @@
 use mesa::shasta::bos;
 
-
 pub async fn exec(
-    // hsm_group: Option<&String>,
-    // cli_get_template: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     hsm_group_name: Option<&String>,
@@ -12,15 +9,6 @@ pub async fn exec(
     limit: Option<&u8>,
 ) {
     let limit_number;
-
-    // let template_name = cli_get_template.get_one::<String>("name");
-
-    /* let hsm_group_name = match hsm_group {
-        None => cli_get_template.get_one::<String>("hsm-group"),
-        Some(hsm_group_val) => Some(hsm_group_val),
-    }; */
-
-    // let most_recent = cli_get_template.get_one::<bool>("most-recent");
 
     if let Some(true) = most_recent {
         limit_number = Some(&1);

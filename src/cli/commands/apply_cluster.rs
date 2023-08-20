@@ -19,40 +19,25 @@ pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
-    // cli_apply_image: &ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     path_file: &PathBuf,
-    // base_image_id: &str,
     hsm_group_param: Option<&String>,
     k8s_api_url: &str,
     tag: String,
     output_opt: Option<&String>,
 ) {
-    // let path_file: &PathBuf = cli_apply_image.get_one("file").unwrap();
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
-
-    /* if bos_session_templates_yaml.is_empty() {
-        eprintln!("The input file has no configurations!");
-        std::process::exit(-1);
-    }
-
-    if bos_session_templates_yaml.len() > 1 {
-        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
-        std::process::exit(-1);
-    } */
 
     // Create CFS configuration and image
     let (_, cfs_session_list) = apply_image::exec(
         vault_base_url,
         vault_secret_path,
         vault_role_id,
-        // cli_apply_image,
         path_file,
         shasta_token,
         shasta_base_url,
-        // base_image_id,
         Some(&false),
         &tag,
         hsm_group_param,

@@ -3,8 +3,8 @@ use k8s_openapi::chrono;
 
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
-    console, get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, log,
-    update_hsm_group, update_node,
+    console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
+    get_nodes, get_session, get_template, log, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -65,7 +65,7 @@ pub async fn process_cli(
                 hsm_group_name,
                 session_name,
                 limit_number,
-                cli_get_session.get_one("output")
+                cli_get_session.get_one("output"),
             )
             .await;
         } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
@@ -86,7 +86,7 @@ pub async fn process_cli(
         } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
             // Check HSM group name provided and configuration file
             let hsm_group_name = match hsm_group {
-                None => cli_get_node.get_one::<String>("HSMGROUP"),
+                None => cli_get_node.get_one::<String>("HSM_GROUP_NAME"),
                 Some(_) => hsm_group,
             };
             get_nodes::exec(
@@ -104,7 +104,9 @@ pub async fn process_cli(
             .await;
         } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
             let hsm_group_name = match hsm_group {
-                None => cli_get_hsm_groups.get_one::<String>("HSMGROUP").unwrap(),
+                None => cli_get_hsm_groups
+                    .get_one::<String>("HSM_GROUP_NAME")
+                    .unwrap(),
                 Some(hsm_group_name_value) => hsm_group_name_value,
             };
             get_hsm::exec(shasta_token, shasta_base_url, hsm_group_name).await;
@@ -260,7 +262,7 @@ pub async fn process_cli(
     } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             let hsm_group_name = if hsm_group.is_none() {
-                cli_update_node.get_one::<String>("HSM_GROUP")
+                cli_update_node.get_one::<String>("HSM_GROUP_NAME")
             } else {
                 hsm_group
             };
@@ -268,7 +270,8 @@ pub async fn process_cli(
                 shasta_token,
                 shasta_base_url,
                 hsm_group_name,
-                cli_update_node,
+                cli_update_node.get_one::<String>("boot-image"),
+                cli_update_node.get_one::<String>("desired-configuration"),
                 cli_update_node
                     .get_one::<String>("XNAMES")
                     .unwrap()
@@ -278,11 +281,17 @@ pub async fn process_cli(
             )
             .await;
         } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
+            let hsm_group_name = if hsm_group.is_none() {
+                cli_update_hsm_group.get_one::<String>("HSM_GROUP_NAME")
+            } else {
+                hsm_group
+            };
             update_hsm_group::exec(
                 shasta_token,
                 shasta_base_url,
-                cli_update_hsm_group,
-                hsm_group,
+                cli_update_hsm_group.get_one::<String>("boot-image"),
+                cli_update_hsm_group.get_one::<String>("desired-configuration"),
+                hsm_group_name.unwrap(),
             )
             .await;
         }
@@ -296,24 +305,54 @@ pub async fn process_cli(
             vault_role_id,
             k8s_api_url,
             None,
-            cli_log.get_one::<String>("SESSION"),
+            cli_log.get_one::<String>("SESSION_NAME"),
             cli_log.get_one::<u8>("layer-id"),
             hsm_group,
         )
         .await;
+    /* } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
+    console_node::exec(
+        hsm_group,
+        // cli_console,
+        shasta_token,
+        shasta_base_url,
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+        k8s_api_url,
+        cli_console.get_one::<String>("XNAME").unwrap(),
+    )
+    .await; */
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-        console::exec(
-            hsm_group,
-            // cli_console,
-            shasta_token,
-            shasta_base_url,
-            vault_base_url,
-            vault_secret_path,
-            vault_role_id,
-            k8s_api_url,
-            cli_console.get_one::<String>("XNAME").unwrap(),
-        )
-        .await;
+        if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
+            console_node::exec(
+                hsm_group,
+                // cli_console,
+                shasta_token,
+                shasta_base_url,
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
+                cli_console_node.get_one::<String>("XNAME").unwrap(),
+            )
+            .await;
+        } else if let Some(cli_console_target_ansible) = cli_console.subcommand_matches("target-ansible") {
+            console_cfs_session_image_target_ansible::exec(
+                hsm_group,
+                // cli_console,
+                shasta_token,
+                shasta_base_url,
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
+                cli_console_target_ansible
+                    .get_one::<String>("SESSION_NAME")
+                    .unwrap(),
+            )
+            .await;
+        }
     }
 
     Ok(())

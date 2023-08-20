@@ -1,5 +1,5 @@
 use crate::common::jwt_ops::get_claims_from_jwt_token;
-use mesa::{shasta::cfs::configuration, shasta::cfs};
+use mesa::{shasta::cfs, shasta::cfs::configuration};
 use serde_yaml::Value;
 use std::path::Path;
 
@@ -9,14 +9,11 @@ use std::path::Path;
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 /// Return CFS configuration name
 pub async fn exec(
-    // cli_apply_configuration: &ArgMatches,
     path_file: &Path,
     shasta_token: &str,
     shasta_base_url: &str,
     timestamp: &str,
 ) -> String {
-    // * Parse input params
-    // let path_file: &PathBuf = cli_apply_configuration.get_one("file").unwrap();
     println!("file config: {:#?}", path_file.file_name());
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
