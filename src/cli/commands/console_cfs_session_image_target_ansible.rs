@@ -1,14 +1,10 @@
-use std::{
-    error::Error,
-    io::{stdout, Read, Write},
-};
-
 use futures::StreamExt;
 
 use mesa::manta::console;
-use termion::{color, raw::IntoRawMode};
-use tokio::{io::AsyncWriteExt, runtime::Runtime};
-use tokio_util::io::ReaderStream;
+use termion::color;
+use tokio::{io::AsyncWriteExt, select};
+
+use crate::common::terminal_ops;
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -20,9 +16,61 @@ pub async fn exec(
     k8s_api_url: &str,
     cfs_session_name: &str,
 ) {
-    ///////////////////////////////////////////
-    // TODO: VALIDATE CFS SESSION NAME BELONGS TO THE HSM GROUP RESTRICTED TO THE USER
-    ///////////////////////////////////////////
+    let cfs_session_details_list_rslt = mesa::shasta::cfs::session::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        hsm_group,
+        Some(&cfs_session_name.to_string()),
+        None,
+        Some(false),
+    )
+    .await;
+    if let Ok(cfs_session_details_list) = cfs_session_details_list_rslt {
+        if cfs_session_details_list.is_empty() {
+            eprintln!("No CFS session found. Exit",);
+            std::process::exit(1);
+        }
+        let cfs_session_details = cfs_session_details_list.first().unwrap();
+        if cfs_session_details
+            .pointer("/target/definition")
+            .unwrap()
+            .ne("image")
+        {
+            eprintln!(
+                "CFS session found {} is type dynamic. Exit",
+                cfs_session_details["name"].as_str().unwrap()
+            );
+            std::process::exit(1);
+        }
+        if cfs_session_details
+            .pointer("/status/session/status")
+            .unwrap()
+            .as_str()
+            .ne(&Some("running"))
+        {
+            eprintln!(
+                "CFS session found {} state is not 'running'. Exit",
+                cfs_session_details["name"].as_str().unwrap()
+            );
+            std::process::exit(1);
+        }
+        if cfs_session_details
+            .pointer("/target/groups")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .into_iter()
+            .any(|group| group["name"].as_str().unwrap().eq(hsm_group.unwrap()))
+        {
+            eprintln!(
+                "CFS session found {} is not targeting HSM group {}",
+                cfs_session_details["name"].as_str().unwrap(),
+                hsm_group.unwrap()
+            );
+            std::process::exit(1);
+        }
+    }
+
     connect_to_console(
         &cfs_session_name.to_string(),
         vault_base_url,
@@ -40,7 +88,7 @@ pub async fn connect_to_console(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), anyhow::Error> {
     log::info!("CFS session name: {}", cfs_session_name);
 
     let mut attached = console::get_container_attachment_to_cfs_session_image_target(
@@ -64,7 +112,65 @@ pub async fn connect_to_console(
         color::Fg(color::Reset)
     );
 
-    let mut stdin_writer = attached.stdin().unwrap();
+    let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
+    let mut stdout = tokio::io::stdout();
+
+    let mut output = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
+    let mut input = attached.stdin().unwrap();
+
+    let term_tx = attached.terminal_size().unwrap();
+
+    let mut handle_terminal_size_handle = tokio::spawn(terminal_ops::handle_terminal_size(term_tx));
+
+    crossterm::terminal::enable_raw_mode()?;
+
+    loop {
+        select! {
+            message = stdin.next() => {
+                match message {
+                    Some(Ok(message)) => {
+                        input.write(&message).await?;
+                    },
+                    Some(Err(message)) => {
+                       input.write(format!("#*#* stdin {:?}", &message).as_bytes()).await?;
+                       break
+                    },
+                    None => {
+                        input.write("stdin None".as_bytes()).await?;
+                        break
+                    },
+                }
+            },
+            message = output.next() => {
+                match message {
+                    Some(Ok(message)) => {
+                        stdout.write(&message).await?;
+                        stdout.flush().await?;
+                    },
+                    Some(Err(message)) => {
+                       input.write(format!("#*#* stdout {:?}", &message).as_bytes()).await?;
+                       break
+                    },
+                    None => {
+                        input.write("stdout None".as_bytes()).await?;
+                        break
+                    },
+                }
+            },
+            result = &mut handle_terminal_size_handle => {
+                match result {
+                    Ok(_) => println!("End of terminal size stream"),
+                    Err(e) => println!("Error getting terminal size: {e:?}")
+                }
+            },
+        };
+    }
+
+    crossterm::terminal::disable_raw_mode()?;
+
+    Ok(())
+
+    /* let mut stdin_writer = attached.stdin().unwrap();
     let mut stdout_stream = ReaderStream::new(attached.stdout().unwrap());
 
     let mut stdin = std::io::stdin();
@@ -114,5 +220,5 @@ pub async fn connect_to_console(
                     .as_bytes(),
             )
             .await?;
-    }
+    } */
 }
