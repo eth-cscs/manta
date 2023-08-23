@@ -5,6 +5,7 @@ pub mod apply_node_off;
 pub mod apply_node_on;
 pub mod apply_node_reset;
 pub mod apply_session;
+pub mod console_base_image_container;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
 pub mod get_configuration;

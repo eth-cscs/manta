@@ -337,7 +337,7 @@ pub async fn process_cli(
                 cli_console_node.get_one::<String>("XNAME").unwrap(),
             )
             .await;
-        } else if let Some(cli_console_target_ansible) = cli_console.subcommand_matches("target-ansible") {
+        } else if let Some(cli_console_target_build_image_container) = cli_console.subcommand_matches("target-build-image-container") {
             console_cfs_session_image_target_ansible::exec(
                 hsm_group,
                 // cli_console,
@@ -347,11 +347,13 @@ pub async fn process_cli(
                 vault_secret_path,
                 vault_role_id,
                 k8s_api_url,
-                cli_console_target_ansible
+                cli_console_target_build_image_container
                     .get_one::<String>("SESSION_NAME")
                     .unwrap(),
             )
             .await;
+        } else if let Some(cli_console_base_image_container) = cli_console.subcommand_matches("base-image-container") {
+            println!("Start container base image and connect!!!");
         }
     }
 

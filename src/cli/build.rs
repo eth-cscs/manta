@@ -59,12 +59,13 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .arg(arg!(<XNAME> "node xname").required(true)),
                 )
                 .subcommand(
-                    Command::new("target-ansible")
-                        .aliases(["t", "ta", "target", "ansible"])
+                    Command::new("target-build-image-container")
+                        .alias("t")
                         .arg_required_else_help(true)
-                        .about("Opens an interactive session to the ansible target container of a CFS session")
+                        .about("Opens an interactive session to the container used to build a cluster image through a CFS session")
                         .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
-                ),
+                )
+                .subcommand(Command::new("base-image-container").alias("b").arg_required_else_help(true).about("Opens an interactive session to a container with Alps base image (w/o any customization)"))
         )
 }
 
