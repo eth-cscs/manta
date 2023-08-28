@@ -182,6 +182,8 @@ pub async fn process_cli(
                 shasta_token,
                 shasta_base_url,
                 // base_image_id,
+                cli_apply_image.get_one::<String>("ansible-verbosity"),
+                cli_apply_image.get_one::<String>("ansible-passthrough"),
                 cli_apply_image.get_one::<bool>("watch-logs"),
                 &tag,
                 hsm_group,
@@ -205,6 +207,8 @@ pub async fn process_cli(
                 cli_apply_cluster.get_one("file").unwrap(),
                 // base_image_id,
                 hsm_group,
+                cli_apply_cluster.get_one::<String>("ansible-verbosity"),
+                cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                 k8s_api_url,
                 tag,
                 cli_apply_cluster.get_one::<String>("output"),
@@ -337,7 +341,9 @@ pub async fn process_cli(
                 cli_console_node.get_one::<String>("XNAME").unwrap(),
             )
             .await;
-        } else if let Some(cli_console_target_ansible) = cli_console.subcommand_matches("target-ansible") {
+        } else if let Some(cli_console_target_ansible) =
+            cli_console.subcommand_matches("target-ansible")
+        {
             console_cfs_session_image_target_ansible::exec(
                 hsm_group,
                 // cli_console,

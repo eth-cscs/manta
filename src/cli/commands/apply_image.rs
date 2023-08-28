@@ -24,6 +24,8 @@ pub async fn exec(
     path_file: &PathBuf,
     shasta_token: &str,
     shasta_base_url: &str,
+    ansible_verbosity: Option<&String>,
+    ansible_passthrough: Option<&String>,
     watch_logs: Option<&bool>,
     tag: &str,
     hsm_group_config: Option<&String>,
@@ -121,6 +123,16 @@ pub async fn exec(
 
         // Rename session configuration name
         cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
+
+        // Set ansible verbosity
+        cfs_session.ansible_verbosity = Some(ansible_verbosity
+            .cloned()
+            .unwrap_or("0".to_string())
+            .parse::<u8>()
+            .unwrap());
+
+        // Set ansible passthrough params
+        cfs_session.ansible_passthrough = ansible_passthrough.cloned();
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
