@@ -32,9 +32,7 @@ pub async fn exec(
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-    let bos_session_templates_yaml = sat_file_yaml["session_templates"].as_sequence().unwrap();
-
-    if bos_session_templates_yaml.is_empty() {
+    /* if bos_session_templates_yaml.is_empty() {
         eprintln!("The input file has no configurations!");
         std::process::exit(-1);
     }
@@ -42,7 +40,7 @@ pub async fn exec(
     if bos_session_templates_yaml.len() > 1 {
         eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
         std::process::exit(-1);
-    }
+    } */
 
     // Create CFS configuration and image
     let (_, cfs_session_list) = apply_image::exec(
