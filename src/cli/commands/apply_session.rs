@@ -25,8 +25,8 @@ pub async fn exec(
     hsm_group: Option<&String>,
     repos_paths: Vec<PathBuf>,
     ansible_limit: Option<String>,
-    ansible_verbosity: String,
-    ansible_passthrough: String,
+    ansible_verbosity: Option<String>,
+    ansible_passthrough: Option<String>,
     watch_logs: bool,
 ) -> (String, String) {
     /* let included: HashSet<String>;
@@ -128,8 +128,8 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         Some(xname_list.into_iter().collect::<Vec<_>>().join(",")), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
-        Some(ansible_verbosity.parse::<u8>().unwrap_or(0)),
-        Some(ansible_passthrough),
+        Some(ansible_verbosity.unwrap_or("3".to_string()).parse::<u8>().unwrap_or(0)),
+        ansible_passthrough,
     )
     .await
     .unwrap();
