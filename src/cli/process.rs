@@ -4,11 +4,11 @@ use k8s_openapi::chrono;
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
     console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
-    get_nodes, get_session, get_template, log, update_hsm_group, update_node,
+    get_nodes, get_session, get_template, log, update_hsm_group, update_node, apply_virt_env,
 };
 
 pub async fn process_cli(
-    cli_root: ArgMatches,
+    cli_apply: ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
@@ -20,7 +20,7 @@ pub async fn process_cli(
     // base_image_id: &str,
     k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-    if let Some(cli_get) = cli_root.subcommand_matches("get") {
+    if let Some(cli_get) = cli_apply.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
             /*        let hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
@@ -118,7 +118,7 @@ pub async fn process_cli(
             };
             get_images::exec(shasta_token, shasta_base_url, hsm_group_name).await;
         }
-    } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
+    } else if let Some(cli_apply) = cli_apply.subcommand_matches("apply") {
         /* if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
             let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
             apply_configuration::exec(
@@ -260,8 +260,15 @@ pub async fn process_cli(
                 )
                 .await;
             }
+        } else if let Some(cli_apply_virtual_environment) = cli_apply.subcommand_matches("virtual-environment") {
+            apply_virt_env::exec(
+                shasta_token,
+                shasta_base_url,
+                cli_apply_virtual_environment.get_one::<String>("image-id").unwrap(),
+            )
+            .await;
         }
-    } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
+    } else if let Some(cli_update) = cli_apply.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             let hsm_group_name = if hsm_group.is_none() {
                 cli_update_node.get_one::<String>("HSM_GROUP_NAME")
@@ -297,7 +304,7 @@ pub async fn process_cli(
             )
             .await;
         }
-    } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
+    } else if let Some(cli_log) = cli_apply.subcommand_matches("log") {
         log::exec(
             // cli_log,
             shasta_token,
@@ -325,7 +332,7 @@ pub async fn process_cli(
         cli_console.get_one::<String>("XNAME").unwrap(),
     )
     .await; */
-    } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
+    } else if let Some(cli_console) = cli_apply.subcommand_matches("console") {
         if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
             console_node::exec(
                 hsm_group,

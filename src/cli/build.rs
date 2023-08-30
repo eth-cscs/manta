@@ -25,7 +25,14 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .subcommand(subcommand_apply_node_off(hsm_group))
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
                 )
-                .subcommand(subcommand_apply_session(hsm_group)),
+                .subcommand(subcommand_apply_session(hsm_group))
+                .subcommand(Command::new("virtual-environment")
+                .aliases(["ve", "venv", "virt"])
+                .arg_required_else_help(true)
+                .about("Returns a hostname use can ssh with the image ID provided")
+                // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
+                .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
+                            ),
         )
         .subcommand(
             Command::new("update")

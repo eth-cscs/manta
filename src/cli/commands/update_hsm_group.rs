@@ -1,5 +1,3 @@
-use clap::ArgMatches;
-
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::shasta::{capmc, hsm, ims};
 
