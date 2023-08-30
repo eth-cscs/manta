@@ -63,6 +63,7 @@ chmod 777 -R /var/log/manta
 
 |Name|mandatory|Type|Description|Example|
 |----|---------|----|-----------|-------|
+|MANTA_CSM_TOKEN|no|env|CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak||
 |log|no|config file|log details/verbosity|off/error/warn/info/debug/trace|
 |socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
 |keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
