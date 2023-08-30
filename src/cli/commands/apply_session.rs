@@ -27,6 +27,7 @@ pub async fn exec(
     repos_paths: Vec<PathBuf>,
     ansible_limit: Option<String>,
     ansible_verbosity: String,
+    ansible_passthrough: String,
     watch_logs: bool,
 ) -> (String, String) {
     /* let included: HashSet<String>;
@@ -133,8 +134,9 @@ pub async fn exec(
         gitea_base_url,
         shasta_token,
         shasta_base_url,
-        xname_list.into_iter().collect::<Vec<_>>().join(","), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
-        ansible_verbosity.parse::<u8>().unwrap_or(0),
+        Some(xname_list.into_iter().collect::<Vec<_>>().join(",")), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
+        Some(ansible_verbosity.parse::<u8>().unwrap_or(0)),
+        Some(ansible_passthrough),
     )
     .await
     .unwrap();
@@ -171,12 +173,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     gitea_base_url: &str,
     shasta_token: &str,
     shasta_base_url: &str,
-    limit: String,
-    ansible_verbosity: u8,
+    limit: Option<String>,
+    ansible_verbosity: Option<u8>,
+    ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
     let cfs_sessions =
-        cfs::session::http_client::get(shasta_token, shasta_base_url, None, None, None, None).await?;
+        cfs::session::http_client::get(shasta_token, shasta_base_url, None, None, None, None)
+            .await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
@@ -201,7 +205,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     // NOTE: nodes can be a list of xnames or hsm group name
 
     // Convert limit (String with list of target nodes for new CFS session) into list of String
-    let nodes_list: Vec<&str> = limit.split(',').map(|node| node.trim()).collect();
+    let limit_value = limit.clone().unwrap_or("".to_string());
+    let nodes_list: Vec<&str> = limit_value.split(',').map(|node| node.trim()).collect();
 
     // Check each node if it has a CFS session already running
     for node in nodes_list {
@@ -214,7 +219,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     }
 
     // Check nodes are ready to run a CFS layer
-    let xnames: Vec<String> = limit
+    let xnames: Vec<String> = limit_value
         .split(',')
         .map(|xname| String::from(xname.trim()))
         .collect();
@@ -228,9 +233,12 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             &xname,
         )
         .await?;
-        let hsm_configuration_state =
-            &mesa::shasta::hsm::http_client::get_component_status(shasta_token, shasta_base_url, &xname).await?
-                ["State"];
+        let hsm_configuration_state = &mesa::shasta::hsm::http_client::get_component_status(
+            shasta_token,
+            shasta_base_url,
+            &xname,
+        )
+        .await?["State"];
         log::info!(
             "HSM component state for component {}: {}",
             xname,
@@ -403,8 +411,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let session = cfs::session::CfsSession::new(
         cfs_session_name,
         cfs_configuration_name,
-        Some(limit),
-        Some(ansible_verbosity),
+        limit,
+        ansible_verbosity,
+        ansible_passthrough,
         false,
         None,
         None,

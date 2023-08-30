@@ -152,6 +152,10 @@ pub async fn process_cli(
                     .get_one::<String>("ansible-verbosity")
                     .unwrap()
                     .to_string(),
+                cli_apply_session
+                    .get_one::<String>("ansible-passthrough")
+                    .unwrap()
+                    .to_string(),
                 *cli_apply_session
                     .get_one::<bool>("watch-logs")
                     .unwrap_or(&false),
