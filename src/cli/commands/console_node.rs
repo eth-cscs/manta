@@ -92,14 +92,14 @@ pub async fn connect_to_console(
             message = stdin.next() => {
                 match message {
                     Some(Ok(message)) => {
-                        input.write(&message).await?;
+                        input.write_all(&message).await?;
                     },
                     Some(Err(message)) => {
-                       input.write(format!("#*#* stdin {:?}", &message).as_bytes()).await?;
+                       input.write_all(format!("#*#* stdin {:?}", &message).as_bytes()).await?;
                        break
                     },
                     None => {
-                        input.write("stdin None".as_bytes()).await?;
+                        input.write_all("stdin None".as_bytes()).await?;
                         break
                     },
                 }
@@ -107,15 +107,15 @@ pub async fn connect_to_console(
             message = output.next() => {
                 match message {
                     Some(Ok(message)) => {
-                        stdout.write(&message).await?;
+                        stdout.write_all(&message).await?;
                         stdout.flush().await?;
                     },
                     Some(Err(message)) => {
-                       input.write(format!("#*#* stdout {:?}", &message).as_bytes()).await?;
+                       input.write_all(format!("#*#* stdout {:?}", &message).as_bytes()).await?;
                        break
                     },
                     None => {
-                        input.write("stdout None".as_bytes()).await?;
+                        input.write_all("stdout None".as_bytes()).await?;
                         break
                     },
                 }
