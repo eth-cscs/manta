@@ -74,6 +74,12 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
                 ),
         )
+        .subcommand(
+            Command::new("delete")
+                .arg_required_else_help(true)
+                .about("Delete all data related to a CFS configuration. This command will look for all data related to a CFS configuration name and delete only if all images related to this CFS configuration are not assigned to any node to boot or dessired configuration")
+                .arg(arg!(<CONFIGURATION> "CFS configuration name"))
+        )
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {
