@@ -43,6 +43,11 @@ pub async fn exec(
     // Get CFS images from SAT YAML file
     let image_list_yaml = sat_file_yaml["images"].as_sequence();
 
+    // Check HSM groups in images section matches the HSM group in Manta configuration file
+    if let Some(hsm_group_config_value) = hsm_group_config {
+        println!("image_list_yaml:\n{:#?}", image_list_yaml);
+    }
+
     // Used to uniquely identify cfs configuration name and cfs session name. This process follows
     // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
     // let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
