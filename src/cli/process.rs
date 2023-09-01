@@ -1,3 +1,5 @@
+use std::io::IsTerminal;
+
 use clap::ArgMatches;
 use k8s_openapi::chrono;
 
@@ -261,6 +263,11 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_apply_virtual_environment) = cli_apply.subcommand_matches("virtual-environment") {
+            if !std::io::stdout().is_terminal() {
+                eprintln!("This command needs to run in interactive mode. Exit");
+                std::process::exit(1);
+            }
+
             apply_virt_env::exec(
                 shasta_token,
                 shasta_base_url,
@@ -334,6 +341,11 @@ pub async fn process_cli(
     .await; */
     } else if let Some(cli_console) = cli_apply.subcommand_matches("console") {
         if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
+            if !std::io::stdout().is_terminal() {
+                eprintln!("This command needs to run in interactive mode. Exit");
+                std::process::exit(1);
+            }
+
             console_node::exec(
                 hsm_group,
                 // cli_console,
@@ -349,6 +361,11 @@ pub async fn process_cli(
         } else if let Some(cli_console_target_ansible) =
             cli_console.subcommand_matches("target-ansible")
         {
+            if !std::io::stdout().is_terminal() {
+                eprintln!("This command needs to run in interactive mode. Exit");
+                std::process::exit(1);
+            }
+
             console_cfs_session_image_target_ansible::exec(
                 hsm_group,
                 // cli_console,
