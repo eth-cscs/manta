@@ -15,7 +15,7 @@ pub async fn exec(
     k8s_api_url: &str,
     cluster_name: Option<&String>,
     session_name: Option<&String>,
-    layer_id: Option<&u8>,
+    // layer_id: Option<&u8>,
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
@@ -54,7 +54,7 @@ pub async fn exec(
         .unwrap();
 
     // Get CFS session logs
-    let mut logs_stream = get_cfs_session_logs_stream(client, cfs_session_name, layer_id)
+    let mut logs_stream = get_cfs_session_logs_stream(client, cfs_session_name, /* layer_id */ None)
         .await
         .unwrap();
 

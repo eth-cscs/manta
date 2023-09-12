@@ -2,7 +2,7 @@ use mesa::shasta::ims;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, image_id: &str) {
+pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bool>, */ image_id: &str) {
     // Take user name and check if there is an SSH public key with that name already in Alps
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
@@ -43,13 +43,24 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, image_id: &str) {
     )
     .await;
 
-    if let Ok(resp_json) = resp_json_rslt {
-        let hostname = resp_json.pointer("/ssh_containers/0/connection_info/customer_access/host").unwrap().as_str().unwrap();
-        log::info!("Virtual environment successfully created! hostname with ssh enabled: {}", hostname);
-        println!("{}", hostname);
-    } else {
-        std::process::exit(1);
-    }
+    let hostname_value = match resp_json_rslt {
+        Ok(resp_json) => resp_json
+            .pointer("/ssh_containers/0/connection_info/customer_access/host")
+            .cloned()
+            .unwrap(),
+        Err(_) => std::process::exit(1),
+    };
 
-    // Exit
+    // if block.unwrap() {
+    //     println!("Now block the call");
+    //
+    // } else {
+    //     println!("Do not block");
+    // }
+
+    log::info!(
+        "Virtual environment successfully created! hostname with ssh enabled: {}",
+        hostname_value.as_str().unwrap()
+    );
+    println!("{}", hostname_value.as_str().unwrap());
 }

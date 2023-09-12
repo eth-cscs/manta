@@ -5,8 +5,8 @@ use k8s_openapi::chrono;
 
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
-    console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
-    get_nodes, get_session, get_template, log, update_hsm_group, update_node, apply_virt_env,
+    apply_virt_env, console_cfs_session_image_target_ansible, console_node, get_configuration,
+    get_hsm, get_images, get_nodes, get_session, get_template, log, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -262,7 +262,9 @@ pub async fn process_cli(
                 )
                 .await;
             }
-        } else if let Some(cli_apply_virtual_environment) = cli_apply.subcommand_matches("virtual-environment") {
+        } else if let Some(cli_apply_virtual_environment) =
+            cli_apply.subcommand_matches("virtual-environment")
+        {
             if !std::io::stdout().is_terminal() {
                 eprintln!("This command needs to run in interactive mode. Exit");
                 std::process::exit(1);
@@ -271,7 +273,12 @@ pub async fn process_cli(
             apply_virt_env::exec(
                 shasta_token,
                 shasta_base_url,
-                cli_apply_virtual_environment.get_one::<String>("image-id").unwrap(),
+                // cli_apply_virtual_environment
+                //     .get_one::<bool>("block")
+                //     .copied(),
+                cli_apply_virtual_environment
+                    .get_one::<String>("image-id")
+                    .unwrap(),
             )
             .await;
         }
@@ -322,7 +329,7 @@ pub async fn process_cli(
             k8s_api_url,
             None,
             cli_log.get_one::<String>("SESSION_NAME"),
-            cli_log.get_one::<u8>("layer-id"),
+            // cli_log.get_one::<u8>("layer-id"),
             hsm_group,
         )
         .await;

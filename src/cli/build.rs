@@ -29,7 +29,8 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .subcommand(Command::new("virtual-environment")
                 .aliases(["ve", "venv", "virt"])
                 .arg_required_else_help(true)
-                .about("Returns a hostname use can ssh with the image ID provided")
+                .about("Returns a hostname use can ssh with the image ID provided. This call is async, the user will have to wait for the virtual environment to be ready after running this command, normally takes a few seconds.")
+                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the virtual environment has been created."))
                 // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
                 .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
                             ),
@@ -48,11 +49,11 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .arg_required_else_help(true)
                 .about("Get CFS session logs")
                 .arg(arg!(<SESSION_NAME> "session name"))
-                .arg(
-                    arg!(-l --"layer-id" <VALUE> "layer id")
-                        .required(false)
-                        .value_parser(value_parser!(u8)),
-                ),
+                // .arg(
+                //     arg!(-l --"layer-id" <VALUE> "layer id")
+                //         .required(false)
+                //         .value_parser(value_parser!(u8)),
+                // ),
         )
         .subcommand(
             Command::new("console")
