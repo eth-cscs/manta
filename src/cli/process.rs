@@ -5,7 +5,7 @@ use k8s_openapi::chrono;
 
 use super::commands::{
     apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
-    apply_virt_env, console_cfs_session_image_target_ansible, console_node, get_configuration,
+    apply_ephemeral_env, console_cfs_session_image_target_ansible, console_node, get_configuration,
     get_hsm, get_images, get_nodes, get_session, get_template, log, update_hsm_group, update_node,
 };
 
@@ -262,21 +262,21 @@ pub async fn process_cli(
                 )
                 .await;
             }
-        } else if let Some(cli_apply_virtual_environment) =
-            cli_apply.subcommand_matches("virtual-environment")
+        } else if let Some(cli_apply_ephemeral_environment) =
+            cli_apply.subcommand_matches("ephemeral-environment")
         {
             if !std::io::stdout().is_terminal() {
                 eprintln!("This command needs to run in interactive mode. Exit");
                 std::process::exit(1);
             }
 
-            apply_virt_env::exec(
+            apply_ephemeral_env::exec(
                 shasta_token,
                 shasta_base_url,
-                // cli_apply_virtual_environment
+                // cli_apply_ephemeral_environment
                 //     .get_one::<bool>("block")
                 //     .copied(),
-                cli_apply_virtual_environment
+                cli_apply_ephemeral_environment
                     .get_one::<String>("image-id")
                     .unwrap(),
             )

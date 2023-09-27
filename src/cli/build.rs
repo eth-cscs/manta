@@ -26,11 +26,11 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
                 )
                 .subcommand(subcommand_apply_session(hsm_group))
-                .subcommand(Command::new("virtual-environment")
+                .subcommand(Command::new("ephemeral-environment")
                 .aliases(["ve", "venv", "virt"])
                 .arg_required_else_help(true)
-                .about("Returns a hostname use can ssh with the image ID provided. This call is async, the user will have to wait for the virtual environment to be ready after running this command, normally takes a few seconds.")
-                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the virtual environment has been created."))
+                .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
+                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
                 // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
                 .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
                             ),
