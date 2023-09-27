@@ -1,4 +1,4 @@
-FROM rust:1.69.0 as builder
+FROM rust:1.72.1 as builder
 # RUN apt-get update -y
 # RUN apt-get upgrade -y
 # RUN apt-get install -y pkg-config libssl-dev musl-tools
@@ -20,4 +20,3 @@ RUN update-ca-certificates
 # RUN mkdir -p /etc/ssl/certs
 # COPY /etc/ssl/certs/DigiCert* /etc/ssl/certs/
 ENTRYPOINT ["manta"]
-
