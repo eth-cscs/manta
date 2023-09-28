@@ -3,7 +3,7 @@ mod common;
 mod config;
 
 use mesa::shasta;
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 
 use directories::ProjectDirs;
 
@@ -16,8 +16,13 @@ use crate::common::log_ops;
 // #[global_allocator]
 // static ALOC: dhat::Alloc = dhat::Alloc;
 
+// fn main() {
+//     println!("crap");
+// }
+
 #[tokio::main]
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+    //println!("async main");
     // DHAT (profiling)
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
@@ -31,13 +36,31 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let mut path_to_manta_configuration_file = PathBuf::from(project_dirs.unwrap().config_dir());
 
-    path_to_manta_configuration_file.push("config.toml"); // ~/.config/manta/config is the file
+    // ~/.config/manta/config.toml on Linux
+    // ~/Library/Application Support/local.cscs.manta/config.toml on MacOS
+    path_to_manta_configuration_file.push("config.toml");
 
-    log::info!(
-        "Reading manta configuration from {}",
-        &path_to_manta_configuration_file.to_string_lossy()
-    );
-
+    if path_to_manta_configuration_file.exists() {
+        let k = match File::open(&path_to_manta_configuration_file) {
+            Err(_why) => {
+                println!(
+                    "The configuration file at {} is not readable. Cannot continue.",
+                    &path_to_manta_configuration_file.to_string_lossy()
+                );
+                std::process::exit(exitcode::CONFIG)
+            }
+            Ok(_file) => log::info!(
+                "Reading manta configuration from {}",
+                &path_to_manta_configuration_file.to_string_lossy()
+            ),
+        };
+    } else {
+        println!(
+            "The configuration file at {} does not exist or is not readable. Cannot continue.",
+            &path_to_manta_configuration_file.to_string_lossy()
+        );
+        std::process::exit(exitcode::CONFIG);
+    }
     // let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
     let settings = ::config::Config::builder()
         .add_source(::config::File::from(path_to_manta_configuration_file))
