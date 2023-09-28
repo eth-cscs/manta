@@ -1,0 +1,8 @@
+#!/bin/bash
+
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+if [[ "${OS}x" == "linux" ]]; then
+  cross build --target $(uname -m)-unknown-${OS}-gnu --release
+else
+  cross build --target $(uname -m)-apple-${OS} --release
+fi
