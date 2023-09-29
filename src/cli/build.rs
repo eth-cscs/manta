@@ -27,7 +27,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 )
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(Command::new("ephemeral-environment")
-                .aliases(["ve", "venv", "virt"])
+                .aliases(["ee", "eph", "ephemeral"])
                 .arg_required_else_help(true)
                 .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
                 // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
@@ -193,7 +193,11 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
 pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("images")
         .aliases(["i", "img", "imag", "image"])
-        .about("Get image information");
+        .about("Get image information")
+        .arg(
+            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
 
     match hsm_group {
         None => {

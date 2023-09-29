@@ -118,7 +118,7 @@ pub async fn process_cli(
                 None => cli_get_images.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(hsm_group_val),
             };
-            get_images::exec(shasta_token, shasta_base_url, hsm_group_name).await;
+            get_images::exec(shasta_token, shasta_base_url, hsm_group_name, cli_get_images.get_one::<u8>("limit")).await;
         }
     } else if let Some(cli_apply) = cli_apply.subcommand_matches("apply") {
         /* if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
