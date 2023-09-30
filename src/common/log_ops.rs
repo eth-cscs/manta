@@ -68,7 +68,7 @@ pub fn configure(log_level: String) {
     // use handle to change logger configuration at runtime
 
     if error_configuring_audit_logs.is_some() {
-        log::error!(
+        log::warn!(
             "Unable to create audit file {}. Reason: {:?}. Continue",
             audit_file_path,
             error_configuring_audit_logs
