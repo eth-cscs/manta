@@ -1,12 +1,21 @@
 use std::io::IsTerminal;
 
 use clap::ArgMatches;
+use comfy_table::Table;
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use k8s_openapi::chrono;
+use mesa::manta::{
+    bos::template::get_image_id_from_bos_sessiontemplate_related_to_cfs_configuration,
+    cfs::session::get_image_id_from_cfs_session_related_to_cfs_configuration,
+};
+
+use crate::common::node_ops::get_node_vec_booting_image;
 
 use super::commands::{
-    apply_cluster, apply_image, apply_node_off, apply_node_on, apply_node_reset, apply_session,
-    apply_ephemeral_env, console_cfs_session_image_target_ansible, console_node, get_configuration,
-    get_hsm, get_images, get_nodes, get_session, get_template, log, update_hsm_group, update_node,
+    apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
+    apply_node_reset, apply_session, console_cfs_session_image_target_ansible, console_node,
+    get_configuration, get_hsm, get_images, get_nodes, get_session, get_template,
+    update_hsm_group, update_node, self,
 };
 
 pub async fn process_cli(
@@ -118,7 +127,13 @@ pub async fn process_cli(
                 None => cli_get_images.get_one::<String>("hsm-group"),
                 Some(hsm_group_val) => Some(hsm_group_val),
             };
-            get_images::exec(shasta_token, shasta_base_url, hsm_group_name, cli_get_images.get_one::<u8>("limit")).await;
+            get_images::exec(
+                shasta_token,
+                shasta_base_url,
+                hsm_group_name,
+                cli_get_images.get_one::<u8>("limit"),
+            )
+            .await;
         }
     } else if let Some(cli_apply) = cli_apply.subcommand_matches("apply") {
         /* if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
@@ -319,7 +334,7 @@ pub async fn process_cli(
             .await;
         }
     } else if let Some(cli_log) = cli_apply.subcommand_matches("log") {
-        log::exec(
+        commands::log::exec(
             // cli_log,
             shasta_token,
             shasta_base_url,
@@ -388,6 +403,402 @@ pub async fn process_cli(
             )
             .await;
         }
+    } else if let Some(cli_delete) = cli_apply.subcommand_matches("delete") {
+        let since_opt = if let Some(since) = cli_delete.get_one::<String>("since") {
+            let date_time = chrono::NaiveDateTime::parse_from_str(
+                &(since.to_string() + "T00:00:00"),
+                "%Y-%m-%dT%H:%M:%S",
+            )
+            .unwrap();
+            Some(date_time)
+        } else {
+            None
+        };
+
+        let until_opt = if let Some(until) = cli_delete.get_one::<String>("until") {
+            let date_time = chrono::NaiveDateTime::parse_from_str(
+                &(until.to_string() + "T00:00:00"),
+                "%Y-%m-%dT%H:%M:%S",
+            )
+            .unwrap();
+            Some(date_time)
+        } else {
+            None
+        };
+
+        let cfs_configuration_name_opt = cli_delete.get_one::<String>("configuration-name");
+
+        let hsm_group_name_opt = cli_delete.get_one::<String>("hsm-group");
+
+        // COLLECT SITE WIDE DATA FOR VALIDATION
+        //
+
+        // Check dessired configuration not using any CFS configuration to delete: Get all CFS components in CSM
+        let cfs_components = mesa::shasta::cfs::component::http_client::get_multiple_components(
+            &shasta_token,
+            &shasta_base_url,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+        // Check images related to CFS configurations to delete are not used to boot nodes. For
+        // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
+        // Get all BSS boot params
+        let boot_param_vec =
+            mesa::shasta::bss::http_client::get_boot_params(shasta_token, shasta_base_url, &[])
+                .await
+                .unwrap();
+
+        let mut cfs_configuration_value_vec = mesa::shasta::cfs::configuration::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            cfs_configuration_name_opt,
+            None,
+        )
+        .await
+        .unwrap();
+
+        // Filter CFS configurations based on user input
+        if since_opt.is_some() && until_opt.is_some() {
+            cfs_configuration_value_vec.retain(|cfs_configuration_value| {
+                let date = chrono::DateTime::parse_from_rfc3339(
+                    cfs_configuration_value["lastUpdated"].as_str().unwrap(),
+                )
+                .unwrap()
+                .naive_utc();
+
+                return since_opt.unwrap() <= date && date < until_opt.unwrap();
+            });
+        } else if cfs_configuration_name_opt.is_some() {
+            cfs_configuration_value_vec.retain(|cfs_configuration_value| {
+                cfs_configuration_value["name"]
+                    .as_str()
+                    .unwrap()
+                    .eq_ignore_ascii_case(cfs_configuration_name_opt.unwrap())
+            });
+        }
+
+        // Get list CFS configuration names
+        let mut cfs_configuration_name_vec = cfs_configuration_value_vec
+            .iter()
+            .map(|configuration_value| configuration_value["name"].as_str().unwrap())
+            .collect::<Vec<&str>>();
+
+        // Check images related to CFS configurations to delete are not used to boot nodes. For
+        // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
+        // Get all BOS session templates
+        let mut bos_sessiontemplate_value_vec = mesa::shasta::bos::template::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            hsm_group_name_opt,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+        // TODO: change to iter so we can later on get its image ids without having to copy memory
+        // to create new Vec
+        bos_sessiontemplate_value_vec.retain(|bos_sessiontemplate_value| {
+            cfs_configuration_name_vec.contains(
+                &bos_sessiontemplate_value
+                    .pointer("/cfs/configuration")
+                    .unwrap()
+                    .as_str()
+                    .unwrap(),
+            )
+        });
+
+        let cfs_configuration_name_from_bos_sessiontemplate_value_iter =
+            bos_sessiontemplate_value_vec
+                .iter()
+                .map(|bos_sessiontemplate_value| {
+                    bos_sessiontemplate_value
+                        .pointer("/cfs/configuration")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                });
+
+        // Check images related to CFS configurations to delete are not used to boot nodes. For
+        // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
+        // Get all CFS sessions
+        let mut cfs_session_value_vec = mesa::shasta::cfs::session::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            hsm_group_name_opt,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+        // TODO: change to iter so we can later on get its image ids without having to copy memory
+        // to create new Vec
+        cfs_session_value_vec.retain(|cfs_session_value| {
+            cfs_configuration_name_vec.contains(
+                &cfs_session_value
+                    .pointer("/configuration/name")
+                    .unwrap()
+                    .as_str()
+                    .unwrap(),
+            )
+        });
+
+        let cfs_configuration_name_from_cfs_sessions =
+            cfs_session_value_vec.iter().map(|cfs_session_value| {
+                cfs_session_value
+                    .pointer("/configuration/name")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+            });
+
+        cfs_configuration_name_vec = cfs_configuration_name_from_bos_sessiontemplate_value_iter
+            .chain(cfs_configuration_name_from_cfs_sessions)
+            .collect::<Vec<&str>>();
+        cfs_configuration_name_vec.sort();
+        cfs_configuration_name_vec.dedup();
+
+        // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
+        let image_id_from_cfs_session_vec =
+            get_image_id_from_cfs_session_related_to_cfs_configuration(&cfs_session_value_vec);
+
+        // Get image ids from BOS session template related to CFS configuration to delete
+        let image_id_from_bos_sessiontemplate_vec =
+            get_image_id_from_bos_sessiontemplate_related_to_cfs_configuration(
+                &bos_sessiontemplate_value_vec,
+            );
+
+        // Combine image ids from CFS session and BOS session template
+        let mut image_id_vec = [
+            image_id_from_cfs_session_vec,
+            image_id_from_bos_sessiontemplate_vec,
+        ]
+        .concat();
+
+        image_id_vec.sort();
+        image_id_vec.dedup();
+
+        // Get list of CFS session name, CFS configuration name and image id
+        let cfs_session_cfs_configuration_image_id_tuple_iter =
+            cfs_session_value_vec.iter().map(|cfs_session_value| {
+                (
+                    cfs_session_value["name"].as_str().unwrap(),
+                    cfs_session_value
+                        .pointer("/configuration/name")
+                        .unwrap()
+                        .as_str()
+                        .unwrap(),
+                    cfs_session_value
+                        .pointer("/status/artifacts/0/result_id")
+                        .unwrap()
+                        .as_str()
+                        .unwrap(),
+                )
+            });
+
+        // Get list of BOS sessiontemplate name, CFS configuration name and image ids for compute nodes
+        let bos_sessiontemplate_cfs_configuration_compute_image_id_tuple_iter =
+            bos_sessiontemplate_value_vec
+                .iter()
+                .map(|bos_sessiontemplate_value| {
+                    let cfs_session_name = bos_sessiontemplate_value["name"].as_str().unwrap();
+                    let cfs_configuration_name = bos_sessiontemplate_value
+                        .pointer("/cfs/configuration")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let image_id = if let Some(image_path_value) =
+                        bos_sessiontemplate_value.pointer("/boot_sets/compute/path")
+                    {
+                        image_path_value
+                            .as_str()
+                            .unwrap()
+                            .strip_prefix("s3://boot-images/")
+                            .unwrap()
+                            .strip_suffix("/manifest.json")
+                            .unwrap()
+                    } else {
+                        ""
+                    };
+                    (cfs_session_name, cfs_configuration_name, image_id)
+                });
+
+        // Get list of BOS sessiontemplate name, CFS configuration name and image ids for uan nodes
+        let bos_sessiontemplate_cfs_configuration_uan_image_id_tuple_iter =
+            bos_sessiontemplate_value_vec
+                .iter()
+                .map(|bos_sessiontemplate_value| {
+                    let bos_sessiontemplate_name =
+                        bos_sessiontemplate_value["name"].as_str().unwrap();
+                    let cfs_configuration_name = bos_sessiontemplate_value
+                        .pointer("/cfs/configuration")
+                        .unwrap()
+                        .as_str()
+                        .unwrap();
+                    let image_id = if let Some(image_path_value) =
+                        bos_sessiontemplate_value.pointer("/boot_sets/uan/path")
+                    {
+                        image_path_value
+                            .as_str()
+                            .unwrap()
+                            .strip_prefix("s3://boot-images/")
+                            .unwrap()
+                            .strip_suffix("/manifest.json")
+                            .unwrap()
+                    } else {
+                        ""
+                    };
+                    (bos_sessiontemplate_name, cfs_configuration_name, image_id)
+                });
+
+        let bos_sessiontemplate_cfs_configuration_image_id_tuple_iter =
+            bos_sessiontemplate_cfs_configuration_compute_image_id_tuple_iter
+                .chain(bos_sessiontemplate_cfs_configuration_uan_image_id_tuple_iter)
+                .collect::<Vec<(&str, &str, &str)>>();
+
+        // PRINT SUMMARY/DATA TO DELETE
+        //
+        println!("CFS sessions to delete:");
+
+        let mut cfs_session_table = Table::new();
+
+        cfs_session_table.set_header(vec!["Name", "Configuration", "Image ID"]);
+
+        for cfs_session_tuple in cfs_session_cfs_configuration_image_id_tuple_iter {
+            cfs_session_table.add_row(vec![
+                cfs_session_tuple.0,
+                cfs_session_tuple.1,
+                cfs_session_tuple.2,
+            ]);
+        }
+
+        println!("{cfs_session_table}");
+
+        println!("BOS sessiontemplates to delete:");
+
+        let mut bos_sessiontemplate_table = Table::new();
+
+        bos_sessiontemplate_table.set_header(vec!["Name", "Configuration", "Image ID"]);
+
+        for bos_sessiontemplate_tuple in &bos_sessiontemplate_cfs_configuration_image_id_tuple_iter
+        {
+            bos_sessiontemplate_table.add_row(vec![
+                bos_sessiontemplate_tuple.0,
+                bos_sessiontemplate_tuple.1,
+                bos_sessiontemplate_tuple.2,
+            ]);
+        }
+
+        println!("{bos_sessiontemplate_table}");
+
+        println!("CFS configurations to delete:");
+
+        let mut cfs_configuration_table = Table::new();
+
+        cfs_configuration_table.set_header(vec!["Name"]);
+
+        for cfs_configuration_name in &cfs_configuration_name_vec {
+            cfs_configuration_table.add_row(vec![cfs_configuration_name]);
+        }
+
+        println!("{cfs_configuration_table}");
+
+        println!("Images to delete:");
+
+        let mut image_id_table = Table::new();
+
+        for image_id in &image_id_vec {
+            image_id_table.add_row(vec![image_id]);
+        }
+
+        println!("{image_id_table}");
+
+        // VALIDATION
+        //
+        // Process CFS configurations to delete one by one
+        for cfs_configuration_name in &cfs_configuration_name_vec {
+            // Check dessired configuration not using any CFS configuration to delete
+            let mut nodes_using_cfs_configuration_as_dessired_configuration_vec = cfs_components
+                .iter()
+                .filter(|cfs_component| {
+                    cfs_component["desiredConfig"]
+                        .as_str()
+                        .unwrap()
+                        .eq(*cfs_configuration_name)
+                })
+                .map(|cfs_component| cfs_component["id"].as_str().unwrap())
+                .collect::<Vec<&str>>();
+
+            nodes_using_cfs_configuration_as_dessired_configuration_vec.sort();
+
+            if !nodes_using_cfs_configuration_as_dessired_configuration_vec.is_empty() {
+                eprintln!(
+                    "CFS configuration {} can't be deleted. Reason:\nCFS configuration {} used as desired configuration for nodes: {}",
+                    cfs_configuration_name, cfs_configuration_name, nodes_using_cfs_configuration_as_dessired_configuration_vec.join(", ")
+                );
+                std::process::exit(1);
+            }
+        }
+
+        for cfs_configuration_name in &cfs_configuration_name_vec {
+            // Check images related to CFS configurations to delete are not used to boot nodes. For
+            // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
+
+            // Check images related to CFS configurations to delete are not used to boot nodes. For
+            // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
+            let mut boot_image_node_vec = Vec::new();
+
+            for image_id in &image_id_vec {
+                let nodes = get_node_vec_booting_image(&image_id, &boot_param_vec);
+
+                if !nodes.is_empty() {
+                    boot_image_node_vec.push((image_id, nodes));
+                }
+            }
+
+            if !boot_image_node_vec.is_empty() {
+                eprintln!(
+                    "Image based on CFS configuration {} can't be deleted. Reason:",
+                    cfs_configuration_name
+                );
+                for (image_id, node_vec) in boot_image_node_vec {
+                    eprintln!("Image id {} used to boot nodes:\n{:?}", image_id, node_vec);
+                }
+                std::process::exit(1);
+            }
+        }
+
+        // ASK USER FOR CONFIRMATION
+        //
+        if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Please revew the data above and confirm to delete:")
+            .interact()
+            .unwrap()
+        {
+            println!("Continue");
+        } else {
+            println!("Cancelled by user. Aborting.");
+            std::process::exit(0);
+        }
+
+        // DELETE DATA
+        //
+        /* delete_data_related_to_cfs_configuration::delete(
+            shasta_token,
+            shasta_base_url,
+            &cfs_configuration_name_vec,
+            &image_id_vec,
+            &cfs_components,
+            &cfs_session_value_vec,
+            &bos_sessiontemplate_value_vec,
+            &boot_param_vec,
+        )
+        .await; */
     }
 
     Ok(())

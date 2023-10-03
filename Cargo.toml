@@ -17,6 +17,7 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 [dependencies]
 mesa = "0.15.0"
 # mesa = { path = "../mesa" } # Only for development purposes
+chrono = "0.4.31"
 anyhow = "1.0.44"
 reqwest = { version = "0.11", features = ["blocking", "json", "rustls-tls", "socks"] }
 serde = { version = "1.0.145", features = ["derive"] }
