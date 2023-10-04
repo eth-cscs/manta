@@ -9,7 +9,7 @@ use mesa::manta::{
     cfs::session::get_image_id_from_cfs_session_related_to_cfs_configuration,
 };
 
-use crate::common::node_ops::get_node_vec_booting_image;
+use crate::{common::node_ops::get_node_vec_booting_image, cli::commands::delete_data_related_to_cfs_configuration};
 
 use super::commands::{
     apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
@@ -793,10 +793,10 @@ pub async fn process_cli(
             shasta_base_url,
             &cfs_configuration_name_vec,
             &image_id_vec,
-            &cfs_components,
+            // &cfs_components,
             &cfs_session_value_vec,
             &bos_sessiontemplate_value_vec,
-            &boot_param_vec,
+            // &boot_param_vec,
         )
         .await; */
     }
