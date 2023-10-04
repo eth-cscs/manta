@@ -237,10 +237,17 @@ Install cross to be able to complile on different platforms
 cargo install cross
 ```
 
-Generate binary
+Generate binary (cross compilation)
 
 ```shell
 cross build --target x86_64-unknown-linux-gnu --release
+```
+
+or
+
+```shell
+rustup target add x86_64-unknown-linux-gnu
+cargo build --target=x86_64-unknown-linux-gnu
 ```
 
 ### Development

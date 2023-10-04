@@ -30,7 +30,7 @@ pub async fn exec(
         node_ops::validate_xname_format(xname);
     }
 
-    connect_to_console(
+    let console_rslt = connect_to_console(
         // included.iter().next().unwrap(),
         &xname.to_string(),
         vault_base_url,
@@ -38,8 +38,18 @@ pub async fn exec(
         vault_role_id,
         k8s_api_url,
     )
-    .await
-    .unwrap();
+    .await;
+
+    match console_rslt {
+        Ok(_) => {
+            crossterm::terminal::disable_raw_mode().unwrap();
+            log::info!("Console closed");
+        }
+        Err(error) => {
+            crossterm::terminal::disable_raw_mode().unwrap();
+            log::error!("{:?}", error);
+        }
+    }
 }
 
 pub async fn connect_to_console(
@@ -95,11 +105,13 @@ pub async fn connect_to_console(
                         input.write_all(&message).await?;
                     },
                     Some(Err(message)) => {
-                       input.write_all(format!("#*#* stdin {:?}", &message).as_bytes()).await?;
+                       crossterm::terminal::disable_raw_mode()?;
+                       log::error!("ERROR: Console stdin {:?}", &message);
                        break
                     },
                     None => {
-                        input.write_all("stdin None".as_bytes()).await?;
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::info!("NONE (No input): Console stdin");
                         break
                     },
                 }
@@ -111,19 +123,24 @@ pub async fn connect_to_console(
                         stdout.flush().await?;
                     },
                     Some(Err(message)) => {
-                       input.write_all(format!("#*#* stdout {:?}", &message).as_bytes()).await?;
+                       crossterm::terminal::disable_raw_mode()?;
+                       log::error!("ERROR: Console stdout: {:?}", &message);
                        break
                     },
                     None => {
-                        input.write_all("stdout None".as_bytes()).await?;
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::info!("Exit console");
                         break
                     },
                 }
             },
             result = &mut handle_terminal_size_handle => {
                 match result {
-                    Ok(_) => println!("End of terminal size stream"),
-                    Err(e) => println!("Error getting terminal size: {e:?}")
+                    Ok(_) => log::info!("End of terminal size stream"),
+                    Err(e) => {
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::error!("Error getting terminal size: {e:?}")
+                    }
                 }
             },
         };

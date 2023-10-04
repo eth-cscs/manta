@@ -85,6 +85,8 @@ pub async fn exec(
 
         log::debug!("image_details:\n{:#?}", image_details_value_vec);
 
+        log::info!("image_details_value_vec:\n{:#?}", image_details_value_vec);
+
         let image_path = Some(
             image_details_value_vec.first().unwrap()["link"]["path"]
                 .as_str()
