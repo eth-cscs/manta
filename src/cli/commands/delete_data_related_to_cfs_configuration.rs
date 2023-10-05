@@ -1,5 +1,5 @@
 use mesa::shasta;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 /// Deletes CFS configuration, CFS session, BOS sessiontemplate, BOS session and images related to
 /// a CFS configuration. This method is safe. It checks if CFS configuration to delete is assigned
@@ -24,7 +24,11 @@ pub async fn delete(
 
         println!(
             "Image deleted: {}",
-            image_deleted_value["id"].as_str().unwrap()
+            image_deleted_value
+                .get("id")
+                .unwrap_or(&json!("Image not found."))
+                .as_str()
+                .unwrap()
         );
     }
 
@@ -39,6 +43,7 @@ pub async fn delete(
             .await
             .unwrap();
 
+    // Match BOS SESSIONS with the 
     for bos_session_id_value in bos_session_id_value_vec {
         let bos_session_value = shasta::bos::session::http_client::get(
             shasta_token,
@@ -48,11 +53,13 @@ pub async fn delete(
         .await
         .unwrap();
 
-        if bos_sessiontemplate_name_vec.contains(
-            &bos_session_value.first().unwrap()["templateName"]
-                .as_str()
-                .unwrap(),
-        ) {
+        if !bos_session_value.is_empty()
+            && bos_sessiontemplate_name_vec.contains(
+                &bos_session_value.first().unwrap()["templateName"]
+                    .as_str()
+                    .unwrap(),
+            )
+        {
             let bos_session_deleted_value = shasta::bos::session::http_client::delete(
                 shasta_token,
                 shasta_base_url,
@@ -63,25 +70,16 @@ pub async fn delete(
 
             println!(
                 "BOS session deleted: {}",
-                bos_session_deleted_value["id"].as_str().unwrap()
+                bos_session_id_value.as_str().unwrap() // For some reason CSM API to delete a BOS
+                                                       // session does not returns the BOS session
+                                                       // ID in the payload...
+            );
+        } else {
+            log::warn!(
+                "Could not find BOS session template related to BOS session {} - Possibly related to a different HSM group or BOS session template was deleted?",
+                bos_session_id_value.as_str().unwrap()
             );
         }
-    }
-
-    // DELETE BOS SESSIONTEMPLATES
-    for bos_sessiontemplate in bos_sessiontemplate_value_vec {
-        let bos_sessiontemplate_deleted_value = shasta::bos::template::http_client::delete(
-            shasta_token,
-            shasta_base_url,
-            bos_sessiontemplate["name"].as_str().unwrap(),
-        )
-        .await
-        .unwrap();
-
-        println!(
-            "BOS sessiontemplate deleted: {}",
-            bos_sessiontemplate_deleted_value["name"].as_str().unwrap()
-        );
     }
 
     // DELETE CFS SESSIONS
@@ -97,6 +95,22 @@ pub async fn delete(
         println!(
             "CFS session deleted: {}",
             cfs_session_deleted_value["name"].as_str().unwrap()
+        );
+    }
+
+    // DELETE BOS SESSIONTEMPLATES
+    for bos_sessiontemplate in bos_sessiontemplate_value_vec {
+        let bos_sessiontemplate_deleted_value = shasta::bos::template::http_client::delete(
+            shasta_token,
+            shasta_base_url,
+            bos_sessiontemplate["name"].as_str().unwrap(),
+        )
+        .await
+        .unwrap();
+
+        println!(
+            "BOS sessiontemplate deleted: {}",
+            bos_sessiontemplate_deleted_value["name"].as_str().unwrap()
         );
     }
 

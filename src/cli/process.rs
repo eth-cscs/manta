@@ -661,6 +661,14 @@ pub async fn process_cli(
                 .chain(bos_sessiontemplate_cfs_configuration_uan_image_id_tuple_iter)
                 .collect::<Vec<(&str, &str, &str)>>();
 
+
+        // EVALUATE IF NEED TO CONTINUE. EXIT IF THERE IS NO DATA TO DELETE
+        //
+        if cfs_configuration_name_vec.is_empty() && image_id_vec.is_empty() && cfs_session_value_vec.is_empty() && bos_sessiontemplate_value_vec.is_empty() {
+            println!("Nothing to delete. Exit");
+            std::process::exit(0);
+        }
+
         // PRINT SUMMARY/DATA TO DELETE
         //
         println!("CFS sessions to delete:");
@@ -788,7 +796,7 @@ pub async fn process_cli(
 
         // DELETE DATA
         //
-        /* delete_data_related_to_cfs_configuration::delete(
+        delete_data_related_to_cfs_configuration::delete(
             shasta_token,
             shasta_base_url,
             &cfs_configuration_name_vec,
@@ -798,7 +806,7 @@ pub async fn process_cli(
             &bos_sessiontemplate_value_vec,
             // &boot_param_vec,
         )
-        .await; */
+        .await;
     }
 
     Ok(())
