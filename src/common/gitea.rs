@@ -2,7 +2,6 @@
 
 pub mod http_client {
 
-    use crate::config;
     use serde_json::Value;
 
     pub async fn get_commit_details(

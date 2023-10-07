@@ -33,6 +33,7 @@ Manta aggregates information from multiple sources:
 - Filter information to a HSM group
 - Update node boot image based on CFS configuration name
 - Audit/Log
+- Delete all data related to CFS configuration
 
 ## Configuration
 
@@ -73,6 +74,7 @@ vault_role_id|yes|config file|role id related to Hashicorp Vault base URL approl
 |vault_secret_path|config file|path in vault to find secrets|shasta or prealps|
 |shasta_base_url|yes|config file|Shasta API base URL for Shasta related jobs submission|https://api-gw-service-nmn.local/apis|
 |hsm_group|no|config|If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command|psi-dev|
+|hsm_available|no|config|List of HSM groups avaiable to use|psi-dev,psitds|
 
 ## Example
 

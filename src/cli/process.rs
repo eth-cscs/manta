@@ -9,17 +9,20 @@ use mesa::manta::{
     cfs::session::get_image_id_from_cfs_session_related_to_cfs_configuration,
 };
 
-use crate::{common::node_ops::get_node_vec_booting_image, cli::commands::delete_data_related_to_cfs_configuration};
+use crate::{
+    cli::commands::delete_data_related_to_cfs_configuration,
+    common::node_ops::get_node_vec_booting_image,
+};
 
 use super::commands::{
-    apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
-    apply_node_reset, apply_session, console_cfs_session_image_target_ansible, console_node,
-    get_configuration, get_hsm, get_images, get_nodes, get_session, get_template,
-    update_hsm_group, update_node, self,
+    self, apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
+    apply_node_reset, apply_session, config_set, config_show,
+    console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
+    get_nodes, get_session, get_template, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
-    cli_apply: ArgMatches,
+    cli_root: ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
     vault_base_url: &str,
@@ -31,7 +34,7 @@ pub async fn process_cli(
     // base_image_id: &str,
     k8s_api_url: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-    if let Some(cli_get) = cli_apply.subcommand_matches("get") {
+    if let Some(cli_get) = cli_root.subcommand_matches("get") {
         if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
             /*        let hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
@@ -135,7 +138,7 @@ pub async fn process_cli(
             )
             .await;
         }
-    } else if let Some(cli_apply) = cli_apply.subcommand_matches("apply") {
+    } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
         /* if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
             let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
             apply_configuration::exec(
@@ -297,7 +300,7 @@ pub async fn process_cli(
             )
             .await;
         }
-    } else if let Some(cli_update) = cli_apply.subcommand_matches("update") {
+    } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
         if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
             let hsm_group_name = if hsm_group.is_none() {
                 cli_update_node.get_one::<String>("HSM_GROUP_NAME")
@@ -333,7 +336,7 @@ pub async fn process_cli(
             )
             .await;
         }
-    } else if let Some(cli_log) = cli_apply.subcommand_matches("log") {
+    } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
         commands::log::exec(
             // cli_log,
             shasta_token,
@@ -361,7 +364,7 @@ pub async fn process_cli(
         cli_console.get_one::<String>("XNAME").unwrap(),
     )
     .await; */
-    } else if let Some(cli_console) = cli_apply.subcommand_matches("console") {
+    } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
         if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
             if !std::io::stdout().is_terminal() {
                 eprintln!("This command needs to run in interactive mode. Exit");
@@ -403,7 +406,20 @@ pub async fn process_cli(
             )
             .await;
         }
-    } else if let Some(cli_delete) = cli_apply.subcommand_matches("delete") {
+    } else if let Some(cli_config) = cli_root.subcommand_matches("config") {
+        if let Some(cli_config_show) = cli_config.subcommand_matches("show") {
+            config_show::exec(shasta_token, shasta_base_url).await;
+        } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
+            if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
+                config_set::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
+                )
+                .await;
+            }
+        }
+    } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
         let since_opt = if let Some(since) = cli_delete.get_one::<String>("since") {
             let date_time = chrono::NaiveDateTime::parse_from_str(
                 &(since.to_string() + "T00:00:00"),
@@ -661,10 +677,13 @@ pub async fn process_cli(
                 .chain(bos_sessiontemplate_cfs_configuration_uan_image_id_tuple_iter)
                 .collect::<Vec<(&str, &str, &str)>>();
 
-
         // EVALUATE IF NEED TO CONTINUE. EXIT IF THERE IS NO DATA TO DELETE
         //
-        if cfs_configuration_name_vec.is_empty() && image_id_vec.is_empty() && cfs_session_value_vec.is_empty() && bos_sessiontemplate_value_vec.is_empty() {
+        if cfs_configuration_name_vec.is_empty()
+            && image_id_vec.is_empty()
+            && cfs_session_value_vec.is_empty()
+            && bos_sessiontemplate_value_vec.is_empty()
+        {
             println!("Nothing to delete. Exit");
             std::process::exit(0);
         }

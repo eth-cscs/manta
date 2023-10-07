@@ -2,7 +2,7 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn build_cli(hsm_group: Option<&String>) -> Command {
+pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: Vec<String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -75,6 +75,40 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 ),
         )
         .subcommand(subcommand_delete(hsm_group))
+        .subcommand(subcommand_config(hsm_available_vec))
+}
+
+pub fn subcommand_config(hsm_available_opt: Vec<String>) -> Command {
+    // Enforce user to chose a HSM group is hsm_available config param is not empty. This is to
+    // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
+    // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
+    // will be able to access any HSM. The security meassures for this is to setup sticky bit to
+    // manta binary so it runs as manta user, then 'chown manta:manta /home/manta/.config/manta/config.toml' so only manta and root users can edit the config file. Tenants can neither su to manta nor root under the access VM (eg castaneda)
+    let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
+        Command::new("hsm")
+            .about("Change config values")
+            .about("Set target HSM group")
+            .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
+    } else {
+        Command::new("hsm")
+            .about("Change config values")
+            .about("Set target HSM group")
+            .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
+    };
+
+    let config = Command::new("config")
+        .alias("C")
+        .arg_required_else_help(true)
+        .about("Manta's configuration")
+        .subcommand(Command::new("show").about("Show config values"))
+        .subcommand(
+            Command::new("set")
+                .arg_required_else_help(true)
+                .about("Change config values")
+                .subcommand(subcommand_config_set_hsm),
+        );
+
+    config
 }
 
 pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
@@ -88,7 +122,8 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
 
     match hsm_group {
         None => {
-            delete = delete.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
+            delete =
+                delete.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
         }
         Some(_) => {}
     }
