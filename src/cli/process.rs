@@ -444,7 +444,17 @@ pub async fn process_cli(
 
         let cfs_configuration_name_opt = cli_delete.get_one::<String>("configuration-name");
 
-        let hsm_group_name_opt = cli_delete.get_one::<String>("hsm-group");
+        let hsm_group_name_opt = if hsm_group.is_some() {
+            hsm_group
+        } else {
+            cli_delete.get_one::<String>("hsm-group")
+        };
+
+        // INPUT VALIDATION - Check since date is prior until date
+        if since_opt.is_some() && until_opt.is_some() && since_opt.unwrap() > until_opt.unwrap() {
+            println!("since date can't be after until date. Exit");
+            std::process::exit(1);
+        }
 
         // COLLECT SITE WIDE DATA FOR VALIDATION
         //
