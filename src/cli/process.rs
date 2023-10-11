@@ -621,9 +621,8 @@ pub async fn process_cli(
                         .unwrap(),
                     cfs_session_value
                         .pointer("/status/artifacts/0/result_id")
-                        .unwrap()
-                        .as_str()
-                        .unwrap(),
+                        .and_then(|result_id| result_id.as_str())
+                        .unwrap_or(""),
                 )
             });
 
