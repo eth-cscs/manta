@@ -583,11 +583,18 @@ pub async fn process_cli(
                     .unwrap()
             });
 
+        // Get list of CFS configuration names related to CFS sessions and BOS sessiontemplates
         cfs_configuration_name_vec = cfs_configuration_name_from_bos_sessiontemplate_value_iter
             .chain(cfs_configuration_name_from_cfs_sessions)
             .collect::<Vec<&str>>();
         cfs_configuration_name_vec.sort();
         cfs_configuration_name_vec.dedup();
+
+        // Get final list of CFS configuration serde values related to CFS sessions and BOS
+        // sessiontemplates
+        cfs_configuration_value_vec.retain(|cfs_configuration_value| {
+            cfs_configuration_name_vec.contains(&cfs_configuration_value["name"].as_str().unwrap())
+        });
 
         // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
         let image_id_from_cfs_session_vec =
@@ -764,10 +771,13 @@ pub async fn process_cli(
 
         let mut cfs_configuration_table = Table::new();
 
-        cfs_configuration_table.set_header(vec!["Name"]);
+        cfs_configuration_table.set_header(vec!["Name", "Last Update"]);
 
-        for cfs_configuration_name in &cfs_configuration_name_vec {
-            cfs_configuration_table.add_row(vec![cfs_configuration_name]);
+        for cfs_configuration_value in &cfs_configuration_value_vec {
+            cfs_configuration_table.add_row(vec![
+                cfs_configuration_value["name"].as_str().unwrap(),
+                cfs_configuration_value["lastUpdated"].as_str().unwrap(),
+            ]);
         }
 
         println!("{cfs_configuration_table}");
