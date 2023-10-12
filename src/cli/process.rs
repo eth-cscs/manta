@@ -600,14 +600,41 @@ pub async fn process_cli(
             );
 
         // Combine image ids from CFS session and BOS session template
-        let mut image_id_vec = [
+        let mut image_id_related_from_cfs_session_bos_sessiontemplate_vec = [
             image_id_from_cfs_session_vec,
             image_id_from_bos_sessiontemplate_vec,
         ]
         .concat();
 
-        image_id_vec.sort();
-        image_id_vec.dedup();
+        image_id_related_from_cfs_session_bos_sessiontemplate_vec.sort();
+        image_id_related_from_cfs_session_bos_sessiontemplate_vec.dedup();
+
+        // Filter list of image ids by removing the ones that does not exists. This is because we
+        // currently image id list contains the values from CFS session and BOS sessiontemplate
+        // which does not means the image still exists (the image perse could have been deleted
+        // previously and the CFS session and BOS sessiontemplate not being cleared)
+        let mut image_id_vec = Vec::new();
+        for image_id in &image_id_related_from_cfs_session_bos_sessiontemplate_vec {
+            if mesa::shasta::ims::image::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                hsm_group_name_opt,
+                Some(image_id),
+                None,
+            )
+            .await
+            .is_ok()
+            {
+                log::info!("Image ID {} exists", image_id);
+                image_id_vec.push(image_id.to_string());
+            }
+        }
+
+        log::info!(
+            "Image id related to CFS sessions and/or BOS sessiontemplate: {:?}",
+            image_id_related_from_cfs_session_bos_sessiontemplate_vec
+        );
+        log::info!("Image ids to delete: {:?}", image_id_vec);
 
         // Get list of CFS session name, CFS configuration name and image id
         let cfs_session_cfs_configuration_image_id_tuple_iter =
@@ -681,6 +708,7 @@ pub async fn process_cli(
                     (bos_sessiontemplate_name, cfs_configuration_name, image_id)
                 });
 
+        // Get final list of CFS configurations to delete. NOTE this list won't include CFS configurations with neither BOS sessiontemplate nor CFS session related, the reason is must filter data to delete by HSM group and CFS configurations by default are not related to any HSM group
         let bos_sessiontemplate_cfs_configuration_image_id_tuple_iter =
             bos_sessiontemplate_cfs_configuration_compute_image_id_tuple_iter
                 .chain(bos_sessiontemplate_cfs_configuration_uan_image_id_tuple_iter)
@@ -747,6 +775,8 @@ pub async fn process_cli(
         println!("Images to delete:");
 
         let mut image_id_table = Table::new();
+
+        image_id_table.set_header(vec!["Image ID"]);
 
         for image_id in &image_id_vec {
             image_id_table.add_row(vec![image_id]);

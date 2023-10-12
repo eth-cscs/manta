@@ -17,19 +17,22 @@ pub async fn delete(
     //
     // DELETE IMAGES
     for image_id in image_id_vec {
-        let image_deleted_value =
-            shasta::ims::image::http_client::delete(shasta_token, shasta_base_url, &image_id)
-                .await
-                .unwrap();
+        let image_deleted_value_rslt =
+            shasta::ims::image::http_client::delete(shasta_token, shasta_base_url, &image_id).await;
 
-        println!(
-            "Image deleted: {}",
-            image_deleted_value
-                .get("id")
-                .unwrap_or(&json!("Image not found."))
-                .as_str()
-                .unwrap()
-        );
+        // process api response
+        match image_deleted_value_rslt {
+            Ok(_) => println!("Image deleted: {}", image_id),
+            Err(error) => {
+                eprintln!("ERROR!!!!:\n{:#?}", error);
+                let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
+                eprintln!("ERROR!!!!:\n{:#?}", error_response);
+                // std::process::exit(0);
+                if error_response["status"].as_u64().unwrap() == 404 {
+                    eprintln!("Image {} not found. Continue", image_id);
+                }
+            }
+        }
     }
 
     // DELETE BOS SESSIONS
@@ -43,7 +46,7 @@ pub async fn delete(
             .await
             .unwrap();
 
-    // Match BOS SESSIONS with the 
+    // Match BOS SESSIONS with the BOS SESSIONTEMPLATE RELATED
     for bos_session_id_value in bos_session_id_value_vec {
         let bos_session_value = shasta::bos::session::http_client::get(
             shasta_token,
@@ -75,7 +78,7 @@ pub async fn delete(
                                                        // ID in the payload...
             );
         } else {
-            log::warn!(
+            log::info!(
                 "Could not find BOS session template related to BOS session {} - Possibly related to a different HSM group or BOS session template was deleted?",
                 bos_session_id_value.as_str().unwrap()
             );
@@ -84,7 +87,7 @@ pub async fn delete(
 
     // DELETE CFS SESSIONS
     for cfs_session_value in cfs_session_value_vec {
-        let cfs_session_deleted_value = shasta::cfs::session::http_client::delete(
+        shasta::cfs::session::http_client::delete(
             shasta_token,
             shasta_base_url,
             cfs_session_value["name"].as_str().unwrap(),
@@ -94,38 +97,41 @@ pub async fn delete(
 
         println!(
             "CFS session deleted: {}",
-            cfs_session_deleted_value["name"].as_str().unwrap()
+            cfs_session_value["name"].as_str().unwrap()
         );
     }
 
     // DELETE BOS SESSIONTEMPLATES
     for bos_sessiontemplate in bos_sessiontemplate_value_vec {
-        let bos_sessiontemplate_deleted_value = shasta::bos::template::http_client::delete(
+        let bos_sessiontemplate_deleted_value_rslt = shasta::bos::template::http_client::delete(
             shasta_token,
             shasta_base_url,
             bos_sessiontemplate["name"].as_str().unwrap(),
         )
-        .await
-        .unwrap();
+        .await;
 
-        println!(
-            "BOS sessiontemplate deleted: {}",
-            bos_sessiontemplate_deleted_value["name"].as_str().unwrap()
-        );
+        match bos_sessiontemplate_deleted_value_rslt {
+            Ok(_) => println!(
+                "BOS sessiontemplate deleted: {}",
+                bos_sessiontemplate["name"].as_str().unwrap()
+            ),
+            Err(error) => {
+                let response_error = serde_json::from_str::<Value>(&error.to_string());
+                log::error!("{:#?}", response_error);
+            }
+        }
     }
 
     // DELETE CFS CONFIGURATIONS
     for cfs_configuration in cfs_configuration_name_vec {
-        let cfs_configuration_deleted_value = shasta::cfs::configuration::http_client::delete(
+        shasta::cfs::configuration::http_client::delete(
             shasta_token,
             shasta_base_url,
             cfs_configuration,
         )
         .await
         .unwrap();
-        println!(
-            "CFS configuration deleted: {}",
-            cfs_configuration_deleted_value["name"].as_str().unwrap()
-        )
+
+        println!("CFS configuration deleted: {}", cfs_configuration)
     }
 }
