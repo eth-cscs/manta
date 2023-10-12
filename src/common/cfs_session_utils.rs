@@ -90,9 +90,7 @@ pub struct CfsSession {
 }
 
 pub fn get_cfs_session_list(cfs_session: Value) -> Vec<String> {
-    let mut result = Vec::new();
-
-    result.push(cfs_session["name"].as_str().unwrap_or_default().to_string());
+    let mut result = vec![cfs_session["name"].as_str().unwrap_or_default().to_string()];
     result.push(
         cfs_session
             .pointer("/configuration/name")
@@ -162,7 +160,7 @@ pub fn get_cfs_session_list(cfs_session: Value) -> Vec<String> {
             .as_str()
             .unwrap()
             .to_string()
-            .replace(",", "\n")
+            .replace(',', "\n")
     };
     result.push(target);
     /*     result.push(
@@ -245,7 +243,7 @@ pub async fn get_image_id_from_cfs_session_list(
     shasta_token: &str,
     shasta_base_url: &str,
     cfs_configuration_name: &String,
-    cfs_sessions_value_list: &Vec<Value>,
+    cfs_sessions_value_list: &[Value],
 ) -> Option<String> {
     // Filter CFS sessions to the ones related to CFS configuration and built an image (target
     // definition is 'image' and it actually has at least one artifact)

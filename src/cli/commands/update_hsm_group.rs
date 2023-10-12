@@ -94,15 +94,12 @@ pub async fn exec(
 
         log::debug!("image_details:\n{:#?}", image_details_resp);
 
-        let image_path = Some(
-            image_details_resp.first().unwrap()["link"]["path"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-        );
+        let image_path = image_details_resp.first().unwrap()["link"]["path"]
+            .as_str()
+            .unwrap()
+            .to_string();
 
         let image_id = image_path
-            .unwrap()
             .strip_prefix("s3://boot-images/")
             .unwrap()
             .strip_suffix("/manifest.json")

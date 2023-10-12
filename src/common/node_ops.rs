@@ -138,9 +138,9 @@ pub async fn validate_xnames(
     true
 }
 
-pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &Vec<Value>) -> Vec<String> {
+pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> Vec<String> {
     let mut node_booting_image_vec = boot_param_vec
-        .into_iter()
+        .iter()
         .filter(|boot_param| {
             boot_param
                 .get("kernel")

@@ -67,14 +67,12 @@ pub async fn exec(
         } else {
             println!("{}", node_xname_list.join(","));
         }
+    } else if output_opt.is_some() && output_opt.unwrap().eq("json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&node_details_list).unwrap()
+        );
     } else {
-        if output_opt.is_some() && output_opt.unwrap().eq("json") {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&node_details_list).unwrap()
-            );
-        } else {
-            node_ops::print_table(node_details_list);
-        }
+        node_ops::print_table(node_details_list);
     }
 }

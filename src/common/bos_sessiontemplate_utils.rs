@@ -30,7 +30,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
     shasta_token: &str,
     shasta_base_url: &str,
     cfs_configuration_name: &String,
-    bos_sessiontemplate_value_list: &Vec<Value>,
+    bos_sessiontemplate_value_list: &[Value],
 ) -> Option<String> {
     // Get all BOS sessiontemplates related to CFS configuration
     let bos_sessiontemplate_value_target_list =

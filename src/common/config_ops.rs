@@ -23,7 +23,7 @@ pub fn get_configuration() -> Config {
     let path_to_manta_configuration_file = get_configuration_file_path();
 
     // let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
-    let settings = ::config::Config::builder()
+    ::config::Config::builder()
         .add_source(::config::File::from(path_to_manta_configuration_file))
         .add_source(
             ::config::Environment::with_prefix("MANTA")
@@ -31,7 +31,5 @@ pub fn get_configuration() -> Config {
                 .prefix_separator("_"),
         )
         .build()
-        .unwrap();
-
-    settings
+        .unwrap()
 }

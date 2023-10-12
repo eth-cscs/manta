@@ -2,8 +2,6 @@ use comfy_table::Table;
 use mesa::shasta::bos;
 use serde_json::json;
 
-use crate::common;
-
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,

@@ -1,4 +1,3 @@
-use mesa::shasta::ims;
 use serde_json::Value;
 
 use crate::common::{bos_sessiontemplate_utils, cfs_session_utils};
@@ -521,7 +520,7 @@ pub async fn get_image_id_from_cfs_session_value(
         shasta_token,
         shasta_base_url,
         &cfs_configuration_name,
-        &[cfs_session_value.clone()].to_vec(),
+        [cfs_session_value.clone()].as_ref(),
     )
     .await;
 

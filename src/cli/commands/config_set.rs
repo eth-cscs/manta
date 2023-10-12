@@ -111,9 +111,8 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, new_hsm_opt: Option
 
     match doc.get("hsm_group") {
         Some(hsm_value) => println!("Target HSM group set to {hsm_value}"),
-        None => println!("Target HSM group unset")
+        None => println!("Target HSM group unset"),
     }
-    
 }
 
 pub fn validate_hsm_group_and_hsm_available_config_params(
@@ -129,13 +128,12 @@ pub fn validate_hsm_group_and_hsm_available_config_params(
     }
 }
 
-pub fn unset_hsm(new_hsm_opt: Option<&String>, hsm_available: Option<&toml_edit::Item>) {
+/* pub fn unset_hsm(new_hsm_opt: Option<&String>, hsm_available: Option<&toml_edit::Item>) {
     if hsm_available.is_some()
         && hsm_available.unwrap().as_array().is_some()
         && !hsm_available.unwrap().as_array().unwrap().is_empty()
     {
         println!("HSM can't be unset. Exit");
         std::process::exit(1);
-    } else {
     }
-}
+} */

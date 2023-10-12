@@ -407,7 +407,7 @@ pub async fn process_cli(
             .await;
         }
     } else if let Some(cli_config) = cli_root.subcommand_matches("config") {
-        if let Some(cli_config_show) = cli_config.subcommand_matches("show") {
+        if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
             config_show::exec(shasta_token, shasta_base_url).await;
         } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
             if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
@@ -461,8 +461,8 @@ pub async fn process_cli(
 
         // Check dessired configuration not using any CFS configuration to delete: Get all CFS components in CSM
         let cfs_components = mesa::shasta::cfs::component::http_client::get_multiple_components(
-            &shasta_token,
-            &shasta_base_url,
+            shasta_token,
+            shasta_base_url,
             None,
             None,
         )
@@ -495,7 +495,7 @@ pub async fn process_cli(
                 .unwrap()
                 .naive_utc();
 
-                return since_opt.unwrap() <= date && date < until_opt.unwrap();
+                since_opt.unwrap() <= date && date < until_opt.unwrap()
             });
         } else if cfs_configuration_name_opt.is_some() {
             cfs_configuration_value_vec.retain(|cfs_configuration_value| {
@@ -830,7 +830,7 @@ pub async fn process_cli(
             let mut boot_image_node_vec = Vec::new();
 
             for image_id in &image_id_vec {
-                let nodes = get_node_vec_booting_image(&image_id, &boot_param_vec);
+                let nodes = get_node_vec_booting_image(image_id, &boot_param_vec);
 
                 if !nodes.is_empty() {
                     boot_image_node_vec.push((image_id, nodes));

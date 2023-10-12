@@ -1,5 +1,5 @@
 use mesa::shasta;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 /// Deletes CFS configuration, CFS session, BOS sessiontemplate, BOS session and images related to
 /// a CFS configuration. This method is safe. It checks if CFS configuration to delete is assigned
@@ -18,7 +18,7 @@ pub async fn delete(
     // DELETE IMAGES
     for image_id in image_id_vec {
         let image_deleted_value_rslt =
-            shasta::ims::image::http_client::delete(shasta_token, shasta_base_url, &image_id).await;
+            shasta::ims::image::http_client::delete(shasta_token, shasta_base_url, image_id).await;
 
         // process api response
         match image_deleted_value_rslt {
@@ -63,7 +63,7 @@ pub async fn delete(
                     .unwrap(),
             )
         {
-            let bos_session_deleted_value = shasta::bos::session::http_client::delete(
+            shasta::bos::session::http_client::delete(
                 shasta_token,
                 shasta_base_url,
                 bos_session_id_value.as_str().unwrap(),

@@ -96,7 +96,7 @@ pub fn subcommand_config(hsm_available_opt: Vec<String>) -> Command {
             .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
     };
 
-    let config = Command::new("config")
+    Command::new("config")
         .alias("C")
         .arg_required_else_help(true)
         .about("Manta's configuration")
@@ -106,9 +106,7 @@ pub fn subcommand_config(hsm_available_opt: Vec<String>) -> Command {
                 .arg_required_else_help(true)
                 .about("Change config values")
                 .subcommand(subcommand_config_set_hsm),
-        );
-
-    config
+        )
 }
 
 pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
