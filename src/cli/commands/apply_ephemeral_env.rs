@@ -2,7 +2,12 @@ use mesa::shasta::ims;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bool>, */ image_id: &str) {
+pub async fn exec(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    /* block: Option<bool>, */ image_id: &str,
+) {
     // Take user name and check if there is an SSH public key with that name already in Alps
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
@@ -17,6 +22,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bo
         ims::public_keys::http_client::get_single(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             user_public_key_name,
         )
         .await
@@ -33,10 +39,14 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bo
     // NOT YET. At this stage just throw an erro because the key was not found
 
     // Create IMS Job
-    log::info!("Creating ephemeral environment baed on image ID {}", image_id);
+    log::info!(
+        "Creating ephemeral environment baed on image ID {}",
+        image_id
+    );
     let resp_json_rslt = ims::job::http_client::post(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         "__test_image_to_delete",
         image_id,
         user_public_ssh_id_value.as_str().unwrap(),

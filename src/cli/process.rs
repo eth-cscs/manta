@@ -25,6 +25,7 @@ pub async fn process_cli(
     cli_root: ArgMatches,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
@@ -46,6 +47,7 @@ pub async fn process_cli(
                 gitea_token,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 cli_get_configuration.get_one::<String>("name"),
                 // hsm_group_name,
                 cli_get_configuration
@@ -76,6 +78,7 @@ pub async fn process_cli(
             get_session::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name,
                 session_name,
                 limit_number,
@@ -91,6 +94,7 @@ pub async fn process_cli(
                 // hsm_group,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name,
                 cli_get_template.get_one::<String>("name"),
                 cli_get_template.get_one::<bool>("most-recent").cloned(),
@@ -106,6 +110,7 @@ pub async fn process_cli(
             get_nodes::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name,
                 *cli_get_node
                     .get_one::<bool>("nids-only-one-line")
@@ -123,7 +128,13 @@ pub async fn process_cli(
                     .unwrap(),
                 Some(hsm_group_name_value) => hsm_group_name_value,
             };
-            get_hsm::exec(shasta_token, shasta_base_url, hsm_group_name).await;
+            get_hsm::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                hsm_group_name,
+            )
+            .await;
         } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
             let hsm_group_name = match hsm_group {
                 // ref: https://stackoverflow.com/a/32487173/1918003
@@ -133,6 +144,7 @@ pub async fn process_cli(
             get_images::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name,
                 cli_get_images.get_one::<u8>("limit"),
             )
@@ -163,6 +175,7 @@ pub async fn process_cli(
                 vault_role_id,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 k8s_api_url,
                 cli_apply_session.get_one::<String>("name").cloned(),
                 hsm_group_name,
@@ -199,6 +212,7 @@ pub async fn process_cli(
                 cli_apply_image.get_one("file").unwrap(),
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 // base_image_id,
                 cli_apply_image.get_one::<String>("ansible-verbosity"),
                 cli_apply_image.get_one::<String>("ansible-passthrough"),
@@ -222,6 +236,7 @@ pub async fn process_cli(
                 // cli_apply_cluster,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 cli_apply_cluster.get_one("file").unwrap(),
                 // base_image_id,
                 hsm_group,
@@ -238,6 +253,7 @@ pub async fn process_cli(
                     hsm_group,
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     cli_apply_node_on
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -252,6 +268,7 @@ pub async fn process_cli(
                     hsm_group,
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     cli_apply_node_off
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -267,6 +284,7 @@ pub async fn process_cli(
                     hsm_group,
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     cli_apply_node_reset
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -291,6 +309,7 @@ pub async fn process_cli(
             apply_ephemeral_env::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 // cli_apply_ephemeral_environment
                 //     .get_one::<bool>("block")
                 //     .copied(),
@@ -310,6 +329,7 @@ pub async fn process_cli(
             update_node::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name,
                 cli_update_node.get_one::<String>("boot-image"),
                 cli_update_node.get_one::<String>("desired-configuration"),
@@ -330,6 +350,7 @@ pub async fn process_cli(
             update_hsm_group::exec(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 cli_update_hsm_group.get_one::<String>("boot-image"),
                 cli_update_hsm_group.get_one::<String>("desired-configuration"),
                 hsm_group_name.unwrap(),
@@ -341,6 +362,7 @@ pub async fn process_cli(
             // cli_log,
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             vault_base_url,
             vault_secret_path,
             vault_role_id,
@@ -376,6 +398,7 @@ pub async fn process_cli(
                 // cli_console,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 vault_base_url,
                 vault_secret_path,
                 vault_role_id,
@@ -396,6 +419,7 @@ pub async fn process_cli(
                 // cli_console,
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 vault_base_url,
                 vault_secret_path,
                 vault_role_id,
@@ -408,12 +432,13 @@ pub async fn process_cli(
         }
     } else if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-            config_show::exec(shasta_token, shasta_base_url).await;
+            config_show::exec(shasta_token, shasta_base_url, shasta_root_cert).await;
         } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
             if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
                 config_set::exec(
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
                 )
                 .await;
@@ -463,6 +488,7 @@ pub async fn process_cli(
         let cfs_components = mesa::shasta::cfs::component::http_client::get_multiple_components(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             None,
             None,
         )
@@ -472,14 +498,19 @@ pub async fn process_cli(
         // Check images related to CFS configurations to delete are not used to boot nodes. For
         // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
         // Get all BSS boot params
-        let boot_param_vec =
-            mesa::shasta::bss::http_client::get_boot_params(shasta_token, shasta_base_url, &[])
-                .await
-                .unwrap();
+        let boot_param_vec = mesa::shasta::bss::http_client::get_boot_params(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &[],
+        )
+        .await
+        .unwrap();
 
         let mut cfs_configuration_value_vec = mesa::shasta::cfs::configuration::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             cfs_configuration_name_opt,
             None,
         )
@@ -518,6 +549,7 @@ pub async fn process_cli(
         let mut bos_sessiontemplate_value_vec = mesa::shasta::bos::template::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             hsm_group_name_opt,
             None,
             None,
@@ -554,6 +586,7 @@ pub async fn process_cli(
         let mut cfs_session_value_vec = mesa::shasta::cfs::session::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             hsm_group_name_opt,
             None,
             None,
@@ -625,6 +658,7 @@ pub async fn process_cli(
             if mesa::shasta::ims::image::http_client::get(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 hsm_group_name_opt,
                 Some(image_id),
                 None,
@@ -867,6 +901,7 @@ pub async fn process_cli(
         delete_data_related_to_cfs_configuration::delete(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &cfs_configuration_name_vec,
             &image_id_vec,
             // &cfs_components,

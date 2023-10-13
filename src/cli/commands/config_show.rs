@@ -1,7 +1,7 @@
 use crate::common::config_ops;
 
 /// Prints Manta's configuration on screen
-pub async fn exec(shasta_token: &str, shasta_base_url: &str) {
+pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &[u8]) {
     // Read configuration file
     let settings = config_ops::get_configuration();
 
@@ -24,13 +24,17 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str) {
                 .collect::<Vec<String>>()
                 .join(", ")
         } else {
-            mesa::shasta::hsm::http_client::get_all_hsm_groups(shasta_token, shasta_base_url)
-                .await
-                .unwrap()
-                .iter()
-                .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
-                .collect::<Vec<String>>()
-                .join(", ")
+            mesa::shasta::hsm::http_client::get_all_hsm_groups(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+            )
+            .await
+            .unwrap()
+            .iter()
+            .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
         };
 
     // Print configuration file content to stdout

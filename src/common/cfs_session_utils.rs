@@ -352,12 +352,14 @@ pub fn print_table_struct(get_cfs_session_value_list: &Vec<GetResponse>) {
 pub async fn get_image_id_related_to_cfs_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
     let cfs_sessions_value_list = mesa::shasta::cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         None,
         None,
         None,
@@ -369,6 +371,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     get_image_id_from_cfs_session_list(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         cfs_configuration_name,
         &cfs_sessions_value_list,
     )
@@ -378,6 +381,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
 pub async fn get_image_id_from_cfs_session_list(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
     cfs_sessions_value_list: &[Value],
 ) -> Option<String> {
@@ -428,6 +432,7 @@ pub async fn get_image_id_from_cfs_session_list(
         if mesa::shasta::ims::image::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             None,
             image_id,
             None,
@@ -451,12 +456,19 @@ pub async fn get_image_id_from_cfs_session_list(
 pub async fn transform(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_sessions_value_list: Vec<Value>,
 ) -> Vec<Vec<String>> {
-    let bos_sessiontemplate_list =
-        shasta::bos::template::http_client::get(shasta_token, shasta_base_url, None, None, None)
-            .await
-            .unwrap();
+    let bos_sessiontemplate_list = shasta::bos::template::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     let mut cfs_session_table_data_list = Vec::new();
 

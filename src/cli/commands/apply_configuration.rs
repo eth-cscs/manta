@@ -12,6 +12,7 @@ pub async fn exec(
     path_file: &Path,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     timestamp: &str,
 ) -> String {
     println!("file config: {:#?}", path_file.file_name());
@@ -47,6 +48,7 @@ pub async fn exec(
     let create_cfs_configuration_resp = cfs::configuration::http_client::put(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         &create_cfs_configuration_payload,
         &create_cfs_configuration_payload.name,
     )

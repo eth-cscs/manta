@@ -8,6 +8,7 @@ use serde_json::Value;
 pub async fn delete(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_configuration_name_vec: &Vec<&str>,
     image_id_vec: &Vec<String>,
     cfs_session_value_vec: &Vec<Value>,
@@ -17,8 +18,13 @@ pub async fn delete(
     //
     // DELETE IMAGES
     for image_id in image_id_vec {
-        let image_deleted_value_rslt =
-            shasta::ims::image::http_client::delete(shasta_token, shasta_base_url, image_id).await;
+        let image_deleted_value_rslt = shasta::ims::image::http_client::delete(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            image_id,
+        )
+        .await;
 
         // process api response
         match image_deleted_value_rslt {
@@ -41,16 +47,21 @@ pub async fn delete(
         .map(|bos_sessiontemplate_value| bos_sessiontemplate_value["name"].as_str().unwrap())
         .collect::<Vec<&str>>();
 
-    let bos_session_id_value_vec =
-        shasta::bos::session::http_client::get(shasta_token, shasta_base_url, None)
-            .await
-            .unwrap();
+    let bos_session_id_value_vec = shasta::bos::session::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+    )
+    .await
+    .unwrap();
 
     // Match BOS SESSIONS with the BOS SESSIONTEMPLATE RELATED
     for bos_session_id_value in bos_session_id_value_vec {
         let bos_session_value = shasta::bos::session::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             Some(bos_session_id_value.as_str().unwrap()),
         )
         .await
@@ -66,6 +77,7 @@ pub async fn delete(
             shasta::bos::session::http_client::delete(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 bos_session_id_value.as_str().unwrap(),
             )
             .await
@@ -90,6 +102,7 @@ pub async fn delete(
         shasta::cfs::session::http_client::delete(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             cfs_session_value["name"].as_str().unwrap(),
         )
         .await
@@ -106,6 +119,7 @@ pub async fn delete(
         let bos_sessiontemplate_deleted_value_rslt = shasta::bos::template::http_client::delete(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             bos_sessiontemplate["name"].as_str().unwrap(),
         )
         .await;
@@ -127,6 +141,7 @@ pub async fn delete(
         shasta::cfs::configuration::http_client::delete(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             cfs_configuration,
         )
         .await

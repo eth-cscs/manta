@@ -3,6 +3,7 @@ use mesa::{mesa::bos::sessiontemplate::utils::print_table_struct, shasta::bos};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     hsm_group_name_opt: Option<&String>,
     bos_sessiontemplate_name_opt: Option<&String>,
     most_recent_opt: Option<bool>,
@@ -11,6 +12,7 @@ pub async fn exec(
     let mut bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         /* hsm_group_name,
         template_name,
         limit_number, */

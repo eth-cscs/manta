@@ -20,6 +20,7 @@ pub async fn exec(
     vault_role_id: &str,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     k8s_api_url: &str,
     cfs_session_name: Option<String>,
     hsm_group: Option<&String>,
@@ -72,6 +73,7 @@ pub async fn exec(
         hsm_group_list = crate::common::cluster_ops::get_details(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             hsm_group_value.unwrap(),
         )
         .await;
@@ -93,8 +95,14 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(shasta_token, shasta_base_url, &xname_list, hsm_group)
-                .await
+            if !node_ops::validate_xnames(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &xname_list,
+                hsm_group,
+            )
+            .await
             {
                 eprintln!("xname/s invalid. Exit");
                 std::process::exit(1);
@@ -127,8 +135,14 @@ pub async fn exec(
         gitea_base_url,
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         Some(xname_list.into_iter().collect::<Vec<_>>().join(",")), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
-        Some(ansible_verbosity.unwrap_or("3".to_string()).parse::<u8>().unwrap_or(0)),
+        Some(
+            ansible_verbosity
+                .unwrap_or("3".to_string())
+                .parse::<u8>()
+                .unwrap_or(0),
+        ),
         ansible_passthrough,
     )
     .await
@@ -166,14 +180,22 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     gitea_base_url: &str,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     limit: Option<String>,
     ansible_verbosity: Option<u8>,
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions =
-        cfs::session::http_client::get(shasta_token, shasta_base_url, None, None, None, None)
-            .await?;
+    let cfs_sessions = cfs::session::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
@@ -223,12 +245,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         let component_status = cfs::component::http_client::get_single_component(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &xname,
         )
         .await?;
         let hsm_configuration_state = &mesa::shasta::hsm::http_client::get_component_status(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &xname,
         )
         .await?["State"];
@@ -358,6 +382,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let cfs_configuration = cfs::configuration::CfsConfiguration::create_from_repos(
         gitea_token,
         gitea_base_url,
+        shasta_root_cert,
         repos,
         &cfs_configuration_name.to_string(),
     )
@@ -373,6 +398,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let cfs_configuration_resp = configuration::http_client::put(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         &cfs_configuration,
         cfs_configuration_name,
     )
@@ -415,7 +441,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp =
-        cfs::session::http_client::post(shasta_token, shasta_base_url, &session).await;
+        cfs::session::http_client::post(shasta_token, shasta_base_url, shasta_root_cert, &session)
+            .await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 

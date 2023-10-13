@@ -12,6 +12,7 @@ pub async fn exec(
     hsm_group: Option<&String>,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
@@ -20,7 +21,15 @@ pub async fn exec(
 ) {
     if hsm_group.is_some() {
         // Check user has provided valid XNAMES
-        if !node_ops::validate_xnames(shasta_token, shasta_base_url, &[xname], hsm_group).await {
+        if !node_ops::validate_xnames(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &[xname],
+            hsm_group,
+        )
+        .await
+        {
             eprintln!("xname/s invalid. Exit");
             std::process::exit(1);
         }

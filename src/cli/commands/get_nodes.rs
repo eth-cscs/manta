@@ -9,13 +9,19 @@ use mesa::manta::get_nodes_status;
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     hsm_group_name: Option<&String>,
     silent: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
 ) {
-    let hsm_groups_resp =
-        hsm::http_client::get_hsm_groups(shasta_token, shasta_base_url, hsm_group_name).await;
+    let hsm_groups_resp = hsm::http_client::get_hsm_groups(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_group_name,
+    )
+    .await;
 
     let hsm_group_list = if hsm_groups_resp.is_err() {
         eprintln!(
@@ -42,8 +48,13 @@ pub async fn exec(
 
     hsm_groups_node_list.sort();
 
-    let node_details_list =
-        get_nodes_status::exec(shasta_token, shasta_base_url, hsm_groups_node_list).await;
+    let node_details_list = get_nodes_status::exec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_groups_node_list,
+    )
+    .await;
 
     if silent {
         let node_nid_list = node_details_list

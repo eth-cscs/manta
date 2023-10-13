@@ -6,6 +6,7 @@ use mesa::shasta::{capmc, ims};
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     hsm_group_name: Option<&String>,
     boot_image_configuration_opt: Option<&String>,
     desired_configuration_opt: Option<&String>,
@@ -18,6 +19,7 @@ pub async fn exec(
         mesa::shasta::cfs::configuration::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             desired_configuration_opt,
             Some(&1),
         )
@@ -42,7 +44,14 @@ pub async fn exec(
 
     // Check user has provided valid XNAMES
     if hsm_group_name.is_some()
-        && !node_ops::validate_xnames(shasta_token, shasta_base_url, &xnames, hsm_group_name).await
+        && !node_ops::validate_xnames(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &xnames,
+            hsm_group_name,
+        )
+        .await
     {
         eprintln!("xname/s invalid. Exit");
         std::process::exit(1);
@@ -69,14 +78,22 @@ pub async fn exec(
         let image_id_opt = get_image_id_from_cfs_configuration_name(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             boot_image_cfs_configuration_name.clone(),
         )
         .await;
 
         let image_details_value_vec = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get(shasta_token, shasta_base_url, None, Some(&image_id), None)
-                .await
-                .unwrap()
+            ims::image::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                Some(&image_id),
+                None,
+            )
+            .await
+            .unwrap()
         } else {
             eprintln!(
                 "Image ID related to CFS configuration name {} not found. Exit",
@@ -104,6 +121,7 @@ pub async fn exec(
         let component_patch_rep = mesa::shasta::bss::http_client::patch(
             shasta_base_url,
             shasta_token,
+            shasta_root_cert,
             &xnames.iter().map(|&xname| xname.to_string()).collect(),
             Some(&format!("console=ttyS0,115200 bad_page=panic crashkernel=360M hugepagelist=2m-2g intel_iommu=off intel_pstate=disable iommu.passthrough=on numa_interleave_omit=headless oops=panic pageblock_order=14 rd.neednet=1 rd.retry=10 rd.shell ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.disable_default_svc=0 cxi_core.sct_pid_mask=0xf spire_join_token=${{SPIRE_JOIN_TOKEN}} root=craycps-s3:s3://boot-images/{}/rootfs:37df9a2dc2c4b50679def2193c193c40-230:dvs:api-gw-service-nmn.local:300:nmn0", image_id)),
             Some(&format!("s3://boot-images/{}/kernel", image_id)),
@@ -128,6 +146,7 @@ pub async fn exec(
         mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             xnames.iter().map(|xname| xname.to_string()).collect(), // TODO: modify function signature
             // for this field so it accepts
             // Vec<&str> instead of
@@ -148,6 +167,7 @@ pub async fn exec(
         let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             nodes.clone(),
             Some("Update node boot params and/or desired configuration".to_string()),
             true,
@@ -163,6 +183,7 @@ pub async fn exec(
         let capmc_start_nodes_resp = capmc::http_client::node_power_on::post(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             nodes,
             Some("Update node boot params and/or desired configuration".to_string()),
             false,

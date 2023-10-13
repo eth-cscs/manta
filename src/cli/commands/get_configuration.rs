@@ -7,6 +7,7 @@ pub async fn exec(
     gitea_token: &str,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     configuration_name: Option<&String>,
     // contains: Option<&String>,
     most_recent: Option<bool>,
@@ -15,6 +16,7 @@ pub async fn exec(
     let cfs_configurations = manta::cfs::configuration::get_configuration(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         configuration_name,
         // contains,
         most_recent,

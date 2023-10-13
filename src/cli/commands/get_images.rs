@@ -5,6 +5,7 @@ use serde_json::json;
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     hsm_group_opt: Option<&String>,
     limit_number: Option<&u8>,
 ) {
@@ -74,6 +75,7 @@ pub async fn exec(
     let image_resp_value_vec = mesa::shasta::ims::image::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         hsm_group_opt,
         None,
         limit_number,
@@ -82,15 +84,22 @@ pub async fn exec(
     .unwrap();
 
     // We need BOS session templates to find an image created by SAT
-    let bos_sessiontemplates_value_vec =
-        bos::template::http_client::get(shasta_token, shasta_base_url, hsm_group_opt, None, None)
-            .await
-            .unwrap();
+    let bos_sessiontemplates_value_vec = bos::template::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_group_opt,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     // We need CFS sessions to find images without a BOS session template
     let cfs_session_resp_vec = mesa::shasta::cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         None,
         None,
         None,

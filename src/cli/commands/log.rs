@@ -1,14 +1,18 @@
 use std::error::Error;
 
-use futures::{AsyncBufReadExt, TryStreamExt, io::Lines};
+use futures::{io::Lines, AsyncBufReadExt, TryStreamExt};
 
-use mesa::shasta::{cfs, hsm, kubernetes::{self, get_cfs_session_logs_stream}};
+use mesa::shasta::{
+    cfs, hsm,
+    kubernetes::{self, get_cfs_session_logs_stream},
+};
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
@@ -22,6 +26,7 @@ pub async fn exec(
     let cfs_sessions_resp = cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         cluster_name,
         session_name,
         None,
@@ -39,6 +44,7 @@ pub async fn exec(
     hsm::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         hsm_group_config,
         session_name,
         &cfs_sessions_resp,
@@ -47,16 +53,18 @@ pub async fn exec(
 
     let cfs_session_name: &str = cfs_sessions_resp.last().unwrap()["name"].as_str().unwrap();
 
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+    let shasta_k8s_secrets =
+        fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
 
     // Get CFS session logs
-    let mut logs_stream = get_cfs_session_logs_stream(client, cfs_session_name, /* layer_id */ None)
-        .await
-        .unwrap();
+    let mut logs_stream =
+        get_cfs_session_logs_stream(client, cfs_session_name, /* layer_id */ None)
+            .await
+            .unwrap();
 
     while let Some(line) = logs_stream.try_next().await.unwrap() {
         println!("{}", line);
@@ -70,11 +78,9 @@ pub async fn session_logs(
     cfs_session_name: &str,
     layer_id: Option<&u8>,
     k8s_api_url: &str,
-) -> Result<
-    Lines<impl AsyncBufReadExt>,
-    Box<dyn Error + Sync + Send>,
-> {
-    let shasta_k8s_secrets = fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+) -> Result<Lines<impl AsyncBufReadExt>, Box<dyn Error + Sync + Send>> {
+    let shasta_k8s_secrets =
+        fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await

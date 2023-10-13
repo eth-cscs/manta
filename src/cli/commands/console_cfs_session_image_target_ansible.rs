@@ -10,6 +10,7 @@ pub async fn exec(
     hsm_group: Option<&String>,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
@@ -19,6 +20,7 @@ pub async fn exec(
     let cfs_session_details_list_rslt = mesa::shasta::cfs::session::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         hsm_group,
         Some(&cfs_session_name.to_string()),
         None,

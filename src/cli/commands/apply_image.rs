@@ -24,6 +24,7 @@ pub async fn exec(
     path_file: &PathBuf,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     ansible_verbosity: Option<&String>,
     ansible_passthrough: Option<&String>,
     watch_logs: Option<&bool>,
@@ -84,6 +85,7 @@ pub async fn exec(
         let create_cfs_configuration_resp = cfs::configuration::http_client::put(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &cfs_configuration,
             &cfs_configuration.name,
         )
@@ -140,19 +142,26 @@ pub async fn exec(
         cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
 
         // Set ansible verbosity
-        cfs_session.ansible_verbosity = Some(ansible_verbosity
-            .cloned()
-            .unwrap_or("0".to_string())
-            .parse::<u8>()
-            .unwrap());
+        cfs_session.ansible_verbosity = Some(
+            ansible_verbosity
+                .cloned()
+                .unwrap_or("0".to_string())
+                .parse::<u8>()
+                .unwrap(),
+        );
 
         // Set ansible passthrough params
         cfs_session.ansible_passthrough = ansible_passthrough.cloned();
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
-        let create_cfs_session_resp =
-            cfs::session::http_client::post(shasta_token, shasta_base_url, &cfs_session).await;
+        let create_cfs_session_resp = cfs::session::http_client::post(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_session,
+        )
+        .await;
 
         log::debug!(
             "CFS session creation response:\n{:#?}",

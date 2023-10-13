@@ -99,11 +99,12 @@ pub fn nodes_to_string_format_discrete_columns(
 pub async fn validate_xnames(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     xnames: &[&str],
     hsm_group_name: Option<&String>,
 ) -> bool {
     let hsm_group_members: Vec<_> = if hsm_group_name.is_some() {
-        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group_name.unwrap())
+        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, hsm_group_name.unwrap())
             .await
             .unwrap()["members"]["ids"]
             .as_array()

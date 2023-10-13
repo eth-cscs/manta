@@ -5,6 +5,7 @@ use crate::common;
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     hsm_group_name_opt: Option<&String>,
     cfs_session_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
@@ -13,6 +14,7 @@ pub async fn exec(
     let mut cfs_session_vec = mesa::mesa::cfs::session::http_client::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         None,
     )
     .await
@@ -81,18 +83,31 @@ pub async fn exec(
                     .unwrap()
                     .result_id
                     .as_deref();
+
                 let new_image_id_vec = shasta::ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     hsm_group_name_opt,
                     cfs_session_image_id,
                     None,
                 )
-                .await
-                .unwrap();
-                let new_image_id = new_image_id_vec.first().unwrap();
+                .await;
 
-                Some(new_image_id.as_str().unwrap().to_string())
+                if new_image_id_vec.is_ok() && new_image_id_vec.as_ref().unwrap().first().is_some()
+                {
+                    Some(
+                        new_image_id_vec
+                            .unwrap()
+                            .first()
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                            .to_string(),
+                    )
+                } else {
+                    None
+                }
             } else {
                 None
             };
@@ -115,11 +130,13 @@ pub async fn exec(
     cfs_session_vec = mesa::mesa::cfs::session::http_client::utils::filter(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         &mut cfs_session_vec,
         hsm_group_name_opt,
         cfs_session_name_opt,
         limit_number_opt,
-    ).await;
+    )
+    .await;
 
     if output_opt.is_some() && output_opt.unwrap().eq("json") {
         println!(

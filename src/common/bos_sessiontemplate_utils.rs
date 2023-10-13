@@ -4,12 +4,14 @@ use serde_json::Value;
 pub async fn get_image_id_related_to_cfs_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all BOS sessiontemplates
     let bos_sessiontemplate_value_list = mesa::shasta::bos::template::http_client::get(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         None,
         None,
         None,
@@ -20,6 +22,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     get_image_id_from_bos_sessiontemplate_list(
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         cfs_configuration_name,
         &bos_sessiontemplate_value_list,
     )
@@ -29,6 +32,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
 pub async fn get_image_id_from_bos_sessiontemplate_list(
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
     bos_sessiontemplate_value_list: &[Value],
 ) -> Option<String> {
@@ -73,6 +77,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                 if ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
+                    shasta_root_cert,
                     None,
                     Some(&image_id_related_to_bos_sessiontemplate),
                     None,

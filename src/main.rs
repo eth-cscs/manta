@@ -1,9 +1,6 @@
 mod cli;
 mod common;
 use mesa::shasta;
-use std::{fs::File, path::PathBuf};
-
-use directories::ProjectDirs;
 
 use shasta::authentication;
 
@@ -99,6 +96,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .map(|hsm_group| hsm_group.into_string().unwrap())
         .collect::<Vec<String>>();
 
+    let shasta_root_cert = common::config_ops::get_csm_root_cert_content();
+
     /* let hsm_group = match &settings_hsm_group {
         Ok(hsm_group_val) => {
             /* println!(
@@ -112,7 +111,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => None,
     }; */
 
-    let shasta_token = authentication::get_api_token(&shasta_base_url, &keycloak_base_url).await?;
+    let shasta_token = authentication::get_api_token(
+        &shasta_base_url,
+        &shasta_root_cert,
+        &keycloak_base_url,
+    )
+    .await?;
 
     let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,
@@ -130,6 +134,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         matches,
         &shasta_token,
         &shasta_base_url,
+        &shasta_root_cert,
         &vault_base_url,
         &vault_secret_path,
         &vault_role_id,

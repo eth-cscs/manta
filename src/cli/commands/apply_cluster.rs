@@ -21,6 +21,7 @@ pub async fn exec(
     vault_role_id: &str,
     shasta_token: &str,
     shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     path_file: &PathBuf,
     hsm_group_param: Option<&String>,
     ansible_verbosity: Option<&String>,
@@ -50,6 +51,7 @@ pub async fn exec(
         path_file,
         shasta_token,
         shasta_base_url,
+        shasta_root_cert,
         ansible_verbosity,
         ansible_passthrough,
         Some(&false),
@@ -68,6 +70,7 @@ pub async fn exec(
         let mut cfs_sessions_details = session::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             None,
             Some(&cfs_session.name),
             Some(&1),
@@ -95,6 +98,7 @@ pub async fn exec(
             cfs_sessions_details = session::http_client::get(
                 shasta_token,
                 shasta_base_url,
+                shasta_root_cert,
                 None,
                 Some(&cfs_session.name),
                 Some(&1),
@@ -168,6 +172,7 @@ pub async fn exec(
         let image_detail_vec = image::http_client::get(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             None,
             Some(cfs_session_detail.unwrap()["name"].as_str().unwrap()),
             None,
@@ -257,6 +262,7 @@ pub async fn exec(
         let create_bos_session_template_resp = template::http_client::post(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &create_bos_session_template_payload,
         )
         .await;
@@ -276,8 +282,13 @@ pub async fn exec(
 
         // Get nodes members of HSM group
         // Get HSM group details
-        let hsm_group_details =
-            hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, hsm_group).await;
+        let hsm_group_details = hsm::http_client::get_hsm_group(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_group,
+        )
+        .await;
 
         log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
@@ -293,6 +304,7 @@ pub async fn exec(
         let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             nodes.clone(),
             Some("Shut down cluster to apply changes".to_string()),
             true,
@@ -308,6 +320,7 @@ pub async fn exec(
         let create_bos_boot_session_resp = bos::session::http_client::post(
             shasta_token,
             shasta_base_url,
+            shasta_root_cert,
             &create_bos_session_template_payload.name,
             "boot",
             Some(&nodes.join(",")),

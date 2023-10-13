@@ -3,7 +3,12 @@ use std::{fs, io::Write, path::PathBuf};
 use directories::ProjectDirs;
 use toml_edit::{value, Document};
 
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, new_hsm_opt: Option<&String>) {
+pub async fn exec(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    new_hsm_opt: Option<&String>,
+) {
     // Read configuration file
 
     // XDG Base Directory Specification
@@ -75,13 +80,16 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, new_hsm_opt: Option
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
-        hsm_available_vec =
-            mesa::shasta::hsm::http_client::get_all_hsm_groups(shasta_token, shasta_base_url)
-                .await
-                .unwrap()
-                .into_iter()
-                .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
-                .collect::<Vec<String>>();
+        hsm_available_vec = mesa::shasta::hsm::http_client::get_all_hsm_groups(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
 
         validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), hsm_available_vec);
 
