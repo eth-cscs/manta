@@ -1,165 +1,132 @@
 use mesa::shasta;
 
-use serde_json::Value;
-
-use crate::common::{self, ims_ops};
+use crate::common;
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    hsm_group_name: Option<&String>,
-    session_name: Option<&String>,
-    limit_number: Option<&u8>,
+    hsm_group_name_opt: Option<&String>,
+    cfs_session_name_opt: Option<&String>,
+    limit_number_opt: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    let mut cfs_session_value_list = shasta::cfs::session::http_client::get(
+    let mut cfs_session_vec = mesa::mesa::cfs::session::http_client::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
-        session_name,
-        limit_number,
         None,
     )
     .await
-    .unwrap_or_default();
+    .unwrap();
 
-    log::debug!("CFS sessions:\n{:#?}", cfs_session_value_list);
-
-    if cfs_session_value_list.is_empty() {
+    if cfs_session_vec.is_empty() {
         println!("CFS session not found!");
         std::process::exit(0);
-    } else {
-        let cfs_configuration_name = cfs_session_value_list
-            .first()
+    }
+
+    for cfs_session in cfs_session_vec.iter_mut() {
+        log::debug!("CFS session:\n{:#?}", cfs_session);
+
+        if cfs_session
+            .target
+            .as_ref()
             .unwrap()
-            .pointer("/configuration/name")
+            .definition
+            .as_ref()
             .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string();
-
-        let mut cfs_session_list = Vec::<Value>::new();
-
-        for cfs_session_value in cfs_session_value_list.iter_mut() {
-            log::debug!("CFS session:\n{:#?}", cfs_session_value);
-
-            let cfs_session_name = cfs_session_value["name"].as_str().unwrap().to_string();
-
-            if cfs_session_value
-                .pointer("/target/definition")
+            .eq("image")
+            && cfs_session
+                .status
+                .as_ref()
                 .unwrap()
-                .as_str()
-                .eq(&Some("image"))
-                && cfs_session_value
-                    .pointer("/status/session/succeeded")
+                .session
+                .as_ref()
+                .unwrap()
+                .succeeded
+                .as_ref()
+                .unwrap()
+                .eq("true")
+        {
+            log::info!(
+                "Find image ID related to CFS configuration {} in CFS session {}",
+                cfs_session
+                    .configuration
+                    .as_ref()
                     .unwrap()
-                    .as_str()
-                    .eq(&Some("true"))
-            {
-                log::info!(
-                    "Find image ID related to CFS configuration {} in CFS session {}",
-                    cfs_configuration_name,
-                    cfs_session_name
-                );
+                    .name
+                    .as_ref()
+                    .unwrap(),
+                cfs_session.name.as_ref().unwrap()
+            );
 
-                let new_image_id_opt = ims_ops::get_image_id_from_cfs_session_value(
+            let new_image_id_opt = if cfs_session
+                .status
+                .as_ref()
+                .and_then(|status| {
+                    status.artifacts.as_ref().and_then(|artifacts| {
+                        artifacts
+                            .first()
+                            .and_then(|artifact| artifact.result_id.clone())
+                    })
+                })
+                .is_some()
+            {
+                let cfs_session_image_id = cfs_session
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .artifacts
+                    .as_ref()
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .result_id
+                    .as_deref();
+                let new_image_id_vec = shasta::ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
-                    cfs_session_value,
+                    hsm_group_name_opt,
+                    cfs_session_image_id,
+                    None,
                 )
-                .await;
+                .await
+                .unwrap();
+                let new_image_id = new_image_id_vec.first().unwrap();
 
-                log::info!("Image ID found: {:?}", new_image_id_opt);
-
-                if let Some(new_image_id) = new_image_id_opt {
-                    if cfs_session_value
-                        .pointer("/status/artifacts/0/result_id")
-                        .is_some()
-                    {
-                        /* let cfs_session: cfs_session_utils::CfsSession =
-                            serde_json::from_value(cfs_session_value.clone()).unwrap();
-
-                        println!("CFS SESSION STRUCT:\n{:#?}", cfs_session);
-
-                        cfs_session.status.unwrap().actifacts.unwrap().first().unwrap().result_id = Some(new_image_id); */
-
-                        // let mut cfs_session_value_cloned = cfs_session_value.clone();
-
-                        if let Value::String(current_image_id) = &mut cfs_session_value
-                            .pointer_mut("/status/artifacts/0/result_id")
-                            .unwrap()
-                        {
-                            log::info!(
-                                "Update image ID from {} to {}",
-                                current_image_id,
-                                new_image_id
-                            );
-
-                            *current_image_id = new_image_id;
-
-                            log::debug!("New CFS session details:\n{:#?}", cfs_session_value);
-                        }
-
-                        cfs_session_list.push(cfs_session_value.clone());
-                    } else {
-                        cfs_session_list.push(cfs_session_value.clone());
-                    }
-                } else {
-                    cfs_session_list.push(cfs_session_value.clone());
-                }
+                Some(new_image_id.as_str().unwrap().to_string())
             } else {
-                cfs_session_list.push(cfs_session_value.clone());
+                None
+            };
+
+            if new_image_id_opt.is_some() {
+                cfs_session
+                    .status
+                    .clone()
+                    .unwrap()
+                    .artifacts
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .clone()
+                    .result_id = new_image_id_opt;
             }
-
-            /* let cfs_session_value_aux = cfs_session_value.clone();
-
-            let image_id_opt = common::ims_ops::get_image_id_from_cfs_session_value(
-                shasta_token,
-                shasta_base_url,
-                cfs_session_value_aux.clone(),
-            )
-            .await;
-
-            if let Some(image_id) = image_id_opt {
-                if cfs_session_value_aux
-                    .pointer("/status/artifacts/0/result_id")
-                    .is_some()
-                {
-                    let result_id = &mut cfs_session_value_aux
-                        .pointer("/status/artifacts/0/result_id")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string();
-
-                    *result_id = image_id;
-
-                    cfs_session_list.push(cfs_session_value_aux);
-                } else {
-                    cfs_session_list.push(cfs_session_value_aux);
-                }
-            } */
-        }
-        if output_opt.is_some() && output_opt.unwrap().eq("json") {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(&cfs_session_value_list).unwrap()
-            );
-        } else {
-            common::cfs_session_utils::print_table(&cfs_session_value_list);
         }
     }
 
-    // LEGACY
-
-    /* let cfs_session_table_data_list = manta::cfs::session::get_sessions(
+    cfs_session_vec = mesa::mesa::cfs::session::http_client::utils::filter(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
-        session_name,
-        limit_number,
-    )
-    .await;
+        &mut cfs_session_vec,
+        hsm_group_name_opt,
+        cfs_session_name_opt,
+        limit_number_opt,
+    ).await;
 
-    cfs::session::utils::print_table(cfs_session_table_data_list); */
+    if output_opt.is_some() && output_opt.unwrap().eq("json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&cfs_session_vec).unwrap()
+        );
+    } else {
+        common::cfs_session_utils::print_table_struct(&cfs_session_vec);
+    }
 }

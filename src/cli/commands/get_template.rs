@@ -1,37 +1,35 @@
-use mesa::shasta::bos;
+use mesa::{mesa::bos::sessiontemplate::utils::print_table_struct, shasta::bos};
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    hsm_group_name: Option<&String>,
-    template_name: Option<&String>,
-    most_recent: Option<bool>,
-    limit: Option<&u8>,
+    hsm_group_name_opt: Option<&String>,
+    bos_sessiontemplate_name_opt: Option<&String>,
+    most_recent_opt: Option<bool>,
+    limit_number_opt: Option<&u8>,
 ) {
-    let limit_number;
-
-    if let Some(true) = most_recent {
-        limit_number = Some(&1);
-    } else if let Some(false) = most_recent {
-        limit_number = limit;
-    } else {
-        limit_number = None;
-    }
-
-    let bos_templates = bos::template::http_client::get(
+    let mut bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::http_client::get(
         shasta_token,
         shasta_base_url,
-        hsm_group_name,
+        /* hsm_group_name,
         template_name,
-        limit_number,
+        limit_number, */
     )
     .await
     .unwrap_or_default();
 
-    if bos_templates.is_empty() {
+    bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::utils::filter(
+        &mut bos_sessiontemplate_vec,
+        hsm_group_name_opt,
+        bos_sessiontemplate_name_opt,
+        limit_number_opt,
+    )
+    .await;
+
+    if bos_sessiontemplate_vec.is_empty() {
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
-        bos::template::utils::print_table(bos_templates);
+        print_table_struct(bos_sessiontemplate_vec);
     }
 }

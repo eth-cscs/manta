@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::shasta;
+use mesa::{mesa::cfs::session::get_response_struct::GetResponse, shasta};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -89,7 +89,7 @@ pub struct CfsSession {
     pub tags: Option<...> */
 }
 
-pub fn get_cfs_session_list(cfs_session: Value) -> Vec<String> {
+pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
     let mut result = vec![cfs_session["name"].as_str().unwrap_or_default().to_string()];
     result.push(
         cfs_session
@@ -190,6 +190,119 @@ pub fn get_cfs_session_list(cfs_session: Value) -> Vec<String> {
     result
 }
 
+pub fn cfs_session_struct_to_vec(cfs_session: GetResponse) -> Vec<String> {
+    let mut result = vec![cfs_session.name.unwrap()];
+    result.push(cfs_session.configuration.unwrap().name.unwrap());
+    result.push(
+        cfs_session
+            .status
+            .as_ref()
+            .unwrap()
+            .session
+            .as_ref()
+            .unwrap()
+            .start_time
+            .clone()
+            .unwrap_or("".to_string())
+            .to_string(),
+    );
+    result.push(
+        cfs_session
+            .ansible
+            .as_ref()
+            .unwrap()
+            .passthrough
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string(),
+    );
+    result.push(
+        cfs_session
+            .ansible
+            .as_ref()
+            .unwrap()
+            .verbosity
+            .as_ref()
+            .unwrap()
+            .to_string(),
+    );
+    result.push(
+        cfs_session
+            .status
+            .as_ref()
+            .unwrap()
+            .session
+            .as_ref()
+            .unwrap()
+            .status
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string(),
+    );
+    result.push(
+        cfs_session
+            .status
+            .as_ref()
+            .unwrap()
+            .session
+            .as_ref()
+            .unwrap()
+            .succeeded
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string(),
+    );
+    result.push(
+        cfs_session
+            .target
+            .as_ref()
+            .unwrap()
+            .definition
+            .as_ref()
+            .unwrap_or(&"".to_string())
+            .to_string(),
+    );
+    let target = if !cfs_session
+        .target
+        .as_ref()
+        .unwrap()
+        .groups
+        .as_ref()
+        .unwrap()
+        .is_empty()
+    {
+        cfs_session
+            .target
+            .unwrap()
+            .groups
+            .unwrap()
+            .iter()
+            .map(|group| group.name.as_ref().unwrap().to_string())
+            .collect::<Vec<String>>()
+            .join("\n")
+    } else {
+        cfs_session
+            .ansible
+            .unwrap()
+            .limit
+            .unwrap_or_default()
+            .replace(',', "\n")
+    };
+    result.push(target);
+    result.push(
+        cfs_session
+            .status
+            .unwrap()
+            .artifacts
+            .unwrap_or(Vec::new())
+            .first()
+            .and_then(|artifact| artifact.result_id.clone())
+            .unwrap_or("".to_string()),
+    );
+
+    result
+}
+
 pub fn print_table(get_cfs_session_value_list: &Vec<Value>) {
     let mut table = Table::new();
 
@@ -207,7 +320,30 @@ pub fn print_table(get_cfs_session_value_list: &Vec<Value>) {
     ]);
 
     for cfs_session_value in get_cfs_session_value_list {
-        table.add_row(get_cfs_session_list(cfs_session_value.clone()));
+        table.add_row(cfs_session_value_to_vec(cfs_session_value.clone()));
+    }
+
+    println!("{table}");
+}
+
+pub fn print_table_struct(get_cfs_session_value_list: &Vec<GetResponse>) {
+    let mut table = Table::new();
+
+    table.set_header(vec![
+        "Name",
+        "Configuration",
+        "Start",
+        "Passthrough",
+        "Verbosity",
+        "Status",
+        "Succeeded",
+        "Target Def",
+        "Target",
+        "Image ID",
+    ]);
+
+    for cfs_session_value in get_cfs_session_value_list {
+        table.add_row(cfs_session_struct_to_vec(cfs_session_value.clone()));
     }
 
     println!("{table}");
