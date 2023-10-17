@@ -10,28 +10,22 @@ use log4rs::{
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
 pub fn configure(log_level: String) {
-
     let mut audit_file_path = "/var/log/manta/requests.log";
     if env::consts::OS == "macos" {
         audit_file_path = "./manta-requests.log";
     }
-  
+
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} | {h({l}):5.5} | {f}:{L} — {m}{n}",
         )))
         .build();
-    let mut logfile = "/var/log/manta/requests.log";
 
-    if env::consts::OS == "macos" {
-        logfile = "./manta-requests.log";
-    }
-    let requests = FileAppender::builder()
+    let requests_rslt = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new(
             "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}",
         )))
-        .build(logfile)
-        .unwrap();
+        .build(audit_file_path);
 
     let mut config_builder = Config::builder()
         .appender(Appender::builder().build("stdout", Box::new(stdout)))
@@ -65,17 +59,6 @@ pub fn configure(log_level: String) {
     };
 
     let config = config_builder
-        .build(
-            Root::builder()
-                .appender("stdout")
-                .build(LevelFilter::from_str(&log_level).unwrap_or(LevelFilter::Error)),
-        )
-        .logger(
-            Logger::builder()
-                .appender("requests")
-                .additive(false)
-                .build("app::audit", LevelFilter::Info),
-        )
         .build(
             Root::builder()
                 .appender("stdout")
