@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{env, str::FromStr};
 
 use log::LevelFilter;
 use log4rs::{
@@ -10,7 +10,10 @@ use log4rs::{
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
 pub fn configure(log_level: String) {
-    let audit_file_path = "/var/log/manta/requests.log";
+    let mut audit_file_path = "/var/log/manta/requests.log";
+    if env::consts::OS == "macos" {
+        audit_file_path = "./manta-requests.log";
+    }
 
     let stdout = ConsoleAppender::builder()
         .encoder(Box::new(PatternEncoder::new(

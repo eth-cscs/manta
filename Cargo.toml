@@ -44,11 +44,12 @@ regex = "1.6.0"
 directories = "4.0.1" # XDG Base Directory Specification
 comfy-table = "6.1.1" # used to print mata's command output to stdout as tables
 tracing-subscriber = "0.3.16"
-termion = "2.0.1" # used by manta_console to enable terminal raw and also to print text in color 
+termion = "2.0.1" # used by manta_console to enable terminal raw and also to print text in color
 crossterm = "0.27.0"
 dhat = "0.3.2" # used for memory profiling
 base64 = "0.13.1"
 cargo-dist = "0.0.7"
+exitcode = "1.1.2"
 
 [build-dependencies]
 clap = "*"

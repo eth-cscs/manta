@@ -61,20 +61,19 @@ chmod 777 -R /var/log/manta
 
 ### Legend:
 
-|Name|mandatory|Type|Description|Example|
-|----|---------|----|-----------|-------|
-|MANTA_CSM_TOKEN|no|env|CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak||
-|log|no|config file|log details/verbosity|off/error/warn/info/debug/trace|
-|socks5_proxy|yes|config file|socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle)|socks5h://127.0.0.1:1080|RE
-|keycloak_base_url|yes|config file|Keycloak base URL for authentication|https://api.cmn.alps.cscs.ch/keycloak|
-|gitea_base_url|yes|config file|Gitea base URL to fetch CFS layers git repo details|https://api.cmn.alps.cscs.ch/vcs|
-|k8s_api_url|yes|config file|Shasta k8s API URL|https://10.252.1.12:6442|
-|vault_base_url|yes|config file|Hashicorp Vault base URL storing secrets to authenticate to external services|https://hashicorp-vault.cscs.ch|
-vault_role_id|yes|config file|role id related to Hashicorp Vault base URL approle authentication|yes|b15517de-cabb-06ba-af98-633d216c6d99|
-|vault_secret_path|config file|path in vault to find secrets|shasta or prealps|
-|shasta_base_url|yes|config file|Shasta API base URL for Shasta related jobs submission|https://api-gw-service-nmn.local/apis|
-|hsm_group|no|config|If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command|psi-dev|
-|hsm_available|no|config|List of HSM groups avaiable to use|psi-dev,psitds|
+| Name              | mandatory   | Type                          | Description                                                                                                                                                          | Example                               |
+| ----------------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| MANTA_CSM_TOKEN   | no          | env                           | CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak                                                |                                       |
+| log               | no          | config file                   | log details/verbosity                                                                                                                                                | off/error/warn/info/debug/trace       |
+| socks5_proxy      | yes         | config file                   | socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle) | socks5h://127.0.0.1:1080              | RE                                   |
+| keycloak_base_url | yes         | config file                   | Keycloak base URL for authentication                                                                                                                                 | https://api.cmn.alps.cscs.ch/keycloak |
+| gitea_base_url    | yes         | config file                   | Gitea base URL to fetch CFS layers git repo details                                                                                                                  | https://api.cmn.alps.cscs.ch/vcs      |
+| k8s_api_url       | yes         | config file                   | Shasta k8s API URL                                                                                                                                                   | https://10.252.1.12:6442              |
+| vault_base_url    | yes         | config file                   | Hashicorp Vault base URL storing secrets to authenticate to external services                                                                                        | https://hashicorp-vault.cscs.ch       |
+| vault_role_id     | yes         | config file                   | role id related to Hashicorp Vault base URL approle authentication                                                                                                   | yes                                   | b15517de-cabb-06ba-af98-633d216c6d99 |
+| vault_secret_path | config file | path in vault to find secrets | shasta or prealps                                                                                                                                                    |
+| shasta_base_url   | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
+| hsm_group         | no          | config                        | If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command                                                                     | psi-dev                               |
 
 ## Example
 
@@ -127,7 +126,7 @@ PLAY [Management_Worker] *******************************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0   
+x1500c7s2b0n0              : ok=1    changed=0    unreachable=0    failed=0    skipped=33   rescued=0    ignored=0
 ```
 
 ### Create a CFS session and watch logs
@@ -173,7 +172,7 @@ x1500c3s4b0n1              : ok=8    changed=0    unreachable=0    failed=0    s
 
 ```
 $ manta console x1500c2s4b0n1
-[2022-10-30T02:14:44Z INFO  manta::node_console] Alternatively run - kubectl -n services exec -it cray-console-node-2 -c cray-console-node -- conman -j x1500c2s4b0n1 
+[2022-10-30T02:14:44Z INFO  manta::node_console] Alternatively run - kubectl -n services exec -it cray-console-node-2 -c cray-console-node -- conman -j x1500c2s4b0n1
 [2022-10-30T02:14:44Z INFO  manta::node_console] Connecting to console x1500c2s4b0n1
 Connected to x1500c2s4b0n1!
 Use &. key combination to exit the console.
@@ -194,7 +193,7 @@ Use &. key combination to exit the console.
 
 <ConMan> Console [x1500c2s4b0n1] joined with <nobody@localhost> on pts/511 at 10-30 02:14.
 
-nid003129 login: 
+nid003129 login:
 ```
 
 ### Power off a node
@@ -242,7 +241,7 @@ cargo install cross
 Generate binary (cross compilation)
 
 ```shell
-cross build --target x86_64-unknown-linux-gnu --release
+scripts/build
 ```
 
 or
@@ -266,7 +265,7 @@ cargo install cargo-release
 Configure cargo-dist. Accept default options and only target linux assets
 
 ```
-cargo dist init -t x86_64-unknown-linux-gnu
+cargo dist init -t $(uname -m)-unknown-$(uname -s | tr '[:upper:]' '[:lower:]')-gnu
 ```
 
 Then remove the assets for macos and windows
@@ -326,9 +325,9 @@ Go to https://profiler.firefox.com/ and open manta.perf file
 #### DHAT mem alloction profiling
 
 > https://docs.rs/dhat/latest/dhat/
-> NOTE: lto in Cargo.toml needs to be disabled 
+> NOTE: lto in Cargo.toml needs to be disabled
 
-##### Run 
+##### Run
 
 ```bash
 cargo run -r --features dhat-heap -- get session
