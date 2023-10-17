@@ -165,28 +165,31 @@ pub async fn exec(
             std::process::exit(1);
         }
         // Get image details
-        let image_details = image::http_client::get(
+        let image_detail_vec = image::http_client::get(
             shasta_token,
             shasta_base_url,
+            None,
             Some(cfs_session_detail.unwrap()["name"].as_str().unwrap()),
+            None,
         )
-        .await;
+        .await
+        .unwrap_or(Vec::new());
 
-        log::debug!("IMS image response:\n{:#?}", image_details);
+        log::debug!("IMS image response:\n{:#?}", image_detail_vec);
 
-        let ims_image_name = image_details.as_ref().unwrap()["name"]
+        let ims_image_name = image_detail_vec.first().unwrap()["name"]
             .as_str()
             .unwrap()
             .to_string();
-        let ims_image_etag = image_details.as_ref().unwrap()["link"]["etag"]
+        let ims_image_etag = image_detail_vec.first().unwrap()["link"]["etag"]
             .as_str()
             .unwrap()
             .to_string();
-        let ims_image_path = image_details.as_ref().unwrap()["link"]["path"]
+        let ims_image_path = image_detail_vec.first().unwrap()["link"]["path"]
             .as_str()
             .unwrap()
             .to_string();
-        let ims_image_type = image_details.as_ref().unwrap()["link"]["type"]
+        let ims_image_type = image_detail_vec.first().unwrap()["link"]["type"]
             .as_str()
             .unwrap()
             .to_string();

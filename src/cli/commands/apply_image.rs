@@ -54,7 +54,7 @@ pub async fn exec(
     let image_list_yaml = sat_file_yaml["images"].as_sequence();
 
     // Check HSM groups in images section matches the HSM group in Manta configuration file
-    if let Some(hsm_group_config_value) = hsm_group_config {
+    if let Some(_hsm_group_config_value) = hsm_group_config {
         println!("image_list_yaml:\n{:#?}", image_list_yaml);
     }
 

@@ -30,7 +30,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
     shasta_token: &str,
     shasta_base_url: &str,
     cfs_configuration_name: &String,
-    bos_sessiontemplate_value_list: &Vec<Value>,
+    bos_sessiontemplate_value_list: &[Value],
 ) -> Option<String> {
     // Get all BOS sessiontemplates related to CFS configuration
     let bos_sessiontemplate_value_target_list =
@@ -73,7 +73,9 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                 if ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
+                    None,
                     Some(&image_id_related_to_bos_sessiontemplate),
+                    None,
                 )
                 .await
                 .is_ok()

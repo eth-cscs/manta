@@ -65,7 +65,7 @@ pub async fn exec(
                 let new_image_id_opt = ims_ops::get_image_id_from_cfs_session_value(
                     shasta_token,
                     shasta_base_url,
-                    &cfs_session_value,
+                    cfs_session_value,
                 )
                 .await;
 

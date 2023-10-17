@@ -1,4 +1,4 @@
-# base_image_id = "4bf91021-8d99-4adf-945f-46de2ff50a3d"
+log = "debug"
 # socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
 keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
@@ -7,4 +7,4 @@ k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch - replace with your own
 # hsm_group = "psitds"
-log = "debug"
+# hsm_available = [ "psi-dev", "psitds" ]

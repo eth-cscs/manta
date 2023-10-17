@@ -81,23 +81,25 @@ pub async fn exec(
         .await;
 
         let image_details_resp = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get(shasta_token, shasta_base_url, Some(&image_id)).await
+            ims::image::http_client::get(shasta_token, shasta_base_url, None, Some(&image_id), None)
+                .await
+                .unwrap()
         } else {
-            eprintln!("Image ID related to CFS configuration name {} not found. Exit", boot_image_cfs_configuration_name);
+            eprintln!(
+                "Image ID related to CFS configuration name {} not found. Exit",
+                boot_image_cfs_configuration_name
+            );
             std::process::exit(1);
         };
 
         log::debug!("image_details:\n{:#?}", image_details_resp);
 
-        let image_path = Some(
-            image_details_resp.as_ref().unwrap()["link"]["path"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-        );
+        let image_path = image_details_resp.first().unwrap()["link"]["path"]
+            .as_str()
+            .unwrap()
+            .to_string();
 
         let image_id = image_path
-            .unwrap()
             .strip_prefix("s3://boot-images/")
             .unwrap()
             .strip_suffix("/manifest.json")
@@ -121,7 +123,10 @@ pub async fn exec(
     }
 
     if let Some(desired_configuration_name) = desired_configuration_opt {
-        log::info!("Updating desired configuration. Need restart? {}", need_restart);
+        log::info!(
+            "Updating desired configuration. Need restart? {}",
+            need_restart
+        );
 
         mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
             shasta_token,

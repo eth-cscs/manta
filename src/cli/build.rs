@@ -2,7 +2,7 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn build_cli(hsm_group: Option<&String>) -> Command {
+pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: Vec<String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -26,11 +26,11 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
                 )
                 .subcommand(subcommand_apply_session(hsm_group))
-                .subcommand(Command::new("virtual-environment")
-                .aliases(["ve", "venv", "virt"])
+                .subcommand(Command::new("ephemeral-environment")
+                .aliases(["ee", "eph", "ephemeral"])
                 .arg_required_else_help(true)
-                .about("Returns a hostname use can ssh with the image ID provided. This call is async, the user will have to wait for the virtual environment to be ready after running this command, normally takes a few seconds.")
-                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the virtual environment has been created."))
+                .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
+                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
                 // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
                 .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
                             ),
@@ -74,6 +74,59 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
                 ),
         )
+        .subcommand(subcommand_delete(hsm_group))
+        .subcommand(subcommand_config(hsm_available_vec))
+}
+
+pub fn subcommand_config(hsm_available_opt: Vec<String>) -> Command {
+    // Enforce user to chose a HSM group is hsm_available config param is not empty. This is to
+    // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
+    // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
+    // will be able to access any HSM. The security meassures for this is to setup sticky bit to
+    // manta binary so it runs as manta user, then 'chown manta:manta /home/manta/.config/manta/config.toml' so only manta and root users can edit the config file. Tenants can neither su to manta nor root under the access VM (eg castaneda)
+    let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
+        Command::new("hsm")
+            .about("Change config values")
+            .about("Set target HSM group")
+            .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
+    } else {
+        Command::new("hsm")
+            .about("Change config values")
+            .about("Set target HSM group")
+            .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
+    };
+
+    Command::new("config")
+        .alias("C")
+        .arg_required_else_help(true)
+        .about("Manta's configuration")
+        .subcommand(Command::new("show").about("Show config values"))
+        .subcommand(
+            Command::new("set")
+                .arg_required_else_help(true)
+                .about("Change config values")
+                .subcommand(subcommand_config_set_hsm),
+        )
+}
+
+pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
+    let mut delete = Command::new("delete")
+                .arg_required_else_help(true)
+                .about("Deletes CFS configurations, CFS sessions, BOS sessiontemplates, BOS sessions and images related to CFS configuration/s.")
+                .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
+                .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
+                .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
+                .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"));
+
+    match hsm_group {
+        None => {
+            delete =
+                delete.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
+        }
+        Some(_) => {}
+    }
+
+    delete
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {
@@ -193,7 +246,11 @@ pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command 
 pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("images")
         .aliases(["i", "img", "imag", "image"])
-        .about("Get image information");
+        .about("Get image information")
+        .arg(
+            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
+                .value_parser(value_parser!(u8).range(1..)),
+        );
 
     match hsm_group {
         None => {
@@ -263,11 +320,11 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     apply_session = match hsm_group {
         Some(_) => {
             apply_session
-                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. NOTE: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
+                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
         }
         None => {
             apply_session
-                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. NOTE: ansible-limit must be a subset of hsm-group if both parameters are provided"))
+                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).required(true))
         }

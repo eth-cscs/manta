@@ -1,13 +1,16 @@
 pub mod apply_cluster;
 pub mod apply_configuration;
+pub mod apply_ephemeral_env;
 pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
 pub mod apply_node_reset;
 pub mod apply_session;
-pub mod apply_virt_env;
+pub mod config_set;
+pub mod config_show;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
+pub mod delete_data_related_to_cfs_configuration;
 pub mod get_configuration;
 pub mod get_hsm;
 pub mod get_images;

@@ -33,6 +33,7 @@ Manta aggregates information from multiple sources:
 - Filter information to a HSM group
 - Update node boot image based on CFS configuration name
 - Audit/Log
+- Delete all data related to CFS configuration
 
 ## Configuration
 
@@ -237,10 +238,17 @@ Install cross to be able to complile on different platforms
 cargo install cross
 ```
 
-Generate binary
+Generate binary (cross compilation)
 
 ```shell
 scripts/build
+```
+
+or
+
+```shell
+rustup target add x86_64-unknown-linux-gnu
+cargo build --target=x86_64-unknown-linux-gnu
 ```
 
 ### Development

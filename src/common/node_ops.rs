@@ -137,3 +137,49 @@ pub async fn validate_xnames(
 
     true
 }
+
+pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> Vec<String> {
+    let mut node_booting_image_vec = boot_param_vec
+        .iter()
+        .filter(|boot_param| {
+            boot_param
+                .get("kernel")
+                .and_then(|kernel_value| kernel_value.as_str())
+                .unwrap_or("NA")
+                .strip_prefix("s3://boot-images/")
+                .and_then(|prefix_strip_kernel_path| {
+                    prefix_strip_kernel_path.strip_suffix("/kernel")
+                })
+                .is_some_and(|image_id_candidate| image_id_candidate.eq(image_id))
+        })
+        .flat_map(|boot_param| {
+            boot_param["hosts"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|host| host.as_str().unwrap().to_string())
+                .collect::<Vec<String>>()
+        })
+        .collect::<Vec<String>>();
+
+    node_booting_image_vec.sort();
+
+    node_booting_image_vec
+}
+
+pub async fn get_boot_image_and_nodes_booting_them_vec(
+    image_id_vec: Vec<String>,
+    boot_param_vec: Vec<Value>,
+) -> Vec<(String, Vec<String>)> {
+    let mut boot_image_node_vec = Vec::new();
+
+    for image_id in image_id_vec {
+        let nodes = get_node_vec_booting_image(&image_id, &boot_param_vec);
+
+        if !nodes.is_empty() {
+            boot_image_node_vec.push((image_id, nodes));
+        }
+    }
+
+    boot_image_node_vec
+}

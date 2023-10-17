@@ -33,7 +33,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bo
     // NOT YET. At this stage just throw an erro because the key was not found
 
     // Create IMS Job
-    log::info!("Creating virtual environment baed on image ID {}", image_id);
+    log::info!("Creating ephemeral environment baed on image ID {}", image_id);
     let resp_json_rslt = ims::job::http_client::post(
         shasta_token,
         shasta_base_url,
@@ -59,7 +59,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, /* block: Option<bo
     // }
 
     log::info!(
-        "Virtual environment successfully created! hostname with ssh enabled: {}",
+        "Ephemeral environment successfully created! hostname with ssh enabled: {}",
         hostname_value.as_str().unwrap()
     );
     println!("{}", hostname_value.as_str().unwrap());

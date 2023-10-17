@@ -59,7 +59,7 @@ pub async fn exec(
             .unwrap()
             .as_array()
             .unwrap()
-            .into_iter()
+            .iter()
             .any(|group| group["name"].as_str().unwrap().eq(hsm_group.unwrap()))
         {
             eprintln!(
