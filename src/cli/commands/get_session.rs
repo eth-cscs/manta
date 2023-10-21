@@ -102,7 +102,7 @@ pub async fn exec(
                             .first()
                             .unwrap()
                             .as_str()
-                            .unwrap()
+                            .unwrap_or("")
                             .to_string(),
                     )
                 } else {

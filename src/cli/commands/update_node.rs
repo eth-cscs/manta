@@ -14,8 +14,7 @@ pub async fn exec(
 ) {
     let need_restart = boot_image_configuration_opt.is_some();
 
-    // Check desired configuration exists
-    if let Ok(desired_configuration_detail_list) =
+    let desired_configuration_detail_list_rslt =
         mesa::shasta::cfs::configuration::http_client::get(
             shasta_token,
             shasta_base_url,
@@ -23,8 +22,13 @@ pub async fn exec(
             desired_configuration_opt,
             Some(&1),
         )
-        .await
+        .await;
+
+    // Check desired configuration exists
+    if desired_configuration_detail_list_rslt.is_ok() && !desired_configuration_detail_list_rslt.as_ref().unwrap().is_empty()
     {
+        let desired_configuration_detail_list = desired_configuration_detail_list_rslt.unwrap();
+
         log::debug!(
             "CFS configuration resp:\n{:#?}",
             desired_configuration_detail_list
