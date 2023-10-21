@@ -1,3 +1,6 @@
+use core::time;
+use std::thread;
+
 use mesa::shasta;
 use serde_json::Value;
 
@@ -30,9 +33,9 @@ pub async fn delete(
         match image_deleted_value_rslt {
             Ok(_) => println!("Image deleted: {}", image_id),
             Err(error) => {
-                eprintln!("ERROR!!!!:\n{:#?}", error);
+                eprintln!("ERROR:\n{:#?}", error);
                 let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
-                eprintln!("ERROR!!!!:\n{:#?}", error_response);
+                eprintln!("ERROR:\n{:#?}", error_response);
                 // std::process::exit(0);
                 if error_response["status"].as_u64().unwrap() == 404 {
                     eprintln!("Image {} not found. Continue", image_id);
@@ -98,55 +101,116 @@ pub async fn delete(
     }
 
     // DELETE CFS SESSIONS
+    let max_attempts = 5;
     for cfs_session_value in cfs_session_value_vec {
-        shasta::cfs::session::http_client::delete(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            cfs_session_value["name"].as_str().unwrap(),
-        )
-        .await
-        .unwrap();
+        let mut counter = 0;
+        loop {
+            let deletion_rslt = shasta::cfs::session::http_client::delete(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                cfs_session_value["name"].as_str().unwrap(),
+            )
+            .await;
 
-        println!(
-            "CFS session deleted: {}",
-            cfs_session_value["name"].as_str().unwrap()
-        );
+            /* println!(
+                "CFS session deleted: {}",
+                cfs_session_value["name"].as_str().unwrap()
+            ); */
+            if deletion_rslt.is_err() && counter <= max_attempts {
+                log::warn!("Could not delete CFS session {} attempt {} of {}, trying again in 2 seconds...", cfs_session_value["name"].as_str().unwrap(), counter, max_attempts);
+                thread::sleep(time::Duration::from_secs(2));
+                counter += 1;
+            } else if deletion_rslt.is_err() && counter > max_attempts {
+                eprint!(
+                    "ERROR deleting CFS session {}, please delete it manually.",
+                    cfs_session_value["name"].as_str().unwrap(),
+                );
+                log::debug!("ERROR:\n{:#?}", deletion_rslt.unwrap_err());
+                break;
+            } else {
+                println!(
+                    "CfS session deleted: {}",
+                    cfs_session_value["name"].as_str().unwrap()
+                );
+                break;
+            }
+        }
     }
 
     // DELETE BOS SESSIONTEMPLATES
+    let max_attempts = 5;
     for bos_sessiontemplate in bos_sessiontemplate_value_vec {
-        let bos_sessiontemplate_deleted_value_rslt = shasta::bos::template::http_client::delete(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            bos_sessiontemplate["name"].as_str().unwrap(),
-        )
-        .await;
+        let mut counter = 0;
+        loop {
+            let deletion_rslt = shasta::bos::template::http_client::delete(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                bos_sessiontemplate["name"].as_str().unwrap(),
+            )
+            .await;
 
-        match bos_sessiontemplate_deleted_value_rslt {
-            Ok(_) => println!(
-                "BOS sessiontemplate deleted: {}",
-                bos_sessiontemplate["name"].as_str().unwrap()
-            ),
-            Err(error) => {
-                let response_error = serde_json::from_str::<Value>(&error.to_string());
-                log::error!("{:#?}", response_error);
+            /* match deletion_rslt {
+                Ok(_) => println!(
+                    "BOS sessiontemplate deleted: {}",
+                    bos_sessiontemplate["name"].as_str().unwrap()
+                ),
+                Err(error) => {
+                    let response_error = serde_json::from_str::<Value>(&error.to_string());
+                    log::error!("{:#?}", response_error);
+                }
+            } */
+
+            if deletion_rslt.is_err() && counter <= max_attempts {
+                log::warn!("Could not delete BOS sessiontemplate {} attempt {} of {}, trying again in 2 seconds...", bos_sessiontemplate["name"].as_str().unwrap(), counter, max_attempts);
+                thread::sleep(time::Duration::from_secs(2));
+                counter += 1;
+            } else if deletion_rslt.is_err() && counter > max_attempts {
+                eprint!(
+                    "ERROR deleting BOS sessiontemplate {}, please delete it manually.",
+                    bos_sessiontemplate["name"].as_str().unwrap(),
+                );
+                log::debug!("ERROR:\n{:#?}", deletion_rslt.unwrap_err());
+                break;
+            } else {
+                println!(
+                    "BOS sessiontemplate deleted: {}",
+                    bos_sessiontemplate["name"].as_str().unwrap()
+                );
+                break;
             }
         }
     }
 
     // DELETE CFS CONFIGURATIONS
+    let max_attempts = 5;
     for cfs_configuration in cfs_configuration_name_vec {
-        shasta::cfs::configuration::http_client::delete(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            cfs_configuration,
-        )
-        .await
-        .unwrap();
+        let mut counter = 0;
+        loop {
+            let deletion_rslt = shasta::cfs::configuration::http_client::delete(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                cfs_configuration,
+            )
+            .await;
 
-        println!("CFS configuration deleted: {}", cfs_configuration)
+            if deletion_rslt.is_err() && counter <= max_attempts {
+                log::warn!("Could not delete CFS configuration {} attempt {} of {}, trying again in 2 seconds...", cfs_configuration, counter, max_attempts);
+                thread::sleep(time::Duration::from_secs(2));
+                counter += 1;
+            } else if deletion_rslt.is_err() && counter > max_attempts {
+                eprint!(
+                    "ERROR deleting CFS configuration {}, please delete it manually.",
+                    cfs_configuration,
+                );
+                log::debug!("ERROR:\n{:#?}", deletion_rslt.unwrap_err());
+                break;
+            } else {
+                println!("CFS configuration deleted: {}", cfs_configuration);
+                break;
+            }
+        }
     }
 }
