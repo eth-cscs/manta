@@ -8,6 +8,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     new_hsm_opt: Option<&String>,
+    all_hsm_available_vec: &[String],
 ) {
     // Read configuration file
 
@@ -35,33 +36,14 @@ pub async fn exec(
         .expect("ERROR: could not parse configuration file to TOML");
 
     // VALIDATION
-    let hsm_available_vec;
-    if doc.get("hsm_available").is_some()
-        && doc["hsm_available"].as_array().is_some()
-        && !doc["hsm_available"].as_array().unwrap().is_empty()
-    {
+    if !all_hsm_available_vec.is_empty() {
         // If hsm_available config param has values, then a tenant is running manta ==> enfore
         // config param 'hsm_group' has a value from 'hsm_available' because tenants can't unset
         // 'hsm_group' otherwise they will be able to operate on any HSM group in the system.
         // Note: tenants can't modify the configuration file directly because of manta runs as
         // manta user using sticky bit
-        hsm_available_vec = doc["hsm_available"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|hsm_group_value| hsm_group_value.as_str().unwrap().to_string())
-            .collect::<Vec<String>>();
 
-        /* if new_hsm_opt.is_none() {
-            println!("new hsm is empty!");
-            eprintln!(
-                "Please provide one of the following HSM values {:?}",
-                hsm_available_vec
-            );
-            std::process::exit(1);
-        } */
-
-        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), hsm_available_vec);
+        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), all_hsm_available_vec);
 
         // All goot, we are safe to update 'hsm_group' config param
         log::info!(
@@ -74,13 +56,13 @@ pub async fn exec(
         // 'hsm_available' config param is empty or does not exists, then an admin user is running
         // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
         // this param from the config file
-        log::info!("New HSM value not provided. Unset 'hsm_group' config param");
-        doc.remove("hsm_group");
+        //
+        // NOTHING TO DO
     } else {
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
-        hsm_available_vec = mesa::shasta::hsm::http_client::get_all_hsm_groups(
+        let all_hsm_available_vec = mesa::shasta::hsm::http_client::get_all_hsm_groups(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -91,7 +73,7 @@ pub async fn exec(
         .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
         .collect::<Vec<String>>();
 
-        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), hsm_available_vec);
+        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), &all_hsm_available_vec);
 
         // All goot, we are safe to update 'hsm_group' config param
         log::info!(
@@ -125,7 +107,7 @@ pub async fn exec(
 
 pub fn validate_hsm_group_and_hsm_available_config_params(
     hsm_group: &String,
-    hsm_available_vec: Vec<String>,
+    hsm_available_vec: &[String],
 ) {
     if !hsm_available_vec.contains(hsm_group) {
         eprintln!(

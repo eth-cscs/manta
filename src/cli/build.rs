@@ -2,7 +2,7 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: Vec<String>) -> Command {
+pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: &[String]) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -78,7 +78,7 @@ pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: Vec<String>) -> 
         .subcommand(subcommand_config(hsm_available_vec))
 }
 
-pub fn subcommand_config(hsm_available_opt: Vec<String>) -> Command {
+pub fn subcommand_config(hsm_available_opt: &[String]) -> Command {
     // Enforce user to chose a HSM group is hsm_available config param is not empty. This is to
     // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
     // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
