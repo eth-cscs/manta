@@ -2,7 +2,11 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: &[String]) -> Command {
+pub fn build_cli(
+    hsm_group: Option<&String>,
+    // hsm_available_vec: &[String],
+    site_available_vec: &[String],
+) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -75,26 +79,40 @@ pub fn build_cli(hsm_group: Option<&String>, hsm_available_vec: &[String]) -> Co
                 ),
         )
         .subcommand(subcommand_delete(hsm_group))
-        .subcommand(subcommand_config(hsm_available_vec))
+        .subcommand(subcommand_config())
 }
 
-pub fn subcommand_config(hsm_available_opt: &[String]) -> Command {
+pub fn subcommand_config() -> Command {
     // Enforce user to chose a HSM group is hsm_available config param is not empty. This is to
     // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
     // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
     // will be able to access any HSM. The security meassures for this is to setup sticky bit to
     // manta binary so it runs as manta user, then 'chown manta:manta /home/manta/.config/manta/config.toml' so only manta and root users can edit the config file. Tenants can neither su to manta nor root under the access VM (eg castaneda)
-    let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
+    /* let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
         Command::new("hsm")
             .about("Change config values")
             .about("Set target HSM group")
             .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
     } else {
         Command::new("hsm")
-            .about("Change config values")
+            .about("Change config value")
             .about("Set target HSM group")
             .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
-    };
+    }; */
+
+    let subcommand_config_set_hsm = Command::new("hsm")
+        .about("Change hsm config values")
+        .about("Set target HSM group")
+        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
+
+    let subcommand_config_set_site = Command::new("site")
+        .about("Change site config value")
+        .about("Set site to work on")
+        .arg(arg!(<SITE_NAME> "site name"));
+
+    let subcommand_config_unset_hsm = Command::new("hsm")
+        .about("Clean hsm config values")
+        .about("Set target HSM group");
 
     Command::new("config")
         .alias("C")
@@ -105,7 +123,14 @@ pub fn subcommand_config(hsm_available_opt: &[String]) -> Command {
             Command::new("set")
                 .arg_required_else_help(true)
                 .about("Change config values")
-                .subcommand(subcommand_config_set_hsm),
+                .subcommand(subcommand_config_set_hsm)
+                .subcommand(subcommand_config_set_site),
+        )
+        .subcommand(
+            Command::new("unset")
+                .arg_required_else_help(true)
+                .about("Reset config values")
+                .subcommand(subcommand_config_unset_hsm)
         )
 }
 

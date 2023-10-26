@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+
+use config::{Config, Value};
+
 use crate::common::{config_ops, jwt_ops};
 
 /// Prints Manta's configuration on screen
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &[u8]) {
+pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &[u8], settings: Config) {
     // Read configuration file
-    let settings = config_ops::get_configuration();
+    // let settings = config_ops::get_configuration();
 
     /* let shasta_base_url = settings.get_string("shasta_base_url").unwrap();
     let vault_base_url = settings.get_string("vault_base_url").unwrap();
@@ -33,9 +37,9 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
 
     let settings_hsm_available_vec = realm_access_role_vec;
 
-    let hsm_group_available: String =
+    let hsm_group_available: Vec<String> =
         if !settings_hsm_available_vec.is_empty() {
-           settings_hsm_available_vec.join(", ")
+           settings_hsm_available_vec
         } else {
             mesa::shasta::hsm::http_client::get_all_hsm_groups(
                 shasta_token,
@@ -47,8 +51,17 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
             .iter()
             .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
             .collect::<Vec<String>>()
-            .join(", ")
         };
+
+    let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
+
+    // println!("\n\nSites: {:#?}", site_table);
+
+    let site_name = settings.get_string("site").unwrap();
+
+    // let site = site_table.get(&site_name);
+
+    // println!("\n\nsite:\n{:#?}", site);
 
     // Print configuration file content to stdout
     /* println!("Shasta base URL: {}", shasta_base_url);
@@ -59,6 +72,8 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
     println!("Keycloak base URL: {}", keycloak_base_url);
     println!("Kubernetes api URL: {}", k8s_api_url);
     println!("Log: {}", log_level); */
-    println!("HSM available: {}", hsm_group_available);
+    println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
+    println!("Current site: {}", site_name);
+    println!("HSM available: {:?}", hsm_group_available);
     println!("Current HSM: {}", settings_hsm_group);
 }

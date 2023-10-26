@@ -31,9 +31,9 @@ pub fn get_configuration() -> Config {
         .unwrap()
 }
 
-pub fn get_csm_root_cert_content() -> Vec<u8> {
+pub fn get_csm_root_cert_content(site: &str) -> Vec<u8> {
     let mut config_path = get_configuration_file_path();
-    config_path.push("csm_root_cert.pem");
+    config_path.push(site.to_string() + "_root_cert.pem");
 
     let mut buf = Vec::new();
     let root_cert_file_rslt = File::open(config_path);

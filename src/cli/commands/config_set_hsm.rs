@@ -1,14 +1,17 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
+use mesa::shasta::hsm;
 use toml_edit::{value, Document};
+
+use crate::common::jwt_ops;
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     new_hsm_opt: Option<&String>,
-    all_hsm_available_vec: &[String],
+    // all_hsm_available_vec: &[String],
 ) {
     // Read configuration file
 
@@ -35,24 +38,46 @@ pub async fn exec(
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
+    let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
+        .unwrap()
+        .pointer("/realm_access/roles")
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|role_value| role_value.as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
+
+    settings_hsm_available_vec
+        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+
     // VALIDATION
-    if !all_hsm_available_vec.is_empty() {
-        // If hsm_available config param has values, then a tenant is running manta ==> enfore
-        // config param 'hsm_group' has a value from 'hsm_available' because tenants can't unset
-        // 'hsm_group' otherwise they will be able to operate on any HSM group in the system.
-        // Note: tenants can't modify the configuration file directly because of manta runs as
-        // manta user using sticky bit
+    let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
+        mesa::shasta::hsm::http_client::get_all_hsm_groups(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
+        .collect::<Vec<String>>()
+    } else {
+        settings_hsm_available_vec
+    };
 
-        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), all_hsm_available_vec);
+    validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), &hsm_available_vec);
 
-        // All goot, we are safe to update 'hsm_group' config param
-        log::info!(
-            "Changing configuration to use HSM GROUP {}",
-            new_hsm_opt.unwrap()
-        );
+    // All goot, we are safe to update 'hsm_group' config param
+    log::info!(
+        "Changing configuration to use HSM GROUP {}",
+        new_hsm_opt.unwrap()
+    );
 
-        doc["hsm_group"] = value(new_hsm_opt.unwrap());
-    } else if new_hsm_opt.is_none() {
+    doc["hsm_group"] = value(new_hsm_opt.unwrap());
+
+    if new_hsm_opt.is_none() {
         // 'hsm_available' config param is empty or does not exists, then an admin user is running
         // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
         // this param from the config file
@@ -73,7 +98,10 @@ pub async fn exec(
         .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
         .collect::<Vec<String>>();
 
-        validate_hsm_group_and_hsm_available_config_params(new_hsm_opt.unwrap(), &all_hsm_available_vec);
+        validate_hsm_group_and_hsm_available_config_params(
+            new_hsm_opt.unwrap(),
+            &all_hsm_available_vec,
+        );
 
         // All goot, we are safe to update 'hsm_group' config param
         log::info!(

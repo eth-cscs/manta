@@ -1,5 +1,6 @@
 mod cli;
 mod common;
+use config::Value;
 use mesa::{common::jwt_ops, shasta};
 
 use shasta::authentication;
@@ -70,13 +71,40 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let settings = common::config_ops::get_configuration();
 
-    let shasta_base_url = settings.get_string("shasta_base_url").unwrap();
-    let vault_base_url = settings.get_string("vault_base_url").unwrap();
-    let vault_role_id = settings.get_string("vault_role_id").unwrap();
-    let vault_secret_path = settings.get_string("vault_secret_path").unwrap();
-    let gitea_base_url = settings.get_string("gitea_base_url").unwrap();
-    let keycloak_base_url = settings.get_string("keycloak_base_url").unwrap();
-    let k8s_api_url = settings.get_string("k8s_api_url").unwrap();
+    // println!("settings:\n{:#?}", settings);
+
+    let site_name = settings.get_string("site").unwrap();
+    let site_detail_hashmap = settings.get_table("sites").unwrap();
+    let site_detail_value = site_detail_hashmap
+        .get(&site_name)
+        .unwrap()
+        .clone()
+        .into_table()
+        .unwrap();
+    let site_available_vec = site_detail_hashmap
+        .keys()
+        .map(|site| site.clone())
+        .collect::<Vec<String>>();
+
+    // println!("site_detail_value:\n{:#?}", site_detail_value);
+
+    let shasta_base_url = site_detail_value
+        .get("shasta_base_url")
+        .unwrap()
+        .to_string();
+    let vault_base_url = site_detail_value.get("vault_base_url").unwrap().to_string();
+    let vault_role_id = site_detail_value.get("vault_role_id").unwrap().to_string();
+    let vault_secret_path = site_detail_value
+        .get("vault_secret_path")
+        .unwrap()
+        .to_string();
+    let gitea_base_url = site_detail_value.get("gitea_base_url").unwrap().to_string();
+    let keycloak_base_url = site_detail_value
+        .get("keycloak_base_url")
+        .unwrap()
+        .to_string();
+    let k8s_api_url = site_detail_value.get("k8s_api_url").unwrap().to_string();
+
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
 
     // Init logger
@@ -96,7 +124,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .map(|hsm_group| hsm_group.into_string().unwrap())
     .collect::<Vec<String>>(); */
 
-    let shasta_root_cert = common::config_ops::get_csm_root_cert_content();
+    let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&site_name);
 
     /* let hsm_group = match &settings_hsm_group {
         Ok(hsm_group_val) => {
@@ -111,11 +139,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         Err(_) => None,
     }; */
 
-    let shasta_token =
-        authentication::get_api_token(&shasta_base_url, &shasta_root_cert, &keycloak_base_url)
-            .await?;
-
-    let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
+    /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap()
@@ -126,7 +150,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .collect::<Vec<String>>();
 
     settings_hsm_available_vec
-        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
 
     // println!("JWT token resour_access:\n{:?}", realm_access_role_vec);
 
@@ -141,12 +165,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .unwrap();
 
     // Process input params
-    let matches =
-        crate::cli::build::build_cli(settings_hsm_group_opt.as_ref(), &settings_hsm_available_vec)
-            .get_matches();
+    let matches = crate::cli::build::build_cli(
+        settings_hsm_group_opt.as_ref(),
+        // &settings_hsm_available_vec,
+        &site_available_vec,
+    )
+    .get_matches();
     let cli_result = crate::cli::process::process_cli(
         matches,
-        &shasta_token,
+        &keycloak_base_url,
         &shasta_base_url,
         &shasta_root_cert,
         &vault_base_url,
@@ -155,9 +182,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &gitea_token,
         &gitea_base_url,
         settings_hsm_group_opt.as_ref(),
-        &settings_hsm_available_vec.clone(),
+        // &settings_hsm_available_vec.clone(),
+        // &site_available_vec,
         // &base_image_id,
         &k8s_api_url,
+        settings,
     )
     .await;
 

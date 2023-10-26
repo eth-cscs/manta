@@ -2,11 +2,15 @@ use std::io::IsTerminal;
 
 use clap::ArgMatches;
 use comfy_table::Table;
+use config::Config;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use k8s_openapi::chrono;
-use mesa::manta::{
-    bos::template::get_image_id_from_bos_sessiontemplate_related_to_cfs_configuration,
-    cfs::session::get_image_id_from_cfs_session_related_to_cfs_configuration,
+use mesa::{
+    manta::{
+        bos::template::get_image_id_from_bos_sessiontemplate_related_to_cfs_configuration,
+        cfs::session::get_image_id_from_cfs_session_related_to_cfs_configuration,
+    },
+    shasta::authentication,
 };
 
 use crate::{
@@ -16,14 +20,14 @@ use crate::{
 
 use super::commands::{
     self, apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
-    apply_node_reset, apply_session, config_set, config_show,
-    console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
-    get_nodes, get_session, get_template, update_hsm_group, update_node,
+    apply_node_reset, apply_session, config_set_hsm, config_set_site, config_show,
+    config_unset_hsm, console_cfs_session_image_target_ansible, console_node, get_configuration,
+    get_hsm, get_images, get_nodes, get_session, get_template, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
     cli_root: ArgMatches,
-    shasta_token: &str,
+    keycloak_base_url: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
@@ -32,34 +36,68 @@ pub async fn process_cli(
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
-    hsm_available_vec: &[String],
+    // hsm_available_vec: &[String],
+    // site_available_vec: &[String],
     // base_image_id: &str,
     k8s_api_url: &str,
+    settings: Config,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-            config_show::exec(shasta_token, shasta_base_url, shasta_root_cert).await;
+            let shasta_token = &authentication::get_api_token(
+                &shasta_base_url,
+                shasta_root_cert,
+                &keycloak_base_url,
+            )
+            .await?;
+
+            config_show::exec(shasta_token, shasta_base_url, shasta_root_cert, settings).await;
         } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
             if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
-                config_set::exec(
+                let shasta_token = &authentication::get_api_token(
+                    &shasta_base_url,
+                    shasta_root_cert,
+                    &keycloak_base_url,
+                )
+                .await?;
+
+                config_set_hsm::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
-                    hsm_available_vec,
+                    // hsm_available_vec,
                 )
                 .await;
             }
+            if let Some(cli_config_set_site) = cli_config_set.subcommand_matches("site") {
+                config_set_site::exec(cli_config_set_site.get_one::<String>("SITE_NAME")).await;
+            }
+        } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset") {
+            if let Some(_cli_config_unset_hsm) = cli_config_unset.subcommand_matches("hsm") {
+                let shasta_token = &authentication::get_api_token(
+                    &shasta_base_url,
+                    shasta_root_cert,
+                    &keycloak_base_url,
+                )
+                .await?;
+
+                config_unset_hsm::exec(shasta_token, shasta_base_url, shasta_root_cert).await;
+            }
         }
     } else {
+        let shasta_token =
+            &authentication::get_api_token(&shasta_base_url, &shasta_root_cert, &keycloak_base_url)
+                .await?;
+
         // println!("hsm_group: {:?}", hsm_group);
         // println!("hsm group available: {:?}", hsm_available_vec);
 
         // Validate hsm_vailable and hsm_group
-        if hsm_group.is_none() && !hsm_available_vec.is_empty() {
+        /* if hsm_group.is_none() && !hsm_available_vec.is_empty() {
             eprintln!("HSM group not defined. Please use 'manta config hsm <HSM group name>' to set the HSM group to use in your requests. Exit");
             std::process::exit(1);
-        }
+        } */
 
         if let Some(cli_get) = cli_root.subcommand_matches("get") {
             if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
@@ -919,7 +957,7 @@ pub async fn process_cli(
             // DELETE DATA
             //
             delete_data_related_to_cfs_configuration::delete(
-                shasta_token,
+                &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 &cfs_configuration_name_vec,
