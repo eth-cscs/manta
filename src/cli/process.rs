@@ -52,8 +52,9 @@ pub async fn process_cli(
             }
         }
     } else {
-        println!("hsm_group: {:?}", hsm_group);
-        println!("hsm group available: {:?}", hsm_available_vec);
+        // println!("hsm_group: {:?}", hsm_group);
+        // println!("hsm group available: {:?}", hsm_available_vec);
+
         // Validate hsm_vailable and hsm_group
         if hsm_group.is_none() && !hsm_available_vec.is_empty() {
             eprintln!("HSM group not defined. Please use 'manta config hsm <HSM group name>' to set the HSM group to use in your requests. Exit");
