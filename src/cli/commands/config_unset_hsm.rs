@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use toml_edit::{value, Document};
+use toml_edit::Document;
 
 use crate::common::jwt_ops;
 
@@ -46,7 +46,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
 
     // VALIDATION
     if settings_hsm_available_vec.is_empty() {
-        doc["hsm_group"] = value("");
+        doc.remove("hsm_group");
         println!("hsm group unset");
     } else {
         eprintln!("Can't unset hsm when running in tenant mode.Exit");
