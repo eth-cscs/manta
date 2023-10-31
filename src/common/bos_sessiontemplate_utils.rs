@@ -81,6 +81,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                     None,
                     Some(&image_id_related_to_bos_sessiontemplate),
                     None,
+                    None,
                 )
                 .await
                 .is_ok()

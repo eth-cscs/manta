@@ -379,7 +379,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = cfs::configuration::CfsConfiguration::create_from_repos(
+    let cfs_configuration = cfs::configuration::CfsConfigurationRequest::create_from_repos(
         gitea_token,
         gitea_base_url,
         shasta_root_cert,
@@ -427,7 +427,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = cfs::session::CfsSession::new(
+    let session = cfs::session::CfsSessionRequest::new(
         cfs_session_name,
         cfs_configuration_name,
         limit,

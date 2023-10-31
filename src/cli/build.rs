@@ -112,7 +112,11 @@ pub fn subcommand_config() -> Command {
 
     let subcommand_config_unset_hsm = Command::new("hsm")
         .about("Clean hsm config values")
-        .about("Set target HSM group");
+        .about("Unset target HSM group");
+
+    let subcommand_config_unset_auth = Command::new("auth")
+        .about("Clean auth token")
+        .about("Unset target HSM group");
 
     Command::new("config")
         .alias("C")
@@ -131,6 +135,7 @@ pub fn subcommand_config() -> Command {
                 .arg_required_else_help(true)
                 .about("Reset config values")
                 .subcommand(subcommand_config_unset_hsm)
+                .subcommand(subcommand_config_unset_auth)
         )
 }
 

@@ -21,8 +21,9 @@ use crate::{
 use super::commands::{
     self, apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
     apply_node_reset, apply_session, config_set_hsm, config_set_site, config_show,
-    config_unset_hsm, console_cfs_session_image_target_ansible, console_node, get_configuration,
-    get_hsm, get_images, get_nodes, get_session, get_template, update_hsm_group, update_node,
+    config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
+    get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, update_hsm_group,
+    update_node,
 };
 
 pub async fn process_cli(
@@ -36,11 +37,11 @@ pub async fn process_cli(
     gitea_token: &str,
     gitea_base_url: &str,
     hsm_group: Option<&String>,
-    // hsm_available_vec: &[String],
+    // hsm_group_available_vec: &[String],
     // site_available_vec: &[String],
     // base_image_id: &str,
     k8s_api_url: &str,
-    settings: Config,
+    settings: &Config,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
@@ -83,12 +84,18 @@ pub async fn process_cli(
                 .await?;
 
                 config_unset_hsm::exec(shasta_token, shasta_base_url, shasta_root_cert).await;
+            } else if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth")
+            {
+                config_unset_auth::exec().await;
             }
         }
     } else {
         let shasta_token =
             &authentication::get_api_token(&shasta_base_url, &shasta_root_cert, &keycloak_base_url)
                 .await?;
+
+        let hsm_group_available_vec =
+            config_show::get_hsm_available(shasta_token, shasta_base_url, shasta_root_cert).await;
 
         // println!("hsm_group: {:?}", hsm_group);
         // println!("hsm group available: {:?}", hsm_available_vec);
@@ -282,7 +289,7 @@ pub async fn process_cli(
                     cli_apply_image.get_one::<String>("ansible-passthrough"),
                     cli_apply_image.get_one::<bool>("watch-logs"),
                     &tag,
-                    hsm_group,
+                    Some(&hsm_group_available_vec),
                     k8s_api_url,
                     cli_apply_image.get_one::<String>("output"),
                 )
@@ -304,6 +311,7 @@ pub async fn process_cli(
                     cli_apply_cluster.get_one("file").unwrap(),
                     // base_image_id,
                     hsm_group,
+                    Some(&hsm_group_available_vec),
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     k8s_api_url,
@@ -718,6 +726,7 @@ pub async fn process_cli(
                     hsm_group_name_opt,
                     Some(image_id),
                     None,
+                    None,
                 )
                 .await
                 .is_ok()
@@ -818,7 +827,22 @@ pub async fn process_cli(
                 && cfs_session_value_vec.is_empty()
                 && bos_sessiontemplate_value_vec.is_empty()
             {
-                println!("Nothing to delete. Exit");
+                print!("Nothing to delete.");
+                if cfs_configuration_name_opt.is_some() {
+                    print!(
+                        " Could not find information related to CFS configuration '{}'",
+                        cfs_configuration_name_opt.unwrap()
+                    );
+                }
+                if since_opt.is_some() && until_opt.is_some() {
+                    print!(
+                        " Could not find information between dates {} and {}",
+                        since_opt.unwrap(),
+                        until_opt.unwrap()
+                    );
+                }
+                print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
+
                 std::process::exit(0);
             }
 

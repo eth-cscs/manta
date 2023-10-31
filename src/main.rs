@@ -1,5 +1,6 @@
 mod cli;
 mod common;
+use cli::commands::config_show;
 use config::Value;
 use mesa::{common::jwt_ops, shasta};
 
@@ -81,6 +82,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .clone()
         .into_table()
         .unwrap();
+
     let site_available_vec = site_detail_hashmap
         .keys()
         .map(|site| site.clone())
@@ -117,12 +119,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     }
 
     let settings_hsm_group_opt = settings.get_string("hsm_group").ok();
+
     /* let settings_hsm_available_vec = settings
-    .get_array("hsm_available")
-    .unwrap_or(Vec::new())
-    .into_iter()
-    .map(|hsm_group| hsm_group.into_string().unwrap())
-    .collect::<Vec<String>>(); */
+        .get_array("hsm_available")
+        .unwrap_or(Vec::new())
+        .into_iter()
+        .map(|hsm_group| hsm_group.into_string().unwrap())
+        .collect::<Vec<String>>(); */
 
     let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&site_name);
 
@@ -171,6 +174,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &site_available_vec,
     )
     .get_matches();
+
     let cli_result = crate::cli::process::process_cli(
         matches,
         &keycloak_base_url,
@@ -182,11 +186,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &gitea_token,
         &gitea_base_url,
         settings_hsm_group_opt.as_ref(),
-        // &settings_hsm_available_vec.clone(),
+        // settings_hsm_available_vec,
         // &site_available_vec,
         // &base_image_id,
         &k8s_api_url,
-        settings,
+        &settings,
     )
     .await;
 

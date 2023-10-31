@@ -2,10 +2,15 @@ use std::collections::HashMap;
 
 use config::{Config, Value};
 
-use crate::common::{config_ops, jwt_ops};
+use crate::common::jwt_ops;
 
 /// Prints Manta's configuration on screen
-pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &[u8], settings: Config) {
+pub async fn exec(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    settings: &Config,
+) {
     // Read configuration file
     // let settings = config_ops::get_configuration();
 
@@ -20,7 +25,7 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
     let settings_hsm_group = settings.get_string("hsm_group").unwrap_or("".to_string());
     // let settings_hsm_group_available_value_rslt = settings.get_array("hsm_available");
 
-    let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
+    /* let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap()
@@ -35,23 +40,10 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
 
     // println!("JWT token resour_access:\n{:?}", realm_access_role_vec);
 
-    let settings_hsm_available_vec = realm_access_role_vec;
+    let settings_hsm_available_vec = realm_access_role_vec; */
 
     let hsm_group_available: Vec<String> =
-        if !settings_hsm_available_vec.is_empty() {
-           settings_hsm_available_vec
-        } else {
-            mesa::shasta::hsm::http_client::get_all_hsm_groups(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-            )
-            .await
-            .unwrap()
-            .iter()
-            .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
-            .collect::<Vec<String>>()
-        };
+        get_hsm_available(shasta_token, shasta_base_url, shasta_root_cert).await;
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 
@@ -76,4 +68,38 @@ pub async fn exec(shasta_token: &str, shasta_base_url: &str, shasta_root_cert: &
     println!("Current site: {}", site_name);
     println!("HSM available: {:?}", hsm_group_available);
     println!("Current HSM: {}", settings_hsm_group);
+}
+
+pub async fn get_hsm_available(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+) -> Vec<String> {
+    let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
+        .unwrap()
+        .pointer("/realm_access/roles")
+        .unwrap()
+        .as_array()
+        .unwrap_or(&Vec::new())
+        .iter()
+        .map(|role_value| role_value.as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
+
+    realm_access_role_vec
+        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+
+    if !realm_access_role_vec.is_empty() {
+        realm_access_role_vec
+    } else {
+        mesa::shasta::hsm::http_client::get_all_hsm_groups(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
+        .collect::<Vec<String>>()
+    }
 }

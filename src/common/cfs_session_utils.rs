@@ -1,9 +1,9 @@
 use comfy_table::Table;
-use mesa::{mesa::cfs::session::get_response_struct::GetResponse, shasta};
-use serde::{Deserialize, Serialize};
+use mesa::{shasta, mesa::cfs::session::get_response_struct::CfsSessionGetResponse};
+// use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+/* #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -74,7 +74,7 @@ pub struct Status {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct CfsSession {
+pub struct CfsSessionResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,7 +87,7 @@ pub struct CfsSession {
     pub status: Option<Status>,
     /* #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<...> */
-}
+} */
 
 pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
     let mut result = vec![cfs_session["name"].as_str().unwrap_or_default().to_string()];
@@ -190,7 +190,7 @@ pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
     result
 }
 
-pub fn cfs_session_struct_to_vec(cfs_session: GetResponse) -> Vec<String> {
+pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let mut result = vec![cfs_session.name.unwrap()];
     result.push(cfs_session.configuration.unwrap().name.unwrap());
     result.push(
@@ -303,7 +303,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: GetResponse) -> Vec<String> {
     result
 }
 
-pub fn print_table(get_cfs_session_value_list: &Vec<Value>) {
+pub fn print_table_value(get_cfs_session_value_list: &Vec<Value>) {
     let mut table = Table::new();
 
     table.set_header(vec![
@@ -326,7 +326,7 @@ pub fn print_table(get_cfs_session_value_list: &Vec<Value>) {
     println!("{table}");
 }
 
-pub fn print_table_struct(get_cfs_session_value_list: &Vec<GetResponse>) {
+pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) {
     let mut table = Table::new();
 
     table.set_header(vec![
@@ -435,6 +435,7 @@ pub async fn get_image_id_from_cfs_session_list(
             shasta_root_cert,
             None,
             image_id,
+            None,
             None,
         )
         .await

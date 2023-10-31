@@ -9,6 +9,7 @@ pub mod apply_session;
 pub mod config_set_hsm;
 pub mod config_set_site;
 pub mod config_show;
+pub mod config_unset_auth;
 pub mod config_unset_hsm;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;

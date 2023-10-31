@@ -91,6 +91,7 @@ pub async fn exec(
                     hsm_group_name_opt,
                     cfs_session_image_id,
                     None,
+                    None,
                 )
                 .await;
 

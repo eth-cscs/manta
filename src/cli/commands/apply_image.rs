@@ -1,10 +1,13 @@
 use std::path::PathBuf;
 
 use futures::TryStreamExt;
-use mesa::shasta::cfs::{
-    self,
-    configuration::{self, CfsConfiguration},
-    session::CfsSession,
+
+use mesa::{
+    mesa::cfs::{
+        configuration::{get_put_payload::CfsConfigurationResponse, http_client::http_client::put},
+        session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
+    },
+    shasta::cfs::{configuration::CfsConfigurationRequest, session::CfsSessionRequest},
 };
 use serde_yaml::Value;
 
@@ -29,50 +32,61 @@ pub async fn exec(
     ansible_passthrough: Option<&String>,
     watch_logs: Option<&bool>,
     tag: &str,
-    hsm_group_config: Option<&String>,
+    hsm_group_available_vec_opt: Option<&[String]>,
     k8s_api_url: &str,
     output_opt: Option<&String>,
-) -> (Vec<CfsConfiguration>, Vec<CfsSession>) {
-    let mut cfs_configuration;
-
-    let file_content = std::fs::read_to_string(path_file).unwrap();
+) -> (Vec<CfsConfigurationResponse>, Vec<CfsSessionGetResponse>) {
+    let file_content = std::fs::read_to_string(path_file).expect("SAT file not found. Exit");
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
+
+    // VALIDATION - WE WON'T PROCESS ANYTHING IF THE USER DOES NOT HAVE ACCESS TO ANY HSM GROUP
+    // DEFINED IN THE SAT FILE
+    // Get CFS images from SAT YAML file
+    let image_yaml_list = sat_file_yaml["images"].as_sequence();
+
+    // Check HSM groups in images section in SAT file matches the HSM group in Manta configuration file
+    if let Some(hsm_group_available_vec) = hsm_group_available_vec_opt {
+        for image_yaml in image_yaml_list.unwrap_or(&Vec::new()) {
+            for hsm_group in image_yaml["configuration_group_names"]
+                .as_sequence()
+                .unwrap()
+                .iter()
+                .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
+                .filter(|&hsm_group| {
+                    !hsm_group.eq_ignore_ascii_case("Compute")
+                        && !hsm_group.eq_ignore_ascii_case("Application")
+                        && !hsm_group.eq_ignore_ascii_case("Application_UAN")
+                })
+            {
+                if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
+                    println!(
+                        "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
+                        hsm_group,
+                        image_yaml["name"].as_str().unwrap(),
+                        hsm_group_available_vec
+                    );
+                    std::process::exit(-1);
+                }
+            }
+        }
+    } else {
+        println!("Your user does not have HSM groups assigned in keycloak. Exit");
+        std::process::exit(1);
+    }
+
+    // Process CFS configurations
+    let mut cfs_configuration;
 
     // Get CFS configurations from SAT YAML file
     let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
 
-    /* if configurations_yaml.is_empty() {
-        eprintln!("The input file has no configurations!");
-        std::process::exit(-1);
-    }
-
-    if configurations_yaml.len() > 1 {
-        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
-        std::process::exit(-1);
-    } */
-
-    // Get CFS images from SAT YAML file
-    let image_list_yaml = sat_file_yaml["images"].as_sequence();
-
-    // Check HSM groups in images section matches the HSM group in Manta configuration file
-    if let Some(_hsm_group_config_value) = hsm_group_config {
-        println!("image_list_yaml:\n{:#?}", image_list_yaml);
-    }
-
-    // Used to uniquely identify cfs configuration name and cfs session name. This process follows
-    // what the CSCS build script is doing. We need to do this since we are using CSCS SAT file
-    // let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
     let empty_vec = &Vec::new();
     let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
 
-    let mut cfs_configuration_name_list = Vec::new();
-
-    let mut cfs_session_name_list = Vec::new();
+    let mut cfs_configuration_vec = Vec::new();
 
     for configuration_yaml in configuration_yaml_list {
-        cfs_configuration =
-            configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
+        cfs_configuration = CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
 
         // Rename configuration name
         cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
@@ -82,7 +96,7 @@ pub async fn exec(
             cfs_configuration
         );
 
-        let create_cfs_configuration_resp = cfs::configuration::http_client::put(
+        let create_cfs_configuration_resp = put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -101,45 +115,23 @@ pub async fn exec(
             std::process::exit(1);
         }
 
-        cfs_configuration_name_list.push(cfs_configuration.clone());
+        cfs_configuration_vec.push(create_cfs_configuration_resp.unwrap());
 
         log::info!("CFS configuration created: {}", cfs_configuration.name);
     }
 
+    // Process CFS sessions
     let mut cfs_session_resp_list = Vec::new();
 
-    for image_yaml in image_list_yaml.unwrap_or(empty_vec) {
-        let mut cfs_session = CfsSession::from_sat_file_serde_yaml(image_yaml);
-
-        if let Some(hsm_group) = hsm_group_config {
-            let sat_file_imagen_groups = cfs_session.clone().target.groups.unwrap_or(Vec::new());
-
-            if sat_file_imagen_groups.iter().all(|group| {
-                group.name.contains(hsm_group)
-                    || group.name.eq_ignore_ascii_case("Application")
-                    || group.name.eq_ignore_ascii_case("Application_UAN")
-                    || group.name.eq_ignore_ascii_case("Compute")
-            }) {
-                log::info!(
-                    "Images groups {:?} validated against HSM group {}",
-                    sat_file_imagen_groups,
-                    hsm_group
-                );
-            } else {
-                eprintln!(
-                    "Images groups {:?} NOT validated against HSM group {}",
-                    sat_file_imagen_groups, hsm_group
-                );
-
-                std::process::exit(1);
-            }
-        }
+    for image_yaml in image_yaml_list.unwrap_or(empty_vec) {
+        let mut cfs_session = CfsSessionRequest::from_sat_file_serde_yaml(image_yaml);
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", tag);
 
-        // Rename session configuration name
+        // Rename session's configuration name
         cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
+
 
         // Set ansible verbosity
         cfs_session.ansible_verbosity = Some(
@@ -155,7 +147,7 @@ pub async fn exec(
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
-        let create_cfs_session_resp = cfs::session::http_client::post(
+        let create_cfs_session_resp = post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -176,7 +168,7 @@ pub async fn exec(
 
         cfs_session_resp_list.push(create_cfs_session_resp.unwrap());
 
-        cfs_session_name_list.push(cfs_session.clone());
+        // cfs_session_name_list.push(cfs_session.clone());
 
         log::info!("CFS session created: {}", cfs_session.name);
 
@@ -187,7 +179,7 @@ pub async fn exec(
                 serde_json::to_string_pretty(&cfs_session_resp_list).unwrap()
             );
         } else {
-            cfs_session_utils::print_table(&cfs_session_resp_list);
+            cfs_session_utils::print_table_struct(&cfs_session_resp_list);
         }
 
         // Audit to file
@@ -215,5 +207,5 @@ pub async fn exec(
         }
     }
 
-    (cfs_configuration_name_list, cfs_session_name_list)
+    (cfs_configuration_vec, cfs_session_resp_list)
 }

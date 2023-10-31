@@ -100,6 +100,7 @@ pub async fn exec(
                 None,
                 Some(&image_id),
                 None,
+                None,
             )
             .await
             .unwrap()

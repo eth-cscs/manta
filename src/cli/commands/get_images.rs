@@ -78,6 +78,7 @@ pub async fn exec(
         shasta_root_cert,
         hsm_group_opt,
         None,
+        None,
         limit_number,
     )
     .await
@@ -112,6 +113,7 @@ pub async fn exec(
 
     for image_resp in &image_resp_value_vec {
         let image_id = image_resp["id"].as_str().unwrap();
+        let image_name = image_resp["name"].as_str().unwrap();
         let creation_time = image_resp["created"].as_str().unwrap();
 
         let target_group_name_vec: Vec<String>;
@@ -217,6 +219,7 @@ pub async fn exec(
 
         image_detail_vec.push(vec![
             image_id.to_string(),
+            image_name.to_string(),
             creation_time.to_string(),
             cfs_configuration.to_string(),
             target_groups.clone(),
@@ -230,6 +233,7 @@ pub async fn exec(
 
     table.set_header(vec![
         "Image ID",
+        "Name",
         "Creation time",
         "CFS configuration",
         "HSM groups",

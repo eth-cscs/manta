@@ -1,5 +1,4 @@
-use crate::common::jwt_ops::get_claims_from_jwt_token;
-use mesa::{shasta::cfs, shasta::cfs::configuration};
+use mesa::{shasta::cfs::{self, configuration::CfsConfigurationRequest}, mesa::cfs::configuration::get_put_payload::CfsConfigurationResponse};
 use serde_yaml::Value;
 use std::path::Path;
 
@@ -13,68 +12,58 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    timestamp: &str,
-) -> String {
-    println!("file config: {:#?}", path_file.file_name());
-    let file_content = std::fs::read_to_string(path_file).unwrap();
+    tag: &str,
+) -> anyhow::Result<Vec<String>> {
+    let file_content = std::fs::read_to_string(path_file).expect("SAT file not found. Exit");
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-    let configurations_yaml = sat_file_yaml["configurations"].as_sequence().unwrap();
+    let mut cfs_configuration_vec = Vec::new();
 
-    if configurations_yaml.is_empty() {
-        eprintln!("The input file has no configurations!");
-        std::process::exit(-1);
+    // Get CFS configurations from SAT YAML file
+    let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
+
+    let empty_vec = &Vec::new();
+    let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
+
+    let mut cfs_configuration_name_list = Vec::new();
+
+    for configuration_yaml in configuration_yaml_list {
+        let mut cfs_configuration_request_payload =
+            CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
+
+        // Rename configuration name
+        cfs_configuration_request_payload.name = cfs_configuration_request_payload.name.replace("__DATE__", tag);
+
+        log::debug!(
+            "CFS configuration creation payload:\n{:#?}",
+            cfs_configuration_request_payload
+        );
+
+        let create_cfs_configuration_resp = cfs::configuration::http_client::put(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_configuration_request_payload,
+            &cfs_configuration_request_payload.name,
+        )
+        .await;
+
+        log::debug!(
+            "CFS configuration creation response:\n{:#?}",
+            create_cfs_configuration_resp
+        );
+
+        if create_cfs_configuration_resp.is_err() {
+            eprintln!("CFS configuration creation failed");
+            std::process::exit(1);
+        }
+
+        cfs_configuration_name_list.push(create_cfs_configuration_resp.unwrap());
+
+        log::info!("CFS configuration created: {}", cfs_configuration_request_payload.name);
+
+        cfs_configuration_vec.push(cfs_configuration_request_payload.name);
     }
 
-    if configurations_yaml.len() > 1 {
-        eprintln!("Multiple CFS configurations found in input file, please clean the file so it only contains one.");
-        std::process::exit(-1);
-    }
-
-    let configuration_yaml = &configurations_yaml[0];
-
-    let mut create_cfs_configuration_payload =
-        configuration::CfsConfiguration::from_sat_file_serde_yaml(configuration_yaml);
-
-    create_cfs_configuration_payload.name = create_cfs_configuration_payload
-        .name
-        .replace("__DATE__", timestamp);
-
-    log::info!(
-        "CFS configuration creation payload:\n{:#?}",
-        create_cfs_configuration_payload
-    );
-
-    let create_cfs_configuration_resp = cfs::configuration::http_client::put(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &create_cfs_configuration_payload,
-        &create_cfs_configuration_payload.name,
-    )
-    .await;
-
-    log::info!(
-        "CFS configuration creation response:\n{:#?}",
-        create_cfs_configuration_resp
-    );
-
-    if create_cfs_configuration_resp.is_err() {
-        eprintln!("CFS configuration creation failed");
-        std::process::exit(1);
-    }
-
-    let cfs_configuration_name = create_cfs_configuration_resp.unwrap()["name"]
-        .as_str()
-        .unwrap()
-        .to_string();
-
-    // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply configuration", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
-
-    log::info!("CFS configuration created: {}", cfs_configuration_name);
-
-    cfs_configuration_name
+    Ok(cfs_configuration_vec)
 }
