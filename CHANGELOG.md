@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [1.10.3] - 2023-11-01
 
+### Bug Fixes
+
+- Update manta version
+- Add CHANGELOG integration with cargo-release
+- Add git cliff configuration to support multiline git commits
+
 ### Features
 
 - Add subcommand to change log level
@@ -91,6 +97,11 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 0.7.0
+- Release manta version 0.7.1
+- Release manta version 0.7.2
+- Release manta version 0.8.0
+- Release manta version 0.8.1
 - Release manta version 1.9.5
 
 ## [1.9.4] - 2023-10-04
@@ -136,6 +147,11 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 0.7.0
+- Release manta version 0.7.1
+- Release manta version 0.7.2
+- Release manta version 0.8.0
+- Release manta version 0.8.1
 - Release manta version 0.8.2
 - Release manta version 0.8.3
 - Release manta version 0.8.4
@@ -159,6 +175,11 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.3.1
 - Release manta version 1.3.2
 - Release manta version 1.3.3
+- Release manta version 0.7.0
+- Release manta version 0.7.1
+- Release manta version 0.7.2
+- Release manta version 0.8.0
+- Release manta version 0.8.1
 - Release manta version 1.4.0
 
 ## [0.6.30] - 2023-08-30
@@ -252,6 +273,10 @@ All notable changes to this project will be documented in this file.
 - Release manta version 0.6.16
 
 ## [0.6.15] - 2023-06-25
+
+### Co-authored-by
+
+- Manuel Sopena Ballesteros <msopena@cscs.ch>
 
 ### Miscellaneous Tasks
 
