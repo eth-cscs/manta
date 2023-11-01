@@ -282,11 +282,18 @@ Make sure a github workflow is created in `.github/workflows/release.yml`
 
 #### Deployment
 
+This project is already integrated with github actions through 'cargo release' and 'git cliff'
+
+> git cliff will parse your commits and update the CHANGELOG.md file automatically as long as your commits follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) and [git cliff extra commit types](https://github.com/eth-cscs/manta/blob/main/cliff.toml#L52-L65)
+
 ```
-cargo dist patch --execute
+cargo release <bump level> --execute
 ```
 
+> chose your [bump level](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) accordingly
+
 If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
+
 
 ### Profiling
 
@@ -333,7 +340,7 @@ Go to https://profiler.firefox.com/ and open manta.perf file
 #### DHAT mem alloction profiling
 
 > https://docs.rs/dhat/latest/dhat/
-> NOTE: lto in Cargo.toml needs to be disabled
+> lto in Cargo.toml needs to be disabled
 
 ##### Run
 
