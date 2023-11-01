@@ -210,6 +210,14 @@ $ manta apply node on "x1004c1s4b0n1"
 
 ## Deployment
 
+### Prerequisites
+
+Install build dependencies
+
+```shell
+$ cargo install cargo-release cargo-dist git-cliff
+```
+
 ### Build container image
 
 This repo contains a Dockerfile to build a Container with manta cli.

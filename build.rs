@@ -16,7 +16,7 @@ fn main() -> Result<(), Error> {
         outdir,   // We need to specify where to write to
     )?;
 
-    println!("cargo:eror=completion file is not reliable for tenants");
+    println!("cargo:error=completion file is not reliable for tenants");
     println!("cargo:warning=completion file is generated: {:?}", path);
 
     Ok(())
