@@ -20,7 +20,7 @@ use crate::{
 
 use super::commands::{
     self, apply_cluster, apply_ephemeral_env, apply_image, apply_node_off, apply_node_on,
-    apply_node_reset, apply_session, config_set_hsm, config_set_site, config_show,
+    apply_node_reset, apply_session, config_set_hsm, config_set_log, config_set_site, config_show,
     config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, update_hsm_group,
     update_node,
@@ -73,6 +73,9 @@ pub async fn process_cli(
             }
             if let Some(cli_config_set_site) = cli_config_set.subcommand_matches("site") {
                 config_set_site::exec(cli_config_set_site.get_one::<String>("SITE_NAME")).await;
+            }
+            if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log") {
+                config_set_log::exec(cli_config_set_log.get_one::<String>("LOG_LEVEL")).await;
             }
         } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset") {
             if let Some(_cli_config_unset_hsm) = cli_config_unset.subcommand_matches("hsm") {

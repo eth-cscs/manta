@@ -15,6 +15,9 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        hsm_group_name_opt,
+        cfs_session_name_opt,
+        limit_number_opt,
         None,
     )
     .await

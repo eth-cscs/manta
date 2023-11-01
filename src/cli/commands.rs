@@ -7,6 +7,7 @@ pub mod apply_node_on;
 pub mod apply_node_reset;
 pub mod apply_session;
 pub mod config_set_hsm;
+pub mod config_set_log;
 pub mod config_set_site;
 pub mod config_show;
 pub mod config_unset_auth;

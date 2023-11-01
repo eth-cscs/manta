@@ -101,14 +101,17 @@ pub fn subcommand_config() -> Command {
     }; */
 
     let subcommand_config_set_hsm = Command::new("hsm")
-        .about("Change hsm config values")
         .about("Set target HSM group")
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
 
     let subcommand_config_set_site = Command::new("site")
-        .about("Change site config value")
         .about("Set site to work on")
         .arg(arg!(<SITE_NAME> "site name"));
+
+    let subcommand_config_set_log = Command::new("log").about("Set site to work on").arg(
+        arg!(<LOG_LEVEL> "log verbority level")
+            .value_parser(["error", "warn", "info", "debug", "trace"]),
+    );
 
     let subcommand_config_unset_hsm = Command::new("hsm")
         .about("Clean hsm config values")
@@ -128,14 +131,15 @@ pub fn subcommand_config() -> Command {
                 .arg_required_else_help(true)
                 .about("Change config values")
                 .subcommand(subcommand_config_set_hsm)
-                .subcommand(subcommand_config_set_site),
+                .subcommand(subcommand_config_set_site)
+                .subcommand(subcommand_config_set_log),
         )
         .subcommand(
             Command::new("unset")
                 .arg_required_else_help(true)
                 .about("Reset config values")
                 .subcommand(subcommand_config_unset_hsm)
-                .subcommand(subcommand_config_unset_auth)
+                .subcommand(subcommand_config_unset_auth),
         )
 }
 
