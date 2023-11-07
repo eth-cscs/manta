@@ -114,8 +114,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // log4rs::init_file("log4rs.yml", Default::default()).unwrap(); // log4rs file configuration
     log_ops::configure(log_level); // log4rs programatically configuration
 
-    if let Ok(socks_proxy) = settings.get_string("socks5_proxy") {
-        std::env::set_var("SOCKS5", socks_proxy);
+    if let Some(socks_proxy) = site_detail_value.get("socks5_proxy") {
+        std::env::set_var("SOCKS5", socks_proxy.to_string());
     }
 
     let settings_hsm_group_opt = settings.get_string("hsm_group").ok();
