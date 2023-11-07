@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.4] - 2023-11-07
+
+### Documentation
+
+- Update README with instructions on how to create releases and commit messages best practices for CHANGELOG.md
+
 ## [1.10.3] - 2023-11-01
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add subcommand to change log level
+
+### Miscellaneous Tasks
+
+- Release manta version 1.10.3
 
 ## [1.10.2] - 2023-10-31
 
