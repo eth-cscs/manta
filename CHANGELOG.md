@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.5] - 2023-11-07
+
+### Bug Fixes
+
+- Fix bug where app did not read socks 5 information
+
 ## [1.10.4] - 2023-11-07
 
 ### Documentation
 
 - Update README with instructions on how to create releases and commit messages best practices for CHANGELOG.md
+
+### Miscellaneous Tasks
+
+- Release manta version 1.10.4
 
 ## [1.10.3] - 2023-11-01
 
