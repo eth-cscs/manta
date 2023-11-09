@@ -34,6 +34,7 @@ pub async fn exec(
     ansible_verbosity_opt: Option<&String>,
     ansible_passthrough_opt: Option<&String>,
     k8s_api_url: &str,
+    watch_logs: Option<&bool>,
     tag: String,
     output_opt: Option<&String>,
 ) {
@@ -102,7 +103,7 @@ pub async fn exec(
         shasta_root_cert,
         ansible_verbosity_opt,
         ansible_passthrough_opt,
-        Some(&false),
+        watch_logs,
         &tag,
         hsm_group_available_vec_opt,
         k8s_api_url,
@@ -167,6 +168,9 @@ pub async fn exec(
             }
         }
     }
+
+    println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
+    // session message
 
     // Create BOS sessiontemplate
 

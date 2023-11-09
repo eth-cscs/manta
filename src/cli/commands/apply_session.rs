@@ -1,7 +1,14 @@
 use std::path::{Path, PathBuf};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::shasta::cfs::{self, configuration};
+use futures::TryStreamExt;
+use mesa::{
+    common::vault::http_client::fetch_shasta_k8s_secrets,
+    shasta::{
+        cfs::{self, configuration},
+        kubernetes,
+    },
+};
 
 use crate::cli;
 use crate::common::jwt_ops::get_claims_from_jwt_token;
@@ -150,16 +157,48 @@ pub async fn exec(
 
     if watch_logs {
         log::info!("Fetching logs ...");
-        let _ = cli::commands::log::session_logs(
+        /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(
             vault_base_url,
             vault_secret_path,
             vault_role_id,
-            cfs_session_name.as_str(),
+            &cfs_session.name,
             None,
             k8s_api_url,
         )
         .await
-        .unwrap();
+        .unwrap(); */
+
+        let shasta_k8s_secrets =
+            fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+
+        let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+            .await
+            .unwrap();
+
+        // Get CFS session logs
+        let logs_stream_rslt = kubernetes::get_cfs_session_container_git_clone_logs_stream(
+            client.clone(),
+            &cfs_session_name,
+        )
+        .await;
+
+        match logs_stream_rslt {
+            Ok(mut logs_stream) => {
+                while let Some(line) = logs_stream.try_next().await.unwrap() {
+                    println!("{}", line);
+                }
+            }
+            Err(error_msg) => log::error!("{}", error_msg),
+        }
+
+        let mut logs_stream =
+            kubernetes::get_cfs_session_container_ansible_logs_stream(client, &cfs_session_name)
+                .await
+                .unwrap();
+
+        while let Some(line) = logs_stream.try_next().await.unwrap() {
+            println!("{}", line);
+        }
     }
     // * End Create CFS session
 

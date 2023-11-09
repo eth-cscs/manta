@@ -318,6 +318,7 @@ pub async fn process_cli(
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     k8s_api_url,
+                    cli_apply_cluster.get_one::<bool>("watch-logs"),
                     tag,
                     cli_apply_cluster.get_one::<String>("output"),
                 )

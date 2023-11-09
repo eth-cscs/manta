@@ -3,11 +3,15 @@ use std::path::PathBuf;
 use futures::TryStreamExt;
 
 use mesa::{
+    common::vault::http_client::fetch_shasta_k8s_secrets,
     mesa::cfs::{
         configuration::{get_put_payload::CfsConfigurationResponse, http_client::http_client::put},
         session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
     },
-    shasta::cfs::{configuration::CfsConfigurationRequest, session::CfsSessionRequest},
+    shasta::{
+        cfs::{configuration::CfsConfigurationRequest, session::CfsSessionRequest},
+        kubernetes,
+    },
 };
 use serde_yaml::Value;
 
@@ -132,7 +136,6 @@ pub async fn exec(
         // Rename session's configuration name
         cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
 
-
         // Set ansible verbosity
         cfs_session.ansible_verbosity = Some(
             ansible_verbosity
@@ -190,13 +193,44 @@ pub async fn exec(
         if let Some(true) = watch_logs {
             log::info!("Fetching logs ...");
 
-            let mut logs_stream = cli::commands::log::session_logs(
+            /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(
                 vault_base_url,
                 vault_secret_path,
                 vault_role_id,
                 &cfs_session.name,
                 None,
                 k8s_api_url,
+            )
+            .await
+            .unwrap(); */
+
+            let shasta_k8s_secrets =
+                fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+
+            let client =
+                kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+                    .await
+                    .unwrap();
+
+            // Get CFS session logs
+            let logs_stream_rslt = kubernetes::get_cfs_session_container_git_clone_logs_stream(
+                client.clone(),
+                &cfs_session.name,
+            )
+            .await;
+
+            match logs_stream_rslt {
+                Ok(mut logs_stream) => {
+                    while let Some(line) = logs_stream.try_next().await.unwrap() {
+                        println!("{}", line);
+                    }
+                }
+                Err(error_msg) => log::error!("{}", error_msg),
+            }
+
+            let mut logs_stream = kubernetes::get_cfs_session_container_ansible_logs_stream(
+                client,
+                &cfs_session.name,
             )
             .await
             .unwrap();

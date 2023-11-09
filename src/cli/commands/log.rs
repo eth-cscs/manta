@@ -2,10 +2,7 @@ use std::error::Error;
 
 use futures::{io::Lines, AsyncBufReadExt, TryStreamExt};
 
-use mesa::shasta::{
-    cfs, hsm,
-    kubernetes::{self, get_cfs_session_logs_stream},
-};
+use mesa::shasta::{cfs, hsm, kubernetes};
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
@@ -61,8 +58,23 @@ pub async fn exec(
         .unwrap();
 
     // Get CFS session logs
+    let logs_stream_rslt = kubernetes::get_cfs_session_container_git_clone_logs_stream(
+        client.clone(),
+        &cfs_session_name,
+    )
+    .await;
+
+    match logs_stream_rslt {
+        Ok(mut logs_stream) => {
+            while let Some(line) = logs_stream.try_next().await.unwrap() {
+                println!("{}", line);
+            }
+        }
+        Err(error_msg) => log::error!("{}", error_msg),
+    }
+
     let mut logs_stream =
-        get_cfs_session_logs_stream(client, cfs_session_name, /* layer_id */ None)
+        kubernetes::get_cfs_session_container_ansible_logs_stream(client, cfs_session_name)
             .await
             .unwrap();
 
@@ -71,12 +83,11 @@ pub async fn exec(
     }
 }
 
-pub async fn session_logs(
+/* pub async fn get_cfs_session_container_ansible_logs_stream(
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
     cfs_session_name: &str,
-    layer_id: Option<&u8>,
     k8s_api_url: &str,
 ) -> Result<Lines<impl AsyncBufReadExt>, Box<dyn Error + Sync + Send>> {
     let shasta_k8s_secrets =
@@ -87,5 +98,5 @@ pub async fn session_logs(
         .unwrap();
 
     // Get CFS session logs
-    get_cfs_session_logs_stream(client, cfs_session_name, layer_id).await
-}
+    kubernetes::get_cfs_session_container_ansible_logs_stream(client, cfs_session_name).await
+} */
