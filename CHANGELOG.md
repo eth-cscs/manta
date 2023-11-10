@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.6] - 2023-11-10
+
+### Features
+
+- Enable logs while building a cluster
+- Git-clone CFS session logs integrated to 'watch-log' command
+
+### Refactor
+
+- [**breaking**] Layer-id param removed when fetching ansible logs (this
+- Code related to cfs session logs
+
 ## [1.10.5] - 2023-11-07
 
 ### Bug Fixes
 
 - Fix bug where app did not read socks 5 information
+
+### Miscellaneous Tasks
+
+- Release manta version 1.10.5
 
 ## [1.10.4] - 2023-11-07
 
