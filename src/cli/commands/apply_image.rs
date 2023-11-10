@@ -212,32 +212,7 @@ pub async fn exec(
                     .await
                     .unwrap();
 
-            // Get CFS session logs
-            let logs_stream_rslt = kubernetes::get_cfs_session_container_git_clone_logs_stream(
-                client.clone(),
-                &cfs_session.name,
-            )
-            .await;
-
-            match logs_stream_rslt {
-                Ok(mut logs_stream) => {
-                    while let Some(line) = logs_stream.try_next().await.unwrap() {
-                        println!("{}", line);
-                    }
-                }
-                Err(error_msg) => log::error!("{}", error_msg),
-            }
-
-            let mut logs_stream = kubernetes::get_cfs_session_container_ansible_logs_stream(
-                client,
-                &cfs_session.name,
-            )
-            .await
-            .unwrap();
-
-            while let Some(line) = logs_stream.try_next().await.unwrap() {
-                println!("{}", line);
-            }
+            kubernetes::print_cfs_session_logs(client, &cfs_session.name).await;
         }
     }
 
