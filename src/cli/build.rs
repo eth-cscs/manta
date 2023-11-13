@@ -168,7 +168,8 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")
                 .value_parser(value_parser!(u8).range(1..)),
-        );
+        )
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
     match hsm_group {
         None => {

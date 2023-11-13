@@ -128,7 +128,7 @@ pub async fn exec(
         }
     }
 
-    cfs_session_vec = mesa::mesa::cfs::session::http_client::utils::filter(
+    /* cfs_session_vec = mesa::mesa::cfs::session::http_client::utils::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -137,7 +137,7 @@ pub async fn exec(
         cfs_session_name_opt,
         limit_number_opt,
     )
-    .await;
+    .await; */
 
     if output_opt.is_some() && output_opt.unwrap().eq("json") {
         println!(
