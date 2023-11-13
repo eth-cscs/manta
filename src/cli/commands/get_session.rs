@@ -6,16 +6,18 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_opt: Option<&String>,
+    hsm_group_name_vec: &Vec<String>,
     cfs_session_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
     output_opt: Option<&String>,
 ) {
+    log::info!("Get CFS sessions for HSM groups: {:?}", hsm_group_name_vec);
+
     let mut cfs_session_vec = mesa::mesa::cfs::session::http_client::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name_opt,
+        hsm_group_name_vec,
         cfs_session_name_opt,
         limit_number_opt,
         None,
@@ -87,28 +89,23 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_id_vec = shasta::ims::image::http_client::get(
+                let new_image_id_vec_rslt = shasta::ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_opt,
+                    hsm_group_name_vec,
                     cfs_session_image_id,
                     None,
                     None,
                 )
                 .await;
 
-                if new_image_id_vec.is_ok() && new_image_id_vec.as_ref().unwrap().first().is_some()
+                // if new_image_id_vec_rslt.is_ok() && new_image_id_vec_rslt.as_ref().unwrap().first().is_some()
+                if let Ok(Some(new_image_id)) = new_image_id_vec_rslt
+                    .as_ref()
+                    .map(|new_image_vec| new_image_vec.first())
                 {
-                    Some(
-                        new_image_id_vec
-                            .unwrap()
-                            .first()
-                            .unwrap()
-                            .as_str()
-                            .unwrap_or("")
-                            .to_string(),
-                    )
+                    Some(new_image_id.as_str().unwrap_or("").to_string())
                 } else {
                     None
                 }
@@ -136,7 +133,7 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         &mut cfs_session_vec,
-        hsm_group_name_opt,
+        hsm_group_name_vec,
         cfs_session_name_opt,
         limit_number_opt,
     )

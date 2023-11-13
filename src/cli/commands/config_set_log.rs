@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use toml_edit::{value, Document, Table};
+use toml_edit::{value, Document};
 
 pub async fn exec(new_log_level_opt: Option<&String>) {
     // XDG Base Directory Specification

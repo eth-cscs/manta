@@ -10,7 +10,6 @@ use mesa::{
     },
 };
 
-use crate::cli;
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
 use substring::Substring;
@@ -66,22 +65,22 @@ pub async fn exec(
         ansible_limit.split(',').map(|xname| xname.trim()).collect();
 
     // Parse hsm group
-    let mut hsm_group_value = None;
+    let mut hsm_group_value_opt = None;
 
     // Get hsm_group from cli arg
     if hsm_group.is_some() {
-        hsm_group_value = hsm_group;
+        hsm_group_value_opt = hsm_group;
     }
     // * End Parse input params
 
     // * Process/validate hsm group value (and ansible limit)
-    if hsm_group_value.is_some() {
+    if let Some(hsm_group_value) = hsm_group_value_opt {
         // Get all hsm groups details related to hsm_group input
         hsm_group_list = crate::common::cluster_ops::get_details(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            hsm_group_value.unwrap(),
+            hsm_group_value,
         )
         .await;
 
@@ -225,16 +224,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions = cfs::session::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        None,
-    )
-    .await?;
+    let cfs_sessions =
+        cfs::session::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert, None)
+            .await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()

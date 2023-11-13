@@ -1,7 +1,6 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use mesa::shasta::hsm;
 use toml_edit::{value, Document};
 
 use crate::common::jwt_ops;
@@ -38,7 +37,7 @@ pub async fn exec(
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
+    let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap()
@@ -77,13 +76,7 @@ pub async fn exec(
 
     doc["hsm_group"] = value(new_hsm_opt.unwrap());
 
-    if new_hsm_opt.is_none() {
-        // 'hsm_available' config param is empty or does not exists, then an admin user is running
-        // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
-        // this param from the config file
-        //
-        // NOTHING TO DO
-    } else {
+    if let Some(new_hsm) = new_hsm_opt {
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
@@ -109,7 +102,13 @@ pub async fn exec(
             new_hsm_opt.unwrap()
         );
 
-        doc["hsm_group"] = value(new_hsm_opt.unwrap());
+        doc["hsm_group"] = value(new_hsm);
+    } else {
+        // 'hsm_available' config param is empty or does not exists, then an admin user is running
+        // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
+        // this param from the config file
+        //
+        // NOTHING TO DO
     };
 
     // Update configuration file content

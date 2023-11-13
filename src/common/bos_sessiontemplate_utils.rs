@@ -8,13 +8,10 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all BOS sessiontemplates
-    let bos_sessiontemplate_value_list = mesa::shasta::bos::template::http_client::get(
+    let bos_sessiontemplate_value_list = mesa::shasta::bos::template::http_client::get_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        None,
-        None,
-        None,
     )
     .await
     .unwrap();
@@ -74,14 +71,11 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if ims::image::http_client::get(
+                if ims::image::http_client::get_all(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    None,
                     Some(&image_id_related_to_bos_sessiontemplate),
-                    None,
-                    None,
                 )
                 .await
                 .is_ok()

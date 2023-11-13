@@ -1,4 +1,4 @@
-use mesa::{shasta::cfs, manta};
+use mesa::{manta, shasta::cfs};
 
 use crate::common::gitea;
 
@@ -9,7 +9,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     configuration_name: Option<&String>,
-    // contains: Option<&String>,
+    hsm_group_name_vec: &Vec<String>,
     most_recent: Option<bool>,
     limit: Option<&u8>,
 ) {
@@ -18,7 +18,7 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         configuration_name,
-        // contains,
+        hsm_group_name_vec,
         most_recent,
         limit,
     )

@@ -2,11 +2,7 @@ use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
-pub fn build_cli(
-    hsm_group: Option<&String>,
-    // hsm_available_vec: &[String],
-    site_available_vec: &[String],
-) -> Command {
+pub fn build_cli(hsm_group: Option<&String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -163,7 +159,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
     delete
 }
 
-pub fn subcommand_get_cfs_configuration() -> Command {
+pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .about("Get information from Shasta CFS configuration")
@@ -174,14 +170,14 @@ pub fn subcommand_get_cfs_configuration() -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         );
 
-    /* match hsm_group {
+    match hsm_group {
         None => {
             get_cfs_configuration = get_cfs_configuration
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
         }
         Some(_) => {}
-    } */
+    }
 
     get_cfs_configuration = get_cfs_configuration
         .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
@@ -303,7 +299,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
         .subcommand(subcommand_get_cfs_session(hsm_group))
-        .subcommand(subcommand_get_cfs_configuration())
+        .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))

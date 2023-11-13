@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use futures::TryStreamExt;
-
 use mesa::{
     common::vault::http_client::fetch_shasta_k8s_secrets,
     mesa::cfs::{
@@ -15,10 +13,7 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::{
-    cli,
-    common::{cfs_session_utils, jwt_ops::get_claims_from_jwt_token},
-};
+use crate::common::{cfs_session_utils, jwt_ops::get_claims_from_jwt_token};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -36,7 +31,7 @@ pub async fn exec(
     ansible_passthrough: Option<&String>,
     watch_logs: Option<&bool>,
     tag: &str,
-    hsm_group_available_vec_opt: Option<&[String]>,
+    hsm_group_available_vec: &[String],
     k8s_api_url: &str,
     output_opt: Option<&String>,
 ) -> (Vec<CfsConfigurationResponse>, Vec<CfsSessionGetResponse>) {
@@ -49,33 +44,28 @@ pub async fn exec(
     let image_yaml_list = sat_file_yaml["images"].as_sequence();
 
     // Check HSM groups in images section in SAT file matches the HSM group in Manta configuration file
-    if let Some(hsm_group_available_vec) = hsm_group_available_vec_opt {
-        for image_yaml in image_yaml_list.unwrap_or(&Vec::new()) {
-            for hsm_group in image_yaml["configuration_group_names"]
-                .as_sequence()
-                .unwrap()
-                .iter()
-                .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
-                .filter(|&hsm_group| {
-                    !hsm_group.eq_ignore_ascii_case("Compute")
-                        && !hsm_group.eq_ignore_ascii_case("Application")
-                        && !hsm_group.eq_ignore_ascii_case("Application_UAN")
-                })
-            {
-                if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                    println!(
+    for image_yaml in image_yaml_list.unwrap_or(&Vec::new()) {
+        for hsm_group in image_yaml["configuration_group_names"]
+            .as_sequence()
+            .unwrap()
+            .iter()
+            .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
+            .filter(|&hsm_group| {
+                !hsm_group.eq_ignore_ascii_case("Compute")
+                    && !hsm_group.eq_ignore_ascii_case("Application")
+                    && !hsm_group.eq_ignore_ascii_case("Application_UAN")
+            })
+        {
+            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
+                println!(
                         "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
                         image_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
-                    std::process::exit(-1);
-                }
+                std::process::exit(-1);
             }
         }
-    } else {
-        println!("Your user does not have HSM groups assigned in keycloak. Exit");
-        std::process::exit(1);
     }
 
     // Process CFS configurations

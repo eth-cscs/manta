@@ -1,5 +1,5 @@
 use core::time;
-use std::{ops::Deref, path::PathBuf, thread};
+use std::{path::PathBuf, thread};
 
 // use clap::ArgMatches;
 use mesa::{
@@ -30,7 +30,7 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     path_file: &PathBuf,
     hsm_group_param_opt: Option<&String>,
-    hsm_group_available_vec_opt: Option<&[String]>,
+    hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<&String>,
     ansible_passthrough_opt: Option<&String>,
     k8s_api_url: &str,
@@ -50,46 +50,41 @@ pub async fn exec(
     // Check HSM groups in session_templates in SAT file section matches the HSM group in Manta configuration file
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
-    if let Some(hsm_group_available_vec) = hsm_group_available_vec_opt {
-        for bos_session_template_yaml in bos_session_template_list_yaml {
-            let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
-                bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
-            {
-                boot_sets_compute["node_groups"]
-                    .as_sequence()
-                    .unwrap_or(&Vec::new())
-                    .iter()
-                    .map(|node| node.as_str().unwrap().to_string())
-                    .collect()
-            } else if let Some(boot_sets_compute) =
-                bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
-            {
-                boot_sets_compute["node_groups"]
-                    .as_sequence()
-                    .unwrap_or(&Vec::new())
-                    .iter()
-                    .map(|node| node.as_str().unwrap().to_string())
-                    .collect()
-            } else {
-                println!("No HSM group found in session_templates section in SAT file");
-                std::process::exit(1);
-            };
+    for bos_session_template_yaml in bos_session_template_list_yaml {
+        let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
+            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
+        {
+            boot_sets_compute["node_groups"]
+                .as_sequence()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|node| node.as_str().unwrap().to_string())
+                .collect()
+        } else if let Some(boot_sets_compute) =
+            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
+        {
+            boot_sets_compute["node_groups"]
+                .as_sequence()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|node| node.as_str().unwrap().to_string())
+                .collect()
+        } else {
+            println!("No HSM group found in session_templates section in SAT file");
+            std::process::exit(1);
+        };
 
-            for hsm_group in bos_session_template_hsm_groups {
-                if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                    println!(
+        for hsm_group in bos_session_template_hsm_groups {
+            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
+                println!(
                         "HSM group '{}' in session_templates {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
                         bos_session_template_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
-                    std::process::exit(-1);
-                }
+                std::process::exit(-1);
             }
         }
-    } else {
-        println!("No HSM groups user has access defined, please check with your Alps sys admin this. Exit");
-        std::process::exit(1);
     }
 
     // Create CFS configuration and image
@@ -105,7 +100,7 @@ pub async fn exec(
         ansible_passthrough_opt,
         watch_logs,
         &tag,
-        hsm_group_available_vec_opt,
+        hsm_group_available_vec,
         k8s_api_url,
         output_opt,
     )
@@ -123,11 +118,11 @@ pub async fn exec(
         let mut i = 0;
         let max = 1800; // Max ammount of attempts to check if CFS session has ended
         loop {
-            let cfs_session_value_vec_rslt = session::http_client::get(
+            let cfs_session_value_vec_rslt = session::http_client::filter(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                None,
+                hsm_group_available_vec,
                 Some(&cfs_session_name),
                 Some(&1),
                 Some(true),
@@ -170,7 +165,7 @@ pub async fn exec(
     }
 
     println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
-    // session message
+                // session message
 
     // Create BOS sessiontemplate
 
@@ -240,7 +235,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            None,
+            hsm_group_available_vec,
             Some(&image_id),
             None,
             None,

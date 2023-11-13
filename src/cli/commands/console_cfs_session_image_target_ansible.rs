@@ -7,7 +7,7 @@ use tokio::{io::AsyncWriteExt, select};
 use crate::common::terminal_ops;
 
 pub async fn exec(
-    hsm_group: Option<&String>,
+    hsm_group_name_vec: &Vec<String>,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -17,16 +17,17 @@ pub async fn exec(
     k8s_api_url: &str,
     cfs_session_name: &str,
 ) {
-    let cfs_session_details_list_rslt = mesa::shasta::cfs::session::http_client::get(
+    let cfs_session_details_list_rslt = mesa::shasta::cfs::session::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group,
+        hsm_group_name_vec,
         Some(&cfs_session_name.to_string()),
         None,
         Some(false),
     )
     .await;
+
     if let Ok(cfs_session_details_list) = cfs_session_details_list_rslt {
         if cfs_session_details_list.is_empty() {
             eprintln!("No CFS session found. Exit",);
@@ -56,18 +57,18 @@ pub async fn exec(
             );
             std::process::exit(1);
         }
-        if cfs_session_details
+        if !cfs_session_details
             .pointer("/target/groups")
             .unwrap()
             .as_array()
             .unwrap()
             .iter()
-            .any(|group| group["name"].as_str().unwrap().eq(hsm_group.unwrap()))
+            .any(|group| hsm_group_name_vec.contains(&group["name"].as_str().unwrap().to_string()))
         {
             eprintln!(
-                "CFS session found {} is not targeting HSM group {}",
+                "CFS session found {} is not related to any availble HSM groups {:?}",
                 cfs_session_details["name"].as_str().unwrap(),
-                hsm_group.unwrap()
+                hsm_group_name_vec
             );
             std::process::exit(1);
         }

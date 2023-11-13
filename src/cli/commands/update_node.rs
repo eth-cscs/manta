@@ -19,13 +19,18 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+            None,
             desired_configuration_opt,
             Some(&1),
         )
         .await;
 
     // Check desired configuration exists
-    if desired_configuration_detail_list_rslt.is_ok() && !desired_configuration_detail_list_rslt.as_ref().unwrap().is_empty()
+    if desired_configuration_detail_list_rslt.is_ok()
+        && !desired_configuration_detail_list_rslt
+            .as_ref()
+            .unwrap()
+            .is_empty()
     {
         let desired_configuration_detail_list = desired_configuration_detail_list_rslt.unwrap();
 
@@ -88,14 +93,11 @@ pub async fn exec(
         .await;
 
         let image_details_value_vec = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get(
+            ims::image::http_client::get_all(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                None,
                 Some(&image_id),
-                None,
-                None,
             )
             .await
             .unwrap()

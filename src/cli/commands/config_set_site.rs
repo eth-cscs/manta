@@ -50,7 +50,7 @@ pub async fn exec(new_site_opt: Option<&String>) {
         std::process::exit(1);
     }
 
-    validate_site_and_site_available_config_params(new_site_opt.unwrap(), &site_available_table);
+    validate_site_and_site_available_config_params(new_site_opt.unwrap(), site_available_table);
 
     // All goot, we are safe to update 'site' config param
     log::info!(
@@ -81,10 +81,7 @@ pub async fn exec(new_site_opt: Option<&String>) {
     }
 }
 
-pub fn validate_site_and_site_available_config_params(
-    site: &String,
-    site_available_table: &Table,
-) {
+pub fn validate_site_and_site_available_config_params(site: &String, site_available_table: &Table) {
     if !site_available_table.contains_key(site) {
         eprintln!(
             "Site provided ({}) not valid, please choose one of the following options: {:?}",

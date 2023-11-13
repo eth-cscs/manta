@@ -14,12 +14,12 @@ pub fn get_configuration_file_path() -> PathBuf {
     PathBuf::from(project_dirs.unwrap().config_dir())
 }
 
-/// Reads configuration file with manta parameters
+/// Reads configuration parameters related to manta from environment variables or file. If both
+/// defiend, then environment variables takes preference
 pub fn get_configuration() -> Config {
     let mut config_path = get_configuration_file_path();
     config_path.push("config.toml"); // ~/.config/manta/config is the file
 
-    // let settings = config::get_configuration(&path_to_manta_configuration_file.to_string_lossy());
     ::config::Config::builder()
         .add_source(::config::File::from(config_path))
         .add_source(

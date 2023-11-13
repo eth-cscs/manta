@@ -1,28 +1,28 @@
-use mesa::{mesa::bos::sessiontemplate::utils::print_table_struct, shasta::bos};
+use mesa::mesa::bos::sessiontemplate::utils::print_table_struct;
 
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_opt: Option<&String>,
+    hsm_group_name_vec: &Vec<String>,
+    hsm_member_vec: &Vec<String>,
     bos_sessiontemplate_name_opt: Option<&String>,
-    most_recent_opt: Option<bool>,
     limit_number_opt: Option<&u8>,
 ) {
-    let mut bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::http_client::get(
+    log::info!("Get BOS sessiontemplates for HSM groups: {:?}", hsm_group_name_vec);
+
+    let mut bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::http_client::get_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        /* hsm_group_name,
-        template_name,
-        limit_number, */
     )
     .await
     .unwrap_or_default();
 
     bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::utils::filter(
         &mut bos_sessiontemplate_vec,
-        hsm_group_name_opt,
+        hsm_group_name_vec,
+        hsm_member_vec,
         bos_sessiontemplate_name_opt,
         limit_number_opt,
     )

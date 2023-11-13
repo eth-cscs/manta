@@ -1,5 +1,4 @@
 use mesa::shasta::hsm;
-use termion::color;
 
 use crate::common::node_ops;
 
@@ -10,41 +9,19 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name: Option<&String>,
+    hsm_name_vec: &Vec<String>,
     silent: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
 ) {
-    let hsm_groups_resp = hsm::http_client::get_hsm_groups(
+    // Take all nodes for all hsm_groups found and put them in a Vec
+    let mut hsm_groups_node_list: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name,
+        hsm_name_vec,
     )
     .await;
-
-    let hsm_group_list = if hsm_groups_resp.is_err() {
-        eprintln!(
-            "No HSM group {}{}{} found!",
-            color::Fg(color::Red),
-            hsm_group_name.unwrap(),
-            color::Fg(color::Reset)
-        );
-        std::process::exit(0);
-    } else {
-        hsm_groups_resp.unwrap()
-    };
-
-    if hsm_group_list.is_empty() {
-        println!("No HSM group found");
-        std::process::exit(0);
-    }
-
-    // Take all nodes for all hsm_groups found and put them in a Vec
-    let mut hsm_groups_node_list: Vec<String> =
-        hsm::utils::get_members_from_hsm_groups_serde_value(&hsm_group_list)
-            .into_iter()
-            .collect();
 
     hsm_groups_node_list.sort();
 

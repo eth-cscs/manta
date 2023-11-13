@@ -10,16 +10,16 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    cluster_name: Option<&String>,
+    hsm_name_vec: &Vec<String>,
     session_name: Option<&String>,
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions_resp = cfs::session::http_client::get(
+    let cfs_sessions_resp = cfs::session::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        cluster_name,
+        hsm_name_vec,
         session_name,
         None,
         None,

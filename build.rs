@@ -9,7 +9,7 @@ fn main() -> Result<(), Error> {
         Some(outdir) => outdir,
     };
 
-    let mut cmd = build_cli(None, &Vec::new());
+    let mut cmd = build_cli(None);
     let path = generate_to(
         Bash, &mut cmd, // We need to specify what generator to use
         "manta",  // We need to specify the bin name manually
