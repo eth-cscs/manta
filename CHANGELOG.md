@@ -2,12 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2023-11-13
+
+### Bug Fixes
+
+- Bugs with subcommands ignoring of failing the restrictions
+
+### Features
+
+- Adopt subcommands to work with a group of target HSM group
+- New function to validate requested hsm group
+- New function to validate requested hsm group members
+- Update mesa version
+- Get configuration subcommand output to json format
+
+### Refactor
+
+- Clean code and adapt to new mesa version
+- Clean code
+
 ## [1.10.6] - 2023-11-10
 
 ### Features
 
 - Enable logs while building a cluster
 - Git-clone CFS session logs integrated to 'watch-log' command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.10.6
 
 ### Refactor
 
