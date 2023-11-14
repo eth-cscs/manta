@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2023-11-14
+
+### Features
+
+- Add new sub command apply configuration to create CFS
+
 ## [1.11.0] - 2023-11-13
 
 ### Bug Fixes
@@ -15,6 +21,10 @@ All notable changes to this project will be documented in this file.
 - New function to validate requested hsm group members
 - Update mesa version
 - Get configuration subcommand output to json format
+
+### Miscellaneous Tasks
+
+- Release manta version 1.11.0
 
 ### Refactor
 
