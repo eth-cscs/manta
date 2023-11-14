@@ -1,6 +1,6 @@
 use mesa::{manta, shasta::cfs};
 
-use crate::common::gitea;
+use crate::common::{gitea, cfs_configuration_utils::print_table_struct};
 
 pub async fn exec(
     gitea_base_url: &str,
@@ -68,7 +68,7 @@ pub async fn exec(
                 ));
             }
 
-            manta::cfs::configuration::print_table(manta::cfs::configuration::Configuration::new(
+            print_table_struct(manta::cfs::configuration::Configuration::new(
                 most_recent_cfs_configuration["name"].as_str().unwrap(),
                 most_recent_cfs_configuration["lastUpdated"]
                     .as_str()

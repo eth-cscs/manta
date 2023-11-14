@@ -13,7 +13,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta system")
-                // .subcommand(subcommand_apply_configuration(hsm_group))
+                .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
                 .subcommand(
@@ -307,15 +307,17 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_images(hsm_group))
 }
 
-/* pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
+pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     let mut apply_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .arg_required_else_help(true)
-        .about("Create a CFS configuration against a HSM group")
-        .arg(arg!(-f --file <SAT_FILE> "SAT file with configuration details").value_parser(value_parser!(PathBuf)))
-        .arg(arg!(-n --name <VALUE> "Configuration name"))
-        .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
-        .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
+        .about("Create a CFS configuration")
+        .arg(arg!(-f --file <SAT_FILE> "SAT file with configuration details").value_parser(value_parser!(PathBuf)).required(true))
+        .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        // .arg(arg!(-n --name <VALUE> "Configuration name"))
+        // .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
+        // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
         // .group(ArgGroup::new("req_flag_file").arg("file"))
         ;
 
@@ -328,7 +330,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
     };
 
     apply_configuration
-} */
+}
 
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")

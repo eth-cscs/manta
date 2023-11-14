@@ -23,7 +23,7 @@ use super::commands::{
     apply_node_reset, apply_session, config_set_hsm, config_set_log, config_set_site, config_show,
     config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, update_hsm_group,
-    update_node,
+    update_node, apply_configuration,
 };
 
 pub async fn process_cli(
@@ -261,7 +261,34 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-            if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
+            if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
+                let hsm_group_target_vec = validate_target_hsm_name(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_apply_configuration
+                        .try_get_one::<String>("hsm-group")
+                        .unwrap_or(None),
+                    hsm_group_name_opt,
+                )
+                .await;
+
+                let tag = if let Some(input_tag) = cli_apply_configuration.get_one::<String>("tag") {
+                    input_tag.clone()
+                } else {
+                    chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+                };
+
+                let _ = apply_configuration::exec(
+                    cli_apply_configuration.get_one("file").unwrap(),
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &tag,
+                    cli_apply_configuration.get_one::<String>("output"),
+                )
+                .await;
+            } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
                 let hsm_group_target_vec = validate_target_hsm_name(
                     shasta_token,
                     shasta_base_url,
