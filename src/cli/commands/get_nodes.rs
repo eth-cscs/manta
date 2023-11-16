@@ -43,14 +43,19 @@ pub async fn exec(
             "FAILED"
         } else if node_details_list
             .iter()
-            .any(|node_details| node_details.power_status.eq_ignore_ascii_case("standby"))
+            .any(|node_detail| node_detail.power_status.eq_ignore_ascii_case("OFF"))
         {
-            "STANDBY"
-        }else if node_details_list
+            "OFF"
+        } else if node_details_list
             .iter()
             .any(|node_details| node_details.power_status.eq_ignore_ascii_case("on"))
         {
             "ON"
+        } else if node_details_list
+            .iter()
+            .any(|node_details| node_details.power_status.eq_ignore_ascii_case("standby"))
+        {
+            "STANDBY"
         } else if !node_details_list.iter().any(|node_details| {
             node_details
                 .configuration_status
