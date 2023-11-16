@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.3] - 2023-11-16
+
+### Documentation
+
+- Fix README
+
 ## [1.12.2] - 2023-11-16
 
 ### Documentation
 
 - Update README
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.2
 
 ## [1.12.1] - 2023-11-16
 
