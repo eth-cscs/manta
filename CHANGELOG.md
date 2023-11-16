@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.2] - 2023-11-16
+
+### Documentation
+
+- Update README
+
 ## [1.12.1] - 2023-11-16
 
 ### Features
 
 - Duplicate get nodes subcommand into get cluster
 - Get cluster status
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.1
 
 ## [1.12.0] - 2023-11-14
 
