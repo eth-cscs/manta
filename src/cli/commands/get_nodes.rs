@@ -56,8 +56,8 @@ pub async fn exec(
             .any(|node_details| node_details.power_status.eq_ignore_ascii_case("standby"))
         {
             "STANDBY"
-        } else if !node_details_list.iter().any(|node_details| {
-            node_details
+        } else if node_details_list.iter().any(|node_details| {
+            !node_details
                 .configuration_status
                 .eq_ignore_ascii_case("configured")
         }) {
