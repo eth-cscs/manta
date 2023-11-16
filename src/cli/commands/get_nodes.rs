@@ -13,6 +13,7 @@ pub async fn exec(
     silent: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
+    status: bool,
 ) {
     // Take all nodes for all hsm_groups found and put them in a Vec
     let mut hsm_groups_node_list: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
@@ -33,7 +34,35 @@ pub async fn exec(
     )
     .await;
 
-    if silent {
+    if status {
+        let status_output = if node_details_list.iter().any(|node_details| {
+            node_details
+                .configuration_status
+                .eq_ignore_ascii_case("failed")
+        }) {
+            "FAILED"
+        } else if node_details_list
+            .iter()
+            .any(|node_details| node_details.power_status.eq_ignore_ascii_case("standby"))
+        {
+            "STANDBY"
+        }else if node_details_list
+            .iter()
+            .any(|node_details| node_details.power_status.eq_ignore_ascii_case("on"))
+        {
+            "ON"
+        } else if !node_details_list.iter().any(|node_details| {
+            node_details
+                .configuration_status
+                .eq_ignore_ascii_case("configured")
+        }) {
+            "UNCONFIGURED"
+        } else {
+            "OK"
+        };
+
+        println!("{}", status_output);
+    } else if silent {
         let node_nid_list = node_details_list
             .iter()
             .map(|node_details| node_details.nid.clone())

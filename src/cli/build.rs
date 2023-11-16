@@ -235,10 +235,31 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
     get_bos_template
 }
 
+pub fn subcommand_get_cluster_details(hsm_group: Option<&String>) -> Command {
+    let mut get_node = Command::new("cluster")
+        .aliases(["C", "clstr"])
+        .about("Get cluster details")
+        .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
+        .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
+        .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - ON: At least one node is not yet booted\n - STANDBY: At lesat one node's heartbeat is lost\n - UNCONFIGURED: All nodes are booted but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
+
+    match hsm_group {
+        None => {
+            get_node = get_node
+                .arg_required_else_help(true)
+                .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
+        }
+        Some(_) => {}
+    }
+
+    get_node
+}
+
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
-        .about("Get members of a HSM group")
+        .about("This command will be DEPRECATED in manta v1.15.0. the new command to use will be replaced by 'manta get cluster'. Get members of a HSM group")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
@@ -258,7 +279,7 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
     let mut get_hsm_group = Command::new("hsm-groups")
         .aliases(["h", "hg", "hsm", "hsmgrps"])
-        .about("Get HSM groups details");
+        .about("This command will be DEPRECATED in manta v1.15.0. the new command to use will be called 'manta get cluster' and the output will be similar to manta get nodes. Get HSM groups details");
 
     match hsm_group {
         None => {
@@ -303,6 +324,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
         .subcommand(subcommand_get_node(hsm_group))
+        .subcommand(subcommand_get_cluster_details(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
         .subcommand(subcommand_get_images(hsm_group))
 }
