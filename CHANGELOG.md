@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.4] - 2023-11-16
+
+### Bug Fixes
+
+- Fix 'get cluster status' sub command
+
+### Refactor
+
+- Fix 'get cluster' command help message typo
+- Add deprecated message in 'get nodes' subcommand
+- Fix 'get hsm' cli help message
+
 ## [1.12.3] - 2023-11-16
 
 ### Documentation
 
 - Fix README
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.3
 
 ## [1.12.2] - 2023-11-16
 
