@@ -122,7 +122,7 @@ pub async fn process_cli(
                     if let Some(hsm_group_name) = hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
-                        cli_get_configuration.get_one::<String>("HSM_GROUP_NAME")
+                        cli_get_configuration.get_one::<String>("hsm-group")
                     },
                     hsm_group_name_opt,
                 )
@@ -151,7 +151,7 @@ pub async fn process_cli(
                     if let Some(hsm_group_name) = hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
-                        cli_get_session.get_one::<String>("HSM_GROUP_NAME")
+                        cli_get_session.get_one::<String>("hsm-group")
                     },
                     hsm_group_name_opt,
                 )
@@ -187,7 +187,7 @@ pub async fn process_cli(
                     if let Some(hsm_group_name) = hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
-                        cli_get_template.get_one::<String>("HSM_GROUP_NAME")
+                        cli_get_template.get_one::<String>("hsm-group")
                     },
                     hsm_group_name_opt,
                 )
