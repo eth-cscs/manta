@@ -40,19 +40,25 @@ Manta aggregates information from multiple sources:
 Manta needs a configuration file in `$HOME/.config/manta/config.toml` like shown below
 
 ```bash
-log = "error"
+log = "info"
+
+site = "alps"
+hsm_group = "psi-dev"
+
+[sites]
+
+[sites.alps]
 socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
 keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
 gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
 k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
-vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 vault_secret_path = "shasta"
-hsm_group = "psitds"
+vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 ```
 
-Manta logs user's operations in /var/log/manta/ folder, please make sure this folder exists and all users have rwx access to it
+Manta can log user's operations in /var/log/manta/ folder, please make sure this folder exists and all users have rwx access to it
 
 ```bash
 mkdir /var/log/manta
@@ -61,19 +67,20 @@ chmod 777 -R /var/log/manta
 
 ### Legend:
 
-| Name              | mandatory   | Type                          | Description                                                                                                                                                          | Example                               |
-| ----------------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| MANTA_CSM_TOKEN   | no          | env                           | CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak                                                |                                       |
-| log               | no          | config file                   | log details/verbosity                                                                                                                                                | off/error/warn/info/debug/trace       |
-| socks5_proxy      | yes         | config file                   | socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle) | socks5h://127.0.0.1:1080              | RE                                   |
-| keycloak_base_url | yes         | config file                   | Keycloak base URL for authentication                                                                                                                                 | https://api.cmn.alps.cscs.ch/keycloak |
-| gitea_base_url    | yes         | config file                   | Gitea base URL to fetch CFS layers git repo details                                                                                                                  | https://api.cmn.alps.cscs.ch/vcs      |
-| k8s_api_url       | yes         | config file                   | Shasta k8s API URL                                                                                                                                                   | https://10.252.1.12:6442              |
-| vault_base_url    | yes         | config file                   | Hashicorp Vault base URL storing secrets to authenticate to external services                                                                                        | https://hashicorp-vault.cscs.ch       |
-| vault_role_id     | yes         | config file                   | role id related to Hashicorp Vault base URL approle authentication                                                                                                   | yes                                   | b15517de-cabb-06ba-af98-633d216c6d99 |
-| vault_secret_path | config file | path in vault to find secrets | shasta or prealps                                                                                                                                                    |
-| shasta_base_url   | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
-| hsm_group         | no          | config                        | If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command                                                                     | psi-dev                               |
+| Name                                | mandatory   | Type                          | Description                                                                                                                                                          | Example                               |
+| ----------------------------------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| MANTA_CSM_TOKEN                     | no          | env                           | CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak                                                |                                       |
+| log                                 | no          | config file                   | log details/verbosity                                                                                                                                                | off/error/warn/info/debug/trace       |
+| hsm_group                           | no          | config                        | If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command                                                                     | psi-dev                               |
+| site                                | yes         | config file                   | CSM instance manta comunicates with. Requires to have the right site in the "sites" section                                                                          | alps | prealps | alpsm                |
+| sites.<site name>.socks5_proxy      | yes         | config file                   | socks proxy to access the services (only needed if using manta from outside a Shasta management node. Need VPN. Need to ope your VPN IP in hashicorp  vault approle) | socks5h://127.0.0.1:1080              |
+| sites.<site name>.keycloak_base_url | yes         | config file                   | Keycloak base URL for authentication                                                                                                                                 | https://api.cmn.alps.cscs.ch/keycloak |
+| sites.<site name>.gitea_base_url    | yes         | config file                   | Gitea base URL to fetch CFS layers git repo details                                                                                                                  | https://api.cmn.alps.cscs.ch/vcs      |
+| sites.<site name>.k8s_api_url       | yes         | config file                   | Shasta k8s API URL                                                                                                                                                   | https://10.252.1.12:6442              |
+| sites.<site name>.vault_base_url    | yes         | config file                   | Hashicorp Vault base URL storing secrets to authenticate to external services                                                                                        | https://hashicorp-vault.cscs.ch       |
+| sites.<site name>.vault_role_id     | yes         | config file                   | role id related to Hashicorp Vault base URL approle authentication                                                                                                   | b15517de-cabb-06ba-af98-633d216c6d99  |
+| sites.<site name>.vault_secret_path | yes         | config file                   | path in vault to find secrets                                                                                                                                        | shasta | prealps                      |
+| sites.<site name>.shasta_base_url   | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
 
 ## Example
 
