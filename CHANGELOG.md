@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.6] - 2023-11-16
+
+### Bug Fixes
+
+- Bug getting cluster with nodes being configured
+
 ## [1.12.5] - 2023-11-16
 
 ### Bug Fixes
 
 - Fix bug getting hsm group from cli param
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.5
 
 ## [1.12.4] - 2023-11-16
 
