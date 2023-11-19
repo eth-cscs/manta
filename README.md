@@ -82,6 +82,35 @@ chmod 777 -R /var/log/manta
 | sites.site_name.vault_secret_path   | yes         | config file                   | path in vault to find secrets                                                                                                                                        | shasta | prealps                      |
 | sites.site_name.shasta_base_url     | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
 
+### A note on certificates
+
+Manta expects to have the CA of the CSM endpoint in PEM format in a file named `<SITE>_root_cert.pem>` under `${HOME}/.config/manta` (Linux) or `${HOME}/Library/Application\ Support/local.cscs.manta` (MacOS).
+Please make sure **the file contains just one CA**, on MacOS if there are more than one in the file, and the native-tls module is used, the following part of the security framework crate will break Manta:
+```rust
+    #[cfg(not(target_os = "ios"))]
+pub fn from_pem(buf: &[u8]) -> Result<Certificate, Error> {
+    let mut items = SecItems::default();
+    ImportOptions::new().items(&mut items).import(buf)?;
+    if items.certificates.len() == 1 && items.identities.is_empty() && items.keys.is_empty() {
+        Ok(Certificate(items.certificates.pop().unwrap()))
+    } else {
+        Err(Error(base::Error::from(errSecParam)))
+    }
+}
+```
+
+The error message thrown is usually difficult to interpret and is something like:
+```
+thread 'main' panicked at <somepath>/mesa/src/shasta/authentication.rs:65:10:
+called `Result::unwrap()` on an `Err` value: reqwest::Error { kind: Builder, source: Error { code: -50, message: "One or more parameters passed to a function were not valid." } }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+It's easy to determine how many certs are in the file with `openssl`:
+```bash
+while openssl x509 -noout -subject; do :; done < ~/.config/manta/alps_root_cert.2certsin1.pem
+```
+
 ## Example
 
 ### Get latest (most recent) session
