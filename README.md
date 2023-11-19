@@ -37,7 +37,7 @@ Manta aggregates information from multiple sources:
 
 ## Configuration
 
-Manta needs a configuration file in `$HOME/.config/manta/config.toml` like shown below
+Manta needs a configuration file in `${HOME}/.config/manta/config.toml` like shown below
 
 ```bash
 log = "info"
@@ -58,7 +58,7 @@ vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 ```
 
-Manta can log user's operations in /var/log/manta/ folder, please make sure this folder exists and all users have rwx access to it
+Manta can log user's operations in `/var/log/manta/` (Linux) or `${PWD}` (MacOS), please make sure this folder exists and the current user has `rwx` access to it
 
 ```bash
 mkdir /var/log/manta
