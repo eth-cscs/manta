@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.7] - 2023-11-20
+
+### Bug Fixes
+
+- Bug when cluster creation won't realised if a CFS session failed
+- Rename CFS session and configuration table headers
+- Fix hsm available list send to methods
+
 ## [1.12.6] - 2023-11-16
 
 ### Bug Fixes
 
 - Bug getting cluster with nodes being configured
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.6
 
 ## [1.12.5] - 2023-11-16
 
