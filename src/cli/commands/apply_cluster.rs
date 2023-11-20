@@ -197,6 +197,15 @@ pub async fn exec(
 
         let cfs_session_detail = cfs_session_detail_opt.unwrap().clone();
 
+        if cfs_session_detail.status.clone().is_some_and(|status| {
+            status
+                .session
+                .is_some_and(|session| session.succeeded.unwrap().eq_ignore_ascii_case("false"))
+        }) {
+            eprintln!("CFS session {} failed", cfs_session_detail.name.unwrap());
+            continue;
+        }
+
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
             .as_str()
             .unwrap()

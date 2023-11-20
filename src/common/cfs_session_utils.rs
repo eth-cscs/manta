@@ -307,8 +307,8 @@ pub fn print_table_value(get_cfs_session_value_list: &Vec<Value>) {
     let mut table = Table::new();
 
     table.set_header(vec![
-        "Name",
-        "Configuration",
+        "Session Name",
+        "Configuration Name",
         "Start",
         "Passthrough",
         "Verbosity",
@@ -330,8 +330,8 @@ pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse
     let mut table = Table::new();
 
     table.set_header(vec![
-        "Name",
-        "Configuration",
+        "Session Name",
+        "Configuration Name",
         "Start",
         "Passthrough",
         "Verbosity",

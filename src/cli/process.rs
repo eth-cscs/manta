@@ -407,6 +407,14 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    hsm_group_name_opt,
+                    hsm_group_name_opt,
+                )
+                .await;
+                /* let hsm_group_target_vec = validate_target_hsm_name(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                     if let Some(hsm_group_name) = hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
@@ -414,7 +422,7 @@ pub async fn process_cli(
                     },
                     hsm_group_name_opt,
                 )
-                .await;
+                .await; */
 
                 /* let hsm_name_available_vec = if let Some(hsm_name) = hsm_group_name_opt {
                     [hsm_name.clone()].to_vec()
@@ -458,11 +466,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    if let Some(hsm_group_name) = hsm_group_name_opt {
-                        Some(hsm_group_name)
-                    } else {
-                        cli_apply_cluster.get_one::<String>("HSM_GROUP_NAME")
-                    },
+                    hsm_group_name_opt,
                     hsm_group_name_opt,
                 )
                 .await;
@@ -485,6 +489,7 @@ pub async fn process_cli(
                 } else {
                     chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
                 };
+
                 apply_cluster::exec(
                     vault_base_url,
                     vault_secret_path,

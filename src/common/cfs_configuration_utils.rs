@@ -5,7 +5,7 @@ use serde_json::Value;
 pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
     let mut table = Table::new();
 
-    table.set_header(vec!["Name", "Last Updated", "Layers"]);
+    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
 
     for cfs_configuration_value in cfs_configuration_value_vec {
         let mut layers: Vec<String> = Vec::new();
@@ -55,7 +55,7 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
 pub fn print_table_struct(cfs_configuration: Configuration) {
     let mut table = Table::new();
 
-    table.set_header(vec!["Name", "Last updated", "Layers"]);
+    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
 
     let mut layers: String = String::new();
 
