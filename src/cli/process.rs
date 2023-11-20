@@ -23,7 +23,7 @@ use super::commands::{
     apply_node_on, apply_node_reset, apply_session, config_set_hsm, config_set_log,
     config_set_site, config_show, config_unset_auth, config_unset_hsm,
     console_cfs_session_image_target_ansible, console_node, get_configuration, get_hsm, get_images,
-    get_nodes, get_session, get_template, update_hsm_group, update_node,
+    get_nodes, get_session, get_template, update_hsm_group, update_node, migrate_backup, migrate_restore,
 };
 
 pub async fn process_cli(
@@ -673,7 +673,7 @@ pub async fn process_cli(
                     k8s_api_url,
                     cli_console_node.get_one::<String>("XNAME").unwrap(),
                 )
-                .await;
+                    .await;
             } else if let Some(cli_console_target_ansible) =
                 cli_console.subcommand_matches("target-ansible")
             {
@@ -694,7 +694,7 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                     )
-                    .await
+                        .await
                 };
 
                 console_cfs_session_image_target_ansible::exec(
@@ -711,7 +711,21 @@ pub async fn process_cli(
                         .get_one::<String>("SESSION_NAME")
                         .unwrap(),
                 )
-                .await;
+                    .await;
+            }
+        } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
+            if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {
+                let bos = cli_migrate.get_one::<String>("bos");
+                let destination = cli_migrate.get_one::<String>("destination");
+                migrate_backup::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos,
+                    destination
+                ).await;
+            } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore")  {
+                log::info!(">>> MIGRATE RESTORE not implemented yet")
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
             let hsm_name_available_vec = if let Some(hsm_name) = hsm_group_name_opt {

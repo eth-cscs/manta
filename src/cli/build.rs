@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
+use clap::{arg, value_parser, ArgAction, ArgGroup, Command, Arg};
 
 use std::path::PathBuf;
 
@@ -34,6 +34,14 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
                 .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
                             ),
+        )
+        .subcommand(
+            Command::new("migrate")
+                .alias("m")
+                .arg_required_else_help(true)
+                .about("Migrate vCluster")
+                .subcommand(subcommand_migrate_backup())
+                .subcommand(subcommand_migrate_restore()),
         )
         .subcommand(
             Command::new("update")
@@ -560,4 +568,69 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group
+}
+
+pub fn subcommand_migrate_backup() -> Command {
+    let mut migrate_backup = Command::new("backup")
+        .aliases(["mb"])
+        .arg_required_else_help(true)
+        .about("Backup/restore the configuration of a given vCluster.")
+        .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
+        .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"));
+
+    // .arg(Arg::new("destination")
+    //     .long("destination")
+    //     .short('d')
+    //     .help("Destination folder to store the backup on")
+    //     .required(true)
+    //     .id("destination"))
+    // .arg(Arg::new("bos")
+    //     .short('b')
+    //     .long("bos-sessiontemplate")
+    //     .help("BOS session template to use to derive CFS, boot parameters and HSM group(s)")
+    //     .required(true)
+    //     .id("bos"));
+    // TODO show the full help when running manta migrate --help
+    // .arg(arg!(-b --"bos-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"));
+    // .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
+    // migrate_backup = migrate_backup
+    //     .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
+
+    // long"("os-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
+    // migrate_backup = match migrate_backup {
+    //     Some(_) => {
+    //         migrate_backup
+    //             .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
+    //     }
+    //     None => {
+    //         migrate_backup
+    //             .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
+    //             .arg(arg!(-b --"bos-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
+    //             .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).required(true))
+    //     }
+    // };
+    // migrate_backup = match migrate_backup {
+    //     Some(_) => migrate_backup,
+    //     None => migrate_backup
+    //         .arg(arg!(<SESSIONTEMPLATE> "BOS sessiontemplate").required(true))
+    //         .arg(arg!(<FOLDER> "Destination folder").required(true)),
+    // };
+
+    migrate_backup
+}
+// TODO
+pub fn subcommand_migrate_restore() -> Command {
+    let mut migrate_restore = Command::new("restore")
+        .aliases(["mr"])
+        .arg_required_else_help(true)
+        .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
+        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
+        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
+
+    // migrate_restore = match hsm_group {
+    //     Some(_) => update_hsm_group,
+    //     None => update_hsm_group.arg(arg!(<HSM_GROUP_NAME> "HSM group name").required(true)),
+    // };
+
+    migrate_restore
 }

@@ -22,5 +22,7 @@ pub mod get_nodes;
 pub mod get_session;
 pub mod get_template;
 pub mod log;
+pub mod migrate_backup;
+pub mod migrate_restore;
 pub mod update_hsm_group;
 pub mod update_node;
