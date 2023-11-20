@@ -126,7 +126,7 @@ pub async fn exec(
                     for file in  files2download {
                         let dest = String::from(destination.unwrap()) + "/" + &image_id;
                         let src = image_id.clone() + "/" + file;
-                        println!("Downloading image file {} to {}/{} [{}/{}]", &src, &dest, &file, &download_counter, &files2download.len());
+                        println!("Downloading image file {} to {}/{} [{}/{}]", &src, &dest, &file, &download_counter, &files2download.len()+2);
                         let _result = match s3_download_object(&sts_value,
                                                                &src,
                                                                &bucket_name,
