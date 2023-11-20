@@ -1,3 +1,4 @@
+use std::env::{current_dir, temp_dir};
 use std::path::Path;
 use mesa::shasta::{bos,cfs,ims};
 use mesa::manta;
@@ -5,6 +6,7 @@ use std::io;
 use std::io::BufWriter;
 use std::fs::File;
 use std::fs;
+use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
 
 pub async fn exec(
     shasta_token: &str,
@@ -15,9 +17,15 @@ pub async fn exec(
 ) {
     println!("Migrate_backup; BOS Template={}, Destination folder={}",bos.unwrap(), destination.unwrap());
     let dest_path = Path::new(destination.unwrap());
+    let bucket_name = "boot-images";
+    let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
+    // let files2download = ["manifest.json"];
+
     log::debug!("Create directory '{}'", destination.unwrap());
-    // TODO control return
-    std::fs::create_dir_all(dest_path);
+    match std::fs::create_dir_all(dest_path) {
+        Ok(_ok) => _ok,
+        Err(error) => panic!("Unable to create directory {}. Error returned: {}", &dest_path.to_string_lossy(), error.to_string())
+    };
     let _empty_hsm_group_name: Vec<String> = Vec::new();
     let bos_templates = bos::template::http_client::filter(
         shasta_token,
@@ -27,18 +35,22 @@ pub async fn exec(
         Option::from(bos.unwrap()),
         None,
     ).await.unwrap_or_default();
+    let mut download_counter = 1;
 
     if bos_templates.is_empty() {
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
         // BOS ------------------------------------------------------------------------------------
-        let mut bos_file_path= dest_path.join("bos.json");
-        let bos_file = File::create(bos_file_path)
+        let bos_file_name = String::from(bos.unwrap()) + ".json";
+        let bos_file_path= dest_path.join(bos_file_name);
+        let bos_file = File::create(&bos_file_path)
             .expect("bos.json file could not be created.");
+        println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+2);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
+        download_counter = download_counter + 1;
 
         // CFS ------------------------------------------------------------------------------------
         let configuration_name  =  &bos_templates[0]["cfs"]["configuration"].to_owned().to_string();
@@ -46,21 +58,25 @@ pub async fn exec(
         cn.next();
         cn.next_back();
         // cn.as_str();
-        let crap = String::from(cn.as_str());
+        let configuration_name_clean = String::from(cn.as_str());
         let cfs_configurations = manta::cfs::configuration::get_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            Option::from(crap).as_ref(),
+            Option::from(configuration_name_clean).as_ref(),
             &_empty_hsm_group_name,
             Option::from(true),
             None,
         ).await;
-        let mut cfs_file_path= dest_path.join("cfs.json");
-        let cfs_file = File::create(cfs_file_path)
+        let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
+        let cfs_file_path= dest_path.join(&cfs_file_name);
+        let cfs_file = File::create(&cfs_file_path)
             .expect("cfs.json file could not be created.");
+        println!("Downloading CFS configuration {} to {} [{}/{}]", cn.clone().as_str(), &cfs_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+2);
+
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
+        download_counter = download_counter + 1;
 
         // Image ----------------------------------------------------------------------------------
         for (_boot_sets_param, boot_sets_value) in bos_templates[0]["boot_sets"]
@@ -92,54 +108,44 @@ pub async fn exec(
                     .await
                     .is_ok()
                 {
+                    let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
                     log::info!(
                         "Image ID found related to BOS sessiontemplate {} is {}",
-                        bos_templates[0]["boot_sets"]["name"],
+                        &bos.unwrap(),
                         image_id_related_to_bos_sessiontemplate
                     );
 
+                    let sts_value = match  s3_auth(&shasta_token, &shasta_base_url, &shasta_root_cert).await
+                    {
+                        Ok(sts_value) => {
+                            log::debug!("Debug - STS token:\n{:#?}", sts_value);
+                            sts_value
+                        }
+                        Err(error) => panic!("{}", error.to_string())
+                    };
+                    for file in  files2download {
+                        let dest = String::from(destination.unwrap()) + "/" + &image_id;
+                        let src = image_id.clone() + "/" + file;
+                        println!("Downloading image file {} to {}/{} [{}/{}]", &src, &dest, &file, &download_counter, &files2download.len());
+                        let _result = match s3_download_object(&sts_value,
+                                                               &src,
+                                                               &bucket_name,
+                                                               &dest).await {
+                            Ok(_result) => {
+                                download_counter = download_counter + 1;
+                            },
+                            Err(error) => panic!("Unable to download file {} from s3. Error returned: {}", &src, error.to_string())
+                        };
+                    }
+                    // Here the image should be downloaded already
                 };
             }
         }
         bos::template::utils::print_table(bos_templates);
     }
 
-    if  let destination = dest_path.is_dir() {
-        println!("is directory");
-    } else {
-        println!("is not directory");
-    }
     // Extract in json format:
-    //  - the bos-session template
-    //  - the cfs configuration referred in the bos-session template
     //  - the contents of the HSM group referred in the bos-session template
-
-
 
     std::process::exit(0);
 }
-//     if let Some(true) = most_recent {
-//         limit_number = Some(&1);
-//     } else if let Some(false) = most_recent {
-//         limit_number = limit;
-//     } else {
-//         limit_number = None;
-//     }
-//
-//     let bos_templates = bos::template::http_client::get(
-//         shasta_token,
-//         shasta_base_url,
-//         hsm_group_name,
-//         template_name,
-//         limit_number,
-//     )
-//     .await
-//     .unwrap_or_default();
-//     if bos_templates.is_empty() {
-//
-//         println!("No BOS template found!");
-//         std::process::exit(0);
-//     } else {
-//         bos::template::utils::print_table(bos_templates);
-//     }
-// }
