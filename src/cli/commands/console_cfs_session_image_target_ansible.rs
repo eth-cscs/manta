@@ -162,8 +162,8 @@ pub async fn connect_to_console(
             },
             result = &mut handle_terminal_size_handle => {
                 match result {
-                    Ok(_) => println!("End of terminal size stream"),
-                    Err(e) => println!("Error getting terminal size: {e:?}")
+                    Ok(_) => crossterm::terminal::disable_raw_mode()?,
+                    Err(e) => { crossterm::terminal::disable_raw_mode()?; println!("Error getting terminal size: {e:?}") }
                 }
             },
         };

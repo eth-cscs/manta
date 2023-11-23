@@ -689,10 +689,6 @@ pub async fn process_cli(
 
                 let hsm_name_available_vec = if let Some(hsm_name) = hsm_group_name_opt {
                     [hsm_name.clone()].to_vec()
-                } else if let Some(hsm_name) =
-                    cli_console_target_ansible.get_one::<String>("hsm-group")
-                {
-                    [hsm_name.clone()].to_vec()
                 } else {
                     config_show::get_hsm_name_available_from_jwt_or_all(
                         shasta_token,
