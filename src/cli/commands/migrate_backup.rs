@@ -1,16 +1,9 @@
 use std::collections::HashMap;
-use std::env::{current_dir, temp_dir};
 use std::path::Path;
-use mesa::shasta::{bos, cfs, hsm, ims};
+use mesa::shasta::{bos, hsm, ims};
 use mesa::manta;
-use std::io;
-use std::io::BufWriter;
 use std::fs::File;
-use std::fs;
-use std::ops::Deref;
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
-use serde_json::{Map, Value};
-use crate::common::{cluster_ops, node_ops};
 
 pub async fn exec(
     shasta_token: &str,
@@ -53,7 +46,7 @@ pub async fn exec(
         println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
-        let bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
+        let _bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
         download_counter = download_counter + 1;
 
         // HSM group -----------------------------------------------------------------------------
@@ -70,8 +63,8 @@ pub async fn exec(
         let mut hsm_map = HashMap::new();
 
         for v3 in v2 {
-            let mut v4 = vec![v3.clone()];
-            let mut xnames: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
+            let v4 = vec![v3.clone()];
+            let xnames: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -81,10 +74,7 @@ pub async fn exec(
         }
         // println!("hsm_map={:?}", hsm_map);
 
-        let hsmjson = serde_json::to_writer(&hsm_file, &hsm_map);
-
-
-
+        let _hsmjson = serde_json::to_writer(&hsm_file, &hsm_map);
 
         // CFS ------------------------------------------------------------------------------------
         let configuration_name  =  &bos_templates[0]["cfs"]["configuration"].to_owned().to_string();
@@ -109,7 +99,7 @@ pub async fn exec(
         println!("Downloading CFS configuration {} to {} [{}/{}]", cn.clone().as_str(), &cfs_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+2);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
-        let cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
+        let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
         download_counter = download_counter + 1;
 
         // Image ----------------------------------------------------------------------------------
