@@ -574,47 +574,9 @@ pub fn subcommand_migrate_backup() -> Command {
     let mut migrate_backup = Command::new("backup")
         .aliases(["mb"])
         .arg_required_else_help(true)
-        .about("Backup/restore the configuration of a given vCluster.")
+        .about("Backup the configuration (BOS, CFS, image and HSM group) of a given vCluster/BOS session template.")
         .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
         .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"));
-
-    // .arg(Arg::new("destination")
-    //     .long("destination")
-    //     .short('d')
-    //     .help("Destination folder to store the backup on")
-    //     .required(true)
-    //     .id("destination"))
-    // .arg(Arg::new("bos")
-    //     .short('b')
-    //     .long("bos-sessiontemplate")
-    //     .help("BOS session template to use to derive CFS, boot parameters and HSM group(s)")
-    //     .required(true)
-    //     .id("bos"));
-    // TODO show the full help when running manta migrate --help
-    // .arg(arg!(-b --"bos-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"));
-    // .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
-    // migrate_backup = migrate_backup
-    //     .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
-
-    // long"("os-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
-    // migrate_backup = match migrate_backup {
-    //     Some(_) => {
-    //         migrate_backup
-    //             .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
-    //     }
-    //     None => {
-    //         migrate_backup
-    //             .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
-    //             .arg(arg!(-b --"bos-sessiontemplate" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
-    //             .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).required(true))
-    //     }
-    // };
-    // migrate_backup = match migrate_backup {
-    //     Some(_) => migrate_backup,
-    //     None => migrate_backup
-    //         .arg(arg!(<SESSIONTEMPLATE> "BOS sessiontemplate").required(true))
-    //         .arg(arg!(<FOLDER> "Destination folder").required(true)),
-    // };
 
     migrate_backup
 }
