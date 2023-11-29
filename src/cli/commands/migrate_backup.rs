@@ -1,12 +1,16 @@
+use std::collections::HashMap;
 use std::env::{current_dir, temp_dir};
 use std::path::Path;
-use mesa::shasta::{bos,cfs,ims};
+use mesa::shasta::{bos, cfs, hsm, ims};
 use mesa::manta;
 use std::io;
 use std::io::BufWriter;
 use std::fs::File;
 use std::fs;
+use std::ops::Deref;
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
+use serde_json::{Map, Value};
+use crate::common::{cluster_ops, node_ops};
 
 pub async fn exec(
     shasta_token: &str,
@@ -46,11 +50,41 @@ pub async fn exec(
         let bos_file_path= dest_path.join(bos_file_name);
         let bos_file = File::create(&bos_file_path)
             .expect("bos.json file could not be created.");
-        println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+2);
+        println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
         download_counter = download_counter + 1;
+
+        // HSM group -----------------------------------------------------------------------------
+        let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
+        let hsm_file_path= dest_path.join(hsm_file_name);
+        let hsm_file = File::create(&hsm_file_path)
+            .expect("HSM file could not be created.");
+        println!("Downloading HSM configuration in bos template {} to {} [{}/{}]", &bos.unwrap(), &hsm_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
+        download_counter = download_counter + 1;
+
+        let my_hsm_groups_vec = &bos_templates[0]["boot_sets"]["compute"]["node_groups"].as_array().unwrap().to_owned();
+        let v2: Vec<String> = my_hsm_groups_vec.iter().map(|s| s.to_string().replace("\"", "")).collect();
+
+        let mut hsm_map = HashMap::new();
+
+        for v3 in v2 {
+            let mut v4 = vec![v3.clone()];
+            let mut xnames: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &v4,
+            ).await;
+            hsm_map.insert(v3, xnames);
+        }
+        // println!("hsm_map={:?}", hsm_map);
+
+        let hsmjson = serde_json::to_writer(&hsm_file, &hsm_map);
+
+
+
 
         // CFS ------------------------------------------------------------------------------------
         let configuration_name  =  &bos_templates[0]["cfs"]["configuration"].to_owned().to_string();
@@ -141,7 +175,8 @@ pub async fn exec(
                 };
             }
         }
-        bos::template::utils::print_table(bos_templates);
+
+        // bos::template::utils::print_table(bos_templates);
     }
 
     // Extract in json format:
