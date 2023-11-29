@@ -580,14 +580,15 @@ pub fn subcommand_migrate_backup() -> Command {
 
     migrate_backup
 }
-// TODO
 pub fn subcommand_migrate_restore() -> Command {
     let mut migrate_restore = Command::new("restore")
         .aliases(["mr"])
         .arg_required_else_help(true)
         .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
-        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
-        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
+        .arg(arg!(-b --"bos-file" <BOS_session_template_file> "BOS session template of the cluster backed previously with migrate backup"))
+        .arg(arg!(-c --"cfs-file" <CFS_configuration_file> "CFS session template of the cluster backed previously with migrate backup"))
+        .arg(arg!(-j --"hsm-file" <HSM_group_description_file> "HSM group description file of the cluster backed previously with migrate backup"));
+        // TODO add image
 
     // migrate_restore = match hsm_group {
     //     Some(_) => update_hsm_group,

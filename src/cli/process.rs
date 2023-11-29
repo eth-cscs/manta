@@ -725,7 +725,17 @@ pub async fn process_cli(
                     destination
                 ).await;
             } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore")  {
-                log::info!(">>> MIGRATE RESTORE not implemented yet")
+                let bos_file = cli_migrate.get_one::<String>("bos-file");
+                let cfs_file = cli_migrate.get_one::<String>("cfs-file");
+                let hsm_file = cli_migrate.get_one::<String>("hsm-file");
+                migrate_restore::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos_file,
+                    cfs_file,
+                    hsm_file
+                ).await;
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
             let hsm_name_available_vec = if let Some(hsm_name) = hsm_group_name_opt {
