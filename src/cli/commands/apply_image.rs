@@ -27,9 +27,9 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    ansible_verbosity: Option<&String>,
-    ansible_passthrough: Option<&String>,
-    watch_logs: Option<&bool>,
+    ansible_verbosity_opt: Option<&String>,
+    ansible_passthrough_opt: Option<&String>,
+    watch_logs_opt: Option<&bool>,
     tag: &str,
     hsm_group_available_vec: &[String],
     k8s_api_url: &str,
@@ -40,12 +40,25 @@ pub async fn exec(
 
     // VALIDATION - WE WON'T PROCESS ANYTHING IF THE USER DOES NOT HAVE ACCESS TO ANY HSM GROUP
     // DEFINED IN THE SAT FILE
-    // Get CFS images from SAT YAML file
-    let image_yaml_list = sat_file_yaml["images"].as_sequence();
+
+    // Get CFS configurations from SAT YAML file
+    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let bos_session_template_list_yaml = sat_file_yaml["session_templates"].as_sequence();
+
+    if bos_session_template_list_yaml.is_some() {
+        log::warn!(
+            "SAT file has data in session_template section. This information will be ignored."
+        )
+    }
 
     // Check HSM groups in images section in SAT file matches the HSM group in Manta configuration file
-    for image_yaml in image_yaml_list.unwrap_or(&Vec::new()) {
-        for hsm_group in image_yaml["configuration_group_names"]
+    for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
+        for hsm_group in image_yaml_vec["configuration_group_names"]
             .as_sequence()
             .unwrap()
             .iter()
@@ -60,7 +73,7 @@ pub async fn exec(
                 println!(
                         "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
-                        image_yaml["name"].as_str().unwrap(),
+                        image_yaml_vec["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
                 std::process::exit(-1);
@@ -71,15 +84,9 @@ pub async fn exec(
     // Process CFS configurations
     let mut cfs_configuration;
 
-    // Get CFS configurations from SAT YAML file
-    let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
-
-    let empty_vec = &Vec::new();
-    let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
-
     let mut cfs_configuration_vec = Vec::new();
 
-    for configuration_yaml in configuration_yaml_list {
+    for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
         cfs_configuration = CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
 
         // Rename configuration name
@@ -117,7 +124,7 @@ pub async fn exec(
     // Process CFS sessions
     let mut cfs_session_resp_list = Vec::new();
 
-    for image_yaml in image_yaml_list.unwrap_or(empty_vec) {
+    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         let mut cfs_session = CfsSessionRequest::from_sat_file_serde_yaml(image_yaml);
 
         // Rename session name
@@ -128,7 +135,7 @@ pub async fn exec(
 
         // Set ansible verbosity
         cfs_session.ansible_verbosity = Some(
-            ansible_verbosity
+            ansible_verbosity_opt
                 .cloned()
                 .unwrap_or("0".to_string())
                 .parse::<u8>()
@@ -136,7 +143,7 @@ pub async fn exec(
         );
 
         // Set ansible passthrough params
-        cfs_session.ansible_passthrough = ansible_passthrough.cloned();
+        cfs_session.ansible_passthrough = ansible_passthrough_opt.cloned();
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
@@ -180,7 +187,7 @@ pub async fn exec(
 
         log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 
-        if let Some(true) = watch_logs {
+        if let Some(true) = watch_logs_opt {
             log::info!("Fetching logs ...");
 
             /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(

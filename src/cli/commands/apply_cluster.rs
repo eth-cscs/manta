@@ -10,7 +10,11 @@ use mesa::{
     shasta::{
         bos::{self, template},
         capmc,
-        cfs::session,
+        cfs::{
+            self,
+            configuration::CfsConfigurationRequest,
+            session::{self, http_client::post, CfsSessionRequest},
+        },
         hsm,
         ims::image,
     },
@@ -41,22 +45,26 @@ pub async fn exec(
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
-    let empty_vec = Vec::new();
-    let bos_session_template_list_yaml = sat_file_yaml["session_templates"]
-        .as_sequence()
-        .unwrap_or(&empty_vec);
+    // Get CFS configurations from SAT YAML file
+    let configuration_yaml_value_vec_opt = sat_file_yaml["configurations"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let bos_session_template_list_yaml = sat_file_yaml["session_templates"].as_sequence();
 
     // VALIDATION
     // Check HSM groups in session_templates in SAT file section matches the HSM group in Manta configuration file
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
-    for bos_session_template_yaml in bos_session_template_list_yaml {
+    for bos_session_template_yaml in bos_session_template_list_yaml.unwrap_or(&vec![]) {
         let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
             bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&vec![])
                 .iter()
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
@@ -65,7 +73,7 @@ pub async fn exec(
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&vec![])
                 .iter()
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
@@ -87,8 +95,8 @@ pub async fn exec(
         }
     }
 
-    // Create CFS configuration and image
-    let (cfs_configuration_vec, cfs_session_vec) = apply_image::exec(
+    /* // Create CFS configuration and image
+    let (cfs_configuration_yaml_vec, cfs_session_vec) = apply_image::exec(
         vault_base_url,
         vault_secret_path,
         vault_role_id,
@@ -104,17 +112,94 @@ pub async fn exec(
         k8s_api_url,
         output_opt,
     )
-    .await;
+    .await; */
+
+    // Process "configurations" section in SAT file
+
+    let mut cfs_configuration_value_vec = Vec::new();
+
+    let mut cfs_configuration_name_vec = Vec::new();
+
+    for cfs_configuration_yaml_value in configuration_yaml_value_vec_opt.unwrap_or(&vec![]).iter() {
+        let mut cfs_configuration_value =
+            CfsConfigurationRequest::from_sat_file_serde_yaml(cfs_configuration_yaml_value);
+
+        // Rename configuration name
+        cfs_configuration_value.name = cfs_configuration_value.name.replace("__DATE__", &tag);
+
+        log::debug!(
+            "CFS configuration creation payload:\n{:#?}",
+            cfs_configuration_value
+        );
+
+        let cfs_configuration_value_rslt = cfs::configuration::http_client::put(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_configuration_value,
+            &cfs_configuration_value.name,
+        )
+        .await;
+
+        let cfs_configuration_value =
+            if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
+                cfs_configuration_value
+            } else {
+                eprintln!("CFS configuration creation failed. Exit");
+                std::process::exit(1);
+            };
+
+        let cfs_configuration_name = cfs_configuration_value["name"]
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        cfs_configuration_name_vec.push(cfs_configuration_name.clone());
+
+        log::info!("CFS configuration created: {}", cfs_configuration_name);
+
+        cfs_configuration_value_vec.push(cfs_configuration_value.clone());
+    }
+
+    // Process "images" section in SAT file
 
     let mut cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
-    let mut cfs_configuration_from_session_complete_vec: Vec<CfsConfigurationResponse> = Vec::new();
-    // let mut cfs_session_result_id_list = Vec::new();
 
-    for (cfs_configuration, cfs_session) in cfs_configuration_vec.iter().zip(cfs_session_vec.iter())
-    {
+    for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
+        let mut cfs_session = CfsSessionRequest::from_sat_file_serde_yaml(image_yaml);
+
+        // Rename session name
+        cfs_session.name = cfs_session.name.replace("__DATE__", &tag);
+
+        // Rename session's configuration name
+        cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", &tag);
+
+        // Set ansible verbosity
+        cfs_session.ansible_verbosity = Some(
+            ansible_verbosity_opt
+                .cloned()
+                .unwrap_or("0".to_string())
+                .parse::<u8>()
+                .unwrap(),
+        );
+
+        // Set ansible passthrough params
+        cfs_session.ansible_passthrough = ansible_passthrough_opt.cloned();
+
+        let create_cfs_session_resp = post(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_session,
+        )
+        .await;
+
+        if create_cfs_session_resp.is_err() {
+            eprintln!("CFS session creation failed. Exit");
+            std::process::exit(1);
+        }
+
         // Monitor CFS image creation process ends
-        let cfs_session_name = cfs_session.name.clone().unwrap();
-
         let mut i = 0;
         let max = 1800; // Max ammount of attempts to check if CFS session has ended
         loop {
@@ -123,7 +208,7 @@ pub async fn exec(
                 shasta_base_url,
                 shasta_root_cert,
                 hsm_group_available_vec,
-                Some(&cfs_session_name),
+                Some(&cfs_session.name.to_string()),
                 Some(&1),
                 Some(true),
             )
@@ -143,15 +228,15 @@ pub async fn exec(
                         cfs_session_value_vec_rslt.unwrap().first().unwrap().clone(),
                     );
 
-                cfs_session_complete_vec.push(cfs_session_aux);
+                cfs_session_complete_vec.push(cfs_session_aux.clone());
 
-                cfs_configuration_from_session_complete_vec.push(cfs_configuration.clone());
+                log::info!("CFS session created: {}", cfs_session_aux.name.unwrap());
 
                 break;
             } else {
                 print!(
                     "\rCFS session '{}' running. Checking again in 2 secs. Attempt {} of {}",
-                    cfs_session_name, // TODO: remove this clone
+                    cfs_session.name,
                     i + 1,
                     max
                 );
@@ -167,7 +252,7 @@ pub async fn exec(
     println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
                 // session message
 
-    // Create BOS sessiontemplate
+    // Process "session_templates" section in SAT file
 
     let empty_vec = Vec::new();
     let bos_session_template_list_yaml = sat_file_yaml["session_templates"]
@@ -182,46 +267,24 @@ pub async fn exec(
 
         bos_session_template_image_name = bos_session_template_image_name.replace("__DATE__", &tag);
 
-        let cfs_session_detail_opt = cfs_session_complete_vec.iter().find(|cfs_session_detail| {
-            cfs_session_detail
-                .name
-                .clone()
-                .unwrap()
-                .eq(&bos_session_template_image_name)
-        });
-
-        if cfs_session_detail_opt.is_none() {
-            eprintln!("ERROR: BOS session template image not found in SAT file image list.");
-            std::process::exit(1);
-        }
-
-        let cfs_session_detail = cfs_session_detail_opt.unwrap().clone();
-
-        if cfs_session_detail.status.clone().is_some_and(|status| {
-            status
-                .session
-                .is_some_and(|session| session.succeeded.unwrap().eq_ignore_ascii_case("false"))
-        }) {
-            eprintln!("CFS session {} failed", cfs_session_detail.name.unwrap());
-            continue;
-        }
-
+        // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
             .as_str()
             .unwrap()
             .to_string()
             .replace("__DATE__", &tag);
 
-        let cfs_configuration_detail_opt =
-            cfs_configuration_from_session_complete_vec
-                .iter()
-                .find(|cfs_configuration_detail| {
-                    cfs_configuration_detail
-                        .name
-                        .eq(&bos_session_template_configuration_name)
-                });
+        let cfs_configuration_detail_opt = mesa::shasta::cfs::configuration::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(hsm_group_available_vec),
+            Some(&bos_session_template_configuration_name),
+            None,
+        )
+        .await;
 
-        if cfs_configuration_detail_opt.is_none() {
+        if cfs_configuration_detail_opt.is_err() {
             eprintln!(
                 "ERROR: BOS session template configuration not found in SAT file image list."
             );
@@ -229,30 +292,21 @@ pub async fn exec(
         }
 
         // Get image details
-        let image_id = cfs_session_detail
-            .status
-            .unwrap()
-            .artifacts
-            .unwrap()
-            .into_iter()
-            .next()
-            .unwrap()
-            .result_id
-            .unwrap();
-
-        let image_detail_vec = image::http_client::get(
+        let image_detail_vec = image::http_client::get_fuzzy(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             hsm_group_available_vec,
-            Some(&image_id),
-            None,
-            None,
+            Some(&bos_session_template_image_name),
+            Some(&1),
         )
         .await
         .unwrap_or(Vec::new());
 
-        log::debug!("IMS image response:\n{:#?}", image_detail_vec);
+        log::info!(
+            "Image name: {}",
+            image_detail_vec.first().unwrap()["name"].as_str().unwrap()
+        );
 
         let ims_image_name = image_detail_vec.first().unwrap()["name"]
             .as_str()
@@ -282,7 +336,7 @@ pub async fn exec(
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&vec![])
                 .iter()
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
@@ -291,7 +345,7 @@ pub async fn exec(
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
-                .unwrap_or(&Vec::new())
+                .unwrap_or(&vec![])
                 .iter()
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
@@ -299,11 +353,6 @@ pub async fn exec(
             println!("No HSM group found in session_templates section in SAT file");
             std::process::exit(1);
         };
-
-        // let cfs_configuration_name = bos_session_template_yaml["configuration"]
-        //     .as_str()
-        //     .unwrap_or("")
-        //     .to_string();
 
         // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups matches with
         // Check hsm groups in SAT file includes the hsm_group_param
@@ -329,11 +378,6 @@ pub async fn exec(
                 hsm_group,
             );
 
-        log::debug!(
-            "create BOS session template payload:\n{:#?}",
-            create_bos_session_template_payload
-        );
-
         let create_bos_session_template_resp = template::http_client::post(
             shasta_token,
             shasta_base_url,
@@ -342,17 +386,12 @@ pub async fn exec(
         )
         .await;
 
-        log::debug!(
-            "Create BOS session template response:\n{:#?}",
-            create_bos_session_template_resp
-        );
-
         if create_bos_session_template_resp.is_err() {
             eprintln!("BOS session template creation failed");
             std::process::exit(1);
         }
 
-        // Create BOS session. Note: reboot operation shuts down the nodes and don't bring them back
+        // Create BOS session. Note: reboot operation shuts down the nodes and they may not start
         // up... hence we will split the reboot into 2 operations shutdown and start
 
         // Get nodes members of HSM group
@@ -364,8 +403,6 @@ pub async fn exec(
             hsm_group,
         )
         .await;
-
-        log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
         // Get list of xnames in HSM group
         let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]

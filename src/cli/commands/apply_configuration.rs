@@ -23,14 +23,33 @@ pub async fn exec(
     let mut cfs_configuration_value_vec = Vec::new();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let bos_session_template_list_yaml = sat_file_yaml["session_templates"].as_sequence();
+
+    if configuration_yaml_vec_opt.is_none() {
+        eprintln!("No configuration found in SAT file. Exit");
+        std::process::exit(1);
+    }
+
+    if image_yaml_vec_opt.is_some() {
+        log::warn!("SAT file has data in images section. This information will be ignored.")
+    }
+
+    if bos_session_template_list_yaml.is_some() {
+        log::warn!("SAT file has data in session_template section. This information will be ignored.")
+    }
 
     let empty_vec = &Vec::new();
-    let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
+    let configuration_yaml_vec = configuration_yaml_vec_opt.unwrap_or(empty_vec);
 
     let mut cfs_configuration_name_vec = Vec::new();
 
-    for configuration_yaml in configuration_yaml_list {
+    for configuration_yaml in configuration_yaml_vec {
         let mut cfs_configuration_value =
             CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
 
