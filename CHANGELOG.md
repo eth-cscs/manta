@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.8] - 2023-12-07
+
+### Bug Fixes
+
+- Panic when trying to connect to CFS session (ansible) container
+
+### Features
+
+- Node power status methods blocks the runtime
+- Each section in sat files processed individually
+
+### Refactor
+
+- Clean code
+- Configurations section in SAT file processed independently
+- Images section in SAT file processed independently
+- Session_templates section in SAT file processed independently
+
 ## [1.12.7] - 2023-11-20
 
 ### Bug Fixes
@@ -9,6 +27,10 @@ All notable changes to this project will be documented in this file.
 - Bug when cluster creation won't realised if a CFS session failed
 - Rename CFS session and configuration table headers
 - Fix hsm available list send to methods
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.7
 
 ## [1.12.6] - 2023-11-16
 
