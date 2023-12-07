@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use std::path::Path;
-use mesa::shasta::{bos, hsm, ims};
+use mesa::shasta::{bos, ims};
 use mesa::manta;
 use std::fs::File;
+use mesa::shasta::hsm::http_client::get_hsm_group;
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
 
 pub async fn exec(
@@ -47,7 +47,7 @@ pub async fn exec(
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
-        download_counter = download_counter + 1;
+        download_counter += 1;
 
         // HSM group -----------------------------------------------------------------------------
         let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
@@ -55,26 +55,20 @@ pub async fn exec(
         let hsm_file = File::create(&hsm_file_path)
             .expect("HSM file could not be created.");
         println!("Downloading HSM configuration in bos template {} to {} [{}/{}]", &bos.unwrap(), &hsm_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
-        download_counter = download_counter + 1;
+        download_counter += 1;
 
-        let my_hsm_groups_vec = &bos_templates[0]["boot_sets"]["compute"]["node_groups"].as_array().unwrap().to_owned();
-        let v2: Vec<String> = my_hsm_groups_vec.iter().map(|s| s.to_string().replace("\"", "")).collect();
-
-        let mut hsm_map = HashMap::new();
-
-        for v3 in v2 {
-            let v4 = vec![v3.clone()];
-            let xnames: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
+        let hsm_group_name = bos_templates[0]["boot_sets"]["compute"]["node_groups"][0].clone().to_string().replace('\"', "");
+        let hsm_group_json = match get_hsm_group(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &v4,
-            ).await;
-            hsm_map.insert(v3, xnames);
-        }
-        // println!("hsm_map={:?}", hsm_map);
+                &hsm_group_name).await {
+            Ok(_t) => _t,
+            Err(e) => panic!("Error while fetching the HSM configuration description in JSON format: {}", e),
+        };
 
-        let _hsmjson = serde_json::to_writer(&hsm_file, &hsm_map);
+        log::debug!("{:#?}", &hsm_group_json);
+        let _hsmjson = serde_json::to_writer(&hsm_file, &hsm_group_json);
 
         // CFS ------------------------------------------------------------------------------------
         let configuration_name  =  &bos_templates[0]["cfs"]["configuration"].to_owned().to_string();
@@ -100,7 +94,7 @@ pub async fn exec(
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
-        download_counter = download_counter + 1;
+        download_counter += 1;
 
         // Image ----------------------------------------------------------------------------------
         for (_boot_sets_param, boot_sets_value) in bos_templates[0]["boot_sets"]
