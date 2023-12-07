@@ -4,6 +4,7 @@ use mesa::shasta::{capmc, hsm, ims};
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 /// Updates boot params and desired configuration for all nodes that belongs to a HSM group
+/// If boot params defined, then nodes in HSM group will be rebooted
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -98,7 +99,7 @@ pub async fn exec(
         .await;
 
         let image_details_resp = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get_all(
+            ims::image::http_client::get_all_raw(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -145,6 +146,7 @@ pub async fn exec(
         );
     }
 
+    // Process dessired configuration
     if let Some(desired_configuration_name) = desired_configuration_opt {
         log::info!(
             "Updating desired configuration. Need restart? {}",

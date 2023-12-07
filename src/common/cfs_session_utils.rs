@@ -426,7 +426,7 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        if mesa::shasta::ims::image::http_client::get_all(
+        if mesa::shasta::ims::image::http_client::get_all_raw(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

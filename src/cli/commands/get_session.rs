@@ -89,7 +89,7 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_id_vec_rslt = shasta::ims::image::http_client::get(
+                let new_image_vec_rslt = shasta::ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -101,11 +101,11 @@ pub async fn exec(
                 .await;
 
                 // if new_image_id_vec_rslt.is_ok() && new_image_id_vec_rslt.as_ref().unwrap().first().is_some()
-                if let Ok(Some(new_image_id)) = new_image_id_vec_rslt
+                if let Ok(Some(new_image)) = new_image_vec_rslt
                     .as_ref()
                     .map(|new_image_vec| new_image_vec.first())
                 {
-                    Some(new_image_id.as_str().unwrap_or("").to_string())
+                    Some(new_image.clone().id.unwrap_or("".to_string()))
                 } else {
                     None
                 }

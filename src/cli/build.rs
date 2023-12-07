@@ -355,7 +355,7 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
         Some(_) => {}
         None => {
             apply_configuration =
-                apply_configuration.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+                apply_configuration.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"))
         }
     };
 

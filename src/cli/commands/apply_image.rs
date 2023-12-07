@@ -56,8 +56,9 @@ pub async fn exec(
         )
     }
 
-    // Check HSM groups in images section in SAT file matches the HSM group in Manta configuration file
-    for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
+    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
+    validate_sat_file_images_section(image_yaml_vec_opt, hsm_group_available_vec);
+    /* for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         for hsm_group in image_yaml_vec["configuration_group_names"]
             .as_sequence()
             .unwrap()
@@ -79,7 +80,7 @@ pub async fn exec(
                 std::process::exit(-1);
             }
         }
-    }
+    } */
 
     // Process CFS configurations
     let mut cfs_configuration;
@@ -214,4 +215,31 @@ pub async fn exec(
     }
 
     (cfs_configuration_vec, cfs_session_resp_list)
+}
+
+pub fn validate_sat_file_images_section(image_yaml_vec_opt: Option<&Vec<Value>>, hsm_group_available_vec: &[String]) {
+    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
+    for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
+        for hsm_group in image_yaml_vec["configuration_group_names"]
+            .as_sequence()
+            .unwrap()
+            .iter()
+            .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
+            .filter(|&hsm_group| {
+                !hsm_group.eq_ignore_ascii_case("Compute")
+                    && !hsm_group.eq_ignore_ascii_case("Application")
+                    && !hsm_group.eq_ignore_ascii_case("Application_UAN")
+            })
+        {
+            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
+                println!(
+                        "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
+                        hsm_group,
+                        image_yaml_vec["name"].as_str().unwrap(),
+                        hsm_group_available_vec
+                    );
+                std::process::exit(-1);
+            }
+        }
+    }
 }
