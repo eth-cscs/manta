@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.12.8] - 2023-12-07
+## [1.12.9] - 2023-12-07
 
 ### Bug Fixes
 
@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file.
 
 - Node power status methods blocks the runtime
 - Each section in sat files processed individually
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.8
 
 ### Refactor
 
