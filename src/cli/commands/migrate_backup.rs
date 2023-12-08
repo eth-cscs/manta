@@ -89,8 +89,8 @@ pub async fn exec(
             shasta_root_cert,
             Option::from(configuration_name_clean).as_ref(),
             &_empty_hsm_group_name,
-            Option::from(true),
-            None,
+            // Option::from(true),
+            Some(&1), // limit 1 means most recent
         ).await;
         let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
         let cfs_file_path= dest_path.join(&cfs_file_name);

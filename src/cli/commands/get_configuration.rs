@@ -1,6 +1,6 @@
 use mesa::{manta, shasta::cfs};
 
-use crate::common::{gitea, cfs_configuration_utils::print_table_struct};
+use crate::common::{cfs_configuration_utils::print_table_struct, gitea};
 
 pub async fn exec(
     gitea_base_url: &str,
@@ -10,7 +10,6 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     configuration_name: Option<&String>,
     hsm_group_name_vec: &Vec<String>,
-    most_recent: Option<bool>,
     limit: Option<&u8>,
     output_opt: Option<&String>,
 ) {
@@ -20,7 +19,6 @@ pub async fn exec(
         shasta_root_cert,
         configuration_name,
         hsm_group_name_vec,
-        most_recent,
         limit,
     )
     .await;
@@ -41,10 +39,10 @@ pub async fn exec(
 
             let mut layers: Vec<manta::cfs::configuration::Layer> = vec![];
 
-            for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
+            for layer in &most_recent_cfs_configuration.layers {
                 let gitea_commit_details = gitea::http_client::get_commit_details(
-                    layer["cloneUrl"].as_str().unwrap(),
-                    layer["commit"].as_str().unwrap(),
+                    &layer.clone_url,
+                    layer.commit.as_ref().unwrap(),
                     gitea_base_url,
                     gitea_token,
                 )
@@ -52,13 +50,12 @@ pub async fn exec(
                 .unwrap();
 
                 layers.push(manta::cfs::configuration::Layer::new(
-                    layer["name"].as_str().unwrap(),
-                    layer["cloneUrl"]
-                        .as_str()
-                        .unwrap()
+                    &layer.name,
+                    layer
+                        .clone_url
                         .trim_start_matches("https://api.cmn.alps.cscs.ch")
                         .trim_end_matches(".git"),
-                    layer["commit"].as_str().unwrap(),
+                    &layer.commit.as_ref().unwrap(),
                     gitea_commit_details["commit"]["committer"]["name"]
                         .as_str()
                         .unwrap(),
@@ -69,14 +66,12 @@ pub async fn exec(
             }
 
             print_table_struct(manta::cfs::configuration::Configuration::new(
-                most_recent_cfs_configuration["name"].as_str().unwrap(),
-                most_recent_cfs_configuration["lastUpdated"]
-                    .as_str()
-                    .unwrap(),
+                &most_recent_cfs_configuration.name,
+                &most_recent_cfs_configuration.last_updated,
                 layers,
             ));
         } else {
-            cfs::configuration::utils::print_table(cfs_configuration_vec);
+            cfs::configuration::utils::print_table_struct(cfs_configuration_vec);
         }
     }
 }
