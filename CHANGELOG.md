@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.10] - 2023-12-08
+
+### Bug Fixes
+
+- Fix bug with get configuration subcommand
+
 ## [1.12.9] - 2023-12-07
 
 ### Bug Fixes
@@ -16,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta version 1.12.8
+- Release manta version 1.12.9
 
 ### Refactor
 
