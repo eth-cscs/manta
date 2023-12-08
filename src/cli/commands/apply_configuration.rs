@@ -1,4 +1,4 @@
-use mesa::shasta::cfs::{configuration::configuration::CfsConfigurationRequest, self};
+use mesa::shasta::cfs::{configuration::r#struct::configuration::CfsConfigurationRequest, self};
 use serde_yaml::Value;
 use std::path::PathBuf;
 

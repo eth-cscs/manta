@@ -5,7 +5,10 @@ use futures::TryStreamExt;
 use mesa::{
     common::vault::http_client::fetch_shasta_k8s_secrets,
     shasta::{
-        cfs::{self, configuration::{self, configuration::CfsConfigurationRequest}},
+        cfs::{
+            self,
+            configuration::{self, r#struct::configuration::CfsConfigurationRequest},
+        },
         kubernetes,
     },
 };

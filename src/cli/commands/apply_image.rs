@@ -6,10 +6,7 @@ use mesa::{
         configuration::http_client::http_client::put,
         session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
     },
-    shasta::{
-        cfs::{session::CfsSessionRequest, configuration::{get_put_payload::CfsConfigurationResponse, configuration::CfsConfigurationRequest}},
-        kubernetes,
-    },
+    shasta::{kubernetes, cfs::{configuration::r#struct::{get_put_payload::CfsConfigurationResponse, configuration::CfsConfigurationRequest}, session::CfsSessionRequest}},
 };
 use serde_yaml::Value;
 
@@ -217,7 +214,10 @@ pub async fn exec(
     (cfs_configuration_vec, cfs_session_resp_list)
 }
 
-pub fn validate_sat_file_images_section(image_yaml_vec_opt: Option<&Vec<Value>>, hsm_group_available_vec: &[String]) {
+pub fn validate_sat_file_images_section(
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    hsm_group_available_vec: &[String],
+) {
     // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
     for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         for hsm_group in image_yaml_vec["configuration_group_names"]
