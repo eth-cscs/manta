@@ -3,17 +3,13 @@ use std::{path::PathBuf, thread};
 
 // use clap::ArgMatches;
 use mesa::{
-    mesa::cfs::{
-        configuration::get_put_payload::CfsConfigurationResponse,
-        session::get_response_struct::CfsSessionGetResponse,
-    },
+    mesa::cfs::session::get_response_struct::CfsSessionGetResponse,
     shasta::{
         bos::{self, template},
         capmc,
         cfs::{
             self,
-            configuration::CfsConfigurationRequest,
-            session::{self, http_client::post, CfsSessionRequest},
+            session::{self, http_client::post, CfsSessionRequest}, configuration::configuration::CfsConfigurationRequest,
         },
         hsm,
         ims::image,
@@ -23,10 +19,8 @@ use serde_yaml::Value;
 
 use crate::{
     cli::commands::apply_image::validate_sat_file_images_section,
-    common::{bos_sessiontemplate_utils, jwt_ops::get_claims_from_jwt_token},
+    common::jwt_ops::get_claims_from_jwt_token,
 };
-
-use super::apply_image;
 
 pub async fn exec(
     vault_base_url: &str,

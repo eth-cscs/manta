@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use mesa::{
     common::vault::http_client::fetch_shasta_k8s_secrets,
     mesa::cfs::{
-        configuration::{get_put_payload::CfsConfigurationResponse, http_client::http_client::put},
+        configuration::http_client::http_client::put,
         session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
     },
     shasta::{
-        cfs::{configuration::CfsConfigurationRequest, session::CfsSessionRequest},
+        cfs::{session::CfsSessionRequest, configuration::{get_put_payload::CfsConfigurationResponse, configuration::CfsConfigurationRequest}},
         kubernetes,
     },
 };

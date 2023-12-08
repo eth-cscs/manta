@@ -5,7 +5,7 @@ use futures::TryStreamExt;
 use mesa::{
     common::vault::http_client::fetch_shasta_k8s_secrets,
     shasta::{
-        cfs::{self, configuration},
+        cfs::{self, configuration::{self, configuration::CfsConfigurationRequest}},
         kubernetes,
     },
 };
@@ -410,7 +410,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = cfs::configuration::CfsConfigurationRequest::create_from_repos(
+    let cfs_configuration = CfsConfigurationRequest::create_from_repos(
         gitea_token,
         gitea_base_url,
         shasta_root_cert,
