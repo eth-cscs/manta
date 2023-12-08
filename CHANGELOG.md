@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.12] - 2023-12-08
+
+### Refactor
+
+- Adapt code to new mesa cfs config code structure
+
 ## [1.12.11] - 2023-12-08
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.11
 
 ### Refactor
 
