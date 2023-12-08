@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.11] - 2023-12-08
+
+### Refactor
+
+- Adapt code to new mesa cfs config code structure
+
 ## [1.12.10] - 2023-12-08
 
 ### Bug Fixes
 
 - Fix bug with get configuration subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.10
 
 ## [1.12.9] - 2023-12-07
 
