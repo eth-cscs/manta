@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2023-12-10
+
+### Features
+
+- Add new flag 'force' to  delete subcommand to make it script
+- Delete subcommand sumamry shows more information
+
+### Refactor
+
+- Code in delete and get iamge subcommands
+
 ## [1.12.12] - 2023-12-08
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.12
 
 ### Refactor
 
