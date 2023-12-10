@@ -101,12 +101,13 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all BOS session templates
-    let mut bos_sessiontemplate_value_vec = mesa::shasta::bos::template::http_client::filter(
+    let bos_sessiontemplate_value_vec = mesa::shasta::bos::template::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         &hsm_name_available_vec,
         None,
+        Some(cfs_configuration_name_vec.clone()),
         None,
     )
     .await
@@ -115,7 +116,7 @@ pub async fn delete_data_related_cfs_configuration(
     // Filter BOS sessiontemplates related to CFS configurations to be deleted
     //
     // Filter BOS sessiontemplate containing /cfs/configuration field
-    bos_sessiontemplate_value_vec.retain(|bos_sessiontemplate_value| {
+    /* bos_sessiontemplate_value_vec.retain(|bos_sessiontemplate_value| {
         cfs_configuration_name_vec.contains(
             &bos_sessiontemplate_value
                 .pointer("/cfs/configuration")
@@ -123,7 +124,7 @@ pub async fn delete_data_related_cfs_configuration(
                 .as_str()
                 .unwrap(),
         )
-    });
+    }); */
 
     // Get CFS configurations related with BOS sessiontemplate
     let cfs_configuration_name_from_bos_sessiontemplate_value_iter = bos_sessiontemplate_value_vec
