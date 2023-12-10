@@ -89,7 +89,7 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_vec_rslt = shasta::ims::image::http_client::get(
+                let new_image_vec_rslt = shasta::ims::image::http_client::get_struct(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

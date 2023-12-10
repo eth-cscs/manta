@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, Arg};
+use clap::{arg, value_parser, Arg, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
 
@@ -39,7 +39,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
             Command::new("migrate")
                 .alias("m")
                 .arg_required_else_help(true)
-                .about("Migrate vCluster")
+                .about("WIP - Migrate vCluster")
                 .subcommand(subcommand_migrate_backup())
                 .subcommand(subcommand_migrate_restore()),
         )
@@ -154,6 +154,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
+                .arg(arg!(-f --"force" "Force data deletion. Image artifacts and configurations used by nodes will not be deleted"))
                 .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"));
 
     match hsm_group {
@@ -353,10 +354,9 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
 
     match hsm_group {
         Some(_) => {}
-        None => {
-            apply_configuration =
-                apply_configuration.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"))
-        }
+        None => apply_configuration = apply_configuration.arg(
+            arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"),
+        ),
     };
 
     apply_configuration
@@ -596,3 +596,4 @@ pub fn subcommand_migrate_restore() -> Command {
 
     migrate_restore
 }
+

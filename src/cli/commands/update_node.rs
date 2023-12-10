@@ -93,11 +93,14 @@ pub async fn exec(
         .await;
 
         let image_details_value_vec = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get_all_raw(
+            ims::image::http_client::get_raw(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
+                &vec![],
                 Some(&image_id),
+                None,
+                None,
             )
             .await
             .unwrap()
