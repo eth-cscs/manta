@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] - 2023-12-10
+
+### Refactor
+
+- Refactor code to new mesa method signatures
+
 ## [1.13.0] - 2023-12-10
 
 ### Features
 
 - Add new flag 'force' to  delete subcommand to make it script
 - Delete subcommand sumamry shows more information
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.0
 
 ### Refactor
 
