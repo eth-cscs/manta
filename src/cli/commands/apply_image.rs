@@ -6,7 +6,15 @@ use mesa::{
         configuration::http_client::http_client::put,
         session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
     },
-    shasta::{kubernetes, cfs::{configuration::r#struct::{get_put_payload::CfsConfigurationResponse, configuration::CfsConfigurationRequest}, session::CfsSessionRequest}},
+    shasta::{
+        cfs::{
+            configuration::r#struct::{
+                configuration::CfsConfigurationRequest, get_put_payload::CfsConfigurationResponse,
+            },
+            session::CfsSessionRequest,
+        },
+        kubernetes,
+    },
 };
 use serde_yaml::Value;
 

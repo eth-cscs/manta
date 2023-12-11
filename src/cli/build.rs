@@ -596,4 +596,3 @@ pub fn subcommand_migrate_restore() -> Command {
 
     migrate_restore
 }
-

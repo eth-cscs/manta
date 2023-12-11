@@ -17,7 +17,8 @@ pub async fn exec(
         shasta_root_cert,
         hsm_group_name_vec,
         limit_number,
-    ).await;
+    )
+    .await;
 
     // Print data
     let mut table = Table::new();
@@ -33,7 +34,13 @@ pub async fn exec(
     ]);
 
     for image_details in image_detail_vec {
-        table.add_row(vec![image_details.0.id.as_ref().unwrap(), &image_details.0.name, image_details.0.created.as_ref().unwrap(), &image_details.1, &image_details.2]);
+        table.add_row(vec![
+            image_details.0.id.as_ref().unwrap(),
+            &image_details.0.name,
+            image_details.0.created.as_ref().unwrap(),
+            &image_details.1,
+            &image_details.2,
+        ]);
     }
 
     println!("{table}");

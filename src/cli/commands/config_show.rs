@@ -43,7 +43,8 @@ pub async fn exec(
     let settings_hsm_available_vec = realm_access_role_vec; */
 
     let hsm_group_available: Vec<String> =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert).await;
+        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await;
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 

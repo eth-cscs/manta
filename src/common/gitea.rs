@@ -20,8 +20,8 @@ pub mod http_client {
             .trim_start_matches(gitea_internal_base_url)
             .trim_end_matches(".git");
         /* let repo_name = repo_name
-            .trim_start_matches(gitea_external_base_url)
-            .trim_end_matches(".git"); */
+        .trim_start_matches(gitea_external_base_url)
+        .trim_end_matches(".git"); */
 
         log::info!("repo_url: {}", repo_url);
         log::info!("gitea_base_url: {}", gitea_internal_base_url);

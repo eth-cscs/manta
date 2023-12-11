@@ -5,7 +5,11 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    shasta, manta::{bos::template::get_image_id_from_bos_sessiontemplate_vec, cfs::session::get_image_id_from_cfs_session_vec},
+    manta::{
+        bos::template::get_image_id_from_bos_sessiontemplate_vec,
+        cfs::session::get_image_id_from_cfs_session_vec,
+    },
+    shasta,
 };
 use serde_json::Value;
 
@@ -185,14 +189,11 @@ pub async fn delete_data_related_cfs_configuration(
     });
 
     // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
-    let image_id_from_cfs_session_vec =
-        get_image_id_from_cfs_session_vec(&cfs_session_value_vec);
+    let image_id_from_cfs_session_vec = get_image_id_from_cfs_session_vec(&cfs_session_value_vec);
 
     // Get image ids from BOS session template related to CFS configuration to delete
     let image_id_from_bos_sessiontemplate_vec =
-        get_image_id_from_bos_sessiontemplate_vec(
-            &bos_sessiontemplate_value_vec,
-        );
+        get_image_id_from_bos_sessiontemplate_vec(&bos_sessiontemplate_value_vec);
 
     // Combine image ids from CFS session and BOS session template
     let mut image_id_vec: Vec<&str> = [

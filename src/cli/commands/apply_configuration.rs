@@ -1,4 +1,4 @@
-use mesa::shasta::cfs::{configuration::r#struct::configuration::CfsConfigurationRequest, self};
+use mesa::shasta::cfs::{self, configuration::r#struct::configuration::CfsConfigurationRequest};
 use serde_yaml::Value;
 use std::path::PathBuf;
 
@@ -41,7 +41,9 @@ pub async fn exec(
     }
 
     if bos_session_template_list_yaml.is_some() {
-        log::warn!("SAT file has data in session_template section. This information will be ignored.")
+        log::warn!(
+            "SAT file has data in session_template section. This information will be ignored."
+        )
     }
 
     let empty_vec = &Vec::new();

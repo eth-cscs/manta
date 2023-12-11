@@ -9,7 +9,8 @@ use mesa::{
         capmc,
         cfs::{
             self,
-            session::{self, http_client::post, CfsSessionRequest}, configuration::r#struct::configuration::CfsConfigurationRequest,
+            configuration::r#struct::configuration::CfsConfigurationRequest,
+            session::{self, http_client::post, CfsSessionRequest},
         },
         hsm,
         ims::image,

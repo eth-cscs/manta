@@ -9,7 +9,10 @@ pub async fn exec(
     bos_sessiontemplate_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
 ) {
-    log::info!("Get BOS sessiontemplates for HSM groups: {:?}", hsm_group_name_vec);
+    log::info!(
+        "Get BOS sessiontemplates for HSM groups: {:?}",
+        hsm_group_name_vec
+    );
 
     let mut bos_sessiontemplate_vec = mesa::mesa::bos::sessiontemplate::http_client::get_all(
         shasta_token,
