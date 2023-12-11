@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.2] - 2023-12-11
+
+### Refactor
+
+- Clean code and update mesa version
+- Cargo fmt
+
 ## [1.13.1] - 2023-12-10
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.1
 
 ### Refactor
 
