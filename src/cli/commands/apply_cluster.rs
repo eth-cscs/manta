@@ -5,7 +5,7 @@ use std::{path::PathBuf, thread};
 use mesa::{
     cfs::{
         self,
-        configuration::shasta::r#struct::configuration::CfsConfigurationRequest,
+        configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
         session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
     },
     {capmc, hsm},

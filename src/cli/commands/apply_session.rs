@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{
-        self, configuration::shasta::r#struct::configuration::CfsConfigurationRequest,
+        self, configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
         session::mesa::r#struct::CfsSessionRequest,
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},

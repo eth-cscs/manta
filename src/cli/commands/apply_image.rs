@@ -4,7 +4,7 @@ use mesa::{
     cfs::{
         self,
         configuration::shasta::r#struct::{
-            configuration::CfsConfigurationRequest, get_put_payload::CfsConfigurationResponse,
+            cfs_configuration_request::CfsConfigurationRequest, cfs_configuration_response::CfsConfigurationResponse,
         },
         session::mesa::r#struct::{CfsSessionRequest, CfsSessionGetResponse},
     },
