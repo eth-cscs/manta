@@ -1,15 +1,13 @@
-use mesa::shasta::hsm;
+use mesa::hsm;
 
 use crate::common::node_ops;
-
-use mesa::manta::get_nodes_status;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_name_vec: &Vec<String>,
+    hsm_name_vec: &[String],
     silent: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
@@ -26,7 +24,7 @@ pub async fn exec(
 
     hsm_groups_node_list.sort();
 
-    let node_details_list = get_nodes_status::exec(
+    let node_details_list = mesa::cfs::component::mesa::http_client::exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

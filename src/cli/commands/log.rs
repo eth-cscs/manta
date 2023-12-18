@@ -1,4 +1,4 @@
-use mesa::shasta::{cfs, hsm, kubernetes};
+use mesa::{common::kubernetes, hsm};
 
 use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
 
@@ -10,12 +10,12 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    hsm_name_vec: &Vec<String>,
+    hsm_name_vec: &[String],
     session_name: Option<&String>,
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions_resp = cfs::session::http_client::filter(
+    let cfs_sessions_resp = mesa::cfs::session::shasta::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

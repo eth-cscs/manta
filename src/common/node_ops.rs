@@ -1,29 +1,7 @@
-use std::collections::HashSet;
-
 use comfy_table::{Cell, Table};
-use mesa::{manta::get_nodes_status::NodeDetails, shasta::hsm};
+use mesa::{cfs::component::mesa::http_client::NodeDetails, hsm};
 use regex::Regex;
 use serde_json::Value;
-
-/// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
-/// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
-// TODO: improve by using HashSet::diferent to get excluded and HashSet::intersection to get "included"
-#[deprecated(note = "Use crate::common::node_ops::validate_xnames instead")]
-pub fn check_hsm_group_and_ansible_limit(
-    hsm_groups_nodes: &HashSet<String>,
-    ansible_limit_nodes: HashSet<String>,
-) -> (HashSet<String>, HashSet<String>) {
-    (
-        ansible_limit_nodes
-            .intersection(hsm_groups_nodes)
-            .cloned()
-            .collect(),
-        ansible_limit_nodes
-            .difference(hsm_groups_nodes)
-            .cloned()
-            .collect(),
-    )
-}
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();
@@ -173,7 +151,7 @@ pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> V
     node_booting_image_vec
 }
 
-pub async fn get_boot_image_and_nodes_booting_them_vec(
+/* pub async fn get_boot_image_and_nodes_booting_them_vec(
     image_id_vec: Vec<String>,
     boot_param_vec: Vec<Value>,
 ) -> Vec<(String, Vec<String>)> {
@@ -188,4 +166,4 @@ pub async fn get_boot_image_and_nodes_booting_them_vec(
     }
 
     boot_image_node_vec
-}
+} */

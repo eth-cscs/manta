@@ -1,95 +1,8 @@
 use comfy_table::Table;
-use mesa::mesa::cfs::session::get_response_struct::CfsSessionGetResponse;
-// use serde::{Deserialize, Serialize};
+use mesa::cfs::session::mesa::r#struct::CfsSessionGetResponse;
 use serde_json::Value;
 
-/* #[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Configuration {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Ansible {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verbosity: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub passthrough: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Group {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub members: Option<Vec<String>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Target {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub definition: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<Vec<Group>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Artifact {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Session {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub job: Option<String>,
-    #[serde(rename = "completionTime")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub completion_time: Option<String>,
-    #[serde(rename = "startTime")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_time: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub succeeded: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct Status {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub actifacts: Option<Vec<Artifact>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session: Option<Session>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct CfsSessionResponse {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub configuration: Option<Configuration>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ansible: Option<Ansible>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub target: Option<Target>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<Status>,
-    /* #[serde(skip_serializing_if = "Option::is_none")]
-    pub tags: Option<...> */
-} */
-
-pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
+/* pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
     let mut result = vec![cfs_session["name"].as_str().unwrap_or_default().to_string()];
     result.push(
         cfs_session
@@ -188,7 +101,7 @@ pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
     );
 
     result
-}
+} */
 
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let mut result = vec![cfs_session.name.unwrap()];
@@ -277,7 +190,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .groups
             .unwrap()
             .iter()
-            .map(|group| group.name.as_ref().unwrap().to_string())
+            .map(|group| group.name.to_string())
             .collect::<Vec<String>>()
             .join("\n")
     } else {
@@ -303,7 +216,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
     result
 }
 
-pub fn print_table_value(get_cfs_session_value_list: &Vec<Value>) {
+/* pub fn print_table_value(get_cfs_session_value_list: &Vec<Value>) {
     let mut table = Table::new();
 
     table.set_header(vec![
@@ -324,7 +237,7 @@ pub fn print_table_value(get_cfs_session_value_list: &Vec<Value>) {
     }
 
     println!("{table}");
-}
+} */
 
 pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) {
     let mut table = Table::new();
@@ -356,7 +269,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    let cfs_sessions_value_list = mesa::shasta::cfs::session::http_client::get_all(
+    let cfs_sessions_value_list = mesa::cfs::session::shasta::http_client::get_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -426,11 +339,10 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        if mesa::shasta::ims::image::http_client::get_raw(
+        if mesa::ims::image::http_client::get_raw(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &vec![],
             image_id,
             None,
             None,

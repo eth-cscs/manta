@@ -1,4 +1,4 @@
-use mesa::shasta::{cfs, hsm};
+use mesa::hsm;
 use serde_json::Value;
 
 #[derive(Debug)]
@@ -34,11 +34,11 @@ pub async fn get_details(
             hsm::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
 
         // Get all CFS sessions
-        let cfs_sessions_value_vec = cfs::session::http_client::filter(
+        let cfs_sessions_value_vec = mesa::cfs::session::shasta::http_client::filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &vec![hsm_group_name.to_string()],
+            &[hsm_group_name.to_string()],
             None,
             None,
             None,
@@ -87,7 +87,7 @@ pub async fn get_details(
 
                 // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
                 // members
-                let cfs_configuration_vec = cfs::configuration::http_client::get(
+                let cfs_configuration_vec = mesa::cfs::configuration::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

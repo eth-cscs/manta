@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::manta::cfs::configuration::Configuration;
+use mesa::cfs::configuration::mesa::r#struct::Configuration;
 use serde_json::Value;
 
 pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
@@ -16,8 +16,7 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
             let cfs_configuration_layer_value_vec =
                 cfs_configuration_value["layers"].as_array().unwrap();
 
-            let mut i = 0;
-            for cfs_configuration_layer_value in cfs_configuration_layer_value_vec {
+            for (i, cfs_configuration_layer_value) in cfs_configuration_layer_value_vec.iter().enumerate() {
                 println!(
                     "cfs_configuration_layer_value: {}",
                     cfs_configuration_layer_value
@@ -31,8 +30,6 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
                     cfs_configuration_layer_value["cloneUrl"].as_str().unwrap(),
                     cfs_configuration_layer_value["playbook"].as_str().unwrap(),
                 ));
-
-                i += 1;
             }
         }
 

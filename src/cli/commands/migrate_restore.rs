@@ -1,5 +1,3 @@
-use mesa::shasta::bos;
-
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,

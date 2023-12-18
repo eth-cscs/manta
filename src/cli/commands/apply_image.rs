@@ -1,20 +1,14 @@
 use std::path::PathBuf;
 
 use mesa::{
-    common::vault::http_client::fetch_shasta_k8s_secrets,
-    mesa::cfs::{
-        configuration::http_client::http_client::put,
-        session::{get_response_struct::CfsSessionGetResponse, http_client::http_client::post},
-    },
-    shasta::{
-        cfs::{
-            configuration::r#struct::{
-                configuration::CfsConfigurationRequest, get_put_payload::CfsConfigurationResponse,
-            },
-            session::CfsSessionRequest,
+    cfs::{
+        self,
+        configuration::shasta::r#struct::{
+            configuration::CfsConfigurationRequest, get_put_payload::CfsConfigurationResponse,
         },
-        kubernetes,
+        session::mesa::r#struct::{CfsSessionRequest, CfsSessionGetResponse},
     },
+    common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };
 use serde_yaml::Value;
 
@@ -103,7 +97,7 @@ pub async fn exec(
             cfs_configuration
         );
 
-        let create_cfs_configuration_resp = put(
+        let create_cfs_configuration_resp = cfs::configuration::mesa::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -153,7 +147,7 @@ pub async fn exec(
 
         log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
 
-        let create_cfs_session_resp = post(
+        let create_cfs_session_resp = cfs::session::mesa::http_client::post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

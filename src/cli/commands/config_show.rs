@@ -92,7 +92,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     if !realm_access_role_vec.is_empty() {
         realm_access_role_vec
     } else {
-        mesa::shasta::hsm::http_client::get_all_hsm_groups(
+        mesa::hsm::http_client::get_all_hsm_groups(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

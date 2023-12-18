@@ -1,7 +1,7 @@
 use core::time;
 use std::thread;
 
-use mesa::shasta::capmc;
+use mesa::capmc;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use crate::common::node_ops;

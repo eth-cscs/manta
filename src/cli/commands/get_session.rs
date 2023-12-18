@@ -1,5 +1,3 @@
-use mesa::shasta;
-
 use crate::common;
 
 pub async fn exec(
@@ -13,7 +11,7 @@ pub async fn exec(
 ) {
     log::info!("Get CFS sessions for HSM groups: {:?}", hsm_group_name_vec);
 
-    let mut cfs_session_vec = mesa::mesa::cfs::session::http_client::http_client::get(
+    let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -89,11 +87,11 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_vec_rslt = shasta::ims::image::http_client::get_struct(
+                let new_image_vec_rslt = mesa::ims::image::http_client::get_struct(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_vec,
+                    // hsm_group_name_vec,
                     cfs_session_image_id,
                     None,
                     None,

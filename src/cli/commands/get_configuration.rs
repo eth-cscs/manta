@@ -1,4 +1,7 @@
-use mesa::{manta, shasta::cfs};
+use mesa::cfs::{
+    self,
+    configuration::mesa::r#struct::{Configuration, Layer},
+};
 
 use crate::common::{cfs_configuration_utils::print_table_struct, gitea};
 
@@ -13,7 +16,7 @@ pub async fn exec(
     limit: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    let cfs_configuration_vec = manta::cfs::configuration::get_configuration(
+    let cfs_configuration_vec = cfs::configuration::mesa::http_client::get_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -37,7 +40,7 @@ pub async fn exec(
         if cfs_configuration_vec.len() == 1 {
             let most_recent_cfs_configuration = &cfs_configuration_vec[0];
 
-            let mut layers: Vec<manta::cfs::configuration::Layer> = vec![];
+            let mut layers: Vec<Layer> = vec![];
 
             for layer in &most_recent_cfs_configuration.layers {
                 let gitea_commit_details = gitea::http_client::get_commit_details(
@@ -49,13 +52,13 @@ pub async fn exec(
                 .await
                 .unwrap();
 
-                layers.push(manta::cfs::configuration::Layer::new(
+                layers.push(Layer::new(
                     &layer.name,
                     layer
                         .clone_url
                         .trim_start_matches("https://api.cmn.alps.cscs.ch")
                         .trim_end_matches(".git"),
-                    &layer.commit.as_ref().unwrap(),
+                    layer.commit.as_ref().unwrap(),
                     gitea_commit_details["commit"]["committer"]["name"]
                         .as_str()
                         .unwrap(),
@@ -65,13 +68,13 @@ pub async fn exec(
                 ));
             }
 
-            print_table_struct(manta::cfs::configuration::Configuration::new(
+            print_table_struct(Configuration::new(
                 &most_recent_cfs_configuration.name,
                 &most_recent_cfs_configuration.last_updated,
                 layers,
             ));
         } else {
-            cfs::configuration::utils::print_table_struct(cfs_configuration_vec);
+            cfs::configuration::shasta::utils::print_table_struct(cfs_configuration_vec);
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::shasta::{capmc, ims};
+use mesa::{capmc, cfs};
 
 pub async fn exec(
     shasta_token: &str,
@@ -14,16 +14,15 @@ pub async fn exec(
 ) {
     let need_restart = boot_image_configuration_opt.is_some();
 
-    let desired_configuration_detail_list_rslt =
-        mesa::shasta::cfs::configuration::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            None,
-            desired_configuration_opt,
-            Some(&1),
-        )
-        .await;
+    let desired_configuration_detail_list_rslt = cfs::configuration::shasta::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+        desired_configuration_opt,
+        Some(&1),
+    )
+    .await;
 
     // Check desired configuration exists
     if desired_configuration_detail_list_rslt.is_ok()
@@ -93,11 +92,10 @@ pub async fn exec(
         .await;
 
         let image_details_value_vec = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get_raw(
+            mesa::ims::image::http_client::get_raw(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &vec![],
                 Some(&image_id),
                 None,
                 None,
@@ -126,7 +124,7 @@ pub async fn exec(
             .unwrap()
             .to_string();
 
-        let component_patch_rep = mesa::shasta::bss::http_client::patch(
+        let component_patch_rep = mesa::bss::http_client::patch(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -151,7 +149,7 @@ pub async fn exec(
             need_restart
         );
 
-        mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
+        mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

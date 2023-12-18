@@ -1,6 +1,5 @@
-use mesa::manta;
-use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
-use mesa::shasta::{bos, hsm, ims};
+use mesa::ims::s3::{s3_auth, s3_download_object};
+use mesa::{cfs, hsm};
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
@@ -32,7 +31,7 @@ pub async fn exec(
         ),
     };
     let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let bos_templates = bos::template::http_client::filter(
+    let bos_templates = mesa::bos::template::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -113,7 +112,7 @@ pub async fn exec(
         cn.next_back();
         // cn.as_str();
         let configuration_name_clean = String::from(cn.as_str());
-        let cfs_configurations = manta::cfs::configuration::get_configuration(
+        let cfs_configurations = cfs::configuration::mesa::http_client::get_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -155,11 +154,10 @@ pub async fn exec(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if ims::image::http_client::get_struct(
+                if mesa::ims::image::http_client::get_struct(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &_empty_hsm_group_name,
                     Some(&image_id_related_to_bos_sessiontemplate),
                     None,
                     None,

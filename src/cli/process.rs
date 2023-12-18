@@ -3,12 +3,7 @@ use std::io::IsTerminal;
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::shasta::{authentication, hsm::utils::get_member_vec_from_hsm_name_vec};
-
-use crate::{
-    cli::commands::delete_data_related_to_cfs_configuration,
-    common::node_ops::get_node_vec_booting_image,
-};
+use mesa::common::authentication;
 
 use super::commands::{
     self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_node_off,
@@ -17,7 +12,7 @@ use super::commands::{
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, migrate_backup,
-    migrate_restore, update_hsm_group, update_node,
+    update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -199,7 +194,7 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let hsm_member_vec = get_member_vec_from_hsm_name_vec(
+                let hsm_member_vec = mesa::hsm::utils::get_member_vec_from_hsm_name_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -334,7 +329,7 @@ pub async fn process_cli(
             }
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
-                let hsm_group_target_vec = validate_target_hsm_name(
+                let _hsm_group_target_vec = validate_target_hsm_name(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -470,10 +465,6 @@ pub async fn process_cli(
                 };
 
                 apply_cluster::exec(
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
-                    // cli_apply_cluster,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -483,10 +474,7 @@ pub async fn process_cli(
                     &hsm_group_target_vec,
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
-                    k8s_api_url,
-                    cli_apply_cluster.get_one::<bool>("watch-logs"),
                     tag,
-                    cli_apply_cluster.get_one::<String>("output"),
                 )
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
@@ -679,7 +667,6 @@ pub async fn process_cli(
 
                 console_cfs_session_image_target_ansible::exec(
                     &hsm_name_available_vec,
-                    // cli_console,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -705,7 +692,7 @@ pub async fn process_cli(
                     destination,
                 )
                 .await;
-            } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
+            } else if let Some(_cli_migrate) = cli_migrate.subcommand_matches("restore") {
                 log::info!(">>> MIGRATE RESTORE not implemented yet")
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
@@ -842,7 +829,7 @@ pub async fn validate_target_hsm_members(
     )
     .await;
 
-    let hsm_member_vec_available_vec = get_member_vec_from_hsm_name_vec(
+    let hsm_member_vec_available_vec = mesa::hsm::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

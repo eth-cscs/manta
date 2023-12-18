@@ -4,13 +4,7 @@ use std::{collections::HashMap, thread};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    manta::{
-        bos::template::get_image_id_from_bos_sessiontemplate_vec,
-        cfs::session::get_image_id_from_cfs_session_vec,
-    },
-    shasta,
-};
+use mesa::{bos, cfs};
 use serde_json::Value;
 
 use crate::{
@@ -35,7 +29,7 @@ pub async fn delete_data_related_cfs_configuration(
     // Check dessired configuration not using any CFS configuration to delete
     //
     // Get all CFS components in CSM
-    let cfs_components = mesa::shasta::cfs::component::http_client::get_multiple_components(
+    let cfs_components = mesa::cfs::component::shasta::http_client::get_multiple_components(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -49,7 +43,7 @@ pub async fn delete_data_related_cfs_configuration(
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     //
     // Get all BSS boot params
-    let boot_param_vec = mesa::shasta::bss::http_client::get_boot_params(
+    let boot_param_vec = mesa::bss::http_client::get_boot_params(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -59,7 +53,7 @@ pub async fn delete_data_related_cfs_configuration(
     .unwrap();
 
     // Get all CFS configurations in CSM
-    let mut cfs_configuration_value_vec = mesa::shasta::cfs::configuration::http_client::get(
+    let mut cfs_configuration_value_vec = cfs::configuration::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -101,7 +95,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all BOS session templates
-    let bos_sessiontemplate_value_vec = mesa::shasta::bos::template::http_client::filter(
+    let bos_sessiontemplate_value_vec = mesa::bos::template::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -142,7 +136,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all CFS sessions
-    let mut cfs_session_value_vec = mesa::shasta::cfs::session::http_client::filter(
+    let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -189,11 +183,14 @@ pub async fn delete_data_related_cfs_configuration(
     });
 
     // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
-    let image_id_from_cfs_session_vec = get_image_id_from_cfs_session_vec(&cfs_session_value_vec);
+    let image_id_from_cfs_session_vec =
+        cfs::session::shasta::utils::get_image_id_from_cfs_session_vec(&cfs_session_value_vec);
 
     // Get image ids from BOS session template related to CFS configuration to delete
     let image_id_from_bos_sessiontemplate_vec =
-        get_image_id_from_bos_sessiontemplate_vec(&bos_sessiontemplate_value_vec);
+        bos::template::shasta::utils::get_image_id_from_bos_sessiontemplate_vec(
+            &bos_sessiontemplate_value_vec,
+        );
 
     // Combine image ids from CFS session and BOS session template
     let mut image_id_vec: Vec<&str> = [
@@ -217,11 +214,11 @@ pub async fn delete_data_related_cfs_configuration(
     // previously and the CFS session and BOS sessiontemplate not being cleared)
     let mut image_id_filtered_vec: Vec<&str> = Vec::new();
     for image_id in image_id_vec {
-        if !mesa::shasta::ims::image::http_client::get_struct(
+        if !mesa::ims::image::http_client::get_struct(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &hsm_name_available_vec,
+            // &hsm_name_available_vec,
             Some(image_id),
             None,
             None,
@@ -677,7 +674,7 @@ pub async fn delete(
     //
     // DELETE IMAGES
     for image_id in image_id_vec {
-        let image_deleted_value_rslt = shasta::ims::image::http_client::delete(
+        let image_deleted_value_rslt = mesa::ims::image::http_client::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -701,7 +698,7 @@ pub async fn delete(
     }
 
     // DELETE BOS SESSIONS
-    let bos_session_id_value_vec = shasta::bos::session::http_client::get(
+    let bos_session_id_value_vec = mesa::bos::session::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -712,7 +709,7 @@ pub async fn delete(
 
     // Match BOS SESSIONS with the BOS SESSIONTEMPLATE RELATED
     for bos_session_id_value in bos_session_id_value_vec {
-        let bos_session_value = shasta::bos::session::http_client::get(
+        let bos_session_value = mesa::bos::session::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -728,7 +725,7 @@ pub async fn delete(
                     .unwrap(),
             )
         {
-            shasta::bos::session::http_client::delete(
+            mesa::bos::session::shasta::http_client::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -756,7 +753,7 @@ pub async fn delete(
     for cfs_session_name in cfs_session_name_vec {
         let mut counter = 0;
         loop {
-            let deletion_rslt = shasta::cfs::session::http_client::delete(
+            let deletion_rslt = mesa::cfs::session::shasta::http_client::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -791,7 +788,7 @@ pub async fn delete(
     for bos_sessiontemplate_name in bos_sessiontemplate_name_vec {
         let mut counter = 0;
         loop {
-            let deletion_rslt = shasta::bos::template::http_client::delete(
+            let deletion_rslt = mesa::bos::template::shasta::http_client::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -833,7 +830,7 @@ pub async fn delete(
     for cfs_configuration in cfs_configuration_name_vec {
         let mut counter = 0;
         loop {
-            let deletion_rslt = shasta::cfs::configuration::http_client::delete(
+            let deletion_rslt = cfs::configuration::shasta::http_client::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

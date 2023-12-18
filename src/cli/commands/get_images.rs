@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::{mesa::image, shasta::ims::image::Image};
+use mesa::ims::image::{r#struct::Image, self};
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason
@@ -11,7 +11,7 @@ pub async fn exec(
     hsm_group_name_vec: &Vec<String>,
     limit_number: Option<&u8>,
 ) {
-    let image_detail_vec: Vec<(Image, String, String)> = image::filter(
+    let image_detail_vec: Vec<(Image, String, String)> = image::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

@@ -3,18 +3,12 @@ use std::{path::PathBuf, thread};
 
 // use clap::ArgMatches;
 use mesa::{
-    mesa::cfs::session::get_response_struct::CfsSessionGetResponse,
-    shasta::{
-        bos::{self, template},
-        capmc,
-        cfs::{
-            self,
-            configuration::r#struct::configuration::CfsConfigurationRequest,
-            session::{self, http_client::post, CfsSessionRequest},
-        },
-        hsm,
-        ims::image,
+    cfs::{
+        self,
+        configuration::shasta::r#struct::configuration::CfsConfigurationRequest,
+        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
     },
+    {capmc, hsm},
 };
 use serde_yaml::Value;
 
@@ -24,9 +18,6 @@ use crate::{
 };
 
 pub async fn exec(
-    vault_base_url: &str,
-    vault_secret_path: &str,
-    vault_role_id: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -35,10 +26,7 @@ pub async fn exec(
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<&String>,
     ansible_passthrough_opt: Option<&String>,
-    k8s_api_url: &str,
-    watch_logs: Option<&bool>,
     tag: String,
-    output_opt: Option<&String>,
 ) {
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
@@ -135,7 +123,7 @@ pub async fn exec(
             cfs_configuration_value
         );
 
-        let cfs_configuration_value_rslt = cfs::configuration::http_client::put(
+        let cfs_configuration_value_rslt = cfs::configuration::shasta::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -189,7 +177,7 @@ pub async fn exec(
         // Set ansible passthrough params
         cfs_session.ansible_passthrough = ansible_passthrough_opt.cloned();
 
-        let create_cfs_session_resp = post(
+        let create_cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -206,7 +194,7 @@ pub async fn exec(
         let mut i = 0;
         let max = 1800; // Max ammount of attempts to check if CFS session has ended
         loop {
-            let cfs_session_value_vec_rslt = session::http_client::filter(
+            let cfs_session_value_vec_rslt = mesa::cfs::session::shasta::http_client::filter(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -532,16 +520,16 @@ pub async fn process_session_template_section_in_sat_file(
             .unwrap_or("")
             .to_string();
 
-        bos_session_template_image_name = bos_session_template_image_name.replace("__DATE__", &tag);
+        bos_session_template_image_name = bos_session_template_image_name.replace("__DATE__", tag);
 
         // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
             .as_str()
             .unwrap()
             .to_string()
-            .replace("__DATE__", &tag);
+            .replace("__DATE__", tag);
 
-        let cfs_configuration_detail_opt = mesa::shasta::cfs::configuration::http_client::get(
+        let cfs_configuration_detail_opt = mesa::cfs::configuration::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -559,7 +547,7 @@ pub async fn process_session_template_section_in_sat_file(
         }
 
         // Get base image details
-        let image_detail_vec = image::http_client::get_fuzzy(
+        let image_detail_vec = mesa::ims::image::http_client::get_fuzzy(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -604,7 +592,7 @@ pub async fn process_session_template_section_in_sat_file(
             .as_str()
             .unwrap_or("")
             .to_string()
-            .replace("__DATE__", &tag);
+            .replace("__DATE__", tag);
 
         let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
             bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
@@ -643,7 +631,7 @@ pub async fn process_session_template_section_in_sat_file(
         };
 
         let create_bos_session_template_payload =
-            bos::template::BosTemplateRequest::new_for_hsm_group(
+            mesa::bos::template::mesa::r#struct::request_payload::BosSessionTemplate::new_for_hsm_group(
                 bos_session_template_configuration_name,
                 bos_session_template_name,
                 ims_image_name,
@@ -653,7 +641,7 @@ pub async fn process_session_template_section_in_sat_file(
                 hsm_group,
             );
 
-        let create_bos_session_template_resp = template::http_client::post(
+        let create_bos_session_template_resp = mesa::bos::template::shasta::http_client::post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -704,7 +692,7 @@ pub async fn process_session_template_section_in_sat_file(
         );
 
         // Create BOS session operation start
-        let create_bos_boot_session_resp = bos::session::http_client::post(
+        let create_bos_boot_session_resp = mesa::bos::session::shasta::http_client::post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

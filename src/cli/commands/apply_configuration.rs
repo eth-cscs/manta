@@ -1,4 +1,4 @@
-use mesa::shasta::cfs::{self, configuration::r#struct::configuration::CfsConfigurationRequest};
+use mesa::cfs::configuration::shasta::r#struct::configuration::CfsConfigurationRequest;
 use serde_yaml::Value;
 use std::path::PathBuf;
 
@@ -63,7 +63,7 @@ pub async fn exec(
             cfs_configuration_value
         );
 
-        let cfs_configuration_value_rslt = cfs::configuration::http_client::put(
+        let cfs_configuration_value_rslt = mesa::cfs::configuration::shasta::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

@@ -52,7 +52,7 @@ pub async fn exec(
 
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-        mesa::shasta::hsm::http_client::get_all_hsm_groups(
+        mesa::hsm::http_client::get_all_hsm_groups(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -80,7 +80,7 @@ pub async fn exec(
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
-        let all_hsm_available_vec = mesa::shasta::hsm::http_client::get_all_hsm_groups(
+        let all_hsm_available_vec = mesa::hsm::http_client::get_all_hsm_groups(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

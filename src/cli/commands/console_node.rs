@@ -1,6 +1,6 @@
 use futures::StreamExt;
 
-use mesa::manta::console;
+use mesa::node::console;
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 

@@ -3,15 +3,13 @@ use std::path::{Path, PathBuf};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    common::vault::http_client::fetch_shasta_k8s_secrets,
-    shasta::{
-        cfs::{
-            self,
-            configuration::{self, r#struct::configuration::CfsConfigurationRequest},
-        },
-        kubernetes,
+    cfs::{
+        self, configuration::shasta::r#struct::configuration::CfsConfigurationRequest,
+        session::mesa::r#struct::CfsSessionRequest,
     },
+    common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };
+use serde_json::Value;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
@@ -227,9 +225,13 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions =
-        cfs::session::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await?;
+    let cfs_sessions: Vec<Value> = mesa::cfs::session::shasta::http_client::get_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+    )
+    .await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
@@ -276,14 +278,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = cfs::component::http_client::get_single_component(
+        let component_status = mesa::cfs::component::shasta::http_client::get_single_component(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &xname,
         )
         .await?;
-        let hsm_configuration_state = &mesa::shasta::hsm::http_client::get_component_status(
+        let hsm_configuration_state = &mesa::hsm::http_client::get_component_status(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -429,7 +431,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     );
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = configuration::http_client::put(
+    let cfs_configuration_resp = cfs::configuration::shasta::http_client::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -461,7 +463,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = cfs::session::CfsSessionRequest::new(
+    let session = CfsSessionRequest::new(
         cfs_session_name,
         cfs_configuration_name,
         limit,
@@ -474,14 +476,18 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
-    let cfs_session_resp =
-        cfs::session::http_client::post(shasta_token, shasta_base_url, shasta_root_cert, &session)
-            .await;
+    let cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &session,
+    )
+    .await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 
     let cfs_session_name = match cfs_session_resp {
-        Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),
+        Ok(_) => cfs_session_resp.as_ref().unwrap().name.as_ref().unwrap(),
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);

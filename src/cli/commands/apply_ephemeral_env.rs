@@ -1,5 +1,3 @@
-use mesa::shasta::ims;
-
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 
 pub async fn exec(
@@ -19,7 +17,7 @@ pub async fn exec(
     );
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
-        ims::public_keys::http_client::get_single(
+        mesa::ims::public_keys::http_client::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -43,7 +41,7 @@ pub async fn exec(
         "Creating ephemeral environment baed on image ID {}",
         image_id
     );
-    let resp_json_rslt = ims::job::http_client::post(
+    let resp_json_rslt = mesa::ims::job::http_client::post(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
