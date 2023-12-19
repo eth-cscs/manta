@@ -24,7 +24,7 @@ pub async fn exec(
 
     hsm_groups_node_list.sort();
 
-    let node_details_list = mesa::cfs::component::mesa::http_client::exec(
+    let node_details_list = mesa::cfs::component::mesa::http_client::get_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
