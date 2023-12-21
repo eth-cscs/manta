@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::{cfs::component::mesa::http_client::NodeDetails, hsm};
+use mesa::{hsm, node::utils::NodeDetails};
 use regex::Regex;
 use serde_json::Value;
 
