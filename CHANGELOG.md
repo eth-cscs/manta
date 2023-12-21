@@ -2,7 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.3] - 2023-12-21
+
+### Features
+
+- Update mesa version
+
+### Refactor
+
+- High refactoring
+- Cfs configuration structs
+- Rename method name to get multiple CFS components
+- Hoursekeeping around node methods
+
 ## [1.13.2] - 2023-12-11
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.2
 
 ### Refactor
 
