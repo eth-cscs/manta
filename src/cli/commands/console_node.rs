@@ -1,10 +1,8 @@
 use futures::StreamExt;
 
-use mesa::node::console;
+use mesa::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
-
-use mesa::common::node_ops;
 
 use crate::common::terminal_ops;
 
@@ -21,7 +19,7 @@ pub async fn exec(
 ) {
     if hsm_group.is_some() {
         // Check user has provided valid XNAMES
-        if !node_ops::validate_xnames(
+        if !node::utils::validate_xnames(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -36,7 +34,7 @@ pub async fn exec(
     } else {
         // no hsm_group value provided
         // included = xnames.clone();
-        node_ops::validate_xname_format(xname);
+        node::utils::validate_xname_format(xname);
     }
 
     let console_rslt = connect_to_console(

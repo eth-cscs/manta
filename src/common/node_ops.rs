@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::{hsm, node::utils::NodeDetails};
+use mesa::{hsm, node::r#struct::NodeDetails};
 use regex::Regex;
 use serde_json::Value;
 
