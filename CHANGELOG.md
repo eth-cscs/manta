@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.5] - 2023-12-22
+
+### Refactor
+
+- Update mesa version
+
 ## [1.13.4] - 2023-12-22
 
 ### Bug Fixes
 
 - Import
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.4
 
 ### Refactor
 
