@@ -58,8 +58,6 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_base_url,
         shasta_root_cert,
         None,
-        None,
-        None,
     )
     .await
     .unwrap();
@@ -136,17 +134,25 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all CFS sessions
-    let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::filter(
+    let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &hsm_name_available_vec,
-        None,
         None,
         None,
     )
     .await
     .unwrap();
+
+    mesa::cfs::session::shasta::http_client::filter(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_session_value_vec,
+        &hsm_name_available_vec,
+        None,
+    )
+    .await;
 
     // Filter CFS sessions containing /configuration/name field
     cfs_session_value_vec.retain(|cfs_session_value| {

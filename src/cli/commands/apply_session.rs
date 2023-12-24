@@ -225,10 +225,11 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions: Vec<Value> = mesa::cfs::session::shasta::http_client::get_all(
+    let cfs_sessions: Vec<Value> = mesa::cfs::session::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        None,
         None,
     )
     .await?;

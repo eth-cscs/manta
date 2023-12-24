@@ -269,10 +269,11 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    let cfs_sessions_value_list = mesa::cfs::session::shasta::http_client::get_all(
+    let cfs_sessions_value_list = mesa::cfs::session::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        None,
         Some(true),
     )
     .await

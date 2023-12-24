@@ -194,29 +194,34 @@ pub async fn exec(
         let mut i = 0;
         let max = 1800; // Max ammount of attempts to check if CFS session has ended
         loop {
-            let cfs_session_value_vec_rslt = mesa::cfs::session::shasta::http_client::filter(
+            let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                hsm_group_available_vec,
                 Some(&cfs_session.name.to_string()),
-                Some(&1),
                 Some(true),
+            )
+            .await
+            .unwrap();
+
+            mesa::cfs::session::shasta::http_client::filter_by_hsm(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &mut cfs_session_value_vec,
+                hsm_group_available_vec,
+                Some(&1),
             )
             .await;
 
-            if cfs_session_value_vec_rslt
-                .as_ref()
-                .is_ok_and(|cfs_session_vec| {
-                    !cfs_session_vec.is_empty()
-                        && cfs_session_vec.first().unwrap()["status"]["session"]["status"]
-                            .eq("complete")
-                })
+            if !cfs_session_value_vec.is_empty()
+                && cfs_session_value_vec.first().unwrap()["status"]["session"]["status"]
+                    .eq("complete")
                 && i <= max
             {
                 let cfs_session_aux: CfsSessionGetResponse =
                     CfsSessionGetResponse::from_csm_api_json(
-                        cfs_session_value_vec_rslt.unwrap().first().unwrap().clone(),
+                        cfs_session_value_vec.first().unwrap().clone(),
                     );
 
                 cfs_session_complete_vec.push(cfs_session_aux.clone());
@@ -529,17 +534,27 @@ pub async fn process_session_template_section_in_sat_file(
             .to_string()
             .replace("__DATE__", tag);
 
-        let cfs_configuration_detail_opt = mesa::cfs::configuration::shasta::http_client::get(
+        let mut cfs_configuration_value_vec = mesa::cfs::configuration::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            Some(hsm_group_available_vec),
             Some(&bos_session_template_configuration_name),
-            None,
         )
-        .await;
+        .await
+        .unwrap();
 
-        if cfs_configuration_detail_opt.is_err() {
+        mesa::cfs::configuration::shasta::http_client::filter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut cfs_configuration_value_vec,
+            Some(hsm_group_available_vec),
+            None,
+            None,
+            None,
+        ).await;
+
+        if cfs_configuration_value_vec.is_empty() {
             eprintln!(
                 "ERROR: BOS session template configuration not found in SAT file image list."
             );

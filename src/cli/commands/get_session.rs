@@ -11,17 +11,46 @@ pub async fn exec(
 ) {
     log::info!("Get CFS sessions for HSM groups: {:?}", hsm_group_name_vec);
 
+    /* let mut cfs_session_vec = mesa::cfs::session::shasta::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        cfs_session_name_opt,
+        None,
+    )
+    .await
+    .unwrap();
+
+    mesa::cfs::session::shasta::http_client::filter(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_session_vec,
+        hsm_group_name_vec,
+        None,
+    )
+    .await; */
+
     let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name_vec,
         cfs_session_name_opt,
         limit_number_opt,
         None,
     )
     .await
     .unwrap();
+
+    mesa::cfs::session::mesa::utils::filter_by_hsm(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_session_vec,
+        hsm_group_name_vec,
+        limit_number_opt,
+    )
+    .await;
 
     if cfs_session_vec.is_empty() {
         println!("CFS session not found!");

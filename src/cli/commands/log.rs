@@ -15,7 +15,26 @@ pub async fn exec(
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions_resp = mesa::cfs::session::shasta::http_client::filter(
+    let mut cfs_sessions_resp = mesa::cfs::session::shasta::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        session_name,
+        None,
+    )
+    .await
+    .unwrap();
+
+    mesa::cfs::session::shasta::http_client::filter(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_sessions_resp,
+        hsm_name_vec,
+        None,
+    )
+    .await;
+    /* let cfs_sessions_resp = mesa::cfs::session::shasta::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -25,7 +44,7 @@ pub async fn exec(
         None,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     if cfs_sessions_resp.is_empty() {
         println!("No CFS session found");

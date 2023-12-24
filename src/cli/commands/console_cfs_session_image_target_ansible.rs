@@ -17,61 +17,68 @@ pub async fn exec(
     k8s_api_url: &str,
     cfs_session_name: &str,
 ) {
-    let cfs_session_details_list_rslt = mesa::cfs::session::shasta::http_client::filter(
+    let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name_vec,
         Some(&cfs_session_name.to_string()),
-        None,
         Some(false),
+    )
+    .await
+    .unwrap();
+
+    mesa::cfs::session::shasta::http_client::filter_by_hsm(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_session_value_vec,
+        hsm_group_name_vec,
+        None,
     )
     .await;
 
-    if let Ok(cfs_session_details_list) = cfs_session_details_list_rslt {
-        if cfs_session_details_list.is_empty() {
-            eprintln!("No CFS session found. Exit",);
-            std::process::exit(1);
-        }
-        let cfs_session_details = cfs_session_details_list.first().unwrap();
-        if cfs_session_details
-            .pointer("/target/definition")
-            .unwrap()
-            .ne("image")
-        {
-            eprintln!(
-                "CFS session found {} is type dynamic. Exit",
-                cfs_session_details["name"].as_str().unwrap()
-            );
-            std::process::exit(1);
-        }
-        if cfs_session_details
-            .pointer("/status/session/status")
-            .unwrap()
-            .as_str()
-            .ne(&Some("running"))
-        {
-            eprintln!(
-                "CFS session found {} state is not 'running'. Exit",
-                cfs_session_details["name"].as_str().unwrap()
-            );
-            std::process::exit(1);
-        }
-        if !cfs_session_details
-            .pointer("/target/groups")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|group| hsm_group_name_vec.contains(&group["name"].as_str().unwrap().to_string()))
-        {
-            eprintln!(
-                "CFS session found {} is not related to any availble HSM groups {:?}",
-                cfs_session_details["name"].as_str().unwrap(),
-                hsm_group_name_vec
-            );
-            std::process::exit(1);
-        }
+    if cfs_session_value_vec.is_empty() {
+        eprintln!("No CFS session found. Exit",);
+        std::process::exit(1);
+    }
+    let cfs_session_details = cfs_session_value_vec.first().unwrap();
+    if cfs_session_details
+        .pointer("/target/definition")
+        .unwrap()
+        .ne("image")
+    {
+        eprintln!(
+            "CFS session found {} is type dynamic. Exit",
+            cfs_session_details["name"].as_str().unwrap()
+        );
+        std::process::exit(1);
+    }
+    if cfs_session_details
+        .pointer("/status/session/status")
+        .unwrap()
+        .as_str()
+        .ne(&Some("running"))
+    {
+        eprintln!(
+            "CFS session found {} state is not 'running'. Exit",
+            cfs_session_details["name"].as_str().unwrap()
+        );
+        std::process::exit(1);
+    }
+    if !cfs_session_details
+        .pointer("/target/groups")
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|group| hsm_group_name_vec.contains(&group["name"].as_str().unwrap().to_string()))
+    {
+        eprintln!(
+            "CFS session found {} is not related to any availble HSM groups {:?}",
+            cfs_session_details["name"].as_str().unwrap(),
+            hsm_group_name_vec
+        );
+        std::process::exit(1);
     }
 
     connect_to_console(

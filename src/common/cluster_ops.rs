@@ -34,17 +34,25 @@ pub async fn get_details(
             hsm::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
 
         // Get all CFS sessions
-        let cfs_sessions_value_vec = mesa::cfs::session::shasta::http_client::filter(
+        let mut cfs_sessions_value_vec = mesa::cfs::session::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &[hsm_group_name.to_string()],
-            None,
             None,
             None,
         )
         .await
         .unwrap();
+
+        mesa::cfs::session::shasta::http_client::filter_by_hsm(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut cfs_sessions_value_vec,
+            &[hsm_group_name.to_string()],
+            None,
+        )
+        .await;
 
         let most_recent_cfs_session;
         let cfs_configuration;
@@ -91,7 +99,6 @@ pub async fn get_details(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    None,
                     Some(
                         &most_recent_cfs_session
                             .pointer("/configuration/name")
@@ -100,7 +107,6 @@ pub async fn get_details(
                             .unwrap()
                             .to_string(),
                     ),
-                    None,
                 )
                 .await
                 .unwrap();
