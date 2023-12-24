@@ -16,7 +16,9 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
             let cfs_configuration_layer_value_vec =
                 cfs_configuration_value["layers"].as_array().unwrap();
 
-            for (i, cfs_configuration_layer_value) in cfs_configuration_layer_value_vec.iter().enumerate() {
+            for (i, cfs_configuration_layer_value) in
+                cfs_configuration_layer_value_vec.iter().enumerate()
+            {
                 println!(
                     "cfs_configuration_layer_value: {}",
                     cfs_configuration_layer_value

@@ -1,5 +1,5 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{capmc, hsm, cfs};
+use mesa::{capmc, cfs, hsm};
 
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 

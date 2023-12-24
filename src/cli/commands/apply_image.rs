@@ -4,9 +4,10 @@ use mesa::{
     cfs::{
         self,
         configuration::shasta::r#struct::{
-            cfs_configuration_request::CfsConfigurationRequest, cfs_configuration_response::CfsConfigurationResponse,
+            cfs_configuration_request::CfsConfigurationRequest,
+            cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::{CfsSessionRequest, CfsSessionGetResponse},
+        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };

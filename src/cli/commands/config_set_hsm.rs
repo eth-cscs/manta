@@ -52,16 +52,12 @@ pub async fn exec(
 
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-        mesa::hsm::http_client::get_all_hsm_groups(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-        )
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
-        .collect::<Vec<String>>()
+        mesa::hsm::http_client::get_all_hsm_groups(shasta_token, shasta_base_url, shasta_root_cert)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|hsm_group_value| hsm_group_value["label"].as_str().unwrap().to_string())
+            .collect::<Vec<String>>()
     } else {
         settings_hsm_available_vec
     };

@@ -4,8 +4,9 @@ use std::{path::PathBuf, thread};
 // use clap::ArgMatches;
 use mesa::{
     cfs::{
+        self,
         configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
-        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest}, self,
+        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
     },
     {capmc, hsm},
 };
