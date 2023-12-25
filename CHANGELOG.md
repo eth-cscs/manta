@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2023-12-25
+
+### Features
+
+- Get nodes now shows CFS configuration related to image id used to
+
+### Refactor
+
+- Clean code
+- Adapt code to new mesa
+- Clean code
+
 ## [1.13.5] - 2023-12-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.5
 
 ### Refactor
 
