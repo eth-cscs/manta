@@ -1,38 +1,6 @@
-use comfy_table::{Cell, Table};
-use mesa::{hsm, node::r#struct::NodeDetails};
+use mesa::hsm;
 use regex::Regex;
 use serde_json::Value;
-
-pub fn print_table(nodes_status: Vec<NodeDetails>) {
-    let mut table = Table::new();
-
-    table.set_header(vec![
-        "XNAME",
-        "NID",
-        "Power Status",
-        "Desired Configuration",
-        "Configuration Status",
-        "Enabled",
-        "Error Count",
-        // "Tags",
-        "Image ID (Boot param)",
-    ]);
-
-    for node_status in nodes_status {
-        table.add_row(vec![
-            Cell::new(node_status.xname),
-            Cell::new(node_status.nid),
-            Cell::new(node_status.power_status),
-            Cell::new(node_status.desired_configuration),
-            Cell::new(node_status.configuration_status),
-            Cell::new(node_status.enabled),
-            Cell::new(node_status.error_count),
-            Cell::new(node_status.boot_image_id),
-        ]);
-    }
-
-    println!("{table}");
-}
 
 pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<Value>>) -> String {
     if let Some(nodes_content) = nodes {

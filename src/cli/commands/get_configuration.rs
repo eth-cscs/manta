@@ -16,7 +16,7 @@ pub async fn exec(
     limit: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    let cfs_configuration_vec = cfs::configuration::mesa::http_client::get_configuration(
+    let cfs_configuration_vec = cfs::configuration::mesa::http_client::get_and_filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

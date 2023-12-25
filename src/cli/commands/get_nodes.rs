@@ -93,6 +93,6 @@ pub async fn exec(
             serde_json::to_string_pretty(&node_details_list).unwrap()
         );
     } else {
-        node_ops::print_table(node_details_list);
+        mesa::node::utils::print_table(node_details_list);
     }
 }

@@ -11,10 +11,22 @@ pub async fn exec(
     hsm_group_name_vec: &Vec<String>,
     limit_number: Option<&u8>,
 ) {
+    let mut image_vec: Vec<Image> = image::http_client::get_struct(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+        None,
+        limit_number,
+    )
+    .await
+    .unwrap();
+
     let image_detail_vec: Vec<(Image, String, String)> = image::http_client::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        &mut image_vec,
         hsm_group_name_vec,
         limit_number,
     )

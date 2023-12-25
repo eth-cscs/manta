@@ -112,7 +112,7 @@ pub async fn exec(
         cn.next_back();
         // cn.as_str();
         let configuration_name_clean = String::from(cn.as_str());
-        let cfs_configurations = cfs::configuration::mesa::http_client::get_configuration(
+        let cfs_configurations = cfs::configuration::mesa::http_client::get_and_filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
