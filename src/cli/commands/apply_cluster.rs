@@ -551,7 +551,8 @@ pub async fn process_session_template_section_in_sat_file(
             Some(hsm_group_available_vec),
             None,
             None,
-        ).await;
+        )
+        .await;
 
         if cfs_configuration_value_vec.is_empty() {
             eprintln!(
