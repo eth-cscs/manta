@@ -1,7 +1,5 @@
 use mesa::hsm;
 
-use crate::common::node_ops;
-
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
     shasta_token: &str,
