@@ -562,7 +562,7 @@ pub async fn process_session_template_section_in_sat_file(
         }
 
         // Get base image details
-        let image_detail_vec = mesa::ims::image::http_client::get_fuzzy(
+        let image_detail_vec = mesa::ims::image::utils::get_fuzzy(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

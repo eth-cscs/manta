@@ -154,13 +154,11 @@ pub async fn exec(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if mesa::ims::image::http_client::get_struct(
+                if mesa::ims::image::mesa::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     Some(&image_id_related_to_bos_sessiontemplate),
-                    None,
-                    None,
                 )
                 .await
                 .is_ok()

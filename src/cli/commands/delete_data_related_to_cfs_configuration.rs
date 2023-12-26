@@ -220,14 +220,12 @@ pub async fn delete_data_related_cfs_configuration(
     // previously and the CFS session and BOS sessiontemplate not being cleared)
     let mut image_id_filtered_vec: Vec<&str> = Vec::new();
     for image_id in image_id_vec {
-        if !mesa::ims::image::http_client::get_struct(
+        if !mesa::ims::image::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             // &hsm_name_available_vec,
             Some(image_id),
-            None,
-            None,
         )
         .await
         .unwrap()
@@ -680,7 +678,7 @@ pub async fn delete(
     //
     // DELETE IMAGES
     for image_id in image_id_vec {
-        let image_deleted_value_rslt = mesa::ims::image::http_client::delete(
+        let image_deleted_value_rslt = mesa::ims::image::shasta::http_client::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

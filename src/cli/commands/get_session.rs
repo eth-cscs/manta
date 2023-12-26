@@ -1,3 +1,5 @@
+use mesa::ims::image::r#struct::Image;
+
 use crate::common;
 
 pub async fn exec(
@@ -116,14 +118,12 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_vec_rslt = mesa::ims::image::http_client::get_struct(
+                let new_image_vec_rslt: Result<Vec<Image>, _> = mesa::ims::image::mesa::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     // hsm_group_name_vec,
                     cfs_session_image_id,
-                    None,
-                    None,
                 )
                 .await;
 

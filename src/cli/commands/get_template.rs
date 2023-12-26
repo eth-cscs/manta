@@ -12,10 +12,11 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get_all(
+    let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        bos_sessiontemplate_name_opt,
     )
     .await
     .unwrap_or_default();
@@ -24,7 +25,6 @@ pub async fn exec(
         &mut bos_sessiontemplate_vec,
         hsm_group_name_vec,
         hsm_member_vec,
-        bos_sessiontemplate_name_opt,
         limit_number_opt,
         None,
     )

@@ -95,14 +95,12 @@ pub async fn exec(
         )
         .await;
 
-        let image_details_resp = if let Some(image_id) = image_id_opt {
-            mesa::ims::image::http_client::get_raw(
+        let image_value = if let Some(image_id) = image_id_opt {
+            mesa::ims::image::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 Some(&image_id),
-                None,
-                None,
             )
             .await
             .unwrap()
@@ -114,9 +112,9 @@ pub async fn exec(
             std::process::exit(1);
         };
 
-        log::debug!("image_details:\n{:#?}", image_details_resp);
+        log::debug!("image_details:\n{:#?}", image_value);
 
-        let image_path = image_details_resp.first().unwrap()["link"]["path"]
+        let image_path = image_value.first().unwrap()["link"]["path"]
             .as_str()
             .unwrap()
             .to_string();

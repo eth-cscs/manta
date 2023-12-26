@@ -70,13 +70,11 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if mesa::ims::image::http_client::get_raw(
+                if mesa::ims::image::shasta::http_client::get_raw(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     Some(&image_id_related_to_bos_sessiontemplate),
-                    None,
-                    None,
                 )
                 .await
                 .is_ok()
