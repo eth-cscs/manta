@@ -31,7 +31,7 @@ pub async fn exec(
         ),
     };
     let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let bos_templates = mesa::bos::template::shasta::http_client::get(
+    let bos_templates = mesa::bos::template::shasta::http_client::get_and_filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

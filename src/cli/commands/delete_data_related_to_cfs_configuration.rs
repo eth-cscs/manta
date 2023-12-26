@@ -93,7 +93,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all BOS session templates
-    let bos_sessiontemplate_value_vec = mesa::bos::template::shasta::http_client::get(
+    let bos_sessiontemplate_value_vec = mesa::bos::template::shasta::http_client::get_and_filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
