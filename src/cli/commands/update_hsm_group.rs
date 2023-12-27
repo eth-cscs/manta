@@ -51,18 +51,18 @@ pub async fn exec(
 
     // Get nodes members of HSM group
     // Get HSM group details
-    let hsm_group_details = hsm::group::shasta::http_client::get_hsm_group(
+    let hsm_group_details = hsm::group::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name,
+        Some(hsm_group_name),
     )
     .await;
 
     log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
     // Get list of xnames in HSM group
-    let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
+    let nodes: Vec<String> = hsm_group_details.unwrap().first().unwrap()["members"]["ids"]
         .as_array()
         .unwrap()
         .iter()
