@@ -1,5 +1,6 @@
 use comfy_table::Table;
-use mesa::{bos::template::mesa::r#struct::response_payload::BosSessionTemplate, common::node_ops};
+use mesa::bos::template::mesa::r#struct::response_payload::BosSessionTemplate;
+use mesa::node;
 use serde_json::Value;
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
@@ -42,7 +43,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
                     .as_ref()
                     .unwrap(),
                 &bos_template.enable_cfs.unwrap().to_string(),
-                &node_ops::string_vec_to_multi_line_string(Some(&target), 2),
+                &node::utils::string_vec_to_multi_line_string(Some(&target), 2),
                 &boot_set.1.etag.unwrap_or("".to_string()),
                 &boot_set.1.path.unwrap(),
             ]);
