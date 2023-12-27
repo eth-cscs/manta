@@ -38,7 +38,6 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         cfs_session_name_opt,
-        limit_number_opt,
         None,
     )
     .await
@@ -118,14 +117,15 @@ pub async fn exec(
                     .result_id
                     .as_deref();
 
-                let new_image_vec_rslt: Result<Vec<Image>, _> = mesa::ims::image::mesa::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    // hsm_group_name_vec,
-                    cfs_session_image_id,
-                )
-                .await;
+                let new_image_vec_rslt: Result<Vec<Image>, _> =
+                    mesa::ims::image::mesa::http_client::get(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        // hsm_group_name_vec,
+                        cfs_session_image_id,
+                    )
+                    .await;
 
                 // if new_image_id_vec_rslt.is_ok() && new_image_id_vec_rslt.as_ref().unwrap().first().is_some()
                 if let Ok(Some(new_image)) = new_image_vec_rslt

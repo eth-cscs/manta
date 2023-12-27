@@ -6,7 +6,7 @@ use mesa::{
     cfs::{
         self,
         configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
-        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
+        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     {capmc, hsm},
 };
@@ -157,7 +157,7 @@ pub async fn exec(
     let mut cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
-        let mut cfs_session = CfsSessionRequest::from_sat_file_serde_yaml(image_yaml);
+        let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml);
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", &tag);
@@ -194,7 +194,7 @@ pub async fn exec(
         let mut i = 0;
         let max = 1800; // Max ammount of attempts to check if CFS session has ended
         loop {
-            let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::get(
+            let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -204,29 +204,45 @@ pub async fn exec(
             .await
             .unwrap();
 
-            mesa::cfs::session::shasta::http_client::filter_by_hsm(
+            mesa::cfs::session::mesa::utils::filter_by_hsm(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &mut cfs_session_value_vec,
+                &mut cfs_session_vec,
                 hsm_group_available_vec,
                 Some(&1),
             )
             .await;
 
-            if !cfs_session_value_vec.is_empty()
-                && cfs_session_value_vec.first().unwrap()["status"]["session"]["status"]
+            if !cfs_session_vec.is_empty()
+                && cfs_session_vec
+                    .first()
+                    .unwrap()
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .session
+                    .as_ref()
+                    .unwrap()
+                    .status
+                    .as_ref()
+                    .unwrap()
                     .eq("complete")
                 && i <= max
             {
-                let cfs_session_aux: CfsSessionGetResponse =
-                    CfsSessionGetResponse::from_csm_api_json(
-                        cfs_session_value_vec.first().unwrap().clone(),
-                    );
+                /* let cfs_session_aux: CfsSessionGetResponse =
+                CfsSessionGetResponse::from_csm_api_json(
+                    cfs_session_value_vec.first().unwrap().clone(),
+                ); */
 
-                cfs_session_complete_vec.push(cfs_session_aux.clone());
+                let cfs_session = cfs_session_vec.first().unwrap();
 
-                log::info!("CFS session created: {}", cfs_session_aux.name.unwrap());
+                cfs_session_complete_vec.push(cfs_session.clone());
+
+                log::info!(
+                    "CFS session created: {}",
+                    cfs_session.name.as_ref().unwrap()
+                );
 
                 break;
             } else {
@@ -543,7 +559,7 @@ pub async fn process_session_template_section_in_sat_file(
         .await
         .unwrap();
 
-        mesa::cfs::configuration::shasta::http_client::filter(
+        mesa::cfs::configuration::shasta::utils::filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

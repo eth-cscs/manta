@@ -144,7 +144,7 @@ pub async fn delete_data_related_cfs_configuration(
     .await
     .unwrap();
 
-    mesa::cfs::session::shasta::http_client::filter(
+    mesa::cfs::session::shasta::utils::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

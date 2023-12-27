@@ -2,107 +2,6 @@ use comfy_table::Table;
 use mesa::cfs::session::mesa::r#struct::CfsSessionGetResponse;
 use serde_json::Value;
 
-/* pub fn cfs_session_value_to_vec(cfs_session: Value) -> Vec<String> {
-    let mut result = vec![cfs_session["name"].as_str().unwrap_or_default().to_string()];
-    result.push(
-        cfs_session
-            .pointer("/configuration/name")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/status/session/startTime")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/ansible/passthrough")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/ansible/verbosity")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/status/session/status")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/status/session/succeeded")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .pointer("/target/definition")
-            .unwrap()
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-    let target = if let Some(groups) = cfs_session.pointer("/target/groups").unwrap().as_array() {
-        groups
-            .iter()
-            .map(|group| group["name"].as_str().unwrap_or_default().to_string())
-            .collect::<Vec<String>>()
-            .join("\n")
-    } else {
-        cfs_session
-            .pointer("/ansible/limit")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .to_string()
-            .replace(',', "\n")
-    };
-    result.push(target);
-    /*     result.push(
-        cfs_session
-            .pointer("/target/groups")
-            .unwrap()
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|group| group["name"].as_str().unwrap_or_default().to_string())
-            .collect::<Vec<String>>()
-            .join(",\n"),
-    ); */
-    result.push(
-        cfs_session
-            .pointer("/status/artifacts")
-            .unwrap_or(&serde_json::Value::Array(Vec::new()))
-            .as_array()
-            .unwrap()
-            .first()
-            .unwrap_or(&serde_json::Value::String("".to_string()))["result_id"]
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-    );
-
-    result
-} */
-
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let mut result = vec![cfs_session.name.unwrap()];
     result.push(cfs_session.configuration.unwrap().name.unwrap());
@@ -181,7 +80,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
         .unwrap()
         .groups
         .as_ref()
-        .unwrap()
+        .unwrap_or(&Vec::new())
         .is_empty()
     {
         cfs_session

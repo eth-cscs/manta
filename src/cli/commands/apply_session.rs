@@ -5,7 +5,7 @@ use futures::TryStreamExt;
 use mesa::{
     cfs::{
         self, configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
-        session::mesa::r#struct::CfsSessionRequest,
+        session::mesa::r#struct::CfsSessionPostRequest,
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };
@@ -464,7 +464,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = CfsSessionRequest::new(
+    let session = CfsSessionPostRequest::new(
         cfs_session_name,
         cfs_configuration_name,
         limit,

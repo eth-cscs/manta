@@ -27,7 +27,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::cfs::session::shasta::http_client::filter_by_hsm(
+    mesa::cfs::session::shasta::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

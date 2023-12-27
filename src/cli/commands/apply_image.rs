@@ -7,7 +7,7 @@ use mesa::{
             cfs_configuration_request::CfsConfigurationRequest,
             cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionRequest},
+        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };
@@ -126,7 +126,7 @@ pub async fn exec(
     let mut cfs_session_resp_list = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        let mut cfs_session = CfsSessionRequest::from_sat_file_serde_yaml(image_yaml);
+        let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml);
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", tag);
