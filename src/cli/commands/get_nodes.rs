@@ -1,5 +1,7 @@
 use mesa::hsm;
 
+use crate::common::node_ops;
+
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
     shasta_token: &str,
@@ -91,6 +93,6 @@ pub async fn exec(
             serde_json::to_string_pretty(&node_details_list).unwrap()
         );
     } else {
-        mesa::node::utils::print_table(node_details_list);
+        node_ops::print_table(node_details_list);
     }
 }

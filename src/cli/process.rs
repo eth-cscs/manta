@@ -202,15 +202,22 @@ pub async fn process_cli(
                 )
                 .await;
 
+                let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
+                    Some(limit)
+                } else if let Some(true) = cli_get_template.get_one("most-recent") {
+                    Some(&1)
+                } else {
+                    None
+                };
+
                 get_template::exec(
-                    // hsm_group,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     &hsm_group_target_vec,
                     &hsm_member_vec,
                     cli_get_template.get_one::<String>("name"),
-                    cli_get_template.get_one::<u8>("limit"),
+                    limit_number_opt,
                 )
                 .await;
             } else if let Some(cli_get_node) = cli_get.subcommand_matches("cluster") {

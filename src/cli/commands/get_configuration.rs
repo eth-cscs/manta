@@ -1,6 +1,9 @@
 use mesa::cfs::{
     self,
-    configuration::mesa::r#struct::{Configuration, Layer},
+    configuration::{
+        mesa::r#struct::{Configuration, Layer},
+        shasta::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+    },
 };
 
 use crate::common::{cfs_configuration_utils::print_table_struct, gitea};
@@ -16,15 +19,16 @@ pub async fn exec(
     limit: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    let cfs_configuration_vec = cfs::configuration::mesa::http_client::get_and_filter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        configuration_name,
-        hsm_group_name_vec,
-        limit,
-    )
-    .await;
+    let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
+        cfs::configuration::mesa::http_client::get_and_filter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            configuration_name,
+            hsm_group_name_vec,
+            limit,
+        )
+        .await;
 
     if cfs_configuration_vec.is_empty() {
         println!("No CFS configuration found!");
@@ -68,13 +72,13 @@ pub async fn exec(
                 ));
             }
 
-            print_table_struct(Configuration::new(
+            crate::common::cfs_configuration_utils::print_table_details_struct(Configuration::new(
                 &most_recent_cfs_configuration.name,
                 &most_recent_cfs_configuration.last_updated,
                 layers,
             ));
         } else {
-            cfs::configuration::shasta::utils::print_table_struct(cfs_configuration_vec);
+            print_table_struct(cfs_configuration_vec);
         }
     }
 }

@@ -1,5 +1,8 @@
 use comfy_table::Table;
-use mesa::cfs::configuration::mesa::r#struct::Configuration;
+use mesa::cfs::configuration::{
+    mesa::r#struct::Configuration,
+    shasta::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+};
 use serde_json::Value;
 
 pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
@@ -51,7 +54,44 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
     println!("{table}");
 }
 
-pub fn print_table_struct(cfs_configuration: Configuration) {
+pub fn print_table_struct(cfs_configurations: Vec<CfsConfigurationResponse>) {
+    let mut table = Table::new();
+
+    table.set_header(vec!["Name", "Last updated", "Layers"]);
+
+    for cfs_configuration in cfs_configurations {
+        let mut layers: String = String::new();
+
+        if !cfs_configuration.layers.is_empty() {
+            let layers_json = cfs_configuration.layers;
+
+            layers = format!(
+                "COMMIT: {} NAME: {}",
+                layers_json[0].commit.as_ref().unwrap(),
+                layers_json[0].name
+            );
+
+            for layer in layers_json.iter().skip(1) {
+                layers = format!(
+                    "{}\nCOMMIT: {} NAME: {}",
+                    layers,
+                    layer.commit.as_ref().unwrap(),
+                    layer.name
+                );
+            }
+        }
+
+        table.add_row(vec![
+            cfs_configuration.name,
+            cfs_configuration.last_updated,
+            layers,
+        ]);
+    }
+
+    println!("{table}");
+}
+
+pub fn print_table_details_struct(cfs_configuration: Configuration) {
     let mut table = Table::new();
 
     table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);

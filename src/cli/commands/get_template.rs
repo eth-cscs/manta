@@ -12,6 +12,8 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
+    println!("DEBUG - limit {:#?}", limit_number_opt);
+
     let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -34,6 +36,6 @@ pub async fn exec(
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
-        mesa::bos::template::mesa::utils::print_table_struct(bos_sessiontemplate_vec);
+        crate::common::bos_sessiontemplate_utils::print_table_struct(bos_sessiontemplate_vec);
     }
 }
