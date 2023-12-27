@@ -194,13 +194,14 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let hsm_member_vec = mesa::hsm::utils::get_member_vec_from_hsm_name_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &hsm_group_target_vec,
-                )
-                .await;
+                let hsm_member_vec =
+                    mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        &hsm_group_target_vec,
+                    )
+                    .await;
 
                 let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
                     Some(limit)
@@ -836,13 +837,14 @@ pub async fn validate_target_hsm_members(
     )
     .await;
 
-    let hsm_member_vec_available_vec = mesa::hsm::utils::get_member_vec_from_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &hsm_name_available_vec,
-    )
-    .await;
+    let hsm_member_vec_available_vec =
+        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &hsm_name_available_vec,
+        )
+        .await;
 
     if hsm_group_members_opt
         .iter()

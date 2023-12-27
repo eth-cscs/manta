@@ -690,7 +690,7 @@ pub async fn process_session_template_section_in_sat_file(
 
         // Get nodes members of HSM group
         // Get HSM group details
-        let hsm_group_details = hsm::http_client::get_hsm_group(
+        let hsm_group_details = hsm::group::shasta::http_client::get_hsm_group(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

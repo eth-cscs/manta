@@ -52,7 +52,7 @@ pub async fn exec(
     }
 
     // Check HSM group in configurarion file can access CFS session
-    hsm::utils::validate_config_hsm_group_and_hsm_group_accessed(
+    hsm::group::shasta::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

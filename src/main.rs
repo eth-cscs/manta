@@ -26,11 +26,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .into_table()
         .unwrap();
 
-    /* let site_available_vec = site_detail_hashmap
-    .keys()
-    .map(|site| site.clone())
-    .collect::<Vec<String>>(); */
-
     let shasta_base_url = site_detail_value
         .get("shasta_base_url")
         .unwrap()

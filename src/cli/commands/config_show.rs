@@ -92,11 +92,15 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     if !realm_access_role_vec.is_empty() {
         realm_access_role_vec
     } else {
-        mesa::hsm::http_client::get_all_hsm_groups(shasta_token, shasta_base_url, shasta_root_cert)
-            .await
-            .unwrap()
-            .iter()
-            .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
-            .collect::<Vec<String>>()
+        mesa::hsm::group::shasta::http_client::get_all_hsm_groups(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
+        .collect::<Vec<String>>()
     }
 }

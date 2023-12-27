@@ -90,7 +90,7 @@ pub async fn exec(
 
         for v3 in v2 {
             let v4 = vec![v3.clone()];
-            let xnames: Vec<String> = hsm::utils::get_member_vec_from_hsm_name_vec(
+            let xnames: Vec<String> = hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

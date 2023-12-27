@@ -18,7 +18,7 @@ pub async fn get_details(
     let mut clusters_details = vec![];
 
     // Get HSM groups matching cluster name
-    let hsm_groups = hsm::http_client::get_hsm_group_vec(
+    let hsm_groups = hsm::group::shasta::http_client::get_hsm_group_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -31,7 +31,7 @@ pub async fn get_details(
         let hsm_group_name = hsm_group["label"].as_str().unwrap();
 
         let hsm_group_members: String =
-            hsm::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
+            hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
 
         // Get all CFS sessions
         let mut cfs_sessions_value_vec = mesa::cfs::session::shasta::http_client::get(
