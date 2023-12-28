@@ -45,7 +45,7 @@ pub async fn exec(
         .await
         .unwrap();
 
-        thread::sleep(time::Duration::from_secs(2));
+        tokio::time::sleep(time::Duration::from_secs(2)).await;
 
         let node_status = capmc::http_client::node_power_status::post(
             shasta_token,

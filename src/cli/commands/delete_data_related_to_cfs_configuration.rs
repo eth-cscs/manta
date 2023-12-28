@@ -771,7 +771,7 @@ pub async fn delete(
             ); */
             if deletion_rslt.is_err() && counter <= max_attempts {
                 log::warn!("Could not delete CFS session {} attempt {} of {}, trying again in 2 seconds...", cfs_session_name, counter, max_attempts);
-                thread::sleep(time::Duration::from_secs(2));
+                tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
                 eprint!(
@@ -813,7 +813,7 @@ pub async fn delete(
 
             if deletion_rslt.is_err() && counter <= max_attempts {
                 log::warn!("Could not delete BOS sessiontemplate {} attempt {} of {}, trying again in 2 seconds...", bos_sessiontemplate_name, counter, max_attempts);
-                thread::sleep(time::Duration::from_secs(2));
+                tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
                 eprint!(
@@ -844,7 +844,7 @@ pub async fn delete(
 
             if deletion_rslt.is_err() && counter <= max_attempts {
                 log::warn!("Could not delete CFS configuration {} attempt {} of {}, trying again in 2 seconds...", cfs_configuration, counter, max_attempts);
-                thread::sleep(time::Duration::from_secs(2));
+                tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
                 eprint!(

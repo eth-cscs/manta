@@ -253,7 +253,7 @@ pub async fn exec(
                     max
                 );
 
-                thread::sleep(time::Duration::from_secs(2));
+                tokio::time::sleep(time::Duration::from_secs(2)).await;
                 std::io::Write::flush(&mut std::io::stdout()).unwrap();
 
                 i += 1;
