@@ -287,11 +287,11 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         )
         .await?;
         let hsm_configuration_state =
-            &mesa::hsm::component_status::shasta::http_client::get_component_status(
+            &mesa::hsm::component_status::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &xname,
+                &vec![xname.clone()],
             )
             .await?["State"];
         log::info!(
