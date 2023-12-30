@@ -1,11 +1,10 @@
 use core::time;
-use std::{path::PathBuf, thread};
+use std::path::PathBuf;
 
-// use clap::ArgMatches;
 use mesa::{
     cfs::{
         self,
-        configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
+        configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
         session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     {capmc, hsm},
@@ -123,7 +122,7 @@ pub async fn exec(
             cfs_configuration_value
         );
 
-        let cfs_configuration_value_rslt = cfs::configuration::shasta::http_client::put(
+        let cfs_configuration_value_rslt = cfs::configuration::mesa::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -132,24 +131,20 @@ pub async fn exec(
         )
         .await;
 
-        let cfs_configuration_value =
-            if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
-                cfs_configuration_value
-            } else {
-                eprintln!("CFS configuration creation failed. Exit");
-                std::process::exit(1);
-            };
+        let cfs_configuration = if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
+            cfs_configuration_value
+        } else {
+            eprintln!("CFS configuration creation failed. Exit");
+            std::process::exit(1);
+        };
 
-        let cfs_configuration_name = cfs_configuration_value["name"]
-            .as_str()
-            .unwrap()
-            .to_string();
+        let cfs_configuration_name = cfs_configuration.name.to_string();
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 
         log::info!("CFS configuration created: {}", cfs_configuration_name);
 
-        cfs_configuration_value_vec.push(cfs_configuration_value.clone());
+        cfs_configuration_value_vec.push(cfs_configuration.clone());
     }
 
     // Process "images" section in SAT file
@@ -550,7 +545,7 @@ pub async fn process_session_template_section_in_sat_file(
             .to_string()
             .replace("__DATE__", tag);
 
-        let mut cfs_configuration_value_vec = mesa::cfs::configuration::shasta::http_client::get(
+        let mut cfs_configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -559,18 +554,18 @@ pub async fn process_session_template_section_in_sat_file(
         .await
         .unwrap();
 
-        mesa::cfs::configuration::shasta::utils::filter(
+        mesa::cfs::configuration::mesa::utils::filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &mut cfs_configuration_value_vec,
-            Some(hsm_group_available_vec),
+            &mut cfs_configuration_vec,
             None,
+            hsm_group_available_vec,
             None,
         )
         .await;
 
-        if cfs_configuration_value_vec.is_empty() {
+        if cfs_configuration_vec.is_empty() {
             eprintln!(
                 "ERROR: BOS session template configuration not found in SAT file image list."
             );

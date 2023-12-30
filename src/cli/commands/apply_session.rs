@@ -4,12 +4,11 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{
-        self, configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest,
+        self, configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
         session::mesa::r#struct::CfsSessionPostRequest,
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
 };
-use serde_json::Value;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
@@ -225,7 +224,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions: Vec<Value> = mesa::cfs::session::shasta::http_client::get(
+    let cfs_sessions = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -237,17 +236,33 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
         .filter(|cfs_session| {
-            cfs_session["status"]["session"]["status"].eq("pending")
-                || cfs_session["status"]["session"]["status"].eq("running")
+            vec!["running", "pending"].contains(
+                &cfs_session
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .session
+                    .as_ref()
+                    .unwrap()
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .as_str(),
+            )
         })
-        .flat_map(|cfs_session| {
-            cfs_session["ansible"]["limit"]
-                .as_str()
-                .map(|limit| limit.split(','))
+        .map(|cfs_session| {
+            cfs_session
+                .ansible
+                .as_ref()
+                .unwrap()
+                .limit
+                .as_ref()
+                .unwrap()
+                .split(',')
         })
         .flatten()
         .map(|xname| xname.trim())
-        .collect(); // TODO: remove duplicates
+        .collect(); // TODO: remove duplicates... sort() + dedup() ???
 
     log::info!(
         "Nodes with cfs session running or pending: {:?}",
@@ -286,14 +301,13 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             &xname,
         )
         .await?;
-        let hsm_configuration_state =
-            &mesa::hsm::component_status::shasta::http_client::get(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &vec![xname.clone()],
-            )
-            .await?["State"];
+        let hsm_configuration_state = &mesa::hsm::component_status::shasta::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &vec![xname.clone()],
+        )
+        .await?["State"];
         log::info!(
             "HSM component state for component {}: {}",
             xname,
@@ -433,7 +447,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     );
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = cfs::configuration::shasta::http_client::put(
+    let cfs_configuration_resp = cfs::configuration::mesa::http_client::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -448,10 +462,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     );
 
     let cfs_configuration_name = match cfs_configuration_resp {
-        Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
-            .as_str()
-            .unwrap()
-            .to_string(),
+        Ok(_) => &cfs_configuration_resp.as_ref().unwrap().name,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
@@ -467,7 +478,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     let session = CfsSessionPostRequest::new(
         cfs_session_name,
-        cfs_configuration_name,
+        cfs_configuration_name.clone(),
         limit,
         ansible_verbosity,
         ansible_passthrough,

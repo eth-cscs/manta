@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use mesa::{
     cfs::{
         self,
-        configuration::shasta::r#struct::{
+        configuration::mesa::r#struct::{
             cfs_configuration_request::CfsConfigurationRequest,
             cfs_configuration_response::CfsConfigurationResponse,
         },

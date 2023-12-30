@@ -15,7 +15,7 @@ pub async fn exec(
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let mut cfs_sessions_resp = mesa::cfs::session::shasta::http_client::get(
+    let mut cfs_sessions_resp = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -25,7 +25,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::cfs::session::shasta::utils::filter(
+    mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -52,7 +52,7 @@ pub async fn exec(
     }
 
     // Check HSM group in configurarion file can access CFS session
-    hsm::group::shasta::utils::validate_config_hsm_group_and_hsm_group_accessed(
+    hsm::group::mesa::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -62,7 +62,7 @@ pub async fn exec(
     )
     .await;
 
-    let cfs_session_name: &str = cfs_sessions_resp.last().unwrap()["name"].as_str().unwrap();
+    let cfs_session_name: &str = cfs_sessions_resp.last().unwrap().name.as_ref().unwrap();
 
     let shasta_k8s_secrets =
         fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;

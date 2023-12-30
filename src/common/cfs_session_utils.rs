@@ -1,6 +1,5 @@
 use comfy_table::Table;
 use mesa::cfs::session::mesa::r#struct::CfsSessionGetResponse;
-use serde_json::Value;
 
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let mut result = vec![cfs_session.name.unwrap()];
@@ -168,7 +167,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    let cfs_sessions_value_list = mesa::cfs::session::shasta::http_client::get(
+    let cfs_sessions_value_list = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -193,26 +192,37 @@ pub async fn get_image_id_from_cfs_session_list(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
-    cfs_sessions_value_list: &[Value],
+    cfs_sessions_value_list: &[CfsSessionGetResponse],
 ) -> Option<String> {
     // Filter CFS sessions to the ones related to CFS configuration and built an image (target
     // definition is 'image' and it actually has at least one artifact)
     let cfs_session_value_target_list =
         cfs_sessions_value_list.iter().filter(|cfs_session_value| {
             cfs_session_value
-                .pointer("/configuration/name")
+                .configuration
+                .as_ref()
                 .unwrap()
-                .as_str()
+                .name
+                .as_ref()
                 .unwrap()
-                .to_string()
                 .eq(cfs_configuration_name)
                 && cfs_session_value
-                    .pointer("/target/definition")
+                    .target
+                    .as_ref()
                     .unwrap()
-                    .as_str()
+                    .definition
+                    .as_ref()
                     .unwrap()
                     .eq("image")
-                && cfs_session_value.pointer("/status/artifacts/0").is_some()
+                && cfs_session_value
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .artifacts
+                    .as_ref()
+                    .unwrap()
+                    .first()
+                    .is_some()
         });
 
     log::debug!(
@@ -225,16 +235,24 @@ pub async fn get_image_id_from_cfs_session_list(
     for cfs_session_value_target in cfs_session_value_target_list {
         log::debug!("CFS session details:\n{:#?}", cfs_session_value_target);
 
-        let cfs_session_name = cfs_session_value_target["name"].as_str().unwrap();
+        let cfs_session_name = cfs_session_value_target.name.as_ref().unwrap();
 
         let image_id = cfs_session_value_target
-            .pointer("/status/artifacts/0/result_id")
+            .status
+            .as_ref()
             .unwrap()
-            .as_str();
+            .artifacts
+            .as_ref()
+            .unwrap()
+            .first()
+            .unwrap()
+            .result_id
+            .as_ref()
+            .unwrap();
 
         log::info!(
             "Checking image ID {} in CFS session {} exists",
-            image_id.unwrap(),
+            image_id,
             cfs_session_name
         );
 
@@ -243,7 +261,7 @@ pub async fn get_image_id_from_cfs_session_list(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            image_id,
+            Some(image_id),
         )
         .await
         .is_ok()
@@ -251,10 +269,10 @@ pub async fn get_image_id_from_cfs_session_list(
             log::info!(
                 "Image ID found related to CFS sesison {} is {}",
                 cfs_session_name,
-                image_id.unwrap()
+                image_id
             );
 
-            return image_id.map(String::from); // from https://users.rust-lang.org/t/convert-option-str-to-option-string/20533/2
+            return Some(image_id.to_string()); // from https://users.rust-lang.org/t/convert-option-str-to-option-string/20533/2
         };
     }
 

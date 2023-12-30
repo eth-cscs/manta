@@ -1,5 +1,5 @@
 use core::time;
-use std::{collections::HashMap, thread};
+use std::collections::HashMap;
 
 use chrono::NaiveDateTime;
 use comfy_table::Table;
@@ -23,6 +23,14 @@ pub async fn delete_data_related_cfs_configuration(
     until_opt: Option<NaiveDateTime>,
     force: &bool,
 ) {
+    if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
+        eprintln!(
+            "No access to HSM group {}. Exit",
+            hsm_group_name_opt.unwrap()
+        );
+        std::process::exit(1);
+    }
+
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //
 
@@ -53,7 +61,7 @@ pub async fn delete_data_related_cfs_configuration(
     .unwrap();
 
     // Get all CFS configurations in CSM
-    let mut cfs_configuration_value_vec = cfs::configuration::shasta::http_client::get(
+    let mut cfs_configuration_vec = cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -62,48 +70,60 @@ pub async fn delete_data_related_cfs_configuration(
     .await
     .unwrap();
 
+    cfs::configuration::mesa::utils::filter(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_configuration_vec,
+        None,
+        &vec![hsm_group_name_opt.unwrap().to_string()],
+        None,
+    ).await;
+
     // Filter CFS configurations based on user input
     if let (Some(since), Some(until)) = (since_opt, until_opt) {
-        cfs_configuration_value_vec.retain(|cfs_configuration_value| {
-            let date = chrono::DateTime::parse_from_rfc3339(
-                cfs_configuration_value["lastUpdated"].as_str().unwrap(),
-            )
-            .unwrap()
-            .naive_utc();
+        cfs_configuration_vec.retain(|cfs_configuration_value| {
+            let date = chrono::DateTime::parse_from_rfc3339(&cfs_configuration_value.last_updated)
+                .unwrap()
+                .naive_utc();
 
             since <= date && date < until
         });
     } else if let Some(cfs_configuration_name) = cfs_configuration_name_opt {
-        cfs_configuration_value_vec.retain(|cfs_configuration_value| {
-            cfs_configuration_value["name"]
-                .as_str()
-                .unwrap()
+        cfs_configuration_vec.retain(|cfs_configuration_value| {
+            cfs_configuration_value
+                .name
                 .eq_ignore_ascii_case(cfs_configuration_name)
         });
     }
 
     // Get list CFS configuration names
-    let mut cfs_configuration_name_vec = cfs_configuration_value_vec
+    let mut cfs_configuration_name_vec = cfs_configuration_vec
         .iter()
-        .map(|configuration_value| configuration_value["name"].as_str().unwrap())
-        .collect::<Vec<&str>>();
+        .map(|configuration_value| configuration_value.name.clone())
+        .collect::<Vec<String>>();
 
     // Check images related to CFS configurations to delete are not used to boot nodes. For
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     // deletes all CFS sessions every now and then
     //
     // Get all BOS session templates
-    let bos_sessiontemplate_value_vec = mesa::bos::template::shasta::http_client::get_and_filter(
+    let mut bos_sessiontemplate_value_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &hsm_name_available_vec,
-        None,
-        Some(cfs_configuration_name_vec.clone()),
         None,
     )
     .await
     .unwrap();
+
+    mesa::bos::template::mesa::utils::filter(
+        &mut bos_sessiontemplate_value_vec,
+        &hsm_name_available_vec,
+        cfs_configuration_name_opt.map(|elem| elem.as_str()),
+        None,
+    )
+    .await;
 
     // Filter BOS sessiontemplates related to CFS configurations to be deleted
     //
@@ -123,9 +143,11 @@ pub async fn delete_data_related_cfs_configuration(
         .iter()
         .map(|bos_sessiontemplate_value| {
             bos_sessiontemplate_value
-                .pointer("/cfs/configuration")
+                .cfs
+                .as_ref()
                 .unwrap()
-                .as_str()
+                .configuration
+                .as_ref()
                 .unwrap()
         });
 
@@ -134,7 +156,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all CFS sessions
-    let mut cfs_session_value_vec = mesa::cfs::session::shasta::http_client::get(
+    let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -144,53 +166,58 @@ pub async fn delete_data_related_cfs_configuration(
     .await
     .unwrap();
 
-    mesa::cfs::session::shasta::utils::filter(
+    mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &mut cfs_session_value_vec,
+        &mut cfs_session_vec,
         &hsm_name_available_vec,
         None,
     )
     .await;
 
     // Filter CFS sessions containing /configuration/name field
-    cfs_session_value_vec.retain(|cfs_session_value| {
+    cfs_session_vec.retain(|cfs_session_value| {
         cfs_configuration_name_vec.contains(
-            &cfs_session_value
-                .pointer("/configuration/name")
+            cfs_session_value
+                .configuration
+                .as_ref()
                 .unwrap()
-                .as_str()
+                .name
+                .as_ref()
                 .unwrap(),
         )
     });
 
     // Get CFS configurations related with CFS sessions
     let cfs_configuration_name_from_cfs_sessions =
-        cfs_session_value_vec.iter().map(|cfs_session_value| {
+        cfs_session_vec.iter().map(|cfs_session_value| {
             cfs_session_value
-                .pointer("/configuration/name")
+                .configuration
+                .as_ref()
                 .unwrap()
-                .as_str()
+                .name
+                .as_ref()
                 .unwrap()
         });
 
     // Get list of CFS configuration names related to CFS sessions and BOS sessiontemplates
     cfs_configuration_name_vec = cfs_configuration_name_from_bos_sessiontemplate_value_iter
         .chain(cfs_configuration_name_from_cfs_sessions)
-        .collect::<Vec<&str>>();
+        .cloned()
+        .collect::<Vec<String>>();
     cfs_configuration_name_vec.sort();
     cfs_configuration_name_vec.dedup();
 
     // Get list of CFS configuration serde values related to CFS sessions and BOS
     // sessiontemplates
-    cfs_configuration_value_vec.retain(|cfs_configuration_value| {
-        cfs_configuration_name_vec.contains(&cfs_configuration_value["name"].as_str().unwrap())
+    cfs_configuration_vec.retain(|cfs_configuration_value| {
+        cfs_configuration_name_vec.contains(&cfs_configuration_value.name)
     });
 
     // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
     let image_id_from_cfs_session_vec =
-        cfs::session::shasta::utils::get_image_id_from_cfs_session_vec(&cfs_session_value_vec);
+        cfs::session::mesa::utils::get_image_id_from_cfs_session_vec(&cfs_session_vec);
 
     // Get image ids from BOS session template related to CFS configuration to delete
     let image_id_from_bos_sessiontemplate_vec =
@@ -214,6 +241,8 @@ pub async fn delete_data_related_cfs_configuration(
     image_id_vec.sort();
     image_id_vec.dedup();
 
+    log::info!("Image IDs found: {:?}", image_id_vec);
+
     // Filter list of image ids by removing the ones that does not exists. This is because we
     // currently image id list contains the values from CFS session and BOS sessiontemplate
     // which does not means the image still exists (the image perse could have been deleted
@@ -228,10 +257,13 @@ pub async fn delete_data_related_cfs_configuration(
             Some(image_id),
         )
         .await
-        .unwrap()
+        .unwrap_or(vec![])
         .is_empty()
         {
-            log::info!("Image ID {} exists", image_id);
+            log::info!("Artifact for image ID {} exists", image_id);
+            image_id_filtered_vec.push(image_id);
+        } else {
+            log::info!("Artifact for image ID {} does NOT exists", image_id);
             image_id_filtered_vec.push(image_id);
         }
     }
@@ -246,21 +278,33 @@ pub async fn delete_data_related_cfs_configuration(
     log::info!("Image ids to delete: {:?}", image_id_vec);
 
     // Get list of CFS session name, CFS configuration name and image id
-    let cfs_session_cfs_configuration_image_id_tuple_vec: Vec<(&str, &str, &str)> =
-        cfs_session_value_vec
+    let cfs_session_cfs_configuration_image_id_tuple_vec: Vec<(String, String, String)> =
+        cfs_session_vec
             .iter()
             .map(|cfs_session_value| {
                 (
-                    cfs_session_value["name"].as_str().unwrap(),
+                    cfs_session_value.name.clone().unwrap(),
                     cfs_session_value
-                        .pointer("/configuration/name")
+                        .configuration
+                        .as_ref()
                         .unwrap()
-                        .as_str()
-                        .unwrap(),
+                        .name
+                        .as_ref()
+                        .unwrap()
+                        .clone(),
                     cfs_session_value
-                        .pointer("/status/artifacts/0/result_id")
-                        .and_then(|result_id| result_id.as_str())
-                        .unwrap_or(""),
+                        .status
+                        .as_ref()
+                        .unwrap()
+                        .artifacts
+                        .as_ref()
+                        .unwrap()
+                        .first()
+                        .unwrap()
+                        .result_id
+                        .as_ref()
+                        .unwrap_or(&"".to_string())
+                        .clone(),
                 )
             })
             .collect();
@@ -270,17 +314,17 @@ pub async fn delete_data_related_cfs_configuration(
         Vec::new();
 
     for bos_sessiontemplate_value in &bos_sessiontemplate_value_vec {
-        let cfs_session_name = bos_sessiontemplate_value["name"].as_str().unwrap();
+        let cfs_session_name = bos_sessiontemplate_value.name.as_ref().unwrap();
         let cfs_configuration_name = bos_sessiontemplate_value
-            .pointer("/cfs/configuration")
+            .cfs
+            .as_ref()
             .unwrap()
-            .as_str()
+            .configuration
+            .as_ref()
             .unwrap();
-        for (_, boot_set_prop) in bos_sessiontemplate_value["boot_sets"].as_object().unwrap() {
-            let image_id = if let Some(image_path_value) = boot_set_prop.get("path") {
+        for (_, boot_set_prop) in bos_sessiontemplate_value.boot_sets.as_ref().unwrap() {
+            let image_id = if let Some(image_path_value) = boot_set_prop.path.as_ref() {
                 image_path_value
-                    .as_str()
-                    .unwrap()
                     .strip_prefix("s3://boot-images/")
                     .unwrap()
                     .strip_suffix("/manifest.json")
@@ -290,7 +334,7 @@ pub async fn delete_data_related_cfs_configuration(
             };
 
             bos_sessiontemplate_cfs_configuration_image_id_tuple_vec.push((
-                cfs_session_name,
+                &cfs_session_name,
                 cfs_configuration_name,
                 image_id,
             ));
@@ -379,29 +423,30 @@ pub async fn delete_data_related_cfs_configuration(
     // Get final list of CFS configuration serde values related to CFS sessions and BOS
     // sessiontemplates and excluding the CFS sessions to keep (in case user decides to
     // force the deletion operation)
-    cfs_configuration_value_vec.retain(|cfs_configuration_value| {
-        !cfs_configuration_name_to_keep_vec
-            .contains(&cfs_configuration_value["name"].as_str().unwrap())
+    cfs_configuration_vec.retain(|cfs_configuration_value| {
+        !cfs_configuration_name_to_keep_vec.contains(&cfs_configuration_value.name.as_str())
     });
 
-    let cfs_session_cfs_configuration_image_id_tuple_filtered_vec: Vec<(&str, &str, &str)>;
+    let cfs_session_cfs_configuration_image_id_tuple_filtered_vec: Vec<(String, String, String)>;
     let bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec: Vec<(&str, &str, &str)>;
 
     if !cfs_configuration_name_to_keep_vec.is_empty() || !image_id_to_keep_vec.is_empty() {
         if *force {
             cfs_configuration_name_vec.retain(|cfs_configuration_name| {
-                !cfs_configuration_name_to_keep_vec.contains(cfs_configuration_name)
+                !cfs_configuration_name_to_keep_vec.contains(&cfs_configuration_name.as_str())
             });
 
             image_id_vec.retain(|image_id| !image_id_to_keep_vec.contains(image_id));
 
             cfs_session_cfs_configuration_image_id_tuple_filtered_vec =
                 cfs_session_cfs_configuration_image_id_tuple_vec
-                    .into_iter()
+                    .iter()
                     .filter(|(_, cfs_configuration_name, image_id)| {
-                        !cfs_configuration_name_to_keep_vec.contains(cfs_configuration_name)
-                            && !image_id_to_keep_vec.contains(image_id)
+                        !cfs_configuration_name_to_keep_vec
+                            .contains(&cfs_configuration_name.as_str())
+                            && !image_id_to_keep_vec.contains(&image_id.as_str())
                     })
+                    .cloned()
                     .collect();
 
             bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec =
@@ -554,9 +599,9 @@ pub async fn delete_data_related_cfs_configuration(
 
     for cfs_session_tuple in &cfs_session_cfs_configuration_image_id_tuple_filtered_vec {
         cfs_session_table.add_row(vec![
-            cfs_session_tuple.0,
-            cfs_session_tuple.1,
-            cfs_session_tuple.2,
+            cfs_session_tuple.0.clone(),
+            cfs_session_tuple.1.clone(),
+            cfs_session_tuple.2.clone(),
         ]);
     }
 
@@ -586,10 +631,10 @@ pub async fn delete_data_related_cfs_configuration(
 
     cfs_configuration_table.set_header(vec!["Name", "Last Update"]);
 
-    for cfs_configuration_value in &cfs_configuration_value_vec {
+    for cfs_configuration_value in cfs_configuration_vec {
         cfs_configuration_table.add_row(vec![
-            cfs_configuration_value["name"].as_str().unwrap(),
-            cfs_configuration_value["lastUpdated"].as_str().unwrap(),
+            cfs_configuration_value.name,
+            cfs_configuration_value.last_updated,
         ]);
     }
 
@@ -645,12 +690,15 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &cfs_configuration_name_vec,
+        &cfs_configuration_name_vec
+            .iter()
+            .map(|cfs_config| cfs_config.as_str())
+            .collect(),
         &image_id_vec,
         // &cfs_components,
         &cfs_session_cfs_configuration_image_id_tuple_filtered_vec
-            .into_iter()
-            .map(|(session, _, _)| session)
+            .iter()
+            .map(|(session, _, _)| session.as_str())
             .collect(),
         &bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec
             .into_iter()

@@ -1,8 +1,8 @@
 use mesa::cfs::{
     self,
-    configuration::{
-        mesa::r#struct::{Configuration, Layer},
-        shasta::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+    configuration::mesa::r#struct::{
+        cfs_configuration::{Configuration, Layer},
+        cfs_configuration_response::CfsConfigurationResponse,
     },
 };
 
@@ -78,7 +78,7 @@ pub async fn exec(
                 layers,
             ));
         } else {
-            print_table_struct(cfs_configuration_vec);
+            print_table_struct(&cfs_configuration_vec);
         }
     }
 }

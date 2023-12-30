@@ -30,21 +30,22 @@ pub async fn exec(
             error.to_string()
         ),
     };
-    let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let bos_templates = mesa::bos::template::shasta::http_client::get_and_filter(
+
+    let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &_empty_hsm_group_name,
-        Option::from(bos.unwrap()),
-        None,
-        None,
+        bos,
     )
     .await
     .unwrap_or_default();
+
+    mesa::bos::template::mesa::utils::filter(&mut bos_sessiontemplate_vec, &vec![], None, None)
+        .await;
+
     let mut download_counter = 1;
 
-    if bos_templates.is_empty() {
+    if bos_sessiontemplate_vec.is_empty() {
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
@@ -61,7 +62,7 @@ pub async fn exec(
         );
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
-        let _bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
+        let _bosjson = serde_json::to_writer(&bos_file, &bos_sessiontemplate_vec[0]);
         download_counter = download_counter + 1;
 
         // HSM group -----------------------------------------------------------------------------
@@ -77,8 +78,15 @@ pub async fn exec(
         );
         download_counter = download_counter + 1;
 
-        let my_hsm_groups_vec = &bos_templates[0]["boot_sets"]["compute"]["node_groups"]
-            .as_array()
+        let my_hsm_groups_vec = &bos_sessiontemplate_vec[0]
+            .boot_sets
+            .as_ref()
+            .unwrap()
+            .get("compute")
+            .as_ref()
+            .unwrap()
+            .node_groups
+            .as_ref()
             .unwrap()
             .to_owned();
         let v2: Vec<String> = my_hsm_groups_vec
@@ -104,30 +112,33 @@ pub async fn exec(
         let _hsmjson = serde_json::to_writer(&hsm_file, &hsm_map);
 
         // CFS ------------------------------------------------------------------------------------
-        let configuration_name = &bos_templates[0]["cfs"]["configuration"]
-            .to_owned()
-            .to_string();
-        let mut cn = configuration_name.chars();
-        cn.next();
-        cn.next_back();
+        let configuration_name = &bos_sessiontemplate_vec[0]
+            .cfs
+            .as_ref()
+            .unwrap()
+            .configuration
+            .as_ref()
+            .unwrap();
+        let mut configuration_name_clean = configuration_name.chars();
+        configuration_name_clean.next();
+        configuration_name_clean.next_back();
         // cn.as_str();
-        let configuration_name_clean = String::from(cn.as_str());
         let cfs_configurations = cfs::configuration::mesa::http_client::get_and_filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            Option::from(configuration_name_clean).as_ref(),
-            &_empty_hsm_group_name,
+            Some(&configuration_name_clean.as_str().to_string()),
+            &vec![],
             // Option::from(true),
             Some(&1), // limit 1 means most recent
         )
         .await;
-        let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
+        let cfs_file_name = String::from(configuration_name.as_str()) + ".json";
         let cfs_file_path = dest_path.join(&cfs_file_name);
         let cfs_file = File::create(&cfs_file_path).expect("cfs.json file could not be created.");
         println!(
             "Downloading CFS configuration {} to {} [{}/{}]",
-            cn.clone().as_str(),
+            configuration_name.as_str(),
             &cfs_file_path.clone().to_string_lossy(),
             &download_counter,
             &files2download.len() + 2
@@ -139,12 +150,10 @@ pub async fn exec(
 
         // Image ----------------------------------------------------------------------------------
         for (_boot_sets_param, boot_sets_value) in
-            bos_templates[0]["boot_sets"].as_object().unwrap()
+            bos_sessiontemplate_vec[0].boot_sets.as_ref().unwrap()
         {
-            if let Some(path) = boot_sets_value.get("path") {
+            if let Some(path) = boot_sets_value.path.as_ref() {
                 let image_id_related_to_bos_sessiontemplate = path
-                    .as_str()
-                    .unwrap()
                     .trim_start_matches("s3://boot-images/")
                     .trim_end_matches("/manifest.json")
                     .to_string();

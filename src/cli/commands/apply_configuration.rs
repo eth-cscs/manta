@@ -1,4 +1,4 @@
-use mesa::cfs::configuration::shasta::r#struct::cfs_configuration_request::CfsConfigurationRequest;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest;
 use serde_yaml::Value;
 use std::path::PathBuf;
 
@@ -63,7 +63,7 @@ pub async fn exec(
             cfs_configuration_value
         );
 
-        let cfs_configuration_value_rslt = mesa::cfs::configuration::shasta::http_client::put(
+        let cfs_configuration_rslt = mesa::cfs::configuration::mesa::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -74,21 +74,17 @@ pub async fn exec(
 
         log::debug!(
             "CFS configuration creation response:\n{:#?}",
-            cfs_configuration_value_rslt
+            cfs_configuration_rslt
         );
 
-        let cfs_configuration_value =
-            if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
-                cfs_configuration_value
-            } else {
-                eprintln!("CFS configuration creation failed");
-                std::process::exit(1);
-            };
+        let cfs_configuration_value = if let Ok(cfs_configuration_value) = cfs_configuration_rslt {
+            cfs_configuration_value
+        } else {
+            eprintln!("CFS configuration creation failed");
+            std::process::exit(1);
+        };
 
-        let cfs_configuration_name = cfs_configuration_value["name"]
-            .as_str()
-            .unwrap()
-            .to_string();
+        let cfs_configuration_name = cfs_configuration_value.name.to_string();
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 
@@ -103,7 +99,7 @@ pub async fn exec(
                 serde_json::to_string_pretty(&cfs_configuration_value).unwrap()
             );
         } else {
-            cfs_configuration_utils::print_table_value(&cfs_configuration_value_vec);
+            cfs_configuration_utils::print_table_struct(&cfs_configuration_value_vec);
         }
     }
 

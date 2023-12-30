@@ -25,10 +25,9 @@ pub async fn exec(
 
     bos_sessiontemplate_vec = mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_vec,
-        hsm_group_name_vec,
         hsm_member_vec,
-        limit_number_opt,
         None,
+        limit_number_opt,
     )
     .await;
 

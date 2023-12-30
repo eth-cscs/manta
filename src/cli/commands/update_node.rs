@@ -14,11 +14,11 @@ pub async fn exec(
 ) {
     let need_restart = boot_image_configuration_opt.is_some();
 
-    let desired_configuration_detail_list_rslt = cfs::configuration::shasta::http_client::get(
+    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        desired_configuration_opt.map(|config| config.as_str()),
+        desired_configuration_opt,
     )
     .await;
 
@@ -36,10 +36,11 @@ pub async fn exec(
             desired_configuration_detail_list
         );
 
-        desired_configuration_detail_list.first().unwrap()["name"]
-            .as_str()
+        desired_configuration_detail_list
+            .first()
             .unwrap()
-            .to_string()
+            .name
+            .clone()
     } else {
         eprintln!(
             "Desired configuration {} does not exists. Exit",
