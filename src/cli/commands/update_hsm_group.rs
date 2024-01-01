@@ -195,7 +195,6 @@ pub async fn exec(
             shasta_root_cert,
             nodes,
             Some("Update node boot params and/or desired configuration".to_string()),
-            need_restart,
         )
         .await;
 

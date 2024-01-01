@@ -6,13 +6,13 @@ use k8s_openapi::chrono;
 use mesa::common::authentication;
 
 use super::commands::{
-    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_node_off,
-    apply_node_on, apply_node_reset, apply_session, config_set_hsm, config_set_log,
+    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_session, config_set_hsm, config_set_log,
     config_set_site, config_show, config_unset_auth, config_unset_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, migrate_backup,
-    update_hsm_group, update_node,
+    power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
+    power_reset_nodes, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -102,7 +102,167 @@ pub async fn process_cli(
             std::process::exit(1);
         } */
 
-        if let Some(cli_get) = cli_root.subcommand_matches("get") {
+        if let Some(cli_power) = cli_root.subcommand_matches("power") {
+            if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
+                if let Some(cli_power_on_cluster) = cli_power_on.subcommand_matches("cluster") {
+                    let hsm_group_name_arg_opt =
+                        cli_power_on_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_name =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    let _ = validate_target_hsm_name(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    power_on_cluster::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                    )
+                    .await;
+                } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("node") {
+                    let node_names = cli_power_on_node.get_one::<String>("NODE_NAME").unwrap();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names
+                            .split(",")
+                            .map(|xname| xname.trim().to_string())
+                            .collect(),
+                    )
+                    .await;
+
+                    power_on_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_power_on_node.get_one::<String>("reason").cloned(),
+                    )
+                    .await;
+                }
+            } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
+                if let Some(cli_power_off_cluster) = cli_power_off.subcommand_matches("cluster") {
+                    let hsm_group_name_arg_opt =
+                        cli_power_off_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_name =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    let _ = validate_target_hsm_name(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    power_off_cluster::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                    )
+                    .await;
+                } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("node") {
+                    let node_names = cli_power_off_node.get_one::<String>("NODE_NAME").unwrap();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names
+                            .split(",")
+                            .map(|xname| xname.trim().to_string())
+                            .collect(),
+                    )
+                    .await;
+
+                    power_off_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_power_off_node.get_one::<String>("reason").cloned(),
+                        *cli_power_off_node.get_one::<bool>("force").unwrap(),
+                    )
+                    .await;
+                }
+            } else if let Some(cli_power_reset) = cli_power.subcommand_matches("reset") {
+                if let Some(cli_power_reset_cluster) = cli_power_reset.subcommand_matches("cluster")
+                {
+                    let hsm_group_name_arg_opt =
+                        cli_power_reset_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_name =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    let _ = validate_target_hsm_name(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    power_reset_cluster::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                    )
+                    .await;
+                } else if let Some(cli_power_reset_node) =
+                    cli_power_reset.subcommand_matches("node")
+                {
+                    let node_names = cli_power_reset_node.get_one::<String>("NODE_NAME").unwrap();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names
+                            .split(",")
+                            .map(|xname| xname.trim().to_string())
+                            .collect(),
+                    )
+                    .await;
+
+                    power_reset_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_power_reset_node.get_one::<String>("reason").cloned(),
+                        *cli_power_reset_node.get_one::<bool>("force").unwrap(),
+                    )
+                    .await;
+                }
+            }
+        } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
             if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
                 let hsm_group_name_arg_opt = cli_get_configuration.get_one::<String>("hsm-group");
 
@@ -487,7 +647,7 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
                 if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                    apply_node_on::exec(
+                    /* apply_node_on::exec(
                         settings_hsm_group_name_opt,
                         shasta_token,
                         shasta_base_url,
@@ -500,9 +660,33 @@ pub async fn process_cli(
                             .collect(),
                         cli_apply_node_on.get_one::<String>("reason").cloned(),
                     )
+                    .await; */
+
+                    let node_names: Vec<String> = cli_apply_node_on
+                        .get_one::<String>("XNAMES")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names,
+                    )
+                    .await;
+
+                    power_on_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_apply_node_on.get_one::<String>("reason").cloned(),
+                    )
                     .await;
                 } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                    apply_node_off::exec(
+                    /* apply_node_off::exec(
                         settings_hsm_group_name_opt,
                         shasta_token,
                         shasta_base_url,
@@ -516,11 +700,36 @@ pub async fn process_cli(
                         cli_apply_node_off.get_one::<String>("reason").cloned(),
                         *cli_apply_node_off.get_one::<bool>("force").unwrap(),
                     )
+                    .await; */
+
+                    let node_names: Vec<String> = cli_apply_node_off
+                        .get_one::<String>("XNAMES")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names,
+                    )
+                    .await;
+
+                    power_off_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_apply_node_off.get_one::<String>("reason").cloned(),
+                        *cli_apply_node_off.get_one::<bool>("force").unwrap(),
+                    )
                     .await;
                 } else if let Some(cli_apply_node_reset) =
                     cli_apply_node.subcommand_matches("reset")
                 {
-                    apply_node_reset::exec(
+                    /* apply_node_reset::exec(
                         settings_hsm_group_name_opt,
                         shasta_token,
                         shasta_base_url,
@@ -535,6 +744,31 @@ pub async fn process_cli(
                         *cli_apply_node_reset
                             .get_one::<bool>("force")
                             .unwrap_or(&false),
+                    )
+                    .await; */
+
+                    let node_names: Vec<String> = cli_apply_node_reset
+                        .get_one::<String>("XNAMES")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
+
+                    let xname_vec = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        node_names,
+                    )
+                    .await;
+
+                    power_reset_nodes::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        cli_apply_node_reset.get_one::<String>("reason").cloned(),
+                        *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
                     )
                     .await;
                 }

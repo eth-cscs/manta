@@ -78,7 +78,8 @@ pub async fn delete_data_related_cfs_configuration(
         None,
         &vec![hsm_group_name_opt.unwrap().to_string()],
         None,
-    ).await;
+    )
+    .await;
 
     // Filter CFS configurations based on user input
     if let (Some(since), Some(until)) = (since_opt, until_opt) {

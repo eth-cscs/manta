@@ -12,8 +12,6 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    println!("DEBUG - limit {:#?}", limit_number_opt);
-
     let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,

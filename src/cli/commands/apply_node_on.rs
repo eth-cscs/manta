@@ -38,7 +38,6 @@ pub async fn exec(
             shasta_root_cert,
             xnames.iter().map(|xname| xname.to_string()).collect(), // TODO: fix this HashSet --> Vec conversion. May need to specify lifespan for capmc struct
             reason.clone(),
-            false,
         )
         .await
         .unwrap();

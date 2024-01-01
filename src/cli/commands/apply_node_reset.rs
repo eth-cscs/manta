@@ -47,7 +47,6 @@ pub async fn exec(
         shasta_root_cert,
         xnames.iter().map(|xname| xname.to_string()).collect(),
         reason.cloned(),
-        false,
     )
     .await;
 

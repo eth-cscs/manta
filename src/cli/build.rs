@@ -7,6 +7,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
+        .subcommand(subcommand_power())
         .subcommand(subcommand_get(hsm_group))
         .subcommand(
             Command::new("apply")
@@ -441,7 +442,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
-        .about("Start nodes")
+        .about("DEPRECATED - Please use 'manta power on' instead\nStart nodes")
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-r --reason <TEXT> "reason to power on"));
@@ -465,7 +466,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
-        .about("Shutdown nodes")
+        .about("DEPRECATED - Please use 'manta power off' instead\nShutdown nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to power off"));
@@ -490,7 +491,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
         .aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
-        .about("Restart nodes")
+        .about("DEPRECATED - Please use 'manta power reset' instead\nRestart nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to reset"));
@@ -595,4 +596,78 @@ pub fn subcommand_migrate_restore() -> Command {
     // };
 
     migrate_restore
+}
+
+pub fn subcommand_power() -> Command {
+    Command::new("power")
+        .aliases(["p", "pwr"])
+        .arg_required_else_help(true)
+        .about("Command to submit commands related to cluster/node power management")
+        .subcommand(
+            Command::new("on")
+                .arg_required_else_help(true)
+                .about("Command to power on cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power on all nodes in a cluster")
+                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power on a group of nodes")
+                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
+        .subcommand(
+            Command::new("off")
+                .arg_required_else_help(true)
+                .about("Command to power off cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power off all nodes in a cluster")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power off a group of nodes")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
+        .subcommand(
+            Command::new("reset")
+                .arg_required_else_help(true)
+                .about("Command to power reset cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power reset all nodes in a cluster")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power reset a group of nodes")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
 }
