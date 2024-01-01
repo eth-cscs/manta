@@ -2,11 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2024-01-01
+
+### Bug Fixes
+
+- Get template not filtering by most recent value
+- Replace std sleep for tokio sleep
+
+### Features
+
+- Add cluster power management
+
+### Refactor
+
+- Cargo fmt
+- Use new manta utility functions
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Adopt mesa changes
+- Move functions to print table data from mesa to manta
+- Adapt to mesa code
+- Housekeeping around HSM module
+- Adapt to mesa code
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Swap to mesa library
+
 ## [1.14.0] - 2023-12-25
 
 ### Features
 
 - Get nodes now shows CFS configuration related to image id used to
+
+### Miscellaneous Tasks
+
+- Release manta version 1.14.0
 
 ### Refactor
 
