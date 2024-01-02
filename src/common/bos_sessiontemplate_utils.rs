@@ -176,8 +176,11 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
 
         let bos_sessiontemplate_name = bos_sessiontemplate_value_target.name.as_ref().unwrap();
 
-        for (_boot_sets_param, boot_sets_value) in
-            bos_sessiontemplate_value_target.boot_sets.as_ref().unwrap()
+        for boot_sets_value in bos_sessiontemplate_value_target
+            .boot_sets
+            .as_ref()
+            .unwrap()
+            .values()
         {
             if let Some(path) = boot_sets_value.path.as_ref() {
                 let image_id_related_to_bos_sessiontemplate = path

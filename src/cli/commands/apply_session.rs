@@ -236,7 +236,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
         .filter(|cfs_session| {
-            vec!["running", "pending"].contains(
+            ["running", "pending"].contains(
                 &cfs_session
                     .status
                     .as_ref()

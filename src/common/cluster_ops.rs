@@ -64,20 +64,41 @@ pub async fn get_details(
         let cfs_configuration;
 
         for cfs_session_value in cfs_sessions_value_vec {
-            let target_groups_option = cfs_session_value.target.as_ref().unwrap().groups.as_ref();
+            let target_groups = cfs_session_value
+                .target
+                .as_ref()
+                .unwrap()
+                .groups
+                .as_ref()
+                .map(|target_groups| {
+                    if target_groups.is_empty() {
+                        Vec::new()
+                    } else {
+                        target_groups.to_vec()
+                    }
+                })
+                .unwrap();
+            /* let target_groups_option = cfs_session_value.target.as_ref().unwrap().groups.as_ref();
             let target_groups =
                 if target_groups_option.is_none() || target_groups_option.unwrap().is_empty() {
                     Vec::new()
                 } else {
                     target_groups_option.cloned().unwrap_or_default().to_vec()
-                };
-            let ansible_limit_opt = cfs_session_value.ansible.as_ref().unwrap().limit.as_ref();
-            let ansible_limit =
-                if ansible_limit_opt.is_none() || ansible_limit_opt.unwrap().is_empty() {
-                    ""
-                } else {
-                    &ansible_limit_opt.unwrap()
-                };
+                }; */
+            let ansible_limit = cfs_session_value
+                .ansible
+                .as_ref()
+                .unwrap()
+                .limit
+                .as_ref()
+                .map(|ansible_limit| {
+                    if ansible_limit.is_empty() {
+                        ""
+                    } else {
+                        ansible_limit
+                    }
+                })
+                .unwrap();
 
             // Check CFS session is linkged to HSM GROUP name or any of its members
             if target_groups
@@ -96,7 +117,7 @@ pub async fn get_details(
                     shasta_base_url,
                     shasta_root_cert,
                     Some(
-                        &most_recent_cfs_session
+                        most_recent_cfs_session
                             .configuration
                             .as_ref()
                             .unwrap()

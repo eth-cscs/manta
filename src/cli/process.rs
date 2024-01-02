@@ -6,9 +6,9 @@ use k8s_openapi::chrono;
 use mesa::common::authentication;
 
 use super::commands::{
-    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_session, config_set_hsm, config_set_log,
-    config_set_site, config_show, config_unset_auth, config_unset_hsm,
-    console_cfs_session_image_target_ansible, console_node,
+    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_session,
+    config_set_hsm, config_set_log, config_set_site, config_show, config_unset_auth,
+    config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, migrate_backup,
     power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
@@ -132,16 +132,18 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("node") {
-                    let node_names = cli_power_on_node.get_one::<String>("NODE_NAME").unwrap();
+                    let xname_vec: Vec<String> = cli_power_on_node
+                        .get_one::<String>("NODE_NAME")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names
-                            .split(",")
-                            .map(|xname| xname.trim().to_string())
-                            .collect(),
+                        xname_vec.clone(),
                     )
                     .await;
 
@@ -183,16 +185,18 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("node") {
-                    let node_names = cli_power_off_node.get_one::<String>("NODE_NAME").unwrap();
+                    let xname_vec: Vec<String> = cli_power_off_node
+                        .get_one::<String>("NODE_NAME")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names
-                            .split(",")
-                            .map(|xname| xname.trim().to_string())
-                            .collect(),
+                        xname_vec.clone(),
                     )
                     .await;
 
@@ -238,16 +242,18 @@ pub async fn process_cli(
                 } else if let Some(cli_power_reset_node) =
                     cli_power_reset.subcommand_matches("node")
                 {
-                    let node_names = cli_power_reset_node.get_one::<String>("NODE_NAME").unwrap();
+                    let xname_vec: Vec<String> = cli_power_reset_node
+                        .get_one::<String>("NODE_NAME")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim().to_string())
+                        .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names
-                            .split(",")
-                            .map(|xname| xname.trim().to_string())
-                            .collect(),
+                        xname_vec.clone(),
                     )
                     .await;
 
@@ -662,18 +668,18 @@ pub async fn process_cli(
                     )
                     .await; */
 
-                    let node_names: Vec<String> = cli_apply_node_on
+                    let xname_vec: Vec<String> = cli_apply_node_on
                         .get_one::<String>("XNAMES")
                         .unwrap()
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names,
+                        xname_vec.clone(),
                     )
                     .await;
 
@@ -702,18 +708,18 @@ pub async fn process_cli(
                     )
                     .await; */
 
-                    let node_names: Vec<String> = cli_apply_node_off
+                    let xname_vec: Vec<String> = cli_apply_node_off
                         .get_one::<String>("XNAMES")
                         .unwrap()
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names,
+                        xname_vec.clone(),
                     )
                     .await;
 
@@ -747,18 +753,18 @@ pub async fn process_cli(
                     )
                     .await; */
 
-                    let node_names: Vec<String> = cli_apply_node_reset
+                    let xname_vec: Vec<String> = cli_apply_node_reset
                         .get_one::<String>("XNAMES")
                         .unwrap()
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
-                    let xname_vec = validate_target_hsm_members(
+                    let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        node_names,
+                        xname_vec.clone(),
                     )
                     .await;
 

@@ -323,7 +323,12 @@ pub async fn delete_data_related_cfs_configuration(
             .configuration
             .as_ref()
             .unwrap();
-        for (_, boot_set_prop) in bos_sessiontemplate_value.boot_sets.as_ref().unwrap() {
+        for boot_set_prop in bos_sessiontemplate_value
+            .boot_sets
+            .as_ref()
+            .unwrap()
+            .values()
+        {
             let image_id = if let Some(image_path_value) = boot_set_prop.path.as_ref() {
                 image_path_value
                     .strip_prefix("s3://boot-images/")
