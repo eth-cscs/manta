@@ -1,9 +1,8 @@
-
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
+use mesa::hsm::hw_components::ArtifactType;
+use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
-
-use crate::cli::commands::get_hw_configuration_node::r#struct::ArtifactType;
 
 pub fn build_cli(hsm_group: Option<&String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))

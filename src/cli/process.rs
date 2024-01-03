@@ -287,17 +287,15 @@ pub async fn process_cli(
                 } else if let Some(cli_get_hw_configuration_node) =
                     cli_get_hw_configuration.subcommand_matches("node")
                 {
-                    let xname_vec = cli_get_hw_configuration_node
+                    let xnames = cli_get_hw_configuration_node
                         .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .collect();
+                        .expect("HSM group name is needed at this point");
                     get_hw_configuration_node::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        xname_vec,
                         settings_hsm_group_name_opt,
+                        xnames,
                         cli_get_hw_configuration_node.get_one::<String>("type"),
                         cli_get_hw_configuration_node.get_one::<String>("output"),
                     )

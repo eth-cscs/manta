@@ -5,9 +5,8 @@ use std::{
 };
 
 use comfy_table::Color;
+use mesa::hsm::hw_components::NodeSummary;
 use tokio::sync::Semaphore;
-
-use crate::cli::commands::get_hw_configuration_node::NodeSummary;
 
 pub async fn exec(
     shasta_token: &str,
