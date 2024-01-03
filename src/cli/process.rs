@@ -10,9 +10,9 @@ use super::commands::{
     config_set_hsm, config_set_log, config_set_site, config_show, config_unset_auth,
     config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    get_configuration, get_hsm, get_images, get_nodes, get_session, get_template, migrate_backup,
-    power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
-    power_reset_nodes, update_hsm_group, update_node,
+    get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
+    get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
+    power_on_nodes, power_reset_cluster, power_reset_nodes, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -269,7 +269,42 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
-            if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration") {
+            if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-configuration") {
+                if let Some(cli_get_hw_configuration_cluster) =
+                    cli_get_hw_configuration.subcommand_matches("cluster")
+                {
+                    let hsm_group_name = cli_get_hw_configuration_cluster
+                        .get_one::<String>("CLUSTER_NAME")
+                        .unwrap();
+                    commands::get_hw_configuration_cluster::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name,
+                        cli_get_hw_configuration_cluster.get_one::<String>("output"),
+                    )
+                    .await;
+                } else if let Some(cli_get_hw_configuration_node) =
+                    cli_get_hw_configuration.subcommand_matches("node")
+                {
+                    let xname_vec = cli_get_hw_configuration_node
+                        .get_one::<String>("XNAMES")
+                        .unwrap()
+                        .split(',')
+                        .collect();
+                    get_hw_configuration_node::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                        settings_hsm_group_name_opt,
+                        cli_get_hw_configuration_node.get_one::<String>("type"),
+                        cli_get_hw_configuration_node.get_one::<String>("output"),
+                    )
+                    .await;
+                }
+            } else if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration")
+            {
                 let hsm_group_name_arg_opt = cli_get_configuration.get_one::<String>("hsm-group");
 
                 let target_hsm_group_name =

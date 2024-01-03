@@ -1,6 +1,9 @@
+
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
 
 use std::path::PathBuf;
+
+use crate::cli::commands::get_hw_configuration_node::r#struct::ArtifactType;
 
 pub fn build_cli(hsm_group: Option<&String>) -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
@@ -169,6 +172,32 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
     delete
 }
 
+pub fn subcommand_get_hw_configuration() -> Command {
+    Command::new("hw-configuration")
+        .alias("hw")
+        .arg_required_else_help(true)
+        .about("Get hardware configuration for a cluster or a node")
+        .subcommand(
+            Command::new("cluster")
+                .aliases(["c", "clstr"])
+                .arg_required_else_help(true)
+                .about("Get hw configuration for a cluster")
+                .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"])),
+
+        )
+        .subcommand(
+            Command::new("node")
+                .alias("n")
+                .arg_required_else_help(true)
+                .about("Get hw configuration for some nodes")
+                .arg(arg!(<XNAMES> "List of xnames separated by commas").required(true))
+                .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"])),
+
+        )
+}
+
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_configuration = Command::new("configuration")
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
@@ -330,6 +359,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
+        .subcommand(subcommand_get_hw_configuration())
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
