@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2024-01-04
+
+### Bug Fixes
+
+- Disable build script because it was breaking cli module load from
+
+### Features
+
+- Start migrating hw components features from clstr crate
+- Get hw cluster now accepts a new 'pattern' output
+
+### Refactor
+
+- : add clippy suggestions
+
 ## [1.15.0] - 2024-01-01
 
 ### Bug Fixes
@@ -12,6 +27,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add cluster power management
+
+### Miscellaneous Tasks
+
+- Release manta version 1.15.0
 
 ### Refactor
 
