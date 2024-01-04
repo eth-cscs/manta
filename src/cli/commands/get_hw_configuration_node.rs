@@ -2,51 +2,15 @@ use comfy_table::{Cell, Table};
 use mesa::hsm::hw_components::NodeSummary;
 use std::string::ToString;
 
-use termion::color;
-
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name: Option<&String>,
     xname: &str,
     type_artifact_opt: Option<&String>,
     output_opt: Option<&String>,
 ) {
-    let hsm_groups_resp = mesa::hsm::group::shasta::http_client::get_hsm_group_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_group_name,
-    )
-    .await;
-
-    let hsm_group_list = if let Ok(hsm_groups) = hsm_groups_resp {
-        hsm_groups
-    } else {
-        eprintln!(
-            "No HSM group {}{}{} found!",
-            color::Fg(color::Red),
-            hsm_group_name.unwrap(),
-            color::Fg(color::Reset)
-        );
-        std::process::exit(0);
-    };
-
-    if hsm_group_list.is_empty() {
-        println!("No HSM group found");
-        std::process::exit(0);
-    }
-
-    // Take all nodes for all hsm_groups found and put them in a Vec
-    let mut hsm_groups_node_list: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_value_vec(&hsm_group_list)
-            .into_iter()
-            .collect();
-
-    hsm_groups_node_list.sort();
-
     let mut node_hw_inventory = &mesa::hsm::hw_inventory::shasta::http_client::get_hw_inventory(
         shasta_token,
         shasta_base_url,

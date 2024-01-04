@@ -290,11 +290,20 @@ pub async fn process_cli(
                     let xnames = cli_get_hw_configuration_node
                         .get_one::<String>("XNAMES")
                         .expect("HSM group name is needed at this point");
+
+                    let xname_vec: Vec<String> = xnames.split(',').map(|xname| xname.to_string()).collect();
+
+                    validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec,
+                    ).await;
+
                     get_hw_configuration_node::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        settings_hsm_group_name_opt,
                         xnames,
                         cli_get_hw_configuration_node.get_one::<String>("type"),
                         cli_get_hw_configuration_node.get_one::<String>("output"),
@@ -1096,7 +1105,8 @@ pub async fn validate_target_hsm_name(
 
 /// Validate user has access to a list of HSM group members provided.
 /// HSM members user is asking for are taken from cli command
-/// Returns a cureated list of HSM members user is asking.
+/// Returns a curated list of HSM members user is asking or exits if user does not have access to
+/// the nodes he is requesting
 pub async fn validate_target_hsm_members(
     shasta_token: &str,
     shasta_base_url: &str,

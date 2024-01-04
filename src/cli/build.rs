@@ -172,29 +172,27 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_hw_configuration() -> Command {
-    Command::new("hw-configuration")
-        .alias("hw")
-        .arg_required_else_help(true)
-        .about("Get hardware configuration for a cluster or a node")
-        .subcommand(
-            Command::new("cluster")
+    let command_get_hs_configuration_cluster = Command::new("cluster")
                 .aliases(["c", "clstr"])
                 .arg_required_else_help(true)
                 .about("Get hw configuration for a cluster")
                 .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"])),
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "pattern"]));
 
-        )
-        .subcommand(
-            Command::new("node")
+    let command_get_hs_configuration_node = Command::new("node")
                 .alias("n")
                 .arg_required_else_help(true)
                 .about("Get hw configuration for some nodes")
                 .arg(arg!(<XNAMES> "List of xnames separated by commas").required(true))
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"])),
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
-        )
+    Command::new("hw-configuration")
+        .alias("hw")
+        .arg_required_else_help(true)
+        .about("Get hardware configuration for a cluster or a node")
+        .subcommand(command_get_hs_configuration_cluster)
+        .subcommand(command_get_hs_configuration_node)
 }
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {

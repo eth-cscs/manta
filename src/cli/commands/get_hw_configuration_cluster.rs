@@ -42,20 +42,6 @@ pub async fn exec(
 
     let start_total = Instant::now();
 
-    /* // Get HW inventory details for target HSM group
-    for hsm_member in hsm_group_target_members.clone() {
-        log::info!("Getting HW inventory details for node '{}'", hsm_member);
-
-        let mut node_hw_inventory =
-            hsm::http_client::get_hw_inventory(&shasta_token, &shasta_base_url, &hsm_member)
-                .await
-                .unwrap();
-
-        node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap().clone();
-        let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
-        node_summary_vec.push(node_summary);
-    } */
-
     let mut tasks = tokio::task::JoinSet::new();
 
     let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher number of concurrent tasks won't
@@ -102,13 +88,94 @@ pub async fn exec(
         duration
     );
 
-    if output_opt.is_some() && output_opt.unwrap().eq("json") {
+    if output_opt.is_some_and(|output| output.eq("json")) {
         for node_summary in &hsm_summary {
             println!("{}", serde_json::to_string_pretty(&node_summary).unwrap());
         }
+    } else if output_opt.is_some_and(|output| output.eq("pattern")) {
+         let hsm_node_hw_component_count_hashmap = get_cluster_hw_pattern(hsm_summary);
+        print_to_terminal_cluster_hw_pattern(hsm_group_name, hsm_node_hw_component_count_hashmap)
     } else {
         print_table(&hsm_summary);
     }
+}
+
+pub fn get_cluster_hw_pattern(
+    hsm_summary: Vec<NodeSummary>,
+) -> HashMap<String, usize> {
+    let mut hsm_node_hw_component_count_hashmap: HashMap<String, usize> = HashMap::new();
+
+    for node_summary in hsm_summary {
+        for processor in node_summary.processors {
+            hsm_node_hw_component_count_hashmap
+                .entry(
+                    processor
+                        .info
+                        .unwrap()
+                        .chars()
+                        .filter(|c| !c.is_whitespace())
+                        .collect(),
+                )
+                .and_modify(|qty| *qty += 1)
+                .or_insert(1);
+        }
+
+        for node_accel in node_summary.node_accels {
+            hsm_node_hw_component_count_hashmap
+                .entry(
+                    node_accel
+                        .info
+                        .unwrap()
+                        .chars()
+                        .filter(|c| !c.is_whitespace())
+                        .collect(),
+                )
+                .and_modify(|qty| *qty += 1)
+                .or_insert(1);
+        }
+
+        for memory_dimm in node_summary.memory {
+            let memory_capacity = memory_dimm
+                .clone()
+                .info
+                .unwrap_or("0".to_string())
+                .split(" ")
+                .collect::<Vec<_>>()
+                .first()
+                .unwrap()
+                .to_string()
+                .parse::<usize>()
+                .unwrap();
+
+            hsm_node_hw_component_count_hashmap
+                .entry("memory".to_string())
+                .and_modify(|memory_capacity_aux| *memory_capacity_aux += memory_capacity)
+                .or_insert(memory_capacity);
+        }
+    }
+
+    hsm_node_hw_component_count_hashmap
+}
+
+pub fn print_to_terminal_cluster_hw_pattern(hsm_group_name: &str, hsm_node_hw_component_count_hashmap: HashMap<String, usize>) {
+    println!(
+        "{}:{}",
+        hsm_group_name,
+        hsm_node_hw_component_count_hashmap
+            .iter()
+            .map(|(hw_component, qty)| format!("{}:{}", hw_component, qty))
+            .collect::<Vec<String>>()
+            .join(":")
+    );
+}
+
+pub fn calculate_hsm_total_number_hw_components(
+    target_hsm_hw_component_count_vec: &[(String, HashMap<String, usize>)],
+) -> usize {
+    target_hsm_hw_component_count_vec
+        .iter()
+        .flat_map(|(_node, hw_component_hashmap)| hw_component_hashmap.values())
+        .sum()
 }
 
 pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
@@ -211,15 +278,6 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
     hsm_node_hw_component_count_hashmap_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
     print_table_f32_score(&headers, &hsm_node_hw_component_count_hashmap_vec);
-}
-
-pub fn calculate_hsm_total_number_hw_components(
-    target_hsm_hw_component_count_vec: &[(String, HashMap<String, usize>)],
-) -> usize {
-    target_hsm_hw_component_count_vec
-        .iter()
-        .flat_map(|(_node, hw_component_hashmap)| hw_component_hashmap.values())
-        .sum()
 }
 
 pub fn print_table_f32_score(
