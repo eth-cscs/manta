@@ -1,22 +1,16 @@
-use std::{collections::HashMap, sync::Arc, time::Instant};
+use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use serde_json::{json, Value};
-use tokio::sync::Semaphore;
 
 use crate::cli::commands::{
     apply_hw_cluster::{
         scores::calculate_scarcity_scores,
         utils::{
-            calculate_all_deltas, calculate_hsm_hw_component_count,
-            calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec,
-            calculate_hsm_hw_component_normalized_node_density_score_downscale,
-            calculate_node_density_score, downscale_node_migration,
+            calculate_all_deltas, calculate_hsm_hw_component_count, downscale_node_migration,
             get_hsm_hw_component_count_filtered_by_user_request, get_hsm_hw_component_counter,
-            get_node_hw_component_count,
         },
     },
-    get_hw_configuration_cluster::{calculate_hsm_total_number_hw_components, get_table_f32_score},
+    get_hw_configuration_cluster::get_table_f32_score,
 };
 
 pub async fn exec(
@@ -69,25 +63,6 @@ pub async fn exec(
 
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA
-
-    // Get target HSM group details
-    let hsm_group_target_value: Value = mesa::hsm::group::shasta::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&target_hsm_group_name.to_string()),
-    )
-    .await
-    .unwrap()
-    .first()
-    .unwrap_or(&json!({
-        "label": target_hsm_group_name,
-        "description": "",
-        "members": {
-            "ids": []
-        }
-    }))
-    .clone();
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =

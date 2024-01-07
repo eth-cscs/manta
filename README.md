@@ -24,6 +24,7 @@ Manta aggregates information from multiple sources:
 - List and filter CFS sessions based on cluster name or session name
 - List and filter BOS session templates based on cluster name or session name
 - List nodes in HSM groups
+- List hw configuration/components
 - Create CFS configuration and session (target dynamic) from local repository
 - Create CFS configuration and session (target image) from CSCS SAT input file
 - Watch logs of a CFS session
@@ -34,6 +35,7 @@ Manta aggregates information from multiple sources:
 - Update node boot image based on CFS configuration name
 - Audit/Log
 - Delete all data related to CFS configuration
+- Migrate nodes from HSM group based on hw components profile
 
 ## Configuration
 
