@@ -5,13 +5,16 @@ use serde_json::{json, Value};
 use tokio::sync::Semaphore;
 
 use crate::cli::commands::{
-    apply_hw_cluster::utils::{
-        calculate_all_deltas, calculate_hsm_hw_component_count,
-        calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec,
-        calculate_hsm_hw_component_normalized_node_density_score_downscale,
-        calculate_node_density_score, downscale_node_migration,
-        get_hsm_hw_component_count_filtered_by_user_request, get_hsm_hw_component_counter,
-        get_node_hw_component_count,
+    apply_hw_cluster::{
+        scores::calculate_scarcity_scores,
+        utils::{
+            calculate_all_deltas, calculate_hsm_hw_component_count,
+            calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec,
+            calculate_hsm_hw_component_normalized_node_density_score_downscale,
+            calculate_node_density_score, downscale_node_migration,
+            get_hsm_hw_component_count_filtered_by_user_request, get_hsm_hw_component_counter,
+            get_node_hw_component_count,
+        },
     },
     get_hw_configuration_cluster::{calculate_hsm_total_number_hw_components, get_table_f32_score},
 };
@@ -198,44 +201,19 @@ pub async fn exec(
     //*************************************************************************************
     // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
     // Get parent HSM group members
-    let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &target_hsm_group_name,
-        )
-        .await;
-
-    // Combine target and parent hsm groups to calculate global scarcity scores for each hw
-    // component type
-    let target_parent_hsm_group_member_vec =
-        [target_hsm_group_member_vec, parent_hsm_group_member_vec].concat();
-
-    // Get "global" scores for each hw component type based on hw component scarcity
-    // Get hw components for the rest of hsm groups related to stakeholders related to these nodes
-    let parent_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &delta_hw_component_vec,
-        &target_parent_hsm_group_member_vec,
-        mem_lcm,
-    )
-    .await;
-
-    // Calculate total number of hw components in both target and parent HSM - this point is to
-    // have a high level overview when calculating hw component type scores by scarcity
-    let multiple_hsm_total_number_hw_components: usize =
-        calculate_hsm_total_number_hw_components(&parent_hsm_node_hw_component_count_vec);
-
     // Calculate nomarlized score for each hw component type in as much HSM groups as possible
     // related to the stakeholders using these nodes
     let multiple_hw_component_type_scores_based_on_scracity_hashmap: HashMap<String, f32> =
-        calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec(
-            &parent_hsm_node_hw_component_count_vec,
-            multiple_hsm_total_number_hw_components,
-        );
+        calculate_scarcity_scores(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &delta_hw_component_vec,
+            mem_lcm,
+            &target_hsm_group_member_vec,
+            parent_hsm_group_name,
+        )
+        .await;
 
     // *********************************************************************************************************
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP

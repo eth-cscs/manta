@@ -2370,3 +2370,66 @@ pub mod utils {
             .sum()
     }
 }
+
+pub mod scores {
+    use std::collections::HashMap;
+
+    use super::utils::{
+        calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec,
+        calculate_hsm_total_number_hw_components, get_hsm_hw_component_counter,
+    };
+
+    pub async fn calculate_scarcity_scores(
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        delta_hw_component_vec: &Vec<String>,
+        mem_lcm: u64,
+        target_hsm_group_member_vec: &Vec<String>,
+        parent_hsm_group_name: &str,
+    ) -> HashMap<String, f32> {
+        let parent_hsm_group_member_vec: Vec<String> =
+            mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &parent_hsm_group_name,
+            )
+            .await;
+
+        // Combine target and parent hsm groups to calculate global scarcity scores for each hw
+        // component type
+        let target_parent_hsm_group_member_vec = [
+            target_hsm_group_member_vec.clone(),
+            parent_hsm_group_member_vec,
+        ]
+        .concat();
+
+        // Get "global" scores for each hw component type based on hw component scarcity
+        // Get hw components for the rest of hsm groups related to stakeholders related to these nodes
+        let parent_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            delta_hw_component_vec,
+            &target_parent_hsm_group_member_vec,
+            mem_lcm,
+        )
+        .await;
+
+        // Calculate total number of hw components in both target and parent HSM - this point is to
+        // have a high level overview when calculating hw component type scores by scarcity
+        let multiple_hsm_total_number_hw_components: usize =
+            calculate_hsm_total_number_hw_components(&parent_hsm_node_hw_component_count_vec);
+
+        // Calculate nomarlized score for each hw component type in as much HSM groups as possible
+        // related to the stakeholders using these nodes
+        let multiple_hw_component_type_scores_based_on_scracity_hashmap: HashMap<String, f32> =
+        calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec(
+            &parent_hsm_node_hw_component_count_vec,
+            multiple_hsm_total_number_hw_components,
+        );
+
+        multiple_hw_component_type_scores_based_on_scracity_hashmap
+    }
+}

@@ -170,15 +170,6 @@ pub fn print_to_terminal_cluster_hw_pattern(
     );
 }
 
-pub fn calculate_hsm_total_number_hw_components(
-    target_hsm_hw_component_count_vec: &[(String, HashMap<String, usize>)],
-) -> usize {
-    target_hsm_hw_component_count_vec
-        .iter()
-        .flat_map(|(_node, hw_component_hashmap)| hw_component_hashmap.values())
-        .sum()
-}
-
 pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
     let mut hsm_node_hw_component_count_hashmap_vec: Vec<(String, HashMap<String, usize>)> = vec![];
 
