@@ -406,26 +406,6 @@ pub async fn delete_data_related_cfs_configuration(
         }
     }
 
-    /* println!("---------------------------------------");
-    println!(
-        "DEBUG - cfs configuration: {:?}",
-        cfs_configuration_name_vec
-    );
-    println!(
-        "DEBUG - cfs configuration to keep: {:?}",
-        cfs_configuration_name_to_keep_vec
-    );
-    println!("DEBUG - image ids: {:?}", image_id_vec);
-    println!("DEBUG - image ids to keep: {:?}", image_id_to_keep_vec);
-    println!(
-        "DEBUG - cfs session, cfs configuration, image id: {:?}",
-        cfs_session_cfs_configuration_image_id_tuple_vec
-    );
-    println!(
-        "DEBUG - bos sessiontemplate, cfs configuration, image id: {:?}",
-        bos_sessiontemplate_cfs_configuration_image_id_tuple_vec
-    ); */
-
     // Get final list of CFS configuration serde values related to CFS sessions and BOS
     // sessiontemplates and excluding the CFS sessions to keep (in case user decides to
     // force the deletion operation)
@@ -473,21 +453,6 @@ pub async fn delete_data_related_cfs_configuration(
         cfs_session_cfs_configuration_image_id_tuple_filtered_vec = Vec::new();
         bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec = Vec::new();
     }
-
-    println!("---------------------------------------");
-    println!(
-        "DEBUG - cfs configuration name: {:?}",
-        cfs_configuration_name_vec
-    );
-    println!("DEBUG - image id: {:?}", image_id_vec);
-    println!(
-        "DEBUG - cfs session cfs configuration image id tuple filtered: {:?}",
-        cfs_session_cfs_configuration_image_id_tuple_filtered_vec
-    );
-    println!(
-        "DEBUG - bos sessiontempalte cfs configuration image id tuple filtered: {:?}",
-        bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec
-    );
 
     /* // VALIDATION
     //
@@ -672,23 +637,6 @@ pub async fn delete_data_related_cfs_configuration(
             std::process::exit(0);
         }
     }
-
-    /* println!("---------------------------------------");
-    println!(
-        "DEBUG - cfs configuration name: {:?}",
-        cfs_configuration_name_vec
-    );
-    println!("DEBUG - image id: {:?}", image_id_vec);
-    println!(
-        "DEBUG - cfs session cfs configuration image id tuple filtered: {:?}",
-        cfs_session_cfs_configuration_image_id_tuple_filtered_vec
-    );
-    println!(
-        "DEBUG - bos sessiontempalte cfs configuration image id tuple filtered: {:?}",
-        bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec
-    );
-    println!("DEBUG - EXIT");
-    std::process::exit(0); */
 
     // DELETE DATA
     //

@@ -6,13 +6,14 @@ use k8s_openapi::chrono;
 use mesa::common::authentication;
 
 use super::commands::{
-    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_image, apply_session,
-    config_set_hsm, config_set_log, config_set_site, config_show, config_unset_auth,
+    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_hw_cluster, apply_image,
+    apply_session, config_set_hsm, config_set_log, config_set_site, config_show, config_unset_auth,
     config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
-    power_on_nodes, power_reset_cluster, power_reset_nodes, update_hsm_group, update_node,
+    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
+    update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -268,6 +269,15 @@ pub async fn process_cli(
                     .await;
                 }
             }
+        } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
+            remove_hw_component_cluster::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                cli_remove.get_one::<String>("CLUSTER_NAME").unwrap(),
+                cli_remove.get_one::<String>("PATTERN").unwrap(),
+            )
+            .await;
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
             if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-configuration") {
                 if let Some(cli_get_hw_configuration_cluster) =
@@ -291,14 +301,16 @@ pub async fn process_cli(
                         .get_one::<String>("XNAMES")
                         .expect("HSM group name is needed at this point");
 
-                    let xname_vec: Vec<String> = xnames.split(',').map(|xname| xname.to_string()).collect();
+                    let xname_vec: Vec<String> =
+                        xnames.split(',').map(|xname| xname.to_string()).collect();
 
                     validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         xname_vec,
-                    ).await;
+                    )
+                    .await;
 
                     get_hw_configuration_node::exec(
                         shasta_token,
@@ -544,7 +556,22 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-            if let Some(cli_apply_configuration) = cli_apply.subcommand_matches("configuration") {
+            if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hw-configuration") {
+                if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
+                    apply_hw_cluster::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        cli_apply_hw_cluster
+                            .get_one::<String>("CLUSTER_NAME")
+                            .unwrap(),
+                        cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
+                    )
+                    .await;
+                }
+            } else if let Some(cli_apply_configuration) =
+                cli_apply.subcommand_matches("configuration")
+            {
                 let _hsm_group_target_vec = validate_target_hsm_name(
                     shasta_token,
                     shasta_base_url,

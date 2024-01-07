@@ -11,11 +11,13 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .subcommand(subcommand_power())
         .subcommand(subcommand_get(hsm_group))
+        .subcommand(Command::new("remove").alias("r").arg_required_else_help(true).about("Remove hw components from cluster").arg(arg!(<PATTERN> "Pattern")).arg(arg!(<CLUSTER_NAME> "Cluster name")))
         .subcommand(
             Command::new("apply")
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta system")
+                .subcommand(subcommand_apply_hw_configuration(hsm_group))
                 .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
@@ -364,6 +366,20 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_cluster_details(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
         .subcommand(subcommand_get_images(hsm_group))
+}
+
+pub fn subcommand_apply_hw_configuration(hsm_group: Option<&String>) -> Command {
+    Command::new("hw-configuration")
+        .alias("hw")
+        .arg_required_else_help(true)
+        .subcommand(Command::new("cluster")
+            .aliases(["c", "clstr"])
+            .arg_required_else_help(true)
+            .about("Assign nodes related to a cluster based on hw configuration request")
+            .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+             // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
+            .arg(arg!(-p -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster"))
+        )
 }
 
 pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {

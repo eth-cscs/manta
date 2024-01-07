@@ -40,7 +40,7 @@ futures = "0.3.28"
 clap = { version = "4.3.21", features = ["derive", "cargo", "wrap_help"] }
 clap_complete = "4.3.2"
 git2 = "0.18.1"
-dialoguer = "0.10.2"
+dialoguer = "0.11.0"
 substring = "1.4.5"
 regex = "1.6.0"
 directories = "4.0.1" # XDG Base Directory Specification

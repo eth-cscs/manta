@@ -4,7 +4,7 @@ use std::{
     time::Instant,
 };
 
-use comfy_table::Color;
+use comfy_table::{Color, Table};
 use mesa::hsm::hw_components::NodeSummary;
 use tokio::sync::Semaphore;
 
@@ -38,7 +38,7 @@ pub async fn exec(
     let hsm_group_target_members =
         mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group_value);
 
-    let mut hsm_summary = Vec::new();
+    let mut hsm_summary: Vec<NodeSummary> = Vec::new();
 
     let start_total = Instant::now();
 
@@ -93,16 +93,14 @@ pub async fn exec(
             println!("{}", serde_json::to_string_pretty(&node_summary).unwrap());
         }
     } else if output_opt.is_some_and(|output| output.eq("pattern")) {
-         let hsm_node_hw_component_count_hashmap = get_cluster_hw_pattern(hsm_summary);
+        let hsm_node_hw_component_count_hashmap = get_cluster_hw_pattern(hsm_summary);
         print_to_terminal_cluster_hw_pattern(hsm_group_name, hsm_node_hw_component_count_hashmap)
     } else {
         print_table(&hsm_summary);
     }
 }
 
-pub fn get_cluster_hw_pattern(
-    hsm_summary: Vec<NodeSummary>,
-) -> HashMap<String, usize> {
+pub fn get_cluster_hw_pattern(hsm_summary: Vec<NodeSummary>) -> HashMap<String, usize> {
     let mut hsm_node_hw_component_count_hashmap: HashMap<String, usize> = HashMap::new();
 
     for node_summary in hsm_summary {
@@ -157,7 +155,10 @@ pub fn get_cluster_hw_pattern(
     hsm_node_hw_component_count_hashmap
 }
 
-pub fn print_to_terminal_cluster_hw_pattern(hsm_group_name: &str, hsm_node_hw_component_count_hashmap: HashMap<String, usize>) {
+pub fn print_to_terminal_cluster_hw_pattern(
+    hsm_group_name: &str,
+    hsm_node_hw_component_count_hashmap: HashMap<String, usize>,
+) {
     println!(
         "{}:{}",
         hsm_group_name,
@@ -277,19 +278,16 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
 
     hsm_node_hw_component_count_hashmap_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-    print_table_f32_score(&headers, &hsm_node_hw_component_count_hashmap_vec);
+    let hw_configuration_table =
+        get_table_f32_score(&headers, &hsm_node_hw_component_count_hashmap_vec);
+
+    println!("{hw_configuration_table}");
 }
 
-pub fn print_table_f32_score(
+pub fn get_table_f32_score(
     user_defined_hw_componet_vec: &[String],
     hsm_node_hw_pattern_vec: &[(String, HashMap<String, usize>)],
-) {
-    /* println!("DEBUG - hsm_hw_pattern_vec:\n{:?}", hsm_hw_pattern_vec);
-    println!(
-        "DEBUG - hsm_density_score_hashmap:\n{:?}",
-        hsm_density_score_hashmap
-    ); */
-
+) -> Table {
     let hsm_hw_component_vec: Vec<String> = hsm_node_hw_pattern_vec
         .iter()
         .flat_map(|(_xname, node_pattern_hashmap)| node_pattern_hashmap.keys().cloned())
@@ -300,8 +298,6 @@ pub fn print_table_f32_score(
 
     all_hw_component_vec.sort();
     all_hw_component_vec.dedup();
-
-    // println!("DEBUG - all_hw_component_vec : {:?}", all_hw_component_vec);
 
     let mut table = comfy_table::Table::new();
 
@@ -363,5 +359,6 @@ pub fn print_table_f32_score(
         table.add_row(row);
     }
 
-    println!("{table}\n");
+    // println!("\n{table}\n");
+    table
 }

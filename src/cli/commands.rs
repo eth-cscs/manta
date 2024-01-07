@@ -1,6 +1,7 @@
 pub mod apply_cluster;
 pub mod apply_configuration;
 pub mod apply_ephemeral_env;
+pub mod apply_hw_cluster;
 pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
@@ -32,5 +33,6 @@ pub mod power_on_cluster;
 pub mod power_on_nodes;
 pub mod power_reset_cluster;
 pub mod power_reset_nodes;
+pub mod remove_hw_component_cluster;
 pub mod update_hsm_group;
 pub mod update_node;
