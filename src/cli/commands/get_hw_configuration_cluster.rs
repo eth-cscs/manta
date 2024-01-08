@@ -269,13 +269,12 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
 
     hsm_node_hw_component_count_hashmap_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let hw_configuration_table =
-        get_table_f32_score(&headers, &hsm_node_hw_component_count_hashmap_vec);
+    let hw_configuration_table = get_table(&headers, &hsm_node_hw_component_count_hashmap_vec);
 
     println!("{hw_configuration_table}");
 }
 
-pub fn get_table_f32_score(
+pub fn get_table(
     user_defined_hw_componet_vec: &[String],
     hsm_node_hw_pattern_vec: &[(String, HashMap<String, usize>)],
 ) -> Table {
@@ -350,6 +349,5 @@ pub fn get_table_f32_score(
         table.add_row(row);
     }
 
-    // println!("\n{table}\n");
     table
 }

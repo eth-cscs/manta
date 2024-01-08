@@ -270,16 +270,18 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
-            remove_hw_component_cluster::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                cli_remove.get_one::<String>("CLUSTER_NAME").unwrap(),
-                cli_remove.get_one::<String>("PATTERN").unwrap(),
-            )
-            .await;
+            if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component") {
+                remove_hw_component_cluster::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_remove_hw_configuration.get_one::<String>("CLUSTER_NAME").unwrap(),
+                    cli_remove_hw_configuration.get_one::<String>("PATTERN").unwrap(),
+                )
+                .await;
+            }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
-            if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-configuration") {
+            if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-component") {
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {

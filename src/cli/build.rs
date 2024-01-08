@@ -11,7 +11,17 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .subcommand(subcommand_power())
         .subcommand(subcommand_get(hsm_group))
-        .subcommand(Command::new("remove").alias("r").arg_required_else_help(true).about("Remove hw components from cluster").arg(arg!(<PATTERN> "Pattern")).arg(arg!(<CLUSTER_NAME> "Cluster name")))
+        .subcommand(Command::new("remove")
+            .alias("r")
+            .arg_required_else_help(true)
+            .about("WIP - Remove hw components from cluster")
+            .subcommand(Command::new("hw-component")
+                .alias("hw")
+                .about("WIP - Remove hw components from a cluster")
+                .arg(arg!(<PATTERN> "Pattern"))
+                .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+            )
+        )
         .subcommand(
             Command::new("apply")
                 .alias("a")
@@ -32,13 +42,13 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 )
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(Command::new("ephemeral-environment")
-                .aliases(["ee", "eph", "ephemeral"])
-                .arg_required_else_help(true)
-                .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
-                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
-                // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
-                .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
-                            ),
+                    .aliases(["ee", "eph", "ephemeral"])
+                    .arg_required_else_help(true)
+                    .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
+                    // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
+                    // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
+                    .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
+                ),
         )
         .subcommand(
             Command::new("migrate")
@@ -173,26 +183,26 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
     delete
 }
 
-pub fn subcommand_get_hw_configuration() -> Command {
+pub fn subcommand_get_hw_components() -> Command {
     let command_get_hs_configuration_cluster = Command::new("cluster")
                 .aliases(["c", "clstr"])
                 .arg_required_else_help(true)
-                .about("Get hw configuration for a cluster")
+                .about("Get hw components for a cluster")
                 .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
                 .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "pattern"]));
 
     let command_get_hs_configuration_node = Command::new("node")
                 .alias("n")
                 .arg_required_else_help(true)
-                .about("Get hw configuration for some nodes")
+                .about("Get hw components for some nodes")
                 .arg(arg!(<XNAMES> "List of xnames separated by commas").required(true))
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
                 .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
-    Command::new("hw-configuration")
+    Command::new("hw-component")
         .alias("hw")
         .arg_required_else_help(true)
-        .about("Get hardware configuration for a cluster or a node")
+        .about("Get hardware components1 for a cluster or a node")
         .subcommand(command_get_hs_configuration_cluster)
         .subcommand(command_get_hs_configuration_node)
 }
@@ -358,7 +368,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
-        .subcommand(subcommand_get_hw_configuration())
+        .subcommand(subcommand_get_hw_components())
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
