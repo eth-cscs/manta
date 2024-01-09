@@ -13,7 +13,7 @@ use super::commands::{
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    update_hsm_group, update_node,
+    update_hsm_group, update_node, add_hw_component_cluster,
 };
 
 pub async fn process_cli(
@@ -269,14 +269,34 @@ pub async fn process_cli(
                     .await;
                 }
             }
+        } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
+            if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
+                add_hw_component_cluster::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_add_hw_configuration
+                        .get_one::<String>("CLUSTER_NAME")
+                        .unwrap(),
+                    cli_add_hw_configuration
+                        .get_one::<String>("PATTERN")
+                        .unwrap(),
+                )
+                .await;
+            }
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
-            if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component") {
+            if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
+            {
                 remove_hw_component_cluster::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    cli_remove_hw_configuration.get_one::<String>("CLUSTER_NAME").unwrap(),
-                    cli_remove_hw_configuration.get_one::<String>("PATTERN").unwrap(),
+                    cli_remove_hw_configuration
+                        .get_one::<String>("CLUSTER_NAME")
+                        .unwrap(),
+                    cli_remove_hw_configuration
+                        .get_one::<String>("PATTERN")
+                        .unwrap(),
                 )
                 .await;
             }

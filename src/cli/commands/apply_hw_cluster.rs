@@ -286,7 +286,8 @@ pub async fn exec(
     // *********************************************************************************************************
     // COLLECTIVE DATA TO HELP CALCULATING SCORES
 
-    // Calculate hs component counters for target and parent hsm groups
+    // Bundle both target and parent HSM groups into a single one (basically we are destrying
+    // target for the sake and getting all nodes toghether)
     let mut target_parent_hsm_node_hw_component_count_vec = [
         target_hsm_node_hw_component_count_vec.clone(),
         parent_hsm_node_hw_component_count_vec.clone(),
@@ -327,19 +328,6 @@ pub async fn exec(
     });
 
     // *********************************************************************************************************
-    // VALIDATION
-    // Check collective HSM has enough capacity to process user request
-    for (hw_component, qty_requested) in &user_defined_target_hsm_hw_component_count_hashmap {
-        let qty_available = target_parent_hsm_hw_component_count_hashmap
-            .get(hw_component)
-            .unwrap();
-        if qty_available < qty_requested {
-            eprintln!("HSM 'collective' does not have enough resources to fulfill user request. User is requesting {} ({}) but only avaiable {}. Exit", hw_component, qty_requested, qty_available);
-            std::process::exit(1);
-        }
-    }
-
-    // *********************************************************************************************************
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
 
     println!(
@@ -371,7 +359,7 @@ pub async fn exec(
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
 
     // Migrate nodes
-    let hw_component_counters_to_move_out_from_target_parent_hsm = upscale_node_migration(
+    let hw_component_counters_to_move_out_from_target_parent_hsm = crate::cli::commands::remove_hw_component_cluster::downscale_node_migration(
         &user_defined_target_hsm_hw_component_count_hashmap,
         &user_defined_target_hsm_hw_component_vec,
         &mut target_parent_hsm_node_hw_component_count_vec,

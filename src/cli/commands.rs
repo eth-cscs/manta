@@ -1,3 +1,4 @@
+pub mod add_hw_component_cluster;
 pub mod apply_cluster;
 pub mod apply_configuration;
 pub mod apply_ephemeral_env;
