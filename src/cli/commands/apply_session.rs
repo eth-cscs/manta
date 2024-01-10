@@ -301,17 +301,25 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             &xname,
         )
         .await?;
-        let hsm_configuration_state = &mesa::hsm::component_status::shasta::http_client::get(
+
+        let hsm_component_status_rslt = mesa::hsm::component_status::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &vec![xname.clone()],
         )
-        .await?["State"];
+        .await?;
+
+        let hsm_component_status_state = &hsm_component_status_rslt["Components"]
+            .as_array()
+            .unwrap()
+            .first()
+            .unwrap()["State"];
+
         log::info!(
             "HSM component state for component {}: {}",
             xname,
-            hsm_configuration_state.as_str().unwrap()
+            hsm_component_status_state.as_str().unwrap()
         );
         log::info!(
             "Is component enabled for batched CFS: {}",
@@ -319,7 +327,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         );
         log::info!("Error count: {}", component_status["errorCount"]);
 
-        if hsm_configuration_state.eq("On") || hsm_configuration_state.eq("Standby") {
+        if hsm_component_status_state.eq("On") || hsm_component_status_state.eq("Standby") {
             log::info!("There is an CFS session scheduled to run on this node. Pleas try again later. Aborting");
             std::process::exit(0);
         }

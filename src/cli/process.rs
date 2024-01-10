@@ -6,14 +6,14 @@ use k8s_openapi::chrono;
 use mesa::common::authentication;
 
 use super::commands::{
-    self, apply_cluster, apply_configuration, apply_ephemeral_env, apply_hw_cluster, apply_image,
-    apply_session, config_set_hsm, config_set_log, config_set_site, config_show, config_unset_auth,
-    config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
+    self, add_hw_component_cluster, apply_cluster, apply_configuration, apply_ephemeral_env,
+    apply_hw_cluster, apply_image, apply_session, config_set_hsm, config_set_log, config_set_site,
+    config_show, config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible,
+    console_node, delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    update_hsm_group, update_node, add_hw_component_cluster,
+    update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -650,6 +650,8 @@ pub async fn process_cli(
                 )
                 .await;
 
+                println!("DEBUG - HSM GROUP???? {:?}", hsm_group_target_vec.first());
+
                 apply_session::exec(
                     gitea_token,
                     gitea_base_url,
@@ -661,7 +663,7 @@ pub async fn process_cli(
                     shasta_root_cert,
                     k8s_api_url,
                     cli_apply_session.get_one::<String>("name").cloned(),
-                    hsm_group_target_vec.first(),
+                    target_hsm_group_name,
                     cli_apply_session
                         .get_many("repo-path")
                         .unwrap()
