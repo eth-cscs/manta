@@ -3,10 +3,10 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 use tokio::sync::Semaphore;
 
 use crate::cli::commands::apply_hw_cluster::utils::{
-    calculate_all_deltas, calculate_hsm_hw_component_count,
+    calculate_hsm_hw_component_count,
     calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec,
     calculate_hsm_total_number_hw_components, get_hsm_hw_component_count_filtered_by_user_request,
-    get_node_hw_component_count, upscale_node_migration,
+    get_node_hw_component_count,
 };
 
 pub async fn exec(
@@ -359,12 +359,13 @@ pub async fn exec(
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
 
     // Migrate nodes
-    let hw_component_counters_to_move_out_from_target_parent_hsm = crate::cli::commands::remove_hw_component_cluster::downscale_node_migration(
-        &user_defined_target_hsm_hw_component_count_hashmap,
-        &user_defined_target_hsm_hw_component_vec,
-        &mut target_parent_hsm_node_hw_component_count_vec,
-        &target_parent_hsm_hw_component_normalized_scores_hashmap,
-    );
+    let hw_component_counters_to_move_out_from_target_parent_hsm =
+        crate::cli::commands::remove_hw_component_cluster::downscale_node_migration(
+            &user_defined_target_hsm_hw_component_count_hashmap,
+            &user_defined_target_hsm_hw_component_vec,
+            &mut target_parent_hsm_node_hw_component_count_vec,
+            &target_parent_hsm_hw_component_normalized_scores_hashmap,
+        );
 
     // *********************************************************************************************************
     // PREPARE INFORMATION TO SHOW

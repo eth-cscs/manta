@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::exit, sync::Arc, time::Instant};
+use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use comfy_table::Color;
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -166,7 +166,7 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPARE INFORMATION TO SHOW
 
-    let mut nodes_moved_from_parent_hsm = hw_component_counters_moved_from_parent_hsm
+    let nodes_moved_from_parent_hsm = hw_component_counters_moved_from_parent_hsm
         .iter()
         .map(|(xname, _)| xname)
         .cloned()
@@ -209,6 +209,8 @@ pub async fn exec(
     // SHOW THE SOLUTION
 
     log::info!("----- SOLUTION -----");
+
+    log::info!("Hw components in HSM '{}'", parent_hsm_group_name);
 
     /* log::info!("Hw components in HSM '{}'", target_hsm_group_name);
 
