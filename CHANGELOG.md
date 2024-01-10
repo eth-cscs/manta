@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.1] - 2024-01-10
+
+### Bug Fixes
+
+- Clean obsolete "use" statements
+
+### Features
+
+- Remove hw components from a target hsm groups and node scores calculated based on scarcity across target and parent hsm groups
+- Apply and remove working with simple examples, not fully tested but in good condition
+- Add new hw components to a cluster
+
+### Refactor
+
+- Clean code
+- Update README
+- Refactor code
+
 ## [1.16.0] - 2024-01-04
 
 ### Bug Fixes
@@ -12,6 +30,10 @@ All notable changes to this project will be documented in this file.
 
 - Start migrating hw components features from clstr crate
 - Get hw cluster now accepts a new 'pattern' output
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.0
 
 ### Refactor
 
