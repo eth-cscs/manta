@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.2] - 2024-01-10
+
+### Bug Fixes
+
+- Apply session and update mesa library
+
 ## [1.16.1] - 2024-01-10
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 - Remove hw components from a target hsm groups and node scores calculated based on scarcity across target and parent hsm groups
 - Apply and remove working with simple examples, not fully tested but in good condition
 - Add new hw components to a cluster
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.1
 
 ### Refactor
 
