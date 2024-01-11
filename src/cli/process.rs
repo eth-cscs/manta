@@ -279,7 +279,7 @@ pub async fn process_cli(
                         .get_one::<String>("CLUSTER_NAME")
                         .unwrap(),
                     cli_add_hw_configuration
-                        .get_one::<String>("PATTERN")
+                        .get_one::<String>("pattern")
                         .unwrap(),
                 )
                 .await;
@@ -295,7 +295,7 @@ pub async fn process_cli(
                         .get_one::<String>("CLUSTER_NAME")
                         .unwrap(),
                     cli_remove_hw_configuration
-                        .get_one::<String>("PATTERN")
+                        .get_one::<String>("pattern")
                         .unwrap(),
                 )
                 .await;
@@ -649,8 +649,6 @@ pub async fn process_cli(
                         .collect::<Vec<String>>(),
                 )
                 .await;
-
-                println!("DEBUG - HSM GROUP???? {:?}", hsm_group_target_vec.first());
 
                 apply_session::exec(
                     gitea_token,

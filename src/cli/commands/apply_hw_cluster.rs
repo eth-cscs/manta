@@ -46,6 +46,7 @@ pub async fn exec(
             );
         } else {
             log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+            std::process::exit(1);
         }
     }
 
@@ -1208,12 +1209,12 @@ pub async fn test_memory_capacity() {
 
         for member in hsm_member_vec {
             println!(
-                "DEBUG - processing node {} in hsm group {}",
+                "Processing node {} in hsm group {}",
                 member, hsm_group_name
             );
             if node_hsm_groups_hw_inventory_map.contains_key(member) {
                 println!(
-                    "DEBUG - node {} already processed for hsm groups {:?}",
+                    "Node {} already processed for hsm groups {:?}",
                     member,
                     node_hsm_groups_hw_inventory_map.get(member).unwrap().0
                 );
@@ -1225,7 +1226,7 @@ pub async fn test_memory_capacity() {
                     .push(&hsm_group_name);
             } else {
                 println!(
-                    "DEBUG - fetching hw components for node {} in hsm group {}",
+                    "Fetching hw components for node {} in hsm group {}",
                     member, hsm_group_name
                 );
                 let hw_inventory = get_node_hw_component_count(
@@ -1255,7 +1256,7 @@ pub async fn test_memory_capacity() {
             hsm_memory_capacity_lcm = node_memory_capacity_lcm;
         }
         println!(
-            "DEBUG - node {} hwm groups {:?} hw inventory {:?} memory dimms capacity {:?} lcm {}",
+            "Node {} HSM groups {:?} hw inventory {:?} memory dimms capacity {:?} lcm {}",
             node,
             hsm_groups_hw_inventory.0,
             hsm_groups_hw_inventory.1,

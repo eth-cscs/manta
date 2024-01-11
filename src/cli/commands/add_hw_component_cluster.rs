@@ -41,6 +41,7 @@ pub async fn exec(
             );
         } else {
             log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+            std::process::exit(1);
         }
     }
 
@@ -156,7 +157,7 @@ pub async fn exec(
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
 
     // Migrate nodes
-    let mut hw_component_counters_moved_from_parent_hsm = downscale_node_migration(
+    let hw_component_counters_moved_from_parent_hsm = downscale_node_migration(
         &parent_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap,
         &user_defined_delta_hw_component_vec,
         &mut parent_hsm_node_hw_component_count_vec,
@@ -210,9 +211,48 @@ pub async fn exec(
 
     log::info!("----- SOLUTION -----");
 
-    log::info!("Hw components in HSM '{}'", parent_hsm_group_name);
+    // log::info!("Hw components in HSM '{}'", parent_hsm_group_name);
 
-    /* log::info!("Hw components in HSM '{}'", target_hsm_group_name);
+    log::info!(
+        "Hw components moved from HSM '{}' to '{}': {}",
+        parent_hsm_group_name,
+        target_hsm_group_name,
+        nodes_moved_from_parent_hsm_to_target_hsm_vec.join(", ")
+    );
+
+    let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
+        &user_defined_delta_hw_component_vec,
+        &hw_component_counters_moved_from_parent_hsm,
+    );
+
+    log::info!("\n{hw_configuration_table}");
+
+    log::info!("Hw components in HSM '{}'", target_hsm_group_name);
+
+    // get hsm hw component counters for target hsm
+    let mut target_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &user_defined_delta_hw_component_vec,
+        &target_hsm_group_member_vec,
+        mem_lcm,
+    )
+    .await;
+
+    // sort nodes hw counters by node name
+    target_hsm_node_hw_component_count_vec
+        .sort_by_key(|target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone());
+
+    log::info!(
+        "hsm '{}' hw component counters: {:?}",
+        target_hsm_group_name,
+        target_hsm_node_hw_component_count_vec
+    );
+
+    // calculate hw component counters (summary) across all node within the hsm group
+    /* let target_hsm_hw_component_count_hashmap: HashMap<String, usize> =
+    calculate_hsm_hw_component_count(&target_hsm_node_hw_component_count_vec); */
 
     let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
         &user_defined_delta_hw_component_vec,
@@ -220,15 +260,6 @@ pub async fn exec(
     );
 
     log::info!("\n{hw_configuration_table}");
-
-    log::info!("Hw components moved from HSM '{}'", target_hsm_group_name);
-
-    let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
-        &user_defined_delta_hw_component_vec,
-        &hw_component_counters_moved_from_parent_hsm,
-    );
-
-    log::info!("\n{hw_configuration_table}"); */
 
     let confirm_message = format!(
         "Please check and confirm new hw summary for cluster '{}': {:?}",

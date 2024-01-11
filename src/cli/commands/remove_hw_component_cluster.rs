@@ -41,6 +41,7 @@ pub async fn exec(
             );
         } else {
             log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+            std::process::exit(1);
         }
     }
 
