@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] - 2024-01-11
+
+### Bug Fixes
+
+- Disable tests which need to connect to csm apis becuase they are not accessible from github test environment
+
 ## [1.17.0] - 2024-01-11
 
 ### Bug Fixes
 
 - Fix bug passing params to "remove hw" subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.17.0
 
 ### Refactor
 
