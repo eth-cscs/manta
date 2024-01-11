@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] - 2024-01-11
+
+### Bug Fixes
+
+- Fix bug passing params to "remove hw" subcommand
+
+### Refactor
+
+- Normalize add, remove and apply hw component subcommands
+- Clean code
+- Get mesa from repo
+
 ## [1.16.2] - 2024-01-10
 
 ### Bug Fixes
 
 - Apply session and update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.2
 
 ## [1.16.1] - 2024-01-10
 
