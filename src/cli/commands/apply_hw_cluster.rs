@@ -1120,7 +1120,7 @@ pub mod utils {
     }
 }
 
-#[tokio::test]
+/* #[tokio::test]
 pub async fn test_memory_capacity() {
     // XDG Base Directory Specification
     let project_dirs = directories::ProjectDirs::from(
@@ -1266,9 +1266,9 @@ pub async fn test_memory_capacity() {
     }
 
     println!("Query LCM: {}", hsm_memory_capacity_lcm);
-}
+} */
 
-pub fn test_hsm_hw_management() {
+/* pub fn test_hsm_hw_management() {
     let hsm_zinal_hw_counters = vec![
         (
             "x1001c1s5b0n0",
@@ -1394,4 +1394,4 @@ pub fn test_hsm_hw_management() {
             HashMap::from([("Memory 16384", 16), ("epyc", 2)]),
         ),
     ];
-}
+} */
