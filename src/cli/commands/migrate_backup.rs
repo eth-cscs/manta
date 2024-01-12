@@ -4,6 +4,7 @@ use mesa::manta;
 use std::fs::File;
 use mesa::shasta::hsm::http_client::get_hsm_group;
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
+use serde_json::Value;
 
 pub async fn exec(
     shasta_token: &str,
@@ -16,6 +17,7 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
+    let mut countfiles2download = files2download.len() + 3 ; // BOS + CFS + HSM
     // let files2download = ["manifest.json"];
 
     log::debug!("Create directory '{}'", destination.unwrap());
@@ -23,7 +25,7 @@ pub async fn exec(
         Ok(_ok) => _ok,
         Err(error) => panic!("Unable to create directory {}. Error returned: {}", &dest_path.to_string_lossy(), error.to_string())
     };
-    let _empty_hsm_group_name: Vec<String> = Vec::new();
+    let mut _empty_hsm_group_name: Vec<String> = Vec::new();
     let bos_templates = bos::template::http_client::filter(
         shasta_token,
         shasta_base_url,
@@ -39,11 +41,11 @@ pub async fn exec(
         std::process::exit(0);
     } else {
         // BOS ------------------------------------------------------------------------------------
-        let bos_file_name = String::from(bos.unwrap()) + ".json";
+        let bos_file_name = String::from(bos.unwrap()) + "-bos.json";
         let bos_file_path= dest_path.join(bos_file_name);
         let bos_file = File::create(&bos_file_path)
             .expect("bos.json file could not be created.");
-        println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
+        println!("Downloading BOS session template {} to {} [{}/{}]", &bos.unwrap(), &bos_file_path.clone().to_string_lossy(), &download_counter, &countfiles2download);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
@@ -54,7 +56,7 @@ pub async fn exec(
         let hsm_file_path= dest_path.join(hsm_file_name);
         let hsm_file = File::create(&hsm_file_path)
             .expect("HSM file could not be created.");
-        println!("Downloading HSM configuration in bos template {} to {} [{}/{}]", &bos.unwrap(), &hsm_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+3);
+        println!("Downloading HSM configuration in bos template {} to {} [{}/{}]", &bos.unwrap(), &hsm_file_path.clone().to_string_lossy(), &download_counter, &countfiles2download);
         download_counter += 1;
 
         let hsm_group_name = bos_templates[0]["boot_sets"]["compute"]["node_groups"][0].clone().to_string().replace('\"', "");
@@ -86,11 +88,11 @@ pub async fn exec(
             Option::from(true),
             None,
         ).await;
-        let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
+        let cfs_file_name = String::from(cn.clone().as_str()) + "-cfs.json";
         let cfs_file_path= dest_path.join(&cfs_file_name);
         let cfs_file = File::create(&cfs_file_path)
             .expect("cfs.json file could not be created.");
-        println!("Downloading CFS configuration {} to {} [{}/{}]", cn.clone().as_str(), &cfs_file_path.clone().to_string_lossy(), &download_counter, &files2download.len()+2);
+        println!("Downloading CFS configuration {} to {} [{}/{}]", cn.clone().as_str(), &cfs_file_path.clone().to_string_lossy(), &download_counter, &countfiles2download);
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
@@ -113,50 +115,60 @@ pub async fn exec(
                     "Get image details for ID {}",
                     image_id_related_to_bos_sessiontemplate
                 );
+                _empty_hsm_group_name.push(hsm_group_name.clone().to_string());
+                match ims::image::http_client::get(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        &_empty_hsm_group_name,
+                        Some(&image_id_related_to_bos_sessiontemplate),
+                        None,
+                        None
+                ).await {
+                    Ok(image_value_vec) => {
+                        let image_name = &image_value_vec[0]["name"].to_owned().to_string().replace('"',"");
+                        let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
+                        log::info!(
+                            "Image ID found related to BOS sessiontemplate {} is {}",
+                            &bos.unwrap(),
+                            image_id_related_to_bos_sessiontemplate
+                        );
 
-                if ims::image::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &_empty_hsm_group_name,
-                    Some(&image_id_related_to_bos_sessiontemplate),
-                    None,
-                    None
-                )
-                    .await
-                    .is_ok()
-                {
-                    let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
-                    log::info!(
-                        "Image ID found related to BOS sessiontemplate {} is {}",
-                        &bos.unwrap(),
-                        image_id_related_to_bos_sessiontemplate
-                    );
+                        let ims_file_name = String::from(image_name.clone()) + "-ims.json";
+                        let ims_file_path= dest_path.join(&ims_file_name);
+                        let ims_file = File::create(&ims_file_path)
+                            .expect("ims.json file could not be created.");
+                        println!("Downloading IMS file for image with name {} to {} [{}/{}]", &image_name, &ims_file_path.clone().to_string_lossy(), &download_counter, &countfiles2download);
 
-                    let sts_value = match  s3_auth(&shasta_token, &shasta_base_url, &shasta_root_cert).await
-                    {
-                        Ok(sts_value) => {
-                            log::debug!("Debug - STS token:\n{:#?}", sts_value);
-                            sts_value
-                        }
-                        Err(error) => panic!("{}", error.to_string())
-                    };
-                    for file in  files2download {
-                        let dest = String::from(destination.unwrap()) + "/" + &image_id;
-                        let src = image_id.clone() + "/" + file;
-                        println!("Downloading image file {} to {}/{} [{}/{}]", &src, &dest, &file, &download_counter, &files2download.len()+2);
-                        let _result = match s3_download_object(&sts_value,
+                        // Save to file only the first one returned, we don't expect other BOS templates in the array
+                        let _bosjson = serde_json::to_writer(&ims_file, &image_value_vec[0]);
+
+                        let sts_value = match  s3_auth(&shasta_token, &shasta_base_url, &shasta_root_cert).await
+                        {
+                            Ok(sts_value) => {
+                                log::debug!("Debug - STS token:\n{:#?}", sts_value);
+                                sts_value
+                            }
+                            Err(error) => panic!("{}", error.to_string())
+                        };
+                        for file in  files2download {
+                            let dest = String::from(destination.unwrap()) + "/" + &image_name;
+                            let src = image_id.clone() + "/" + file;
+                            println!("Downloading image file {} to {}/{} [{}/{}]", &src, &dest, &file, download_counter, &countfiles2download);
+                            match s3_download_object(&sts_value,
                                                                &src,
                                                                &bucket_name,
                                                                &dest).await {
-                            Ok(_result) => {
-                                download_counter = download_counter + 1;
-                            },
-                            Err(error) => panic!("Unable to download file {} from s3. Error returned: {}", &src, error.to_string())
-                        };
+                                Ok(_result) => {
+                                    download_counter += 1;
+                                },
+                                Err(error) => panic!("Unable to download file {} from s3. Error returned: {}", &src, error.to_string())
+                            };
+                        }
+                        // Here the image should be downloaded already
                     }
-                    // Here the image should be downloaded already
-                };
+                    Err(error) =>  panic!("{}", error.to_string())
+                }
             }
         }
 
