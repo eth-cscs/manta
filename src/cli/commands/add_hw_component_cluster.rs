@@ -72,7 +72,7 @@ pub async fn exec(
         .await;
 
     // Get HSM hw component counters for target HSM
-    let mut parent_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
+    let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -230,7 +230,7 @@ pub async fn exec(
     log::info!("Hw components in HSM '{}'", target_hsm_group_name);
 
     // get hsm hw component counters for target hsm
-    let mut target_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
+    let mut target_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -298,7 +298,7 @@ pub async fn exec(
     println!("Hsm group '{}' un trouched", target_hsm_group_name);
 }
 
-pub async fn get_hsm_hw_component_counter(
+pub async fn get_hsm_node_hw_component_counter(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -496,7 +496,7 @@ pub async fn calculate_scarcity_scores(
 
     // Get "global" scores for each hw component type based on hw component scarcity
     // Get hw components for the rest of hsm groups related to stakeholders related to these nodes
-    let parent_hsm_node_hw_component_count_vec = get_hsm_hw_component_counter(
+    let parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -508,18 +508,24 @@ pub async fn calculate_scarcity_scores(
 
     // Calculate total number of hw components in both target and parent HSM - this point is to
     // have a high level overview when calculating hw component type scores by scarcity
-    let multiple_hsm_total_number_hw_components: usize =
+    let parent_hsm_total_number_hw_components: usize =
         calculate_hsm_total_number_hw_components(&parent_hsm_node_hw_component_count_vec);
 
     // Calculate nomarlized score for each hw component type in as much HSM groups as possible
     // related to the stakeholders using these nodes
-    let multiple_hw_component_type_scores_based_on_scracity_hashmap: HashMap<String, f32> =
+    let parent_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<String, f32> =
         calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec(
             &parent_hsm_node_hw_component_count_vec,
-            multiple_hsm_total_number_hw_components,
+            parent_hsm_total_number_hw_components,
         );
 
-    multiple_hw_component_type_scores_based_on_scracity_hashmap
+    log::info!(
+        "HSM '{}' hw component scores: {:?}",
+        parent_hsm_group_name,
+        parent_hw_component_type_scores_based_on_scarcity_hashmap
+    );
+
+    parent_hw_component_type_scores_based_on_scarcity_hashmap
 }
 
 /// Removes as much nodes as it can from the target HSM group

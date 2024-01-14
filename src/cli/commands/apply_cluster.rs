@@ -30,6 +30,9 @@ pub async fn exec(
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
+    // Get hardware pattern from SAT YAML file
+    let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
+
     // Get CFS configurations from SAT YAML file
     let configuration_yaml_value_vec_opt = sat_file_yaml["configurations"].as_sequence();
 
@@ -48,61 +51,10 @@ pub async fn exec(
         bos_session_template_yaml_vec_opt,
         hsm_group_available_vec,
     );
-    /* for bos_session_template_yaml in bos_session_template_list_yaml.unwrap_or(&vec![]) {
-        let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
-        {
-            boot_sets_compute["node_groups"]
-                .as_sequence()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
-        {
-            boot_sets_compute["node_groups"]
-                .as_sequence()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else {
-            println!("No HSM group found in session_templates section in SAT file");
-            std::process::exit(1);
-        };
 
-        for hsm_group in bos_session_template_hsm_groups {
-            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                println!(
-                        "HSM group '{}' in session_templates {} not allowed, List of HSM groups available {:?}. Exit",
-                        hsm_group,
-                        bos_session_template_yaml["name"].as_str().unwrap(),
-                        hsm_group_available_vec
-                    );
-                std::process::exit(-1);
-            }
-        }
-    } */
+    // Process "hardware" section in SAT file
 
-    /* // Create CFS configuration and image
-    let (cfs_configuration_yaml_vec, cfs_session_vec) = apply_image::exec(
-        vault_base_url,
-        vault_secret_path,
-        vault_role_id,
-        path_file,
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        ansible_verbosity_opt,
-        ansible_passthrough_opt,
-        watch_logs,
-        &tag,
-        hsm_group_available_vec,
-        k8s_api_url,
-        output_opt,
-    )
-    .await; */
+    println!("DEBUG - hardware pattern: {:?}", hardware_yaml_value_vec_opt);
 
     // Process "configurations" section in SAT file
 

@@ -360,7 +360,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
         log::info!("Checking local repo status ({})", &repo.path().display());
 
-        // Check if all changes in local repo has been commited
+        // Check if all changes in local repo has been commited locally
         if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
             if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt("Your local repo has changes not commited. Do you want to continue?")
