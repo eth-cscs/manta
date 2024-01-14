@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use crate::cli::commands::{
     apply_hw_cluster::utils::{
-        calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
+        calculate_all_deltas_apply_hw, calculate_hsm_hw_component_summary,
+        get_hsm_node_hw_component_counter,
     },
     remove_hw_component_cluster::calculate_scarcity_scores_across_both_target_and_parent_hsm_groups,
 };
@@ -105,7 +106,22 @@ pub async fn exec(
         target_hsm_hw_component_summary_hashmap
     );
 
-    // Update user request hw component count with target HSM group hw components
+    let mut deltas = calculate_all_deltas_apply_hw(
+        &user_defined_target_hsm_hw_component_count_hashmap,
+        &target_hsm_hw_component_summary_hashmap,
+    );
+
+    println!("DEBUG - deltas: {:?}", deltas);
+    std::process::exit(0);
+
+    // Update deltas with target HSM group hw components
+    for (hw_component, _) in target_hsm_hw_component_summary_hashmap {
+        user_defined_target_hsm_hw_component_count_hashmap
+            .entry(hw_component)
+            .or_insert(0);
+    }
+
+    /* // Update user request hw component count with target HSM group hw components
     for (hw_component, _) in target_hsm_hw_component_summary_hashmap {
         user_defined_target_hsm_hw_component_count_hashmap
             .entry(hw_component)
@@ -115,7 +131,7 @@ pub async fn exec(
     log::info!(
         "User defined new hw component count: {:?}",
         user_defined_target_hsm_hw_component_count_hashmap
-    );
+    ); */
 
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - PARENT HSM
