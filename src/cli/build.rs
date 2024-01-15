@@ -391,14 +391,15 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_hw_configuration() -> Command {
     Command::new("hw-configuration")
         .alias("hw")
+        .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
         .arg_required_else_help(true)
         .subcommand(Command::new("cluster")
             .aliases(["c", "clstr"])
             .arg_required_else_help(true)
-            .about("Assign nodes related to a cluster based on hw configuration request")
+            .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
             .arg(arg!(<CLUSTER_NAME> "Cluster name"))
              // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
-            .arg(arg!(-p -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster"))
+            .arg(arg!(-p -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster like <hw component name>:<hw component quantity>[:<hw component name>:<hw component quantity>]. Eg 'a100:12:epic:5' will update the nodes assigned to cluster 'zinal' with 4 nodes:\n - 3 nodes with 4 Nvidia gpus A100 and 1 epyc AMD cpu each\n - 1 node with 2 epyc AMD cpus"))
         )
 }
 
