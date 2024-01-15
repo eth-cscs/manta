@@ -627,7 +627,7 @@ pub async fn process_cli(
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+                let _ = validate_target_hsm_name(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

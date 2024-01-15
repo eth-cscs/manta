@@ -37,7 +37,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta system")
-                .subcommand(subcommand_apply_hw_configuration(hsm_group))
+                .subcommand(subcommand_apply_hw_configuration())
                 .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
@@ -388,7 +388,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_images(hsm_group))
 }
 
-pub fn subcommand_apply_hw_configuration(hsm_group: Option<&String>) -> Command {
+pub fn subcommand_apply_hw_configuration() -> Command {
     Command::new("hw-configuration")
         .alias("hw")
         .arg_required_else_help(true)

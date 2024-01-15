@@ -1,10 +1,5 @@
-use std::collections::HashMap;
-
 use crate::cli::commands::apply_hw_cluster::utils::{
-    calculate_all_deltas_apply_hw, calculate_hsm_hw_component_summary,
-    calculate_new_hsm_group_members_from_user_pattern,
-    calculate_scarcity_scores_across_both_target_and_parent_hsm_groups, downscale_from_deltas,
-    get_hsm_node_hw_component_counter,
+    calculate_hsm_hw_component_summary, calculate_new_hsm_group_members_from_user_pattern,
 };
 
 pub async fn exec(
@@ -55,9 +50,10 @@ pub async fn exec(
     // PRINT SOLUTIONS
 
     // Print target HSM data
-    println!(
+    log::info!(
         "HSM '{}' hw component summary: {:?}",
-        target_hsm_group_name, target_hsm_hw_component_summary_hashmap
+        target_hsm_group_name,
+        target_hsm_hw_component_summary_hashmap
     );
     println!(
         "HSM '{}' members: {:?}",
@@ -69,9 +65,10 @@ pub async fn exec(
     );
 
     // Print parent HSM data
-    println!(
+    log::info!(
         "HSM '{}' hw component summary: {:?}",
-        parent_hsm_group_name, parent_hsm_hw_component_summary_hashmap
+        parent_hsm_group_name,
+        parent_hsm_hw_component_summary_hashmap
     );
     println!(
         "HSM '{}' members: {:?}",
@@ -216,7 +213,7 @@ pub mod utils {
         ); */
 
         // Calculate hw component counters (summary) across all node within the HSM group
-        let mut parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
+        let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
             calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
         log::info!(
@@ -336,10 +333,6 @@ pub mod utils {
         let mut target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
             calculate_hsm_hw_component_summary(target_hsm_node_hw_component_count_vec);
 
-        // Calculate density scores for each node in HSM
-        let target_hsm_node_density_score_hashmap: HashMap<String, usize> =
-            calculate_node_density_score(&target_hsm_node_hw_component_count_vec);
-
         // Calculate initial scores
         let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
             calculate_hsm_node_scores_from_final_hsm(
@@ -362,7 +355,6 @@ pub mod utils {
         let mut work_to_do = keep_iterating_final_hsm(
             &user_defined_hsm_hw_components_count_hashmap,
             &best_candidate_counters,
-            // &downscale_deltas,
             &target_hsm_hw_component_summary_hashmap,
         );
 
@@ -397,7 +389,6 @@ pub mod utils {
             print_table_f32_score(
                 user_defined_hw_component_vec,
                 target_hsm_node_hw_component_count_vec,
-                &target_hsm_node_density_score_hashmap,
                 &target_hsm_node_score_tuple_vec,
             );
 
@@ -448,7 +439,6 @@ pub mod utils {
         print_table_f32_score(
             user_defined_hw_component_vec,
             target_hsm_node_hw_component_count_vec,
-            &target_hsm_node_density_score_hashmap,
             &target_hsm_node_score_tuple_vec,
         );
 
@@ -480,10 +470,6 @@ pub mod utils {
         // Calculate hw component counters for the whole HSM group
         let mut target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
             calculate_hsm_hw_component_summary(hsm_node_hw_component_count_vec);
-
-        // Calculate density scores for each node in HSM
-        let target_hsm_node_density_score_hashmap: HashMap<String, usize> =
-            calculate_node_density_score(&hsm_node_hw_component_count_vec);
 
         // Calculate initial scores
         let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
@@ -538,7 +524,6 @@ pub mod utils {
             print_table_f32_score(
                 deltas_hw_component_vec,
                 hsm_node_hw_component_count_vec,
-                &target_hsm_node_density_score_hashmap,
                 &target_hsm_node_score_tuple_vec,
             );
 
@@ -592,7 +577,6 @@ pub mod utils {
         print_table_f32_score(
             deltas_hw_component_vec,
             hsm_node_hw_component_count_vec,
-            &target_hsm_node_density_score_hashmap,
             &target_hsm_node_score_tuple_vec,
         );
 
@@ -757,19 +741,6 @@ pub mod utils {
 
         true
     }
-    // Calculates node score based on hw component density
-    pub fn calculate_node_density_score(
-        node_hw_component_count_hashmap_target_hsm_vec: &Vec<(String, HashMap<String, usize>)>,
-    ) -> HashMap<String, usize> {
-        let mut target_hsm_density_score_hashmap: HashMap<String, usize> = HashMap::new();
-        for target_hsm_group_hw_component in node_hw_component_count_hashmap_target_hsm_vec {
-            let node_density_score = target_hsm_group_hw_component.1.values().sum();
-            target_hsm_density_score_hashmap
-                .insert(target_hsm_group_hw_component.clone().0, node_density_score);
-        }
-
-        target_hsm_density_score_hashmap
-    }
 
     pub fn calculate_all_deltas_apply_hw(
         user_defined_hw_component_counter_hashmap: &HashMap<String, usize>,
@@ -907,7 +878,6 @@ pub mod utils {
     pub fn print_table_f32_score(
         user_defined_hw_componet_vec: &[String],
         hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
-        hsm_density_score_hashmap: &HashMap<String, usize>,
         hsm_score_vec: &[(String, f32)],
     ) {
         /* println!("DEBUG - hsm_hw_pattern_vec:\n{:?}", hsm_hw_pattern_vec);
@@ -935,7 +905,6 @@ pub mod utils {
             [
                 vec!["Node".to_string()],
                 all_hw_component_vec.clone(),
-                vec!["Density Score".to_string()],
                 vec!["Score".to_string()],
             ]
             .concat(),
@@ -992,11 +961,6 @@ pub mod utils {
                     );
                 }
             } */
-            // Node density score table cell
-            row.push(
-                comfy_table::Cell::new(hsm_density_score_hashmap.get(xname).unwrap_or(&0))
-                    .set_alignment(comfy_table::CellAlignment::Center),
-            );
             // Node score table cell
             let node_score = hsm_score_vec
                 .iter()
