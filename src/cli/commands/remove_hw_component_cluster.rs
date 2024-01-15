@@ -748,28 +748,6 @@ pub async fn get_node_hw_component_count(
     (hsm_member.to_string(), node_hw_profile.0, node_hw_profile.1)
 }
 
-/* // Calculate total number of hw components in a hsm hw component counter
-pub fn calculate_hsm_total_number_hw_components(
-    target_hsm_hw_component_count_vec: &[(String, HashMap<String, usize>)],
-) -> usize {
-    target_hsm_hw_component_count_vec
-        .iter()
-        .flat_map(|(_node, hw_component_hashmap)| hw_component_hashmap.values())
-        .sum()
-} */
-
-/* // Given a list of tuples (xname, list of hw components qty hasmap), this function will return
-// the list of hw components wih their quantity normalized in within the hsm group
-pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec(
-    hsm_hw_component_count_hashmap: HashMap<String, usize>,
-    total_number_hw_components: usize,
-) -> HashMap<String, f32> {
-    calculate_hsm_hw_component_normalized_density_score_from_hsm_hw_component_count_hashmap(
-        hsm_hw_component_count_hashmap,
-        total_number_hw_components,
-    )
-} */
-
 // Calculates node score based on hw component density
 pub fn calculate_node_density_score(
     hsm_node_hw_component_count_hashmap_target_hsm_vec: &Vec<(String, HashMap<String, usize>)>,
@@ -975,20 +953,6 @@ pub fn get_node_hw_properties_from_value(
         .iter()
         .map(|hw_component| hw_component.to_lowercase());
 
-    /* let mut node_hw_component_pattern_vec = Vec::new();
-
-    for actual_hw_component_pattern in processor_and_accelerator_lowercase {
-        for hw_component_pattern in &hw_component_pattern_list {
-            if actual_hw_component_pattern.contains(hw_component_pattern) {
-                node_hw_component_pattern_vec.push(hw_component_pattern.to_string());
-            } else {
-                node_hw_component_pattern_vec.push(actual_hw_component_pattern.clone());
-            }
-        }
-    }
-
-    node_hw_component_pattern_vec */
-
     let mut node_hw_component_pattern_vec = Vec::new();
 
     for actual_hw_component_pattern in processor_and_accelerator_lowercase {
@@ -1010,40 +974,6 @@ pub fn get_node_hw_properties_from_value(
 
     (node_hw_component_pattern_vec, memory_vec)
 }
-
-/* // Given the list of hw components qty in a node, this function will return the list of hw
-// components with their quantity normalized within the node
-pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_hw_component_count_hashmap(
-    hsm_hw_component_count_hashmap: HashMap<String, usize>,
-    total_number_hw_components: usize,
-) -> HashMap<String, f32> {
-    /* let total_number_hw_components = hsm_hw_component_count_hashmap
-    .iter()
-    .fold(0, |acc, (_hw_component, qty)| acc + qty); */
-
-    /* let mut hsm_hw_component_normalized_score_hashmap: HashMap<String, f32> = HashMap::new();
-
-    for (hw_component, qty) in hsm_hw_component_count_hashmap {
-        hsm_hw_component_normalized_score_hashmap
-            .entry(hw_component.to_string())
-            .and_modify(|qty_aux| {
-                *qty_aux = *qty_aux as f32 / total_number_hw_components as f32
-            })
-            .or_insert(qty as f32 / total_number_hw_components as f32);
-    }
-
-    hsm_hw_component_normalized_score_hashmap */
-
-    hsm_hw_component_count_hashmap
-        .iter()
-        .map(|(hw_component, qty)| {
-            (
-                hw_component.to_string(),
-                (*qty * 100) as f32 / total_number_hw_components as f32,
-            )
-        })
-        .collect()
-} */
 
 // Given a node hw conter, user request hw conter and HSM hw counters, calculate if it is save
 // to remove this node form the HSM and still be able to fullful the user request using the
