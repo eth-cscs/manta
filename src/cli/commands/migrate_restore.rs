@@ -8,43 +8,43 @@ use mesa::shasta::ims::image::http_client::{register_new_image,get};
 use mesa::shasta::ims::image::ImsImage;
 use dialoguer::Confirm;
 use git2::IntoCString;
-use md5::{compute};
+use md5::{compute, Digest};
 use std::path::Path;
 use std::collections::HashMap;
 use serde::{Deserialize,Serialize};
 use serde_json::Value;
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
-// #[derive(Serialize, Deserialize, Debug)]
-// struct Link {
-//     pub path: String,
-//     #[serde(rename = "type", default = "default_link_type")]
-//     pub r#type: String,
-// }
-//
-// #[derive(Serialize, Deserialize, Debug)]
-// struct Artifact {
-//     pub link: Link,
-//     pub md5: String,
-//     #[serde(rename = "type")]
-//     pub r#type: String,
-// }
-//
-// #[derive(Serialize, Deserialize, Debug)]
-// struct ImageManifest {
-//     pub created: String,
-//     #[serde(default = "default_version")]
-//     pub version: String,
-//     pub artifacts: Vec<Artifact>,
-// }
-// // This is ridiculous
-// fn default_link_type() -> String {
-//     "s3".to_string()
-// }
-//
-// fn default_version() -> String {
-//     "1.0".to_string()
-// }
+#[derive(Serialize, Deserialize, Debug)]
+struct Link {
+    pub path: String,
+    #[serde(rename = "type", default = "default_link_type")]
+    pub r#type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Artifact {
+    pub link: Link,
+    pub md5: String,
+    #[serde(rename = "type")]
+    pub r#type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ImageManifest {
+    pub created: String,
+    #[serde(default = "default_version")]
+    pub version: String,
+    pub artifacts: Vec<Artifact>,
+}
+// This is ridiculous
+fn default_link_type() -> String {
+    "s3".to_string()
+}
+
+fn default_version() -> String {
+    "1.0".to_string()
+}
 
 pub async fn migrate_upload_image(
     shasta_token: &str,
@@ -52,90 +52,7 @@ pub async fn migrate_upload_image(
     shasta_root_cert: &[u8],
     image_dir:  Option<&String>
 ) {
-    // // Get md5sum of files -------------------------------------------------------------------------
-    // let files_in_image_bundle = ["manifest.json", "initrd", "kernel", "rootfs"];
-    // let mut artifact_rootfs = Artifact {
-    //     md5: "md5".to_string(),
-    //     link: Link {
-    //         path: "path".to_string(),
-    //         r#type: "s3".to_string(),
-    //     },
-    //     r#type: "application/vnd.cray.image.rootfs.squashfs".to_string(),
-    // };
-    // let mut artifact_kernel = Artifact {
-    //     md5: "md5".to_string(),
-    //     link: Link {
-    //         path: "path".to_string(),
-    //         r#type: "s3".to_string(),
-    //     },
-    //     r#type: "application/vnd.cray.image.kernel".to_string(),
-    // };
-    // let mut artifact_initrd = Artifact {
-    //     md5: "md5".to_string(),
-    //     link: Link {
-    //         path: "path".to_string(),
-    //         r#type: "s3".to_string(),
-    //     },
-    //     r#type: "application/vnd.cray.image.initrd".to_string(),
-    // };
-    //
-    // for file_name in  files_in_image_bundle {
-    //     let current_file_name= PathBuf::from(image_dir.unwrap()).join(file_name);
-    //     println!("Calculating md5sum of file {:?}...", current_file_name);
-    //
-    //     // let k = Path::new(std::env::current_dir()); //(std::env::current_dir().unwrap().to_str().unwrap().to_string() + "/" + file_name;
-    //     // println!("file: {}", k);
-    //     let f = File::open(current_file_name).unwrap();
-    //     // Find the length of the file
-    //     let len = f.metadata().unwrap().len();
-    //     // Decide on a reasonable buffer size (300MB in this case, fastest will depend on hardware)
-    //     let buf_len = len.min(300_000_000) as usize;
-    //     let mut buf = BufReader::with_capacity(buf_len, f);
-    //     let mut context = md5::Context::new();
-    //     loop {
-    //         // Get a chunk of the file
-    //         let part = buf.fill_buf().unwrap();
-    //         // If that chunk was empty, the reader has reached EOF
-    //         if part.is_empty() {
-    //             break;
-    //         }
-    //         // Add chunk to the md5
-    //         context.consume(part);
-    //         // Tell the buffer that the chunk is consumed
-    //         let part_len = part.len();
-    //         buf.consume(part_len);
-    //     }
-    //     let digest = context.compute();
-    //     println!("{:x}\t{}", digest, file_name);
-    // }
-    //
-    //
-    // let mut artifacts = vec![artifact_rootfs,artifact_kernel,artifact_initrd];
-    //
-    // let mut manifest = ImageManifest {
-    //     created: "date".to_string(),
-    //     version: "v1.0".to_string(),
-    //     artifacts
-    // };
-    // let serialized_manifest = serde_json::to_string(&manifest).unwrap();
-    // println!("{}", serialized_manifest);
 
-    // Create image record in IMS ------------------------------------------------------------------
-    // #[derive(Serialize, Deserialize, Debug)]
-    // struct ImageStruct {
-    //     name: String,
-    // }
-    // let img = ImageStruct { name: "".to_string(), };
-    //
-    // let ims_data = fs::read_to_string(PathBuf::from(ims_file.unwrap()))
-    //     .expect("Unable to read HSM JSON file");
-    // println!("done");
-
-    // Create manifest.json ------------------------------------------------------------------------
-
-    // Upload rootfs, initrd, kernel and manifest.json to s3 ---------------------------------------
-
-    // Update IMS image record with link to manifest file in s3 ------------------------------------
 }
 
 // Anything in this function is critical, so the asserts will kill further processing
@@ -252,26 +169,33 @@ pub async fn exec(
     log::info!("Migrate_restore; BOS_file={}, CFS_file={}, IMS_file={}, HSM_file={}",bos_file.unwrap(), cfs_file.unwrap(), ims_file.unwrap(), hsm_file.unwrap());
 
     // ========================================================================================================
-    let mut ims_image_manifest = "".to_string();
+    let mut ims_image_manifest = ImageManifest {
+        created: "".to_string(),
+        version: "".to_string(),
+        artifacts: vec![],
+    };
 
     let backup_ims_file = ims_file.clone().unwrap().to_string();
     let backup_cfs_file = cfs_file.clone().unwrap().to_string();
     let backup_bos_file = bos_file.clone().unwrap().to_string();
     let backup_hsm_file = hsm_file.clone().unwrap().to_string();
 
+
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
 
-    // Do we have another image with this name?
-
-    let ims_image_id: String  = ims_register_image(&shasta_token, &shasta_base_url, &shasta_root_cert, &ims_image_name).await;
-    println!("New Image ID: {}", ims_image_id);
-
     // These should come from the manifest, but let's assume these values are correct
-    let vec_backup_image_files = vec![ims_image_name.clone() + "/rootfs",
-                                      ims_image_name.clone() + "/initrd",
-                                      ims_image_name.clone() + "/kernel",];
+    let vec_backup_image_files = vec![image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs",
+                                      image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/initrd",
+                                      image_dir.unwrap().to_string() + "/" +  ims_image_name.clone().as_str() + "/kernel",];
 
-    // calculate_image_checksums(&mut ims_image_manifest, &vec_backup_image_files);
+
+    calculate_image_checksums(&mut ims_image_manifest, &vec_backup_image_files);
+    println!("{:?}", ims_image_manifest);
+
+    // Do we have another image with this name?
+    let ims_image_id: String  = ims_register_image(&shasta_token, &shasta_base_url, &shasta_root_cert, &ims_image_name).await;
+    println!("New image record in IMS for name {}, with ID: {}", &ims_image_name, &ims_image_id);
+
 
     // s3_upload_image_artifacts(&shasta_token, &shasta_base_url, &shasta_root_cert, &ims_image_id, &vec_backup_image_files);
 
@@ -345,27 +269,92 @@ pub async fn exec(
     //     bos::template::utils::print_table(bos_templates);
     // }
 }
+fn file_md5sum(filename: PathBuf) -> Digest {
+
+    // let current_file_name= PathBuf::from(image_dir.unwrap()).join(file_name);
+    // println!("Calculating md5sum of file {:?}...", &filename);
+
+    // let k = Path::new(std::env::current_dir()); //(std::env::current_dir().unwrap().to_str().unwrap().to_string() + "/" + file_name;
+    // println!("file: {}", k);
+    let f = File::open(&filename).unwrap();
+    // Find the length of the file
+    let len = f.metadata().unwrap().len();
+    // Decide on a reasonable buffer size (300MB in this case, fastest will depend on hardware)
+    let buf_len = len.min(300_000_000) as usize;
+    let mut buf = BufReader::with_capacity(buf_len, f);
+    let mut context = md5::Context::new();
+    loop {
+        // Get a chunk of the file
+        let part = buf.fill_buf().unwrap();
+        // If that chunk was empty, the reader has reached EOF
+        if part.is_empty() {
+            break;
+        }
+        // Add chunk to the md5
+        context.consume(part);
+        // Tell the buffer that the chunk is consumed
+        let part_len = part.len();
+        buf.consume(part_len);
+    }
+    let digest = context.compute();
+    // println!("{:x}\t{:?}", digest, &filename);
+    digest
+}
+/// Calculates the md5sum of all the files in the `vec_backup_image_files` vector and updates
+///  the image manifest at `ims_image_manifest`
+fn calculate_image_checksums(image_manifest: &mut ImageManifest, vec_backup_image_files: &Vec<String>) {
+
+    for file in vec_backup_image_files {
+        println!("Calculating md5sum of file {:?}...", file);
+        let mut artifact = Artifact {
+            link: Link { path: "".to_string(), r#type: "".to_string() },
+            md5: "".to_string(),
+            r#type: "".to_string(),
+        };
+        let mut fp = PathBuf::new();
+        fp.push(file);
+        let digest = file_md5sum(fp);
+        println!("{:x}\t{:?}", digest, file);
+
+        if file.contains("kernel") {
+            artifact = Artifact {
+                md5: format!("{:x}", digest),
+                link: Link {
+                    path: "path".to_string(),
+                    r#type: "s3".to_string(),
+                },
+                r#type: "application/vnd.cray.image.kernel".to_string(),
+            };
+
+        }
+        else if file.contains("rootfs") {
+             artifact = Artifact {
+                 md5: format!("{:x}", digest),
+                link: Link {
+                    path: "path".to_string(),
+                    r#type: "s3".to_string(),
+                },
+                r#type: "application/vnd.cray.image.rootfs.squashfs".to_string(),
+            };
+        } else {
+            artifact = Artifact {
+                md5: format!("{:x}", digest),
+                link: Link {
+                    path: "path".to_string(),
+                    r#type: "s3".to_string(),
+                },
+                r#type: "application/vnd.cray.image.initrd".to_string(),
+            };
+        }
+        image_manifest.artifacts.push(artifact);
+    }
+}
 
 /// Registers in IMS a new image and returns the new id to pass to s3
 async fn ims_register_image(    shasta_token: &str,
                           shasta_base_url: &str,
                           shasta_root_cert: &[u8],
                           ims_image_name: &String) -> String {
-
-    // let mut image_name : String = String::new();
-    // let json_response: Vec<Value>;
-    //
-    // let ims_record: &str = r#"{
-    //   "name": "empty"
-    // }"#;
-    //
-    // let mut json_ims_record: Value = serde_json::from_str(ims_record).unwrap();
-    // // json_ims_record["name"] = "fuckintest".into();
-    // // ims_image_name.clone().into();
-    // json_ims_record["name"] = ims_image_name.clone().into();
-    // println!("json_ims_record[name]: {}", &json_ims_record["name"]);
-    // println!("json_ims_record: {}", &json_ims_record);
-
     let ims_record = ImsImage {
         name: ims_image_name.clone().to_string(),
         id: None,
@@ -380,8 +369,9 @@ async fn ims_register_image(    shasta_token: &str,
                                                None,
                                                None).await {
         Ok(vector) => vector,
-        Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}", &ims_image_name),
+        Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
+
     if ! list_images_with_same_name.is_empty() {
         println!("There is already a record for image name {} in IMS do you want to create a new one (the previous one will not be deleted).", &ims_image_name);
         println!("Current IMS record(s): {:?}", &list_images_with_same_name);
