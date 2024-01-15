@@ -67,7 +67,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &parent_hsm_group_name,
+            parent_hsm_group_name,
         )
         .await;
 
@@ -179,7 +179,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &target_hsm_group_name,
+            target_hsm_group_name,
         )
         .await;
 
@@ -302,8 +302,8 @@ pub async fn get_hsm_node_hw_component_counter(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    user_defined_hw_component_vec: &Vec<String>,
-    hsm_group_member_vec: &Vec<String>,
+    user_defined_hw_component_vec: &[String],
+    hsm_group_member_vec: &[String],
     mem_lcm: u64,
 ) -> Vec<(String, HashMap<String, usize>)> {
     // Get HSM group members hw configurfation based on user input
@@ -319,11 +319,11 @@ pub async fn get_hsm_node_hw_component_counter(
     let mut target_hsm_node_hw_component_count_vec = Vec::new();
 
     // Get HW inventory details for parent HSM group
-    for hsm_member in hsm_group_member_vec.clone() {
+    for hsm_member in hsm_group_member_vec.to_owned() {
         let shasta_token_string = shasta_token.to_string(); // TODO: make it static
         let shasta_base_url_string = shasta_base_url.to_string(); // TODO: make it static
         let shasta_root_cert_vec = shasta_root_cert.to_vec();
-        let user_defined_hw_component_vec = user_defined_hw_component_vec.clone();
+        let user_defined_hw_component_vec = user_defined_hw_component_vec.to_owned();
 
         let permit = Arc::clone(&sem).acquire_owned().await;
 
@@ -472,9 +472,9 @@ pub async fn calculate_scarcity_scores(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    delta_hw_component_vec: &Vec<String>,
+    delta_hw_component_vec: &[String],
     mem_lcm: u64,
-    target_hsm_group_member_vec: &Vec<String>,
+    target_hsm_group_member_vec: &[String],
     parent_hsm_group_name: &str,
 ) -> HashMap<String, f32> {
     let parent_hsm_group_member_vec: Vec<String> =
@@ -482,14 +482,14 @@ pub async fn calculate_scarcity_scores(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &parent_hsm_group_name,
+            parent_hsm_group_name,
         )
         .await;
 
     // Combine target and parent hsm groups to calculate global scarcity scores for each hw
     // component type
     let target_parent_hsm_group_member_vec = [
-        target_hsm_group_member_vec.clone(),
+        target_hsm_group_member_vec.to_owned(),
         parent_hsm_group_member_vec,
     ]
     .concat();
@@ -562,14 +562,14 @@ pub fn downscale_node_migration(
 
     // Calculate density scores for each node in HSM
     let target_hsm_node_density_score_hashmap: HashMap<String, usize> =
-        calculate_node_density_score(&target_hsm_node_hw_component_count_vec);
+        calculate_node_density_score(target_hsm_node_hw_component_count_vec);
 
     // Calculate initial scores
     let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
         calculate_hsm_hw_component_normalized_node_density_score_downscale(
-            &target_hsm_node_hw_component_count_vec,
+            target_hsm_node_hw_component_count_vec,
             &deltas,
-            &multiple_hw_component_type_normalized_scores_hashmap,
+            multiple_hw_component_type_normalized_scores_hashmap,
             &target_hsm_hw_component_count_hashmap,
         );
 
@@ -589,7 +589,7 @@ pub fn downscale_node_migration(
 
     // Check if we need to keep iterating
     let mut work_to_do = keep_iterating_downscale(
-        &user_defined_hsm_hw_components_count_hashmap,
+        user_defined_hsm_hw_components_count_hashmap,
         &best_candidate_counters,
         &deltas,
         &target_hsm_hw_component_count_hashmap,
@@ -668,7 +668,7 @@ pub fn downscale_node_migration(
                 target_hsm_node_hw_component_count_vec,
                 // &hw_components_to_migrate_from_target_hsm_to_parent_hsm,
                 &deltas,
-                &multiple_hw_component_type_normalized_scores_hashmap,
+                multiple_hw_component_type_normalized_scores_hashmap,
                 &target_hsm_hw_component_count_hashmap,
             );
 
@@ -684,7 +684,7 @@ pub fn downscale_node_migration(
 
         // Check if we need to keep iterating
         work_to_do = keep_iterating_downscale(
-            &user_defined_hsm_hw_components_count_hashmap,
+            user_defined_hsm_hw_components_count_hashmap,
             &best_candidate_counters,
             &deltas,
             &target_hsm_hw_component_count_hashmap,
@@ -857,10 +857,7 @@ pub fn calculate_hsm_hw_component_normalized_node_density_score_downscale(
     }
 
     let target_hsm_normalized_density_score_tuple_vec: Vec<(String, f32)> =
-        target_hsm_density_score_hashmap
-            .into_iter()
-            .map(|(k, v)| (k, v))
-            .collect();
+        target_hsm_density_score_hashmap.into_iter().collect();
 
     target_hsm_normalized_density_score_tuple_vec
 }

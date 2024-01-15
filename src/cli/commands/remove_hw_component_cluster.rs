@@ -748,7 +748,7 @@ pub async fn get_node_hw_component_count(
     (hsm_member.to_string(), node_hw_profile.0, node_hw_profile.1)
 }
 
-// Calculate total number of hw components in a hsm hw component counter
+/* // Calculate total number of hw components in a hsm hw component counter
 pub fn calculate_hsm_total_number_hw_components(
     target_hsm_hw_component_count_vec: &[(String, HashMap<String, usize>)],
 ) -> usize {
@@ -756,9 +756,9 @@ pub fn calculate_hsm_total_number_hw_components(
         .iter()
         .flat_map(|(_node, hw_component_hashmap)| hw_component_hashmap.values())
         .sum()
-}
+} */
 
-// Given a list of tuples (xname, list of hw components qty hasmap), this function will return
+/* // Given a list of tuples (xname, list of hw components qty hasmap), this function will return
 // the list of hw components wih their quantity normalized in within the hsm group
 pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_component_count_vec(
     hsm_hw_component_count_hashmap: HashMap<String, usize>,
@@ -768,7 +768,7 @@ pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_node_hw_comp
         hsm_hw_component_count_hashmap,
         total_number_hw_components,
     )
-}
+} */
 
 // Calculates node score based on hw component density
 pub fn calculate_node_density_score(
@@ -1011,7 +1011,7 @@ pub fn get_node_hw_properties_from_value(
     (node_hw_component_pattern_vec, memory_vec)
 }
 
-// Given the list of hw components qty in a node, this function will return the list of hw
+/* // Given the list of hw components qty in a node, this function will return the list of hw
 // components with their quantity normalized within the node
 pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_hw_component_count_hashmap(
     hsm_hw_component_count_hashmap: HashMap<String, usize>,
@@ -1043,7 +1043,7 @@ pub fn calculate_hsm_hw_component_normalized_density_score_from_hsm_hw_component
             )
         })
         .collect()
-}
+} */
 
 // Given a node hw conter, user request hw conter and HSM hw counters, calculate if it is save
 // to remove this node form the HSM and still be able to fullful the user request using the
