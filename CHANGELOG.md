@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2024-01-15
+
+### Features
+
+- Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
+- Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
+- Initial code for apply hw subcommand keeping target hsm members
+
 ## [1.18.0] - 2024-01-11
 
 ### Bug Fixes
 
 - Disable tests which need to connect to csm apis becuase they are not accessible from github test environment
+
+### Miscellaneous Tasks
+
+- Release manta version 1.18.0
 
 ## [1.17.0] - 2024-01-11
 
