@@ -8,7 +8,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &Vec<String>,
+    hsm_group_name_vec: &[String],
     limit_number: Option<&u8>,
 ) {
     let mut image_vec: Vec<Image> =

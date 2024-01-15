@@ -137,7 +137,7 @@ pub fn get_cluster_hw_pattern(hsm_summary: Vec<NodeSummary>) -> HashMap<String, 
                 .clone()
                 .info
                 .unwrap_or("0".to_string())
-                .split(" ")
+                .split(' ')
                 .collect::<Vec<_>>()
                 .first()
                 .unwrap()

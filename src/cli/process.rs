@@ -1124,11 +1124,14 @@ pub async fn validate_target_hsm_name(
 
     let hsm_group_target_opt = if let Some(hsm_name) = hsm_group_name_opt {
         Some(hsm_name)
-    } else if let Some(hsm_name) = hsm_group_config_opt {
+    } else {
+        hsm_group_config_opt
+    };
+    /* if let Some(hsm_name) = hsm_group_config_opt {
         Some(hsm_name)
     } else {
         None
-    };
+    }; */
 
     let hsm_group_target_vec: Vec<String> = if let Some(hsm_group_target) = hsm_group_target_opt {
         hsm_name_available_vec

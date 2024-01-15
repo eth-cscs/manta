@@ -1,5 +1,5 @@
 use crate::cli::commands::apply_hw_cluster::utils::{
-    calculate_hsm_hw_component_summary, calculate_new_hsm_group_members_from_user_pattern,
+    calculate_hsm_hw_component_summary, get_hsm_group_members_from_user_pattern,
 };
 
 pub async fn exec(
@@ -24,10 +24,10 @@ pub async fn exec(
     // Normalize text in lowercase and separate each HSM group hw inventory pattern
     let pattern_lowercase = pattern.to_lowercase();
 
-    let (target_hsm_group_name, pattern_hw_component) = pattern_lowercase.split_once(":").unwrap();
+    let (target_hsm_group_name, pattern_hw_component) = pattern_lowercase.split_once(':').unwrap();
 
     let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
-        calculate_new_hsm_group_members_from_user_pattern(
+        get_hsm_group_members_from_user_pattern(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -90,7 +90,7 @@ pub mod utils {
     use crate::cli::commands::remove_hw_component_cluster::get_best_candidate_to_downscale_migrate_f32_score;
 
     // Returns a tuple with 2 list of nodes and its hardware components.
-    pub async fn calculate_new_hsm_group_members_from_user_pattern(
+    pub async fn get_hsm_group_members_from_user_pattern(
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
@@ -143,7 +143,7 @@ pub mod utils {
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &target_hsm_group_name,
+                target_hsm_group_name,
             )
             .await;
 
@@ -187,7 +187,7 @@ pub mod utils {
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &parent_hsm_group_name,
+                parent_hsm_group_name,
             )
             .await;
 
@@ -251,12 +251,14 @@ pub mod utils {
         // Format deltas from HashMap<String, size> to HashMap<String, usize>
         let mut deltas_usize: HashMap<String, usize> = HashMap::new();
         for (hw_component, qty) in deltas.1 {
-            deltas_usize.insert(hw_component, qty.abs() as usize);
+            deltas_usize.insert(hw_component, qty.unsigned_abs());
         }
 
         // *********************************************************************************************************
         // MIGRATE NODES FROM PARENT HSM TO TARGET HSM
 
+        // We migrate nodes from parent first because this is a simple operation since parent hsm
+        // does not need to keep any specific node in there
         // Migrate nodes
         let hw_component_counters_to_move_out_from_parent_hsm = downscale_from_deltas(
             &deltas_usize,
@@ -318,7 +320,7 @@ pub mod utils {
         // equivalent to target_hsm_node_hw_component_count_vec minus
         // hw_components_deltas_from_target_hsm_to_parent_hsm). Note hw componets needs to be grouped/filtered
         // based on user input
-        user_defined_hw_component_vec: &Vec<String>, // list of hw components the user is asking
+        user_defined_hw_component_vec: &[String], // list of hw components the user is asking
         // for
         target_hsm_node_hw_component_count_vec: &mut Vec<(String, HashMap<String, usize>)>, // list
         // of hw component counters in target HSM group
@@ -336,10 +338,10 @@ pub mod utils {
         // Calculate initial scores
         let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
             calculate_hsm_node_scores_from_final_hsm(
-                &target_hsm_node_hw_component_count_vec,
+                target_hsm_node_hw_component_count_vec,
                 &target_hsm_hw_component_summary_hashmap,
-                &user_defined_hsm_hw_components_count_hashmap,
-                &hw_component_type_normalized_scores_hashmap,
+                user_defined_hsm_hw_components_count_hashmap,
+                hw_component_type_normalized_scores_hashmap,
             );
 
         let mut nodes_migrated_from_target_hsm: Vec<(String, HashMap<String, usize>)> = Vec::new();
@@ -353,7 +355,7 @@ pub mod utils {
 
         // Check if we need to keep iterating
         let mut work_to_do = keep_iterating_final_hsm(
-            &user_defined_hsm_hw_components_count_hashmap,
+            user_defined_hsm_hw_components_count_hashmap,
             &best_candidate_counters,
             &target_hsm_hw_component_summary_hashmap,
         );
@@ -422,7 +424,7 @@ pub mod utils {
 
             // Check if we need to keep iterating
             work_to_do = keep_iterating_final_hsm(
-                &user_defined_hsm_hw_components_count_hashmap,
+                user_defined_hsm_hw_components_count_hashmap,
                 &best_candidate_counters,
                 // &downscale_deltas,
                 &target_hsm_hw_component_summary_hashmap,
@@ -454,7 +456,7 @@ pub mod utils {
         // equivalent to target_hsm_node_hw_component_count_vec minus
         // hw_components_deltas_from_target_hsm_to_parent_hsm). Note hw componets needs to be grouped/filtered
         // based on user input
-        deltas_hw_component_vec: &Vec<String>, // list of hw components the user is asking
+        deltas_hw_component_vec: &[String], // list of hw components the user is asking
         // for
         hsm_node_hw_component_count_vec: &mut Vec<(String, HashMap<String, usize>)>, // list
         // of hw component counters in target HSM group
@@ -474,9 +476,9 @@ pub mod utils {
         // Calculate initial scores
         let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
             calculate_hsm_node_scores_from_deltas(
-                &hsm_node_hw_component_count_vec,
+                hsm_node_hw_component_count_vec,
                 &deltas_hashmap,
-                &hw_component_type_normalized_scores_hashmap,
+                hw_component_type_normalized_scores_hashmap,
             );
 
         let mut nodes_migrated_from_target_hsm: Vec<(String, HashMap<String, usize>)> = Vec::new();
@@ -987,8 +989,8 @@ pub mod utils {
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
-        user_defined_hw_component_vec: &Vec<String>,
-        hsm_group_member_vec: &Vec<String>,
+        user_defined_hw_component_vec: &[String],
+        hsm_group_member_vec: &[String],
         mem_lcm: u64,
     ) -> Vec<(String, HashMap<String, usize>)> {
         // Get HSM group members hw configurfation based on user input
@@ -1004,11 +1006,11 @@ pub mod utils {
         let mut target_hsm_node_hw_component_count_vec = Vec::new();
 
         // Get HW inventory details for parent HSM group
-        for hsm_member in hsm_group_member_vec.clone() {
+        for hsm_member in hsm_group_member_vec.to_owned() {
             let shasta_token_string = shasta_token.to_string(); // TODO: make it static
             let shasta_base_url_string = shasta_base_url.to_string(); // TODO: make it static
             let shasta_root_cert_vec = shasta_root_cert.to_vec();
-            let user_defined_hw_component_vec = user_defined_hw_component_vec.clone();
+            let user_defined_hw_component_vec = user_defined_hw_component_vec.to_owned();
 
             let permit = Arc::clone(&sem).acquire_owned().await;
 

@@ -250,7 +250,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
                     .as_str(),
             )
         })
-        .map(|cfs_session| {
+        .flat_map(|cfs_session| {
             cfs_session
                 .ansible
                 .as_ref()
@@ -260,7 +260,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
                 .unwrap()
                 .split(',')
         })
-        .flatten()
         .map(|xname| xname.trim())
         .collect(); // TODO: remove duplicates... sort() + dedup() ???
 
