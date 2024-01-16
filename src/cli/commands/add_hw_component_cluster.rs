@@ -174,7 +174,7 @@ pub async fn exec(
         .collect::<Vec<String>>();
 
     // Get target HSM group members
-    let mut target_hsm_group_member_vec: Vec<String> =
+    let mut target_hsm_node_vec: Vec<String> =
         mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
@@ -183,9 +183,9 @@ pub async fn exec(
         )
         .await;
 
-    target_hsm_group_member_vec.extend(nodes_moved_from_parent_hsm);
+    target_hsm_node_vec.extend(nodes_moved_from_parent_hsm);
 
-    target_hsm_group_member_vec.sort();
+    target_hsm_node_vec.sort();
 
     // Get list of xnames in target HSM group
     let parent_hsm_node_vec = parent_hsm_node_hw_component_count_vec
@@ -194,31 +194,20 @@ pub async fn exec(
         .cloned()
         .collect::<Vec<String>>();
 
-    // Get xnames form list of hw components moved from target HSM group
-    let nodes_moved_from_parent_hsm_to_target_hsm_vec = hw_component_counters_moved_from_parent_hsm
+    // Get list of xnames in target HSM group
+    let parent_hsm_node_vec = parent_hsm_node_hw_component_count_vec
         .iter()
-        .map(|(xname, _)| xname.clone())
+        .map(|(xname, _)| xname)
+        .cloned()
         .collect::<Vec<String>>();
 
     let hw_component_count_parent_hsm_hashmap =
         calculate_hsm_hw_component_count(&parent_hsm_node_hw_component_count_vec);
 
-    let hw_component_count_moved_from_parent_hsm_hashmap =
-        calculate_hsm_hw_component_count(&hw_component_counters_moved_from_parent_hsm);
-
     // *********************************************************************************************************
     // SHOW THE SOLUTION
 
     log::info!("----- SOLUTION -----");
-
-    // log::info!("Hw components in HSM '{}'", parent_hsm_group_name);
-
-    log::info!(
-        "Hw components moved from HSM '{}' to '{}': {}",
-        parent_hsm_group_name,
-        target_hsm_group_name,
-        nodes_moved_from_parent_hsm_to_target_hsm_vec.join(", ")
-    );
 
     let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
         &user_defined_delta_hw_component_vec,
@@ -235,7 +224,7 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         &user_defined_delta_hw_component_vec,
-        &target_hsm_group_member_vec,
+        &target_hsm_node_vec,
         mem_lcm,
     )
     .await;
@@ -277,25 +266,29 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    println!(
-        "Target HSM '{}' members migrated: {}",
-        target_hsm_group_name,
-        nodes_moved_from_parent_hsm_to_target_hsm_vec.join(",")
-    );
-
-    log::info!(
-        "Target HSM '{}' hw components migrated: {:?}",
-        target_hsm_group_name,
-        hw_component_count_moved_from_parent_hsm_hashmap
-    );
+    let target_hsm_group_value = serde_json::json!({
+        "label": target_hsm_group_name,
+        "decription": "",
+        "members": target_hsm_node_vec,
+        "tags": []
+    });
 
     println!(
-        "Target HSM '{}' final members: {}",
-        target_hsm_group_name,
-        parent_hsm_node_vec.join(",")
+        "{}",
+        serde_json::to_string_pretty(&target_hsm_group_value).unwrap()
     );
 
-    println!("Hsm group '{}' un trouched", target_hsm_group_name);
+    let parent_hsm_group_value = serde_json::json!({
+        "label": parent_hsm_group_name,
+        "decription": "",
+        "members": parent_hsm_node_vec,
+        "tags": []
+    });
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
+    );
 }
 
 pub async fn get_hsm_node_hw_component_counter(

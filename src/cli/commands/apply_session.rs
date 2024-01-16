@@ -8,13 +8,14 @@ use mesa::{
         session::mesa::r#struct::CfsSessionPostRequest,
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    node::utils::validate_xnames,
 };
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
 use substring::Substring;
 
-use crate::common::{local_git_repo, node_ops};
+use crate::common::local_git_repo;
 
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
@@ -101,7 +102,7 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(
+            if !validate_xnames(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

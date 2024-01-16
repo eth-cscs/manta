@@ -73,7 +73,7 @@ pub fn nodes_to_string_format_discrete_columns(
     members
 }
 
-/// Validates a list of xnames.
+/* /// Validates a list of xnames.
 /// Checks xnames strings are valid
 /// If hsm_group_name if provided, then checks all xnames belongs to that hsm_group
 pub async fn validate_xnames(
@@ -124,7 +124,7 @@ pub async fn validate_xnames(
     } */
 
     true
-}
+} */
 
 pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> Vec<String> {
     let mut node_booting_image_vec = boot_param_vec

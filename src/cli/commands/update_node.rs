@@ -1,7 +1,7 @@
-use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
+use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{capmc, cfs};
+use mesa::{capmc, cfs, node::utils::validate_xnames};
 
 pub async fn exec(
     shasta_token: &str,
@@ -51,7 +51,7 @@ pub async fn exec(
 
     // Check user has provided valid XNAMES
     if hsm_group_name.is_some()
-        && !node_ops::validate_xnames(
+        && !validate_xnames(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

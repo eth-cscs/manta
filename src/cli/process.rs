@@ -14,7 +14,7 @@ use super::commands::{
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    update_hsm_group, update_node, remove_nodes,
+    remove_nodes, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -290,6 +290,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     cli_add_nodes.get_one::<String>("cluster").unwrap(),
+                    "nodes_free",
                     cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
                 )
                 .await;
@@ -315,6 +316,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     cli_remove_nodes.get_one::<String>("cluster").unwrap(),
+                    "nodes_free",
                     cli_remove_nodes.get_one::<String>("XNAMES").unwrap(),
                 )
                 .await;

@@ -1,9 +1,9 @@
 use core::time;
 
 use mesa::capmc;
+use mesa::node::utils::validate_xnames;
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
-use crate::common::node_ops;
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -15,7 +15,7 @@ pub async fn exec(
     force: bool,
 ) {
     // Check user has provided valid XNAMES
-    if !node_ops::validate_xnames(
+    if !validate_xnames(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

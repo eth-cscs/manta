@@ -268,6 +268,15 @@ pub async fn exec(
     let hw_component_count_moved_from_target_hsm_hashmap =
         calculate_hsm_hw_component_count(&hw_component_counters_moved_from_target_hsm);
 
+    let mut parent_hsm_node_vec = [
+        parent_hsm_group_member_vec,
+        nodes_moved_from_target_hsm_to_parent_hsm_vec,
+    ]
+    .concat();
+
+    parent_hsm_node_vec.sort();
+    parent_hsm_node_vec.dedup();
+
     // *********************************************************************************************************
     // SHOW THE SOLUTION
 
@@ -307,25 +316,29 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    println!(
-        "Target HSM '{}' members migrated: {}",
-        target_hsm_group_name,
-        nodes_moved_from_target_hsm_to_parent_hsm_vec.join(",")
-    );
-
-    log::info!(
-        "Target HSM '{}' hw components migrated: {:?}",
-        target_hsm_group_name,
-        hw_component_count_moved_from_target_hsm_hashmap
-    );
+    let target_hsm_group_value = serde_json::json!({
+        "label": target_hsm_group_name,
+        "decription": "",
+        "members": target_hsm_node_vec,
+        "tags": []
+    });
 
     println!(
-        "Target HSM '{}' final members: {}",
-        target_hsm_group_name,
-        target_hsm_node_vec.join(",")
+        "{}",
+        serde_json::to_string_pretty(&target_hsm_group_value).unwrap()
     );
 
-    println!("Hsm group '{}' un trouched", target_hsm_group_name);
+    let parent_hsm_group_value = serde_json::json!({
+        "label": parent_hsm_group_name,
+        "decription": "",
+        "members": parent_hsm_node_vec,
+        "tags": []
+    });
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
+    );
 }
 
 pub async fn get_hsm_hw_node_component_counter(
@@ -837,9 +850,7 @@ pub fn calculate_hsm_hw_component_normalized_node_density_score_downscale(
     }
 
     let target_hsm_normalized_density_score_tuple_vec: Vec<(String, f32)> =
-        target_hsm_density_score_hashmap
-            .into_iter()
-            .collect();
+        target_hsm_density_score_hashmap.into_iter().collect();
 
     target_hsm_normalized_density_score_tuple_vec
 }

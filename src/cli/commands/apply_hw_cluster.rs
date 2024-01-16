@@ -46,6 +46,16 @@ pub async fn exec(
     let parent_hsm_hw_component_summary_hashmap =
         calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
+    let target_hsm_node_vec = target_hsm_node_hw_component_count_vec
+        .into_iter()
+        .map(|(xname, _)| xname)
+        .collect::<Vec<String>>();
+
+    let parent_hsm_node_vec = parent_hsm_node_hw_component_count_vec
+        .into_iter()
+        .map(|(xname, _)| xname)
+        .collect::<Vec<String>>();
+
     // *********************************************************************************************************
     // PRINT SOLUTIONS
 
@@ -55,13 +65,21 @@ pub async fn exec(
         target_hsm_group_name,
         target_hsm_hw_component_summary_hashmap
     );
-    println!(
+    /* println!(
         "HSM '{}' members: {:?}",
-        target_hsm_group_name,
-        target_hsm_node_hw_component_count_vec
-            .into_iter()
-            .map(|(xname, _)| xname)
-            .collect::<Vec<String>>()
+        target_hsm_group_name, target_hsm_nodes
+    ); */
+
+    let target_hsm_group_value = serde_json::json!({
+        "label": target_hsm_group_name,
+        "decription": "",
+        "members": target_hsm_node_vec,
+        "tags": []
+    });
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&target_hsm_group_value).unwrap()
     );
 
     // Print parent HSM data
@@ -70,13 +88,21 @@ pub async fn exec(
         parent_hsm_group_name,
         parent_hsm_hw_component_summary_hashmap
     );
-    println!(
+    /* println!(
         "HSM '{}' members: {:?}",
-        parent_hsm_group_name,
-        parent_hsm_node_hw_component_count_vec
-            .into_iter()
-            .map(|(xname, _)| xname)
-            .collect::<Vec<String>>()
+        parent_hsm_group_name, parent_hsm_nodes
+    ); */
+
+    let parent_hsm_group_value = serde_json::json!({
+        "label": parent_hsm_group_name,
+        "decription": "",
+        "members": parent_hsm_node_vec,
+        "tags": []
+    });
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
     );
 }
 
