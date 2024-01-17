@@ -9,9 +9,10 @@ use mesa::shasta::ims::image::{ImsImage,ImsLink,ImsImageRecord2Update};
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_upload_object};
 use chrono::Local;
 use dialoguer::Confirm;
-use md5::Digest;
+use md5::{compute, Digest};
 use std::path::Path;
 use mesa::shasta;
+use mesa::shasta::bos::template::{BosTemplateRequest, Property};
 use mesa::shasta::cfs::configuration::CfsConfigurationRequest;
 use serde::{Deserialize,Serialize};
 
@@ -75,8 +76,6 @@ pub async fn exec(
     let backup_bos_file = bos_file.clone().unwrap().to_string();
     let backup_hsm_file = hsm_file.clone().unwrap().to_string();
 
-
-
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
     println!("\tImage name: {}", ims_image_name);
     println!("\t\trootfs file: {}", image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs");
@@ -117,58 +116,70 @@ pub async fn exec(
     // this operation is simple as the file only has git repos and commits
     create_cfs_config(shasta_token, shasta_base_url, shasta_root_cert, &backup_cfs_file).await;
 
-
     // Create a new BOS session template based on the original BOS file backed previously
-    // create_bos_sessiontemplate(shasta_token, shasta_base_url, shasta_root_cert, backup_bos_file).await;
+    create_bos_sessiontemplate(shasta_token, shasta_base_url, shasta_root_cert, &backup_bos_file, &ims_image_id).await;
 
     println!("Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
-    // Everything below can/should be ignored
+
     // ========================================================================================================
+}
+async fn create_bos_sessiontemplate(shasta_token: &str,
+                           shasta_base_url: &str,
+                           shasta_root_cert: &[u8],
+                           bos_file: &String,
+                           ims_image_id: &String) {
+    let bos_data = fs::read_to_string(PathBuf::from(bos_file))
+        .expect("Unable to read BOS JSON file");
+
+    let bos_json: serde_json::Value = serde_json::from_str(&bos_data)
+        .expect("BOS JSON file does not have correct format.");
+
+    let bos_sessiontemplate_name = bos_json["name"].clone().to_string().replace('"', "");
+    // BOS sessiontemplates need the new ID of the image!
+    println!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
+
+    match shasta::bos::template::http_client::filter(shasta_token,
+                                                     shasta_base_url,
+                                                     shasta_root_cert,
+                                                     &vec![],
+                                                     Option::from(&bos_sessiontemplate_name),
+                                                     None).await {
+        Ok(vector) => {
+            log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
+
+            if !vector.is_empty() {
+                println!("There already exists a BOS sessiontemplate with name {}. It can be replaced, but it's dangerous.", &bos_sessiontemplate_name);
+                let confirmation = Confirm::new()
+                    .with_prompt("Do you want to overwrite it?")
+                    .interact()
+                    .unwrap();
+
+                if ! confirmation {
+                    println!("Looks like you do not want to continue, bailing out.");
+                    std::process::exit(2)
+                }
+            }
+            let bos_sessiontemplate :BosTemplateRequest = serde_json::from_str(bos_data.as_str()).unwrap();
+            // This is as ugly as it can be
+            // println!("Path: {}", bos_sessiontemplate.clone().boot_sets.clone().unwrap().compute.clone().unwrap().path.clone().unwrap().to_string());
+            let path_modified = format!("s3://boot-images/{}/manifest.json",ims_image_id);
+            let bos_sessiontemplate_modified = bos_sessiontemplate.clone().set_bootset_compute_path(path_modified);
+
+            println!("BOS sessiontemplate loaded:\n{:#?}",&bos_sessiontemplate);
+            println!("BOS sessiontemplate modified:\n{:#?}",&bos_sessiontemplate_modified);
+
+            match shasta::bos::template::http_client::post(shasta_token,
+                                                               shasta_base_url,
+                                                               shasta_root_cert,
+                                                               &bos_sessiontemplate).await {
+                Ok(result) => println!("Ok, result: {:#?}", result),
+                Err(e1) => panic!("Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}", e1),
+            }
 
 
-
-    // CFS =========================================================================================
-
-    // load into memory
-    // let cfs_data = fs::read_to_string(PathBuf::from(cfs_file.unwrap()))
-    //     .expect("Unable to read HSM JSON file");
-    //
-    // let cfs_json: serde_json::Value = serde_json::from_str(&cfs_data)
-    //     .expect("HSM JSON file does not have correct format.");
-    // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
-
-    // create or update CFS config
-
-    // BOS =========================================================================================
-
-    // load into memory
-    // let bos_data = fs::read_to_string(PathBuf::from(&bos_file.unwrap()))
-    //     .expect("Unable to read HSM JSON file");
-    //
-    // let bos_json: serde_json::Value = serde_json::from_str(&bos_data)
-    //     .expect("HSM JSON file does not have correct format.");
-    //
-    // log::debug!("Migrate_restore: all JSON files loaded ok");
-
-
-
-    //
-    // let bos_templates = bos::template::http_client::get(
-    //     shasta_token,
-    //     shasta_base_url,
-    //     hsm_group_name,
-    //     template_name,
-    //     limit_number,
-    // )
-    //     .await
-    //     .unwrap_or_default();
-
-    // if bos_templates.is_empty() {
-    //     println!("No BOS template found!");
-    //     std::process::exit(0);
-    // } else {
-    //     bos::template::utils::print_table(bos_templates);
-    // }
+        }
+        Err(e) => panic!("Error, unable to query CSM to get list of BOS sessiontemplates. Error returned: {}", e),
+    }
 }
 
 async fn create_cfs_config(shasta_token: &str,
