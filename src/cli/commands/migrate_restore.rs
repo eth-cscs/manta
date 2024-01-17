@@ -11,6 +11,8 @@ use chrono::Local;
 use dialoguer::Confirm;
 use md5::Digest;
 use std::path::Path;
+use mesa::shasta;
+use mesa::shasta::cfs::configuration::CfsConfigurationRequest;
 use serde::{Deserialize,Serialize};
 
 
@@ -74,6 +76,7 @@ pub async fn exec(
     let backup_hsm_file = hsm_file.clone().unwrap().to_string();
 
 
+
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
     println!("\tImage name: {}", ims_image_name);
     println!("\t\trootfs file: {}", image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs");
@@ -113,6 +116,7 @@ pub async fn exec(
     // create a new CFS configuration based on the original CFS file backed up previously
     // this operation is simple as the file only has git repos and commits
     create_cfs_config(shasta_token, shasta_base_url, shasta_root_cert, &backup_cfs_file).await;
+
 
     // Create a new BOS session template based on the original BOS file backed previously
     // create_bos_sessiontemplate(shasta_token, shasta_base_url, shasta_root_cert, backup_bos_file).await;
@@ -174,9 +178,47 @@ async fn create_cfs_config(shasta_token: &str,
     let cfs_data = fs::read_to_string(PathBuf::from(cfs_file))
         .expect("Unable to read CFS JSON file");
 
-    let _cfs_json: serde_json::Value = serde_json::from_str(&cfs_data)
+    let cfs_json: serde_json::Value = serde_json::from_str(&cfs_data)
         .expect("CFS JSON file does not have correct format.");
+
     // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
+    let cfs_config_name = cfs_json["name"].clone().to_string().replace('"', "");
+    match shasta::cfs::configuration::http_client::get(shasta_token,
+                                                 shasta_base_url,
+                                                 shasta_root_cert,
+                                                 None,
+                                                 Option::from(&cfs_config_name),
+                                                 None).await {
+        Ok(vector) => {
+            if ! vector.is_empty() {
+                println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
+                let confirmation = Confirm::new()
+                    .with_prompt("Do you want to overwrite it?")
+                    .interact()
+                    .unwrap();
+
+                if ! confirmation {
+                    println!("Looks like you do not want to continue, bailing out.");
+                    std::process::exit(2)
+                }
+            }
+            // At this point we're sure there's either no CFS config with that name
+            // or that the user wants to overwrite it, so let's do it
+
+            let mut cfs_config :CfsConfigurationRequest = serde_json::from_str(cfs_data.as_str()).unwrap();
+            println!("CFS config:\n{:#?}",&cfs_config);
+            match shasta::cfs::configuration::http_client::put(shasta_token,
+                                                               shasta_base_url,
+                                                               shasta_root_cert,
+                                                               &cfs_config,
+                                                               &cfs_config_name.as_str()).await {
+                Ok(result) => println!("Ok, result: {:#?}", result),
+                Err(e1) => panic!("Error, unable to create CFS configuration. Error returned by CSM API: {}", e1),
+            }
+
+        },
+        Err(e) => panic!("Error, unable to query CSM to get list of CFS configurations. Error returned: {}", e),
+    };
 }
 
 async fn ims_update_image_with_manifest(shasta_token: &str,
