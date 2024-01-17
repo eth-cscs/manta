@@ -4,7 +4,6 @@ use mesa::manta;
 use std::fs::File;
 use mesa::shasta::hsm::http_client::get_hsm_group;
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_download_object};
-use serde_json::Value;
 
 pub async fn exec(
     shasta_token: &str,
