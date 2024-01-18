@@ -1,6 +1,7 @@
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::os::macos::fs::MetadataExt;
 use std::path::PathBuf;
 use mesa::shasta::hsm::http_client::{create_new_hsm_group, delete_hsm_group};
 use mesa::shasta::hsm::HsmGroup;
@@ -15,7 +16,7 @@ use mesa::shasta;
 use mesa::shasta::bos::template::{BosTemplateRequest, Property};
 use mesa::shasta::cfs::configuration::CfsConfigurationRequest;
 use serde::{Deserialize,Serialize};
-
+use humansize::{format_size, DECIMAL};
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -89,14 +90,17 @@ pub async fn exec(
 
     println!();
 
+    println!("Calculating image artifact checksum...");
     calculate_image_checksums(&mut ims_image_manifest, &vec_backup_image_files);
 
     // println!("{:?}", ims_image_manifest);
 
     // Do we have another image with this name?
+    println!("Registering new image with IMS...");
     let ims_image_id: String  = ims_register_image(&shasta_token, &shasta_base_url, &shasta_root_cert, &ims_image_name).await;
-    println!("New image record in IMS for image with name {}, new ID: {}", &ims_image_name, &ims_image_id);
+    println!("New IMS ID: {}", &ims_image_id);
 
+    println!("Uploading image artifacts to s3...");
     s3_upload_image_artifacts(shasta_token,
                               shasta_base_url,
                               shasta_root_cert,
@@ -108,14 +112,15 @@ pub async fn exec(
     log::debug!("Updating image record with location of the newly generated manifest.json data");
     ims_update_image_with_manifest(shasta_token, shasta_base_url, shasta_root_cert, &ims_image_name, &ims_image_id,).await;
 
-    println!("Creating group HSM...");
-    // hsm_create_group(&shasta_token, &shasta_base_url, &shasta_root_cert, &backup_hsm_file).await;
+    println!("Creating HSM group...");
     create_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, &backup_hsm_file).await;
 
+    println!("Uploading CFS configuration...");
     // create a new CFS configuration based on the original CFS file backed up previously
     // this operation is simple as the file only has git repos and commits
     create_cfs_config(shasta_token, shasta_base_url, shasta_root_cert, &backup_cfs_file).await;
 
+    println!("Uploading BOS sessiontemplate...");
     // Create a new BOS session template based on the original BOS file backed previously
     create_bos_sessiontemplate(shasta_token, shasta_base_url, shasta_root_cert, &backup_bos_file, &ims_image_id).await;
 
@@ -136,7 +141,7 @@ async fn create_bos_sessiontemplate(shasta_token: &str,
 
     let bos_sessiontemplate_name = bos_json["name"].clone().to_string().replace('"', "");
     // BOS sessiontemplates need the new ID of the image!
-    println!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
+    log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
     match shasta::bos::template::http_client::filter(shasta_token,
                                                      shasta_base_url,
@@ -165,8 +170,8 @@ async fn create_bos_sessiontemplate(shasta_token: &str,
             let path_modified = format!("s3://boot-images/{}/manifest.json",ims_image_id);
             let bos_sessiontemplate_modified = bos_sessiontemplate.clone().set_bootset_compute_path(path_modified);
 
-            println!("BOS sessiontemplate loaded:\n{:#?}",&bos_sessiontemplate);
-            println!("BOS sessiontemplate modified:\n{:#?}",&bos_sessiontemplate_modified);
+            log::debug!("BOS sessiontemplate loaded:\n{:#?}",&bos_sessiontemplate);
+            log::debug!("BOS sessiontemplate modified:\n{:#?}",&bos_sessiontemplate_modified);
 
             match shasta::bos::template::http_client::post(shasta_token,
                                                                shasta_base_url,
@@ -217,7 +222,7 @@ async fn create_cfs_config(shasta_token: &str,
             // or that the user wants to overwrite it, so let's do it
 
             let mut cfs_config :CfsConfigurationRequest = serde_json::from_str(cfs_data.as_str()).unwrap();
-            println!("CFS config:\n{:#?}",&cfs_config);
+            log::debug!("CFS config:\n{:#?}",&cfs_config);
             match shasta::cfs::configuration::http_client::put(shasta_token,
                                                                shasta_base_url,
                                                                shasta_root_cert,
@@ -286,7 +291,7 @@ async fn ims_update_image_with_manifest(shasta_token: &str,
 
     // println!("New IMS link {:?}", &rec);
     match update_image(shasta_token, shasta_base_url, shasta_root_cert, &ims_image_id.to_string(), &rec).await {
-        Ok(_returned) => println!("Returned json: {}", _returned),
+        Ok(_returned) => log::debug!("Returned json: {}", _returned),
         Err(e) => panic!("Error, unable to modify the record of the image. Err msg: {}",e),
     };
 }
@@ -306,7 +311,7 @@ async fn s3_upload_image_artifacts(shasta_token: &str,
     // Connect and auth to S3
     let sts_value = match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
         Ok(sts_value) => {
-            println!("Debug - STS token:\n{:#?}", sts_value);
+            log::debug!("Debug - STS token:\n{:#?}", sts_value);
             sts_value
         }
         Err(error) => panic!("Unable to authenticate with s3 when uploading images. Error: {}", error)
@@ -314,8 +319,24 @@ async fn s3_upload_image_artifacts(shasta_token: &str,
 
     for file in vec_image_files {
         let filename = Path::new(file).file_name().clone().unwrap();
+        let file_size = match fs::metadata(file) {
+            Ok(_file_metadata) => {
+                let res: String = humansize::format_size(_file_metadata.st_size(), DECIMAL);
+                res
+            },
+            Err(e) => {
+                eprintln!("Unable to fetch file metadata info, faking the value");
+                "-1".to_string()
+            }
+        };
+
         let full_object_path = format!("{}/{}", &object_path, &filename.to_string_lossy());
-        println!("Uploading file {:?} to s3://{}/{}.", &file, &bucket_name, &full_object_path);
+        println!("Uploading file {:?} ({}) to s3://{}/{}.",
+                 &file,
+                 &file_size,
+                 &bucket_name,
+                 &full_object_path);
+
         match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
             Ok(_result) => {
                 println!("OK");
@@ -401,7 +422,17 @@ fn file_md5sum(filename: PathBuf) -> Digest {
 fn calculate_image_checksums(image_manifest: &mut ImageManifest, vec_backup_image_files: &Vec<String>) {
 
     for file in vec_backup_image_files {
-        println!("Calculating md5sum of file {:?}...", file);
+        let file_size = match fs::metadata(&file) {
+            Ok(_file_metadata) => {
+                let res: String = humansize::format_size(_file_metadata.st_size(), DECIMAL);
+                res
+            },
+            Err(e) => {
+                eprintln!("Unable to fetch file metadata info, faking the value");
+                "-1".to_string()
+            }
+        };
+        println!("Calculating md5sum of file {:?} ({})...", &file, &file_size);
         let mut artifact = Artifact {
             link: Link { path: "".to_string(), r#type: "".to_string() },
             md5: "".to_string(),
@@ -410,7 +441,7 @@ fn calculate_image_checksums(image_manifest: &mut ImageManifest, vec_backup_imag
         let mut fp = PathBuf::new();
         fp.push(file);
         let digest = file_md5sum(fp);
-        println!("{:x}\t{:?}", digest, file);
+        // println!("{:x}\t{:?}", digest, file);
 
         if file.contains("kernel") {
             artifact = Artifact {
