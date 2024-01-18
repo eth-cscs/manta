@@ -17,6 +17,7 @@ use mesa::shasta::bos::template::BosTemplateRequest;
 use mesa::shasta::cfs::configuration::CfsConfigurationRequest;
 use serde::{Deserialize,Serialize};
 use humansize::DECIMAL;
+use indicatif::ProgressBar;
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -395,10 +396,13 @@ fn file_md5sum(filename: PathBuf) -> Digest {
     let f = File::open(filename).unwrap();
     // Find the length of the file
     let len = f.metadata().unwrap().len();
-    // Decide on a reasonable buffer size (300MB in this case, fastest will depend on hardware)
-    let buf_len = len.min(300_000_000) as usize;
+    // Decide on a reasonable buffer size (100MB in this case, fastest will depend on hardware)
+    let buf_len = len.min(100_000_000) as usize;
     let mut buf = BufReader::with_capacity(buf_len, f);
     let mut context = md5::Context::new();
+    let mut i = 0;
+    let bar = ProgressBar::new(len/buf_len as u64);
+
     loop {
         // Get a chunk of the file
         let part = buf.fill_buf().unwrap();
@@ -411,8 +415,16 @@ fn file_md5sum(filename: PathBuf) -> Digest {
         // Tell the buffer that the chunk is consumed
         let part_len = part.len();
         buf.consume(part_len);
+        i+=1;
+        bar.inc(1);
+        // println!("Consumed {} out of {}; step {}/{}",
+        //          humansize::format_size(part_len, DECIMAL),
+        //          humansize::format_size(len, DECIMAL),
+        //          i, len as usize/buf_len);
     }
     let digest = context.compute();
+    bar.finish();
+
     // println!("{:x}\t{:?}", digest, &filename);
     digest
 }
@@ -432,12 +444,7 @@ fn calculate_image_checksums(image_manifest: &mut ImageManifest, vec_backup_imag
             }
         };
         println!("Calculating md5sum of file {:?} ({})...", &file, &file_size);
-        let mut artifact;
-        // let mut artifact = Artifact {
-        //     link: Link { path: "".to_string(), r#type: "".to_string() },
-        //     md5: "".to_string(),
-        //     r#type: "".to_string(),
-        // };
+        let artifact;
         let mut fp = PathBuf::new();
         fp.push(file);
         let digest = file_md5sum(fp);
