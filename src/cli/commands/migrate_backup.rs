@@ -16,7 +16,7 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
-    let mut countfiles2download = files2download.len() + 3 ; // BOS + CFS + HSM
+    let countfiles2download = files2download.len() + 3 ; // BOS + CFS + HSM
     // let files2download = ["manifest.json"];
 
     log::debug!("Create directory '{}'", destination.unwrap());

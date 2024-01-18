@@ -571,7 +571,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_migrate_backup() -> Command {
-    let mut migrate_backup = Command::new("backup")
+    let migrate_backup = Command::new("backup")
         .aliases(["mb"])
         .arg_required_else_help(true)
         .about("Backup the configuration (BOS, CFS, image and HSM group) of a given vCluster/BOS session template.")
@@ -581,7 +581,7 @@ pub fn subcommand_migrate_backup() -> Command {
     migrate_backup
 }
 pub fn subcommand_migrate_restore() -> Command {
-    let mut migrate_restore = Command::new("restore")
+    let migrate_restore = Command::new("restore")
         .aliases(["mr"])
         .arg_required_else_help(true)
         .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")

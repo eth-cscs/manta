@@ -10,13 +10,13 @@ use mesa::shasta::ims::image::{ImsImage,ImsLink,ImsImageRecord2Update};
 use mesa::shasta::ims::s3::s3::{s3_auth, s3_upload_object};
 use chrono::Local;
 use dialoguer::Confirm;
-use md5::{compute, Digest};
+use md5::Digest;
 use std::path::Path;
 use mesa::shasta;
-use mesa::shasta::bos::template::{BosTemplateRequest, Property};
+use mesa::shasta::bos::template::BosTemplateRequest;
 use mesa::shasta::cfs::configuration::CfsConfigurationRequest;
 use serde::{Deserialize,Serialize};
-use humansize::{format_size, DECIMAL};
+use humansize::DECIMAL;
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -222,7 +222,7 @@ async fn create_cfs_config(shasta_token: &str,
             // At this point we're sure there's either no CFS config with that name
             // or that the user wants to overwrite it, so let's do it
 
-            let mut cfs_config :CfsConfigurationRequest = serde_json::from_str(cfs_data.as_str()).unwrap();
+            let cfs_config :CfsConfigurationRequest = serde_json::from_str(cfs_data.as_str()).unwrap();
             log::debug!("CFS config:\n{:#?}",&cfs_config);
             match shasta::cfs::configuration::http_client::put(shasta_token,
                                                                shasta_base_url,
@@ -259,7 +259,7 @@ async fn ims_update_image_add_manifest(shasta_token: &str,
         },
         Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
-    let ims_record = ImsImage {
+    let _ims_record = ImsImage {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
         created: None,
@@ -327,7 +327,7 @@ async fn s3_upload_image_artifacts(shasta_token: &str,
                 res
             },
             Err(e) => {
-                eprintln!("Unable to fetch file metadata info, faking the value");
+                eprintln!("Unable to fetch file metadata info, faking the value. Error: {}",e);
                 "-1".to_string()
             }
         };
@@ -427,16 +427,17 @@ fn calculate_image_checksums(image_manifest: &mut ImageManifest, vec_backup_imag
                 res
             },
             Err(e) => {
-                eprintln!("Unable to fetch file metadata info, faking the value");
+                eprintln!("Unable to fetch file metadata info, faking the value. Error: {}", e);
                 "-1".to_string()
             }
         };
         println!("Calculating md5sum of file {:?} ({})...", &file, &file_size);
-        let mut artifact = Artifact {
-            link: Link { path: "".to_string(), r#type: "".to_string() },
-            md5: "".to_string(),
-            r#type: "".to_string(),
-        };
+        let mut artifact;
+        // let mut artifact = Artifact {
+        //     link: Link { path: "".to_string(), r#type: "".to_string() },
+        //     md5: "".to_string(),
+        //     r#type: "".to_string(),
+        // };
         let mut fp = PathBuf::new();
         fp.push(file);
         let digest = file_md5sum(fp);
