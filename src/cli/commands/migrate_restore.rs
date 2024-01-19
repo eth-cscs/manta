@@ -7,7 +7,7 @@ use mesa::shasta::hsm::http_client::{create_new_hsm_group, delete_hsm_group};
 use mesa::shasta::hsm::HsmGroup;
 use mesa::shasta::ims::image::http_client::{register_new_image,update_image};
 use mesa::shasta::ims::image::{ImsImage,ImsLink,ImsImageRecord2Update};
-use mesa::shasta::ims::s3::s3::{s3_auth, s3_upload_object};
+use mesa::shasta::ims::s3::s3::{s3_auth, s3_upload_object, s3_multipart_upload_object};//, s3_upload_object_multipart};
 use chrono::Local;
 use dialoguer::Confirm;
 use md5::Digest;
@@ -340,12 +340,23 @@ async fn s3_upload_image_artifacts(shasta_token: &str,
                  &bucket_name,
                  &full_object_path);
 
-        match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
-            Ok(_result) => {
-                println!("OK");
-            },
-            Err(error) => panic!("Unable to upload file to s3. Error {}", error)
-        };
+        if fs::metadata(file).unwrap().st_size() > 1024*1024*200 {
+            match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
+                Ok(_result) => {
+                    println!("OK");
+                },
+                Err(error) => panic!("Unable to upload file to s3. Error {}", error)
+            };
+        } else {
+            match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
+                Ok(_result) => {
+                    println!("OK");
+                },
+                Err(error) => panic!("Unable to upload file to s3. Error {}", error)
+            };
+        }
+
+
         // I'm pretty sure there's a better way to do this...
         if file.contains("kernel") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
