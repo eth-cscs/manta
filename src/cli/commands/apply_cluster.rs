@@ -54,7 +54,10 @@ pub async fn exec(
 
     // Process "hardware" section in SAT file
 
-    println!("DEBUG - hardware pattern: {:?}", hardware_yaml_value_vec_opt);
+    println!(
+        "DEBUG - hardware pattern: {:?}",
+        hardware_yaml_value_vec_opt
+    );
 
     // Process "configurations" section in SAT file
 
@@ -132,7 +135,17 @@ pub async fn exec(
         )
         .await;
 
-        if create_cfs_session_resp.is_err() {
+        if create_cfs_session_resp.is_err()
+            || create_cfs_session_resp
+                .unwrap()
+                .status
+                .unwrap()
+                .session
+                .unwrap()
+                .succeeded
+                .unwrap()
+                == "false"
+        {
             eprintln!("CFS session creation failed. Exit");
             std::process::exit(1);
         }
@@ -296,16 +309,20 @@ pub async fn process_session_template_section_in_sat_file(
             .to_string()
             .replace("__DATE__", tag);
 
-        let mut cfs_configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
+        log::info!(
+            "Looking for CFS configuration with name: {}",
+            bos_session_template_configuration_name
+        );
+
+        let cfs_configuration_vec_rslt = mesa::cfs::configuration::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             Some(&bos_session_template_configuration_name),
         )
-        .await
-        .unwrap();
+        .await;
 
-        mesa::cfs::configuration::mesa::utils::filter(
+        /* mesa::cfs::configuration::mesa::utils::filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -314,9 +331,9 @@ pub async fn process_session_template_section_in_sat_file(
             hsm_group_available_vec,
             None,
         )
-        .await;
+        .await; */
 
-        if cfs_configuration_vec.is_empty() {
+        if cfs_configuration_vec_rslt.is_err() || cfs_configuration_vec_rslt.unwrap().is_empty() {
             eprintln!(
                 "ERROR: BOS session template configuration not found in SAT file image list."
             );
