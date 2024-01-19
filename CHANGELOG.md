@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.1] - 2024-01-19
+
+### Bug Fixes
+
+- Fix bug when creating clusters using sat file
+
+### Features
+
+- Add and remove nodes from HSM group
+- Add functionality to add or remove nodes to/from an HSM group
+- Add new mesa version
+
+### Refactor
+
+- Clean code related to subcommand 'apply hw'
+- Clean code
+- Add apply hw-configuration cli help message
+- Clippy fixes
+- Clippy fixes
+- Clippy fixes
+- Change apply/add/remove hw components to/from HSM group to
+
 ## [1.19.0] - 2024-01-15
 
 ### Features
@@ -9,6 +31,10 @@ All notable changes to this project will be documented in this file.
 - Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
 - Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
 - Initial code for apply hw subcommand keeping target hsm members
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.0
 
 ## [1.18.0] - 2024-01-11
 
