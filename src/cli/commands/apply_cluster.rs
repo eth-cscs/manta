@@ -86,11 +86,12 @@ pub async fn exec(
         )
         .await;
 
-        let cfs_configuration = if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
-            cfs_configuration_value
-        } else {
-            eprintln!("CFS configuration creation failed. Exit");
-            std::process::exit(1);
+        let cfs_configuration = match cfs_configuration_value_rslt {
+            Ok(cfs_configuration_value) => cfs_configuration_value,
+            Err(error_message) => {
+                eprintln!("{}, Exit", error_message);
+                std::process::exit(1);
+            }
         };
 
         let cfs_configuration_name = cfs_configuration.name.to_string();

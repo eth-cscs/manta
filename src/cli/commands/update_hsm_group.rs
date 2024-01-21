@@ -19,7 +19,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        desired_configuration_opt,
+        desired_configuration_opt.map(|elem| elem.as_str()),
     )
     .await;
 

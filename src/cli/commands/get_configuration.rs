@@ -24,7 +24,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            configuration_name,
+            configuration_name.map(|elem| elem.as_str()),
             hsm_group_name_vec,
             limit,
         )
