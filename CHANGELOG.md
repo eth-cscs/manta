@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.3] - 2024-01-21
+
+### Refactor
+
+- Clean code
+
 ## [1.19.2] - 2024-01-21
 
 ### Bug Fixes
 
 - Rollback apply hw so it unpins all nodes in target hsm
 - Fix issues related to add hw and remove hw subcommands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.2
 
 ## [1.19.1] - 2024-01-19
 
