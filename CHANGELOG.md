@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.2] - 2024-01-21
+
+### Bug Fixes
+
+- Rollback apply hw so it unpins all nodes in target hsm
+- Fix issues related to add hw and remove hw subcommands
+
 ## [1.19.1] - 2024-01-19
 
 ### Bug Fixes
@@ -13,6 +20,10 @@ All notable changes to this project will be documented in this file.
 - Add and remove nodes from HSM group
 - Add functionality to add or remove nodes to/from an HSM group
 - Add new mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.1
 
 ### Refactor
 
