@@ -5,6 +5,11 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
+use crate::cli::commands::apply_hw_cluster::utils::{
+    calculate_hsm_hw_component_summary, calculate_scarcity_scores,
+    get_hsm_node_hw_component_counter,
+};
+
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -92,49 +97,15 @@ pub async fn exec(
         target_hsm_node_hw_component_count_vec
     ); */
 
-    // User may ask for resources that does not exists in neither target nor parent HSM groups they
-    // manage, for this reason we are going to clean the hw components in the user request which
-    // does not exists in either target or parent HSM group
-    //
     // Calculate hw component counters (summary) across all node within the HSM group
-    let target_hsm_hw_component_count_hashmap: HashMap<String, usize> =
-        calculate_hsm_hw_component_count(&target_hsm_node_hw_component_count_vec);
-
-    user_defined_delta_hw_component_count_hashmap.retain(|hw_component, _qty| {
-        target_hsm_hw_component_count_hashmap.contains_key(hw_component)
-    });
-
-    // Filter/group hw component type based on user input pattern (eg if user input pattern has
-    // work "epyc", then all AMD epyc cpus like "AMD EPYC 7713 64-Core Processor", "AMD EPYC 7742 64-Core Processor", "AMD EPYC 7A53 64-Core Processor", etc. will be grouped in a single hw component type called "epyc")
-    let target_hsm_hw_component_count_filtered_by_user_request_hashmap: HashMap<String, usize> =
-        filter_hsm_hw_component_count_based_on_user_input_pattern(
-            &user_defined_delta_hw_component_vec,
-            &target_hsm_node_hw_component_count_vec,
-        );
+    let target_hsm_hw_component_summary: HashMap<String, usize> =
+        calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
 
     log::info!(
-        "HSM '{}' hw component counters filtered by user input pattern: {:?}",
+        "HSM group '{}' hw component summary: {:?}",
         target_hsm_group_name,
-        target_hsm_hw_component_count_filtered_by_user_request_hashmap
+        target_hsm_hw_component_summary
     );
-
-    // *********************************************************************************************************
-    // CALCULATE FINAL HSM GROUP HW COMPONENT COUNTERS SUMMARY (TARGET HSM GROUP MINUS USER INPUT DELTAS). Calculate the hw components the target HSM group should have after applying the deltas
-    // (removing the hw components from the target hsm spcecified by the user)
-    let mut target_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap: HashMap<
-        String,
-        usize,
-    > = HashMap::new();
-
-    for (hw_component, counter) in &user_defined_delta_hw_component_count_hashmap {
-        let new_counter: usize = target_hsm_hw_component_count_filtered_by_user_request_hashmap
-            .get(hw_component)
-            .unwrap()
-            - *counter as usize;
-
-        target_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap
-            .insert(hw_component.to_string(), new_counter);
-    }
 
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - PARENT HSM
@@ -150,7 +121,7 @@ pub async fn exec(
         .await;
 
     // Get HSM hw component counters for parent HSM
-    let mut parent_hsm_node_hw_component_count_vec = get_hsm_hw_node_component_counter(
+    let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -160,7 +131,7 @@ pub async fn exec(
     )
     .await;
 
-    // sort nodes hw counters by node name
+    // Sort nodes hw counters by node name
     parent_hsm_node_hw_component_count_vec
         .sort_by_key(|parent_hsm_group_hw_component| parent_hsm_group_hw_component.0.clone());
 
@@ -170,112 +141,94 @@ pub async fn exec(
         parent_hsm_node_hw_component_count_vec
     ); */
 
-    // User may ask for resources that does not exists in neither target nor parent HSM groups they
-    // manage, for this reason we are going to clean the hw components in the user request which
-    // does not exists in either target or parent HSM group
-    //
     // Calculate hw component counters (summary) across all node within the HSM group
-    let parent_hsm_hw_component_count_hashmap: HashMap<String, usize> =
-        calculate_hsm_hw_component_count(&parent_hsm_node_hw_component_count_vec);
-
-    user_defined_delta_hw_component_count_hashmap.retain(|hw_component, _qty| {
-        parent_hsm_hw_component_count_hashmap.contains_key(hw_component)
-    });
-
-    // Filter/group hw component type based on user input pattern (eg if user input pattern has
-    // work "epyc", then all AMD epyc cpus like "AMD EPYC 7713 64-Core Processor", "AMD EPYC 7742 64-Core Processor", "AMD EPYC 7A53 64-Core Processor", etc. will be grouped in a single hw component type called "epyc")
-    let parent_hsm_node_hw_component_count_filtered_by_user_request_hashmap: HashMap<
-        String,
-        usize,
-    > = filter_hsm_hw_component_count_based_on_user_input_pattern(
-        &user_defined_delta_hw_component_vec,
-        &parent_hsm_node_hw_component_count_vec,
-    );
+    let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
+        calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
     log::info!(
-        "HSM '{}' hw component counters filtered by user input pattern: {:?}",
+        "HSM group '{}' hw component summary: {:?}",
         parent_hsm_group_name,
-        parent_hsm_node_hw_component_count_filtered_by_user_request_hashmap
+        parent_hsm_hw_component_summary_hashmap
     );
+
+    // *********************************************************************************************************
+    // CALCULATE COMBINED HSM WITH TARGET HSM AND PARENT HSM DATA
+
+    let mut combined_target_parent_hsm_node_hw_component_count_vec = [
+        target_hsm_node_hw_component_count_vec.clone(),
+        parent_hsm_node_hw_component_count_vec.clone(),
+    ]
+    .concat();
+
+    let combined_target_parent_hsm_hw_component_summary_hashmap =
+        calculate_hsm_hw_component_summary(&combined_target_parent_hsm_node_hw_component_count_vec);
+
+    // *********************************************************************************************************
+    // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
+
+    // Get parent HSM group members
+    // Calculate nomarlized score for each hw component type in as much HSM groups as possible
+    // related to the stakeholders using these nodes
+    let combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
+        String,
+        f32,
+    > = calculate_scarcity_scores(&combined_target_parent_hsm_node_hw_component_count_vec).await;
 
     // *********************************************************************************************************
     // CALCULATE FINAL HSM GROUP HW COMPONENT COUNTERS (SUMMARY) AND DELTAS Calculate the hw components the target HSM group should have after applying the deltas
     // (removing the hw components from the target hsm spcecified by the user)
-    let mut parent_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap: HashMap<
-        String,
-        usize,
-    > = HashMap::new();
+    let mut final_target_hsm_hw_component_summary: HashMap<String, usize> = HashMap::new();
 
     for (hw_component, counter) in &user_defined_delta_hw_component_count_hashmap {
-        let new_counter: usize = parent_hsm_node_hw_component_count_filtered_by_user_request_hashmap
-            .get(hw_component)
-            .unwrap() - *counter as usize;
+        let new_counter: usize =
+            target_hsm_hw_component_summary.get(hw_component).unwrap() - *counter as usize;
 
-        parent_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap
-            .insert(hw_component.to_string(), new_counter);
+        final_target_hsm_hw_component_summary.insert(hw_component.to_string(), new_counter);
     }
-
-    //*************************************************************************************
-    // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
-    // Get parent HSM group members
-    // Calculate nomarlized score for each hw component type in as much HSM groups as possible
-    // related to the stakeholders using these nodes
-    let target_hsm_and_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
-        String,
-        f32,
-    > = calculate_scarcity_scores_across_both_target_and_parent_hsm_groups(
-        &[
-            target_hsm_node_hw_component_count_vec.clone(),
-            parent_hsm_node_hw_component_count_vec,
-        ]
-        .concat(),
-    )
-    .await;
 
     // *********************************************************************************************************
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
 
-    // Migrate nodes
-    let mut hw_component_counters_moved_from_target_hsm = downscale_node_migration(
-        &target_hsm_hw_component_count_filtered_by_user_request_after_applying_deltas_hashmap,
-        &user_defined_delta_hw_component_vec,
-        &mut target_hsm_node_hw_component_count_vec,
-        &target_hsm_and_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
-    );
+    // Downscale parent HSM group
+    let hw_component_counters_to_move_out_from_target_hsm =
+        crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
+            &final_target_hsm_hw_component_summary.clone(),
+            &final_target_hsm_hw_component_summary
+                .into_iter()
+                .map(|(hw_component, _)| hw_component)
+                .collect::<Vec<String>>(),
+            &mut target_hsm_node_hw_component_count_vec,
+            &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
+        );
 
     // *********************************************************************************************************
     // PREPARE INFORMATION TO SHOW
 
-    // Sort hw components moved form target HSM group
-    hw_component_counters_moved_from_target_hsm.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-
-    // Get list of xnames in target HSM group
-    let target_hsm_node_vec = target_hsm_node_hw_component_count_vec
+    let nodes_moved_from_target_hsm = hw_component_counters_to_move_out_from_target_hsm
         .iter()
         .map(|(xname, _)| xname)
         .cloned()
         .collect::<Vec<String>>();
 
-    // Get xnames form list of hw components moved from target HSM group
-    let nodes_moved_from_target_hsm_to_parent_hsm_vec = hw_component_counters_moved_from_target_hsm
-        .iter()
-        .map(|(xname, _)| xname.clone())
-        .collect::<Vec<String>>();
-
-    let hw_component_count_target_hsm_hashmap =
-        calculate_hsm_hw_component_count(&target_hsm_node_hw_component_count_vec);
-
-    let hw_component_count_moved_from_target_hsm_hashmap =
-        calculate_hsm_hw_component_count(&hw_component_counters_moved_from_target_hsm);
-
-    let mut parent_hsm_node_vec = [
-        parent_hsm_group_member_vec,
-        nodes_moved_from_target_hsm_to_parent_hsm_vec,
-    ]
-    .concat();
+    // Get parent HSM group members
+    let mut parent_hsm_node_vec: Vec<String> = parent_hsm_group_member_vec;
+    parent_hsm_node_vec.extend(nodes_moved_from_target_hsm);
 
     parent_hsm_node_vec.sort();
-    parent_hsm_node_vec.dedup();
+
+    let parent_hsm_hw_component_summary =
+        calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
+
+    // Calculate hw component counters (summary) across all node within the HSM group
+    let target_hsm_hw_component_summary: HashMap<String, usize> =
+        calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+
+    // Get list of xnames in target HSM group
+    let target_hsm_node_vec = target_hsm_node_hw_component_count_vec 
+        .iter()
+        .map(|(xname, _)| xname)
+        .cloned()
+        .collect::<Vec<String>>();
 
     // *********************************************************************************************************
     // SHOW THE SOLUTION
@@ -284,6 +237,12 @@ pub async fn exec(
 
     log::info!("Hw components in HSM '{}'", target_hsm_group_name);
 
+    log::info!(
+        "hsm '{}' hw component counters: {:?}",
+        target_hsm_group_name,
+        target_hsm_node_hw_component_count_vec
+    );
+
     let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
         &user_defined_delta_hw_component_vec,
         &target_hsm_node_hw_component_count_vec,
@@ -291,18 +250,9 @@ pub async fn exec(
 
     log::info!("\n{hw_configuration_table}");
 
-    log::info!("Hw components moved from HSM '{}'", target_hsm_group_name);
-
-    let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
-        &user_defined_delta_hw_component_vec,
-        &hw_component_counters_moved_from_target_hsm,
-    );
-
-    log::info!("\n{hw_configuration_table}");
-
     let confirm_message = format!(
         "Please check and confirm new hw summary for cluster '{}': {:?}",
-        target_hsm_group_name, hw_component_count_target_hsm_hashmap
+        target_hsm_group_name, target_hsm_hw_component_summary
     );
 
     if Confirm::with_theme(&ColorfulTheme::default())
