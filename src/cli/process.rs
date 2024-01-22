@@ -1052,6 +1052,32 @@ pub async fn process_cli(
                     destination,
                 )
                 .await;
+            } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
+                let bos_file = cli_migrate.get_one::<String>("bos-file");
+                let cfs_file = cli_migrate.get_one::<String>("cfs-file");
+                let hsm_file = cli_migrate.get_one::<String>("hsm-file");
+                commands::migrate_restore::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos_file,
+                    cfs_file,
+                    hsm_file,
+                )
+                .await;
+            }
+        } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
+            if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {
+                let bos = cli_migrate.get_one::<String>("bos");
+                let destination = cli_migrate.get_one::<String>("destination");
+                migrate_backup::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos,
+                    destination,
+                )
+                .await;
             } else if let Some(_cli_migrate) = cli_migrate.subcommand_matches("restore") {
                 log::info!(">>> MIGRATE RESTORE not implemented yet")
             }

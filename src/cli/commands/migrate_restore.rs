@@ -1,20 +1,39 @@
+use std::fs;
+use std::path::PathBuf;
+
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
-    hsm_group_name: Option<&String>,
-    template_name: Option<&String>,
-    most_recent: Option<bool>,
-    limit: Option<&u8>,
+    shasta_root_cert: &[u8],
+    bos_file:  Option<&String>,
+    cfs_file:  Option<&String>,
+    hsm_file:  Option<&String>
 ) {
-    let limit_number;
+    println!("Migrate_backup; BOS_file={}, CFS_file={}, HSM_file={}",bos_file.unwrap(), cfs_file.unwrap(), hsm_file.unwrap());
+    // HSM -----------------------------------------------------------------------------------------
+    // HSM needs to go first as CFS and BOS have references to it
+    let hsm_data = fs::read_to_string(PathBuf::from(hsm_file.unwrap()))
+        .expect("Unable to read HSM JSON file");
 
-    if let Some(true) = most_recent {
-        limit_number = Some(&1);
-    } else if let Some(false) = most_recent {
-        limit_number = limit;
-    } else {
-        limit_number = None;
-    }
+    let hsm_json: serde_json::Value = serde_json::from_str(&hsm_data)
+        .expect("HSM JSON file does not have correct format.");
+
+    // CFS -----------------------------------------------------------------------------------------
+    let cfs_data = fs::read_to_string(PathBuf::from(cfs_file.unwrap()))
+        .expect("Unable to read HSM JSON file");
+
+    let cfs_json: serde_json::Value = serde_json::from_str(&cfs_data)
+        .expect("HSM JSON file does not have correct format.");
+    // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
+
+    // BOS -----------------------------------------------------------------------------------------
+    let bos_data = fs::read_to_string(PathBuf::from(&bos_file.unwrap()))
+        .expect("Unable to read HSM JSON file");
+
+    let bos_json: serde_json::Value = serde_json::from_str(&bos_data)
+        .expect("HSM JSON file does not have correct format.");
+
+    println!("All loaded ok");
     //
     // let bos_templates = bos::template::http_client::get(
     //     shasta_token,

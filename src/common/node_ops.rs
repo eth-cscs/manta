@@ -1,6 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::{hsm, node::r#struct::NodeDetails};
-use regex::Regex;
+use mesa::node::r#struct::NodeDetails;
 use serde_json::Value;
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {

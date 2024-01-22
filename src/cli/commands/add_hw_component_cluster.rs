@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use serde_json::Value;
 
 use crate::cli::commands::apply_hw_cluster::utils::{
     calculate_hsm_hw_component_summary, calculate_scarcity_scores,
