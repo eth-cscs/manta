@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] - 2024-01-22
+
+### Bug Fixes
+
+- Merge cluster migration branch
+- Cli build code fix
+
 ## [1.19.3] - 2024-01-21
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.3
 
 ### Refactor
 
@@ -293,6 +304,18 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Panic when trying to connect to CFS session (ansible) container
+- Simplify the collection of the HSM group description data.
+
+### Feature
+
+- Migrate/backup first commit (partial)
+- Migrate/backup ignore JetBrains stuff
+- Migrate/backup download all files of a bos session template
+- Migrate/backup fix count of artifacts in download info
+- Migrate/backup add support to produce a file with the list of xnames belonging to the HSM groups in the BOS session template.
+- Migrate/backup cleanup
+- Migrate/backup more cleanup
+- Migrate/restore load backed files into memory
 
 ### Features
 
