@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] - 2024-01-23
+
+### Bug Fixes
+
+- Add migrate subcommand
+
 ## [1.20.0] - 2024-01-22
 
 ### Bug Fixes
 
 - Merge cluster migration branch
 - Cli build code fix
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.0
 
 ## [1.19.3] - 2024-01-21
 
