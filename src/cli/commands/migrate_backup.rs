@@ -18,6 +18,7 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
+    let countfiles2download = files2download.len() + 3 ; // BOS + CFS + HSM
     // let files2download = ["manifest.json"];
 
     log::debug!("Create directory '{}'", destination.unwrap());
@@ -29,6 +30,7 @@ pub async fn exec(
             error.to_string()
         ),
     };
+
     let _empty_hsm_group_name: Vec<String> = Vec::new();
     let mut bos_templates = mesa::bos::template::mesa::http_client::get(
         shasta_token,
@@ -47,6 +49,7 @@ pub async fn exec(
         std::process::exit(0);
     } else {
         // BOS ------------------------------------------------------------------------------------
+
         let bos_file_name = String::from(bos.unwrap()) + ".json";
         let bos_file_path = dest_path.join(bos_file_name);
         let bos_file = File::create(&bos_file_path).expect("bos.json file could not be created.");
@@ -64,6 +67,7 @@ pub async fn exec(
 
         // HSM group -----------------------------------------------------------------------------
         let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
+
         let hsm_file_path = dest_path.join(hsm_file_name);
         let hsm_file = File::create(&hsm_file_path).expect("HSM file could not be created.");
         println!(
@@ -122,6 +126,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+
             Some(&configuration_name_clean),
         )
         .await
@@ -176,6 +181,7 @@ pub async fn exec(
                                 log::debug!("Debug - STS token:\n{:#?}", sts_value);
                                 sts_value
                             }
+
                             Err(error) => panic!("{}", error.to_string()),
                         };
                     for file in files2download {
@@ -201,8 +207,8 @@ pub async fn exec(
                                 ),
                             };
                     }
-                    // Here the image should be downloaded already
-                };
+                    Err(error) =>  panic!("{}", error.to_string())
+                }
             }
         }
 

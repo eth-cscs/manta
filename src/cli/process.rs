@@ -1056,6 +1056,8 @@ pub async fn process_cli(
                 let bos_file = cli_migrate.get_one::<String>("bos-file");
                 let cfs_file = cli_migrate.get_one::<String>("cfs-file");
                 let hsm_file = cli_migrate.get_one::<String>("hsm-file");
+                let ims_file = cli_migrate.get_one::<String>("ims-file");
+                let image_dir = cli_migrate.get_one::<String>("image-dir");
                 commands::migrate_restore::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1063,8 +1065,9 @@ pub async fn process_cli(
                     bos_file,
                     cfs_file,
                     hsm_file,
-                )
-                .await;
+                    ims_file,
+                    image_dir
+                ).await;
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
             if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {

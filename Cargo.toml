@@ -51,6 +51,10 @@ crossterm = "0.27.0"
 dhat = "0.3.2" # used for memory profiling
 base64 = "0.13.1"
 exitcode = "1.1.2"
+digest = "0.10.7"
+md5 = { version = "0.7.0", features = [] }
+humansize = "2.0.0"
+indicatif = "0.17.7"
 
 [build-dependencies]
 clap = "*"
