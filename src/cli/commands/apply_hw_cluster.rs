@@ -271,10 +271,8 @@ pub mod utils {
         let combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
             String,
             f32,
-        > = calculate_scarcity_scores(
-            &combined_target_parent_hsm_node_hw_component_count_vec,
-        )
-        .await;
+        > = calculate_scarcity_scores(&combined_target_parent_hsm_node_hw_component_count_vec)
+            .await;
 
         // *********************************************************************************************************
         // CALCULATE FINAL HSM SUMMARY COUNTERS AFTER REMOVING THE NODES THAT NEED TO GO TO TARGET
@@ -291,9 +289,7 @@ pub mod utils {
         let hw_component_counters_to_move_out_from_combined_hsm =
             crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
                 &final_combined_target_parent_hsm_hw_component_summary.clone(),
-                &final_combined_target_parent_hsm_hw_component_summary
-                    .into_iter()
-                    .map(|(hw_component, _)| hw_component)
+                &final_combined_target_parent_hsm_hw_component_summary.into_keys()
                     .collect::<Vec<String>>(),
                 &mut combined_target_parent_hsm_node_hw_component_count_vec,
                 &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
@@ -606,18 +602,14 @@ pub mod utils {
     } */
 
     pub async fn calculate_scarcity_scores(
-        hsm_node_hw_component_count: &Vec<(
-            String,
-            HashMap<String, usize>,
-        )>,
+        hsm_node_hw_component_count: &Vec<(String, HashMap<String, usize>)>,
     ) -> HashMap<String, f32> {
         let total_num_nodes = hsm_node_hw_component_count.len();
 
-        let mut hw_component_vec: Vec<&String> =
-            hsm_node_hw_component_count
-                .iter()
-                .flat_map(|(_, hw_component_counter_hashmap)| hw_component_counter_hashmap.keys())
-                .collect();
+        let mut hw_component_vec: Vec<&String> = hsm_node_hw_component_count
+            .iter()
+            .flat_map(|(_, hw_component_counter_hashmap)| hw_component_counter_hashmap.keys())
+            .collect();
 
         hw_component_vec.sort();
         hw_component_vec.dedup();
@@ -626,9 +618,7 @@ pub mod utils {
         for hw_component in hw_component_vec {
             let mut node_count = 0;
 
-            for (_, hw_component_counter_hashmap) in
-                hsm_node_hw_component_count
-            {
+            for (_, hw_component_counter_hashmap) in hsm_node_hw_component_count {
                 if hw_component_counter_hashmap.contains_key(hw_component) {
                     node_count += 1;
                 }

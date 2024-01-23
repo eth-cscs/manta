@@ -159,9 +159,6 @@ pub async fn exec(
     ]
     .concat();
 
-    let combined_target_parent_hsm_hw_component_summary_hashmap =
-        calculate_hsm_hw_component_summary(&combined_target_parent_hsm_node_hw_component_count_vec);
-
     // *********************************************************************************************************
     // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
 
@@ -193,8 +190,7 @@ pub async fn exec(
         crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
             &final_target_hsm_hw_component_summary.clone(),
             &final_target_hsm_hw_component_summary
-                .into_iter()
-                .map(|(hw_component, _)| hw_component)
+                .into_keys()
                 .collect::<Vec<String>>(),
             &mut target_hsm_node_hw_component_count_vec,
             &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,

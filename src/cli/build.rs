@@ -648,18 +648,16 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_migrate_backup() -> Command {
-    let migrate_backup = Command::new("backup")
+    Command::new("backup")
         .aliases(["mb"])
         .arg_required_else_help(true)
         .about("Backup the configuration (BOS, CFS, image and HSM group) of a given vCluster/BOS session template.")
         .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
-        .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"));
-
-    migrate_backup
+        .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
 }
 
 pub fn subcommand_migrate_restore() -> Command {
-    let migrate_restore = Command::new("restore")
+    Command::new("restore")
         .aliases(["mr"])
         .arg_required_else_help(true)
         .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
@@ -667,14 +665,7 @@ pub fn subcommand_migrate_restore() -> Command {
         .arg(arg!(-c --"cfs-file" <CFS_configuration_file> "CFS session template of the cluster backed previously with migrate backup"))
         .arg(arg!(-j --"hsm-file" <HSM_group_description_file> "HSM group description file of the cluster backed previously with migrate backup"))
         .arg(arg!(-m --"ims-file" <IMS_file> "IMS file backed previously with migrate backup"))
-        .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored."));
-
-    // migrate_restore = match hsm_group {
-    //     Some(_) => update_hsm_group,
-    //     None => update_hsm_group.arg(arg!(<HSM_GROUP_NAME> "HSM group name").required(true)),
-    // };
-
-    migrate_restore
+        .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored."))
 }
 
 pub fn subcommand_power() -> Command {

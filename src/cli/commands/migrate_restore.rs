@@ -77,10 +77,10 @@ pub async fn exec(
         artifacts: vec![],
     };
 
-    let backup_ims_file = ims_file.clone().unwrap().to_string();
-    let backup_cfs_file = cfs_file.clone().unwrap().to_string();
-    let backup_bos_file = bos_file.clone().unwrap().to_string();
-    let backup_hsm_file = hsm_file.clone().unwrap().to_string();
+    let backup_ims_file = ims_file.unwrap().to_string();
+    let backup_cfs_file = cfs_file.unwrap().to_string();
+    let backup_bos_file = bos_file.unwrap().to_string();
+    let backup_hsm_file = hsm_file.unwrap().to_string();
 
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
     println!("\tImage name: {}", ims_image_name);
@@ -114,9 +114,9 @@ pub async fn exec(
     // Do we have another image with this name?
     println!("Registering new image with IMS...");
     let ims_image_id: String = ims_register_image(
-        &shasta_token,
-        &shasta_base_url,
-        &shasta_root_cert,
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         &ims_image_name,
     )
     .await;
@@ -224,7 +224,7 @@ async fn create_bos_sessiontemplate(
             // This is as ugly as it can be
             // println!("Path: {}", bos_sessiontemplate.clone().boot_sets.clone().unwrap().compute.clone().unwrap().path.clone().unwrap().to_string());
             let path_modified = format!("s3://boot-images/{}/manifest.json", ims_image_id);
-            let bos_sessiontemplate_modified = bos_sessiontemplate
+            bos_sessiontemplate
                 .boot_sets
                 .as_mut()
                 .unwrap()
@@ -234,10 +234,7 @@ async fn create_bos_sessiontemplate(
                 .path = Some(path_modified);
 
             log::debug!("BOS sessiontemplate loaded:\n{:#?}", bos_sessiontemplate);
-            log::debug!(
-                "BOS sessiontemplate modified:\n{:#?}",
-                &bos_sessiontemplate_modified
-            );
+            log::debug!("BOS sessiontemplate modified:\n{:#?}", &bos_sessiontemplate);
 
             match bos::template::shasta::http_client::post(
                 shasta_token,
@@ -312,7 +309,7 @@ async fn create_cfs_config(
                 shasta_base_url,
                 shasta_root_cert,
                 &cfs_config,
-                &cfs_config_name.as_str(),
+                cfs_config_name.as_str(),
             )
             .await
             {
@@ -338,10 +335,11 @@ async fn ims_update_image_add_manifest(
     ims_image_name: &String,
     ims_image_id: &String,
 ) {
-    match mesa::ims::image::shasta::http_client::get(&shasta_token,
-                                                      &shasta_base_url,
-                                                      &shasta_root_cert,
-                                                      Some(ims_image_name)
+    match mesa::ims::image::shasta::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(ims_image_name)
     ).await {
         Ok(_vector) => {
             if _vector.is_empty() {
@@ -433,7 +431,7 @@ async fn s3_upload_image_artifacts(
     };
 
     for file in vec_image_files {
-        let filename = Path::new(file).file_name().clone().unwrap();
+        let filename = Path::new(file).file_name().unwrap();
         let file_size = match fs::metadata(file) {
             Ok(_file_metadata) => {
                 let res: String = humansize::format_size(_file_metadata.len(), DECIMAL);
@@ -550,7 +548,6 @@ fn file_md5sum(filename: PathBuf) -> Digest {
     let buf_len = len.min(100_000_000) as usize;
     let mut buf = BufReader::with_capacity(buf_len, f);
     let mut context = md5::Context::new();
-    let mut i = 0;
     let bar = ProgressBar::new(len / buf_len as u64);
 
     loop {
@@ -565,7 +562,6 @@ fn file_md5sum(filename: PathBuf) -> Digest {
         // Tell the buffer that the chunk is consumed
         let part_len = part.len();
         buf.consume(part_len);
-        i += 1;
         bar.inc(1);
         // println!("Consumed {} out of {}; step {}/{}",
         //          humansize::format_size(part_len, DECIMAL),
@@ -585,7 +581,7 @@ fn calculate_image_checksums(
     vec_backup_image_files: &Vec<String>,
 ) {
     for file in vec_backup_image_files {
-        let file_size = match fs::metadata(&file) {
+        let file_size = match fs::metadata(file) {
             Ok(_file_metadata) => {
                 let res: String = humansize::format_size(_file_metadata.len(), DECIMAL);
                 res
@@ -654,11 +650,12 @@ async fn ims_register_image(
         link: None,
         arch: None,
     };
-    let list_images_with_same_name = match mesa::ims::image::mesa::http_client::get(&shasta_token,
-                                               &shasta_base_url,
-                                               &shasta_root_cert,
-                                               Some(ims_image_name)
-                                               ).await {
+    let list_images_with_same_name = match mesa::ims::image::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(ims_image_name)
+        ).await {
         Ok(vector) => vector,
         Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
@@ -678,9 +675,9 @@ async fn ims_register_image(
     }
 
     let json_response = match register_new_image(
-        &shasta_token,
-        &shasta_base_url,
-        &shasta_root_cert,
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         &ims_record,
     )
     .await
@@ -689,7 +686,7 @@ async fn ims_register_image(
         Err(error) => panic!(
             "Error: Unable to register a new image {} into IMS {}",
             &ims_image_name.to_string(),
-            error.to_string()
+            error
         ),
     };
     json_response["id"].to_string().replace('"', "")

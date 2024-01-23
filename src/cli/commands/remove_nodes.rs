@@ -9,7 +9,7 @@ pub async fn exec(
     xname_string: &str,
 ) {
     let new_target_hsm_members = xname_string
-        .split(",")
+        .split(',')
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
 

@@ -18,8 +18,6 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
-    let countfiles2download = files2download.len() + 3; // BOS + CFS + HSM
-                                                        // let files2download = ["manifest.json"];
 
     log::debug!("Create directory '{}'", destination.unwrap());
     match std::fs::create_dir_all(dest_path) {
@@ -27,7 +25,7 @@ pub async fn exec(
         Err(error) => panic!(
             "Unable to create directory {}. Error returned: {}",
             &dest_path.to_string_lossy(),
-            error.to_string()
+            error
         ),
     };
 
@@ -146,7 +144,7 @@ pub async fn exec(
         download_counter += 1;
 
         // Image ----------------------------------------------------------------------------------
-        for (_boot_sets_param, boot_sets_value) in bos_templates[0].boot_sets.as_ref().unwrap() {
+        for boot_sets_value in bos_templates[0].boot_sets.as_ref().unwrap().values() {
             if let Some(path) = &boot_sets_value.path {
                 let image_id_related_to_bos_sessiontemplate = path
                     .trim_start_matches("s3://boot-images/")
@@ -175,7 +173,7 @@ pub async fn exec(
                     );
 
                     let sts_value =
-                        match s3_auth(&shasta_token, &shasta_base_url, &shasta_root_cert).await {
+                        match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
                             Ok(sts_value) => {
                                 log::debug!("Debug - STS token:\n{:#?}", sts_value);
                                 sts_value
@@ -194,17 +192,16 @@ pub async fn exec(
                             &download_counter,
                             &files2download.len() + 2
                         );
-                        let _result =
-                            match s3_download_object(&sts_value, &src, &bucket_name, &dest).await {
-                                Ok(_result) => {
-                                    download_counter = download_counter + 1;
-                                }
-                                Err(error) => panic!(
-                                    "Unable to download file {} from s3. Error returned: {}",
-                                    &src,
-                                    error.to_string()
-                                ),
-                            };
+
+                        match s3_download_object(&sts_value, &src, bucket_name, &dest).await {
+                            Ok(_result) => {
+                                download_counter += 1;
+                            }
+                            Err(error) => panic!(
+                                "Unable to download file {} from s3. Error returned: {}",
+                                &src, error
+                            ),
+                        };
                     }
                 } else {
                     panic!(

@@ -9,7 +9,7 @@ pub async fn exec(
     xname_string: &str,
 ) {
     let new_target_hsm_members = xname_string
-        .split(",")
+        .split(',')
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
 
@@ -39,7 +39,7 @@ pub async fn exec(
     // merge HSM group list with the list of xnames provided by the user
     target_hsm_group_member_vec.extend(
         xname_string
-            .split(",")
+            .split(',')
             .map(|xname| xname.trim().to_string())
             .collect::<Vec<String>>(),
     );

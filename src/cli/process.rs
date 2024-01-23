@@ -1066,8 +1066,9 @@ pub async fn process_cli(
                     cfs_file,
                     hsm_file,
                     ims_file,
-                    image_dir
-                ).await;
+                    image_dir,
+                )
+                .await;
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
             if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {

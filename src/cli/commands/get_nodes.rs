@@ -13,7 +13,6 @@ pub async fn exec(
     output_opt: Option<&String>,
     status: bool,
 ) {
-
     // Take all nodes for all hsm_groups found and put them in a Vec
     let mut hsm_groups_node_list: Vec<String> =
         hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
