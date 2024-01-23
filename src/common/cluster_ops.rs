@@ -1,11 +1,17 @@
-use mesa::shasta::{cfs, hsm};
+use mesa::{
+    cfs::{
+        configuration::mesa::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+        session::mesa::r#struct::CfsSessionGetResponse,
+    },
+    hsm,
+};
 use serde_json::Value;
 
 #[derive(Debug)]
 pub struct ClusterDetails {
     pub hsm_group_label: String,
-    pub most_recent_cfs_configuration_name_created: Value,
-    pub most_recent_cfs_session_name_created: Value,
+    pub most_recent_cfs_configuration_name_created: CfsConfigurationResponse,
+    pub most_recent_cfs_session_name_created: CfsSessionGetResponse,
     pub members: Vec<Value>,
 }
 
@@ -18,7 +24,7 @@ pub async fn get_details(
     let mut clusters_details = vec![];
 
     // Get HSM groups matching cluster name
-    let hsm_groups = hsm::http_client::get_hsm_group_vec(
+    let hsm_groups = hsm::group::shasta::http_client::get_hsm_group_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -31,54 +37,73 @@ pub async fn get_details(
         let hsm_group_name = hsm_group["label"].as_str().unwrap();
 
         let hsm_group_members: String =
-            hsm::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
+            hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(",");
 
         // Get all CFS sessions
-        let cfs_sessions_value_vec = cfs::session::http_client::filter(
+        let mut cfs_sessions_value_vec = mesa::cfs::session::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &vec![hsm_group_name.to_string()],
-            None,
             None,
             None,
         )
         .await
         .unwrap();
 
+        mesa::cfs::session::mesa::utils::filter_by_hsm(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut cfs_sessions_value_vec,
+            &[hsm_group_name.to_string()],
+            None,
+        )
+        .await;
+
         let most_recent_cfs_session;
         let cfs_configuration;
 
         for cfs_session_value in cfs_sessions_value_vec {
-            let target_groups_option = cfs_session_value.pointer("/target/groups");
-            // let target_groups = if Some(Value::Null) == target_groups_option.cloned()
-            //     || target_groups_option.is_none()
-            let target_groups = if let (Some(Value::Null), _) | (_, None) =
-                (target_groups_option.cloned(), target_groups_option)
-            {
-                Vec::new()
-            } else {
-                target_groups_option
-                    .unwrap()
-                    .as_array()
-                    .cloned()
-                    .unwrap_or_default()
-            };
-            let ansible_limit_opt = cfs_session_value.pointer("/ansible/limit");
-            // let ansible_limit = if Some(Value::Null) == ansible_limit_opt.cloned()
-            //     || ansible_limit_opt.is_none()
-            let ansible_limit = if let (Some(Value::Null), _) | (_, None) =
-                (ansible_limit_opt.cloned(), ansible_limit_opt)
-            {
-                ""
-            } else {
-                ansible_limit_opt.unwrap().as_str().unwrap()
-            };
+            let target_groups = cfs_session_value
+                .target
+                .as_ref()
+                .unwrap()
+                .groups
+                .as_ref()
+                .map(|target_groups| {
+                    if target_groups.is_empty() {
+                        Vec::new()
+                    } else {
+                        target_groups.to_vec()
+                    }
+                })
+                .unwrap();
+            /* let target_groups_option = cfs_session_value.target.as_ref().unwrap().groups.as_ref();
+            let target_groups =
+                if target_groups_option.is_none() || target_groups_option.unwrap().is_empty() {
+                    Vec::new()
+                } else {
+                    target_groups_option.cloned().unwrap_or_default().to_vec()
+                }; */
+            let ansible_limit = cfs_session_value
+                .ansible
+                .as_ref()
+                .unwrap()
+                .limit
+                .as_ref()
+                .map(|ansible_limit| {
+                    if ansible_limit.is_empty() {
+                        ""
+                    } else {
+                        ansible_limit
+                    }
+                })
+                .unwrap();
 
             // Check CFS session is linkged to HSM GROUP name or any of its members
             if target_groups
                 .iter()
-                .map(|target_group| target_group["name"].as_str().unwrap())
+                .map(|target_group| target_group.name.as_str())
                 .collect::<Vec<&str>>()
                 .contains(&hsm_group_name)
                 || ansible_limit.contains(&hsm_group_members)
@@ -87,20 +112,19 @@ pub async fn get_details(
 
                 // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
                 // members
-                let cfs_configuration_vec = cfs::configuration::http_client::get(
+                let cfs_configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    None,
                     Some(
-                        &most_recent_cfs_session
-                            .pointer("/configuration/name")
+                        most_recent_cfs_session
+                            .configuration
+                            .as_ref()
                             .unwrap()
-                            .as_str()
-                            .unwrap()
-                            .to_string(),
+                            .name
+                            .as_ref()
+                            .unwrap(),
                     ),
-                    None,
                 )
                 .await
                 .unwrap();

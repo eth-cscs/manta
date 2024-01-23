@@ -1,4 +1,4 @@
-use mesa::shasta::cfs::{self, configuration::CfsConfigurationRequest};
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest;
 use serde_yaml::Value;
 use std::path::PathBuf;
 
@@ -23,14 +23,35 @@ pub async fn exec(
     let mut cfs_configuration_value_vec = Vec::new();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_list_yaml = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+
+    // Get inages from SAT YAML file
+    let bos_session_template_list_yaml = sat_file_yaml["session_templates"].as_sequence();
+
+    if configuration_yaml_vec_opt.is_none() {
+        eprintln!("No configuration found in SAT file. Exit");
+        std::process::exit(1);
+    }
+
+    if image_yaml_vec_opt.is_some() {
+        log::warn!("SAT file has data in images section. This information will be ignored.")
+    }
+
+    if bos_session_template_list_yaml.is_some() {
+        log::warn!(
+            "SAT file has data in session_template section. This information will be ignored."
+        )
+    }
 
     let empty_vec = &Vec::new();
-    let configuration_yaml_list = configuration_list_yaml.unwrap_or(empty_vec);
+    let configuration_yaml_vec = configuration_yaml_vec_opt.unwrap_or(empty_vec);
 
     let mut cfs_configuration_name_vec = Vec::new();
 
-    for configuration_yaml in configuration_yaml_list {
+    for configuration_yaml in configuration_yaml_vec {
         let mut cfs_configuration_value =
             CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
 
@@ -42,7 +63,7 @@ pub async fn exec(
             cfs_configuration_value
         );
 
-        let cfs_configuration_value_rslt = cfs::configuration::http_client::put(
+        let cfs_configuration_rslt = mesa::cfs::configuration::mesa::http_client::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -53,21 +74,17 @@ pub async fn exec(
 
         log::debug!(
             "CFS configuration creation response:\n{:#?}",
-            cfs_configuration_value_rslt
+            cfs_configuration_rslt
         );
 
-        let cfs_configuration_value =
-            if let Ok(cfs_configuration_value) = cfs_configuration_value_rslt {
-                cfs_configuration_value
-            } else {
-                eprintln!("CFS configuration creation failed");
-                std::process::exit(1);
-            };
+        let cfs_configuration_value = if let Ok(cfs_configuration_value) = cfs_configuration_rslt {
+            cfs_configuration_value
+        } else {
+            eprintln!("CFS configuration creation failed");
+            std::process::exit(1);
+        };
 
-        let cfs_configuration_name = cfs_configuration_value["name"]
-            .as_str()
-            .unwrap()
-            .to_string();
+        let cfs_configuration_name = cfs_configuration_value.name.to_string();
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 
@@ -82,7 +99,7 @@ pub async fn exec(
                 serde_json::to_string_pretty(&cfs_configuration_value).unwrap()
             );
         } else {
-            cfs_configuration_utils::print_table_value(&cfs_configuration_value_vec);
+            cfs_configuration_utils::print_table_struct(&cfs_configuration_value_vec);
         }
     }
 

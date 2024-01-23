@@ -1,11 +1,12 @@
 use comfy_table::Table;
-use mesa::manta::cfs::configuration::Configuration;
-use serde_json::Value;
+use mesa::cfs::configuration::mesa::r#struct::{
+    cfs_configuration::Configuration, cfs_configuration_response::CfsConfigurationResponse,
+};
 
-pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
+/* pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
     let mut table = Table::new();
 
-    table.set_header(vec!["Name", "Last Updated", "Layers"]);
+    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
 
     for cfs_configuration_value in cfs_configuration_value_vec {
         let mut layers: Vec<String> = Vec::new();
@@ -16,8 +17,9 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
             let cfs_configuration_layer_value_vec =
                 cfs_configuration_value["layers"].as_array().unwrap();
 
-            let mut i = 0;
-            for cfs_configuration_layer_value in cfs_configuration_layer_value_vec {
+            for (i, cfs_configuration_layer_value) in
+                cfs_configuration_layer_value_vec.iter().enumerate()
+            {
                 println!(
                     "cfs_configuration_layer_value: {}",
                     cfs_configuration_layer_value
@@ -31,8 +33,6 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
                     cfs_configuration_layer_value["cloneUrl"].as_str().unwrap(),
                     cfs_configuration_layer_value["playbook"].as_str().unwrap(),
                 ));
-
-                i += 1;
             }
         }
 
@@ -50,12 +50,49 @@ pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
     }
 
     println!("{table}");
-}
+} */
 
-pub fn print_table_struct(cfs_configuration: Configuration) {
+pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
 
     table.set_header(vec!["Name", "Last updated", "Layers"]);
+
+    for cfs_configuration in cfs_configurations {
+        let mut layers: String = String::new();
+
+        if !cfs_configuration.layers.is_empty() {
+            let layers_json = &cfs_configuration.layers;
+
+            layers = format!(
+                "COMMIT: {} NAME: {}",
+                layers_json[0].commit.as_ref().unwrap(),
+                layers_json[0].name
+            );
+
+            for layer in layers_json.iter().skip(1) {
+                layers = format!(
+                    "{}\nCOMMIT: {} NAME: {}",
+                    layers,
+                    layer.commit.as_ref().unwrap(),
+                    layer.name
+                );
+            }
+        }
+
+        table.add_row(vec![
+            cfs_configuration.name.clone(),
+            cfs_configuration.last_updated.clone(),
+            layers,
+        ]);
+    }
+
+    println!("{table}");
+}
+
+pub fn print_table_details_struct(cfs_configuration: Configuration) {
+    let mut table = Table::new();
+
+    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
 
     let mut layers: String = String::new();
 

@@ -1,4 +1,6 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, Arg};
+use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
+use mesa::hsm::hw_components::ArtifactType;
+use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
 
@@ -7,12 +9,47 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
+        .subcommand(subcommand_power())
         .subcommand(subcommand_get(hsm_group))
+        .subcommand(Command::new("add")
+            .arg_required_else_help(true)
+            .about("WIP - Add hw components to cluster")
+            .subcommand(Command::new("hw-component")
+                .alias("hw")
+                .about("WIP - Add hw components from a cluster")
+                .arg(arg!(-p --pattern <PATTERN> "Pattern"))
+                .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+            )
+            .subcommand(Command::new("nodes")
+                .aliases(["n", "node"])
+                .about("WIP - Add nodes to a cluster")
+                .arg(arg!(-c --cluster <CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
+            )
+        )
+        .subcommand(Command::new("remove")
+            .alias("r")
+            .arg_required_else_help(true)
+            .about("WIP - Remove hw components from cluster")
+            .subcommand(Command::new("hw-component")
+                .alias("hw")
+                .about("WIP - Remove hw components from a cluster")
+                .arg(arg!(-p --pattern <PATTERN> "Pattern"))
+                .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+            )
+            .subcommand(Command::new("nodes")
+                .aliases(["n", "node"])
+                .about("WIP - Remove nodes to a cluster")
+                .arg(arg!(-c --cluster <CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
+            )
+        )
         .subcommand(
             Command::new("apply")
                 .alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta system")
+                .subcommand(subcommand_apply_hw_configuration())
                 .subcommand(subcommand_apply_configuration(hsm_group))
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
@@ -27,19 +64,19 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 )
                 .subcommand(subcommand_apply_session(hsm_group))
                 .subcommand(Command::new("ephemeral-environment")
-                .aliases(["ee", "eph", "ephemeral"])
-                .arg_required_else_help(true)
-                .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
-                // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
-                // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
-                .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
-                            ),
+                    .aliases(["ee", "eph", "ephemeral"])
+                    .arg_required_else_help(true)
+                    .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
+                    // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
+                    // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
+                    .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
+                ),
         )
         .subcommand(
             Command::new("migrate")
                 .alias("m")
                 .arg_required_else_help(true)
-                .about("Migrate vCluster")
+                .about("WIP - Migrate vCluster")
                 .subcommand(subcommand_migrate_backup())
                 .subcommand(subcommand_migrate_restore()),
         )
@@ -154,6 +191,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
+                .arg(arg!(-f --"force" "Force data deletion. Image artifacts and configurations used by nodes will not be deleted"))
                 .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"));
 
     match hsm_group {
@@ -165,6 +203,30 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
     }
 
     delete
+}
+
+pub fn subcommand_get_hw_components() -> Command {
+    let command_get_hs_configuration_cluster = Command::new("cluster")
+                .aliases(["c", "clstr"])
+                .arg_required_else_help(true)
+                .about("Get hw components for a cluster")
+                .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "pattern"]));
+
+    let command_get_hs_configuration_node = Command::new("node")
+                .alias("n")
+                .arg_required_else_help(true)
+                .about("Get hw components for some nodes")
+                .arg(arg!(<XNAMES> "List of xnames separated by commas").required(true))
+                .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
+
+    Command::new("hw-component")
+        .alias("hw")
+        .arg_required_else_help(true)
+        .about("Get hardware components1 for a cluster or a node")
+        .subcommand(command_get_hs_configuration_cluster)
+        .subcommand(command_get_hs_configuration_node)
 }
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
@@ -328,6 +390,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .alias("g")
         .arg_required_else_help(true)
         .about("Get information from Shasta system")
+        .subcommand(subcommand_get_hw_components())
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
         .subcommand(subcommand_get_bos_template(hsm_group))
@@ -335,6 +398,21 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_cluster_details(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
         .subcommand(subcommand_get_images(hsm_group))
+}
+
+pub fn subcommand_apply_hw_configuration() -> Command {
+    Command::new("hw-configuration")
+        .alias("hw")
+        .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
+        .arg_required_else_help(true)
+        .subcommand(Command::new("cluster")
+            .aliases(["c", "clstr"])
+            .arg_required_else_help(true)
+            .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
+            .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+             // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
+            .arg(arg!(-p -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster like <hw component name>:<hw component quantity>[:<hw component name>:<hw component quantity>]. Eg 'a100:12:epic:5' will update the nodes assigned to cluster 'zinal' with 4 nodes:\n - 3 nodes with 4 Nvidia gpus A100 and 1 epyc AMD cpu each\n - 1 node with 2 epyc AMD cpus"))
+        )
 }
 
 pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
@@ -353,10 +431,9 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
 
     match hsm_group {
         Some(_) => {}
-        None => {
-            apply_configuration =
-                apply_configuration.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-        }
+        None => apply_configuration = apply_configuration.arg(
+            arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"),
+        ),
     };
 
     apply_configuration
@@ -441,7 +518,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
-        .about("Start nodes")
+        .about("DEPRECATED - Please use 'manta power on' instead\nStart nodes")
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-r --reason <TEXT> "reason to power on"));
@@ -465,7 +542,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
-        .about("Shutdown nodes")
+        .about("DEPRECATED - Please use 'manta power off' instead\nShutdown nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to power off"));
@@ -490,7 +567,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
         .aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
-        .about("Restart nodes")
+        .about("DEPRECATED - Please use 'manta power reset' instead\nRestart nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to reset"));
@@ -580,6 +657,7 @@ pub fn subcommand_migrate_backup() -> Command {
 
     migrate_backup
 }
+
 pub fn subcommand_migrate_restore() -> Command {
     let migrate_restore = Command::new("restore")
         .aliases(["mr"])
@@ -597,4 +675,78 @@ pub fn subcommand_migrate_restore() -> Command {
     // };
 
     migrate_restore
+}
+
+pub fn subcommand_power() -> Command {
+    Command::new("power")
+        .aliases(["p", "pwr"])
+        .arg_required_else_help(true)
+        .about("Command to submit commands related to cluster/node power management")
+        .subcommand(
+            Command::new("on")
+                .arg_required_else_help(true)
+                .about("Command to power on cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power on all nodes in a cluster")
+                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power on a group of nodes")
+                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
+        .subcommand(
+            Command::new("off")
+                .arg_required_else_help(true)
+                .about("Command to power off cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power off all nodes in a cluster")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power off a group of nodes")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
+        .subcommand(
+            Command::new("reset")
+                .arg_required_else_help(true)
+                .about("Command to power reset cluster/node")
+                .subcommand(
+                    Command::new("cluster")
+                        .aliases(["c", "clstr"])
+                        .arg_required_else_help(true)
+                        .about("Command to power reset all nodes in a cluster")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(<CLUSTER_NAME> "Cluster name")),
+                )
+                .subcommand(
+                    Command::new("node")
+                        .alias("n")
+                        .arg_required_else_help(true)
+                        .about("Command to power reset a group of nodes")
+                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(<NODE_NAME> "Node name")),
+                ),
+        )
 }

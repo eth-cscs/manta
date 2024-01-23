@@ -1,6 +1,6 @@
 use futures::StreamExt;
 
-use mesa::manta::console;
+use mesa::node::console;
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
@@ -17,61 +17,78 @@ pub async fn exec(
     k8s_api_url: &str,
     cfs_session_name: &str,
 ) {
-    let cfs_session_details_list_rslt = mesa::shasta::cfs::session::http_client::filter(
+    let mut cfs_session_value_vec = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name_vec,
         Some(&cfs_session_name.to_string()),
-        None,
         Some(false),
+    )
+    .await
+    .unwrap();
+
+    mesa::cfs::session::mesa::utils::filter_by_hsm(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &mut cfs_session_value_vec,
+        hsm_group_name_vec,
+        None,
     )
     .await;
 
-    if let Ok(cfs_session_details_list) = cfs_session_details_list_rslt {
-        if cfs_session_details_list.is_empty() {
-            eprintln!("No CFS session found. Exit",);
-            std::process::exit(1);
-        }
-        let cfs_session_details = cfs_session_details_list.first().unwrap();
-        if cfs_session_details
-            .pointer("/target/definition")
-            .unwrap()
-            .ne("image")
-        {
-            eprintln!(
-                "CFS session found {} is type dynamic. Exit",
-                cfs_session_details["name"].as_str().unwrap()
-            );
-            std::process::exit(1);
-        }
-        if cfs_session_details
-            .pointer("/status/session/status")
-            .unwrap()
-            .as_str()
-            .ne(&Some("running"))
-        {
-            eprintln!(
-                "CFS session found {} state is not 'running'. Exit",
-                cfs_session_details["name"].as_str().unwrap()
-            );
-            std::process::exit(1);
-        }
-        if !cfs_session_details
-            .pointer("/target/groups")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|group| hsm_group_name_vec.contains(&group["name"].as_str().unwrap().to_string()))
-        {
-            eprintln!(
-                "CFS session found {} is not related to any availble HSM groups {:?}",
-                cfs_session_details["name"].as_str().unwrap(),
-                hsm_group_name_vec
-            );
-            std::process::exit(1);
-        }
+    if cfs_session_value_vec.is_empty() {
+        eprintln!("No CFS session found. Exit",);
+        std::process::exit(1);
+    }
+    let cfs_session_details = cfs_session_value_vec.first().unwrap();
+    if cfs_session_details
+        .target
+        .as_ref()
+        .unwrap()
+        .definition
+        .as_ref()
+        .unwrap()
+        .ne("image")
+    {
+        eprintln!(
+            "CFS session found {} is type dynamic. Exit",
+            cfs_session_details.name.as_ref().unwrap()
+        );
+        std::process::exit(1);
+    }
+    if cfs_session_details
+        .status
+        .as_ref()
+        .unwrap()
+        .session
+        .as_ref()
+        .unwrap()
+        .status
+        .ne(&Some("running".to_string()))
+    {
+        eprintln!(
+            "CFS session found {} state is not 'running'. Exit",
+            cfs_session_details.name.as_ref().unwrap()
+        );
+        std::process::exit(1);
+    }
+    if !cfs_session_details
+        .target
+        .as_ref()
+        .unwrap()
+        .groups
+        .as_ref()
+        .unwrap()
+        .iter()
+        .any(|group| hsm_group_name_vec.contains(&group.name.to_string()))
+    {
+        eprintln!(
+            "CFS session found {} is not related to any availble HSM groups {:?}",
+            cfs_session_details.name.as_ref().unwrap(),
+            hsm_group_name_vec
+        );
+        std::process::exit(1);
     }
 
     connect_to_console(
@@ -162,8 +179,8 @@ pub async fn connect_to_console(
             },
             result = &mut handle_terminal_size_handle => {
                 match result {
-                    Ok(_) => println!("End of terminal size stream"),
-                    Err(e) => println!("Error getting terminal size: {e:?}")
+                    Ok(_) => crossterm::terminal::disable_raw_mode()?,
+                    Err(e) => { crossterm::terminal::disable_raw_mode()?; println!("Error getting terminal size: {e:?}") }
                 }
             },
         };

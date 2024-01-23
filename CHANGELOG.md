@@ -2,11 +2,369 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] - 2024-01-23
+
+### Bug Fixes
+
+- Add migrate subcommand
+
+## [1.20.0] - 2024-01-22
+
+### Bug Fixes
+
+- Merge cluster migration branch
+- Cli build code fix
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.0
+
+## [1.19.3] - 2024-01-21
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.3
+
+### Refactor
+
+- Clean code
+
+## [1.19.2] - 2024-01-21
+
+### Bug Fixes
+
+- Rollback apply hw so it unpins all nodes in target hsm
+- Fix issues related to add hw and remove hw subcommands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.2
+
+## [1.19.1] - 2024-01-19
+
+### Bug Fixes
+
+- Fix bug when creating clusters using sat file
+
+### Features
+
+- Add and remove nodes from HSM group
+- Add functionality to add or remove nodes to/from an HSM group
+- Add new mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.1
+
+### Refactor
+
+- Clean code related to subcommand 'apply hw'
+- Clean code
+- Add apply hw-configuration cli help message
+- Clippy fixes
+- Clippy fixes
+- Clippy fixes
+- Change apply/add/remove hw components to/from HSM group to
+
+## [1.19.0] - 2024-01-15
+
+### Features
+
+- Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
+- Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
+- Initial code for apply hw subcommand keeping target hsm members
+
+### Miscellaneous Tasks
+
+- Release manta version 1.19.0
+
+## [1.18.0] - 2024-01-11
+
+### Bug Fixes
+
+- Disable tests which need to connect to csm apis becuase they are not accessible from github test environment
+
+### Miscellaneous Tasks
+
+- Release manta version 1.18.0
+
+## [1.17.0] - 2024-01-11
+
+### Bug Fixes
+
+- Fix bug passing params to "remove hw" subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.17.0
+
+### Refactor
+
+- Normalize add, remove and apply hw component subcommands
+- Clean code
+- Get mesa from repo
+
+## [1.16.2] - 2024-01-10
+
+### Bug Fixes
+
+- Apply session and update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.2
+
+## [1.16.1] - 2024-01-10
+
+### Bug Fixes
+
+- Clean obsolete "use" statements
+
+### Features
+
+- Remove hw components from a target hsm groups and node scores calculated based on scarcity across target and parent hsm groups
+- Apply and remove working with simple examples, not fully tested but in good condition
+- Add new hw components to a cluster
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.1
+
+### Refactor
+
+- Clean code
+- Update README
+- Refactor code
+
+## [1.16.0] - 2024-01-04
+
+### Bug Fixes
+
+- Disable build script because it was breaking cli module load from
+
+### Features
+
+- Start migrating hw components features from clstr crate
+- Get hw cluster now accepts a new 'pattern' output
+
+### Miscellaneous Tasks
+
+- Release manta version 1.16.0
+
+### Refactor
+
+- : add clippy suggestions
+
+## [1.15.0] - 2024-01-01
+
+### Bug Fixes
+
+- Get template not filtering by most recent value
+- Replace std sleep for tokio sleep
+
+### Features
+
+- Add cluster power management
+
+### Miscellaneous Tasks
+
+- Release manta version 1.15.0
+
+### Refactor
+
+- Cargo fmt
+- Use new manta utility functions
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Adopt mesa changes
+- Move functions to print table data from mesa to manta
+- Adapt to mesa code
+- Housekeeping around HSM module
+- Adapt to mesa code
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Adapt to new mesa code
+- Swap to mesa library
+
+## [1.14.0] - 2023-12-25
+
+### Features
+
+- Get nodes now shows CFS configuration related to image id used to
+
+### Miscellaneous Tasks
+
+- Release manta version 1.14.0
+
+### Refactor
+
+- Clean code
+- Adapt code to new mesa
+- Clean code
+
+## [1.13.5] - 2023-12-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.5
+
+### Refactor
+
+- Update mesa version
+
+## [1.13.4] - 2023-12-22
+
+### Bug Fixes
+
+- Import
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.4
+
+### Refactor
+
+- Update mesa version
+
+## [1.13.3] - 2023-12-21
+
+### Features
+
+- Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.3
+
+### Refactor
+
+- High refactoring
+- Cfs configuration structs
+- Rename method name to get multiple CFS components
+- Hoursekeeping around node methods
+
+## [1.13.2] - 2023-12-11
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.2
+
+### Refactor
+
+- Clean code and update mesa version
+- Cargo fmt
+
+## [1.13.1] - 2023-12-10
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.1
+
+### Refactor
+
+- Refactor code to new mesa method signatures
+
+## [1.13.0] - 2023-12-10
+
+### Features
+
+- Add new flag 'force' to  delete subcommand to make it script
+- Delete subcommand sumamry shows more information
+
+### Miscellaneous Tasks
+
+- Release manta version 1.13.0
+
+### Refactor
+
+- Code in delete and get iamge subcommands
+
+## [1.12.12] - 2023-12-08
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.12
+
+### Refactor
+
+- Adapt code to new mesa cfs config code structure
+
+## [1.12.11] - 2023-12-08
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.11
+
+### Refactor
+
+- Adapt code to new mesa cfs config code structure
+
+## [1.12.10] - 2023-12-08
+
+### Bug Fixes
+
+- Fix bug with get configuration subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.10
+
+## [1.12.9] - 2023-12-07
+
+### Bug Fixes
+
+- Panic when trying to connect to CFS session (ansible) container
+- Simplify the collection of the HSM group description data.
+
+### Feature
+
+- Migrate/backup first commit (partial)
+- Migrate/backup ignore JetBrains stuff
+- Migrate/backup download all files of a bos session template
+- Migrate/backup fix count of artifacts in download info
+- Migrate/backup add support to produce a file with the list of xnames belonging to the HSM groups in the BOS session template.
+- Migrate/backup cleanup
+- Migrate/backup more cleanup
+- Migrate/restore load backed files into memory
+
+### Features
+
+- Node power status methods blocks the runtime
+- Each section in sat files processed individually
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.8
+- Release manta version 1.12.9
+
+### Refactor
+
+- Clean code
+- Configurations section in SAT file processed independently
+- Images section in SAT file processed independently
+- Session_templates section in SAT file processed independently
+
+## [1.12.7] - 2023-11-20
+
+### Bug Fixes
+
+- Bug when cluster creation won't realised if a CFS session failed
+- Rename CFS session and configuration table headers
+- Fix hsm available list send to methods
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.7
+
 ## [1.12.6] - 2023-11-16
 
 ### Bug Fixes
 
 - Bug getting cluster with nodes being configured
+
+### Miscellaneous Tasks
+
+- Release manta version 1.12.6
 
 ## [1.12.5] - 2023-11-16
 

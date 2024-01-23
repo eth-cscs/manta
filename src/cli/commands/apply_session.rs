@@ -3,18 +3,19 @@ use std::path::{Path, PathBuf};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    common::vault::http_client::fetch_shasta_k8s_secrets,
-    shasta::{
-        cfs::{self, configuration},
-        kubernetes,
+    cfs::{
+        self, configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
+        session::mesa::r#struct::CfsSessionPostRequest,
     },
+    common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    node::utils::validate_xnames,
 };
 
 use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
 use substring::Substring;
 
-use crate::common::{local_git_repo, node_ops};
+use crate::common::local_git_repo;
 
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
@@ -101,7 +102,7 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !node_ops::validate_xnames(
+            if !validate_xnames(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -224,24 +225,44 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Get ALL sessions
-    let cfs_sessions =
-        cfs::session::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await?;
+    let cfs_sessions = mesa::cfs::session::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+        None,
+    )
+    .await?;
 
     let nodes_in_running_or_pending_cfs_session: Vec<&str> = cfs_sessions
         .iter()
         .filter(|cfs_session| {
-            cfs_session["status"]["session"]["status"].eq("pending")
-                || cfs_session["status"]["session"]["status"].eq("running")
+            ["running", "pending"].contains(
+                &cfs_session
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .session
+                    .as_ref()
+                    .unwrap()
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .as_str(),
+            )
         })
         .flat_map(|cfs_session| {
-            cfs_session["ansible"]["limit"]
-                .as_str()
-                .map(|limit| limit.split(','))
+            cfs_session
+                .ansible
+                .as_ref()
+                .unwrap()
+                .limit
+                .as_ref()
+                .unwrap()
+                .split(',')
         })
-        .flatten()
         .map(|xname| xname.trim())
-        .collect(); // TODO: remove duplicates
+        .collect(); // TODO: remove duplicates... sort() + dedup() ???
 
     log::info!(
         "Nodes with cfs session running or pending: {:?}",
@@ -273,24 +294,32 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = cfs::component::http_client::get_single_component(
+        let component_status = mesa::cfs::component::shasta::http_client::get_single_component(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &xname,
         )
         .await?;
-        let hsm_configuration_state = &mesa::shasta::hsm::http_client::get_component_status(
+
+        let hsm_component_status_rslt = mesa::hsm::component_status::shasta::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &xname,
+            &vec![xname.clone()],
         )
-        .await?["State"];
+        .await?;
+
+        let hsm_component_status_state = &hsm_component_status_rslt["Components"]
+            .as_array()
+            .unwrap()
+            .first()
+            .unwrap()["State"];
+
         log::info!(
             "HSM component state for component {}: {}",
             xname,
-            hsm_configuration_state.as_str().unwrap()
+            hsm_component_status_state.as_str().unwrap()
         );
         log::info!(
             "Is component enabled for batched CFS: {}",
@@ -298,7 +327,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         );
         log::info!("Error count: {}", component_status["errorCount"]);
 
-        if hsm_configuration_state.eq("On") || hsm_configuration_state.eq("Standby") {
+        if hsm_component_status_state.eq("On") || hsm_component_status_state.eq("Standby") {
             log::info!("There is an CFS session scheduled to run on this node. Pleas try again later. Aborting");
             std::process::exit(0);
         }
@@ -331,7 +360,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
         log::info!("Checking local repo status ({})", &repo.path().display());
 
-        // Check if all changes in local repo has been commited
+        // Check if all changes in local repo has been commited locally
         if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
             if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt("Your local repo has changes not commited. Do you want to continue?")
@@ -410,7 +439,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = cfs::configuration::CfsConfigurationRequest::create_from_repos(
+    let cfs_configuration = CfsConfigurationRequest::create_from_repos(
         gitea_token,
         gitea_base_url,
         shasta_root_cert,
@@ -426,7 +455,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     );
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = configuration::http_client::put(
+    let cfs_configuration_resp = cfs::configuration::mesa::http_client::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -441,10 +470,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     );
 
     let cfs_configuration_name = match cfs_configuration_resp {
-        Ok(_) => cfs_configuration_resp.as_ref().unwrap()["name"]
-            .as_str()
-            .unwrap()
-            .to_string(),
+        Ok(_) => &cfs_configuration_resp.as_ref().unwrap().name,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
@@ -458,9 +484,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         chrono::Utc::now().format("%Y%m%d%H%M%S")
     );
 
-    let session = cfs::session::CfsSessionRequest::new(
+    let session = CfsSessionPostRequest::new(
         cfs_session_name,
-        cfs_configuration_name,
+        cfs_configuration_name.clone(),
         limit,
         ansible_verbosity,
         ansible_passthrough,
@@ -471,14 +497,18 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Create CFS Session payload:\n{:#?}", session);
 
-    let cfs_session_resp =
-        cfs::session::http_client::post(shasta_token, shasta_base_url, shasta_root_cert, &session)
-            .await;
+    let cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &session,
+    )
+    .await;
 
     log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 
     let cfs_session_name = match cfs_session_resp {
-        Ok(_) => cfs_session_resp.as_ref().unwrap()["name"].as_str().unwrap(),
+        Ok(_) => cfs_session_resp.as_ref().unwrap().name.as_ref().unwrap(),
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);

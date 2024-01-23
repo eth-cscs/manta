@@ -1,7 +1,7 @@
-use crate::common::{ims_ops::get_image_id_from_cfs_configuration_name, node_ops};
+use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::shasta::{capmc, ims};
+use mesa::{capmc, cfs, node::utils::validate_xnames};
 
 pub async fn exec(
     shasta_token: &str,
@@ -14,16 +14,13 @@ pub async fn exec(
 ) {
     let need_restart = boot_image_configuration_opt.is_some();
 
-    let desired_configuration_detail_list_rslt =
-        mesa::shasta::cfs::configuration::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            None,
-            desired_configuration_opt,
-            Some(&1),
-        )
-        .await;
+    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        desired_configuration_opt.map(|elem| elem.as_str()),
+    )
+    .await;
 
     // Check desired configuration exists
     if desired_configuration_detail_list_rslt.is_ok()
@@ -39,10 +36,11 @@ pub async fn exec(
             desired_configuration_detail_list
         );
 
-        desired_configuration_detail_list.first().unwrap()["name"]
-            .as_str()
+        desired_configuration_detail_list
+            .first()
             .unwrap()
-            .to_string()
+            .name
+            .clone()
     } else {
         eprintln!(
             "Desired configuration {} does not exists. Exit",
@@ -53,7 +51,7 @@ pub async fn exec(
 
     // Check user has provided valid XNAMES
     if hsm_group_name.is_some()
-        && !node_ops::validate_xnames(
+        && !validate_xnames(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -93,7 +91,7 @@ pub async fn exec(
         .await;
 
         let image_details_value_vec = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get_all(
+            mesa::ims::image::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -123,7 +121,7 @@ pub async fn exec(
             .unwrap()
             .to_string();
 
-        let component_patch_rep = mesa::shasta::bss::http_client::patch(
+        let component_patch_rep = mesa::bss::http_client::patch(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -148,7 +146,7 @@ pub async fn exec(
             need_restart
         );
 
-        mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
+        mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -191,7 +189,6 @@ pub async fn exec(
             shasta_root_cert,
             nodes,
             Some("Update node boot params and/or desired configuration".to_string()),
-            false,
         )
         .await;
 

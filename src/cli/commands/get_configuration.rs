@@ -1,6 +1,12 @@
-use mesa::{manta, shasta::cfs};
+use mesa::cfs::{
+    self,
+    configuration::mesa::r#struct::{
+        cfs_configuration::{Configuration, Layer},
+        cfs_configuration_response::CfsConfigurationResponse,
+    },
+};
 
-use crate::common::{gitea, cfs_configuration_utils::print_table_struct};
+use crate::common::{cfs_configuration_utils::print_table_struct, gitea};
 
 pub async fn exec(
     gitea_base_url: &str,
@@ -10,20 +16,19 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     configuration_name: Option<&String>,
     hsm_group_name_vec: &Vec<String>,
-    most_recent: Option<bool>,
     limit: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    let cfs_configuration_vec = manta::cfs::configuration::get_configuration(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        configuration_name,
-        hsm_group_name_vec,
-        most_recent,
-        limit,
-    )
-    .await;
+    let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
+        cfs::configuration::mesa::http_client::get_and_filter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            configuration_name.map(|elem| elem.as_str()),
+            hsm_group_name_vec,
+            limit,
+        )
+        .await;
 
     if cfs_configuration_vec.is_empty() {
         println!("No CFS configuration found!");
@@ -39,26 +44,25 @@ pub async fn exec(
         if cfs_configuration_vec.len() == 1 {
             let most_recent_cfs_configuration = &cfs_configuration_vec[0];
 
-            let mut layers: Vec<manta::cfs::configuration::Layer> = vec![];
+            let mut layers: Vec<Layer> = vec![];
 
-            for layer in most_recent_cfs_configuration["layers"].as_array().unwrap() {
+            for layer in &most_recent_cfs_configuration.layers {
                 let gitea_commit_details = gitea::http_client::get_commit_details(
-                    layer["cloneUrl"].as_str().unwrap(),
-                    layer["commit"].as_str().unwrap(),
+                    &layer.clone_url,
+                    layer.commit.as_ref().unwrap(),
                     gitea_base_url,
                     gitea_token,
                 )
                 .await
                 .unwrap();
 
-                layers.push(manta::cfs::configuration::Layer::new(
-                    layer["name"].as_str().unwrap(),
-                    layer["cloneUrl"]
-                        .as_str()
-                        .unwrap()
+                layers.push(Layer::new(
+                    &layer.name,
+                    layer
+                        .clone_url
                         .trim_start_matches("https://api.cmn.alps.cscs.ch")
                         .trim_end_matches(".git"),
-                    layer["commit"].as_str().unwrap(),
+                    layer.commit.as_ref().unwrap(),
                     gitea_commit_details["commit"]["committer"]["name"]
                         .as_str()
                         .unwrap(),
@@ -68,15 +72,13 @@ pub async fn exec(
                 ));
             }
 
-            print_table_struct(manta::cfs::configuration::Configuration::new(
-                most_recent_cfs_configuration["name"].as_str().unwrap(),
-                most_recent_cfs_configuration["lastUpdated"]
-                    .as_str()
-                    .unwrap(),
+            crate::common::cfs_configuration_utils::print_table_details_struct(Configuration::new(
+                &most_recent_cfs_configuration.name,
+                &most_recent_cfs_configuration.last_updated,
                 layers,
             ));
         } else {
-            cfs::configuration::utils::print_table(cfs_configuration_vec);
+            print_table_struct(&cfs_configuration_vec);
         }
     }
 }

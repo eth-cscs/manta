@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>"]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
-version = "1.12.6"
+version = "1.20.1"
 license-file = "LICENSE"
 documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
 homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
@@ -15,8 +15,10 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.17.2"
-# mesa = { path = "../manta-mesa/mesa" } # Only for development purposes
+mesa = "0.24.0"
+# mesa = { path = "../mesa" } # Only for development purposes
+strum = "0.25.0"
+strum_macros = "0.25"
 chrono = "0.4.31"
 anyhow = "1.0.44"
 reqwest = { version = "0.11", features = ["blocking", "json", "rustls-tls", "socks"] }
@@ -38,7 +40,7 @@ futures = "0.3.28"
 clap = { version = "4.3.21", features = ["derive", "cargo", "wrap_help"] }
 clap_complete = "4.3.2"
 git2 = "0.18.1"
-dialoguer = "0.10.2"
+dialoguer = "0.11.0"
 substring = "1.4.5"
 regex = "1.6.0"
 directories = "4.0.1" # XDG Base Directory Specification

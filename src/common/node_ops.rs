@@ -1,29 +1,6 @@
-use std::collections::HashSet;
-
 use comfy_table::{Cell, Table};
-use mesa::{manta::get_nodes_status::NodeDetails, shasta::hsm};
-use regex::Regex;
+use mesa::node::r#struct::NodeDetails;
 use serde_json::Value;
-
-/// Checks nodes in ansible-limit belongs to list of nodes from multiple hsm groups
-/// Returns (Vec<String>, vec<String>) being left value the list of nodes from ansible limit nodes in hsm groups and right value list of nodes from ansible limit not in hsm groups
-// TODO: improve by using HashSet::diferent to get excluded and HashSet::intersection to get "included"
-#[deprecated(note = "Use crate::common::node_ops::validate_xnames instead")]
-pub fn check_hsm_group_and_ansible_limit(
-    hsm_groups_nodes: &HashSet<String>,
-    ansible_limit_nodes: HashSet<String>,
-) -> (HashSet<String>, HashSet<String>) {
-    (
-        ansible_limit_nodes
-            .intersection(hsm_groups_nodes)
-            .cloned()
-            .collect(),
-        ansible_limit_nodes
-            .difference(hsm_groups_nodes)
-            .cloned()
-            .collect(),
-    )
-}
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();
@@ -37,6 +14,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
         "Enabled",
         "Error Count",
         // "Tags",
+        "Boot configuration",
         "Image ID (Boot param)",
     ]);
 
@@ -49,6 +27,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
             Cell::new(node_status.configuration_status),
             Cell::new(node_status.enabled),
             Cell::new(node_status.error_count),
+            Cell::new(node_status.boot_configuration),
             Cell::new(node_status.boot_image_id),
         ]);
     }
@@ -93,7 +72,7 @@ pub fn nodes_to_string_format_discrete_columns(
     members
 }
 
-/// Validates a list of xnames.
+/* /// Validates a list of xnames.
 /// Checks xnames strings are valid
 /// If hsm_group_name if provided, then checks all xnames belongs to that hsm_group
 pub async fn validate_xnames(
@@ -103,10 +82,17 @@ pub async fn validate_xnames(
     xnames: &[&str],
     hsm_group_name_opt: Option<&String>,
 ) -> bool {
-    let hsm_group_members: Vec<_> = if let Some(hsm_group_name) =  hsm_group_name_opt {
-        hsm::http_client::get_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, hsm_group_name)
-            .await
-            .unwrap()["members"]["ids"]
+    let hsm_group_members: Vec<_> = if let Some(hsm_group_name) = hsm_group_name_opt {
+        hsm::group::shasta::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(hsm_group_name),
+        )
+        .await
+        .unwrap()
+        .first()
+        .unwrap()["members"]["ids"]
             .as_array()
             .unwrap()
             .to_vec()
@@ -137,7 +123,7 @@ pub async fn validate_xnames(
     } */
 
     true
-}
+} */
 
 pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> Vec<String> {
     let mut node_booting_image_vec = boot_param_vec
@@ -168,7 +154,7 @@ pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> V
     node_booting_image_vec
 }
 
-pub async fn get_boot_image_and_nodes_booting_them_vec(
+/* pub async fn get_boot_image_and_nodes_booting_them_vec(
     image_id_vec: Vec<String>,
     boot_param_vec: Vec<Value>,
 ) -> Vec<(String, Vec<String>)> {
@@ -183,4 +169,4 @@ pub async fn get_boot_image_and_nodes_booting_them_vec(
     }
 
     boot_image_node_vec
-}
+} */

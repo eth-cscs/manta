@@ -1,9 +1,10 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::shasta::{capmc, hsm, ims};
+use mesa::{capmc, cfs, hsm};
 
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 /// Updates boot params and desired configuration for all nodes that belongs to a HSM group
+/// If boot params defined, then nodes in HSM group will be rebooted
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -14,16 +15,13 @@ pub async fn exec(
 ) {
     let need_restart = boot_image_configuration_opt.is_some();
 
-    let desired_configuration_detail_list_rslt =
-        mesa::shasta::cfs::configuration::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            None,
-            desired_configuration_opt,
-            Some(&1),
-        )
-        .await;
+    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        desired_configuration_opt.map(|elem| elem.as_str()),
+    )
+    .await;
 
     // Check desired configuration exists
     if desired_configuration_detail_list_rslt.is_ok()
@@ -39,10 +37,11 @@ pub async fn exec(
             desired_configuration_detail_list
         );
 
-        desired_configuration_detail_list.first().unwrap()["name"]
-            .as_str()
+        let _ = desired_configuration_detail_list
+            .first()
             .unwrap()
-            .to_string()
+            .name
+            .clone();
     } else {
         eprintln!(
             "Desired configuration {} does not exists. Exit",
@@ -53,18 +52,18 @@ pub async fn exec(
 
     // Get nodes members of HSM group
     // Get HSM group details
-    let hsm_group_details = hsm::http_client::get_hsm_group(
+    let hsm_group_details = hsm::group::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_group_name,
+        Some(hsm_group_name),
     )
     .await;
 
     log::debug!("HSM group response:\n{:#?}", hsm_group_details);
 
     // Get list of xnames in HSM group
-    let nodes: Vec<String> = hsm_group_details.unwrap()["members"]["ids"]
+    let nodes: Vec<String> = hsm_group_details.unwrap().first().unwrap()["members"]["ids"]
         .as_array()
         .unwrap()
         .iter()
@@ -97,8 +96,8 @@ pub async fn exec(
         )
         .await;
 
-        let image_details_resp = if let Some(image_id) = image_id_opt {
-            ims::image::http_client::get_all(
+        let image_value = if let Some(image_id) = image_id_opt {
+            mesa::ims::image::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -114,9 +113,9 @@ pub async fn exec(
             std::process::exit(1);
         };
 
-        log::debug!("image_details:\n{:#?}", image_details_resp);
+        log::debug!("image_details:\n{:#?}", image_value);
 
-        let image_path = image_details_resp.first().unwrap()["link"]["path"]
+        let image_path = image_value.first().unwrap()["link"]["path"]
             .as_str()
             .unwrap()
             .to_string();
@@ -128,7 +127,7 @@ pub async fn exec(
             .unwrap()
             .to_string();
 
-        let component_patch_rep = mesa::shasta::bss::http_client::put(
+        let component_patch_rep = mesa::bss::http_client::put(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -145,13 +144,14 @@ pub async fn exec(
         );
     }
 
+    // Process dessired configuration
     if let Some(desired_configuration_name) = desired_configuration_opt {
         log::info!(
             "Updating desired configuration. Need restart? {}",
             need_restart
         );
 
-        mesa::shasta::cfs::component::utils::update_component_list_desired_configuration(
+        mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -195,7 +195,6 @@ pub async fn exec(
             shasta_root_cert,
             nodes,
             Some("Update node boot params and/or desired configuration".to_string()),
-            need_restart,
         )
         .await;
 

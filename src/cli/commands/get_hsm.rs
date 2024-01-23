@@ -21,102 +21,153 @@ pub async fn exec(
         println!(" * CFS configuration details:");
         println!(
             "   - name: {}",
-            hsm_group.most_recent_cfs_configuration_name_created["name"]
-                .as_str()
-                .unwrap_or_default()
+            hsm_group.most_recent_cfs_configuration_name_created.name
         );
         println!(
             "   - last updated: {}",
-            hsm_group.most_recent_cfs_configuration_name_created["lastUpdated"]
-                .as_str()
-                .unwrap_or_default()
+            hsm_group
+                .most_recent_cfs_configuration_name_created
+                .last_updated
         );
 
-        for (i, layer) in hsm_group.most_recent_cfs_configuration_name_created["layers"]
-            .as_array()
-            .unwrap_or(&Vec::new())
+        for (i, layer) in hsm_group
+            .most_recent_cfs_configuration_name_created
+            .layers
             .iter()
             .enumerate()
         {
             println!("   + Layer {}", i);
-            println!(
-                "     - name: {}",
-                layer["name"].as_str().unwrap_or_default()
-            );
-            println!(
-                "     - url: {}",
-                layer["cloneUrl"].as_str().unwrap_or_default()
-            );
-            println!(
-                "     - commit: {}",
-                layer["commit"].as_str().unwrap_or_default()
-            );
-            println!(
-                "     - playbook: {}",
-                layer["playbook"].as_str().unwrap_or_default()
-            );
+            println!("     - name: {}", layer.name);
+            println!("     - url: {}", layer.clone_url);
+            println!("     - commit: {}", layer.commit.as_ref().unwrap());
+            println!("     - playbook: {}", layer.playbook);
         }
 
         println!(" * CFS session details:");
         println!(
             "   - Name: {}",
-            hsm_group.most_recent_cfs_session_name_created["name"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .name
                 .unwrap_or_default()
         );
         println!(
             "   - Configuration name: {}",
-            hsm_group.most_recent_cfs_session_name_created["configuration"]["name"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .configuration
+                .as_ref()
+                .unwrap()
+                .name
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
             "   - Target: {}",
-            hsm_group.most_recent_cfs_session_name_created["target"]["definition"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .target
+                .as_ref()
+                .unwrap()
+                .definition
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!("   + Ansible details:");
         println!(
             "     - name: {}",
-            hsm_group.most_recent_cfs_session_name_created["ansible"]["config"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .ansible
+                .as_ref()
+                .unwrap()
+                .config
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
             "     - limit: {}",
-            hsm_group.most_recent_cfs_session_name_created["ansible"]["limit"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .ansible
+                .as_ref()
+                .unwrap()
+                .limit
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!("   + Status:");
         println!(
             "     - status: {}",
-            hsm_group.most_recent_cfs_session_name_created["status"]["session"]["status"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .status
+                .as_ref()
+                .unwrap()
+                .session
+                .as_ref()
+                .unwrap()
+                .status
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
             "     - succeeded: {}",
-            hsm_group.most_recent_cfs_session_name_created["status"]["session"]["succeeded"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .status
+                .as_ref()
+                .unwrap()
+                .session
+                .as_ref()
+                .unwrap()
+                .succeeded
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
             "     - job: {}",
-            hsm_group.most_recent_cfs_session_name_created["status"]["session"]["job"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .status
+                .as_ref()
+                .unwrap()
+                .session
+                .as_ref()
+                .unwrap()
+                .job
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
             "     - start: {}",
-            hsm_group.most_recent_cfs_session_name_created["status"]["session"]["startTime"]
-                .as_str()
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .status
+                .as_ref()
+                .unwrap()
+                .session
+                .as_ref()
+                .unwrap()
+                .start_time
+                .as_ref()
+                .cloned()
                 .unwrap_or_default()
         );
         println!(
-            "   - tags: {}",
-            hsm_group.most_recent_cfs_session_name_created["tags"]
+            "   - tags: {:#?}",
+            hsm_group
+                .most_recent_cfs_session_name_created
+                .tags
+                .as_ref()
+                .unwrap()
         );
 
         println!(
