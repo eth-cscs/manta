@@ -18,8 +18,8 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
-    let countfiles2download = files2download.len() + 3 ; // BOS + CFS + HSM
-    // let files2download = ["manifest.json"];
+    let countfiles2download = files2download.len() + 3; // BOS + CFS + HSM
+                                                        // let files2download = ["manifest.json"];
 
     log::debug!("Create directory '{}'", destination.unwrap());
     match std::fs::create_dir_all(dest_path) {
@@ -126,7 +126,6 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-
             Some(&configuration_name_clean),
         )
         .await
@@ -207,7 +206,11 @@ pub async fn exec(
                                 ),
                             };
                     }
-                    Err(error) =>  panic!("{}", error.to_string())
+                } else {
+                    panic!(
+                        "Image related to BOS session template {} - NOT FOUND",
+                        image_id_related_to_bos_sessiontemplate
+                    );
                 }
             }
         }
