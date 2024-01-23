@@ -73,6 +73,14 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 ),
         )
         .subcommand(
+            Command::new("migrate")
+                .alias("m")
+                .arg_required_else_help(true)
+                .about("WIP - Migrate vCluster")
+                .subcommand(subcommand_migrate_backup())
+                .subcommand(subcommand_migrate_restore()),
+        )
+        .subcommand(
             Command::new("update")
                 .alias("u")
                 .arg_required_else_help(true)
