@@ -348,10 +348,18 @@ pub async fn process_session_template_section_in_sat_file(
             shasta_root_cert,
             hsm_group_available_vec,
             Some(&bos_session_template_image_name),
-            Some(&1),
+            None,
         )
         .await
         .unwrap_or(Vec::new());
+
+        if image_detail_vec.is_empty() {
+            eprintln!(
+                "Image with name '{}' not found. Exit",
+                bos_session_template_image_name
+            );
+            std::process::exit(1);
+        }
 
         log::info!("Image name: {}", image_detail_vec.first().unwrap().0.name);
 
