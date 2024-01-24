@@ -2,11 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.2] - 2024-01-24
+
+### Bug Fixes
+
+- Merge migration functionality
+
+### Co-authored-by
+
+- Masber <masber@hotmail.com>
+
+### Refactor
+
+- Apply clippy suggestions
+
 ## [1.20.1] - 2024-01-23
 
 ### Bug Fixes
 
 - Add migrate subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.1
 
 ## [1.20.0] - 2024-01-22
 
