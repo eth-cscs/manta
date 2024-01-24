@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.3] - 2024-01-24
+
+### Bug Fixes
+
+- Bug in 'apply cluster' subcommand where it was filtering wrong images
+
 ## [1.20.2] - 2024-01-24
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Co-authored-by
 
 - Masber <masber@hotmail.com>
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.2
 
 ### Refactor
 
