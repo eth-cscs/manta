@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.4] - 2024-01-24
+
+### Bug Fixes
+
+- Update mesa version to fix a bug
+
 ## [1.20.3] - 2024-01-24
 
 ### Bug Fixes
 
 - Bug in 'apply cluster' subcommand where it was filtering wrong images
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.3
 
 ## [1.20.2] - 2024-01-24
 
