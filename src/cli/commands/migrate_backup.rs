@@ -1,8 +1,10 @@
 use kube::api::WatchEvent::Error;
 use std::fs::File;
 use std::path::Path;
+use humansize::DECIMAL;
+use indicatif::ProgressBar;
 
-use mesa::ims::s3::{s3_auth, s3_download_object};
+use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 pub async fn exec(
     shasta_token: &str,
@@ -164,7 +166,7 @@ pub async fn exec(
                     &download_counter,
                     &files2download_count
                 );
-                let ims_record = match mesa::ims::image::shasta::http_client::get(
+                match mesa::ims::image::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -176,10 +178,6 @@ pub async fn exec(
                         log::info!( "Image ID found related to BOS sessiontemplate {} is {}",
                                     &bos.unwrap(),
                                     image_id_related_to_bos_sessiontemplate);
-
-
-
-
                         let sts_value =
                             match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
                                 Ok(sts_value) => {
@@ -192,15 +190,17 @@ pub async fn exec(
                         for file in files2download {
                             let dest = String::from(destination.unwrap()) + "/" + &image_id;
                             let src = image_id.clone() + "/" + file;
+
+                            let object_size = s3_get_object_size(&sts_value, &src, bucket_name).await.unwrap_or(-1);
                             println!(
-                                "Downloading image file {} to {}/{} [{}/{}]",
+                                "Downloading image file {} ({}) to {}/{} [{}/{}]",
                                 &src,
+                                humansize::format_size(object_size as u64, DECIMAL),
                                 &dest,
                                 &file,
                                 &download_counter,
                                 &files2download_count
                             );
-
                             match s3_download_object(&sts_value, &src, bucket_name, &dest).await {
                                 Ok(_result) => {
                                     download_counter += 1;
