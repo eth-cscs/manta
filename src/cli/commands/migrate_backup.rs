@@ -115,25 +115,21 @@ pub async fn exec(
             .as_ref()
             .unwrap()
             .to_owned();
-        let mut cn = configuration_name.chars();
-        cn.next();
-        cn.next_back();
-        // cn.as_str();
-        let configuration_name_clean = String::from(cn.as_str());
         let cfs_configurations = mesa::cfs::configuration::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            Some(&configuration_name_clean),
+            Some(&configuration_name),
         )
         .await
         .unwrap();
-        let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
+        let cfs_file_name = String::from(configuration_name.clone().as_str()) + ".json";
         let cfs_file_path = dest_path.join(&cfs_file_name);
         let cfs_file = File::create(&cfs_file_path).expect("cfs.json file could not be created.");
         println!(
             "Downloading CFS configuration {} to {} [{}/{}]",
-            cn.clone().as_str(),
+            // cn.clone().as_str(),
+            &configuration_name,
             &cfs_file_path.clone().to_string_lossy(),
             &download_counter,
             &files2download.len() + 2
