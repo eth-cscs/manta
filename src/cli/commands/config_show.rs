@@ -90,9 +90,10 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
     if !realm_access_role_vec.is_empty() {
+        realm_access_role_vec.sort();
         realm_access_role_vec
     } else {
-        mesa::hsm::group::shasta::http_client::get_all(
+        let mut all_hsm_groups = mesa::hsm::group::shasta::http_client::get_all(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -101,6 +102,10 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         .unwrap()
         .iter()
         .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
-        .collect::<Vec<String>>()
+        .collect::<Vec<String>>();
+
+        all_hsm_groups.sort();
+
+        all_hsm_groups
     }
 }
