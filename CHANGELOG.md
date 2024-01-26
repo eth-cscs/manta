@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.14] - 2024-01-26
+
+### Bug Fixes
+
+- Add macos build to releases
+
 ## [1.20.13] - 2024-01-26
 
 ### Bug Fixes
 
 - Add macos build to releases
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.13
 
 ## [1.20.12] - 2024-01-26
 
