@@ -132,6 +132,8 @@ jobs:
         run: rustup update --no-self-update
       - name: Install cargo-dist
         run: ${{ matrix.install-dist }}
+      - name: DEBUG openssl installation
+        run: echo $(which openssl)
       # - name: Init cargo-dist
       #   run: cargo dist init ${{ matrix.dist-init-args }}
       - name: Run cargo-dist
