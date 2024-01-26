@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.7] - 2024-01-26
+
+### Bug Fixes
+
+- Github actions publishing mac m1
+
 ## [1.20.6] - 2024-01-26
 
 ### Features
 
 - Sort hsm available list in 'config show' command
 - Add new target for mac, the idea is to have a new binary in github releases for mac users
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.6
 
 ## [1.20.5] - 2024-01-24
 
