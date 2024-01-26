@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.10] - 2024-01-26
+
+### Bug Fixes
+
+- Github actions publishing mac m1
+
 ## [1.20.9] - 2024-01-26
 
 ### Bug Fixes
 
 - Github actions publishing mac m1
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.9
 
 ## [1.20.8] - 2024-01-26
 
