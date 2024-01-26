@@ -109,26 +109,27 @@ jobs:
           dist-args: --artifacts=local --target=x86_64-unknown-linux-gnu
           dist-init-args: --yes --target=x86_64-unknown-linux-gnu 
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.7/cargo-dist-installer.sh | sh
-        - os: macos-latest 
+        # - os: macos-latest 
+        - os: ubuntu-20.04
           dist-args: --artifacts=local --target=aarch64-apple-darwin
           dist-init-args: --yes --target=aarch64-apple-darwin 
           install-dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.0.7/cargo-dist-installer.sh | sh
 
-    # runs-on: ${{ matrix.os }}
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    # runs-on: ubuntu-20.04
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-      - name: install packages
-        if: matrix.os == 'macos-latest'
-        run: brew install openssl@1.1
-        # 26/01/2024 - need to configure open-ssl on mac, othwerwise cargo-dist will complain. Following this code as a workaround https://github.com/dotnet/runtime/issues/49827#issuecomment-809081192
-      - name: Setup OpenSSL (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/libssl.1.1.dylib
-          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/libcrypto.1.1.dylib
+      # - name: install packages
+      #   if: matrix.os == 'macos-latest'
+      #   run: brew install openssl@1.1
+      #   # 26/01/2024 - need to configure open-ssl on mac, othwerwise cargo-dist will complain. Following this code as a workaround https://github.com/dotnet/runtime/issues/49827#issuecomment-809081192
+      # - name: Setup OpenSSL (macOS)
+      #   if: matrix.os == 'macos-latest'
+      #   run: |
+      #     ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/libssl.1.1.dylib
+      #     ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/libcrypto.1.1.dylib
       - name: Install Rust
         run: rustup update --no-self-update
       - name: Install cargo-dist
