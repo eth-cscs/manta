@@ -118,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: install packages
-        run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew reinstall openssl@1.1
+        run: HOMEBREW_NO_INSTALL_CLEANUP=1 brew reinstall openssl@3
       #   # 26/01/2024 - need to configure open-ssl on mac, othwerwise cargo-dist will complain. Following this code as a workaround https://github.com/dotnet/runtime/issues/49827#issuecomment-809081192
       # - name: Setup OpenSSL (macOS)
       #   if: matrix.operatingSystem == 'macos-latest'
