@@ -117,6 +117,12 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v3
+        # 26/01/2024 - need to configure open-ssl on mac, othwerwise cargo-dist will complain. Following this code as a workaround https://github.com/dotnet/runtime/issues/49827#issuecomment-809081192
+      - name: Setup OpenSSL (macOS)
+        if: matrix.operatingSystem == 'macOS-latest'
+        run: |
+          ln -s /usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib /usr/local/lib/libssl.1.1.dylib
+          ln -s /usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib /usr/local/lib/libcrypto.1.1.dylib
       - name: Install Rust
         run: rustup update --no-self-update
       - name: Install cargo-dist
