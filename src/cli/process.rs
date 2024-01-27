@@ -8,8 +8,9 @@ use mesa::common::authentication;
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
     apply_ephemeral_env, apply_hw_cluster, apply_image, apply_session, config_set_hsm,
-    config_set_log, config_set_site, config_show, config_unset_auth, config_unset_hsm,
-    console_cfs_session_image_target_ansible, console_node,
+    config_set_log, config_set_site,
+    config_show::{self, get_hsm_name_available_from_jwt_or_all},
+    config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
@@ -117,12 +118,11 @@ pub async fn process_cli(
                             hsm_group_name_arg_opt
                         };
 
-                    let _ = validate_target_hsm_name(
+                    check_user_has_access_to_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group_name,
-                        settings_hsm_group_name_opt,
                     )
                     .await;
 
@@ -170,12 +170,11 @@ pub async fn process_cli(
                             hsm_group_name_arg_opt
                         };
 
-                    let _ = validate_target_hsm_name(
+                    check_user_has_access_to_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group_name,
-                        settings_hsm_group_name_opt,
                     )
                     .await;
 
@@ -225,12 +224,11 @@ pub async fn process_cli(
                             hsm_group_name_arg_opt
                         };
 
-                    let _ = validate_target_hsm_name(
+                    check_user_has_access_to_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group_name,
-                        settings_hsm_group_name_opt,
                     )
                     .await;
 
@@ -272,13 +270,29 @@ pub async fn process_cli(
             }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
+                let hsm_group_name_arg_opt =
+                    cli_add_hw_configuration.get_one::<String>("CLUSTER_NAME");
+
+                let target_hsm_group_name_opt =
+                    if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                        Some(hsm_group_name)
+                    } else {
+                        hsm_group_name_arg_opt
+                    };
+
+                check_user_has_access_to_hsm_group(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name_opt,
+                )
+                .await;
+
                 add_hw_component_cluster::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    cli_add_hw_configuration
-                        .get_one::<String>("CLUSTER_NAME")
-                        .unwrap(),
+                    target_hsm_group_name_opt.unwrap(),
                     cli_add_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
@@ -298,6 +312,24 @@ pub async fn process_cli(
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
             if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
             {
+                let hsm_group_name_arg_opt =
+                    cli_remove_hw_configuration.get_one::<String>("CLUSTER_NAME");
+
+                let target_hsm_group_name_opt =
+                    if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                        Some(hsm_group_name)
+                    } else {
+                        hsm_group_name_arg_opt
+                    };
+
+                check_user_has_access_to_hsm_group(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name_opt,
+                )
+                .await;
+
                 remove_hw_component_cluster::exec(
                     shasta_token,
                     shasta_base_url,
@@ -326,14 +358,29 @@ pub async fn process_cli(
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {
-                    let hsm_group_name = cli_get_hw_configuration_cluster
-                        .get_one::<String>("CLUSTER_NAME")
-                        .unwrap();
+                    let hsm_group_name_arg_opt =
+                        cli_get_hw_configuration_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_name_opt =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    check_user_has_access_to_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name_opt,
+                    )
+                    .await;
+
                     commands::get_hw_configuration_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name,
+                        target_hsm_group_name_opt.unwrap(),
                         cli_get_hw_configuration_cluster.get_one::<String>("output"),
                     )
                     .await;
@@ -369,19 +416,18 @@ pub async fn process_cli(
             {
                 let hsm_group_name_arg_opt = cli_get_configuration.get_one::<String>("hsm-group");
 
-                let target_hsm_group_name =
+                let target_hsm_group_name_opt =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
 
-                let hsm_group_target_vec = validate_target_hsm_name(
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_name,
-                    settings_hsm_group_name_opt,
+                    target_hsm_group_name_opt,
                 )
                 .await;
 
@@ -399,29 +445,28 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     cli_get_configuration.get_one::<String>("name"),
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name_opt.cloned().unwrap()],
                     limit,
                     cli_get_configuration.get_one("output"),
                 )
                 .await;
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
                 let hsm_group_name_arg_opt = cli_get_session.get_one::<String>("hsm-group");
-                let target_hsm_group_name =
+
+                let target_hsm_group_name_opt =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_name,
-                    settings_hsm_group_name_opt,
+                    target_hsm_group_name_opt,
                 )
                 .await;
-
-                // let session_name = cli_get_session.get_one::<String>("name");
 
                 let limit: Option<&u8> = if let Some(true) = cli_get_session.get_one("most-recent")
                 {
@@ -434,7 +479,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name_opt.unwrap().to_string()],
                     cli_get_session.get_one::<String>("name"),
                     limit,
                     cli_get_session.get_one("output"),
@@ -442,18 +487,19 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
                 let hsm_group_name_arg_opt = cli_get_template.get_one::<String>("hsm-group");
-                let target_hsm_group_name =
+
+                let target_hsm_group_name_opt =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_name,
-                    settings_hsm_group_name_opt,
+                    target_hsm_group_name_opt,
                 )
                 .await;
 
@@ -462,7 +508,7 @@ pub async fn process_cli(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        &hsm_group_target_vec,
+                        &vec![target_hsm_group_name_opt.unwrap().to_string()],
                     )
                     .await;
 
@@ -478,7 +524,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name_opt.unwrap().to_string()],
                     &hsm_member_vec,
                     cli_get_template.get_one::<String>("name"),
                     limit_number_opt,
@@ -486,18 +532,19 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_node) = cli_get.subcommand_matches("cluster") {
                 let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
+
                 let target_hsm_group_name =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_name,
-                    settings_hsm_group_name_opt,
                 )
                 .await;
 
@@ -505,7 +552,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name.unwrap().to_string()],
                     *cli_get_node
                         .get_one::<bool>("nids-only-one-line")
                         .unwrap_or(&false),
@@ -518,18 +565,19 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
                 let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
+
                 let target_hsm_group_name =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_name,
-                    settings_hsm_group_name_opt,
                 )
                 .await;
 
@@ -537,7 +585,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name.unwrap().to_string()],
                     *cli_get_node
                         .get_one::<bool>("nids-only-one-line")
                         .unwrap_or(&false),
@@ -550,18 +598,19 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
                 let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
+
                 let target_hsm_group_name =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_name,
-                    settings_hsm_group_name_opt,
                 )
                 .await;
 
@@ -569,23 +618,24 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_target_vec.first().unwrap(),
+                    target_hsm_group_name.unwrap(),
                 )
                 .await;
             } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
                 let hsm_group_name_arg_opt = cli_get_images.get_one::<String>("hsm-group");
+
                 let target_hsm_group_name =
                     if let Some(hsm_group_name) = settings_hsm_group_name_opt {
                         Some(hsm_group_name)
                     } else {
                         hsm_group_name_arg_opt
                     };
-                let hsm_group_target_vec = validate_target_hsm_name(
+
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_name,
-                    settings_hsm_group_name_opt,
                 )
                 .await;
 
@@ -593,7 +643,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &hsm_group_target_vec,
+                    &vec![target_hsm_group_name.unwrap().to_string()],
                     cli_get_images.get_one::<u8>("limit"),
                 )
                 .await;
@@ -601,13 +651,29 @@ pub async fn process_cli(
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hw-configuration") {
                 if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
+                    let hsm_group_name_arg_opt =
+                        cli_apply_hw_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_name =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    check_user_has_access_to_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                    )
+                    .await;
+
                     apply_hw_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        cli_apply_hw_cluster
-                            .get_one::<String>("CLUSTER_NAME")
-                            .unwrap(),
+                        target_hsm_group_name.unwrap(),
                         cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
                     )
                     .await;
@@ -615,11 +681,10 @@ pub async fn process_cli(
             } else if let Some(cli_apply_configuration) =
                 cli_apply.subcommand_matches("configuration")
             {
-                let _hsm_group_target_vec = validate_target_hsm_name(
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    settings_hsm_group_name_opt,
                     settings_hsm_group_name_opt,
                 )
                 .await;
@@ -641,35 +706,41 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
-                let hsm_group_name_arg_opt = cli_apply_session.get_one::<String>("hsm-group");
-                let target_hsm_group_name =
-                    if let Some(hsm_group_name) = settings_hsm_group_name_opt {
-                        Some(hsm_group_name)
-                    } else {
-                        hsm_group_name_arg_opt
-                    };
-                let _ = validate_target_hsm_name(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_name,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
+                let mut hsm_group_name_arg_opt = cli_apply_session.get_one::<String>("hsm-group");
 
-                let hsm_group_members = validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    cli_apply_session
-                        .get_one::<String>("ansible-limit")
-                        .cloned()
-                        .unwrap_or_default()
-                        .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect::<Vec<String>>(),
-                )
-                .await;
+                let hsm_group_members_opt = cli_apply_session.get_one::<String>("ansible-limit");
+
+                if let Some(hsm_group_name) = hsm_group_name_arg_opt {
+                    let target_hsm_group_name =
+                        if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                            Some(hsm_group_name)
+                        } else {
+                            hsm_group_name_arg_opt
+                        };
+
+                    check_user_has_access_to_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                    )
+                    .await;
+
+                    hsm_group_name_arg_opt = Some(hsm_group_name);
+                }
+
+                if let Some(ansible_limit) = hsm_group_members_opt {
+                    validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        ansible_limit
+                            .split(',')
+                            .map(|xname| xname.trim().to_string())
+                            .collect::<Vec<String>>(),
+                    )
+                    .await;
+                }
 
                 apply_session::exec(
                     gitea_token,
@@ -682,13 +753,13 @@ pub async fn process_cli(
                     shasta_root_cert,
                     k8s_api_url,
                     cli_apply_session.get_one::<String>("name").cloned(),
-                    target_hsm_group_name,
+                    hsm_group_name_arg_opt,
                     cli_apply_session
                         .get_many("repo-path")
                         .unwrap()
                         .cloned()
                         .collect(),
-                    Some(hsm_group_members.join(",")),
+                    hsm_group_members_opt.cloned(),
                     cli_apply_session
                         .get_one::<String>("ansible-verbosity")
                         .cloned(),
@@ -701,12 +772,18 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
-                let hsm_group_target_vec = validate_target_hsm_name(
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     settings_hsm_group_name_opt,
-                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                 )
                 .await;
 
@@ -729,18 +806,24 @@ pub async fn process_cli(
                     cli_apply_image.get_one::<String>("ansible-passthrough"),
                     cli_apply_image.get_one::<bool>("watch-logs"),
                     &tag,
-                    &hsm_group_target_vec,
+                    &hsm_group_available_vec,
                     k8s_api_url,
                     cli_apply_image.get_one::<String>("output"),
                 )
                 .await;
             } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
-                let hsm_group_target_vec = validate_target_hsm_name(
+                check_user_has_access_to_hsm_group(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     settings_hsm_group_name_opt,
-                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                 )
                 .await;
 
@@ -757,7 +840,7 @@ pub async fn process_cli(
                     cli_apply_cluster.get_one("file").unwrap(),
                     // base_image_id,
                     settings_hsm_group_name_opt,
-                    &hsm_group_target_vec,
+                    &hsm_group_available_vec,
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     tag,
@@ -787,7 +870,7 @@ pub async fn process_cli(
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
-                    let _ = validate_target_hsm_members(
+                    validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -913,16 +996,28 @@ pub async fn process_cli(
             }
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
-                let hsm_group_name = if settings_hsm_group_name_opt.is_none() {
-                    cli_update_node.get_one::<String>("HSM_GROUP_NAME")
-                } else {
-                    settings_hsm_group_name_opt
-                };
+                let hsm_group_name_arg_opt = cli_update_node.get_one::<String>("HSM_GROUP_NAME");
+
+                let target_hsm_group_name =
+                    if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                        Some(hsm_group_name)
+                    } else {
+                        hsm_group_name_arg_opt
+                    };
+
+                check_user_has_access_to_hsm_group(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                )
+                .await;
+
                 update_node::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name,
+                    target_hsm_group_name,
                     cli_update_node.get_one::<String>("boot-image"),
                     cli_update_node.get_one::<String>("desired-configuration"),
                     cli_update_node
@@ -934,28 +1029,63 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
-                let hsm_group_name = if settings_hsm_group_name_opt.is_none() {
-                    cli_update_hsm_group.get_one::<String>("HSM_GROUP_NAME")
-                } else {
-                    settings_hsm_group_name_opt
-                };
+                let hsm_group_name_arg_opt =
+                    cli_update_hsm_group.get_one::<String>("HSM_GROUP_NAME");
+
+                let target_hsm_group_name =
+                    if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                        Some(hsm_group_name)
+                    } else {
+                        hsm_group_name_arg_opt
+                    };
+
+                check_user_has_access_to_hsm_group(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                )
+                .await;
                 update_hsm_group::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     cli_update_hsm_group.get_one::<String>("boot-image"),
                     cli_update_hsm_group.get_one::<String>("desired-configuration"),
-                    hsm_group_name.unwrap(),
+                    target_hsm_group_name.unwrap(),
                 )
                 .await;
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-            let hsm_group_target_vec = validate_target_hsm_name(
+            /* check_user_has_access_to_hsm_group(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 cli_log.try_get_one::<String>("hsm-group").unwrap_or(None),
                 settings_hsm_group_name_opt,
+            )
+            .await; */
+
+            let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("hsm-group").unwrap_or(None);
+
+            let target_hsm_group_name = if let Some(hsm_group_name) = settings_hsm_group_name_opt {
+                Some(hsm_group_name)
+            } else {
+                hsm_group_name_arg_opt
+            };
+
+            check_user_has_access_to_hsm_group(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_name,
+            )
+            .await;
+
+            let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
             )
             .await;
 
@@ -968,7 +1098,7 @@ pub async fn process_cli(
                 vault_secret_path,
                 vault_role_id,
                 k8s_api_url,
-                &hsm_group_target_vec,
+                &hsm_group_available_vec,
                 cli_log.get_one::<String>("SESSION_NAME"),
                 settings_hsm_group_name_opt,
             )
@@ -1158,14 +1288,13 @@ pub async fn process_cli(
 
 /// Validate user has access to a list of HSM group names provided.
 /// HSM groups user is asking for are taken from either config file or env or cli command
-/// Returns a curated list of HSM groups user is asking.
-pub async fn validate_target_hsm_name(
+/// This function exits if the user does not have access to any of the HSM groups provided
+pub async fn check_user_has_access_to_hsm_group(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_config_opt: Option<&String>,
-    hsm_group_name_opt: Option<&String>,
-) -> Vec<String> {
+    target_hsm_group_opt: Option<&String>,
+) {
     let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
@@ -1173,43 +1302,23 @@ pub async fn validate_target_hsm_name(
     )
     .await;
 
-    let hsm_group_target_opt = if let Some(hsm_name) = hsm_group_name_opt {
-        Some(hsm_name)
-    } else {
-        hsm_group_config_opt
-    };
-    /* if let Some(hsm_name) = hsm_group_config_opt {
-        Some(hsm_name)
-    } else {
-        None
-    }; */
+    if let Some(target_hsm_group) = target_hsm_group_opt {
+        if !hsm_name_available_vec.contains(target_hsm_group) {
+            println!(
+                "Access to HSM group '{}' denied or does not exists, please choose one from the list below:\n{}\nExit",
+                target_hsm_group,
+                hsm_name_available_vec.join(", ")
+            );
 
-    let hsm_group_target_vec: Vec<String> = if let Some(hsm_group_target) = hsm_group_target_opt {
-        hsm_name_available_vec
-            .clone()
-            .into_iter()
-            .filter(|hsm_name_aux| hsm_name_aux.eq(hsm_group_target))
-            .collect::<Vec<String>>()
-    } else {
-        hsm_name_available_vec.clone()
-    };
-
-    if hsm_group_target_vec.is_empty() {
-        println!(
-            "Target HSM group '{}' not available, plese chose one of {:?}. Exit",
-            hsm_group_target_opt.unwrap(),
-            hsm_name_available_vec
-        );
-        std::process::exit(1);
+            std::process::exit(1);
+        }
     }
-
-    hsm_group_target_vec
 }
 
 /// Validate user has access to a list of HSM group members provided.
 /// HSM members user is asking for are taken from cli command
-/// Returns a curated list of HSM members user is asking or exits if user does not have access to
-/// the nodes he is requesting
+/// Exit if user does not have access to any of the members provided. By not having access to a HSM
+/// members means, the node bleongs to an HSM group which the user does not have access
 pub async fn validate_target_hsm_members(
     shasta_token: &str,
     shasta_base_url: &str,

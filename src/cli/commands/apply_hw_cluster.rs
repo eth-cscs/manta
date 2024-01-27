@@ -289,7 +289,8 @@ pub mod utils {
         let hw_component_counters_to_move_out_from_combined_hsm =
             crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
                 &final_combined_target_parent_hsm_hw_component_summary.clone(),
-                &final_combined_target_parent_hsm_hw_component_summary.into_keys()
+                &final_combined_target_parent_hsm_hw_component_summary
+                    .into_keys()
                     .collect::<Vec<String>>(),
                 &mut combined_target_parent_hsm_node_hw_component_count_vec,
                 &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,

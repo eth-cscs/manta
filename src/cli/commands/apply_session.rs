@@ -449,7 +449,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     .await;
 
     // Update/PUT CFS configuration
-    log::info!(
+    log::debug!(
         "Create CFS configuration payload:\n{:#?}",
         cfs_configuration
     );
@@ -464,7 +464,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     )
     .await;
 
-    log::info!(
+    log::debug!(
         "Create CFS configuration response:\n{:#?}",
         cfs_configuration_resp
     );
@@ -495,7 +495,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         None,
     );
 
-    log::info!("Create CFS Session payload:\n{:#?}", session);
+    log::debug!("Create CFS Session payload:\n{:#?}", session);
 
     let cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
         shasta_token,
@@ -505,7 +505,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     )
     .await;
 
-    log::info!("Create CFS Session response:\n{:#?}", cfs_session_resp);
+    log::debug!("Create CFS Session response:\n{:#?}", cfs_session_resp);
 
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap().name.as_ref().unwrap(),
