@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.33] - 2024-01-27
+
+### Bug Fixes
+
+- Remove windows as a target
+
 ## [1.20.32] - 2024-01-27
 
 ### Features
 
 - Add openssl vendor feature to git2
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.32
 
 ## [1.20.31] - 2024-01-27
 
