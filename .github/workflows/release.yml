@@ -59,7 +59,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.70.0" --no-self-update && rustup default "1.70.0"
+        run: rustup update "1.67.1" --no-self-update && rustup default "1.67.1"
       - name: Install cargo-dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -111,7 +111,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.70.0" --no-self-update && rustup default "1.70.0"
+        run: rustup update "1.67.1" --no-self-update && rustup default "1.67.1"
       - uses: swatinem/rust-cache@v2
       - name: Install cargo-dist
         run: ${{ matrix.install_dist }}
@@ -164,7 +164,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.70.0" --no-self-update && rustup default "1.70.0"
+        run: rustup update "1.67.1" --no-self-update && rustup default "1.67.1"
       - name: Install cargo-dist
         run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.8.1/cargo-dist-installer.sh | sh"
       # Get all the local artifacts for the global tasks to use (for e.g. checksums)
@@ -210,7 +210,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.70.0" --no-self-update && rustup default "1.70.0"
+        run: rustup update "1.67.1" --no-self-update && rustup default "1.67.1"
       - name: Install cargo-dist
         run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.8.1/cargo-dist-installer.sh | sh"
       # Fetch artifacts from scratch-storage
