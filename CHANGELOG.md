@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Add releases for other OS
 
+### Miscellaneous Tasks
+
+- Release manta version 1.20.29
+
 ## [1.20.28] - 2024-01-26
 
 ### Bug Fixes
