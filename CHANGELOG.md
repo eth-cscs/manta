@@ -2,13 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.34] - 2024-01-28
+
+### Bug Fixes
+
+- Rename 'force' param in 'delete' command to 'yes'
+- Rename aliases for command 'apply configuration'
+- Improve user validation to check access to a HSM group
+
+### Fixes
+
+- Migrate backup and migrate restore (#11)
+
+### Refactor
+
+- Code checkif user has access to HSM groups and members
+- Fix some log messages
+
 ## [1.20.33] - 2024-01-27
 
 ### Bug Fixes
 
+- Add releases for other OS
+- Add releases for other OS
 - Remove windows as a target
-
-## [1.20.32] - 2024-01-27
 
 ### Features
 
@@ -16,33 +33,11 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
-- Release manta version 1.20.32
-
-## [1.20.31] - 2024-01-27
-
-### Bug Fixes
-
-- Add releases for other OS
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.31
-
-## [1.20.30] - 2024-01-27
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.30
-
-## [1.20.29] - 2024-01-27
-
-### Bug Fixes
-
-- Add releases for other OS
-
-### Miscellaneous Tasks
-
 - Release manta version 1.20.29
+- Release manta version 1.20.30
+- Release manta version 1.20.31
+- Release manta version 1.20.32
+- Release manta version 1.20.33
 
 ## [1.20.28] - 2024-01-26
 
