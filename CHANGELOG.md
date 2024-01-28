@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.35] - 2024-01-28
+
+### Bug Fixes
+
+- Update mesa version in cargo.toml
+
 ## [1.20.34] - 2024-01-28
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 ### Fixes
 
 - Migrate backup and migrate restore (#11)
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.34
 
 ### Refactor
 
