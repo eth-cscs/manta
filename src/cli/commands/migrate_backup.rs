@@ -1,8 +1,6 @@
-use kube::api::WatchEvent::Error;
+use humansize::DECIMAL;
 use std::fs::File;
 use std::path::Path;
-use humansize::DECIMAL;
-use indicatif::ProgressBar;
 
 use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
@@ -142,7 +140,6 @@ pub async fn exec(
         let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
         download_counter += 1;
 
-
         // Image ----------------------------------------------------------------------------------
         for boot_sets_value in bos_templates[0].boot_sets.as_ref().unwrap().values() {
             if let Some(path) = &boot_sets_value.path {
@@ -155,9 +152,12 @@ pub async fn exec(
                     "Get image details for ID {}",
                     image_id_related_to_bos_sessiontemplate
                 );
-                let ims_file_name = String::from(image_id_related_to_bos_sessiontemplate.clone().as_str()) + "-ims.json";
+                let ims_file_name =
+                    String::from(image_id_related_to_bos_sessiontemplate.clone().as_str())
+                        + "-ims.json";
                 let ims_file_path = dest_path.join(&ims_file_name);
-                let ims_file = File::create(&ims_file_path).expect("ims.json file could not be created.");
+                let ims_file =
+                    File::create(&ims_file_path).expect("ims.json file could not be created.");
 
                 println!(
                     "Downloading IMS image record {} to {} [{}/{}]",
@@ -170,14 +170,19 @@ pub async fn exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some(&image_id_related_to_bos_sessiontemplate)).await {
+                    Some(&image_id_related_to_bos_sessiontemplate),
+                )
+                .await
+                {
                     Ok(ims_record) => {
                         serde_json::to_writer_pretty(&ims_file, &ims_record)
                             .expect("Unable to write new ims record image.json file");
                         let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
-                        log::info!( "Image ID found related to BOS sessiontemplate {} is {}",
-                                    &bos.unwrap(),
-                                    image_id_related_to_bos_sessiontemplate);
+                        log::info!(
+                            "Image ID found related to BOS sessiontemplate {} is {}",
+                            &bos.unwrap(),
+                            image_id_related_to_bos_sessiontemplate
+                        );
                         let sts_value =
                             match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
                                 Ok(sts_value) => {
@@ -190,8 +195,9 @@ pub async fn exec(
                         for file in files2download {
                             let dest = String::from(destination.unwrap()) + "/" + &image_id;
                             let src = image_id.clone() + "/" + file;
-
-                            let object_size = s3_get_object_size(&sts_value, &src, bucket_name).await.unwrap_or(-1);
+                            let object_size = s3_get_object_size(&sts_value, &src, bucket_name)
+                                .await
+                                .unwrap_or(-1);
                             println!(
                                 "Downloading image file {} ({}) to {}/{} [{}/{}]",
                                 &src,

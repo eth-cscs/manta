@@ -421,7 +421,7 @@ async fn s3_upload_image_artifacts(
     // Connect and auth to S3
     let sts_value = match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
         Ok(sts_value) => {
-            log::debug!("Debug - STS token:\n{:#?}", sts_value);
+            log::debug!("STS token:\n{:#?}", sts_value);
             sts_value
         }
         Err(error) => panic!(

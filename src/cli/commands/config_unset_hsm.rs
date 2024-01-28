@@ -44,16 +44,11 @@ pub async fn exec(shasta_token: &str) {
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
-    // VALIDATION
-    if settings_hsm_available_vec.is_empty() {
-        doc.remove("hsm_group");
-        println!("hsm group unset");
-    } else {
-        eprintln!("Can't unset hsm when running in tenant mode.Exit");
-        std::process::exit(1);
-    }
+    log::info!("Unset HSM group");
+    doc.remove("hsm_group");
 
     // Update configuration file content
+    log::info!("Update config file");
     let mut manta_configuration_file = std::fs::OpenOptions::new()
         .write(true)
         .truncate(true)
@@ -67,4 +62,6 @@ pub async fn exec(shasta_token: &str) {
         .write_all(doc.to_string().as_bytes())
         .unwrap();
     manta_configuration_file.flush().unwrap();
+
+    println!("hsm group unset");
 }

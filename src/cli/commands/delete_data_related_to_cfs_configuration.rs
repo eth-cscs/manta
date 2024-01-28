@@ -21,7 +21,7 @@ pub async fn delete_data_related_cfs_configuration(
     cfs_configuration_name_opt: Option<&String>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
-    force: &bool,
+    yes: &bool,
 ) {
     if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
         eprintln!(
@@ -124,6 +124,11 @@ pub async fn delete_data_related_cfs_configuration(
         None,
     )
     .await;
+
+    log::debug!(
+        "BOS sessiontemplate filtered by HSM and configuration name:\n{:#?}",
+        bos_sessiontemplate_value_vec
+    );
 
     // Get CFS configurations related with BOS sessiontemplate
     let cfs_configuration_name_from_bos_sessiontemplate_value_iter = bos_sessiontemplate_value_vec
@@ -354,9 +359,11 @@ pub async fn delete_data_related_cfs_configuration(
 
     // VALIDATION
     //
-    let mut cfs_configuration_name_to_keep_vec: Vec<&str> = Vec::new();
-    let mut image_id_to_keep_vec: Vec<&str> = Vec::new();
+    let mut cfs_configuration_name_used_to_configure_nodes_vec: Vec<&str> = Vec::new();
+    let mut image_id_used_to_boot_nodes_vec: Vec<&str> = Vec::new();
 
+    // We can't allow any data deletion operation which can jeopardize the system stability,
+    // therefore we will filter the list of the CFS configurations and Images used to configure or boot nodes
     for (cfs_configuration_name, image_id_vec) in cfs_configuration_image_id {
         let mut nodes_using_cfs_configuration_as_dessired_configuration_vec = cfs_components
             .iter()
@@ -368,8 +375,9 @@ pub async fn delete_data_related_cfs_configuration(
             })
             .map(|cfs_component| cfs_component["id"].as_str().unwrap())
             .collect::<Vec<&str>>();
+
         if !nodes_using_cfs_configuration_as_dessired_configuration_vec.is_empty() {
-            cfs_configuration_name_to_keep_vec.push(cfs_configuration_name);
+            cfs_configuration_name_used_to_configure_nodes_vec.push(cfs_configuration_name);
 
             nodes_using_cfs_configuration_as_dessired_configuration_vec.sort();
 
@@ -382,7 +390,7 @@ pub async fn delete_data_related_cfs_configuration(
             let node_vec = get_node_vec_booting_image(image_id, &boot_param_vec);
 
             if !node_vec.is_empty() {
-                image_id_to_keep_vec.push(image_id);
+                image_id_used_to_boot_nodes_vec.push(image_id);
                 eprintln!(
                     "Image '{}' used to boot nodes: {}",
                     image_id,
@@ -396,52 +404,55 @@ pub async fn delete_data_related_cfs_configuration(
     // sessiontemplates and excluding the CFS sessions to keep (in case user decides to
     // force the deletion operation)
     cfs_configuration_vec.retain(|cfs_configuration_value| {
-        !cfs_configuration_name_to_keep_vec.contains(&cfs_configuration_value.name.as_str())
+        !cfs_configuration_name_used_to_configure_nodes_vec
+            .contains(&cfs_configuration_value.name.as_str())
     });
 
     let cfs_session_cfs_configuration_image_id_tuple_filtered_vec: Vec<(String, String, String)>;
     let bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec: Vec<(&str, &str, &str)>;
 
-    if !cfs_configuration_name_to_keep_vec.is_empty() || !image_id_to_keep_vec.is_empty() {
-        if *force {
-            cfs_configuration_name_vec.retain(|cfs_configuration_name| {
-                !cfs_configuration_name_to_keep_vec.contains(&cfs_configuration_name.as_str())
-            });
-
-            image_id_vec.retain(|image_id| !image_id_to_keep_vec.contains(image_id));
-
-            cfs_session_cfs_configuration_image_id_tuple_filtered_vec =
-                cfs_session_cfs_configuration_image_id_tuple_vec
-                    .iter()
-                    .filter(|(_, cfs_configuration_name, image_id)| {
-                        !cfs_configuration_name_to_keep_vec
-                            .contains(&cfs_configuration_name.as_str())
-                            && !image_id_to_keep_vec.contains(&image_id.as_str())
-                    })
-                    .cloned()
-                    .collect();
-
-            bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec =
-                bos_sessiontemplate_cfs_configuration_image_id_tuple_vec
-                    .into_iter()
-                    .filter(|(_, cfs_configuration_name, image_id)| {
-                        !cfs_configuration_name_to_keep_vec.contains(cfs_configuration_name)
-                            && !image_id_to_keep_vec.contains(image_id)
-                    })
-                    .collect();
-        } else {
-            // User don't want to force and there are cfs configurations or images used in the
-            // system. EXIT
-            eprintln!("Exit");
-            std::process::exit(1);
-        }
+    // EVALUATE IF NEED TO CONTINUE. 
+    // CHECK IF ANY CFS CONFIGURAION OR IMAGE IS CURRENTLY USED TO CONFIGURE OR BOOT NODES
+    if !cfs_configuration_name_used_to_configure_nodes_vec.is_empty()
+        || !image_id_used_to_boot_nodes_vec.is_empty()
+    {
+        // There are CFS configuraions or Images currently used by nodes. Better to be safe and
+        // stop the process
+        eprintln!("Exit");
+        std::process::exit(1);
     } else {
-        cfs_session_cfs_configuration_image_id_tuple_filtered_vec = Vec::new();
-        bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec = Vec::new();
+        // We are safe to delete, none of the data selected for deletion is currently used as
+        // neither configure nor boot the nodes
+        cfs_configuration_name_vec.retain(|cfs_configuration_name| {
+            !cfs_configuration_name_used_to_configure_nodes_vec
+                .contains(&cfs_configuration_name.as_str())
+        });
+
+        image_id_vec.retain(|image_id| !image_id_used_to_boot_nodes_vec.contains(image_id));
+
+        cfs_session_cfs_configuration_image_id_tuple_filtered_vec =
+            cfs_session_cfs_configuration_image_id_tuple_vec
+                .iter()
+                .filter(|(_, cfs_configuration_name, image_id)| {
+                    !cfs_configuration_name_used_to_configure_nodes_vec
+                        .contains(&cfs_configuration_name.as_str())
+                        && !image_id_used_to_boot_nodes_vec.contains(&image_id.as_str())
+                })
+                .cloned()
+                .collect();
+
+        bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec =
+            bos_sessiontemplate_cfs_configuration_image_id_tuple_vec
+                .into_iter()
+                .filter(|(_, cfs_configuration_name, image_id)| {
+                    !cfs_configuration_name_used_to_configure_nodes_vec
+                        .contains(cfs_configuration_name)
+                        && !image_id_used_to_boot_nodes_vec.contains(image_id)
+                })
+                .collect();
     }
 
-    // EVALUATE IF NEED TO CONTINUE. EXIT IF THERE IS NO DATA TO DELETE
-    //
+    // EXIT IF THERE IS NO DATA TO DELETE
     if cfs_configuration_name_vec.is_empty()
         && image_id_vec.is_empty()
         && cfs_session_cfs_configuration_image_id_tuple_filtered_vec.is_empty()
@@ -531,7 +542,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // ASK USER FOR CONFIRMATION
     //
-    if !*force {
+    if !*yes {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Please revew the data above and confirm to delete:")
             .interact()

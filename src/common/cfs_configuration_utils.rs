@@ -55,7 +55,7 @@ use mesa::cfs::configuration::mesa::r#struct::{
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
 
-    table.set_header(vec!["Name", "Last updated", "Layers"]);
+    table.set_header(vec!["Config Name", "Last updated", "Layers"]);
 
     for cfs_configuration in cfs_configurations {
         let mut layers: String = String::new();

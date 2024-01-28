@@ -191,7 +191,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
-                .arg(arg!(-f --"force" "Force data deletion. Image artifacts and configurations used by nodes will not be deleted"))
+                .arg(arg!(-y --"yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted"))
                 .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"));
 
     match hsm_group {
@@ -417,7 +417,7 @@ pub fn subcommand_apply_hw_configuration() -> Command {
 
 pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     let mut apply_configuration = Command::new("configuration")
-        .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
+        .aliases(["conf", "config"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration")
         .arg(arg!(-f --file <SAT_FILE> "SAT file with configuration details").value_parser(value_parser!(PathBuf)).required(true))

@@ -136,18 +136,29 @@ pub async fn exec(
         )
         .await;
 
-        if create_cfs_session_resp.is_err()
-            || create_cfs_session_resp
-                .unwrap()
-                .status
-                .unwrap()
-                .session
-                .unwrap()
-                .succeeded
-                .unwrap()
-                == "false"
+        if let Err(error) = create_cfs_session_resp {
+            eprintln!("CFS session creation failed.\nReason:\n{:#?}\nExit", error);
+            std::process::exit(1);
+        }
+
+        if create_cfs_session_resp
+            .as_ref()
+            .unwrap()
+            .status
+            .as_ref()
+            .unwrap()
+            .session
+            .as_ref()
+            .unwrap()
+            .succeeded
+            .as_ref()
+            .unwrap()
+            == "false"
         {
-            eprintln!("CFS session creation failed. Exit");
+            eprintln!(
+                "CFS session creation failed.\nReason:\n{:#?}\nExit",
+                create_cfs_session_resp
+            );
             std::process::exit(1);
         }
 
