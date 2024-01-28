@@ -1,7 +1,10 @@
+use kube::api::WatchEvent::Error;
 use std::fs::File;
 use std::path::Path;
+use humansize::DECIMAL;
+use indicatif::ProgressBar;
 
-use mesa::ims::s3::{s3_auth, s3_download_object};
+use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 pub async fn exec(
     shasta_token: &str,
@@ -18,7 +21,7 @@ pub async fn exec(
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
-
+    let files2download_count = files2download.len() + 4; // manifest.json, initrd, kernel, rootfs, bos, cfs, hsm, ims
     log::debug!("Create directory '{}'", destination.unwrap());
     match std::fs::create_dir_all(dest_path) {
         Ok(_ok) => _ok,
@@ -56,7 +59,7 @@ pub async fn exec(
             &bos.unwrap(),
             &bos_file_path.clone().to_string_lossy(),
             &download_counter,
-            &files2download.len() + 3
+            &files2download_count
         );
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
@@ -73,7 +76,7 @@ pub async fn exec(
             &bos.unwrap(),
             &hsm_file_path.clone().to_string_lossy(),
             &download_counter,
-            &files2download.len() + 3
+            &files2download_count
         );
         download_counter += 1;
 
@@ -115,33 +118,30 @@ pub async fn exec(
             .as_ref()
             .unwrap()
             .to_owned();
-        let mut cn = configuration_name.chars();
-        cn.next();
-        cn.next_back();
-        // cn.as_str();
-        let configuration_name_clean = String::from(cn.as_str());
         let cfs_configurations = mesa::cfs::configuration::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            Some(&configuration_name_clean),
+            Some(&configuration_name),
         )
         .await
         .unwrap();
-        let cfs_file_name = String::from(cn.clone().as_str()) + ".json";
+        let cfs_file_name = String::from(configuration_name.clone().as_str()) + ".json";
         let cfs_file_path = dest_path.join(&cfs_file_name);
         let cfs_file = File::create(&cfs_file_path).expect("cfs.json file could not be created.");
         println!(
             "Downloading CFS configuration {} to {} [{}/{}]",
-            cn.clone().as_str(),
+            // cn.clone().as_str(),
+            &configuration_name,
             &cfs_file_path.clone().to_string_lossy(),
             &download_counter,
-            &files2download.len() + 2
+            &files2download_count
         );
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
         download_counter += 1;
+
 
         // Image ----------------------------------------------------------------------------------
         for boot_sets_value in bos_templates[0].boot_sets.as_ref().unwrap().values() {
@@ -155,60 +155,70 @@ pub async fn exec(
                     "Get image details for ID {}",
                     image_id_related_to_bos_sessiontemplate
                 );
+                let ims_file_name = String::from(image_id_related_to_bos_sessiontemplate.clone().as_str()) + "-ims.json";
+                let ims_file_path = dest_path.join(&ims_file_name);
+                let ims_file = File::create(&ims_file_path).expect("ims.json file could not be created.");
 
-                if mesa::ims::image::shasta::http_client::get(
+                println!(
+                    "Downloading IMS image record {} to {} [{}/{}]",
+                    &image_id_related_to_bos_sessiontemplate,
+                    &ims_file_path.clone().to_string_lossy(),
+                    &download_counter,
+                    &files2download_count
+                );
+                match mesa::ims::image::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some(&image_id_related_to_bos_sessiontemplate),
-                )
-                .await
-                .is_ok()
-                {
-                    let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
-                    log::info!(
-                        "Image ID found related to BOS sessiontemplate {} is {}",
-                        &bos.unwrap(),
-                        image_id_related_to_bos_sessiontemplate
-                    );
+                    Some(&image_id_related_to_bos_sessiontemplate)).await {
+                    Ok(ims_record) => {
+                        serde_json::to_writer_pretty(&ims_file, &ims_record)
+                            .expect("Unable to write new ims record image.json file");
+                        let image_id = image_id_related_to_bos_sessiontemplate.clone().to_string();
+                        log::info!( "Image ID found related to BOS sessiontemplate {} is {}",
+                                    &bos.unwrap(),
+                                    image_id_related_to_bos_sessiontemplate);
+                        let sts_value =
+                            match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
+                                Ok(sts_value) => {
+                                    log::debug!("Debug - STS token:\n{:#?}", sts_value);
+                                    sts_value
+                                }
 
-                    let sts_value =
-                        match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
-                            Ok(sts_value) => {
-                                log::debug!("Debug - STS token:\n{:#?}", sts_value);
-                                sts_value
-                            }
+                                Err(error) => panic!("{}", error.to_string()),
+                            };
+                        for file in files2download {
+                            let dest = String::from(destination.unwrap()) + "/" + &image_id;
+                            let src = image_id.clone() + "/" + file;
 
-                            Err(error) => panic!("{}", error.to_string()),
-                        };
-                    for file in files2download {
-                        let dest = String::from(destination.unwrap()) + "/" + &image_id;
-                        let src = image_id.clone() + "/" + file;
-                        println!(
-                            "Downloading image file {} to {}/{} [{}/{}]",
-                            &src,
-                            &dest,
-                            &file,
-                            &download_counter,
-                            &files2download.len() + 2
-                        );
-
-                        match s3_download_object(&sts_value, &src, bucket_name, &dest).await {
-                            Ok(_result) => {
-                                download_counter += 1;
-                            }
-                            Err(error) => panic!(
-                                "Unable to download file {} from s3. Error returned: {}",
-                                &src, error
-                            ),
-                        };
+                            let object_size = s3_get_object_size(&sts_value, &src, bucket_name).await.unwrap_or(-1);
+                            println!(
+                                "Downloading image file {} ({}) to {}/{} [{}/{}]",
+                                &src,
+                                humansize::format_size(object_size as u64, DECIMAL),
+                                &dest,
+                                &file,
+                                &download_counter,
+                                &files2download_count
+                            );
+                            match s3_download_object(&sts_value, &src, bucket_name, &dest).await {
+                                Ok(_result) => {
+                                    download_counter += 1;
+                                }
+                                Err(error) => panic!(
+                                    "Unable to download file {} from s3. Error returned: {}",
+                                    &src, error
+                                ),
+                            };
+                        } // for file in files2download
                     }
-                } else {
-                    panic!(
-                        "Image related to BOS session template {} - NOT FOUND",
-                        image_id_related_to_bos_sessiontemplate
-                    );
-                }
+                    Err(e) => {
+                        panic!(
+                            "Image related to BOS session template {} - NOT FOUND. Error: {}",
+                            image_id_related_to_bos_sessiontemplate, e
+                        );
+                    }
+                };
             }
         }
 

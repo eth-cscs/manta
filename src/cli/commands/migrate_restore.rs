@@ -1,15 +1,15 @@
 use chrono::Local;
 use dialoguer::Confirm;
 use humansize::DECIMAL;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
 use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest;
 use mesa::hsm::group::mesa::http_client::{create_new_hsm_group, delete_hsm_group};
 use mesa::hsm::r#struct::HsmGroup;
 use mesa::ims::image::mesa::utils::update_image;
 use mesa::ims::image::r#struct::{Image, ImsImageRecord2Update, Link};
-use mesa::ims::image::utils::register_new_image;
-use mesa::ims::s3::{s3_auth, s3_multipart_upload_object, s3_upload_object};
+use mesa::ims::image::utils::{get_fuzzy, register_new_image};
+use mesa::ims::s3::{BAR_FORMAT, s3_auth, s3_multipart_upload_object, s3_upload_object};
 use mesa::{bos, cfs};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -548,7 +548,8 @@ fn file_md5sum(filename: PathBuf) -> Digest {
     let buf_len = len.min(100_000_000) as usize;
     let mut buf = BufReader::with_capacity(buf_len, f);
     let mut context = md5::Context::new();
-    let bar = ProgressBar::new(len / buf_len as u64);
+    let bar = ProgressBar::new(len);
+    bar.set_style(ProgressStyle::with_template(BAR_FORMAT).unwrap());
 
     loop {
         // Get a chunk of the file
@@ -562,7 +563,7 @@ fn file_md5sum(filename: PathBuf) -> Digest {
         // Tell the buffer that the chunk is consumed
         let part_len = part.len();
         buf.consume(part_len);
-        bar.inc(1);
+        bar.inc(part_len as u64);
         // println!("Consumed {} out of {}; step {}/{}",
         //          humansize::format_size(part_len, DECIMAL),
         //          humansize::format_size(len, DECIMAL),
@@ -650,18 +651,18 @@ async fn ims_register_image(
         link: None,
         arch: None,
     };
-    let list_images_with_same_name = match mesa::ims::image::mesa::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(ims_image_name)
-        ).await {
+    let list_images_with_same_name = match get_fuzzy(shasta_token,
+                                                     shasta_base_url,
+                                                     shasta_root_cert,
+                                                     &["".to_string()], // hsm_group_name
+                                                     Some(ims_image_name.clone().as_str()),
+                                                     None).await {
         Ok(vector) => vector,
-        Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
+        Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
 
     if !list_images_with_same_name.is_empty() {
-        println!("There is already a record for image name {} in IMS do you want to create a new one (the previous one will not be deleted).", &ims_image_name);
+        println!("There is already at least one record for image name {} in IMS do you want to create a new one (the previous one will not be deleted).", &ims_image_name);
         println!("Current IMS record(s): {:?}", &list_images_with_same_name);
         let confirmation = Confirm::new()
             .with_prompt("Do you want to create a new record?")
