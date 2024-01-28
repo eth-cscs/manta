@@ -67,7 +67,7 @@ pub async fn exec(
     if need_restart {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
-                "This operation will reboot nodes {:?}. Do you want to continue?",
+                "This operation will reboot the following nodes:\n{:?}\nDo you want to continue?",
                 xnames
             ))
             .interact()

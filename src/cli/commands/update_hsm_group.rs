@@ -73,7 +73,7 @@ pub async fn exec(
     if need_restart {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
-                "This operation will reboot all nodes in HSM group {}. Do you want to continue?",
+                "This operation will reboot all nodes in HSM group '{}'.\nDo you want to continue?",
                 hsm_group_name
             ))
             .interact()
