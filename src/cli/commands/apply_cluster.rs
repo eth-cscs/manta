@@ -26,6 +26,7 @@ pub async fn exec(
     ansible_verbosity_opt: Option<&String>,
     ansible_passthrough_opt: Option<&String>,
     tag: String,
+    do_not_reboot: bool,
 ) {
     let file_content = std::fs::read_to_string(path_file).unwrap();
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
@@ -246,6 +247,7 @@ pub async fn exec(
         hsm_group_available_vec,
         sat_file_yaml,
         &tag,
+        do_not_reboot,
     )
     .await;
 }
@@ -300,6 +302,7 @@ pub async fn process_session_template_section_in_sat_file(
     hsm_group_available_vec: &Vec<String>,
     sat_file_yaml: Value,
     tag: &str,
+    do_not_reboot: bool,
 ) {
     let empty_vec = Vec::new();
     let bos_session_template_list_yaml = sat_file_yaml["session_templates"]
@@ -471,59 +474,64 @@ pub async fn process_session_template_section_in_sat_file(
         // Create BOS session. Note: reboot operation shuts down the nodes and they may not start
         // up... hence we will split the reboot into 2 operations shutdown and start
 
-        // Get nodes members of HSM group
-        // Get HSM group details
-        let hsm_group_details = hsm::group::shasta::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(hsm_group),
-        )
-        .await;
+        if do_not_reboot {
+            log::info!("Reboot canceled by user");
+        } else {
+            log::info!("Rebooting nodes");
+            // Get nodes members of HSM group
+            // Get HSM group details
+            let hsm_group_details = hsm::group::shasta::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                Some(hsm_group),
+            )
+            .await;
 
-        // Get list of xnames in HSM group
-        let nodes: Vec<String> = hsm_group_details.unwrap().first().unwrap()["members"]["ids"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|node| node.as_str().unwrap().to_string())
-            .collect();
+            // Get list of xnames in HSM group
+            let nodes: Vec<String> = hsm_group_details.unwrap().first().unwrap()["members"]["ids"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|node| node.as_str().unwrap().to_string())
+                .collect();
 
-        // Create CAPMC operation shutdown
-        let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            nodes.clone(),
-            Some("Shut down cluster to apply changes".to_string()),
-            true,
-        )
-        .await;
+            // Create CAPMC operation shutdown
+            let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                nodes.clone(),
+                Some("Shut down cluster to apply changes".to_string()),
+                true,
+            )
+            .await;
 
-        log::debug!(
-            "CAPMC shutdown nodes response:\n{:#?}",
-            capmc_shutdown_nodes_resp
-        );
+            log::debug!(
+                "CAPMC shutdown nodes response:\n{:#?}",
+                capmc_shutdown_nodes_resp
+            );
 
-        // Create BOS session operation start
-        let create_bos_boot_session_resp = mesa::bos::session::shasta::http_client::post(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &create_bos_session_template_payload.name,
-            "boot",
-            Some(&nodes.join(",")),
-        )
-        .await;
+            // Create BOS session operation start
+            let create_bos_boot_session_resp = mesa::bos::session::shasta::http_client::post(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &create_bos_session_template_payload.name,
+                "boot",
+                Some(&nodes.join(",")),
+            )
+            .await;
 
-        log::debug!(
-            "Create BOS boot session response:\n{:#?}",
-            create_bos_boot_session_resp
-        );
+            log::debug!(
+                "Create BOS boot session response:\n{:#?}",
+                create_bos_boot_session_resp
+            );
 
-        if create_bos_boot_session_resp.is_err() {
-            eprintln!("Error creating BOS boot session. Exit");
-            std::process::exit(1);
+            if create_bos_boot_session_resp.is_err() {
+                eprintln!("Error creating BOS boot session. Exit");
+                std::process::exit(1);
+            }
         }
 
         // Audit

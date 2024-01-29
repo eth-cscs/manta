@@ -746,6 +746,9 @@ pub async fn process_cli(
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     tag,
+                    *cli_apply_cluster
+                        .get_one::<bool>("do-not-reboot")
+                        .unwrap_or(&false),
                 )
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

@@ -504,6 +504,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
         .arg_required_else_help(true)
         .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
         .arg(arg!(-f --file <SAT_FILE> "SAT file with CFS configuration, CFS image and BOS session template details").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot."))
         .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["1", "2", "3", "4"])
