@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.1] - 2024-01-29
+
+### Bug Fixes
+
+- Error when deleting an image based on a db recod but the artifact does not exists
+
 ## [1.21.0] - 2024-01-29
 
 ### Features
 
 - Add new param to apply cluster to avoid nodes from rebooting
+
+### Miscellaneous Tasks
+
+- Release manta version 1.21.0
 
 ## [1.20.35] - 2024-01-28
 
