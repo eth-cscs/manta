@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.2] - 2024-01-29
+
+### Bug Fixes
+
+- Format errors when deleting an image which does not exists
+
 ## [1.21.1] - 2024-01-29
 
 ### Bug Fixes
 
 - Error when deleting an image based on a db recod but the artifact does not exists
+
+### Miscellaneous Tasks
+
+- Release manta version 1.21.1
 
 ## [1.21.0] - 2024-01-29
 
