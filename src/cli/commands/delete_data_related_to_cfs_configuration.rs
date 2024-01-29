@@ -292,9 +292,7 @@ pub async fn delete_data_related_cfs_configuration(
                         .as_ref()
                         .unwrap()
                         .first()
-                        .unwrap()
-                        .result_id
-                        .as_ref()
+                        .and_then(|artifact| artifact.result_id.as_ref())
                         .unwrap_or(&"".to_string())
                         .clone(),
                 )
@@ -411,7 +409,7 @@ pub async fn delete_data_related_cfs_configuration(
     let cfs_session_cfs_configuration_image_id_tuple_filtered_vec: Vec<(String, String, String)>;
     let bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec: Vec<(&str, &str, &str)>;
 
-    // EVALUATE IF NEED TO CONTINUE. 
+    // EVALUATE IF NEED TO CONTINUE.
     // CHECK IF ANY CFS CONFIGURAION OR IMAGE IS CURRENTLY USED TO CONFIGURE OR BOOT NODES
     if !cfs_configuration_name_used_to_configure_nodes_vec.is_empty()
         || !image_id_used_to_boot_nodes_vec.is_empty()
@@ -609,12 +607,14 @@ pub async fn delete(
         match image_deleted_value_rslt {
             Ok(_) => println!("Image deleted: {}", image_id),
             Err(error) => {
-                eprintln!("ERROR:\n{:#?}", error);
                 let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
-                eprintln!("ERROR:\n{:#?}", error_response);
+                eprintln!(
+                    "ERROR:\n{:#?}",
+                    serde_json::to_string_pretty(&error_response)
+                );
                 // std::process::exit(0);
                 if error_response["status"].as_u64().unwrap() == 404 {
-                    eprintln!("Image {} not found. Continue", image_id);
+                    eprintln!("Image id '{}' artifact not found. Continue", image_id);
                 }
             }
         }
