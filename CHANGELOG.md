@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] - 2024-01-29
+
+### Features
+
+- Add new param to apply cluster to avoid nodes from rebooting
+
 ## [1.20.35] - 2024-01-28
 
 ### Bug Fixes
 
 - Update mesa version in cargo.toml
+
+### Miscellaneous Tasks
+
+- Release manta version 1.20.35
 
 ## [1.20.34] - 2024-01-28
 
