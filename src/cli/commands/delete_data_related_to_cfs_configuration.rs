@@ -608,11 +608,7 @@ pub async fn delete(
             Ok(_) => println!("Image deleted: {}", image_id),
             Err(error) => {
                 let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
-                eprintln!(
-                    "ERROR:\n{:#?}",
-                    serde_json::to_string_pretty(&error_response)
-                );
-                // std::process::exit(0);
+                log::warn!("{}", serde_json::to_string_pretty(&error_response).unwrap());
                 if error_response["status"].as_u64().unwrap() == 404 {
                     eprintln!("Image id '{}' artifact not found. Continue", image_id);
                 }
