@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.3] - 2024-01-30
+
+### Bug Fixes
+
+- Get configuration command ignoring configurations related to CFS
+- Print statement
+- Show error if apply cluster failt creating a configuration
+- Bos sessiontemplate filter by list of xnames
+
+### Features
+
+- Update mesa version
+
 ## [1.21.2] - 2024-01-29
 
 ### Bug Fixes
 
 - Format errors when deleting an image which does not exists
+
+### Miscellaneous Tasks
+
+- Release manta version 1.21.2
 
 ## [1.21.1] - 2024-01-29
 
