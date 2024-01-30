@@ -1,6 +1,8 @@
 use core::time;
 use std::collections::HashMap;
 
+use std::io::{self, Write};
+
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -120,6 +122,7 @@ pub async fn delete_data_related_cfs_configuration(
     mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_value_vec,
         &hsm_name_available_vec,
+        &Vec::new(),
         cfs_configuration_name_opt.map(|elem| elem.as_str()),
         None,
     )
@@ -292,9 +295,7 @@ pub async fn delete_data_related_cfs_configuration(
                         .as_ref()
                         .unwrap()
                         .first()
-                        .unwrap()
-                        .result_id
-                        .as_ref()
+                        .and_then(|artifact| artifact.result_id.as_ref())
                         .unwrap_or(&"".to_string())
                         .clone(),
                 )
@@ -411,7 +412,7 @@ pub async fn delete_data_related_cfs_configuration(
     let cfs_session_cfs_configuration_image_id_tuple_filtered_vec: Vec<(String, String, String)>;
     let bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec: Vec<(&str, &str, &str)>;
 
-    // EVALUATE IF NEED TO CONTINUE. 
+    // EVALUATE IF NEED TO CONTINUE.
     // CHECK IF ANY CFS CONFIGURAION OR IMAGE IS CURRENTLY USED TO CONFIGURE OR BOOT NODES
     if !cfs_configuration_name_used_to_configure_nodes_vec.is_empty()
         || !image_id_used_to_boot_nodes_vec.is_empty()
@@ -473,6 +474,7 @@ pub async fn delete_data_related_cfs_configuration(
             );
         }
         print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
+        io::stdout().flush().unwrap();
 
         std::process::exit(0);
     }
@@ -609,12 +611,10 @@ pub async fn delete(
         match image_deleted_value_rslt {
             Ok(_) => println!("Image deleted: {}", image_id),
             Err(error) => {
-                eprintln!("ERROR:\n{:#?}", error);
                 let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
-                eprintln!("ERROR:\n{:#?}", error_response);
-                // std::process::exit(0);
+                log::warn!("{}", serde_json::to_string_pretty(&error_response).unwrap());
                 if error_response["status"].as_u64().unwrap() == 404 {
-                    eprintln!("Image {} not found. Continue", image_id);
+                    eprintln!("Image id '{}' artifact not found. Continue", image_id);
                 }
             }
         }
@@ -693,7 +693,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting CFS session {}, please delete it manually.",
                     cfs_session_name,
                 );
@@ -735,7 +735,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting BOS sessiontemplate {}, please delete it manually.",
                     bos_sessiontemplate_name,
                 );
@@ -766,7 +766,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting CFS configuration {}, please delete it manually.",
                     cfs_configuration,
                 );

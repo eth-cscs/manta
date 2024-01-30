@@ -1,5 +1,8 @@
 use core::time;
-use std::path::PathBuf;
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+};
 
 use mesa::{
     cfs::{
@@ -210,14 +213,36 @@ pub async fn exec(
 
                 let cfs_session = cfs_session_vec.first().unwrap();
 
-                cfs_session_complete_vec.push(cfs_session.clone());
+                if cfs_session
+                    .status
+                    .as_ref()
+                    .unwrap()
+                    .session
+                    .as_ref()
+                    .unwrap()
+                    .succeeded
+                    .as_ref()
+                    .unwrap()
+                    .as_str()
+                    == "false"
+                {
+                    // CFS session failed
+                    eprintln!(
+                        "ERROR creating CFS session '{}'",
+                        cfs_session.name.as_ref().unwrap()
+                    );
+                    std::process::exit(1);
+                } else {
+                    // CFS session succeeded
+                    cfs_session_complete_vec.push(cfs_session.clone());
 
-                log::info!(
-                    "CFS session created: {}",
-                    cfs_session.name.as_ref().unwrap()
-                );
+                    log::info!(
+                        "CFS session created: {}",
+                        cfs_session.name.as_ref().unwrap()
+                    );
 
-                break;
+                    break;
+                }
             } else {
                 print!(
                     "\rCFS session '{}' running. Checking again in 2 secs. Attempt {} of {}",
@@ -225,6 +250,7 @@ pub async fn exec(
                     i + 1,
                     max
                 );
+                io::stdout().flush().unwrap();
 
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 std::io::Write::flush(&mut std::io::stdout()).unwrap();

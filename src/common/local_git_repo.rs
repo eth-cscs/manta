@@ -260,6 +260,7 @@ pub fn fetch<'a>(
             );
         }
         io::stdout().flush().unwrap();
+
         true
     });
 
