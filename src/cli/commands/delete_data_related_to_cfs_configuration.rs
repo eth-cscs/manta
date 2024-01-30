@@ -1,6 +1,8 @@
 use core::time;
 use std::collections::HashMap;
 
+use std::io::{self, Write};
+
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -471,6 +473,7 @@ pub async fn delete_data_related_cfs_configuration(
             );
         }
         print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
+        io::stdout().flush().unwrap();
 
         std::process::exit(0);
     }
@@ -689,7 +692,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting CFS session {}, please delete it manually.",
                     cfs_session_name,
                 );
@@ -731,7 +734,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting BOS sessiontemplate {}, please delete it manually.",
                     bos_sessiontemplate_name,
                 );
@@ -762,7 +765,7 @@ pub async fn delete(
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
                 counter += 1;
             } else if deletion_rslt.is_err() && counter > max_attempts {
-                eprint!(
+                eprintln!(
                     "ERROR deleting CFS configuration {}, please delete it manually.",
                     cfs_configuration,
                 );
