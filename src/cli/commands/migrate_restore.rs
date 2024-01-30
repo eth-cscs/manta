@@ -84,24 +84,25 @@ pub async fn exec(
 
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
     println!("\tImage name: {}", ims_image_name);
-    println!(
-        "\t\trootfs file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs"
-    );
+
     println!(
         "\t\tinitrd file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/initrd"
+        image_dir.unwrap().to_string() + "/initrd"
     );
     println!(
         "\t\tkernel file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/kernel"
+        image_dir.unwrap().to_string() + "/kernel"
+    );
+    println!(
+        "\t\trootfs file: {}",
+        image_dir.unwrap().to_string() + "/rootfs"
     );
 
     // These should come from the manifest, but let's assume these values are correct
     let vec_backup_image_files = vec![
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/initrd",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/kernel",
+        image_dir.unwrap().to_string() + "/initrd",
+        image_dir.unwrap().to_string() + "/kernel",
+        image_dir.unwrap().to_string() + "/rootfs",
     ];
 
     println!();
@@ -134,6 +135,7 @@ pub async fn exec(
     .await;
     // println!();
     // println!("Image manifest: {:?}", ims_image_manifest);
+    println!("Updating IMS image record with the new location in s3...");
     log::debug!("Updating image record with location of the newly generated manifest.json data");
     ims_update_image_add_manifest(
         shasta_token,
@@ -714,7 +716,7 @@ fn get_image_name_from_ims_file(ims_file: &String) -> String {
     //   "name": "gele-cos-3.2.2"
     // }
     //
-    ims_json["name"].clone().to_string().replace('"', "")
+    ims_json[0]["name"].clone().to_string().replace('"', "")
 }
 
 // Anything in this function is critical, so the asserts will kill further processing
