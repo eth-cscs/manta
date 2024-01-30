@@ -40,7 +40,14 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::bos::template::mesa::utils::filter(&mut bos_templates, &Vec::new(), None, None).await;
+    mesa::bos::template::mesa::utils::filter(
+        &mut bos_templates,
+        &Vec::new(),
+        &Vec::new(),
+        None,
+        None,
+    )
+    .await;
     let mut download_counter = 1;
 
     if bos_templates.is_empty() {

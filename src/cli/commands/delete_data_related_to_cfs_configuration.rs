@@ -122,6 +122,7 @@ pub async fn delete_data_related_cfs_configuration(
     mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_value_vec,
         &hsm_name_available_vec,
+        &Vec::new(),
         cfs_configuration_name_opt.map(|elem| elem.as_str()),
         None,
     )
