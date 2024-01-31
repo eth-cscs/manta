@@ -15,10 +15,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::ops::Deref;
 use std::path::Path;
 use std::path::PathBuf;
-use hyper::body::HttpBody;
+
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 /* #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,9 +43,9 @@ struct ImageManifest {
     pub artifacts: Vec<Artifact>,
 }
 // This is ridiculous
-fn default_link_type() -> String {
-    "s3".to_string()
-}
+// fn default_link_type() -> String {
+//     "s3".to_string()
+// }
 
 fn default_version() -> String {
     "1.0".to_string()
@@ -70,6 +69,22 @@ pub async fn exec(
         hsm_file.unwrap()
     );
     println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
+    if ! PathBuf::from(&bos_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &bos_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&cfs_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &cfs_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&ims_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &ims_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&hsm_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &hsm_file.unwrap());
+        std::process::exit(1)
+    }
 
     // ========================================================================================================
     let current_timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
@@ -107,6 +122,13 @@ pub async fn exec(
         image_dir.unwrap().to_string() + "/rootfs",
     ];
 
+    for file in &vec_backup_image_files {
+        if ! PathBuf::from(&file).exists() {
+            eprintln!("Error, file {} does not exist or cannot be open.", &file);
+            std::process::exit(1)
+        }
+    }
+
     println!();
 
     println!("Calculating image artifact checksum...");
@@ -115,7 +137,7 @@ pub async fn exec(
     // println!("{:?}", ims_image_manifest);
 
     // Do we have another image with this name?
-    println!("\nRegistering new image with IMS...");
+    println!("\n\nRegistering image with IMS...");
     let ims_image_id: String = ims_register_image(
         shasta_token,
         shasta_base_url,
@@ -123,7 +145,7 @@ pub async fn exec(
         &ims_image_name,
     )
     .await;
-    println!("New IMS ID: {}", &ims_image_id);
+    println!("Ok, IMS image ID: {}", &ims_image_id);
 
     println!("\nUploading image artifacts to s3...");
     s3_upload_image_artifacts(
@@ -147,8 +169,9 @@ pub async fn exec(
         &ims_image_id,
     )
     .await;
+    println!("Ok");
 
-    println!("\n Creating HSM group...");
+    println!("\nCreating HSM group...");
     create_hsm_group(
         shasta_token,
         shasta_base_url,
@@ -156,6 +179,7 @@ pub async fn exec(
         &backup_hsm_file,
     )
     .await;
+    println!("Ok");
 
     println!("\nUploading CFS configuration...");
     // create a new CFS configuration based on the original CFS file backed up previously
@@ -476,7 +500,7 @@ async fn s3_upload_image_artifacts(
 
         let full_object_path = format!("{}/{}", &object_path, &filename.to_string_lossy());
         println!(
-            "Uploading file {:?} ({}) to s3://{}/{}.",
+            "File {:?} ({}) to s3://{}/{}.",
             &file, &file_size, &bucket_name, &full_object_path
         );
 
@@ -547,7 +571,7 @@ async fn s3_upload_image_artifacts(
     log::debug!("Uploading the new manifest.json file");
     let manifest_full_object_path = format!("{}/manifest.json", &object_path);
     println!(
-        "Uploading file {:?} to s3://{}/{}.",
+        "File {:?} -> s3://{}/{}.",
         &new_manifest_file_name, &bucket_name, &manifest_full_object_path
     );
 
@@ -567,7 +591,7 @@ async fn s3_upload_image_artifacts(
 }
 /// Return the md5sum of a file
 fn file_md5sum(filename: PathBuf) -> Digest {
-    log::debug!("Calculating md5sum of file {:?}...", &filename);
+    log::debug!("File {:?}...", &filename);
 
     let f = File::open(filename).unwrap();
     // Find the length of the file
@@ -623,7 +647,7 @@ fn calculate_image_checksums(
                 "-1".to_string()
             }
         };
-        println!("Calculating md5sum of file {:?} ({})...", &file, &file_size);
+        println!("File {:?} ({})...", &file, &file_size);
         let artifact;
         let mut fp = PathBuf::new();
         fp.push(file);
@@ -722,7 +746,7 @@ async fn ims_register_image(
 }
 
 /// Gets the image name off an IMS yaml file
-fn get_image_name_from_ims_file(ims_file: &String) -> String {
+pub fn get_image_name_from_ims_file(ims_file: &String) -> String {
     // load into memory
     let ims_data =
         fs::read_to_string(PathBuf::from(&ims_file)).expect("Unable to read IMS file file");
@@ -867,6 +891,9 @@ pub async fn create_hsm_group(
                     println!("Not deleting the group, cannot continue the operation.");
                     std::process::exit(2);
                 }
+            } else if error.to_string().to_lowercase().contains("400") {
+                eprintln!("Unable to create the group, the API returned code 400. This usually means the HSM file is malformed, or has incorrect xnames for this site in it.");
+                std::process::exit(2);
             }
         }
     };

@@ -3,6 +3,7 @@ use std::fs::File;
 use std::path::Path;
 
 use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
+use crate::cli::commands::migrate_restore;
 
 pub async fn exec(
     shasta_token: &str,
@@ -11,11 +12,14 @@ pub async fn exec(
     bos: Option<&String>,
     destination: Option<&String>,
 ) {
+
     println!(
-        "Migrate_backup; BOS Template={}, Destination folder={}",
+        "Migrate backup of the BOS Template: {}; destination folder: {}\n",
         bos.unwrap(),
         destination.unwrap()
     );
+    // println!("Migrate backup of the BOS Template image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
+
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
@@ -29,6 +33,12 @@ pub async fn exec(
             error
         ),
     };
+    let bos_file_name = String::from(bos.unwrap()) + ".json";
+    let bos_file_path = dest_path.join(bos_file_name);
+
+    let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
+    let hsm_file_path = dest_path.join(hsm_file_name);
+
 
     let _empty_hsm_group_name: Vec<String> = Vec::new();
     let mut bos_templates = mesa::bos::template::mesa::http_client::get(
@@ -52,12 +62,9 @@ pub async fn exec(
 
     if bos_templates.is_empty() {
         println!("No BOS template found!");
-        std::process::exit(0);
+        std::process::exit(1);
     } else {
         // BOS ------------------------------------------------------------------------------------
-
-        let bos_file_name = String::from(bos.unwrap()) + ".json";
-        let bos_file_path = dest_path.join(bos_file_name);
         let bos_file = File::create(&bos_file_path).expect("bos.json file could not be created.");
         println!(
             "Downloading BOS session template {} to {} [{}/{}]",
@@ -68,13 +75,11 @@ pub async fn exec(
         );
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
-        let _bosjson = serde_json::to_writer(&bos_file, &bos_templates[0]);
+        let _bosjson = serde_json::to_writer_pretty(&bos_file, &bos_templates[0]);
         download_counter += 1;
 
         // HSM group -----------------------------------------------------------------------------
-        let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
 
-        let hsm_file_path = dest_path.join(hsm_file_name);
         let hsm_file = File::create(&hsm_file_path).expect("HSM file could not be created.");
         println!(
             "Downloading HSM configuration in bos template {} to {} [{}/{}]",
@@ -112,7 +117,7 @@ pub async fn exec(
         };
 
         log::debug!("{:#?}", &hsm_group_json);
-        let _hsmjson = serde_json::to_writer(&hsm_file, &hsm_group_json);
+        let _hsmjson = serde_json::to_writer_pretty(&hsm_file, &hsm_group_json);
 
         // CFS ------------------------------------------------------------------------------------
         let configuration_name = &bos_templates[0]
@@ -144,7 +149,7 @@ pub async fn exec(
         );
 
         // Save to file only the first one returned, we don't expect other BOS templates in the array
-        let _cfsjson = serde_json::to_writer(&cfs_file, &cfs_configurations[0]);
+        let _cfsjson = serde_json::to_writer_pretty(&cfs_file, &cfs_configurations[0]);
         download_counter += 1;
 
         // Image ----------------------------------------------------------------------------------
@@ -224,6 +229,18 @@ pub async fn exec(
                                 ),
                             };
                         } // for file in files2download
+                        println!("\nDone, the following image bundle was generated:");
+                        println!("\tBOS file: {}", &bos_file_path.to_string_lossy());
+                        println!("\tCFS file: {}", &cfs_file_path.to_string_lossy());
+                        println!("\tHSM file: {}", &hsm_file_path.to_string_lossy());
+                        println!("\tIMS file: {}", &ims_file_path.to_string_lossy());
+                        let ims_image_name = migrate_restore::get_image_name_from_ims_file(&ims_file_path.clone().to_string_lossy().to_string());
+                        println!("\tImage name: {}", ims_image_name);
+                        for file in files2download {
+                            let dest = String::from(destination.unwrap());
+                            let src = image_id.clone() + "/" + file;
+                            println!("\t\tfile: {}/{}", dest, src);
+                        }
                     }
                     Err(e) => {
                         panic!(
@@ -232,14 +249,10 @@ pub async fn exec(
                         );
                     }
                 };
+
             }
         }
 
-        // bos::template::utils::print_table(bos_templates);
     }
-
-    // Extract in json format:
-    //  - the contents of the HSM group referred in the bos-session template
-
-    std::process::exit(0);
+    std::process::exit(1);
 }
