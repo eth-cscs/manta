@@ -15,8 +15,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::Deref;
 use std::path::Path;
 use std::path::PathBuf;
+use hyper::body::HttpBody;
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 /* #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -113,7 +115,7 @@ pub async fn exec(
     // println!("{:?}", ims_image_manifest);
 
     // Do we have another image with this name?
-    println!("Registering new image with IMS...");
+    println!("\nRegistering new image with IMS...");
     let ims_image_id: String = ims_register_image(
         shasta_token,
         shasta_base_url,
@@ -123,7 +125,7 @@ pub async fn exec(
     .await;
     println!("New IMS ID: {}", &ims_image_id);
 
-    println!("Uploading image artifacts to s3...");
+    println!("\nUploading image artifacts to s3...");
     s3_upload_image_artifacts(
         shasta_token,
         shasta_base_url,
@@ -135,7 +137,7 @@ pub async fn exec(
     .await;
     // println!();
     // println!("Image manifest: {:?}", ims_image_manifest);
-    println!("Updating IMS image record with the new location in s3...");
+    println!("\nUpdating IMS image record with the new location in s3...");
     log::debug!("Updating image record with location of the newly generated manifest.json data");
     ims_update_image_add_manifest(
         shasta_token,
@@ -146,7 +148,7 @@ pub async fn exec(
     )
     .await;
 
-    println!("Creating HSM group...");
+    println!("\n Creating HSM group...");
     create_hsm_group(
         shasta_token,
         shasta_base_url,
@@ -155,7 +157,7 @@ pub async fn exec(
     )
     .await;
 
-    println!("Uploading CFS configuration...");
+    println!("\nUploading CFS configuration...");
     // create a new CFS configuration based on the original CFS file backed up previously
     // this operation is simple as the file only has git repos and commits
     create_cfs_config(
@@ -163,10 +165,9 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         &backup_cfs_file,
-    )
-    .await;
+    ).await;
 
-    println!("Uploading BOS sessiontemplate...");
+    println!("\nUploading BOS sessiontemplate...");
     // Create a new BOS session template based on the original BOS file backed previously
     create_bos_sessiontemplate(
         shasta_token,
@@ -177,7 +178,7 @@ pub async fn exec(
     )
     .await;
 
-    println!("Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
+    println!("\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
 
     // ========================================================================================================
 }
@@ -198,15 +199,16 @@ async fn create_bos_sessiontemplate(
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    match bos::template::mesa::http_client::get(
+    match bos::template::mesa::http_client::get_all(
         shasta_token,
         shasta_base_url,
-        shasta_root_cert,
-        Option::from(&bos_sessiontemplate_name),
-    )
-    .await
+        shasta_root_cert).await
     {
-        Ok(vector) => {
+        Ok(mut vector) => {
+
+            vector.retain(|bos_sessiontemplate| {
+               bos_sessiontemplate.name.eq(&Option::from(bos_sessiontemplate_name.clone()))
+            });
             log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
 
             if !vector.is_empty() {
@@ -219,6 +221,13 @@ async fn create_bos_sessiontemplate(
                 if !confirmation {
                     println!("Looks like you do not want to continue, bailing out.");
                     std::process::exit(2)
+                } else {
+                    match bos::template::shasta::http_client::delete(shasta_token,
+                                                                          shasta_base_url,
+                                                                          shasta_root_cert, &bos_sessiontemplate_name).await {
+                        Ok(_) => log::debug!("Ok BOS session template {}, deleted.", &bos_sessiontemplate_name),
+                        Result::Err(err1) => panic!("Error, unable to delete BOS session template. Cannot continue. Error: {}", err1),
+                    };
                 }
             }
             let mut bos_sessiontemplate: bos::template::mesa::r#struct::request_payload::BosSessionTemplate =
@@ -246,7 +255,7 @@ async fn create_bos_sessiontemplate(
             )
             .await
             {
-                Ok(result) => log::error!("Ok, result: {:#?}", result),
+                Ok(_result) => println!("Ok, BOS session template {} created successfully.",  &bos_sessiontemplate_name),
                 Err(e1) => panic!(
                     "Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}",
                     e1
@@ -275,18 +284,22 @@ async fn create_cfs_config(
 
     // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
     let cfs_config_name = cfs_json["name"].clone().to_string().replace('"', "");
+
+    // Get all CFS configurations, this is ugly
     match cfs::configuration::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        Some(&cfs_config_name),
+        None,
     )
     .await
     {
         Ok(get_cfs_configuration_api_response) => {
-            let cfs_config_vec: Vec<CfsConfigurationRequest> =
+            let mut cfs_config_vec: Vec<CfsConfigurationRequest> =
                 serde_json::from_str(&get_cfs_configuration_api_response.text().await.unwrap())
                     .unwrap();
+            cfs_config_vec.retain(|cfs_configuration| cfs_configuration.name == cfs_config_name);
+
 
             if !cfs_config_vec.is_empty() {
                 println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
@@ -298,6 +311,14 @@ async fn create_cfs_config(
                 if !confirmation {
                     println!("Looks like you do not want to continue, bailing out.");
                     std::process::exit(2)
+                } else {
+                    match cfs::configuration::shasta::http_client::delete(shasta_token,
+                                                                    shasta_base_url,
+                                                                    shasta_root_cert,
+                                                                    cfs_config_name.as_str()).await {
+                        Ok(_) => log::debug!("Ok CFS configuration {}, deleted.",cfs_config_name),
+                        Result::Err(err1) => panic!("Error, unable to delete configuration. Cannot continue. Error: {}", err1),
+                    };
                 }
             }
             // At this point we're sure there's either no CFS config with that name
@@ -315,7 +336,10 @@ async fn create_cfs_config(
             )
             .await
             {
-                Ok(result) => log::debug!("Ok, result: {:#?}", result),
+                Ok(result) => {
+                    log::debug!("Ok, result: {:#?}", result);
+                    println!("Ok, CFS configuration {} created successfully.",  &cfs_config_name);
+                },
                 Err(e1) => panic!(
                     "Error, unable to create CFS configuration. Error returned by CSM API: {}",
                     e1
@@ -337,19 +361,21 @@ async fn ims_update_image_add_manifest(
     ims_image_name: &String,
     ims_image_id: &String,
 ) {
-    match mesa::ims::image::shasta::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(ims_image_name)
-    ).await {
+
+    match get_fuzzy(shasta_token,
+                         shasta_base_url,
+                         shasta_root_cert,
+                         &["".to_string()], // hsm_group_name
+                         Some(ims_image_name.clone().as_str()),
+                         None).await {
         Ok(_vector) => {
             if _vector.is_empty() {
                 panic!("Error: there are no images stored with id {} in IMS. Unable to update the image manifest", &ims_image_id);
             }
         },
-        Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
+        Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
+
     let _ims_record = mesa::ims::image::r#struct::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
@@ -454,11 +480,11 @@ async fn s3_upload_image_artifacts(
             &file, &file_size, &bucket_name, &full_object_path
         );
 
-        if fs::metadata(file).unwrap().len() > 1024 * 1024 * 200 {
+        if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
             match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
             {
                 Ok(_result) => {
-                    println!("OK");
+                    log::debug!("Artifact uploaded successfully.");
                 }
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
@@ -736,8 +762,14 @@ pub async fn create_hsm_group(
     // Create new HSM group if not existing
 
     // Parse HSM group file
-    // The file looks like this: {"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}
-    let mut hsm: HsmGroup = serde_json::from_str(hsm_data.as_str()).unwrap();
+    // The file looks like this: [{"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}]
+    let mut hsm_vec: Vec<HsmGroup> = serde_json::from_str(hsm_data.as_str()).unwrap();
+    log::debug!("HSM vector {:#?}", &hsm_vec);
+
+    // for hsm in hsm_vec.iter() {
+    //     let mut hsm: HsmGroup = hsm.clone();
+    // }
+    let mut hsm: HsmGroup = hsm_vec.remove(0);
     log::debug!("HSM group to create {:#?}", &hsm_data.as_str());
 
     // let exclusive:bool = false; // Make sure this is false, so we can test this without impacting other HSM groups
@@ -833,6 +865,7 @@ pub async fn create_hsm_group(
                     }
                 } else {
                     println!("Not deleting the group, cannot continue the operation.");
+                    std::process::exit(2);
                 }
             }
         }
