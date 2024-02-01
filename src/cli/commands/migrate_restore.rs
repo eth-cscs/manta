@@ -503,19 +503,21 @@ async fn s3_upload_image_artifacts(
             "File {:?} ({}) to s3://{}/{}.",
             &file, &file_size, &bucket_name, &full_object_path
         );
-
+        let mut etag:String;
         if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
-            match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
+            etag = match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
             {
-                Ok(_result) => {
+                Ok(result) => {
                     log::debug!("Artifact uploaded successfully.");
+                    result
                 }
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
         } else {
-            match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
-                Ok(_result) => {
-                    println!("OK");
+            etag = match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
+                Ok(result) => {
+                    println!("Ok");
+                    result
                 }
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
@@ -524,6 +526,9 @@ async fn s3_upload_image_artifacts(
         // I'm pretty sure there's a better way to do this...
         if file.contains("kernel") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("kernel") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
@@ -535,6 +540,9 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("rootfs") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("rootfs") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
@@ -546,6 +554,9 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("initrd") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("initrd") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
