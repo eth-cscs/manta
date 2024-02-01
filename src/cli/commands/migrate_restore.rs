@@ -18,6 +18,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
 
+
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 /* #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Link {
@@ -42,9 +43,9 @@ struct ImageManifest {
     pub artifacts: Vec<Artifact>,
 }
 // This is ridiculous
-fn default_link_type() -> String {
-    "s3".to_string()
-}
+// fn default_link_type() -> String {
+//     "s3".to_string()
+// }
 
 fn default_version() -> String {
     "1.0".to_string()
@@ -68,6 +69,22 @@ pub async fn exec(
         hsm_file.unwrap()
     );
     println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
+    if ! PathBuf::from(&bos_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &bos_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&cfs_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &cfs_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&ims_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &ims_file.unwrap());
+        std::process::exit(1)
+    }
+    if ! PathBuf::from(&hsm_file.unwrap()).exists() {
+        eprintln!("Error, file {} does not exist or cannot be open.", &hsm_file.unwrap());
+        std::process::exit(1)
+    }
 
     // ========================================================================================================
     let current_timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
@@ -84,25 +101,33 @@ pub async fn exec(
 
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
     println!("\tImage name: {}", ims_image_name);
-    println!(
-        "\t\trootfs file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs"
-    );
+
     println!(
         "\t\tinitrd file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/initrd"
+        image_dir.unwrap().to_string() + "/initrd"
     );
     println!(
         "\t\tkernel file: {}",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/kernel"
+        image_dir.unwrap().to_string() + "/kernel"
+    );
+    println!(
+        "\t\trootfs file: {}",
+        image_dir.unwrap().to_string() + "/rootfs"
     );
 
     // These should come from the manifest, but let's assume these values are correct
     let vec_backup_image_files = vec![
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/rootfs",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/initrd",
-        image_dir.unwrap().to_string() + "/" + ims_image_name.clone().as_str() + "/kernel",
+        image_dir.unwrap().to_string() + "/initrd",
+        image_dir.unwrap().to_string() + "/kernel",
+        image_dir.unwrap().to_string() + "/rootfs",
     ];
+
+    for file in &vec_backup_image_files {
+        if ! PathBuf::from(&file).exists() {
+            eprintln!("Error, file {} does not exist or cannot be open.", &file);
+            std::process::exit(1)
+        }
+    }
 
     println!();
 
@@ -112,7 +137,7 @@ pub async fn exec(
     // println!("{:?}", ims_image_manifest);
 
     // Do we have another image with this name?
-    println!("Registering new image with IMS...");
+    println!("\n\nRegistering image with IMS...");
     let ims_image_id: String = ims_register_image(
         shasta_token,
         shasta_base_url,
@@ -120,9 +145,9 @@ pub async fn exec(
         &ims_image_name,
     )
     .await;
-    println!("New IMS ID: {}", &ims_image_id);
+    println!("Ok, IMS image ID: {}", &ims_image_id);
 
-    println!("Uploading image artifacts to s3...");
+    println!("\nUploading image artifacts to s3...");
     s3_upload_image_artifacts(
         shasta_token,
         shasta_base_url,
@@ -134,6 +159,7 @@ pub async fn exec(
     .await;
     // println!();
     // println!("Image manifest: {:?}", ims_image_manifest);
+    println!("\nUpdating IMS image record with the new location in s3...");
     log::debug!("Updating image record with location of the newly generated manifest.json data");
     ims_update_image_add_manifest(
         shasta_token,
@@ -143,8 +169,9 @@ pub async fn exec(
         &ims_image_id,
     )
     .await;
+    println!("Ok");
 
-    println!("Creating HSM group...");
+    println!("\nCreating HSM group...");
     create_hsm_group(
         shasta_token,
         shasta_base_url,
@@ -152,8 +179,9 @@ pub async fn exec(
         &backup_hsm_file,
     )
     .await;
+    println!("Ok");
 
-    println!("Uploading CFS configuration...");
+    println!("\nUploading CFS configuration...");
     // create a new CFS configuration based on the original CFS file backed up previously
     // this operation is simple as the file only has git repos and commits
     create_cfs_config(
@@ -161,10 +189,9 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         &backup_cfs_file,
-    )
-    .await;
+    ).await;
 
-    println!("Uploading BOS sessiontemplate...");
+    println!("\nUploading BOS sessiontemplate...");
     // Create a new BOS session template based on the original BOS file backed previously
     create_bos_sessiontemplate(
         shasta_token,
@@ -175,7 +202,7 @@ pub async fn exec(
     )
     .await;
 
-    println!("Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
+    println!("\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
 
     // ========================================================================================================
 }
@@ -196,15 +223,16 @@ async fn create_bos_sessiontemplate(
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    match bos::template::mesa::http_client::get(
+    match bos::template::mesa::http_client::get_all(
         shasta_token,
         shasta_base_url,
-        shasta_root_cert,
-        Option::from(&bos_sessiontemplate_name),
-    )
-    .await
+        shasta_root_cert).await
     {
-        Ok(vector) => {
+        Ok(mut vector) => {
+
+            vector.retain(|bos_sessiontemplate| {
+               bos_sessiontemplate.name.eq(&Option::from(bos_sessiontemplate_name.clone()))
+            });
             log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
 
             if !vector.is_empty() {
@@ -217,6 +245,13 @@ async fn create_bos_sessiontemplate(
                 if !confirmation {
                     println!("Looks like you do not want to continue, bailing out.");
                     std::process::exit(2)
+                } else {
+                    match bos::template::shasta::http_client::delete(shasta_token,
+                                                                          shasta_base_url,
+                                                                          shasta_root_cert, &bos_sessiontemplate_name).await {
+                        Ok(_) => log::debug!("Ok BOS session template {}, deleted.", &bos_sessiontemplate_name),
+                        Result::Err(err1) => panic!("Error, unable to delete BOS session template. Cannot continue. Error: {}", err1),
+                    };
                 }
             }
             let mut bos_sessiontemplate: bos::template::mesa::r#struct::request_payload::BosSessionTemplate =
@@ -244,7 +279,7 @@ async fn create_bos_sessiontemplate(
             )
             .await
             {
-                Ok(result) => log::error!("Ok, result: {:#?}", result),
+                Ok(_result) => println!("Ok, BOS session template {} created successfully.",  &bos_sessiontemplate_name),
                 Err(e1) => panic!(
                     "Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}",
                     e1
@@ -273,18 +308,22 @@ async fn create_cfs_config(
 
     // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
     let cfs_config_name = cfs_json["name"].clone().to_string().replace('"', "");
+
+    // Get all CFS configurations, this is ugly
     match cfs::configuration::shasta::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        Some(&cfs_config_name),
+        None,
     )
     .await
     {
         Ok(get_cfs_configuration_api_response) => {
-            let cfs_config_vec: Vec<CfsConfigurationRequest> =
+            let mut cfs_config_vec: Vec<CfsConfigurationRequest> =
                 serde_json::from_str(&get_cfs_configuration_api_response.text().await.unwrap())
                     .unwrap();
+            cfs_config_vec.retain(|cfs_configuration| cfs_configuration.name == cfs_config_name);
+
 
             if !cfs_config_vec.is_empty() {
                 println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
@@ -296,6 +335,14 @@ async fn create_cfs_config(
                 if !confirmation {
                     println!("Looks like you do not want to continue, bailing out.");
                     std::process::exit(2)
+                } else {
+                    match cfs::configuration::shasta::http_client::delete(shasta_token,
+                                                                    shasta_base_url,
+                                                                    shasta_root_cert,
+                                                                    cfs_config_name.as_str()).await {
+                        Ok(_) => log::debug!("Ok CFS configuration {}, deleted.",cfs_config_name),
+                        Result::Err(err1) => panic!("Error, unable to delete configuration. Cannot continue. Error: {}", err1),
+                    };
                 }
             }
             // At this point we're sure there's either no CFS config with that name
@@ -313,7 +360,10 @@ async fn create_cfs_config(
             )
             .await
             {
-                Ok(result) => log::debug!("Ok, result: {:#?}", result),
+                Ok(result) => {
+                    log::debug!("Ok, result: {:#?}", result);
+                    println!("Ok, CFS configuration {} created successfully.",  &cfs_config_name);
+                },
                 Err(e1) => panic!(
                     "Error, unable to create CFS configuration. Error returned by CSM API: {}",
                     e1
@@ -335,19 +385,21 @@ async fn ims_update_image_add_manifest(
     ims_image_name: &String,
     ims_image_id: &String,
 ) {
-    match mesa::ims::image::shasta::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(ims_image_name)
-    ).await {
+
+    match get_fuzzy(shasta_token,
+                         shasta_base_url,
+                         shasta_root_cert,
+                         &["".to_string()], // hsm_group_name
+                         Some(ims_image_name.clone().as_str()),
+                         None).await {
         Ok(_vector) => {
             if _vector.is_empty() {
                 panic!("Error: there are no images stored with id {} in IMS. Unable to update the image manifest", &ims_image_id);
             }
         },
-        Err(error) => panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
+        Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
+
     let _ims_record = mesa::ims::image::r#struct::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
@@ -448,22 +500,24 @@ async fn s3_upload_image_artifacts(
 
         let full_object_path = format!("{}/{}", &object_path, &filename.to_string_lossy());
         println!(
-            "Uploading file {:?} ({}) to s3://{}/{}.",
+            "File {:?} ({}) to s3://{}/{}.",
             &file, &file_size, &bucket_name, &full_object_path
         );
-
-        if fs::metadata(file).unwrap().len() > 1024 * 1024 * 200 {
-            match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
+        let mut etag:String;
+        if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
+            etag = match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
             {
-                Ok(_result) => {
-                    println!("OK");
+                Ok(result) => {
+                    log::debug!("Artifact uploaded successfully.");
+                    result
                 }
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
         } else {
-            match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
-                Ok(_result) => {
-                    println!("OK");
+            etag = match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
+                Ok(result) => {
+                    println!("Ok");
+                    result
                 }
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
@@ -472,6 +526,9 @@ async fn s3_upload_image_artifacts(
         // I'm pretty sure there's a better way to do this...
         if file.contains("kernel") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("kernel") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
@@ -483,6 +540,9 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("rootfs") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("rootfs") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
@@ -494,6 +554,9 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("initrd") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
+                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                    artifact.link.etag = Some(etag.clone());
+                }
                 if artifact.r#type.contains("initrd") {
                     artifact.link.path = "s3://".to_string()
                         + bucket_name
@@ -519,7 +582,7 @@ async fn s3_upload_image_artifacts(
     log::debug!("Uploading the new manifest.json file");
     let manifest_full_object_path = format!("{}/manifest.json", &object_path);
     println!(
-        "Uploading file {:?} to s3://{}/{}.",
+        "File {:?} -> s3://{}/{}.",
         &new_manifest_file_name, &bucket_name, &manifest_full_object_path
     );
 
@@ -539,7 +602,7 @@ async fn s3_upload_image_artifacts(
 }
 /// Return the md5sum of a file
 fn file_md5sum(filename: PathBuf) -> Digest {
-    log::debug!("Calculating md5sum of file {:?}...", &filename);
+    log::debug!("File {:?}...", &filename);
 
     let f = File::open(filename).unwrap();
     // Find the length of the file
@@ -595,7 +658,7 @@ fn calculate_image_checksums(
                 "-1".to_string()
             }
         };
-        println!("Calculating md5sum of file {:?} ({})...", &file, &file_size);
+        println!("File {:?} ({})...", &file, &file_size);
         let artifact;
         let mut fp = PathBuf::new();
         fp.push(file);
@@ -694,7 +757,7 @@ async fn ims_register_image(
 }
 
 /// Gets the image name off an IMS yaml file
-fn get_image_name_from_ims_file(ims_file: &String) -> String {
+pub fn get_image_name_from_ims_file(ims_file: &String) -> String {
     // load into memory
     let ims_data =
         fs::read_to_string(PathBuf::from(&ims_file)).expect("Unable to read IMS file file");
@@ -714,7 +777,7 @@ fn get_image_name_from_ims_file(ims_file: &String) -> String {
     //   "name": "gele-cos-3.2.2"
     // }
     //
-    ims_json["name"].clone().to_string().replace('"', "")
+    ims_json[0]["name"].clone().to_string().replace('"', "")
 }
 
 // Anything in this function is critical, so the asserts will kill further processing
@@ -734,8 +797,14 @@ pub async fn create_hsm_group(
     // Create new HSM group if not existing
 
     // Parse HSM group file
-    // The file looks like this: {"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}
-    let mut hsm: HsmGroup = serde_json::from_str(hsm_data.as_str()).unwrap();
+    // The file looks like this: [{"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}]
+    let mut hsm_vec: Vec<HsmGroup> = serde_json::from_str(hsm_data.as_str()).unwrap();
+    log::debug!("HSM vector {:#?}", &hsm_vec);
+
+    // for hsm in hsm_vec.iter() {
+    //     let mut hsm: HsmGroup = hsm.clone();
+    // }
+    let mut hsm: HsmGroup = hsm_vec.remove(0);
     log::debug!("HSM group to create {:#?}", &hsm_data.as_str());
 
     // let exclusive:bool = false; // Make sure this is false, so we can test this without impacting other HSM groups
@@ -831,7 +900,11 @@ pub async fn create_hsm_group(
                     }
                 } else {
                     println!("Not deleting the group, cannot continue the operation.");
+                    std::process::exit(2);
                 }
+            } else if error.to_string().to_lowercase().contains("400") {
+                eprintln!("Unable to create the group, the API returned code 400. This usually means the HSM file is malformed, or has incorrect xnames for this site in it.");
+                std::process::exit(2);
             }
         }
     };
