@@ -3,7 +3,6 @@ pub mod cfs_configuration_utils;
 pub mod cfs_session_utils;
 pub mod cluster_ops;
 pub mod config_ops;
-pub mod gitea;
 pub mod ims_ops;
 pub mod jwt_ops;
 pub mod local_git_repo;

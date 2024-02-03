@@ -58,8 +58,8 @@ pub async fn exec(
 
     // Process "hardware" section in SAT file
 
-    println!(
-        "DEBUG - hardware pattern: {:?}",
+    log::info!(
+        "hardware pattern: {:?}",
         hardware_yaml_value_vec_opt
     );
 

@@ -1,15 +1,17 @@
-use mesa::cfs::{
-    self,
-    configuration::mesa::r#struct::{
-        cfs_configuration::{Configuration, Layer},
-        cfs_configuration_response::CfsConfigurationResponse,
+use mesa::{
+    cfs::{
+        self,
+        configuration::mesa::r#struct::{
+            cfs_configuration::{Configuration, Layer},
+            cfs_configuration_response::CfsConfigurationResponse,
+        },
     },
+    common::gitea,
 };
 
-use crate::common::{cfs_configuration_utils::print_table_struct, gitea};
+use crate::common::cfs_configuration_utils::print_table_struct;
 
 pub async fn exec(
-    gitea_base_url: &str,
     gitea_token: &str,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -50,8 +52,8 @@ pub async fn exec(
                 let gitea_commit_details = gitea::http_client::get_commit_details(
                     &layer.clone_url,
                     layer.commit.as_ref().unwrap(),
-                    gitea_base_url,
                     gitea_token,
+                    shasta_root_cert,
                 )
                 .await
                 .unwrap();

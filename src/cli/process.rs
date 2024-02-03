@@ -236,7 +236,7 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         xname_vec.clone(),
-                    )
+                   )
                     .await;
 
                     power_reset_nodes::exec(
@@ -395,7 +395,6 @@ pub async fn process_cli(
                     };
 
                 get_configuration::exec(
-                    gitea_base_url,
                     gitea_token,
                     shasta_token,
                     shasta_base_url,
@@ -616,6 +615,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    gitea_token,
                     &tag,
                     cli_apply_configuration.get_one::<String>("output"),
                 )

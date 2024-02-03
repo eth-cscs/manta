@@ -554,7 +554,7 @@ async fn s3_upload_image_artifacts(
             "File {:?} ({}) to s3://{}/{}.",
             &file, &file_size, &bucket_name, &full_object_path
         );
-        let mut etag:String;
+        let etag:String;
         if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
             etag = match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
             {
