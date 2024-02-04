@@ -655,6 +655,8 @@ pub fn subcommand_migrate_backup() -> Command {
         .about("Backup the configuration (BOS, CFS, image and HSM group) of a given vCluster/BOS session template.")
         .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "BOS Sessiontemplate to use to derive CFS, boot parameters and HSM group"))
         .arg(arg!(-d --"destination" <FOLDER> "Destination folder to store the backup on"))
+        .arg(arg!(-p --"pre-hook" <SCRIPT> "Script to run before doing the backup."))
+        .arg(arg!(-a --"after-hook" <SCRIPT> "Script to run immediately after the backup is completed successfully."))
 }
 
 pub fn subcommand_migrate_restore() -> Command {
@@ -667,6 +669,9 @@ pub fn subcommand_migrate_restore() -> Command {
         .arg(arg!(-j --"hsm-file" <HSM_group_description_file> "HSM group description file of the cluster backed previously with migrate backup"))
         .arg(arg!(-m --"ims-file" <IMS_file> "IMS file backed previously with migrate backup"))
         .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored."))
+        .arg(arg!(-p --"pre-hook" <SCRIPT> "Script to run before restoring the backup."))
+        .arg(arg!(-a --"after-hook" <SCRIPT> "Script to run immediately after the backup is successfully restored."))
+
 }
 
 pub fn subcommand_power() -> Command {

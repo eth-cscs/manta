@@ -11,6 +11,8 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     bos: Option<&String>,
     destination: Option<&String>,
+    prehook: Option<&String>,
+    afterhook: Option<&String>,
 ) {
 
     println!(

@@ -60,6 +60,8 @@ pub async fn exec(
     hsm_file: Option<&String>,
     ims_file: Option<&String>,
     image_dir: Option<&String>,
+    prehook: Option<&String>,
+    afterhook: Option<&String>,
 ) {
     log::info!(
         "Migrate_restore; BOS_file={}, CFS_file={}, IMS_file={}, HSM_file={}",
