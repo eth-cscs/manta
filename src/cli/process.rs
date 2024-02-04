@@ -1046,7 +1046,7 @@ pub async fn process_cli(
                 let bos = cli_migrate.get_one::<String>("bos");
                 let destination = cli_migrate.get_one::<String>("destination");
                 let prehook = cli_migrate.get_one::<String>("pre-hook");
-                let afterhook = cli_migrate.get_one::<String>("pre-hook");
+                let posthook = cli_migrate.get_one::<String>("pre-hook");
                 migrate_backup::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1054,7 +1054,7 @@ pub async fn process_cli(
                     bos,
                     destination,
                     prehook,
-                    afterhook
+                    posthook
                 )
                 .await;
             } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
@@ -1064,7 +1064,7 @@ pub async fn process_cli(
                 let ims_file = cli_migrate.get_one::<String>("ims-file");
                 let image_dir = cli_migrate.get_one::<String>("image-dir");
                 let prehook = cli_migrate.get_one::<String>("pre-hook");
-                let afterhook = cli_migrate.get_one::<String>("pre-hook");
+                let posthook = cli_migrate.get_one::<String>("post-hook");
                 commands::migrate_restore::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1075,7 +1075,7 @@ pub async fn process_cli(
                     ims_file,
                     image_dir,
                     prehook,
-                    afterhook
+                    posthook
                 )
                 .await;
             }

@@ -12,13 +12,15 @@ pub async fn exec(
     bos: Option<&String>,
     destination: Option<&String>,
     prehook: Option<&String>,
-    afterhook: Option<&String>,
+    posthook: Option<&String>,
 ) {
 
     println!(
-        "Migrate backup of the BOS Template: {}; destination folder: {}\n",
+        "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",
         bos.unwrap(),
-        destination.unwrap()
+        destination.unwrap(),
+        &prehook.unwrap_or(&"none".to_string()),
+        &posthook.unwrap_or(&"none".to_string()),
     );
     // println!("Migrate backup of the BOS Template image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
 

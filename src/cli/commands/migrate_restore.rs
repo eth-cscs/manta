@@ -61,10 +61,12 @@ pub async fn exec(
     ims_file: Option<&String>,
     image_dir: Option<&String>,
     prehook: Option<&String>,
-    afterhook: Option<&String>,
+    posthook: Option<&String>,
 ) {
     log::info!(
-        "Migrate_restore; BOS_file={}, CFS_file={}, IMS_file={}, HSM_file={}",
+        "Migrate_restore\n Prehook={}\n Posthook={}\n BOS_file={}\n CFS_file={}\n IMS_file={}\n HSM_file={}",
+        &prehook.unwrap_or(&"none".to_string()),
+        &posthook.unwrap_or(&"none".to_string()),
         bos_file.unwrap(),
         cfs_file.unwrap(),
         ims_file.unwrap(),
