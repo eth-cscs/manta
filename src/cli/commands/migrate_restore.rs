@@ -72,7 +72,31 @@ pub async fn exec(
         ims_file.unwrap(),
         hsm_file.unwrap()
     );
-    println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
+    println!(
+        "Migrate_restore\n Prehook={}\n Posthook={}\n BOS_file={}\n CFS_file={}\n IMS_file={}\n HSM_file={}",
+        &prehook.unwrap_or(&"none".to_string()),
+        &posthook.unwrap_or(&"none".to_string()),
+        bos_file.unwrap(),
+        cfs_file.unwrap(),
+        ims_file.unwrap(),
+        hsm_file.unwrap()
+    );
+
+    if prehook.is_some() && !Path::new(&prehook.unwrap()).exists() {
+        eprintln!(
+            "Error: the defined prehook file {} does not exist.",
+            &prehook.unwrap()
+        );
+        std::process::exit(2);
+    }
+    if posthook.is_some() && !Path::new(&posthook.unwrap()).exists() {
+        eprintln!(
+            "Error: the deefined posthook file {} does not exist.",
+            &posthook.unwrap()
+        );
+        std::process::exit(2);
+    }
+    // println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
     if ! PathBuf::from(&bos_file.unwrap()).exists() {
         eprintln!("Error, file {} does not exist or cannot be open.", &bos_file.unwrap());
         std::process::exit(1)

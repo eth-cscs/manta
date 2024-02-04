@@ -22,6 +22,20 @@ pub async fn exec(
         &prehook.unwrap_or(&"none".to_string()),
         &posthook.unwrap_or(&"none".to_string()),
     );
+    if prehook.is_some() && !Path::new(&prehook.unwrap()).exists() {
+        eprintln!(
+            "Error: the defined prehook file {} does not exist.",
+            &prehook.unwrap()
+        );
+        std::process::exit(2);
+    }
+    if posthook.is_some() && !Path::new(&posthook.unwrap()).exists() {
+        eprintln!(
+            "Error: the efined posthook file {} does not exist.",
+            &posthook.unwrap()
+        );
+        std::process::exit(2);
+    }
     // println!("Migrate backup of the BOS Template image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
 
     let dest_path = Path::new(destination.unwrap());
