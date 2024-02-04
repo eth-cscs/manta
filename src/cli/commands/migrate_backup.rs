@@ -31,7 +31,7 @@ pub async fn exec(
     }
     if posthook.is_some() && !Path::new(&posthook.unwrap()).exists() {
         eprintln!(
-            "Error: the efined posthook file {} does not exist.",
+            "Error: the defined posthook file {} does not exist.",
             &posthook.unwrap()
         );
         std::process::exit(2);
