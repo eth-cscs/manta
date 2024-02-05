@@ -66,7 +66,7 @@ pub async fn exec(
     posthook: Option<&String>,
 ) {
     log::info!(
-        "Migrate_restore\n Prehook={}\n Posthook={}\n BOS_file={}\n CFS_file={}\n IMS_file={}\n HSM_file={}",
+        "Migrate_restore \n Pre-hook: {}\n Post-hook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
         &prehook.unwrap_or(&"none".to_string()),
         &posthook.unwrap_or(&"none".to_string()),
         bos_file.unwrap(),
@@ -75,7 +75,7 @@ pub async fn exec(
         hsm_file.unwrap()
     );
     println!(
-        "Migrate_restore\n Prehook={}\n Posthook={}\n BOS_file={}\n CFS_file={}\n IMS_file={}\n HSM_file={}",
+        "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
         &prehook.unwrap_or(&"none".to_string()),
         &posthook.unwrap_or(&"none".to_string()),
         bos_file.unwrap(),
@@ -133,18 +133,18 @@ pub async fn exec(
     let backup_hsm_file = hsm_file.unwrap().to_string();
 
     let ims_image_name: String = get_image_name_from_ims_file(&backup_ims_file);
-    println!("\tImage name: {}", ims_image_name);
+    println!(" Image name: {}", ims_image_name);
 
     println!(
-        "\t\tinitrd file: {}",
+        "\tinitrd file: {}",
         image_dir.unwrap().to_string() + "/initrd"
     );
     println!(
-        "\t\tkernel file: {}",
+        "\tkernel file: {}",
         image_dir.unwrap().to_string() + "/kernel"
     );
     println!(
-        "\t\trootfs file: {}",
+        "\trootfs file: {}",
         image_dir.unwrap().to_string() + "/rootfs"
     );
 
