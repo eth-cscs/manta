@@ -1046,7 +1046,7 @@ pub async fn process_cli(
                 let bos = cli_migrate.get_one::<String>("bos");
                 let destination = cli_migrate.get_one::<String>("destination");
                 let prehook = cli_migrate.get_one::<String>("pre-hook");
-                let posthook = cli_migrate.get_one::<String>("pre-hook");
+                let posthook = cli_migrate.get_one::<String>("post-hook");
                 migrate_backup::exec(
                     shasta_token,
                     shasta_base_url,
