@@ -1,10 +1,56 @@
 use humansize::DECIMAL;
 use std::fs::File;
+use std::ops::Deref;
 use std::path::Path;
+use std::process::{Command, exit, Stdio};
+use execute::{Execute, shell};
+use is_executable::IsExecutable;
+use std::error::Error;
 
 use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 use crate::cli::commands::migrate_restore;
 
+/// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
+/// returns Ok(exit_code) or Err() with the description of the error
+pub async fn run_hook(hook: Option<&String>)
+    -> Result<(i32), Box<dyn Error>> {
+    let mut command = shell(&hook.unwrap());
+    // command.stdout(Stdio::piped());
+    let output = command.execute_output().unwrap();
+    // println!("{}", String::from_utf8(output.stdout).unwrap());
+    if let Some(exit_code) = output.status.code() {
+        if exit_code != 0 {
+            Err("The hook failed with return code {}")?;
+            eprintln!("Error: the hook failed with return code={}. I will not continue.", exit_code);
+        } else {
+            return Ok(exit_code);
+        }
+    } else {
+        Err("Error: the hook was interrupted, will not continue.")?;
+    }
+    println!("Done with the hook.");
+    Ok(0)
+}
+
+/// Checks that the hook exists and is executable
+/// returns Ok if all good, an error message otherwise
+pub async fn check_hook_perms(hook: Option<&String>)
+    -> Result<(), Box<dyn Error>> {
+
+    if hook.is_some() {
+        let hookpath = Path::new(hook.unwrap());
+        if ! &hookpath.exists() {
+            Err("Error: the hook file does not exist.")?;
+        } else if ! &hookpath.is_executable() {
+            Err("Error: the hook file is not executable does not exist.")?;
+        } else {
+            return Ok(())
+        }
+    } else {
+        Err("Hook is empty")?;
+    }
+    Ok(())
+}
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -22,21 +68,34 @@ pub async fn exec(
         &prehook.unwrap_or(&"none".to_string()),
         &posthook.unwrap_or(&"none".to_string()),
     );
-    if prehook.is_some() && !Path::new(&prehook.unwrap()).exists() {
-        eprintln!(
-            "Error: the defined prehook file {} does not exist.",
-            &prehook.unwrap()
-        );
-        std::process::exit(2);
+    if prehook.is_some() {
+        match check_hook_perms(prehook).await {
+            Ok(_r) => log::debug!("Pre-hook script exists and is executable."),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &prehook.unwrap());
+                exit(2);
+            }
+        };
+        println!("Running the pre-hook {}",&prehook.unwrap());
+        match run_hook(prehook).await {
+            Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                exit(2);
+            }
+        };
     }
-    if posthook.is_some() && !Path::new(&posthook.unwrap()).exists() {
-        eprintln!(
-            "Error: the defined posthook file {} does not exist.",
-            &posthook.unwrap()
-        );
-        std::process::exit(2);
+    if posthook.is_some() {
+        match check_hook_perms(posthook).await {
+            Ok(_) => log::debug!("Post-hook script exists and is executable."),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &posthook.unwrap());
+                exit(2);
+            }
+        };
     }
-    // println!("Migrate backup of the BOS Template image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
+
+
 
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
@@ -258,6 +317,16 @@ pub async fn exec(
                             let dest = String::from(destination.unwrap());
                             let src = image_id.clone() + "/" + file;
                             println!("\t\tfile: {}/{}", dest, src);
+                        }
+                        if posthook.is_some() {
+                            println!("Running the post-hook {}", &posthook.unwrap());
+                            match run_hook(posthook).await {
+                                Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
+                                Err(_error) => {
+                                    log::error!("{}", _error);
+                                    exit(2);
+                                }
+                            };
                         }
                     }
                     Err(e) => {

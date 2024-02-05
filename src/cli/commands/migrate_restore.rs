@@ -17,6 +17,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::exit;
+use crate::cli::commands::migrate_backup::run_hook;
 
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
@@ -81,20 +83,23 @@ pub async fn exec(
         ims_file.unwrap(),
         hsm_file.unwrap()
     );
-
-    if prehook.is_some() && !Path::new(&prehook.unwrap()).exists() {
-        eprintln!(
-            "Error: the defined prehook file {} does not exist.",
-            &prehook.unwrap()
-        );
-        std::process::exit(2);
+    if prehook.is_some() {
+        match crate::cli::commands::migrate_backup::check_hook_perms(prehook).await {
+            Ok(_) => log::debug!("Pre-hook script exists and is executable."),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &prehook.unwrap());
+                exit(2);
+            }
+        };
     }
-    if posthook.is_some() && !Path::new(&posthook.unwrap()).exists() {
-        eprintln!(
-            "Error: the deefined posthook file {} does not exist.",
-            &posthook.unwrap()
-        );
-        std::process::exit(2);
+    if posthook.is_some() {
+        match crate::cli::commands::migrate_backup::check_hook_perms(posthook).await {
+            Ok(_) => log::debug!("Post-hook script exists and is executable."),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &posthook.unwrap());
+                exit(2);
+            }
+        };
     }
     // println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
     if ! PathBuf::from(&bos_file.unwrap()).exists() {
@@ -158,7 +163,16 @@ pub async fn exec(
     }
 
     println!();
-
+    if prehook.is_some() {
+        println!("Running the pre-hook {}", &prehook.unwrap());
+        match run_hook(prehook).await {
+            Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                exit(2);
+            }
+        };
+    }
     println!("Calculating image artifact checksum...");
     calculate_image_checksums(&mut ims_image_manifest, &vec_backup_image_files);
 
@@ -229,7 +243,16 @@ pub async fn exec(
         &ims_image_id,
     )
     .await;
-
+    if posthook.is_some() {
+        println!("Running the post-hook {}", &posthook.unwrap());
+        match run_hook(posthook).await {
+            Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                exit(2);
+            }
+        };
+    }
     println!("\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
 
     // ========================================================================================================
