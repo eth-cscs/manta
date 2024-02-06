@@ -1045,12 +1045,16 @@ pub async fn process_cli(
             if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {
                 let bos = cli_migrate.get_one::<String>("bos");
                 let destination = cli_migrate.get_one::<String>("destination");
+                let prehook = cli_migrate.get_one::<String>("pre-hook");
+                let posthook = cli_migrate.get_one::<String>("post-hook");
                 migrate_backup::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     bos,
                     destination,
+                    prehook,
+                    posthook
                 )
                 .await;
             } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
@@ -1059,6 +1063,8 @@ pub async fn process_cli(
                 let hsm_file = cli_migrate.get_one::<String>("hsm-file");
                 let ims_file = cli_migrate.get_one::<String>("ims-file");
                 let image_dir = cli_migrate.get_one::<String>("image-dir");
+                let prehook = cli_migrate.get_one::<String>("pre-hook");
+                let posthook = cli_migrate.get_one::<String>("post-hook");
                 commands::migrate_restore::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1068,23 +1074,10 @@ pub async fn process_cli(
                     hsm_file,
                     ims_file,
                     image_dir,
+                    prehook,
+                    posthook
                 )
                 .await;
-            }
-        } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
-            if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {
-                let bos = cli_migrate.get_one::<String>("bos");
-                let destination = cli_migrate.get_one::<String>("destination");
-                migrate_backup::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    bos,
-                    destination,
-                )
-                .await;
-            } else if let Some(_cli_migrate) = cli_migrate.subcommand_matches("restore") {
-                log::info!(">>> MIGRATE RESTORE not implemented yet")
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
             let hsm_group_name_arg_opt = cli_delete.get_one::<String>("hsm-group"); // For now, we
