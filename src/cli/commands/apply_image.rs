@@ -149,7 +149,6 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            gitea_token,
             &cray_product_catalog,
             image_yaml,
             ansible_verbosity_opt,

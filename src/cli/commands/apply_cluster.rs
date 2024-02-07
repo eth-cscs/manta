@@ -7,13 +7,12 @@ use std::{
 use mesa::{
     cfs::{
         self,
-        configuration::mesa::r#struct::{
-            cfs_configuration_request::CfsConfigurationRequest,
-            cfs_configuration_response::{ApiError, CfsConfigurationResponse},
+        configuration::mesa::r#struct::cfs_configuration_response::{
+            ApiError, CfsConfigurationResponse,
         },
-        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
+        session::mesa::r#struct::CfsSessionGetResponse,
     },
-    common::{gitea, kubernetes},
+    common::kubernetes,
     {capmc, hsm},
 };
 use serde_yaml::Value;
@@ -34,8 +33,8 @@ pub async fn exec(
     path_file: &PathBuf,
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
-    ansible_verbosity_opt: Option<&String>,
-    ansible_passthrough_opt: Option<&String>,
+    ansible_verbosity_opt: Option<u8>,
+    ansible_passthrough_opt: Option<String>,
     gitea_token: &str,
     tag: &str,
     do_not_reboot: bool,
@@ -119,18 +118,17 @@ pub async fn exec(
 
     // Process "images" section in SAT file
 
-    let mut cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
+    let cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
         let cfs_session_rslt = cfs::session::mesa::utils::create_from_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            gitea_token,
             &cray_product_catalog,
-            image_yaml,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
+            image_yaml,
             tag,
         )
         .await;

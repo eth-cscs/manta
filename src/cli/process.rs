@@ -752,8 +752,12 @@ pub async fn process_cli(
                     // base_image_id,
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
-                    cli_apply_cluster.get_one::<String>("ansible-verbosity"),
-                    cli_apply_cluster.get_one::<String>("ansible-passthrough"),
+                    cli_apply_cluster
+                        .get_one::<u8>("ansible-verbosity")
+                        .cloned(),
+                    cli_apply_cluster
+                        .get_one::<String>("ansible-passthrough")
+                        .cloned(),
                     gitea_token,
                     &tag,
                     *cli_apply_cluster
@@ -1064,7 +1068,7 @@ pub async fn process_cli(
                     bos,
                     destination,
                     prehook,
-                    posthook
+                    posthook,
                 )
                 .await;
             } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
@@ -1085,7 +1089,7 @@ pub async fn process_cli(
                     ims_file,
                     image_dir,
                     prehook,
-                    posthook
+                    posthook,
                 )
                 .await;
             }
