@@ -6,7 +6,6 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration;
 use mesa::{bos, cfs};
 use serde_json::Value;
 

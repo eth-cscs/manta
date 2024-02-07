@@ -714,7 +714,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     // base_image_id,
-                    cli_apply_image.get_one::<String>("ansible-verbosity"),
+                    cli_apply_image.get_one::<u8>("ansible-verbosity").cloned(),
                     cli_apply_image.get_one::<String>("ansible-passthrough"),
                     cli_apply_image.get_one::<bool>("watch-logs"),
                     &tag,
@@ -755,9 +755,7 @@ pub async fn process_cli(
                     cli_apply_cluster
                         .get_one::<u8>("ansible-verbosity")
                         .cloned(),
-                    cli_apply_cluster
-                        .get_one::<String>("ansible-passthrough")
-                        .cloned(),
+                    cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     gitea_token,
                     &tag,
                     *cli_apply_cluster

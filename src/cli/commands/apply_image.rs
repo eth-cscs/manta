@@ -3,17 +3,14 @@ use std::{collections::HashMap, path::PathBuf};
 use mesa::{
     cfs::{
         self,
-        configuration::mesa::r#struct::{
-            cfs_configuration_request::CfsConfigurationRequest,
-            cfs_configuration_response::{ApiError, CfsConfigurationResponse},
+        configuration::mesa::r#struct::cfs_configuration_response::{
+            ApiError, CfsConfigurationResponse,
         },
-        session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
+        session::mesa::r#struct::CfsSessionGetResponse,
     },
-    common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    common::kubernetes,
 };
 use serde_yaml::Value;
-
-use crate::common::{cfs_session_utils, jwt_ops::get_claims_from_jwt_token};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -27,7 +24,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    ansible_verbosity_opt: Option<&String>,
+    ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     watch_logs_opt: Option<&bool>,
     tag: &str,
@@ -101,7 +98,7 @@ pub async fn exec(
     }
 
     // Process CFS sessions
-    let mut cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
+    let cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         /* let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml).unwrap();

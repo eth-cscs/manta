@@ -34,7 +34,7 @@ pub async fn exec(
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<u8>,
-    ansible_passthrough_opt: Option<String>,
+    ansible_passthrough_opt: Option<&String>,
     gitea_token: &str,
     tag: &str,
     do_not_reboot: bool,
@@ -126,9 +126,9 @@ pub async fn exec(
             shasta_base_url,
             shasta_root_cert,
             &cray_product_catalog,
+            image_yaml,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
-            image_yaml,
             tag,
         )
         .await;

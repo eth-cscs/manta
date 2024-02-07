@@ -1,19 +1,17 @@
+use execute::{shell, Execute};
 use humansize::DECIMAL;
-use std::fs::File;
-use std::ops::Deref;
-use std::path::Path;
-use std::process::{Command, exit, Stdio};
-use execute::{Execute, shell};
 use is_executable::IsExecutable;
 use std::error::Error;
+use std::fs::File;
+use std::path::Path;
+use std::process::exit;
 
-use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 use crate::cli::commands::migrate_restore;
+use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 /// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
 /// returns Ok(exit_code) or Err() with the description of the error
-pub async fn run_hook(hook: Option<&String>)
-    -> Result<(i32), Box<dyn Error>> {
+pub async fn run_hook(hook: Option<&String>) -> Result<(i32), Box<dyn Error>> {
     let mut command = shell(&hook.unwrap());
     // command.stdout(Stdio::piped());
     let output = command.execute_output().unwrap();
@@ -21,7 +19,10 @@ pub async fn run_hook(hook: Option<&String>)
     if let Some(exit_code) = output.status.code() {
         if exit_code != 0 {
             Err("The hook failed with return code {}")?;
-            eprintln!("Error: the hook failed with return code={}. I will not continue.", exit_code);
+            eprintln!(
+                "Error: the hook failed with return code={}. I will not continue.",
+                exit_code
+            );
         } else {
             return Ok(exit_code);
         }
@@ -34,17 +35,15 @@ pub async fn run_hook(hook: Option<&String>)
 
 /// Checks that the hook exists and is executable
 /// returns Ok if all good, an error message otherwise
-pub async fn check_hook_perms(hook: Option<&String>)
-    -> Result<(), Box<dyn Error>> {
-
+pub async fn check_hook_perms(hook: Option<&String>) -> Result<(), Box<dyn Error>> {
     if hook.is_some() {
         let hookpath = Path::new(hook.unwrap());
-        if ! &hookpath.exists() {
+        if !&hookpath.exists() {
             Err("Error: the hook file does not exist.")?;
-        } else if ! &hookpath.is_executable() {
+        } else if !&hookpath.is_executable() {
             Err("Error: the hook file is not executable does not exist.")?;
         } else {
-            return Ok(())
+            return Ok(());
         }
     } else {
         Err("Hook is empty")?;
@@ -60,7 +59,6 @@ pub async fn exec(
     prehook: Option<&String>,
     posthook: Option<&String>,
 ) {
-
     println!(
         "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",
         bos.unwrap(),
@@ -76,7 +74,7 @@ pub async fn exec(
                 exit(2);
             }
         };
-        println!("Running the pre-hook {}",&prehook.unwrap());
+        println!("Running the pre-hook {}", &prehook.unwrap());
         match run_hook(prehook).await {
             Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
             Err(_error) => {
@@ -94,8 +92,6 @@ pub async fn exec(
             }
         };
     }
-
-
 
     let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
@@ -115,7 +111,6 @@ pub async fn exec(
 
     let hsm_file_name = String::from(bos.unwrap()) + "-hsm.json";
     let hsm_file_path = dest_path.join(hsm_file_name);
-
 
     let _empty_hsm_group_name: Vec<String> = Vec::new();
     let mut bos_templates = mesa::bos::template::mesa::http_client::get(
@@ -311,7 +306,9 @@ pub async fn exec(
                         println!("\tCFS file: {}", &cfs_file_path.to_string_lossy());
                         println!("\tHSM file: {}", &hsm_file_path.to_string_lossy());
                         println!("\tIMS file: {}", &ims_file_path.to_string_lossy());
-                        let ims_image_name = migrate_restore::get_image_name_from_ims_file(&ims_file_path.clone().to_string_lossy().to_string());
+                        let ims_image_name = migrate_restore::get_image_name_from_ims_file(
+                            &ims_file_path.clone().to_string_lossy().to_string(),
+                        );
                         println!("\tImage name: {}", ims_image_name);
                         for file in files2download {
                             let dest = String::from(destination.unwrap());
@@ -321,7 +318,9 @@ pub async fn exec(
                         if posthook.is_some() {
                             println!("Running the post-hook {}", &posthook.unwrap());
                             match run_hook(posthook).await {
-                                Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
+                                Ok(_code) => {
+                                    log::debug!("Post-hook script completed ok. RT={}", _code)
+                                }
                                 Err(_error) => {
                                     log::error!("{}", _error);
                                     exit(2);
@@ -336,10 +335,8 @@ pub async fn exec(
                         );
                     }
                 };
-
             }
         }
-
     }
     std::process::exit(1);
 }

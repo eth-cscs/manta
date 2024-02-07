@@ -1,9 +1,8 @@
 use mesa::{
-    cfs::configuration::mesa::r#struct::{
-        cfs_configuration, cfs_configuration_request::CfsConfigurationRequest,
-        cfs_configuration_response::{CfsConfigurationResponse, ApiError},
+    cfs::configuration::mesa::r#struct::cfs_configuration_response::{
+        ApiError, CfsConfigurationResponse,
     },
-    common::{gitea, kubernetes},
+    common::kubernetes,
 };
 use serde_yaml::Value;
 use std::path::PathBuf;
