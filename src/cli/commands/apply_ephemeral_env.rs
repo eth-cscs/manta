@@ -41,7 +41,7 @@ pub async fn exec(
         "Creating ephemeral environment baed on image ID {}",
         image_id
     );
-    let resp_json_rslt = mesa::ims::job::http_client::post(
+    let resp_json_rslt = mesa::ims::job::http_client::post_customize(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

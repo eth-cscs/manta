@@ -1,6 +1,9 @@
 use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
-    common::gitea,
+    cfs::configuration::mesa::r#struct::{
+        cfs_configuration, cfs_configuration_request::CfsConfigurationRequest,
+        cfs_configuration_response::{CfsConfigurationResponse, ApiError},
+    },
+    common::{gitea, kubernetes},
 };
 use serde_yaml::Value;
 use std::path::PathBuf;
@@ -17,6 +20,10 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    vault_base_url: &str,
+    vault_secret_path: &str,
+    vault_role_id: &str,
+    k8s_api_url: &str,
     gitea_token: &str,
     tag: &str,
     output_opt: Option<&String>,
@@ -49,84 +56,59 @@ pub async fn exec(
         )
     }
 
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
+
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
+
     let empty_vec = &Vec::new();
     let configuration_yaml_vec = configuration_yaml_vec_opt.unwrap_or(empty_vec);
 
     let mut cfs_configuration_name_vec = Vec::new();
 
     for configuration_yaml in configuration_yaml_vec {
-        let mut cfs_configuration =
-            CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                gitea_token,
+                &cray_product_catalog,
+                configuration_yaml,
+                tag,
+            )
+            .await;
 
-        log::info!("Process CFS configuration layers");
-        for cfs_configuration_layer in cfs_configuration.layers.iter_mut() {
-            log::info!("CFS configuration layer:\n{:#?}", cfs_configuration_layer);
-            let git_commit = cfs_configuration_layer.commit.as_ref();
-            let git_tag = cfs_configuration_layer.tag.as_ref();
-            let git_branch = cfs_configuration_layer.branch.as_ref();
-            if git_commit.is_some() && git_tag.is_some()
-                || git_commit.is_some() && git_commit.is_some() && git_branch.is_some()
-                || git_tag.is_some() && git_branch.is_some()
-            {
-                println!("NOT GOOD, only unde one valuet_");
-            } else if let Some(git_tag) = git_tag {
-                log::info!("git tag: {}", git_tag);
-                let tag_details = gitea::http_client::get_tag_details(
-                    &cfs_configuration_layer.clone_url,
-                    &git_tag,
-                    gitea_token,
-                    shasta_root_cert,
-                )
-                .await
-                .unwrap();
-
-                log::info!("tag details:\n{:#?}", tag_details);
-                let commit_id: Option<String> =
-                    tag_details["id"].as_str().map(|commit| commit.to_string());
-
-                cfs_configuration_layer.commit = commit_id;
+        let cfs_configuration = match cfs_configuration_rslt {
+            Ok(cfs_configuration) => cfs_configuration,
+            Err(error) => {
+                eprintln!("{}", error);
+                std::process::exit(1);
             }
-        }
-
-        // Rename configuration name
-        cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
-
-        log::debug!("CFS configuration:\n{:#?}", cfs_configuration);
-
-        let cfs_configuration_rslt = mesa::cfs::configuration::mesa::http_client::put(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &cfs_configuration,
-            &cfs_configuration.name,
-        )
-        .await;
-
-        log::debug!(
-            "CFS configuration creation response:\n{:#?}",
-            cfs_configuration_rslt
-        );
-
-        let cfs_configuration_value = if let Ok(cfs_configuration_value) = cfs_configuration_rslt {
-            cfs_configuration_value
-        } else {
-            eprintln!("CFS configuration creation failed");
-            std::process::exit(1);
         };
 
-        let cfs_configuration_name = cfs_configuration_value.name.to_string();
+        let cfs_configuration_name = cfs_configuration.name.to_string();
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 
         log::info!("CFS configuration created: {}", cfs_configuration_name);
 
-        cfs_configuration_value_vec.push(cfs_configuration_value.clone());
+        cfs_configuration_value_vec.push(cfs_configuration.clone());
 
         // Print output
         if output_opt.is_some() && output_opt.unwrap().eq("json") {
             println!(
                 "{}",
-                serde_json::to_string_pretty(&cfs_configuration_value).unwrap()
+                serde_json::to_string_pretty(&cfs_configuration).unwrap()
             );
         } else {
             cfs_configuration_utils::print_table_struct(&cfs_configuration_value_vec);

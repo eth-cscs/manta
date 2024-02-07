@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration;
 use mesa::{bos, cfs};
 use serde_json::Value;
 
@@ -123,10 +124,23 @@ pub async fn delete_data_related_cfs_configuration(
         &mut bos_sessiontemplate_value_vec,
         &hsm_name_available_vec,
         &Vec::new(),
-        cfs_configuration_name_opt.map(|elem| elem.as_str()),
+        // cfs_configuration_name_opt.map(|elem| elem.as_str()),
         None,
     )
     .await;
+
+    // Filter BOS sessiontemplate containing /configuration/name field
+    bos_sessiontemplate_value_vec.retain(|bos_sessiontemplate| {
+        cfs_configuration_name_vec.contains(
+            bos_sessiontemplate
+                .cfs
+                .as_ref()
+                .unwrap()
+                .configuration
+                .as_ref()
+                .unwrap(),
+        )
+    });
 
     log::debug!(
         "BOS sessiontemplate filtered by HSM and configuration name:\n{:#?}",

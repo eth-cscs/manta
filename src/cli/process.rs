@@ -236,7 +236,7 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         xname_vec.clone(),
-                   )
+                    )
                     .await;
 
                     power_reset_nodes::exec(
@@ -615,6 +615,10 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    vault_base_url,
+                    vault_secret_path,
+                    vault_role_id,
+                    k8s_api_url,
                     gitea_token,
                     &tag,
                     cli_apply_configuration.get_one::<String>("output"),
@@ -716,6 +720,7 @@ pub async fn process_cli(
                     &tag,
                     &hsm_group_available_vec,
                     k8s_api_url,
+                    gitea_token,
                     cli_apply_image.get_one::<String>("output"),
                 )
                 .await;
@@ -739,13 +744,18 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    vault_base_url,
+                    vault_secret_path,
+                    vault_role_id,
+                    k8s_api_url,
                     cli_apply_cluster.get_one("file").unwrap(),
                     // base_image_id,
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
                     cli_apply_cluster.get_one::<String>("ansible-verbosity"),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
-                    tag,
+                    gitea_token,
+                    &tag,
                     *cli_apply_cluster
                         .get_one::<bool>("do-not-reboot")
                         .unwrap_or(&false),

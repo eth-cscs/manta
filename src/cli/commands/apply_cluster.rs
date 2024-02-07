@@ -7,9 +7,13 @@ use std::{
 use mesa::{
     cfs::{
         self,
-        configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
+        configuration::mesa::r#struct::{
+            cfs_configuration_request::CfsConfigurationRequest,
+            cfs_configuration_response::{ApiError, CfsConfigurationResponse},
+        },
         session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
+    common::{gitea, kubernetes},
     {capmc, hsm},
 };
 use serde_yaml::Value;
@@ -23,12 +27,17 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    vault_base_url: &str,
+    vault_secret_path: &str,
+    vault_role_id: &str,
+    k8s_api_url: &str,
     path_file: &PathBuf,
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<&String>,
     ansible_passthrough_opt: Option<&String>,
-    tag: String,
+    gitea_token: &str,
+    tag: &str,
     do_not_reboot: bool,
 ) {
     let file_content = std::fs::read_to_string(path_file).unwrap();
@@ -38,7 +47,7 @@ pub async fn exec(
     let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_yaml_value_vec_opt = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec = sat_file_yaml["configurations"].as_sequence();
 
     // Get inages from SAT YAML file
     let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
@@ -58,42 +67,45 @@ pub async fn exec(
 
     // Process "hardware" section in SAT file
 
-    log::info!(
-        "hardware pattern: {:?}",
-        hardware_yaml_value_vec_opt
-    );
+    log::info!("hardware pattern: {:?}", hardware_yaml_value_vec_opt);
 
     // Process "configurations" section in SAT file
+    //
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
+
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
 
     let mut cfs_configuration_value_vec = Vec::new();
 
     let mut cfs_configuration_name_vec = Vec::new();
 
-    for cfs_configuration_yaml_value in configuration_yaml_value_vec_opt.unwrap_or(&vec![]).iter() {
-        let mut cfs_configuration_value =
-            CfsConfigurationRequest::from_sat_file_serde_yaml(cfs_configuration_yaml_value);
+    for configuration_yaml in configuration_yaml_vec.unwrap_or(&vec![]).iter() {
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                gitea_token,
+                &cray_product_catalog,
+                configuration_yaml,
+                tag,
+            )
+            .await;
 
-        // Rename configuration name
-        cfs_configuration_value.name = cfs_configuration_value.name.replace("__DATE__", &tag);
-
-        log::debug!(
-            "CFS configuration creation payload:\n{:#?}",
-            cfs_configuration_value
-        );
-
-        let cfs_configuration_value_rslt = cfs::configuration::mesa::http_client::put(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &cfs_configuration_value,
-            &cfs_configuration_value.name,
-        )
-        .await;
-
-        let cfs_configuration = match cfs_configuration_value_rslt {
-            Ok(cfs_configuration_value) => cfs_configuration_value,
-            Err(error_message) => {
-                eprintln!("{}, Exit", error_message);
+        let cfs_configuration = match cfs_configuration_rslt {
+            Ok(cfs_configuration) => cfs_configuration,
+            Err(error) => {
+                eprintln!("{}", error);
                 std::process::exit(1);
             }
         };
@@ -101,8 +113,6 @@ pub async fn exec(
         let cfs_configuration_name = cfs_configuration.name.to_string();
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
-
-        log::info!("CFS configuration created: {}", cfs_configuration_name);
 
         cfs_configuration_value_vec.push(cfs_configuration.clone());
     }
@@ -112,152 +122,39 @@ pub async fn exec(
     let mut cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
-        let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml);
-
-        // Rename session name
-        cfs_session.name = cfs_session.name.replace("__DATE__", &tag);
-
-        // Rename session's configuration name
-        cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", &tag);
-
-        // Set ansible verbosity
-        cfs_session.ansible_verbosity = Some(
-            ansible_verbosity_opt
-                .cloned()
-                .unwrap_or("0".to_string())
-                .parse::<u8>()
-                .unwrap(),
-        );
-
-        // Set ansible passthrough params
-        cfs_session.ansible_passthrough = ansible_passthrough_opt.cloned();
-
-        let create_cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
+        let cfs_session_rslt = cfs::session::mesa::utils::create_from_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &cfs_session,
+            gitea_token,
+            &cray_product_catalog,
+            image_yaml,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt,
+            tag,
         )
         .await;
 
-        if let Err(error) = create_cfs_session_resp {
-            eprintln!("CFS session creation failed.\nReason:\n{:#?}\nExit", error);
-            std::process::exit(1);
-        }
+        /* let cfs_session = match cfs_session_rslt {
+            Ok(cfs_session) => cfs_session,
+            Err(error) => {
+                eprintln!("{}", error);
+                std::process::exit(1);
+            }
+        };
 
-        if create_cfs_session_resp
-            .as_ref()
-            .unwrap()
-            .status
-            .as_ref()
-            .unwrap()
-            .session
-            .as_ref()
-            .unwrap()
-            .succeeded
-            .as_ref()
-            .unwrap()
-            == "false"
-        {
-            eprintln!(
-                "CFS session creation failed.\nReason:\n{:#?}\nExit",
-                create_cfs_session_resp
-            );
-            std::process::exit(1);
-        }
+        log::info!(
+            "CFS session created: {}",
+            cfs_session.name.as_ref().unwrap()
+        );
 
-        // Monitor CFS image creation process ends
-        let mut i = 0;
-        let max = 1800; // Max ammount of attempts to check if CFS session has ended
-        loop {
-            let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                Some(&cfs_session.name.to_string()),
-                Some(true),
-            )
-            .await
-            .unwrap();
-
-            mesa::cfs::session::mesa::utils::filter_by_hsm(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &mut cfs_session_vec,
-                hsm_group_available_vec,
-                Some(&1),
-            )
+        wait_cfs_session_to_complete(shasta_token, shasta_base_url, shasta_root_cert, &cfs_session)
             .await;
 
-            if !cfs_session_vec.is_empty()
-                && cfs_session_vec
-                    .first()
-                    .unwrap()
-                    .status
-                    .as_ref()
-                    .unwrap()
-                    .session
-                    .as_ref()
-                    .unwrap()
-                    .status
-                    .as_ref()
-                    .unwrap()
-                    .eq("complete")
-                && i <= max
-            {
-                /* let cfs_session_aux: CfsSessionGetResponse =
-                CfsSessionGetResponse::from_csm_api_json(
-                    cfs_session_value_vec.first().unwrap().clone(),
-                ); */
-
-                let cfs_session = cfs_session_vec.first().unwrap();
-
-                if cfs_session
-                    .status
-                    .as_ref()
-                    .unwrap()
-                    .session
-                    .as_ref()
-                    .unwrap()
-                    .succeeded
-                    .as_ref()
-                    .unwrap()
-                    .as_str()
-                    == "false"
-                {
-                    // CFS session failed
-                    eprintln!(
-                        "ERROR creating CFS session '{}'",
-                        cfs_session.name.as_ref().unwrap()
-                    );
-                    std::process::exit(1);
-                } else {
-                    // CFS session succeeded
-                    cfs_session_complete_vec.push(cfs_session.clone());
-
-                    log::info!(
-                        "CFS session created: {}",
-                        cfs_session.name.as_ref().unwrap()
-                    );
-
-                    break;
-                }
-            } else {
-                print!(
-                    "\rCFS session '{}' running. Checking again in 2 secs. Attempt {} of {}",
-                    cfs_session.name,
-                    i + 1,
-                    max
-                );
-                io::stdout().flush().unwrap();
-
-                tokio::time::sleep(time::Duration::from_secs(2)).await;
-                std::io::Write::flush(&mut std::io::stdout()).unwrap();
-
-                i += 1;
-            }
-        }
+        if !cfs_session.is_success() {
+            eprintln!("CFS session creation failed.\nExit",);
+            std::process::exit(1);
+        } */
     }
 
     println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
@@ -564,5 +461,93 @@ pub async fn process_session_template_section_in_sat_file(
         let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
         log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
+    }
+}
+
+pub async fn wait_cfs_session_to_complete(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    cfs_session: &CfsSessionGetResponse,
+) {
+    // Monitor CFS image creation process ends
+    let mut i = 0;
+    let max = 1800; // Max ammount of attempts to check if CFS session has ended
+    loop {
+        let cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(&cfs_session.name.as_ref().unwrap().to_string()),
+            Some(true),
+        )
+        .await
+        .unwrap();
+        /*
+        mesa::cfs::session::mesa::utils::filter_by_hsm(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut cfs_session_vec,
+            hsm_group_available_vec,
+            Some(&1),
+        )
+        .await; */
+
+        if !cfs_session_vec.is_empty()
+            && cfs_session_vec
+                .first()
+                .unwrap()
+                .status
+                .as_ref()
+                .unwrap()
+                .session
+                .as_ref()
+                .unwrap()
+                .status
+                .as_ref()
+                .unwrap()
+                .eq("complete")
+            && i <= max
+        {
+            /* let cfs_session_aux: CfsSessionGetResponse =
+            CfsSessionGetResponse::from_csm_api_json(
+                cfs_session_value_vec.first().unwrap().clone(),
+            ); */
+
+            let cfs_session = cfs_session_vec.first().unwrap();
+
+            if !cfs_session.is_success() {
+                // CFS session failed
+                eprintln!(
+                    "ERROR creating CFS session '{}'",
+                    cfs_session.name.as_ref().unwrap()
+                );
+                std::process::exit(1);
+            } else {
+                // CFS session succeeded
+                // cfs_session_complete_vec.push(cfs_session.clone());
+
+                log::info!(
+                    "CFS session created: {}",
+                    cfs_session.name.as_ref().unwrap()
+                );
+
+                break;
+            }
+        } else {
+            print!(
+                "\rCFS session '{}' running. Checking again in 2 secs. Attempt {} of {}",
+                cfs_session.name.as_ref().unwrap(),
+                i + 1,
+                max
+            );
+            io::stdout().flush().unwrap();
+
+            tokio::time::sleep(time::Duration::from_secs(2)).await;
+            std::io::Write::flush(&mut std::io::stdout()).unwrap();
+
+            i += 1;
+        }
     }
 }

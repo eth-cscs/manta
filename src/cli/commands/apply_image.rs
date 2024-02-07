@@ -1,11 +1,11 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
 use mesa::{
     cfs::{
         self,
         configuration::mesa::r#struct::{
             cfs_configuration_request::CfsConfigurationRequest,
-            cfs_configuration_response::CfsConfigurationResponse,
+            cfs_configuration_response::{ApiError, CfsConfigurationResponse},
         },
         session::mesa::r#struct::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
@@ -33,6 +33,7 @@ pub async fn exec(
     tag: &str,
     hsm_group_available_vec: &[String],
     k8s_api_url: &str,
+    gitea_token: &str,
     output_opt: Option<&String>,
 ) -> (Vec<CfsConfigurationResponse>, Vec<CfsSessionGetResponse>) {
     let file_content = std::fs::read_to_string(path_file).expect("SAT file not found. Exit");
@@ -58,75 +59,52 @@ pub async fn exec(
 
     // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
     validate_sat_file_images_section(image_yaml_vec_opt, hsm_group_available_vec);
-    /* for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        for hsm_group in image_yaml_vec["configuration_group_names"]
-            .as_sequence()
-            .unwrap()
-            .iter()
-            .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
-            .filter(|&hsm_group| {
-                !hsm_group.eq_ignore_ascii_case("Compute")
-                    && !hsm_group.eq_ignore_ascii_case("Application")
-                    && !hsm_group.eq_ignore_ascii_case("Application_UAN")
-            })
-        {
-            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                println!(
-                        "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
-                        hsm_group,
-                        image_yaml_vec["name"].as_str().unwrap(),
-                        hsm_group_available_vec
-                    );
-                std::process::exit(-1);
-            }
-        }
-    } */
 
-    // Process CFS configurations
-    let mut cfs_configuration;
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
 
-    let mut cfs_configuration_vec = Vec::new();
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
+
+    let mut cfs_configuration_hashmap = HashMap::new();
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        cfs_configuration = CfsConfigurationRequest::from_sat_file_serde_yaml(configuration_yaml);
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                gitea_token,
+                &cray_product_catalog,
+                configuration_yaml,
+                tag,
+            )
+            .await;
 
-        // Rename configuration name
-        cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
+        let cfs_configuration = match cfs_configuration_rslt {
+            Ok(cfs_configuration) => cfs_configuration,
+            Err(error) => {
+                eprintln!("{}", error);
+                std::process::exit(1);
+            }
+        };
 
-        log::debug!(
-            "CFS configuration creation payload:\n{:#?}",
-            cfs_configuration
-        );
-
-        let create_cfs_configuration_resp = cfs::configuration::mesa::http_client::put(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &cfs_configuration,
-            &cfs_configuration.name,
-        )
-        .await;
-
-        log::debug!(
-            "CFS configuration creation response:\n{:#?}",
-            create_cfs_configuration_resp
-        );
-
-        if create_cfs_configuration_resp.is_err() {
-            eprintln!("CFS configuration creation failed");
-            std::process::exit(1);
-        }
-
-        cfs_configuration_vec.push(create_cfs_configuration_resp.unwrap());
-
-        log::info!("CFS configuration created: {}", cfs_configuration.name);
+        cfs_configuration_hashmap.insert(cfs_configuration.name.clone(), cfs_configuration.clone());
     }
 
     // Process CFS sessions
-    let mut cfs_session_resp_list = Vec::new();
+    let mut cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml);
+        /* let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml).unwrap();
 
         // Rename session name
         cfs_session.name = cfs_session.name.replace("__DATE__", tag);
@@ -165,22 +143,54 @@ pub async fn exec(
             eprintln!("CFS session creation failed");
             eprintln!("Reason:\n{:#?}", create_cfs_session_resp);
             std::process::exit(1);
-        }
+        } */
 
-        cfs_session_resp_list.push(create_cfs_session_resp.unwrap());
+        let cfs_session_rslt = cfs::session::mesa::utils::create_from_sat_file(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            gitea_token,
+            &cray_product_catalog,
+            image_yaml,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt,
+            tag,
+        )
+        .await;
+
+        /* let cfs_session = match cfs_session_rslt {
+            Ok(cfs_session) => cfs_session,
+            Err(error) => {
+                eprintln!("{}", error);
+                std::process::exit(1);
+            }
+        };
+
+        log::info!(
+            "CFS session created: {}",
+            cfs_session.name.as_ref().unwrap()
+        );
+
+        cfs_session_created_hashmap.insert(cfs_session.name.clone().unwrap(), cfs_session.clone());
 
         // cfs_session_name_list.push(cfs_session.clone());
-
-        log::info!("CFS session created: {}", cfs_session.name);
 
         // Print output
         if output_opt.is_some() && output_opt.unwrap().eq("json") {
             println!(
                 "{}",
-                serde_json::to_string_pretty(&cfs_session_resp_list).unwrap()
+                serde_json::to_string_pretty(
+                    &cfs_session_created_hashmap
+                        .values()
+                        .cloned()
+                        .collect::<Vec<CfsSessionGetResponse>>()
+                )
+                .unwrap()
             );
         } else {
-            cfs_session_utils::print_table_struct(&cfs_session_resp_list);
+            cfs_session_utils::print_table_struct(
+                &cfs_session_created_hashmap.values().cloned().collect(),
+            );
         }
 
         // Audit to file
@@ -210,11 +220,14 @@ pub async fn exec(
                     .await
                     .unwrap();
 
-            kubernetes::print_cfs_session_logs(client, &cfs_session.name).await;
-        }
+            kubernetes::print_cfs_session_logs(client, cfs_session.name.unwrap().as_str()).await;
+        } */
     }
 
-    (cfs_configuration_vec, cfs_session_resp_list)
+    (
+        cfs_configuration_hashmap.values().cloned().collect(),
+        cfs_session_created_hashmap.values().cloned().collect(),
+    )
 }
 
 pub fn validate_sat_file_images_section(
@@ -225,7 +238,7 @@ pub fn validate_sat_file_images_section(
     for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         for hsm_group in image_yaml_vec["configuration_group_names"]
             .as_sequence()
-            .unwrap()
+            .unwrap_or(&Vec::new())
             .iter()
             .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
             .filter(|&hsm_group| {
