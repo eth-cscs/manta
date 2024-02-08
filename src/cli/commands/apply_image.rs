@@ -1,17 +1,14 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use mesa::{
-    cfs::{
-        configuration::mesa::r#struct::cfs_configuration_response::{
-            ApiError, CfsConfigurationResponse,
-        },
-        session::mesa::r#struct::CfsSessionGetResponse,
+    cfs::configuration::mesa::r#struct::cfs_configuration_response::{
+        ApiError, CfsConfigurationResponse,
     },
     common::kubernetes,
 };
 use serde_yaml::Value;
 
-use crate::common;
+use crate::common::{self, sat_file::import_images_section_in_sat_file};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -33,7 +30,7 @@ pub async fn exec(
     k8s_api_url: &str,
     gitea_token: &str,
     output_opt: Option<&String>,
-) -> (Vec<CfsConfigurationResponse>, Vec<CfsSessionGetResponse>) {
+) {
     let file_content = std::fs::read_to_string(path_file).expect("SAT file not found. Exit");
     let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
@@ -44,7 +41,7 @@ pub async fn exec(
     let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
 
     // Get inages from SAT YAML file
-    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+    let image_yaml_vec_opt: Option<&Vec<Value>> = sat_file_yaml["images"].as_sequence();
 
     // Get inages from SAT YAML file
     let bos_session_template_list_yaml = sat_file_yaml["session_templates"].as_sequence();
@@ -99,7 +96,7 @@ pub async fn exec(
     }
 
     // Process CFS sessions
-    let cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
+    /* let cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
         let image_id = common::sat_file::create_image_from_sat_file_serde_yaml(
@@ -113,12 +110,20 @@ pub async fn exec(
             tag,
         )
         .await;
-    }
+    } */
 
-    (
-        cfs_configuration_hashmap.values().cloned().collect(),
-        cfs_session_created_hashmap.values().cloned().collect(),
-    )
+    let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
+        import_images_section_in_sat_file(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
+            &cray_product_catalog,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt,
+            tag,
+        )
+        .await;
 }
 
 pub fn validate_sat_file_images_section(
