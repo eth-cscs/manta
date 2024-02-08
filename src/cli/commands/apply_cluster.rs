@@ -6,7 +6,6 @@ use std::{
 
 use mesa::{
     cfs::{
-        self,
         configuration::mesa::r#struct::cfs_configuration_response::{
             ApiError, CfsConfigurationResponse,
         },
@@ -19,7 +18,7 @@ use serde_yaml::Value;
 
 use crate::{
     cli::commands::apply_image::validate_sat_file_images_section,
-    common::jwt_ops::get_claims_from_jwt_token,
+    common::{self, jwt_ops::get_claims_from_jwt_token},
 };
 
 pub async fn exec(
@@ -90,7 +89,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec.unwrap_or(&vec![]).iter() {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
-            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+            common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -121,12 +120,12 @@ pub async fn exec(
     let cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
-        let cfs_session_rslt = cfs::session::mesa::utils::create_from_sat_file(
+        let cfs_session_rslt = common::sat_file::create_image_from_sat_file_serde_yaml(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &cray_product_catalog,
             image_yaml,
+            &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
             tag,

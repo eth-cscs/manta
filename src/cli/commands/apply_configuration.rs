@@ -7,7 +7,7 @@ use mesa::{
 use serde_yaml::Value;
 use std::path::PathBuf;
 
-use crate::common::cfs_configuration_utils;
+use crate::common::{self, cfs_configuration_utils};
 
 /// Creates a configuration from a sat file
 /// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
@@ -76,7 +76,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
-            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+            common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

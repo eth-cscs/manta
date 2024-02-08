@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf};
 
 use mesa::{
     cfs::{
-        self,
         configuration::mesa::r#struct::cfs_configuration_response::{
             ApiError, CfsConfigurationResponse,
         },
@@ -11,6 +10,8 @@ use mesa::{
     common::kubernetes,
 };
 use serde_yaml::Value;
+
+use crate::common;
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -75,7 +76,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
-            mesa::cfs::configuration::mesa::utils::create_from_sat_file(
+            common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -101,123 +102,17 @@ pub async fn exec(
     let cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        /* let mut cfs_session = CfsSessionPostRequest::from_sat_file_serde_yaml(image_yaml).unwrap();
-
-        // Rename session name
-        cfs_session.name = cfs_session.name.replace("__DATE__", tag);
-
-        // Rename session's configuration name
-        cfs_session.configuration_name = cfs_session.configuration_name.replace("__DATE__", tag);
-
-        // Set ansible verbosity
-        cfs_session.ansible_verbosity = Some(
-            ansible_verbosity_opt
-                .cloned()
-                .unwrap_or("0".to_string())
-                .parse::<u8>()
-                .unwrap(),
-        );
-
-        // Set ansible passthrough params
-        cfs_session.ansible_passthrough = ansible_passthrough_opt.cloned();
-
-        log::debug!("CFS session creation payload:\n{:#?}", cfs_session);
-
-        let create_cfs_session_resp = cfs::session::mesa::http_client::post(
+        let image_id = common::sat_file::create_image_from_sat_file_serde_yaml(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &cfs_session,
-        )
-        .await;
-
-        log::debug!(
-            "CFS session creation response:\n{:#?}",
-            create_cfs_session_resp
-        );
-
-        if create_cfs_session_resp.is_err() {
-            eprintln!("CFS session creation failed");
-            eprintln!("Reason:\n{:#?}", create_cfs_session_resp);
-            std::process::exit(1);
-        } */
-
-        let cfs_session_rslt = cfs::session::mesa::utils::create_from_sat_file(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &cray_product_catalog,
             image_yaml,
+            &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
             tag,
         )
         .await;
-
-        /* let cfs_session = match cfs_session_rslt {
-            Ok(cfs_session) => cfs_session,
-            Err(error) => {
-                eprintln!("{}", error);
-                std::process::exit(1);
-            }
-        };
-
-        log::info!(
-            "CFS session created: {}",
-            cfs_session.name.as_ref().unwrap()
-        );
-
-        cfs_session_created_hashmap.insert(cfs_session.name.clone().unwrap(), cfs_session.clone());
-
-        // cfs_session_name_list.push(cfs_session.clone());
-
-        // Print output
-        if output_opt.is_some() && output_opt.unwrap().eq("json") {
-            println!(
-                "{}",
-                serde_json::to_string_pretty(
-                    &cfs_session_created_hashmap
-                        .values()
-                        .cloned()
-                        .collect::<Vec<CfsSessionGetResponse>>()
-                )
-                .unwrap()
-            );
-        } else {
-            cfs_session_utils::print_table_struct(
-                &cfs_session_created_hashmap.values().cloned().collect(),
-            );
-        }
-
-        // Audit to file
-        let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply image", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
-
-        if let Some(true) = watch_logs_opt {
-            log::info!("Fetching logs ...");
-
-            /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(
-                vault_base_url,
-                vault_secret_path,
-                vault_role_id,
-                &cfs_session.name,
-                None,
-                k8s_api_url,
-            )
-            .await
-            .unwrap(); */
-
-            let shasta_k8s_secrets =
-                fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
-
-            let client =
-                kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
-                    .await
-                    .unwrap();
-
-            kubernetes::print_cfs_session_logs(client, cfs_session.name.unwrap().as_str()).await;
-        } */
     }
 
     (
