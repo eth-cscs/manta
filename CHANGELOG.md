@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2024-02-09
+
+### Bug Fixes
+
+- Delete data was not filtering BOS sessiontemplate properly
+- Create bos sessiontemplate from SAT file
+
+### Features
+
+- Apply image and apply cluster subcommands now manages IMS jobs through recipes and
+- Apply configuration, apply image and apply cluster subcommands now
+- Update manta version
+
+### Refactor
+
+- Clean gitea code since it is moved to mesa
+- Clean code
+- Clean code
+- Clean code
+- Move code related to import data from SAT file to its own
+- Add tests to import images in SAT file
+- Create module for SAT code
+
 ## [1.21.3] - 2024-01-30
 
 ### Bug Fixes
@@ -14,6 +37,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.21.3
 
 ## [1.21.2] - 2024-01-29
 
