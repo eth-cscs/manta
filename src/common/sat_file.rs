@@ -46,13 +46,15 @@ pub async fn create_cfs_configuration_from_sat_file(
 ///  - image_yaml_vec: the list of images in the SAT file, each element is a serde_yaml::Value
 ///  - ref_name_processed_vec: he list of images (ref_name) already processed
 /// Note:
-/// image.base.image_ref points to the it depends on (image.ref_name)
-/// NOTE 2: because we may find images with no "ref_name", we will use the function "get_ref_name"
-/// which will fall back to "name" field if "ref_name" is missing in the image
+/// image.base.image_ref value in SAT file points to the it depends on (image.ref_name)
+/// NOTE 2: we assume that there may be a mix of images in SAT file with and without "ref_name"
+/// value, we will use the function "get_ref_name" which will fall back to "name" field if
+/// "ref_name" is missing in the image
 /// An image is ready to be processed if:
 ///  - It does not depends on another image (image.base.image_ref is missing)
 ///  - The image it depends to is already processed (image.base.image_ref included in
 ///  ref_name_processed)
+///  - It has not been already processed
 pub fn get_next_image_to_process(
     image_yaml_vec: &Vec<serde_yaml::Value>,
     ref_name_processed_vec: &Vec<String>,
@@ -60,7 +62,9 @@ pub fn get_next_image_to_process(
     image_yaml_vec
         .iter()
         .find(|image_yaml| {
-            let ref_name: &str = &get_ref_name(image_yaml);
+            let ref_name: &str = &get_ref_name(image_yaml); // Again, because we assume images in
+                                                            // SAT file may or may not have ref_name value, we will use "get_ref_name" function to
+                                                            // get the id of the image
 
             let image_base_image_ref_opt: Option<&str> =
                 image_yaml.get("base").and_then(|image_base_yaml| {
@@ -70,9 +74,10 @@ pub fn get_next_image_to_process(
                 });
 
             !ref_name_processed_vec.contains(&ref_name.to_string())
-                || image_base_image_ref_opt.is_some_and(|image_base_image_ref| {
-                    ref_name_processed_vec.contains(&image_base_image_ref.to_string())
-                })
+                && (image_base_image_ref_opt.is_none()
+                    || image_base_image_ref_opt.is_some_and(|image_base_image_ref| {
+                        ref_name_processed_vec.contains(&image_base_image_ref.to_string())
+                    }))
         })
         .cloned()
 }
@@ -96,19 +101,31 @@ pub async fn import_images_section_in_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    ref_name_processed_hashmap: &mut HashMap<String, String>,
     image_yaml_vec: Vec<serde_yaml::Value>,
     cray_product_catalog: &BTreeMap<String, String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     tag: &str,
 ) -> HashMap<String, serde_yaml::Value> {
-    // List of image.ref_name already processed
-    let mut ref_name_processed_vec: Vec<String> = Vec::new();
-
     // Get an image to process (the image either has no dependency or it's image dependency has
     // already ben processed)
-    let mut next_image_to_process_opt: Option<serde_yaml::Value> =
-        get_next_image_to_process(&image_yaml_vec, &ref_name_processed_vec);
+    let mut next_image_to_process_opt: Option<serde_yaml::Value> = get_next_image_to_process(
+        &image_yaml_vec,
+        &ref_name_processed_hashmap
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>(),
+    );
+
+    println!(
+        "DEBUG - ref name processed hashmap:\n{:#?}",
+        ref_name_processed_hashmap
+    );
+    println!(
+        "DEBUG - next image to process:\n{:#?}",
+        next_image_to_process_opt
+    );
 
     // Process images
     let mut image_processed_hashmap: HashMap<String, serde_yaml::Value> = HashMap::new();
@@ -122,17 +139,32 @@ pub async fn import_images_section_in_sat_file(
             &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
+            &ref_name_processed_hashmap,
             tag,
         )
         .await
         .unwrap();
 
-        image_processed_hashmap.insert(image_id, image_yaml.clone());
+        image_processed_hashmap.insert(image_id.clone(), image_yaml.clone());
 
-        ref_name_processed_vec.push(get_ref_name(&image_yaml));
+        ref_name_processed_hashmap.insert(get_ref_name(&image_yaml), image_id.clone());
 
-        next_image_to_process_opt =
-            get_next_image_to_process(&image_yaml_vec, &ref_name_processed_vec);
+        next_image_to_process_opt = get_next_image_to_process(
+            &image_yaml_vec,
+            &ref_name_processed_hashmap
+                .keys()
+                .cloned()
+                .collect::<Vec<String>>(),
+        );
+
+        println!(
+            "DEBUG - ref name processed hashmap:\n{:#?}",
+            ref_name_processed_hashmap
+        );
+        println!(
+            "DEBUG - next image to process:\n{:#?}",
+            next_image_to_process_opt
+        );
     }
 
     image_processed_hashmap
@@ -146,15 +178,18 @@ pub async fn create_image_from_sat_file_serde_yaml(
     cray_product_catalog: &BTreeMap<String, String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
+    ref_name_image_id_hashmap: &HashMap<String, String>,
     tag: &str,
 ) -> Result<String, ApiError> {
-    log::info!("Creating an image");
+    log::info!("Importing image");
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
     let mut name = image_yaml["name"].as_str().unwrap().to_string();
 
     // Rename session name
     name = name.replace("__DATE__", tag);
+
+    log::info!("Importing image '{}'", name);
 
     // Get CFS configuration related to CFS session in SAT file
     let mut configuration: String = image_yaml["configuration"]
@@ -198,12 +233,16 @@ pub async fn create_image_from_sat_file_serde_yaml(
         if let Some(sat_file_image_base_image_ref_value_yaml) =
             sat_file_image_base_value_yaml.get("image_ref")
         {
-            // Process image with 'image_ref' from another image in this same SAT file
-            let image_id = "TODO";
+            let image_ref: String = sat_file_image_base_image_ref_value_yaml
+                .as_str()
+                .unwrap()
+                .to_string();
 
-            return Err(ApiError::MesaError(
-                "Functionality not implemented".to_string(),
-            ));
+            // Process image with 'image_ref' from another image in this same SAT file
+            base_image_id = ref_name_image_id_hashmap
+                .get(&image_ref)
+                .unwrap()
+                .to_string();
         } else if let Some(sat_file_image_base_ims_value_yaml) =
             sat_file_image_base_value_yaml.get("ims")
         {
@@ -284,9 +323,10 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 base_image_id = ims_job["resultant_image_id"].as_str().unwrap().to_string();
             } else if ims_job_type == "image" {
                 log::info!("SAT file - IMS job type image");
-                return Err(ApiError::MesaError(
-                    "Functionality not implemented".to_string(),
-                ));
+                base_image_id = sat_file_image_base_ims_value_yaml["id"]
+                    .as_str()
+                    .unwrap()
+                    .to_string();
             } else {
                 return Err(ApiError::MesaError(
                     "Can't process 'images.base.ims' section in SAT file. Exit".to_string(),
@@ -553,7 +593,7 @@ mod tests {
                      type: recipe
                      version: "2.4.139"
                - name: final_image
-                 ref_name: base_cos_image
+                 ref_name: compute_image
                  base:
                     image_ref: base_cos_image
             "#,
@@ -582,6 +622,58 @@ mod tests {
         assert!(
             next_image_to_process_1.unwrap()["name"].as_str().unwrap() == "base_image"
                 && next_image_to_process_2.unwrap()["name"].as_str().unwrap() == "final_image"
+        );
+    }
+
+    #[test]
+    fn test_get_next_image_to_process_4() {
+        let image_yaml_vec: serde_yaml::Value = serde_yaml::from_str(
+            r#"images:
+               - name: base_image
+                 ref_name: base_cos_image
+                 base:
+                   product: 
+                     name: cos
+                     type: recipe
+                     version: "2.4.139"
+               - name: final_image
+                 ref_name: compute_image
+                 base:
+                    image_ref: base_cos_image
+            "#,
+        )
+        .unwrap();
+
+        println!(
+            "image yaml vec:\n{}",
+            serde_yaml::to_string(&image_yaml_vec).unwrap()
+        );
+
+        let mut ref_name_processed_vec: Vec<String> = Vec::new();
+
+        let next_image_to_process_1: Option<serde_yaml::Value> = get_next_image_to_process(
+            image_yaml_vec["images"].as_sequence().unwrap(),
+            &ref_name_processed_vec,
+        );
+
+        ref_name_processed_vec.push("base_cos_image".to_string());
+
+        let next_image_to_process_2: Option<serde_yaml::Value> = get_next_image_to_process(
+            image_yaml_vec["images"].as_sequence().unwrap(),
+            &ref_name_processed_vec,
+        );
+
+        ref_name_processed_vec.push("compute_image".to_string());
+
+        let next_image_to_process_3: Option<serde_yaml::Value> = get_next_image_to_process(
+            image_yaml_vec["images"].as_sequence().unwrap(),
+            &ref_name_processed_vec,
+        );
+
+        assert!(
+            next_image_to_process_1.unwrap()["name"].as_str().unwrap() == "base_image"
+                && next_image_to_process_2.unwrap()["name"].as_str().unwrap() == "final_image"
+                && next_image_to_process_3.is_none()
         );
     }
 }

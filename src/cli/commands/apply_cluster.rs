@@ -1,5 +1,6 @@
 use core::time;
 use std::{
+    collections::HashMap,
     io::{self, Write},
     path::PathBuf,
 };
@@ -12,13 +13,15 @@ use mesa::{
         session::mesa::r#struct::CfsSessionGetResponse,
     },
     common::kubernetes,
-    {capmc, hsm},
+    ims, {capmc, hsm},
 };
 use serde_yaml::Value;
 
 use crate::{
     cli::commands::apply_image::validate_sat_file_images_section,
-    common::{self, jwt_ops::get_claims_from_jwt_token},
+    common::{
+        self, jwt_ops::get_claims_from_jwt_token, sat_file::import_images_section_in_sat_file,
+    },
 };
 
 pub async fn exec(
@@ -117,7 +120,24 @@ pub async fn exec(
 
     // Process "images" section in SAT file
 
-    let cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
+    // List of image.ref_name already processed
+    let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
+
+    let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
+        import_images_section_in_sat_file(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut ref_name_processed_hashmap,
+            image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
+            &cray_product_catalog,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt,
+            tag,
+        )
+        .await;
+
+    /* let cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
 
     for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
         let cfs_session_rslt = common::sat_file::create_image_from_sat_file_serde_yaml(
@@ -152,7 +172,7 @@ pub async fn exec(
             eprintln!("CFS session creation failed.\nExit",);
             std::process::exit(1);
         } */
-    }
+    } */
 
     println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
                 // session message
@@ -163,6 +183,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        ref_name_processed_hashmap,
         hsm_group_param_opt,
         hsm_group_available_vec,
         sat_file_yaml,
@@ -218,6 +239,7 @@ pub async fn process_session_template_section_in_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    ref_name_processed_hashmap: HashMap<String, String>,
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     sat_file_yaml: Value,
@@ -230,12 +252,72 @@ pub async fn process_session_template_section_in_sat_file(
         .unwrap_or(&empty_vec);
 
     for bos_session_template_yaml in bos_session_template_list_yaml {
-        let mut bos_session_template_image_name = bos_session_template_yaml["image"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let image_details: ims::image::r#struct::Image = if let Some(bos_session_template_image) =
+            bos_session_template_yaml.get("image")
+        {
+            if let Some(bos_session_template_image_ims) = bos_session_template_image.get("ims") {
+                if let Some(bos_session_template_image_ims_name) =
+                    bos_session_template_image_ims.get("name")
+                {
+                    let bos_session_template_image_name = bos_session_template_image_ims_name
+                        .as_str()
+                        .unwrap()
+                        .to_string();
 
-        bos_session_template_image_name = bos_session_template_image_name.replace("__DATE__", tag);
+                    // Get base image details
+                    mesa::ims::image::utils::get_fuzzy(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_available_vec,
+                        Some(&bos_session_template_image_name),
+                        None,
+                    )
+                    .await
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .0
+                    .clone()
+                } else {
+                    eprintln!("ERROR: no 'image.ims.name' section in session_template.\nExit");
+                    std::process::exit(1);
+                }
+            } else if let Some(bos_session_template_image_image_ref) =
+                bos_session_template_image.get("image_ref")
+            {
+                let image_ref = bos_session_template_image_image_ref
+                    .as_str()
+                    .unwrap()
+                    .to_string();
+
+                let image_id = ref_name_processed_hashmap
+                    .get(&image_ref)
+                    .unwrap()
+                    .to_string();
+
+                // Get Image by id
+                ims::image::mesa::http_client::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(&image_id),
+                )
+                .await
+                .unwrap()
+                .first()
+                .unwrap()
+                .clone()
+            } else {
+                eprintln!("ERROR: neither 'image.ims' nor 'image.image_ref' sections found in session_template.image.\nExit");
+                std::process::exit(1);
+            }
+        } else {
+            eprintln!("ERROR: no 'image' section in session_template.\nExit");
+            std::process::exit(1);
+        };
+
+        log::info!("Image details: {:#?}", image_details);
 
         // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
@@ -275,55 +357,10 @@ pub async fn process_session_template_section_in_sat_file(
             std::process::exit(1);
         }
 
-        // Get base image details
-        let image_detail_vec = mesa::ims::image::utils::get_fuzzy(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            hsm_group_available_vec,
-            Some(&bos_session_template_image_name),
-            None,
-        )
-        .await
-        .unwrap_or(Vec::new());
-
-        if image_detail_vec.is_empty() {
-            eprintln!(
-                "Image with name '{}' not found. Exit",
-                bos_session_template_image_name
-            );
-            std::process::exit(1);
-        }
-
-        log::info!("Image name: {}", image_detail_vec.first().unwrap().0.name);
-
-        let ims_image_name = image_detail_vec.first().unwrap().0.name.to_string();
-        let ims_image_etag = image_detail_vec
-            .first()
-            .unwrap()
-            .0
-            .link
-            .as_ref()
-            .unwrap()
-            .etag
-            .as_ref()
-            .unwrap();
-        let ims_image_path = &image_detail_vec
-            .first()
-            .unwrap()
-            .0
-            .link
-            .as_ref()
-            .unwrap()
-            .path;
-        let ims_image_type = &image_detail_vec
-            .first()
-            .unwrap()
-            .0
-            .link
-            .as_ref()
-            .unwrap()
-            .r#type;
+        let ims_image_name = image_details.name.to_string();
+        let ims_image_etag = image_details.link.as_ref().unwrap().etag.as_ref().unwrap();
+        let ims_image_path = &image_details.link.as_ref().unwrap().path;
+        let ims_image_type = &image_details.link.as_ref().unwrap().r#type;
 
         let bos_session_template_name = bos_session_template_yaml["name"]
             .as_str()
@@ -533,6 +570,8 @@ pub async fn wait_cfs_session_to_complete(
                 break;
             }
         } else {
+            print!("\x1B[2K");
+            io::stdout().flush().unwrap();
             print!(
                 "\rCFS session '{}' running. Checking again in 2 secs. Attempt {} of {}",
                 cfs_session.name.as_ref().unwrap(),

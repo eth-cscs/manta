@@ -112,11 +112,15 @@ pub async fn exec(
         .await;
     } */
 
+    // List of image.ref_name already processed
+    let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
+
     let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
         import_images_section_in_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+            &mut ref_name_processed_hashmap,
             image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
             &cray_product_catalog,
             ansible_verbosity_opt,

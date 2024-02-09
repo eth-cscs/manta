@@ -753,8 +753,9 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
                     cli_apply_cluster
-                        .get_one::<u8>("ansible-verbosity")
-                        .cloned(),
+                        .get_one::<String>("ansible-verbosity")
+                        .cloned()
+                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     gitea_token,
                     &tag,
