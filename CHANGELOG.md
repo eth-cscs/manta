@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.2] - 2024-02-10
+
+### Bug Fixes
+
+- Apply cluster command failing if session_template section in SAT file was in old format
+
 ## [1.22.1] - 2024-02-10
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.1
 
 ### Refactor
 
