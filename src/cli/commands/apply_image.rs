@@ -95,23 +95,6 @@ pub async fn exec(
         cfs_configuration_hashmap.insert(cfs_configuration.name.clone(), cfs_configuration.clone());
     }
 
-    // Process CFS sessions
-    /* let cfs_session_created_hashmap: HashMap<String, CfsSessionGetResponse> = HashMap::new();
-
-    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        let image_id = common::sat_file::create_image_from_sat_file_serde_yaml(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            image_yaml,
-            &cray_product_catalog,
-            ansible_verbosity_opt,
-            ansible_passthrough_opt,
-            tag,
-        )
-        .await;
-    } */
-
     // List of image.ref_name already processed
     let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
 
@@ -128,6 +111,11 @@ pub async fn exec(
             tag,
         )
         .await;
+
+    println!(
+        "List of new image IDs: {:#?}",
+        cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
+    );
 }
 
 pub fn validate_sat_file_images_section(

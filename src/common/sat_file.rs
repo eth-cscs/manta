@@ -10,7 +10,6 @@ use mesa::{
     },
     ims::{self, recipe::r#struct::RecipeGetResponse},
 };
-use serde_json::Value;
 
 pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,
@@ -118,15 +117,6 @@ pub async fn import_images_section_in_sat_file(
             .collect::<Vec<String>>(),
     );
 
-    println!(
-        "DEBUG - ref name processed hashmap:\n{:#?}",
-        ref_name_processed_hashmap
-    );
-    println!(
-        "DEBUG - next image to process:\n{:#?}",
-        next_image_to_process_opt
-    );
-
     // Process images
     let mut image_processed_hashmap: HashMap<String, serde_yaml::Value> = HashMap::new();
 
@@ -156,15 +146,6 @@ pub async fn import_images_section_in_sat_file(
                 .cloned()
                 .collect::<Vec<String>>(),
         );
-
-        println!(
-            "DEBUG - ref name processed hashmap:\n{:#?}",
-            ref_name_processed_hashmap
-        );
-        println!(
-            "DEBUG - next image to process:\n{:#?}",
-            next_image_to_process_opt
-        );
     }
 
     image_processed_hashmap
@@ -184,12 +165,13 @@ pub async fn create_image_from_sat_file_serde_yaml(
     log::info!("Importing image");
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
-    let mut name = image_yaml["name"].as_str().unwrap().to_string();
+    let image_name = image_yaml["name"]
+        .as_str()
+        .unwrap()
+        .to_string()
+        .replace("__DATE__", tag);
 
-    // Rename session name
-    name = name.replace("__DATE__", tag);
-
-    log::info!("Importing image '{}'", name);
+    log::info!("Importing image '{}'", image_name);
 
     // Get CFS configuration related to CFS session in SAT file
     let mut configuration: String = image_yaml["configuration"]
@@ -213,123 +195,47 @@ pub async fn create_image_from_sat_file_serde_yaml(
     // Get/process base image
     if let Some(sat_file_image_ims_value_yaml) = image_yaml.get("ims") {
         // ----------- BASE IMAGE - BACKWARD COMPATIBILITY WITH PREVIOUS SAT FILE
-        log::info!("SAT file - old version");
-        if sat_file_image_ims_value_yaml
-            .get("is_recipe")
-            .is_some_and(|is_recipe_value| is_recipe_value.as_bool().unwrap() == false)
-            && sat_file_image_ims_value_yaml.get("id").is_some()
-        {
-            // Create final image from CFS session
-            base_image_id = sat_file_image_ims_value_yaml["id"]
-                .as_str()
-                .unwrap()
-                .to_string();
-        } else {
-            return Err(ApiError::MesaError(
-                "Functionality not built. Exit".to_string(),
-            ));
-        }
+        log::info!("SAT file - 'image.ims' job - previous version to create images in SAT file (for backward compatibility)");
+
+        base_image_id = process_sat_file_image_old_version(sat_file_image_ims_value_yaml).unwrap();
     } else if let Some(sat_file_image_base_value_yaml) = image_yaml.get("base") {
         if let Some(sat_file_image_base_image_ref_value_yaml) =
             sat_file_image_base_value_yaml.get("image_ref")
         {
-            let image_ref: String = sat_file_image_base_image_ref_value_yaml
-                .as_str()
-                .unwrap()
-                .to_string();
+            log::info!("SAT file - 'image.base.image_ref' job");
 
-            // Process image with 'image_ref' from another image in this same SAT file
-            base_image_id = ref_name_image_id_hashmap
-                .get(&image_ref)
-                .unwrap()
-                .to_string();
+            base_image_id = process_sat_file_image_ref_name(
+                sat_file_image_base_image_ref_value_yaml,
+                ref_name_image_id_hashmap,
+            )
+            .unwrap();
         } else if let Some(sat_file_image_base_ims_value_yaml) =
             sat_file_image_base_value_yaml.get("ims")
         {
-            log::info!("SAT file - IMS job");
+            log::info!("SAT file - 'image.base.ims' job");
             let ims_job_type = sat_file_image_base_ims_value_yaml["type"].as_str().unwrap();
             if ims_job_type == "recipe" {
-                log::info!("SAT file - IMS job type recipe");
-                // Base image is an IMS recipe
+                log::info!("SAT file - 'image.base.ims' job of type 'recipe'");
 
-                // Base image needs to be created from a IMS job using an IMS recipe
-                let recipe_name = sat_file_image_base_ims_value_yaml["name"].as_str().unwrap();
-
-                // Get all IMS recipes
-                let recipe_detail_vec: Vec<RecipeGetResponse> = ims::recipe::http_client::get(
+                base_image_id = process_sat_file_image_ims_type_recipe(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    None,
+                    sat_file_image_base_ims_value_yaml,
+                    &image_name,
                 )
                 .await
                 .unwrap();
-
-                // Filter recipes by name
-                let recipe_detail_opt = recipe_detail_vec
-                    .iter()
-                    .find(|recipe| recipe.name == recipe_name);
-
-                log::info!("IMS recipe details:\n{:#?}", recipe_detail_opt);
-
-                // Check recipe with requested name exists
-                let recipe_id = if let Some(recipe_detail) = recipe_detail_opt {
-                    recipe_detail.id.as_ref().unwrap()
-                } else {
-                    return Err(ApiError::MesaError(format!(
-                        "IMS recipe with name '{}' - not found. Exit",
-                        recipe_name
-                    )));
-                };
-
-                log::info!("IMS recipe id found '{}'", recipe_id);
-
-                // Get root public ssh key
-                let root_public_ssh_key_value: Value = ims::public_keys::http_client::get_single(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some("mgmt root key"),
-                )
-                .await
-                .unwrap();
-
-                let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
-
-                let ims_job = ims::job::r#struct::JobPostRequest {
-                    job_type: "create".to_string(),
-                    image_root_archive_name: name.clone(),
-                    kernel_file_name: Some("vmlinuz".to_string()),
-                    initrd_file_name: Some("initrd".to_string()),
-                    kernel_parameters_file_name: Some("kernel-parameters".to_string()),
-                    artifact_id: recipe_id.to_string(),
-                    public_key_id: root_public_ssh_key.to_string(),
-                    ssh_containers: None, // Should this be None ???
-                    enable_debug: Some(false),
-                    build_env_size: Some(15),
-                };
-
-                let ims_job: Value = ims::job::http_client::post_sync(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &ims_job,
-                )
-                .await
-                .unwrap();
-
-                log::info!("IMS job response:\n{:#?}", ims_job);
-
-                base_image_id = ims_job["resultant_image_id"].as_str().unwrap().to_string();
             } else if ims_job_type == "image" {
-                log::info!("SAT file - IMS job type image");
+                log::info!("SAT file - 'image.base.ims' job of type 'image'");
+
                 base_image_id = sat_file_image_base_ims_value_yaml["id"]
                     .as_str()
                     .unwrap()
                     .to_string();
             } else {
                 return Err(ApiError::MesaError(
-                    "Can't process 'images.base.ims' section in SAT file. Exit".to_string(),
+                    "Can't process SAT file 'images.base.ims' is missing. Exit".to_string(),
                 ));
             }
 
@@ -337,7 +243,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
         } else if let Some(sat_file_image_base_product_value_yaml) =
             sat_file_image_base_value_yaml.get("product")
         {
-            log::info!("SAT file - product job");
+            log::info!("SAT file - 'image.base.product' job");
             // Base image created from a cray product
             let product_name = sat_file_image_base_product_value_yaml["name"]
                 .as_str()
@@ -354,10 +260,10 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 + "s";
 
             let product_details =
-                &serde_yaml::from_str::<Value>(&cray_product_catalog[product_name]).unwrap()
-                    [product_version][product_type.clone()];
+                &serde_yaml::from_str::<serde_json::Value>(&cray_product_catalog[product_name])
+                    .unwrap()[product_version][product_type.clone()];
 
-            log::info!("Recipe details:\n{:#?}", product_details);
+            log::debug!("Recipe details:\n{:#?}", product_details);
 
             // ----------- BASE IMAGE - CRAY PRODUCT CATALOG TYPE RECIPE
             if product_type == "recipes" {
@@ -365,64 +271,25 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 // images[].base.product.id is the id of the IMS recipe used to
                 // build the new base image)
 
-                log::info!("SAT file - product job based on IMS recipe");
+                log::info!("SAT file - 'image.base.product' job based on IMS recipes");
 
-                let recipe_id: String = product_details
-                    .as_object()
-                    .unwrap()
-                    .values()
-                    .collect::<Vec<_>>()
-                    .first()
-                    .unwrap()["id"]
-                    .as_str()
-                    .unwrap()
-                    .to_string();
-
-                // Get root public ssh key
-                let root_public_ssh_key_value: Value = ims::public_keys::http_client::get_single(
+                base_image_id = process_sat_file_image_product_type_ims_recipe(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some("mgmt root key"),
+                    &product_details,
+                    &image_name,
                 )
                 .await
                 .unwrap();
 
-                let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
-
-                let ims_job = ims::job::r#struct::JobPostRequest {
-                    job_type: "create".to_string(),
-                    image_root_archive_name: name.clone(),
-                    kernel_file_name: Some("vmlinuz".to_string()),
-                    initrd_file_name: Some("initrd".to_string()),
-                    kernel_parameters_file_name: Some("kernel-parameters".to_string()),
-                    artifact_id: recipe_id,
-                    public_key_id: root_public_ssh_key.to_string(),
-                    ssh_containers: None, // Should this be None ???
-                    enable_debug: Some(false),
-                    build_env_size: Some(15),
-                };
-
-                let ims_job: Value = ims::job::http_client::post_sync(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &ims_job,
-                )
-                .await
-                .unwrap();
-
-                log::info!(
-                    "IMS job response:\n{}",
-                    serde_json::to_string_pretty(&ims_job).unwrap()
-                );
-
-                base_image_id = ims_job["resultant_image_id"].as_str().unwrap().to_string();
-
-            // ----------- BASE IMAGE - CRAY PRODUCT CATALOG TYPE IMAGE
+                // ----------- BASE IMAGE - CRAY PRODUCT CATALOG TYPE IMAGE
             } else if product_type == "images" {
                 // Base image already created and its id is available in the Cray
                 // product catalog
+
+                log::info!("SAT file - 'image.base.product' job based on IMS images");
+
                 log::info!("Getting base image id from Cray product catalog");
                 base_image_id = product_details
                     .as_object()
@@ -436,52 +303,214 @@ pub async fn create_image_from_sat_file_serde_yaml(
                     .to_string();
             } else {
                 return Err(ApiError::MesaError(
-                    "Can't process 'images.base.product' section in SAT file. Exit".to_string(),
+                    "Can't process SAT file, field 'images.base.product.type' must be either 'images' or 'recipes'. Exit".to_string(),
                 ));
             }
         } else {
             return Err(ApiError::MesaError(
-                "Can't process 'images.base' section in SAT file. Exit".to_string(),
+                "Can't process SAT file 'images.base.product' is missing. Exit".to_string(),
             ));
         }
     } else {
         return Err(ApiError::MesaError(
-            "Can't process 'images.base' section in SAT file. Exit".to_string(),
+            "Can't process SAT file 'images.base' is missing. Exit".to_string(),
         ));
     }
 
     if configuration.is_empty() {
-        log::info!(
-                        "No CFS session needs to be created since there is no CFS configuration assigned to this image"
-                    );
+        log::info!("No CFS session needs to be created since there is no CFS configuration assigned to this image");
+        println!(
+            "Image '{}' imported image_id '{}'",
+            image_name, base_image_id
+        );
         return Ok(base_image_id);
+    } else {
+        // Create a CFS session
+        log::info!("Creating CFS session");
+
+        // Create CFS session
+        let cfs_session = CfsSessionPostRequest::new(
+            image_name.clone(),
+            configuration,
+            None,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt.cloned(),
+            true,
+            Some(groups_name.to_vec()),
+            Some(base_image_id),
+        );
+
+        let cfs_session = cfs::session::mesa::http_client::post_sync(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_session,
+        )
+        .await
+        .unwrap();
+
+        let image_id = cfs_session.get_result_id().unwrap();
+        println!("Image '{}' imported image_id '{}'", image_name, image_id);
+
+        return Ok(image_id);
     }
+}
 
-    // Create a CFS session
-    log::info!("Creating CFS session");
+async fn process_sat_file_image_product_type_ims_recipe(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    product_details: &serde_json::Value,
+    image_name: &String,
+) -> Result<String, ApiError> {
+    let recipe_id: String = product_details
+        .as_object()
+        .unwrap()
+        .values()
+        .collect::<Vec<_>>()
+        .first()
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
-    // Create CFS session
-    let cfs_session = CfsSessionPostRequest::new(
-        name.clone(),
-        configuration,
-        None,
-        ansible_verbosity_opt,
-        ansible_passthrough_opt.cloned(),
-        true,
-        Some(groups_name.to_vec()),
-        Some(base_image_id),
-    );
-
-    let cfs_session = cfs::session::mesa::http_client::post_sync(
+    // Get root public ssh key
+    let root_public_ssh_key_value: serde_json::Value = ims::public_keys::http_client::get_single(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &cfs_session,
+        Some("mgmt root key"),
     )
     .await
     .unwrap();
 
-    return Ok(cfs_session.get_result_id().unwrap());
+    let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
+
+    let ims_job = ims::job::r#struct::JobPostRequest {
+        job_type: "create".to_string(),
+        image_root_archive_name: image_name.clone(),
+        kernel_file_name: Some("vmlinuz".to_string()),
+        initrd_file_name: Some("initrd".to_string()),
+        kernel_parameters_file_name: Some("kernel-parameters".to_string()),
+        artifact_id: recipe_id,
+        public_key_id: root_public_ssh_key.to_string(),
+        ssh_containers: None, // Should this be None ???
+        enable_debug: Some(false),
+        build_env_size: Some(15),
+    };
+
+    let ims_job: serde_json::Value =
+        ims::job::http_client::post_sync(shasta_token, shasta_base_url, shasta_root_cert, &ims_job)
+            .await
+            .unwrap();
+
+    Ok(ims_job["resultant_image_id"].as_str().unwrap().to_string())
+}
+
+async fn process_sat_file_image_ims_type_recipe(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    sat_file_image_base_ims_value_yaml: &serde_yaml::Value,
+    image_name: &String,
+) -> Result<String, ApiError> {
+    // Base image needs to be created from a IMS job using an IMS recipe
+    let recipe_name = sat_file_image_base_ims_value_yaml["name"].as_str().unwrap();
+
+    // Get all IMS recipes
+    let recipe_detail_vec: Vec<RecipeGetResponse> =
+        ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+            .await
+            .unwrap();
+
+    // Filter recipes by name
+    let recipe_detail_opt = recipe_detail_vec
+        .iter()
+        .find(|recipe| recipe.name == recipe_name);
+
+    log::info!("IMS recipe details:\n{:#?}", recipe_detail_opt);
+
+    // Check recipe with requested name exists
+    let recipe_id = if let Some(recipe_detail) = recipe_detail_opt {
+        recipe_detail.id.as_ref().unwrap()
+    } else {
+        return Err(ApiError::MesaError(format!(
+            "IMS recipe with name '{}' - not found. Exit",
+            recipe_name
+        )));
+    };
+
+    log::info!("IMS recipe id found '{}'", recipe_id);
+
+    // Get root public ssh key
+    let root_public_ssh_key_value: serde_json::Value = ims::public_keys::http_client::get_single(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some("mgmt root key"),
+    )
+    .await
+    .unwrap();
+
+    let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
+
+    let ims_job = ims::job::r#struct::JobPostRequest {
+        job_type: "create".to_string(),
+        image_root_archive_name: image_name.to_string(),
+        kernel_file_name: Some("vmlinuz".to_string()),
+        initrd_file_name: Some("initrd".to_string()),
+        kernel_parameters_file_name: Some("kernel-parameters".to_string()),
+        artifact_id: recipe_id.to_string(),
+        public_key_id: root_public_ssh_key.to_string(),
+        ssh_containers: None, // Should this be None ???
+        enable_debug: Some(false),
+        build_env_size: Some(15),
+    };
+
+    let ims_job: serde_json::Value =
+        ims::job::http_client::post_sync(shasta_token, shasta_base_url, shasta_root_cert, &ims_job)
+            .await
+            .unwrap();
+
+    log::info!("IMS job response:\n{:#?}", ims_job);
+
+    Ok(ims_job["resultant_image_id"].as_str().unwrap().to_string())
+}
+
+fn process_sat_file_image_old_version(
+    sat_file_image_ims_value_yaml: &serde_yaml::Value,
+) -> Result<String, ApiError> {
+    if sat_file_image_ims_value_yaml
+        .get("is_recipe")
+        .is_some_and(|is_recipe_value| is_recipe_value.as_bool().unwrap() == false)
+        && sat_file_image_ims_value_yaml.get("id").is_some()
+    {
+        // Create final image from CFS session
+        Ok(sat_file_image_ims_value_yaml["id"]
+            .as_str()
+            .unwrap()
+            .to_string())
+    } else {
+        return Err(ApiError::MesaError(
+            "Functionality not built. Exit".to_string(),
+        ));
+    }
+}
+
+fn process_sat_file_image_ref_name(
+    sat_file_image_base_image_ref_value_yaml: &serde_yaml::Value,
+    ref_name_image_id_hashmap: &HashMap<String, String>,
+) -> Result<String, ApiError> {
+    let image_ref: String = sat_file_image_base_image_ref_value_yaml
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    // Process image with 'image_ref' from another image in this same SAT file
+    Ok(ref_name_image_id_hashmap
+        .get(&image_ref)
+        .unwrap()
+        .to_string())
 }
 
 #[cfg(test)]

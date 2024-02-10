@@ -137,45 +137,10 @@ pub async fn exec(
         )
         .await;
 
-    /* let cfs_session_complete_vec: Vec<CfsSessionGetResponse> = Vec::new();
-
-    for image_yaml in image_yaml_vec_opt.unwrap_or(&vec![]) {
-        let cfs_session_rslt = common::sat_file::create_image_from_sat_file_serde_yaml(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            image_yaml,
-            &cray_product_catalog,
-            ansible_verbosity_opt,
-            ansible_passthrough_opt,
-            tag,
-        )
-        .await;
-
-        /* let cfs_session = match cfs_session_rslt {
-            Ok(cfs_session) => cfs_session,
-            Err(error) => {
-                eprintln!("{}", error);
-                std::process::exit(1);
-            }
-        };
-
-        log::info!(
-            "CFS session created: {}",
-            cfs_session.name.as_ref().unwrap()
-        );
-
-        wait_cfs_session_to_complete(shasta_token, shasta_base_url, shasta_root_cert, &cfs_session)
-            .await;
-
-        if !cfs_session.is_success() {
-            eprintln!("CFS session creation failed.\nExit",);
-            std::process::exit(1);
-        } */
-    } */
-
-    println!(); // Don't delete we do need to print an empty line here for the previous waiting CFS
-                // session message
+    log::info!(
+        "List of new image IDs: {:#?}",
+        cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
+    );
 
     // Process "session_templates" section in SAT file
 
@@ -317,7 +282,7 @@ pub async fn process_session_template_section_in_sat_file(
             std::process::exit(1);
         };
 
-        log::info!("Image details: {:#?}", image_details);
+        log::debug!("Image details: {:#?}", image_details);
 
         // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
