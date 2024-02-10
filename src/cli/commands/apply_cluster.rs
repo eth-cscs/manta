@@ -273,6 +273,25 @@ pub async fn process_session_template_section_in_sat_file(
                 .first()
                 .unwrap()
                 .clone()
+            } else if let Some(image_name_substring) = bos_session_template_image.as_str() {
+                // Backward compatibility
+                // Get base image details
+                log::info!("Looking for IMS image which name contains '{}'", image_name_substring);
+
+                mesa::ims::image::utils::get_fuzzy(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    Some(&image_name_substring),
+                    None,
+                )
+                .await
+                .unwrap()
+                .first()
+                .unwrap()
+                .0
+                .clone()
             } else {
                 eprintln!("ERROR: neither 'image.ims' nor 'image.image_ref' sections found in session_template.image.\nExit");
                 std::process::exit(1);
@@ -282,7 +301,7 @@ pub async fn process_session_template_section_in_sat_file(
             std::process::exit(1);
         };
 
-        log::debug!("Image details: {:#?}", image_details);
+        log::info!("Image found");
 
         // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
