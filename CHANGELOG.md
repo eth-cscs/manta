@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.1] - 2024-02-10
+
+### Refactor
+
+- Clean code and stdout messages
+
 ## [1.22.0] - 2024-02-09
 
 ### Bug Fixes
@@ -14,6 +20,10 @@ All notable changes to this project will be documented in this file.
 - Apply image and apply cluster subcommands now manages IMS jobs through recipes and
 - Apply configuration, apply image and apply cluster subcommands now
 - Update manta version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.0
 
 ### Refactor
 
