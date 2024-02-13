@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.7] - 2024-02-13
+
+### Bug Fixes
+
+- Fix stdout messages
+- Manta crashes:wa when CFS configuration layer had no commit id
+
 ## [1.22.6] - 2024-02-13
 
 ### Bug Fixes
 
 - Manta crashes:wa when CFS configuration layer had no commit id
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.6
 
 ## [1.22.5] - 2024-02-13
 
