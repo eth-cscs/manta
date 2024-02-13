@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.4] - 2024-02-13
+
+### Features
+
+- Update mesa version
+
 ## [1.22.3] - 2024-02-10
 
 ### Bug Fixes
 
 - Mesa crate
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.3
 
 ## [1.22.2] - 2024-02-10
 
