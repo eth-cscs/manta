@@ -49,14 +49,21 @@ pub async fn exec(
             let mut layers: Vec<Layer> = vec![];
 
             for layer in &most_recent_cfs_configuration.layers {
-                let gitea_commit_details = gitea::http_client::get_commit_details(
-                    &layer.clone_url,
-                    layer.commit.as_ref().unwrap(),
-                    gitea_token,
-                    shasta_root_cert,
-                )
-                .await
-                .unwrap();
+                let commit_id_opt = layer.commit.as_ref();
+
+                let gitea_commit_details: serde_json::Value = if let Some(commit_id) = commit_id_opt
+                {
+                    gitea::http_client::get_commit_details(
+                        &layer.clone_url,
+                        commit_id,
+                        gitea_token,
+                        shasta_root_cert,
+                    )
+                    .await
+                    .unwrap_or(serde_json::json!({}))
+                } else {
+                    serde_json::json!({})
+                };
 
                 layers.push(Layer::new(
                     &layer.name,
@@ -64,11 +71,15 @@ pub async fn exec(
                         .clone_url
                         .trim_start_matches("https://api.cmn.alps.cscs.ch")
                         .trim_end_matches(".git"),
-                    layer.commit.as_ref().unwrap(),
-                    gitea_commit_details["commit"]["committer"]["name"]
+                    layer.commit.as_ref().unwrap_or(&"Not defined".to_string()),
+                    gitea_commit_details
+                        .pointer("commit/committer/name")
+                        .unwrap_or(&serde_json::json!("Not defined"))
                         .as_str()
                         .unwrap(),
-                    gitea_commit_details["commit"]["committer"]["date"]
+                    gitea_commit_details
+                        .pointer("commit/committer/date")
+                        .unwrap_or(&serde_json::json!("Not defined"))
                         .as_str()
                         .unwrap(),
                 ));
