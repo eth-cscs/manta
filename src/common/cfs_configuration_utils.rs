@@ -66,7 +66,10 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
 
             layers = format!(
                 "COMMIT: {} NAME: {}",
-                layers_json[0].commit.as_ref().unwrap(),
+                layers_json[0]
+                    .commit
+                    .as_ref()
+                    .unwrap_or(&"Not defined".to_string()),
                 layers_json[0].name
             );
 
