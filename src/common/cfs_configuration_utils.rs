@@ -58,7 +58,6 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     table.set_header(vec!["Config Name", "Last updated", "Layers"]);
 
     for cfs_configuration in cfs_configurations {
-        println!("DEBUG - CFS configuration: {:#?}", cfs_configuration);
         let mut layers: String = String::new();
 
         if !cfs_configuration.layers.is_empty() {
@@ -74,7 +73,6 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
             );
 
             for layer in layers_json.iter().skip(1) {
-                println!("DEBUG - layer: {:#?}", layer);
                 layers = format!(
                     "{}\nCOMMIT: {} NAME: {}",
                     layers,
