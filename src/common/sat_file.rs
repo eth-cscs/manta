@@ -45,7 +45,7 @@ pub async fn create_cfs_configuration_from_sat_file(
 ///  - image_yaml_vec: the list of images in the SAT file, each element is a serde_yaml::Value
 ///  - ref_name_processed_vec: he list of images (ref_name) already processed
 /// Note:
-/// image.base.image_ref value in SAT file points to the it depends on (image.ref_name)
+/// image.base.image_ref value in SAT file points to the image it depends on (image.ref_name)
 /// NOTE 2: we assume that there may be a mix of images in SAT file with and without "ref_name"
 /// value, we will use the function "get_ref_name" which will fall back to "name" field if
 /// "ref_name" is missing in the image
@@ -348,6 +348,14 @@ pub async fn create_image_from_sat_file_serde_yaml(
         )
         .await
         .unwrap();
+
+        if !cfs_session.is_success() {
+            eprintln!(
+                "Error: CFS session '{}' failed. Exit",
+                cfs_session.name.unwrap()
+            );
+            std::process::exit(1);
+        }
 
         let image_id = cfs_session.get_result_id().unwrap();
         println!("Image '{}' imported image_id '{}'", image_name, image_id);
