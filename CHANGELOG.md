@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.9] - 2024-02-16
+
+### Bug Fixes
+
+- Show_config function breaks if the list of HSM groups the user has access to is empty
+
 ## [1.22.8] - 2024-02-15
 
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.8
 
 ## [1.22.7] - 2024-02-13
 
