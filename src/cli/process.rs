@@ -916,20 +916,22 @@ pub async fn process_cli(
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
                 let hsm_group_name_arg_opt = cli_update_node.get_one::<String>("HSM_GROUP_NAME");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
+                if hsm_group_name_arg_opt.is_some() {
+                    get_target_hsm_group_vec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+                }
 
                 update_node::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_vec.first(),
+                    hsm_group_name_arg_opt,
                     cli_update_node.get_one::<String>("boot-image"),
                     cli_update_node.get_one::<String>("desired-configuration"),
                     cli_update_node
