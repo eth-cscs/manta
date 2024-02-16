@@ -79,7 +79,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
-        .unwrap()
+        .unwrap_or(&serde_json::json!([]))
         .as_array()
         .unwrap_or(&Vec::new())
         .iter()
