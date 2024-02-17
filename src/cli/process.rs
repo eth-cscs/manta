@@ -714,7 +714,10 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     // base_image_id,
-                    cli_apply_image.get_one::<u8>("ansible-verbosity").cloned(),
+                    cli_apply_image
+                        .get_one::<String>("ansible-verbosity")
+                        .cloned()
+                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     cli_apply_image.get_one::<String>("ansible-passthrough"),
                     cli_apply_image.get_one::<bool>("watch-logs"),
                     &tag,
