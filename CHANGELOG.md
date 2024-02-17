@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.10] - 2024-02-17
+
+### Bug Fixes
+
+- Command update node fails if user is not restricted to any HSM groups
+- Fix error parsing cli opn 'ansible-verbosity' to 'apply image' subcommand
+
 ## [1.22.9] - 2024-02-16
 
 ### Bug Fixes
 
 - Show_config function breaks if the list of HSM groups the user has access to is empty
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.9
 
 ## [1.22.8] - 2024-02-15
 
