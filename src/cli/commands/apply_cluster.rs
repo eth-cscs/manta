@@ -138,7 +138,7 @@ pub async fn exec(
         .await;
 
     log::info!(
-        "List of new image IDs: {:#?}",
+        "List of new image IDs: {:?}",
         cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
     );
 
@@ -274,24 +274,32 @@ pub async fn process_session_template_section_in_sat_file(
                 .unwrap()
                 .clone()
             } else if let Some(image_name_substring) = bos_session_template_image.as_str() {
+                let image_name = image_name_substring.replace("__DATE__", tag);
+
                 // Backward compatibility
                 // Get base image details
-                log::info!("Looking for IMS image which name contains '{}'", image_name_substring);
+                log::info!("Looking for IMS image which name contains '{}'", image_name);
 
-                mesa::ims::image::utils::get_fuzzy(
+                let image_vec = mesa::ims::image::utils::get_fuzzy(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     hsm_group_available_vec,
-                    Some(&image_name_substring),
+                    Some(&image_name),
                     None,
                 )
                 .await
-                .unwrap()
-                .first()
-                .unwrap()
-                .0
-                .clone()
+                .unwrap();
+
+                if image_vec.is_empty() {
+                    eprintln!(
+                        "ERROR: Could not find an image which name contains '{}'. Exit",
+                        image_name
+                    );
+                    std::process::exit(1);
+                };
+
+                image_vec.first().unwrap().0.clone()
             } else {
                 eprintln!("ERROR: neither 'image.ims' nor 'image.image_ref' sections found in session_template.image.\nExit");
                 std::process::exit(1);
