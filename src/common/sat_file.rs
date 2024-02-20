@@ -18,7 +18,7 @@ pub async fn create_cfs_configuration_from_sat_file(
     gitea_token: &str,
     cray_product_catalog: &BTreeMap<String, String>,
     sat_file_configuration_yaml: &serde_yaml::Value,
-    tag: &str,
+    // tag: &str,
 ) -> Result<CfsConfigurationResponse, ApiError> {
     let mut cfs_configuration = mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest::from_sat_file_serde_yaml(
         shasta_root_cert,
@@ -29,7 +29,7 @@ pub async fn create_cfs_configuration_from_sat_file(
     .await;
 
     // Rename configuration name
-    cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
+    // cfs_configuration.name = cfs_configuration.name.replace("__DATE__", tag);
 
     mesa::cfs::configuration::mesa::utils::create(
         shasta_token,
@@ -105,7 +105,7 @@ pub async fn import_images_section_in_sat_file(
     cray_product_catalog: &BTreeMap<String, String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
-    tag: &str,
+    // tag: &str,
 ) -> HashMap<String, serde_yaml::Value> {
     // Get an image to process (the image either has no dependency or it's image dependency has
     // already ben processed)
@@ -130,7 +130,7 @@ pub async fn import_images_section_in_sat_file(
             ansible_verbosity_opt,
             ansible_passthrough_opt,
             &ref_name_processed_hashmap,
-            tag,
+            // tag,
         )
         .await
         .unwrap();
@@ -160,27 +160,28 @@ pub async fn create_image_from_sat_file_serde_yaml(
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     ref_name_image_id_hashmap: &HashMap<String, String>,
-    tag: &str,
+    // tag: &str,
 ) -> Result<String, ApiError> {
     log::info!("Importing image");
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
-    let image_name = image_yaml["name"]
-        .as_str()
-        .unwrap()
-        .to_string()
-        .replace("__DATE__", tag);
+    let image_name = image_yaml["name"].as_str().unwrap().to_string();
+    // let image_name = image_yaml["name"]
+    //     .as_str()
+    //     .unwrap()
+    //     .to_string()
+    //     .replace("__DATE__", tag);
 
     log::info!("Importing image '{}'", image_name);
 
     // Get CFS configuration related to CFS session in SAT file
-    let mut configuration: String = image_yaml["configuration"]
+    let configuration: String = image_yaml["configuration"]
         .as_str()
         .unwrap_or_default()
         .to_string();
 
     // Rename session's configuration name
-    configuration = configuration.replace("__DATE__", tag);
+    // configuration = configuration.replace("__DATE__", tag);
 
     // Get HSM groups related to CFS session in SAT file
     let groups_name: Vec<String> = image_yaml["configuration_group_names"]

@@ -603,15 +603,16 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let tag = if let Some(input_tag) = cli_apply_configuration.get_one::<String>("tag")
-                {
-                    input_tag.clone()
-                } else {
-                    chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                };
+                // let tag = if let Some(input_tag) = cli_apply_configuration.get_one::<String>("tag")
+                // {
+                //     input_tag.clone()
+                // } else {
+                //     chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+                // };
 
                 let _ = apply_configuration::exec(
                     cli_apply_configuration.get_one("file").unwrap(),
+                    cli_apply_configuration.get_one("values-file"),
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -620,7 +621,7 @@ pub async fn process_cli(
                     vault_role_id,
                     k8s_api_url,
                     gitea_token,
-                    &tag,
+                    // &tag,
                     cli_apply_configuration.get_one::<String>("output"),
                 )
                 .await;
@@ -699,17 +700,18 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let tag = if let Some(input_tag) = cli_apply_image.get_one::<String>("tag") {
+                /* let tag = if let Some(input_tag) = cli_apply_image.get_one::<String>("tag") {
                     input_tag.clone()
                 } else {
                     chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                };
+                }; */
 
                 apply_image::exec(
                     vault_base_url,
                     vault_secret_path,
                     vault_role_id,
                     cli_apply_image.get_one("file").unwrap(),
+                    cli_apply_image.get_one("values-file"),
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -720,7 +722,7 @@ pub async fn process_cli(
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     cli_apply_image.get_one::<String>("ansible-passthrough"),
                     cli_apply_image.get_one::<bool>("watch-logs"),
-                    &tag,
+                    // &tag,
                     &hsm_group_available_vec,
                     k8s_api_url,
                     gitea_token,
@@ -737,11 +739,11 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let tag = if let Some(input_tag) = cli_apply_cluster.get_one::<String>("tag") {
+                /* let tag = if let Some(input_tag) = cli_apply_cluster.get_one::<String>("tag") {
                     input_tag.clone()
                 } else {
                     chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                };
+                }; */
 
                 apply_cluster::exec(
                     shasta_token,
@@ -752,6 +754,7 @@ pub async fn process_cli(
                     vault_role_id,
                     k8s_api_url,
                     cli_apply_cluster.get_one("file").unwrap(),
+                    cli_apply_cluster.get_one("values-file"),
                     // base_image_id,
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
@@ -761,7 +764,7 @@ pub async fn process_cli(
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
                     gitea_token,
-                    &tag,
+                    // &tag,
                     *cli_apply_cluster
                         .get_one::<bool>("do-not-reboot")
                         .unwrap_or(&false),

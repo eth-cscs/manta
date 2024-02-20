@@ -415,30 +415,6 @@ pub fn subcommand_apply_hw_configuration() -> Command {
         )
 }
 
-pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
-    let mut apply_configuration = Command::new("configuration")
-        .aliases(["conf", "config"])
-        .arg_required_else_help(true)
-        .about("Create a CFS configuration")
-        .arg(arg!(-f --file <SAT_FILE> "SAT file with configuration details").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
-        // .arg(arg!(-n --name <VALUE> "Configuration name"))
-        // .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
-        // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
-        // .group(ArgGroup::new("req_flag_file").arg("file"))
-        ;
-
-    match hsm_group {
-        Some(_) => {}
-        None => apply_configuration = apply_configuration.arg(
-            arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"),
-        ),
-    };
-
-    apply_configuration
-}
-
 pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     let mut apply_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess", "sssn"])
@@ -473,6 +449,31 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
     apply_session
 }
 
+pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
+    let mut apply_configuration = Command::new("configuration")
+        .aliases(["conf", "config"])
+        .arg_required_else_help(true)
+        .about("Create a CFS configuration")
+        .arg(arg!(-f --"file" <SAT_FILE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
+        .arg(arg!(-V --"values-file" <SESSION_VARS_FILE> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
+        // .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        // .arg(arg!(-n --name <VALUE> "Configuration name"))
+        // .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
+        // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
+        // .group(ArgGroup::new("req_flag_file").arg("file"))
+        ;
+
+    match hsm_group {
+        Some(_) => {}
+        None => apply_configuration = apply_configuration.arg(
+            arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"),
+        ),
+    };
+
+    apply_configuration
+}
+
 /// Creates an image based on a list of Ansible scripts (CFS layers) and assigns the image to a HSM
 /// group.
 /// Returns: the image id.
@@ -483,8 +484,9 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
         .aliases(["i", "img", "imag"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration and a CFS image")
-        .arg(arg!(-f --file <SAT_FILE> "SAT file with the CFS configuration and CFS image details").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
+        .arg(arg!(-f --"file" <SAT_FILE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
+        .arg(arg!(-V --"values-file" <SESSION_VARS_FILE> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
+        // .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
         /* .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
            .value_parser(value_parser!(PathBuf))) */
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -503,9 +505,10 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
         .aliases(["clus","clstr"])
         .arg_required_else_help(true)
         .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
-        .arg(arg!(-f --file <SAT_FILE> "SAT file with CFS configuration, CFS image and BOS session template details").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-f --"file" <SAT_FILE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
+        .arg(arg!(-V --"values-file" <SESSION_VARS_FILE> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
         .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot."))
-        .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
+        // .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["1", "2", "3", "4"])
             .num_args(1)
@@ -671,7 +674,6 @@ pub fn subcommand_migrate_restore() -> Command {
         .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored."))
         .arg(arg!(-p --"pre-hook" <SCRIPT> "Script to run before restoring the backup."))
         .arg(arg!(-a --"post-hook" <SCRIPT> "Script to run immediately after the backup is successfully restored."))
-
 }
 
 pub fn subcommand_power() -> Command {

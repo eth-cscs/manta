@@ -15,7 +15,8 @@ use crate::common::{self, cfs_configuration_utils};
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 /// Return CFS configuration name
 pub async fn exec(
-    path_file: &PathBuf,
+    sat_file_path: &PathBuf,
+    values_file_path_opt: Option<&PathBuf>,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -24,11 +25,33 @@ pub async fn exec(
     vault_role_id: &str,
     k8s_api_url: &str,
     gitea_token: &str,
-    tag: &str,
+    // tag: &str,
     output_opt: Option<&String>,
 ) -> anyhow::Result<Vec<String>> {
-    let file_content = std::fs::read_to_string(path_file).expect("SAT file not found. Exit");
-    let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
+    let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+
+    let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
+        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
+        // TEMPLATE
+        // Read sesson vars file
+        let session_vars_file_content = std::fs::read_to_string(session_vars_file_path).unwrap();
+        let session_vars_file_yaml: Value =
+            serde_yaml::from_str(&session_vars_file_content).unwrap();
+
+        // Render SAT file template
+        let env = minijinja::Environment::new();
+        let sat_file_rendered = env
+            .render_str(&file_content, session_vars_file_yaml)
+            .unwrap();
+
+        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
+
+        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
+    } else {
+        serde_yaml::from_str(&file_content).unwrap()
+    };
+
+    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let mut cfs_configuration_value_vec = Vec::new();
 
@@ -83,7 +106,7 @@ pub async fn exec(
                 gitea_token,
                 &cray_product_catalog,
                 configuration_yaml,
-                tag,
+                // tag,
             )
             .await;
 
