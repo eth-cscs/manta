@@ -11,19 +11,30 @@ pub async fn exec(
     vault_role_id: &str,
     k8s_api_url: &str,
     hsm_name_vec: &[String],
-    session_name: Option<&String>,
+    session_name_opt: Option<&String>,
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let mut cfs_sessions_resp = mesa::cfs::session::mesa::http_client::get(
+    let cfs_sessions_resp_opt = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        session_name,
+        session_name_opt,
         None,
     )
-    .await
-    .unwrap();
+    .await;
+
+    let mut cfs_sessions_resp = match cfs_sessions_resp_opt {
+        Ok(cfs_sessions_resp) => cfs_sessions_resp,
+        Err(error) => {
+            eprintln!(
+                "ERROR: CFS session '{}' not found.\nReason: {:#?}\nExit",
+                session_name_opt.unwrap(),
+                error
+            );
+            std::process::exit(1);
+        }
+    };
 
     mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
@@ -57,7 +68,7 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         hsm_group_config,
-        session_name,
+        session_name_opt,
         &cfs_sessions_resp,
     )
     .await;
