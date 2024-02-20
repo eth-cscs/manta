@@ -20,7 +20,9 @@ use serde_yaml::Value;
 use crate::{
     cli::commands::apply_image::validate_sat_file_images_section,
     common::{
-        self, jwt_ops::get_claims_from_jwt_token, sat_file::import_images_section_in_sat_file,
+        self,
+        jwt_ops::get_claims_from_jwt_token,
+        sat_file::{self, import_images_section_in_sat_file},
     },
 };
 
@@ -32,17 +34,52 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    path_file: &PathBuf,
+    sat_file_path: &PathBuf,
+    values_file_path_opt: Option<&PathBuf>,
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     gitea_token: &str,
-    tag: &str,
+    // tag: &str,
     do_not_reboot: bool,
 ) {
-    let file_content = std::fs::read_to_string(path_file).unwrap();
-    let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
+    let sat_file_content: String =
+        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+
+    let values_file_content_opt = values_file_path_opt
+        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
+
+    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+        &sat_file_content,
+        values_file_content_opt.as_ref(),
+        Some(Vec::new()),
+    );
+
+    /* let file_content = std::fs::read_to_string(sat_file_path).unwrap();
+
+    let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
+        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
+        // TEMPLATE
+        // Read sesson vars file
+        let session_vars_file_content = std::fs::read_to_string(session_vars_file_path).unwrap();
+        let session_vars_file_yaml: Value =
+            serde_yaml::from_str(&session_vars_file_content).unwrap();
+
+        // Render SAT file template
+        let env = minijinja::Environment::new();
+        let sat_file_rendered = env
+            .render_str(&file_content, session_vars_file_yaml)
+            .unwrap();
+
+        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
+
+        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
+    } else {
+        serde_yaml::from_str(&file_content).unwrap()
+    }; */
+
+    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     // Get hardware pattern from SAT YAML file
     let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
@@ -99,7 +136,7 @@ pub async fn exec(
                 gitea_token,
                 &cray_product_catalog,
                 configuration_yaml,
-                tag,
+                // tag,
             )
             .await;
 
@@ -133,7 +170,7 @@ pub async fn exec(
             &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
-            tag,
+            // tag,
         )
         .await;
 
@@ -152,7 +189,7 @@ pub async fn exec(
         hsm_group_param_opt,
         hsm_group_available_vec,
         sat_file_yaml,
-        &tag,
+        // &tag,
         do_not_reboot,
     )
     .await;
@@ -208,7 +245,7 @@ pub async fn process_session_template_section_in_sat_file(
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     sat_file_yaml: Value,
-    tag: &str,
+    // tag: &str,
     do_not_reboot: bool,
 ) {
     let empty_vec = Vec::new();
@@ -274,7 +311,8 @@ pub async fn process_session_template_section_in_sat_file(
                 .unwrap()
                 .clone()
             } else if let Some(image_name_substring) = bos_session_template_image.as_str() {
-                let image_name = image_name_substring.replace("__DATE__", tag);
+                let image_name = image_name_substring;
+                // let image_name = image_name_substring.replace("__DATE__", tag);
 
                 // Backward compatibility
                 // Get base image details
@@ -315,8 +353,9 @@ pub async fn process_session_template_section_in_sat_file(
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
             .as_str()
             .unwrap()
-            .to_string()
-            .replace("__DATE__", tag);
+            .to_string();
+
+        // bos_session_template_configuration_name.replace("__DATE__", tag);
 
         log::info!(
             "Looking for CFS configuration with name: {}",
@@ -357,8 +396,9 @@ pub async fn process_session_template_section_in_sat_file(
         let bos_session_template_name = bos_session_template_yaml["name"]
             .as_str()
             .unwrap_or("")
-            .to_string()
-            .replace("__DATE__", tag);
+            .to_string();
+
+        // bos_session_template_name.replace("__DATE__", tag);
 
         let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
             bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
