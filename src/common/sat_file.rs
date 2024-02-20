@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::PathBuf,
+};
 
 use mesa::{
     cfs::{
@@ -10,6 +13,55 @@ use mesa::{
     },
     ims::{self, recipe::r#struct::RecipeGetResponse},
 };
+use minijinja::context;
+use serde_yaml::Value;
+
+pub fn render_jinja2_sat_file_yaml(
+    sat_file_content: &String,
+    values_file_content_opt: Option<&String>,
+    value_option_vec_opt: Option<Vec<String>>,
+) -> Value {
+    /* let mut sat_file_yaml: String;
+
+    let env = minijinja::Environment::new();
+    let template = env.template_from_str(&sat_file_content).unwrap();
+
+    if let Some(value_option_vec) = value_option_vec_opt {
+        for value_option in value_option_vec {
+            // let key_value_vec: Vec<&str> = value_option.split("=").collect::<Vec<_>>();
+
+            // let key = key_value_vec[0];
+            // let value = key_value_vec[1];
+            let value: Value = serde_yaml::from_str(&value_option).unwrap();
+
+            println!("DEBUG - value: {:#?}", value);
+
+            let sat_file_rendered = template..render(value).unwrap();
+            println!("DEBUG - template:\n{:#?}", sat_file_rendered);
+        }
+
+        sat_file_yaml = "xxxx".to_string();
+    }; */
+
+    let sat_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
+        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
+        // TEMPLATE
+        // Read sesson vars file
+        let values_file_yaml: Value = serde_yaml::from_str(&values_file_content).unwrap();
+
+        // Render SAT file template
+        let env = minijinja::Environment::new();
+        let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
+
+        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
+
+        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
+    } else {
+        serde_yaml::from_str(&sat_file_content).unwrap()
+    };
+
+    sat_file_yaml
+}
 
 pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,
@@ -524,7 +576,9 @@ fn process_sat_file_image_ref_name(
 
 #[cfg(test)]
 mod tests {
-    use crate::common::sat_file::{get_next_image_to_process, get_ref_name};
+    use crate::common::sat_file::{
+        get_next_image_to_process, get_ref_name, render_jinja2_sat_file_yaml,
+    };
 
     /// Test function "get_ref_name" so it falls back to "name" field if "ref_name" is missing
     #[test]
@@ -712,6 +766,89 @@ mod tests {
             next_image_to_process_1.unwrap()["name"].as_str().unwrap() == "base_image"
                 && next_image_to_process_2.unwrap()["name"].as_str().unwrap() == "final_image"
                 && next_image_to_process_3.is_none()
+        );
+    }
+
+    #[test]
+    fn test_get_sat_file_yaml() {
+        let sat_file_content = r#"
+        name: "{{ name }}"
+        configurations:
+        - name: "{{ config.name }}-{{ config.version }}"
+          layers:
+          - name: ss11
+            playbook: shs_cassini_install.yml
+            git:
+              url: https://api-gw-service-nmn.local/vcs/cray/slingshot-host-software-config-management.git
+              branch: integration
+          - name: cos
+            playbook: site.yml
+            product:
+              name: cos
+              version: 2.3.101
+              branch: integration
+          - name: cscs
+            playbook: site.yml
+            git:
+              url: https://api-gw-service-nmn.local/vcs/cray/cscs-config-management.git
+              branch: cscs-23.06.0
+          - name: nomad-orchestrator
+            playbook: site-client.yml
+            git:
+              url: https://api-gw-service-nmn.local/vcs/cray/nomad_orchestrator.git
+              branch: main
+        images:
+        - name: zinal-nomad-{{ image.version }}
+          ims:
+            is_recipe: false
+            id: 4bf91021-8d99-4adf-945f-46de2ff50a3d
+          configuration: "{{ config.name }}-{{ config.version }}"
+          configuration_group_names:
+          - Compute
+          - "{{ hsm.group_name }}"
+
+        session_templates:
+        - name: "{{ bos_st.name }}"
+          image: zinal-image-v0.5
+          configuration: "{{ config.name }}-{{ config.version }}"
+          bos_parameters:
+            boot_sets:
+              compute:
+                kernel_parameters: ip=dhcp quiet spire_join_token=${SPIRE_JOIN_TOKEN}
+                node_groups:
+                - "{{ hsm.group_name }}"
+        "#;
+
+        let values_file_content = r#"
+        hsm:
+          group_name: "zinal_cta"
+        config:
+          name: "test-config"
+          version: "v1.0.0"
+        image:
+          version: "v1.0.5"
+        bos_st:
+          name: "deploy-cluster-action"
+          version: "v1.0"
+        "#;
+
+        let var_content = vec![
+            "name: testing".to_string(),
+            "name: config: testing".to_string(),
+        ];
+
+        /* let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(sat_file_content).unwrap();
+        let mut values_file_yaml: serde_yaml::Mapping =
+            serde_yaml::from_str(values_file_content).unwrap();
+        println!("DEBUG - mapping:\n{:#?}", values_file_yaml);
+        for map in values_file_yaml.iter() {
+            println!("DEBUG - map: {:#?}", map);
+        } */
+
+        render_jinja2_sat_file_yaml(
+            &sat_file_content.to_string(),
+            Some(&values_file_content.to_string()),
+            Some(var_content),
         );
     }
 }

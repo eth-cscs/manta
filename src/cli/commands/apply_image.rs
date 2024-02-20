@@ -8,7 +8,10 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::common::{self, sat_file::import_images_section_in_sat_file};
+use crate::common::{
+    self,
+    sat_file::{self, import_images_section_in_sat_file},
+};
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -32,7 +35,19 @@ pub async fn exec(
     gitea_token: &str,
     output_opt: Option<&String>,
 ) {
-    let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+    let sat_file_content: String =
+        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+
+    let values_file_content_opt = values_file_path_opt
+        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
+
+    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+        &sat_file_content,
+        values_file_content_opt.as_ref(),
+        Some(Vec::new()),
+    );
+
+    /* let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
 
     let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
@@ -53,7 +68,7 @@ pub async fn exec(
         serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
     } else {
         serde_yaml::from_str(&file_content).unwrap()
-    };
+    }; */
 
     // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 

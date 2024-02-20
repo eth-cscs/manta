@@ -7,7 +7,7 @@ use mesa::{
 use serde_yaml::Value;
 use std::path::PathBuf;
 
-use crate::common::{self, cfs_configuration_utils};
+use crate::common::{self, cfs_configuration_utils, sat_file};
 
 /// Creates a configuration from a sat file
 /// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
@@ -28,28 +28,40 @@ pub async fn exec(
     // tag: &str,
     output_opt: Option<&String>,
 ) -> anyhow::Result<Vec<String>> {
-    let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+    let sat_file_content: String =
+        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
 
-    let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
+    let values_file_content_opt = values_file_path_opt
+        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
+
+    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+        &sat_file_content,
+        values_file_content_opt.as_ref(),
+        Some(Vec::new()),
+    );
+
+    /* let sat_file_content: String = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+
+    let sat_file_yaml: Value = if let Some(values_file_path) = values_file_path_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
         // TEMPLATE
         // Read sesson vars file
-        let session_vars_file_content = std::fs::read_to_string(session_vars_file_path).unwrap();
-        let session_vars_file_yaml: Value =
-            serde_yaml::from_str(&session_vars_file_content).unwrap();
+        let values_file_string = std::fs::read_to_string(values_file_path).unwrap();
+        let values_file_yaml: Value =
+            serde_yaml::from_str(&values_file_string).unwrap();
 
         // Render SAT file template
         let env = minijinja::Environment::new();
         let sat_file_rendered = env
-            .render_str(&file_content, session_vars_file_yaml)
+            .render_str(&sat_file_content, values_file_yaml)
             .unwrap();
 
         log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
 
         serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
     } else {
-        serde_yaml::from_str(&file_content).unwrap()
-    };
+        serde_yaml::from_str(&sat_file_content).unwrap()
+    }; */
 
     // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
