@@ -2,12 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.11] - 2024-02-20
+
+### Bug Fixes
+
+- Bug with manta panicking while creating a cluster if image creation fails
+- Error when getting CFS session logs using a CFS session which does not exists
+- Update mesa library
+
 ## [1.22.10] - 2024-02-17
 
 ### Bug Fixes
 
 - Command update node fails if user is not restricted to any HSM groups
 - Fix error parsing cli opn 'ansible-verbosity' to 'apply image' subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.10
 
 ## [1.22.9] - 2024-02-16
 
