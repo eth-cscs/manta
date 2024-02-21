@@ -21,44 +21,41 @@ pub fn render_jinja2_sat_file_yaml(
     values_file_content_opt: Option<&String>,
     value_option_vec_opt: Option<Vec<String>>,
 ) -> Value {
-    /* let mut sat_file_yaml: String;
-
-    let env = minijinja::Environment::new();
-    let template = env.template_from_str(&sat_file_content).unwrap();
-
     if let Some(value_option_vec) = value_option_vec_opt {
         for value_option in value_option_vec {
-            // let key_value_vec: Vec<&str> = value_option.split("=").collect::<Vec<_>>();
+            let key_value_vec: Vec<&str> = value_option.split("=").collect();
+            let key = key_value_vec.first().unwrap();
+            let value = key_value_vec.last().unwrap();
+            let key_parts_vec: Vec<&str> = key.split(".").collect();
 
-            // let key = key_value_vec[0];
-            // let value = key_value_vec[1];
-            let value: Value = serde_yaml::from_str(&value_option).unwrap();
-
-            println!("DEBUG - value: {:#?}", value);
-
-            let sat_file_rendered = template..render(value).unwrap();
-            println!("DEBUG - template:\n{:#?}", sat_file_rendered);
+            for key in key_parts_vec {
+                println!("key: {}", key);
+                if let Some(context_value) = values_file_yaml.get(key) {
+                    println!("key '{}' in values/context file", key);
+                } else {
+                    println!("key '{}' not in values/context file", key)
+                }
+            }
         }
+    }
 
-        sat_file_yaml = "xxxx".to_string();
-    }; */
-
-    let sat_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
+    let values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
         // TEMPLATE
         // Read sesson vars file
         let values_file_yaml: Value = serde_yaml::from_str(&values_file_content).unwrap();
 
-        // Render SAT file template
-        let env = minijinja::Environment::new();
-        let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
-
-        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
-
-        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
     } else {
         serde_yaml::from_str(&sat_file_content).unwrap()
     };
+
+    // Render SAT file template
+    let env = minijinja::Environment::new();
+    let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
+
+    log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
+
+    let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
 
     sat_file_yaml
 }
