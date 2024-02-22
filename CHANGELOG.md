@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.14] - 2024-02-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.14
+
 ## [1.22.13] - 2024-02-22
 
 ### Bug Fixes
