@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    path::PathBuf,
-};
+use std::collections::{BTreeMap, HashMap};
 
 use mesa::{
     cfs::{
@@ -13,7 +10,6 @@ use mesa::{
     },
     ims::{self, recipe::r#struct::RecipeGetResponse},
 };
-use minijinja::context;
 use serde::de::Error;
 use serde_yaml::{Mapping, Value};
 
@@ -36,6 +32,7 @@ use serde_yaml::{Mapping, Value};
 /// ```
 /// key_1
 ///   key_1_1: new_value_1_1
+///   key_1_2: value_1_2
 ///   key_1_3: new_value_1_3
 /// key_2: new_value_2
 /// key_4: new_value_4
@@ -46,30 +43,28 @@ use serde_yaml::{Mapping, Value};
 /// ```
 /// key_1
 ///   key_1_1: new_value_1_1
-///   key_1_2: value_1_2
 ///   key_1_3: new_value_1_3
 /// key_2: new_value_2
 /// key_3: value_3
 /// key_4: new_value_4
 /// ```
-fn merge_yaml(a: &mut Value, b: &Value) {
-    match (a, b) {
-        // If both values are mappings, iterate through the second mapping
-        // and insert its values into the first, effectively overwriting
-        // any existing keys with the new values.
-        (Value::Mapping(a_map), Value::Mapping(b_map)) => {
-            for (k, v) in b_map {
-                a_map.insert(k.clone(), v.clone());
+fn merge_yaml(mut base: Value, merge: Value) -> Option<Value> {
+    match (base, merge) {
+        (Value::Mapping(mut base_map), Value::Mapping(merge_map)) => {
+            for (key, value) in merge_map {
+                if let Some(base_value) = base_map.get_mut(&key) {
+                    *base_value = merge_yaml(base_value.clone(), value)?;
+                } else {
+                    base_map.insert(key, value);
+                }
             }
+            Some(Value::Mapping(base_map))
         }
-        // Add other specific cases here if you need to handle sequences or scalars differently.
-        // For example, merging arrays or handling specific overwrite logic for scalars.
-        _ => {
-            // If the values do not match the expected types for merging,
-            // or if you simply want to overwrite `a` with `b` in cases not
-            // handled above, you can uncomment the line below.
-            // *a = b.clone();
+        (Value::Sequence(mut base_seq), Value::Sequence(merge_seq)) => {
+            base_seq.extend(merge_seq);
+            Some(Value::Sequence(base_seq))
         }
+        (_, merge) => Some(merge),
     }
 }
 
@@ -153,9 +148,15 @@ pub fn render_jinja2_sat_file_yaml(
     if let Some(value_option_vec) = value_cli_vec_opt {
         for value_option in value_option_vec {
             let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
-            println!("DEBUG - from dot notation to yaml:\n{}", serde_yaml::to_string(&cli_var_context_yaml).unwrap());
-            merge_yaml(&mut values_file_yaml, &cli_var_context_yaml);
-            println!("DEBUG - YAML FILE:\n{}", serde_yaml::to_string(&values_file_yaml).unwrap());
+            println!(
+                "DEBUG - from dot notation to yaml:\n{}",
+                serde_yaml::to_string(&cli_var_context_yaml).unwrap()
+            );
+            values_file_yaml = merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
+            println!(
+                "DEBUG - CONTEXT YAML FILE AFTER MIGRATION WITH VARS:\n{}",
+                serde_yaml::to_string(&values_file_yaml).unwrap()
+            );
         }
     }
 
@@ -163,8 +164,8 @@ pub fn render_jinja2_sat_file_yaml(
     let env = minijinja::Environment::new();
     let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
 
-    println!("DEBUG - SAT FILE RENDERED:\n:{}", sat_file_rendered);
-    log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
+    println!("DEBUG - SAT FILE RENDERED:\n{}", sat_file_rendered);
+    log::debug!("SAT file rendered:\n{}", sat_file_rendered);
 
     let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
 
@@ -940,9 +941,7 @@ mod tests {
           version: "v1.0"
         "#;
 
-        let var_content = vec![
-            "config.name = new-value".to_string(),
-        ];
+        let var_content = vec!["config.name = new-value".to_string()];
 
         /* let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(sat_file_content).unwrap();
         let mut values_file_yaml: serde_yaml::Mapping =
