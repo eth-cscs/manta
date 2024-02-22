@@ -12,10 +12,15 @@ homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
 repository = "https://github.com/eth-cscs/manta"
 publish = false                                                         # cargo dist --> Avoid publishing to crates.io
 
+# to fix github pipeline from breaking while building apple artifacts... see https://github.com/eth-cscs/manta/actions/runs/8003436504/job/21858765025#step:8:600
+# solution found here: https://github.com/sfackler/rust-openssl/issues/2179#issuecomment-1958688396
+[patch.crates-io]
+zstd-sys = { git = "https://github.com/harana-oss/zstd-rs.git" }
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.27.5"
+mesa = "0.27.6"
 # mesa = { path = "../mesa" } # Only for development purposes
 strum = "0.25.0"
 strum_macros = "0.25"
