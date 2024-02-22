@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.0] - 2024-02-22
+
+### Features
+
+- Initial woking state
+- Improve the function that merges 2 yaml structs by avoiding having to rewrite siblings
+
 ## [1.23.0] - 2024-02-20
 
 ### Co-authored-by
@@ -12,6 +19,10 @@ All notable changes to this project will be documented in this file.
 
 - New feature to use the SAT files as jinja2 templates (#37)
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.23.0
 
 ## [1.22.11] - 2024-02-20
 
