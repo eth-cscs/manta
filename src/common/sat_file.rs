@@ -14,45 +14,156 @@ use mesa::{
     ims::{self, recipe::r#struct::RecipeGetResponse},
 };
 use minijinja::context;
-use serde_yaml::Value;
+use serde::de::Error;
+use serde_yaml::{Mapping, Value};
+
+/// Merge 2 yamls, 'b' values will overwrite 'a' values
+///
+/// eg:
+///
+/// having a:
+///
+/// ```
+/// key_1
+///   key_1_1: value_1_1
+///   key_1_2: value_1_2
+/// key_2: value_2
+/// key_3: value_3
+/// ```
+///
+/// and b:
+///
+/// ```
+/// key_1
+///   key_1_1: new_value_1_1
+///   key_1_3: new_value_1_3
+/// key_2: new_value_2
+/// key_4: new_value_4
+/// ```
+///
+/// would convert a into:
+///
+/// ```
+/// key_1
+///   key_1_1: new_value_1_1
+///   key_1_2: value_1_2
+///   key_1_3: new_value_1_3
+/// key_2: new_value_2
+/// key_3: value_3
+/// key_4: new_value_4
+/// ```
+fn merge_yaml(a: &mut Value, b: &Value) {
+    match (a, b) {
+        // If both values are mappings, iterate through the second mapping
+        // and insert its values into the first, effectively overwriting
+        // any existing keys with the new values.
+        (Value::Mapping(a_map), Value::Mapping(b_map)) => {
+            for (k, v) in b_map {
+                a_map.insert(k.clone(), v.clone());
+            }
+        }
+        // Add other specific cases here if you need to handle sequences or scalars differently.
+        // For example, merging arrays or handling specific overwrite logic for scalars.
+        _ => {
+            // If the values do not match the expected types for merging,
+            // or if you simply want to overwrite `a` with `b` in cases not
+            // handled above, you can uncomment the line below.
+            // *a = b.clone();
+        }
+    }
+}
+
+/// Convert a String dot notation expression into a serde_yaml::Value.
+///
+/// eg:
+///
+/// dot notation input like:
+///
+/// ```
+/// key_1.key_2.key_3=1
+/// ````
+///
+/// would result in a serde_yaml::Value equivalent to:
+///
+/// ```
+/// key_1
+///   key_2
+///     key_3: 1
+/// ```
+fn dot_notation_to_yaml(dot_notation: &str) -> Result<serde_yaml::Value, serde_yaml::Error> {
+    let parts: Vec<&str> = dot_notation.split('=').collect();
+    if parts.len() != 2 {
+        return Err(serde_yaml::Error::custom("Invalid format"));
+    }
+
+    let keys: Vec<&str> = parts[0].trim().split('.').collect();
+    let value_str = parts[1].trim().trim_matches('"'); // Remove leading and trailing quotes
+    let value: Value = Value::String(value_str.to_string());
+
+    let mut root = Value::Mapping(Mapping::new());
+    let mut current_level = &mut root;
+
+    for (i, &key) in keys.iter().enumerate() {
+        if i == keys.len() - 1 {
+            // Last key, assign the value
+            if let Value::Mapping(map) = current_level {
+                map.insert(Value::String(key.to_string()), value.clone());
+            }
+        } else {
+            // Not the last key, create or use existing map
+            let next_level = if let Value::Mapping(map) = current_level {
+                if map.contains_key(&Value::String(key.to_string())) {
+                    // Use existing map
+                    map.get_mut(&Value::String(key.to_string())).unwrap()
+                } else {
+                    // Create new map and insert
+                    map.insert(
+                        Value::String(key.to_string()),
+                        Value::Mapping(Mapping::new()),
+                    );
+                    map.get_mut(&Value::String(key.to_string())).unwrap()
+                }
+            } else {
+                // In case the structure is not as expected; should not happen in this logic
+                return Err(serde_yaml::Error::custom(
+                    "Unexpected structure encountered",
+                ));
+            };
+            current_level = next_level;
+        }
+    }
+
+    Ok(root)
+}
 
 pub fn render_jinja2_sat_file_yaml(
     sat_file_content: &String,
     values_file_content_opt: Option<&String>,
-    value_option_vec_opt: Option<Vec<String>>,
+    value_cli_vec_opt: Option<Vec<String>>,
 ) -> Value {
-    if let Some(value_option_vec) = value_option_vec_opt {
-        for value_option in value_option_vec {
-            let key_value_vec: Vec<&str> = value_option.split("=").collect();
-            let key = key_value_vec.first().unwrap();
-            let value = key_value_vec.last().unwrap();
-            let key_parts_vec: Vec<&str> = key.split(".").collect();
-
-            for key in key_parts_vec {
-                println!("key: {}", key);
-                if let Some(context_value) = values_file_yaml.get(key) {
-                    println!("key '{}' in values/context file", key);
-                } else {
-                    println!("key '{}' not in values/context file", key)
-                }
-            }
-        }
-    }
-
-    let values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
+    let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
         // TEMPLATE
         // Read sesson vars file
-        let values_file_yaml: Value = serde_yaml::from_str(&values_file_content).unwrap();
-
+        serde_yaml::from_str(&values_file_content).unwrap()
     } else {
         serde_yaml::from_str(&sat_file_content).unwrap()
     };
+
+    if let Some(value_option_vec) = value_cli_vec_opt {
+        for value_option in value_option_vec {
+            let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
+            println!("DEBUG - from dot notation to yaml:\n{}", serde_yaml::to_string(&cli_var_context_yaml).unwrap());
+            merge_yaml(&mut values_file_yaml, &cli_var_context_yaml);
+            println!("DEBUG - YAML FILE:\n{}", serde_yaml::to_string(&values_file_yaml).unwrap());
+        }
+    }
 
     // Render SAT file template
     let env = minijinja::Environment::new();
     let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
 
+    println!("DEBUG - SAT FILE RENDERED:\n:{}", sat_file_rendered);
     log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
 
     let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
@@ -830,8 +941,7 @@ mod tests {
         "#;
 
         let var_content = vec![
-            "name: testing".to_string(),
-            "name: config: testing".to_string(),
+            "config.name = new-value".to_string(),
         ];
 
         /* let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(sat_file_content).unwrap();
