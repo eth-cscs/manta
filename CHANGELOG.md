@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Mesa config in Cargo
 
+### Miscellaneous Tasks
+
+- Release manta version 1.22.13
+
 ## [1.22.12] - 2024-02-22
 
 ### Features
