@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.12] - 2024-02-22
+
+### Features
+
+- Update version
+- Update version
+
 ## [1.22.11] - 2024-02-20
 
 ### Bug Fixes
@@ -9,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Bug with manta panicking while creating a cluster if image creation fails
 - Error when getting CFS session logs using a CFS session which does not exists
 - Update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.11
 
 ## [1.22.10] - 2024-02-17
 
