@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.17] - 2024-02-22
+
+### Bug Fixes
+
+- Remove apple targets since they are breaking the ci pipeline
+
 ## [1.22.16] - 2024-02-22
 
 ### Bug Fixes
 
 - Add fix to github pipeline breaking while building apple artifacts
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.16
 
 ## [1.22.15] - 2024-02-22
 
