@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.16] - 2024-02-22
+
+### Bug Fixes
+
+- Add fix to github pipeline breaking while building apple artifacts
+
+## [1.22.15] - 2024-02-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.15
+
 ## [1.22.14] - 2024-02-22
 
 ### Miscellaneous Tasks
