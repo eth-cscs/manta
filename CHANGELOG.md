@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [1.24.0] - 2024-02-22
 
+### Bug Fixes
+
+- Mesa library
+- Manta version
+
 ### Features
 
 - Initial woking state
 - Improve the function that merges 2 yaml structs by avoiding having to rewrite siblings
+
+### Miscellaneous Tasks
+
+- Release manta version 1.24.0
 
 ## [1.23.0] - 2024-02-20
 
