@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.13] - 2024-02-22
+
+### Bug Fixes
+
+- Mesa config in Cargo
+
 ## [1.22.12] - 2024-02-22
 
 ### Features
 
 - Update version
 - Update version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.22.12
 
 ## [1.22.11] - 2024-02-20
 
