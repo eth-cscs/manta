@@ -5,7 +5,6 @@ use mesa::{
     common::kubernetes,
 };
 use serde_yaml::Value;
-use std::path::PathBuf;
 
 use crate::common::{self, cfs_configuration_utils, sat_file};
 
@@ -15,8 +14,9 @@ use crate::common::{self, cfs_configuration_utils, sat_file};
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 /// Return CFS configuration name
 pub async fn exec(
-    sat_file_path: &PathBuf,
-    values_file_path_opt: Option<&PathBuf>,
+    sat_file_content: String,
+    values_file_content_opt: Option<String>,
+    values_cli_opt: Option<Vec<String>>,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -28,42 +28,11 @@ pub async fn exec(
     // tag: &str,
     output_opt: Option<&String>,
 ) -> anyhow::Result<Vec<String>> {
-    let sat_file_content: String =
-        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
-
-    let values_file_content_opt = values_file_path_opt
-        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
-
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
-        Some(Vec::new()),
+        values_cli_opt,
     );
-
-    /* let sat_file_content: String = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
-
-    let sat_file_yaml: Value = if let Some(values_file_path) = values_file_path_opt {
-        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
-        // TEMPLATE
-        // Read sesson vars file
-        let values_file_string = std::fs::read_to_string(values_file_path).unwrap();
-        let values_file_yaml: Value =
-            serde_yaml::from_str(&values_file_string).unwrap();
-
-        // Render SAT file template
-        let env = minijinja::Environment::new();
-        let sat_file_rendered = env
-            .render_str(&sat_file_content, values_file_yaml)
-            .unwrap();
-
-        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
-
-        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
-    } else {
-        serde_yaml::from_str(&sat_file_content).unwrap()
-    }; */
-
-    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
     let mut cfs_configuration_value_vec = Vec::new();
 

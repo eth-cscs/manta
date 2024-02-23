@@ -148,15 +148,7 @@ pub fn render_jinja2_sat_file_yaml(
     if let Some(value_option_vec) = value_cli_vec_opt {
         for value_option in value_option_vec {
             let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
-            println!(
-                "DEBUG - from dot notation to yaml:\n{}",
-                serde_yaml::to_string(&cli_var_context_yaml).unwrap()
-            );
             values_file_yaml = merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
-            println!(
-                "DEBUG - CONTEXT YAML FILE AFTER MIGRATION WITH VARS:\n{}",
-                serde_yaml::to_string(&values_file_yaml).unwrap()
-            );
         }
     }
 
@@ -323,7 +315,6 @@ pub async fn create_image_from_sat_file_serde_yaml(
     ref_name_image_id_hashmap: &HashMap<String, String>,
     // tag: &str,
 ) -> Result<String, ApiError> {
-    log::info!("Importing image");
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
     let image_name = image_yaml["name"].as_str().unwrap().to_string();
@@ -357,7 +348,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
     // Get/process base image
     if let Some(sat_file_image_ims_value_yaml) = image_yaml.get("ims") {
         // ----------- BASE IMAGE - BACKWARD COMPATIBILITY WITH PREVIOUS SAT FILE
-        log::info!("SAT file - 'image.ims' job - previous version to create images in SAT file (for backward compatibility)");
+        log::info!("SAT file - 'image.ims' job ('images' section in SAT file is outdated - switching to backward compatibility)");
 
         base_image_id = process_sat_file_image_old_version(sat_file_image_ims_value_yaml).unwrap();
     } else if let Some(sat_file_image_base_value_yaml) = image_yaml.get("base") {
@@ -941,7 +932,7 @@ mod tests {
           version: "v1.0"
         "#;
 
-        let var_content = vec!["config.name = new-value".to_string()];
+        let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
         /* let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(sat_file_content).unwrap();
         let mut values_file_yaml: serde_yaml::Mapping =

@@ -1,4 +1,4 @@
-use std::io::IsTerminal;
+use std::{io::IsTerminal, path::PathBuf};
 
 use clap::ArgMatches;
 use config::Config;
@@ -99,7 +99,7 @@ pub async fn process_cli(
 
                 config_unset_hsm::exec(shasta_token).await;
             }
-            if let Some(cli_config_unset_parent_hsm) =
+            if let Some(_cli_config_unset_parent_hsm) =
                 cli_config_unset.subcommand_matches("parent-hsm")
             {
                 let shasta_token = &authentication::get_api_token(
@@ -677,16 +677,34 @@ pub async fn process_cli(
                 )
                 .await;
 
-                // let tag = if let Some(input_tag) = cli_apply_configuration.get_one::<String>("tag")
-                // {
-                //     input_tag.clone()
-                // } else {
-                //     chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                // };
+                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+                let cli_value_vec_opt: Option<Vec<String>> =
+                    cli_apply_configuration.get_many("values").map(|value_vec| {
+                        value_vec
+                            .map(|value: &String| value.replace("__DATE__", &timestamp))
+                            .collect()
+                    });
+
+                let cli_values_file_content_opt: Option<String> = cli_apply_configuration
+                    .get_one("values-file")
+                    .and_then(|values_file_path: &PathBuf| {
+                        std::fs::read_to_string(values_file_path).ok().map(
+                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                        )
+                    });
+
+                let sat_file_content: String = std::fs::read_to_string(
+                    cli_apply_configuration
+                        .get_one::<PathBuf>("sat-template-file")
+                        .expect("ERROR: SAT file not found. Exit"),
+                )
+                .expect("ERROR: reading SAT file template. Exit");
 
                 let _ = apply_configuration::exec(
-                    cli_apply_configuration.get_one("file").unwrap(),
-                    cli_apply_configuration.get_one("values-file"),
+                    sat_file_content,
+                    cli_values_file_content_opt,
+                    cli_value_vec_opt,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -774,18 +792,37 @@ pub async fn process_cli(
                 )
                 .await;
 
-                /* let tag = if let Some(input_tag) = cli_apply_image.get_one::<String>("tag") {
-                    input_tag.clone()
-                } else {
-                    chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                }; */
+                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+                let cli_value_vec_opt: Option<Vec<String>> =
+                    cli_apply_image.get_many("values").map(|value_vec| {
+                        value_vec
+                            .map(|value: &String| value.replace("__DATE__", &timestamp))
+                            .collect()
+                    });
+
+                let cli_values_file_content_opt: Option<String> = cli_apply_image
+                    .get_one("values-file")
+                    .and_then(|values_file_path: &PathBuf| {
+                        std::fs::read_to_string(values_file_path).ok().map(
+                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                        )
+                    });
+
+                let sat_file_content: String = std::fs::read_to_string(
+                    cli_apply_image
+                        .get_one::<PathBuf>("sat-template-file")
+                        .expect("ERROR: SAT file not found. Exit"),
+                )
+                .expect("ERROR: reading SAT file template. Exit");
 
                 apply_image::exec(
                     vault_base_url,
                     vault_secret_path,
                     vault_role_id,
-                    cli_apply_image.get_one("file").unwrap(),
-                    cli_apply_image.get_one("values-file"),
+                    sat_file_content,
+                    cli_values_file_content_opt,
+                    cli_value_vec_opt,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -813,11 +850,29 @@ pub async fn process_cli(
                 )
                 .await;
 
-                /* let tag = if let Some(input_tag) = cli_apply_cluster.get_one::<String>("tag") {
-                    input_tag.clone()
-                } else {
-                    chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
-                }; */
+                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+                let cli_value_vec_opt: Option<Vec<String>> =
+                    cli_apply_cluster.get_many("values").map(|value_vec| {
+                        value_vec
+                            .map(|value: &String| value.replace("__DATE__", &timestamp))
+                            .collect()
+                    });
+
+                let cli_values_file_content_opt: Option<String> = cli_apply_cluster
+                    .get_one("values-file")
+                    .and_then(|values_file_path: &PathBuf| {
+                        std::fs::read_to_string(values_file_path).ok().map(
+                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                        )
+                    });
+
+                let sat_file_content: String = std::fs::read_to_string(
+                    cli_apply_cluster
+                        .get_one::<PathBuf>("sat-template-file")
+                        .expect("ERROR: SAT file not found. Exit"),
+                )
+                .expect("ERROR: reading SAT file template. Exit");
 
                 apply_cluster::exec(
                     shasta_token,
@@ -827,9 +882,9 @@ pub async fn process_cli(
                     vault_secret_path,
                     vault_role_id,
                     k8s_api_url,
-                    cli_apply_cluster.get_one("file").unwrap(),
-                    cli_apply_cluster.get_one("values-file"),
-                    // base_image_id,
+                    sat_file_content,
+                    cli_values_file_content_opt,
+                    cli_value_vec_opt,
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
                     cli_apply_cluster

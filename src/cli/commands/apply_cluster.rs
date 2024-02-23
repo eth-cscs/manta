@@ -2,9 +2,9 @@ use core::time;
 use std::{
     collections::HashMap,
     io::{self, Write},
-    path::PathBuf,
 };
 
+use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::{
         configuration::mesa::r#struct::cfs_configuration_response::{
@@ -34,8 +34,9 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    sat_file_path: &PathBuf,
-    values_file_path_opt: Option<&PathBuf>,
+    sat_file_content: String,
+    values_file_content_opt: Option<String>,
+    values_cli_opt: Option<Vec<String>>,
     hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<u8>,
@@ -44,40 +45,27 @@ pub async fn exec(
     // tag: &str,
     do_not_reboot: bool,
 ) {
-    let sat_file_content: String =
-        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
-
-    let values_file_content_opt = values_file_path_opt
-        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
-
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
-        Some(Vec::new()),
+        values_cli_opt,
     );
 
-    /* let file_content = std::fs::read_to_string(sat_file_path).unwrap();
+    println!(
+        "SAT file content:\n{}",
+        serde_yaml::to_string(&sat_file_yaml).unwrap()
+    );
+    let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Please check the template above and confirm to proceed")
+        .interact()
+        .unwrap();
 
-    let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
-        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
-        // TEMPLATE
-        // Read sesson vars file
-        let session_vars_file_content = std::fs::read_to_string(session_vars_file_path).unwrap();
-        let session_vars_file_yaml: Value =
-            serde_yaml::from_str(&session_vars_file_content).unwrap();
-
-        // Render SAT file template
-        let env = minijinja::Environment::new();
-        let sat_file_rendered = env
-            .render_str(&file_content, session_vars_file_yaml)
-            .unwrap();
-
-        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
-
-        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
+    if process_sat_file {
+        println!("Proceed and process SAT file");
     } else {
-        serde_yaml::from_str(&file_content).unwrap()
-    }; */
+        println!("Operation canceled by user. Exit");
+        std::process::exit(0);
+    }
 
     // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
 
@@ -149,6 +137,8 @@ pub async fn exec(
         };
 
         let cfs_configuration_name = cfs_configuration.name.to_string();
+
+        log::info!("CFS configuration '{}' created", cfs_configuration_name);
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 
@@ -347,7 +337,7 @@ pub async fn process_session_template_section_in_sat_file(
             std::process::exit(1);
         };
 
-        log::info!("Image found");
+        log::info!("Image with name '{}' found", image_details.name);
 
         // Get CFS configuration to configure the nodes
         let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
@@ -455,9 +445,15 @@ pub async fn process_session_template_section_in_sat_file(
         )
         .await;
 
-        if create_bos_session_template_resp.is_err() {
-            eprintln!("BOS session template creation failed");
-            std::process::exit(1);
+        match create_bos_session_template_resp {
+            Ok(bos_sessiontemplate) => println!(
+                "BOS sessiontemplate '{}' created",
+                bos_sessiontemplate["name"].as_str().unwrap()
+            ),
+            Err(error) => eprintln!(
+                "ERROR: BOS session template creation failed.\nReason:\n{}\nExit",
+                error
+            ),
         }
 
         // Create BOS session. Note: reboot operation shuts down the nodes and they may not start

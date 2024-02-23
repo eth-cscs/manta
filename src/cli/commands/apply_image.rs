@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 use mesa::{
     cfs::configuration::mesa::r#struct::cfs_configuration_response::{
@@ -21,8 +21,9 @@ pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
     vault_role_id: &str,
-    sat_file_path: &PathBuf,
-    values_file_path_opt: Option<&PathBuf>,
+    sat_file_content: String,
+    values_file_content_opt: Option<String>,
+    values_cli_opt: Option<Vec<String>>,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -35,16 +36,10 @@ pub async fn exec(
     gitea_token: &str,
     output_opt: Option<&String>,
 ) {
-    let sat_file_content: String =
-        std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
-
-    let values_file_content_opt = values_file_path_opt
-        .and_then(|values_file_path| std::fs::read_to_string(values_file_path).ok());
-
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
-        Some(Vec::new()),
+        values_cli_opt,
     );
 
     /* let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
