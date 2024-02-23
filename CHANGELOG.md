@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.2] - 2024-02-23
+
+### Bug Fixes
+
+- SAT file templating
+- Disable apple targets due to a bug in cc crate used by openssl crate
+
+### Features
+
+- Replace __DATE__ in SAT file vars file and cli vars for timestamp
+
+### Refactor
+
+- Clean stdout messages
+
 ## [1.24.1] - 2024-02-23
 
 ### Bug Fixes
@@ -12,6 +27,10 @@ All notable changes to this project will be documented in this file.
 
 - Integrate parent HSM to config file
 - Integratino parent HSM to `add hw`, `add node`, `remove hw`, `remove node` and `apply hw` subcommands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.24.1
 
 ### Refactor
 
