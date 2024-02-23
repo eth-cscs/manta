@@ -1,3 +1,4 @@
+use crate::cli::commands::migrate_backup::run_hook;
 use chrono::Local;
 use dialoguer::Confirm;
 use humansize::DECIMAL;
@@ -9,7 +10,7 @@ use mesa::hsm::r#struct::HsmGroup;
 use mesa::ims::image::mesa::utils::update_image;
 use mesa::ims::image::r#struct::{Image, ImsImageRecord2Update, Link};
 use mesa::ims::image::utils::{get_fuzzy, register_new_image};
-use mesa::ims::s3::{BAR_FORMAT, s3_auth, s3_multipart_upload_object, s3_upload_object};
+use mesa::ims::s3::{s3_auth, s3_multipart_upload_object, s3_upload_object, BAR_FORMAT};
 use mesa::{bos, cfs};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -18,8 +19,6 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
-use crate::cli::commands::migrate_backup::run_hook;
-
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 /* #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,20 +101,32 @@ pub async fn exec(
         };
     }
     // println!("Migrate restore of the following image:\n\tBOS file: {}\n\tCFS file: {}\n\tIMS file: {}\n\tHSM file: {}", &bos_file.unwrap(), &cfs_file.unwrap(), &ims_file.unwrap(), &hsm_file.unwrap() );
-    if ! PathBuf::from(&bos_file.unwrap()).exists() {
-        eprintln!("Error, file {} does not exist or cannot be open.", &bos_file.unwrap());
+    if !PathBuf::from(&bos_file.unwrap()).exists() {
+        eprintln!(
+            "Error, file {} does not exist or cannot be open.",
+            &bos_file.unwrap()
+        );
         std::process::exit(1)
     }
-    if ! PathBuf::from(&cfs_file.unwrap()).exists() {
-        eprintln!("Error, file {} does not exist or cannot be open.", &cfs_file.unwrap());
+    if !PathBuf::from(&cfs_file.unwrap()).exists() {
+        eprintln!(
+            "Error, file {} does not exist or cannot be open.",
+            &cfs_file.unwrap()
+        );
         std::process::exit(1)
     }
-    if ! PathBuf::from(&ims_file.unwrap()).exists() {
-        eprintln!("Error, file {} does not exist or cannot be open.", &ims_file.unwrap());
+    if !PathBuf::from(&ims_file.unwrap()).exists() {
+        eprintln!(
+            "Error, file {} does not exist or cannot be open.",
+            &ims_file.unwrap()
+        );
         std::process::exit(1)
     }
-    if ! PathBuf::from(&hsm_file.unwrap()).exists() {
-        eprintln!("Error, file {} does not exist or cannot be open.", &hsm_file.unwrap());
+    if !PathBuf::from(&hsm_file.unwrap()).exists() {
+        eprintln!(
+            "Error, file {} does not exist or cannot be open.",
+            &hsm_file.unwrap()
+        );
         std::process::exit(1)
     }
 
@@ -156,7 +167,7 @@ pub async fn exec(
     ];
 
     for file in &vec_backup_image_files {
-        if ! PathBuf::from(&file).exists() {
+        if !PathBuf::from(&file).exists() {
             eprintln!("Error, file {} does not exist or cannot be open.", &file);
             std::process::exit(1)
         }
@@ -231,7 +242,8 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         &backup_cfs_file,
-    ).await;
+    )
+    .await;
 
     println!("\nUploading BOS sessiontemplate...");
     // Create a new BOS session template based on the original BOS file backed previously
@@ -274,15 +286,14 @@ async fn create_bos_sessiontemplate(
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    match bos::template::mesa::http_client::get_all(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert).await
+    match bos::template::mesa::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await
     {
         Ok(mut vector) => {
-
             vector.retain(|bos_sessiontemplate| {
-               bos_sessiontemplate.name.eq(&Option::from(bos_sessiontemplate_name.clone()))
+                bos_sessiontemplate
+                    .name
+                    .eq(&Option::from(bos_sessiontemplate_name.clone()))
             });
             log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
 
@@ -330,7 +341,10 @@ async fn create_bos_sessiontemplate(
             )
             .await
             {
-                Ok(_result) => println!("Ok, BOS session template {} created successfully.",  &bos_sessiontemplate_name),
+                Ok(_result) => println!(
+                    "Ok, BOS session template {} created successfully.",
+                    &bos_sessiontemplate_name
+                ),
                 Err(e1) => panic!(
                     "Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}",
                     e1
@@ -375,7 +389,6 @@ async fn create_cfs_config(
                     .unwrap();
             cfs_config_vec.retain(|cfs_configuration| cfs_configuration.name == cfs_config_name);
 
-
             if !cfs_config_vec.is_empty() {
                 println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
                 let confirmation = Confirm::new()
@@ -387,12 +400,19 @@ async fn create_cfs_config(
                     println!("Looks like you do not want to continue, bailing out.");
                     std::process::exit(2)
                 } else {
-                    match cfs::configuration::shasta::http_client::delete(shasta_token,
-                                                                    shasta_base_url,
-                                                                    shasta_root_cert,
-                                                                    cfs_config_name.as_str()).await {
-                        Ok(_) => log::debug!("Ok CFS configuration {}, deleted.",cfs_config_name),
-                        Result::Err(err1) => panic!("Error, unable to delete configuration. Cannot continue. Error: {}", err1),
+                    match cfs::configuration::shasta::http_client::delete(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        cfs_config_name.as_str(),
+                    )
+                    .await
+                    {
+                        Ok(_) => log::debug!("Ok CFS configuration {}, deleted.", cfs_config_name),
+                        Result::Err(err1) => panic!(
+                            "Error, unable to delete configuration. Cannot continue. Error: {}",
+                            err1
+                        ),
                     };
                 }
             }
@@ -413,8 +433,11 @@ async fn create_cfs_config(
             {
                 Ok(result) => {
                     log::debug!("Ok, result: {:#?}", result);
-                    println!("Ok, CFS configuration {} created successfully.",  &cfs_config_name);
-                },
+                    println!(
+                        "Ok, CFS configuration {} created successfully.",
+                        &cfs_config_name
+                    );
+                }
                 Err(e1) => panic!(
                     "Error, unable to create CFS configuration. Error returned by CSM API: {}",
                     e1
@@ -436,7 +459,6 @@ async fn ims_update_image_add_manifest(
     ims_image_name: &String,
     ims_image_id: &String,
 ) {
-
     match get_fuzzy(shasta_token,
                          shasta_base_url,
                          shasta_root_cert,
@@ -554,16 +576,18 @@ async fn s3_upload_image_artifacts(
             "File {:?} ({}) to s3://{}/{}.",
             &file, &file_size, &bucket_name, &full_object_path
         );
-        let etag:String;
+        let etag: String;
         if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
-            etag = match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file).await
-            {
-                Ok(result) => {
-                    log::debug!("Artifact uploaded successfully.");
-                    result
-                }
-                Err(error) => panic!("Unable to upload file to s3. Error {}", error),
-            };
+            etag =
+                match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file)
+                    .await
+                {
+                    Ok(result) => {
+                        log::debug!("Artifact uploaded successfully.");
+                        result
+                    }
+                    Err(error) => panic!("Unable to upload file to s3. Error {}", error),
+                };
         } else {
             etag = match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
                 Ok(result) => {
@@ -577,7 +601,8 @@ async fn s3_upload_image_artifacts(
         // I'm pretty sure there's a better way to do this...
         if file.contains("kernel") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
-                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                if !etag.is_empty() {
+                    // assign eTag if returned by s3, otherwise set to none
                     artifact.link.etag = Some(etag.clone());
                 }
                 if artifact.r#type.contains("kernel") {
@@ -591,7 +616,8 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("rootfs") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
-                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                if !etag.is_empty() {
+                    // assign eTag if returned by s3, otherwise set to none
                     artifact.link.etag = Some(etag.clone());
                 }
                 if artifact.r#type.contains("rootfs") {
@@ -605,7 +631,8 @@ async fn s3_upload_image_artifacts(
             }
         } else if file.contains("initrd") {
             for artifact in ims_image_manifest.artifacts.iter_mut() {
-                if ! etag.is_empty() { // assign eTag if returned by s3, otherwise set to none
+                if !etag.is_empty() {
+                    // assign eTag if returned by s3, otherwise set to none
                     artifact.link.etag = Some(etag.clone());
                 }
                 if artifact.r#type.contains("initrd") {

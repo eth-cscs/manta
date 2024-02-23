@@ -23,6 +23,9 @@ pub async fn exec(
     let k8s_api_url = settings.get_string("k8s_api_url").unwrap();
     let log_level = settings.get_string("log").unwrap_or("error".to_string()); */
     let settings_hsm_group = settings.get_string("hsm_group").unwrap_or("".to_string());
+    let settings_parent_hsm_group = settings
+        .get_string("parent_hsm_group")
+        .unwrap_or("".to_string());
     // let settings_hsm_group_available_value_rslt = settings.get_array("hsm_available");
 
     /* let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
@@ -69,6 +72,7 @@ pub async fn exec(
     println!("Current site: {}", site_name);
     println!("HSM available: {:?}", hsm_group_available);
     println!("Current HSM: {}", settings_hsm_group);
+    println!("Parent HSM: {}", settings_parent_hsm_group);
 }
 
 pub async fn get_hsm_name_available_from_jwt_or_all(

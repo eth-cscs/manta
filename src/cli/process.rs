@@ -8,9 +8,10 @@ use mesa::common::authentication;
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
     apply_ephemeral_env, apply_hw_cluster, apply_image, apply_session, config_set_hsm,
-    config_set_log, config_set_site,
+    config_set_log, config_set_parent_hsm, config_set_site,
     config_show::{self, get_hsm_name_available_from_jwt_or_all},
-    config_unset_auth, config_unset_hsm, console_cfs_session_image_target_ansible, console_node,
+    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
@@ -63,6 +64,24 @@ pub async fn process_cli(
                 )
                 .await;
             }
+            if let Some(cli_config_set_parent_hsm) = cli_config_set.subcommand_matches("parent-hsm")
+            {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                )
+                .await?;
+
+                config_set_parent_hsm::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_config_set_parent_hsm.get_one::<String>("HSM_GROUP_NAME"),
+                    // hsm_available_vec,
+                )
+                .await;
+            }
             if let Some(cli_config_set_site) = cli_config_set.subcommand_matches("site") {
                 config_set_site::exec(cli_config_set_site.get_one::<String>("SITE_NAME")).await;
             }
@@ -79,8 +98,20 @@ pub async fn process_cli(
                 .await?;
 
                 config_unset_hsm::exec(shasta_token).await;
-            } else if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth")
+            }
+            if let Some(cli_config_unset_parent_hsm) =
+                cli_config_unset.subcommand_matches("parent-hsm")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                )
+                .await?;
+
+                config_unset_parent_hsm::exec(shasta_token).await;
+            }
+            if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth") {
                 config_unset_auth::exec().await;
             }
         }
@@ -252,14 +283,26 @@ pub async fn process_cli(
             }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
-                let hsm_group_name_arg_opt =
-                    cli_add_hw_configuration.get_one::<String>("CLUSTER_NAME");
+                let target_hsm_group_name_arg_opt =
+                    cli_add_hw_configuration.get_one::<String>("target-cluster");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_arg_opt,
+                    target_hsm_group_name_arg_opt,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let parent_hsm_group_name_arg_opt =
+                    cli_add_hw_configuration.get_one::<String>("parent-cluster");
+
+                let parent_hsm_group_vec = get_target_hsm_group_vec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    parent_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
                 .await;
@@ -269,6 +312,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_vec.first().unwrap(),
+                    parent_hsm_group_vec.first().unwrap(),
                     cli_add_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
@@ -279,8 +323,8 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    cli_add_nodes.get_one::<String>("cluster").unwrap(),
-                    "nodes_free",
+                    cli_add_nodes.get_one::<String>("target-cluster").unwrap(),
+                    cli_add_nodes.get_one::<String>("parent-cluster").unwrap(),
                     cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
                 )
                 .await;
@@ -288,14 +332,26 @@ pub async fn process_cli(
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
             if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
             {
-                let hsm_group_name_arg_opt =
-                    cli_remove_hw_configuration.get_one::<String>("CLUSTER_NAME");
+                let target_hsm_group_name_arg_opt =
+                    cli_remove_hw_configuration.get_one::<String>("target-cluster");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_arg_opt,
+                    target_hsm_group_name_arg_opt,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let parent_hsm_group_name_arg_opt =
+                    cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
+
+                let parent_hsm_group_vec = get_target_hsm_group_vec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    parent_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
                 .await;
@@ -305,6 +361,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_vec.first().unwrap(),
+                    parent_hsm_group_vec.first().unwrap(),
                     cli_remove_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
@@ -315,8 +372,12 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    cli_remove_nodes.get_one::<String>("cluster").unwrap(),
-                    "nodes_free",
+                    cli_remove_nodes
+                        .get_one::<String>("target-cluster")
+                        .unwrap(),
+                    cli_remove_nodes
+                        .get_one::<String>("parent-cluster")
+                        .unwrap(),
                     cli_remove_nodes.get_one::<String>("XNAMES").unwrap(),
                 )
                 .await;
@@ -570,14 +631,26 @@ pub async fn process_cli(
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hw-configuration") {
                 if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
-                    let hsm_group_name_arg_opt =
-                        cli_apply_hw_cluster.get_one::<String>("CLUSTER_NAME");
+                    let target_hsm_group_name_arg_opt =
+                        cli_apply_hw_cluster.get_one::<String>("target-cluster");
 
                     let target_hsm_group_vec = get_target_hsm_group_vec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
+                        target_hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    let parent_hsm_group_name_arg_opt =
+                        cli_apply_hw_cluster.get_one::<String>("parent-cluster");
+
+                    let parent_hsm_group_vec = get_target_hsm_group_vec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        parent_hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
                     .await;
@@ -587,6 +660,7 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group_vec.first().unwrap(),
+                        parent_hsm_group_vec.first().unwrap(),
                         cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
                     )
                     .await;

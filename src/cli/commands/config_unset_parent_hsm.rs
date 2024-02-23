@@ -34,7 +34,7 @@ pub async fn exec(shasta_token: &str) {
     let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
-        .unwrap()
+        .unwrap_or(&serde_json::json!([]))
         .as_array()
         .unwrap()
         .iter()
@@ -44,8 +44,8 @@ pub async fn exec(shasta_token: &str) {
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
-    log::info!("Unset HSM group");
-    doc.remove("hsm_group");
+    log::info!("Unset parent HSM group");
+    doc.remove("parent_hsm_group");
 
     // Update configuration file content
     log::info!("Update config file");
@@ -63,5 +63,5 @@ pub async fn exec(shasta_token: &str) {
         .unwrap();
     manta_configuration_file.flush().unwrap();
 
-    println!("Target HSM group unset");
+    println!("Parent HSM group unset");
 }

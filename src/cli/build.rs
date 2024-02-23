@@ -17,13 +17,15 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
             .subcommand(Command::new("hw-component")
                 .alias("hw")
                 .about("WIP - Add hw components from a cluster")
-                .arg(arg!(-p --pattern <PATTERN> "Pattern"))
-                .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
             )
             .subcommand(Command::new("nodes")
                 .aliases(["n", "node"])
                 .about("WIP - Add nodes to a cluster")
-                .arg(arg!(-c --cluster <CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving to."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving nodes from the target cluster."))
                 .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
             )
         )
@@ -34,13 +36,15 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
             .subcommand(Command::new("hw-component")
                 .alias("hw")
                 .about("WIP - Remove hw components from a cluster")
-                .arg(arg!(-p --pattern <PATTERN> "Pattern"))
-                .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
             )
             .subcommand(Command::new("nodes")
                 .aliases(["n", "node"])
                 .about("WIP - Remove nodes to a cluster")
-                .arg(arg!(-c --cluster <CLUSTER_NAME> "Cluster name"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving to."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving nodes from the target cluster."))
                 .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
             )
         )
@@ -145,6 +149,10 @@ pub fn subcommand_config() -> Command {
         .about("Set target HSM group")
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
 
+    let subcommand_config_set_parent_hsm = Command::new("parent-hsm")
+        .about("Set parent HSM group")
+        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
+
     let subcommand_config_set_site = Command::new("site")
         .about("Set site to work on")
         .arg(arg!(<SITE_NAME> "site name"));
@@ -154,13 +162,12 @@ pub fn subcommand_config() -> Command {
             .value_parser(["error", "warn", "info", "debug", "trace"]),
     );
 
-    let subcommand_config_unset_hsm = Command::new("hsm")
-        .about("Clean hsm config values")
-        .about("Unset target HSM group");
+    let subcommand_config_unset_hsm = Command::new("hsm").about("Unset target HSM group");
 
-    let subcommand_config_unset_auth = Command::new("auth")
-        .about("Clean auth token")
-        .about("Unset target HSM group");
+    let subcommand_config_unset_parent_hsm =
+        Command::new("parent-hsm").about("Unset parent HSM group");
+
+    let subcommand_config_unset_auth = Command::new("auth").about("Unset authentication token");
 
     Command::new("config")
         .alias("C")
@@ -172,6 +179,7 @@ pub fn subcommand_config() -> Command {
                 .arg_required_else_help(true)
                 .about("Change config values")
                 .subcommand(subcommand_config_set_hsm)
+                .subcommand(subcommand_config_set_parent_hsm)
                 .subcommand(subcommand_config_set_site)
                 .subcommand(subcommand_config_set_log),
         )
@@ -180,6 +188,7 @@ pub fn subcommand_config() -> Command {
                 .arg_required_else_help(true)
                 .about("Reset config values")
                 .subcommand(subcommand_config_unset_hsm)
+                .subcommand(subcommand_config_unset_parent_hsm)
                 .subcommand(subcommand_config_unset_auth),
         )
 }
@@ -188,7 +197,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
     let mut delete = Command::new("delete")
                 .arg_required_else_help(true)
                 .about("Deletes CFS configurations, CFS sessions, BOS sessiontemplates, BOS sessions and images related to CFS configuration/s.")
-                .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
+                .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and IMS images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
                 .arg(arg!(-y --"yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted"))
@@ -409,9 +418,10 @@ pub fn subcommand_apply_hw_configuration() -> Command {
             .aliases(["c", "clstr"])
             .arg_required_else_help(true)
             .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
-            .arg(arg!(<CLUSTER_NAME> "Cluster name"))
+            .arg(arg!(-P -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster like <hw component name>:<hw component quantity>[:<hw component name>:<hw component quantity>]. Eg 'a100:12:epic:5' will update the nodes assigned to cluster 'zinal' with 4 nodes:\n - 3 nodes with 4 Nvidia gpus A100 and 1 epyc AMD cpu each\n - 1 node with 2 epyc AMD cpus"))
+            .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
+            .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
              // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
-            .arg(arg!(-p -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster like <hw component name>:<hw component quantity>[:<hw component name>:<hw component quantity>]. Eg 'a100:12:epic:5' will update the nodes assigned to cluster 'zinal' with 4 nodes:\n - 3 nodes with 4 Nvidia gpus A100 and 1 epyc AMD cpu each\n - 1 node with 2 epyc AMD cpus"))
         )
 }
 

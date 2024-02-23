@@ -48,7 +48,7 @@ use serde_yaml::{Mapping, Value};
 /// key_3: value_3
 /// key_4: new_value_4
 /// ```
-fn merge_yaml(mut base: Value, merge: Value) -> Option<Value> {
+fn merge_yaml(base: Value, merge: Value) -> Option<Value> {
     match (base, merge) {
         (Value::Mapping(mut base_map), Value::Mapping(merge_map)) => {
             for (key, value) in merge_map {

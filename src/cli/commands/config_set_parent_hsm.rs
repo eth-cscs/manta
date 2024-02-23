@@ -42,7 +42,7 @@ pub async fn exec(
         .pointer("/realm_access/roles")
         .unwrap_or(&serde_json::json!([]))
         .as_array()
-        .unwrap()
+        .unwrap_or(&Vec::new())
         .iter()
         .map(|role_value| role_value.as_str().unwrap().to_string())
         .collect::<Vec<String>>();
@@ -74,7 +74,7 @@ pub async fn exec(
         new_hsm_opt.unwrap()
     );
 
-    doc["hsm_group"] = value(new_hsm_opt.unwrap());
+    doc["parent_hsm_group"] = value(new_hsm_opt.unwrap());
 
     if let Some(new_hsm) = new_hsm_opt {
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
@@ -102,7 +102,7 @@ pub async fn exec(
             new_hsm_opt.unwrap()
         );
 
-        doc["hsm_group"] = value(new_hsm);
+        doc["parent_hsm_group"] = value(new_hsm);
     } else {
         // 'hsm_available' config param is empty or does not exists, then an admin user is running
         // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
@@ -126,9 +126,9 @@ pub async fn exec(
         .unwrap();
     manta_configuration_file.flush().unwrap();
 
-    match doc.get("hsm_group") {
-        Some(hsm_value) => println!("Target HSM group set to {hsm_value}"),
-        None => println!("Target HSM group unset"),
+    match doc.get("parent_hsm_group") {
+        Some(hsm_value) => println!("Parent HSM group set to {hsm_value}"),
+        None => println!("Parent HSM group unset"),
     }
 }
 

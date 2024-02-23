@@ -7,6 +7,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     target_hsm_group_name: &str,
+    parent_hsm_group_name: &str,
     pattern: &str,
 ) {
     // *********************************************************************************************************
@@ -15,8 +16,6 @@ pub async fn exec(
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 
     log::info!("pattern: {}", pattern);
-
-    let parent_hsm_group_name = "nodes_free";
 
     // lcm -> used to normalize and quantify memory capacity
     let mem_lcm = 16384; // 1024 * 16
