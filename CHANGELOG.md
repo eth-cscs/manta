@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.1] - 2024-02-23
+
+### Bug Fixes
+
+- HSM validation for admin users
+
+### Features
+
+- Integrate parent HSM to config file
+- Integratino parent HSM to `add hw`, `add node`, `remove hw`, `remove node` and `apply hw` subcommands
+
+### Refactor
+
+- Improve stdout messages
+
 ## [1.24.0] - 2024-02-22
 
 ### Bug Fixes
@@ -16,6 +31,7 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 1.24.0
 - Release manta version 1.24.0
 
 ## [1.23.0] - 2024-02-20
