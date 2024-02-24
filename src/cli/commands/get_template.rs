@@ -21,14 +21,16 @@ pub async fn exec(
     .await
     .unwrap_or_default();
 
-    bos_sessiontemplate_vec = mesa::bos::template::mesa::utils::filter(
-        &mut bos_sessiontemplate_vec,
-        hsm_group_name_vec,
-        hsm_member_vec,
-        // None,
-        limit_number_opt,
-    )
-    .await;
+    if bos_sessiontemplate_name_opt.is_none() {
+        bos_sessiontemplate_vec = mesa::bos::template::mesa::utils::filter(
+            &mut bos_sessiontemplate_vec,
+            hsm_group_name_vec,
+            hsm_member_vec,
+            // None,
+            limit_number_opt,
+        )
+        .await;
+    }
 
     if bos_sessiontemplate_vec.is_empty() {
         println!("No BOS template found!");

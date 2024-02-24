@@ -8,6 +8,7 @@ use mesa::{
     },
     common::gitea,
 };
+use serde_json::Value;
 
 use crate::common::cfs_configuration_utils::print_table_struct;
 
@@ -49,6 +50,62 @@ pub async fn exec(
             let mut layers: Vec<Layer> = vec![];
 
             for layer in &most_recent_cfs_configuration.layers {
+                let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
+                let branch_name_opt: Option<&str> = layer.branch.as_deref();
+                let most_recent_commit;
+                let tag_name;
+
+                let repo_ref_vec: Vec<Value> = gitea::http_client::get_all_refs(
+                    &layer.clone_url,
+                    gitea_token,
+                    shasta_root_cert,
+                )
+                .await
+                .unwrap();
+
+                // Find remote git ref with same commit id as layer we are processing
+                let ref_value_opt: Option<&Value> = repo_ref_vec.iter().find(|ref_vec| {
+                    ref_vec
+                        .pointer("/object/sha")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .eq(&commit_id)
+                });
+
+                if let Some(ref_value) = ref_value_opt {
+                    // remote git ref found meaning there is a ref with existing commit id
+                    log::debug!("Found ref in remote git repo:\n{:#?}", ref_value);
+                    let ref_type = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
+                    if let (Some(_branch_name), "commit") = (branch_name_opt, ref_type) {
+                        // Layer was created specifying a branch name and layer commit id is the
+                        // most recent one
+                        tag_name = None;
+                        most_recent_commit = Some(true);
+                    } else if ref_type.eq("tag") {
+                        // Layer was created using a tag or a hardcoded commit id that matches a
+                        // tag
+                        tag_name = Some(
+                            ref_value["ref"]
+                                .as_str()
+                                .unwrap()
+                                .trim_start_matches("refs/tags/"),
+                        );
+                        most_recent_commit = Some(false);
+                    } else {
+                        // Layer was created using a hardcoded commit id
+                        // In theory this case could never happen because if we found a ref, then
+                        // it must be either a branch or a tag
+                        tag_name = None;
+                        most_recent_commit = None;
+                    }
+                } else {
+                    // No ref found in remote git repo
+                    log::debug!("No ref found in remote git repo");
+                    tag_name = None;
+                    most_recent_commit = None;
+                }
+
                 let commit_id_opt = layer.commit.as_ref();
 
                 let gitea_commit_details: serde_json::Value = if let Some(commit_id) = commit_id_opt
@@ -71,17 +128,20 @@ pub async fn exec(
                         .clone_url
                         .trim_start_matches("https://api.cmn.alps.cscs.ch")
                         .trim_end_matches(".git"),
-                    layer.commit.as_ref().unwrap_or(&"Not defined".to_string()),
+                    &commit_id,
                     gitea_commit_details
-                        .pointer("commit/committer/name")
+                        .pointer("/commit/committer/name")
                         .unwrap_or(&serde_json::json!("Not defined"))
                         .as_str()
                         .unwrap(),
                     gitea_commit_details
-                        .pointer("commit/committer/date")
+                        .pointer("/commit/committer/date")
                         .unwrap_or(&serde_json::json!("Not defined"))
                         .as_str()
                         .unwrap(),
+                    branch_name_opt,
+                    tag_name,
+                    most_recent_commit,
                 ));
             }
 

@@ -99,23 +99,50 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     let mut layers: String = String::new();
 
-    if !cfs_configuration.config_layers.is_empty() {
+    for layer in cfs_configuration.config_layers {
         layers = format!(
-            "commit id: {} commit date: {} name: {} author: {}",
-            cfs_configuration.config_layers[0].commit_id,
-            cfs_configuration.config_layers[0].commit_date,
+            "{}Name: {}\nCommit date: {}\nAuthor: {}\nBranch: {} -- Is up to date? {}\nTag: {}\nCommit ID: {}\n\n",
+            layers,
+            layer.name,
+            layer.commit_date,
+            layer.author,
+            layer.branch.unwrap_or("Not defined".to_string()),
+            layer.most_recent_commit.unwrap_or(false),
+            layer.tag.unwrap_or("Not defined".to_string()),
+            layer.commit_id,
+        );
+    }
+
+    layers = layers.trim_end_matches("\n\n").to_string();
+
+    /* if !cfs_configuration.config_layers.is_empty() {
+        layers = format!(
+            "Name: {}\nCommit date: {}\nAuthor: {}\nBranch: {} Most recent?: {}\nTag: {}\nCommit ID: {}",
             cfs_configuration.config_layers[0].name,
-            cfs_configuration.config_layers[0].author
+            cfs_configuration.config_layers[0].commit_date,
+            cfs_configuration.config_layers[0].author,
+            cfs_configuration.config_layers[0]
+                .branch
+                .as_ref()
+                .unwrap_or(&"Not deinfed".to_string()),
+            cfs_configuration.config_layers[0].most_recent_commit.as_ref().unwrap_or(&"Not defined".to_string()).to_string(),
+            cfs_configuration.config_layers[0].tag.as_ref().unwrap_or(&"Not defined".to_string()),
+            cfs_configuration.config_layers[0].commit_id,
         );
 
         for i in 1..cfs_configuration.config_layers.len() {
             let layer = &cfs_configuration.config_layers[i];
             layers = format!(
-                "{}\ncommit id: {} commit date: {} name: {} author: {}",
-                layers, layer.commit_id, layer.commit_date, layer.name, layer.author
+                "{}\n\nName: {}\nCommit date: {}\nAuthor: {}\nBranch: {}\nCommit ID: {}",
+                layers,
+                layer.name,
+                layer.commit_date,
+                layer.author,
+                layer.branch.as_ref().unwrap_or(&"Not defined".to_string()),
+                layer.commit_id,
             );
         }
-    }
+    } */
 
     table.add_row(vec![
         cfs_configuration.name,

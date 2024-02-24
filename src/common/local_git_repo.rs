@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports)] // TODO: to avoid compiler from complaining about unused methods
-
 use std::error::Error;
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 use std::io::{self, Write};
@@ -76,7 +74,7 @@ pub fn untracked_changed_local_files(
     }
 }
 
-/// equivalent to `git add .`
+/// Equivalent to `git add .`
 pub fn add_all(repo: &Repository) {
     let mut index = repo.index().unwrap();
 
@@ -116,6 +114,7 @@ pub fn add_all(repo: &Repository) {
     index.write().unwrap();
 }
 
+/// Equivalent to `git commit`
 pub fn commit(repo: &Repository) {
     let mut index = repo.index().unwrap();
     let oid = index.write_tree().unwrap();
@@ -133,6 +132,7 @@ pub fn commit(repo: &Repository) {
     .unwrap();
 }
 
+/// Equivalent to `git push`
 pub fn push(mut remote: Remote) -> Result<(), git2::Error> {
     // Configure callbacks for push operation
     let mut callbacks = git2::RemoteCallbacks::new();
@@ -198,6 +198,7 @@ pub fn push(mut remote: Remote) -> Result<(), git2::Error> {
     )
 }
 
+/// Equivalent to `git fetch`
 pub fn fetch<'a>(
     repo: &'a git2::Repository,
     refs: &[&str],
@@ -206,13 +207,13 @@ pub fn fetch<'a>(
     let mut cb = git2::RemoteCallbacks::new();
 
     // TODO: CLEAN THIS!!!
-    cb.credentials(|_url, username_from_url, _allowed_types| {
-        log::debug!("url is: {}", _url);
+    cb.credentials(|url, username_from_url, allowed_types| {
+        log::debug!("url is: {}", url);
         log::debug!(
             "username from url is: {}",
             username_from_url.unwrap_or("Not defined")
         ); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git'
-        log::debug!("allowed types are: {:#?}", _allowed_types);
+        log::debug!("allowed types are: {:#?}", allowed_types);
 
         if username_from_url.unwrap().eq("git") {
             // ssh authentication
@@ -327,3 +328,132 @@ pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), 
 
     Ok(())
 }
+
+/* #[cfg(test)]
+mod tests {
+    use super::fetch;
+    use std::io::{self, Write};
+
+    #[test]
+    fn test_fetch() {
+        let mut cb = git2::RemoteCallbacks::new();
+
+        let url = "https://vcs.cmn.alps.cscs.ch/vcs/cray/cscs-config-management.git";
+        let username = "crayvcs";
+        let password = "f557a93bc816235de79534d835e48cc1037375bca3850acaa67d27a672a991cf";
+
+        println!("DEBUG - 0");
+
+        cb.credentials(|_, _, _| git2::Cred::userpass_plaintext(username, password));
+
+        let repo = git2::Repository::init("fake_repo").unwrap();
+        git2::opts::set_ssl_cert_file("/home/msopena/.config/manta/opa-gpm-cmn-alps-cscs-ch-chain.pem");
+
+        println!("DEBUG - 1");
+
+        /* // TODO: CLEAN THIS!!!
+        cb.credentials(|url, username_from_url, allowed_types| {
+            log::debug!("url is: {}", url);
+            log::debug!(
+                "username from url is: {}",
+                username_from_url.unwrap_or("Not defined")
+            ); // IMPORTANT: username from url is None because .git/config has https address 'url = https://git.cscs.ch/msopena/manta.git'
+            log::debug!("allowed types are: {:#?}", allowed_types);
+
+            if username_from_url.unwrap().eq("git") {
+                // ssh authentication
+                git2::Cred::ssh_key(
+                    username_from_url.unwrap(),
+                    None,
+                    std::path::Path::new(&format!(
+                        "{}/.ssh/gitlab_vcef",
+                        std::env::var("HOME").expect("key file ~/.ssh/gitlab_vcef not found")
+                    )),
+                    None,
+                )
+            } else {
+                // plain username and password authentication
+                let username: String = Input::new()
+                    .with_prompt("Username: ")
+                    .interact_text()
+                    .unwrap();
+
+                let password = Password::new()
+                    .with_prompt("New Password")
+                    .with_confirmation("Confirm password", "Passwords mismatching")
+                    .interact()
+                    .unwrap();
+
+                git2::Cred::userpass_plaintext(&username, &password) // IMPORTANT: this with combination of .git/config having an https address 'url = https://git.cscs.ch/msopena/manta.git' makes library to switch to CredentialType::USER_PASS_PLAINTEXT
+            }
+        }); */
+
+        // Print out our transfer progress.
+        cb.transfer_progress(|stats| {
+            if stats.received_objects() == stats.total_objects() {
+                print!(
+                    "Resolving deltas {}/{}\r",
+                    stats.indexed_deltas(),
+                    stats.total_deltas()
+                );
+            } else if stats.total_objects() > 0 {
+                print!(
+                    "Received {}/{} objects ({}) in {} bytes\r",
+                    stats.received_objects(),
+                    stats.total_objects(),
+                    stats.indexed_objects(),
+                    stats.received_bytes()
+                );
+            }
+            std::io::stdout().flush().unwrap();
+
+            true
+        });
+
+        let mut fo = git2::FetchOptions::new();
+        fo.remote_callbacks(cb);
+        // Always fetch all tags.
+        // Perform a download and also update tips
+        fo.download_tags(git2::AutotagOption::All);
+
+        println!("DEBUG - 2");
+
+        let remote_rslt = repo.remote("csm-gitea", url);
+
+        let mut remote = match remote_rslt {
+            Ok(remote) => remote,
+            Err(error) => {
+                eprintln!("ERROR:\n{:#?}", error);
+                std::process::exit(1);
+            }
+        };
+
+        println!("DEBUG - 3");
+
+        println!("Fetching remote {} for repo", remote.name().unwrap());
+        remote.fetch(&["main"], Some(&mut fo), None).unwrap();
+
+        println!("DEBUG - 4");
+
+        // If there are local objects (we got a thin pack), then tell the user
+        // how many objects we saved from having to cross the network.
+        let stats = remote.stats();
+        if stats.local_objects() > 0 {
+            println!(
+                "\rReceived {}/{} objects in {} bytes (used {} local \
+                 objects)",
+                stats.indexed_objects(),
+                stats.total_objects(),
+                stats.received_bytes(),
+                stats.local_objects()
+            );
+        } else {
+            println!(
+                "\rReceived {}/{} objects in {} bytes",
+                stats.indexed_objects(),
+                stats.total_objects(),
+                stats.received_bytes()
+            );
+        }
+    }
+} */

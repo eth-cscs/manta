@@ -156,7 +156,6 @@ pub fn render_jinja2_sat_file_yaml(
     let env = minijinja::Environment::new();
     let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
 
-    println!("DEBUG - SAT FILE RENDERED:\n{}", sat_file_rendered);
     log::debug!("SAT file rendered:\n{}", sat_file_rendered);
 
     let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
