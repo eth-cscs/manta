@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] - 2024-02-24
+
+### Bug Fixes
+
+- Get configuration, get image, get template was filtering way too
+- Ci pipeline not generating homebrew installation command till cc
+
+### Features
+
+- Get configuration now resolves gitea information like branch and
+- Update mesa library
+
 ## [1.24.2] - 2024-02-23
 
 ### Bug Fixes
@@ -12,6 +24,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Replace __DATE__ in SAT file vars file and cli vars for timestamp
+
+### Miscellaneous Tasks
+
+- Release manta version 1.24.2
 
 ### Refactor
 
