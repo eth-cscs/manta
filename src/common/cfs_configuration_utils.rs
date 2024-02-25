@@ -101,19 +101,19 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}Name: {}\nCommit date: {}\nAuthor: {}\nBranch: {} -- Is up to date? {}\nTag: {}\nCommit ID: {}\n\n",
+            "{}\n\nName: {}\nBranch: {} / Is up to date? {}\nTag: {}\nCommit date: {}\nAuthor: {}\nCommit ID: {}",
             layers,
             layer.name,
-            layer.commit_date,
-            layer.author,
             layer.branch.unwrap_or("Not defined".to_string()),
             layer.most_recent_commit.unwrap_or(false),
             layer.tag.unwrap_or("Not defined".to_string()),
+            layer.commit_date,
+            layer.author,
             layer.commit_id,
         );
     }
 
-    layers = layers.trim_end_matches("\n\n").to_string();
+    layers = layers.trim_start_matches("\n\n").to_string();
 
     /* if !cfs_configuration.config_layers.is_empty() {
         layers = format!(
