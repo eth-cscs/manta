@@ -220,7 +220,7 @@ pub fn subcommand_get_hw_components() -> Command {
                 .arg_required_else_help(true)
                 .about("Get hw components for a cluster")
                 .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "pattern"]));
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "summary", "details"]).default_value("summary"));
 
     let command_get_hs_configuration_node = Command::new("node")
                 .alias("n")

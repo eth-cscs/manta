@@ -95,8 +95,15 @@ pub async fn exec(
     } else if output_opt.is_some_and(|output| output.eq("pattern")) {
         let hsm_node_hw_component_count_hashmap = get_cluster_hw_pattern(hsm_summary);
         print_to_terminal_cluster_hw_pattern(hsm_group_name, hsm_node_hw_component_count_hashmap)
+    } else if output_opt.is_some_and(|output| output.eq("details")) {
+        print_table_details(&hsm_summary);
+    } else if output_opt.is_some_and(|output| output.eq("summary")) {
+        let hsm_node_hw_component_summary =
+            mesa::hsm::hw_inventory::mesa::utils::calculate_hsm_hw_component_summary(&hsm_summary);
+
+        print_table_summary(&hsm_node_hw_component_summary);
     } else {
-        print_table(&hsm_summary);
+        eprintln!("'output' value not valid. Exit");
     }
 }
 
@@ -170,7 +177,20 @@ pub fn print_to_terminal_cluster_hw_pattern(
     );
 }
 
-pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
+pub fn print_table_summary(hsm_hw_component_summary_vec: &HashMap<String, usize>) {
+    let headers = hsm_hw_component_summary_vec.keys();
+
+    let mut table = comfy_table::Table::new();
+
+    table.set_header(headers);
+    table.add_row(comfy_table::Row::from(
+        hsm_hw_component_summary_vec.values(),
+    ));
+
+    println!("{table}");
+}
+
+pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
     let mut hsm_node_hw_component_count_hashmap_vec: Vec<(String, HashMap<String, usize>)> = vec![];
 
     let mut processor_set: HashSet<String> = HashSet::new();
