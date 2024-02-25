@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.1] - 2024-02-25
+
+### Refactor
+
+- Reformat how CFS configuration layer details are printed on screen
+
 ## [1.25.0] - 2024-02-24
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 
 - Get configuration now resolves gitea information like branch and
 - Update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.25.0
 
 ## [1.24.2] - 2024-02-23
 
