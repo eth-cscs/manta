@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.0] - 2024-02-28
+
+### Bug Fixes
+
+- Bug in apply cluster subcommand where it was failing when reading
+
+### Features
+
+- Show more detailed information related to CFS configuration
+- Commands add node, remove, node, add, hw, remove, hw and apply hw
+- Update manta version
+
+### Refactor
+
+- Clean code
+
 ## [1.26.0] - 2024-02-25
 
 ### Features
 
 - Get hw components subcommands now can print information as a summary of all hw components in a cluster
+
+### Miscellaneous Tasks
+
+- Release manta version 1.26.0
 
 ## [1.25.1] - 2024-02-25
 
