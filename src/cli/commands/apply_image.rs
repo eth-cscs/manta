@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::configuration::mesa::r#struct::cfs_configuration_response::{
         ApiError, CfsConfigurationResponse,
@@ -42,33 +43,21 @@ pub async fn exec(
         values_cli_opt,
     );
 
-    /* let file_content = std::fs::read_to_string(sat_file_path).expect("SAT file not found. Exit");
+    println!(
+        "SAT file content:\n{}",
+        serde_yaml::to_string(&sat_file_yaml).unwrap()
+    );
+    let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Please check the template above and confirm to proceed")
+        .interact()
+        .unwrap();
 
-    let sat_file_yaml: Value = if let Some(session_vars_file_path) = values_file_path_opt {
-        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
-        // TEMPLATE
-        // Read sesson vars file
-        let session_vars_file_content = std::fs::read_to_string(session_vars_file_path).unwrap();
-        let session_vars_file_yaml: Value =
-            serde_yaml::from_str(&session_vars_file_content).unwrap();
-
-        // Render SAT file template
-        let env = minijinja::Environment::new();
-        let sat_file_rendered = env
-            .render_str(&file_content, session_vars_file_yaml)
-            .unwrap();
-
-        log::debug!("SAT file rendered:\n:{}", sat_file_rendered);
-
-        serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap()
+    if process_sat_file {
+        println!("Proceed and process SAT file");
     } else {
-        serde_yaml::from_str(&file_content).unwrap()
-    }; */
-
-    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
-
-    // VALIDATION - WE WON'T PROCESS ANYTHING IF THE USER DOES NOT HAVE ACCESS TO ANY HSM GROUP
-    // DEFINED IN THE SAT FILE
+        println!("Operation canceled by user. Exit");
+        std::process::exit(0);
+    }
 
     // Get CFS configurations from SAT YAML file
     let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();

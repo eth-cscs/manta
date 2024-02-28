@@ -1,3 +1,4 @@
+use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::configuration::mesa::r#struct::cfs_configuration_response::{
         ApiError, CfsConfigurationResponse,
@@ -33,6 +34,22 @@ pub async fn exec(
         values_file_content_opt.as_ref(),
         values_cli_opt,
     );
+
+    println!(
+        "SAT file content:\n{}",
+        serde_yaml::to_string(&sat_file_yaml).unwrap()
+    );
+    let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Please check the template above and confirm to proceed")
+        .interact()
+        .unwrap();
+
+    if process_sat_file {
+        println!("Proceed and process SAT file");
+    } else {
+        println!("Operation canceled by user. Exit");
+        std::process::exit(0);
+    }
 
     let mut cfs_configuration_value_vec = Vec::new();
 
