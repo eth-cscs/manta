@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
@@ -206,7 +207,7 @@ pub async fn exec(
 
     // Get parent HSM group members
     let mut parent_hsm_node_vec: Vec<String> = parent_hsm_group_member_vec;
-    parent_hsm_node_vec.extend(nodes_moved_from_target_hsm);
+    parent_hsm_node_vec.extend(nodes_moved_from_target_hsm.clone());
 
     parent_hsm_node_vec.sort();
 
@@ -258,6 +259,28 @@ pub async fn exec(
     } else {
         println!("Cancelled by user. Aborting.");
         std::process::exit(0);
+    }
+
+    // *********************************************************************************************************
+    // UPDATE HSM GROUP MEMBERS IN CSM
+    for xname in nodes_moved_from_target_hsm {
+        let _ = hsm::group::shasta::http_client::delete_member(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            parent_hsm_group_name,
+            &xname,
+        )
+        .await;
+
+        let _ = hsm::group::shasta::http_client::post_member(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            target_hsm_group_name,
+            &xname,
+        )
+        .await;
     }
 
     let target_hsm_group_value = serde_json::json!({

@@ -447,8 +447,8 @@ pub async fn process_session_template_section_in_sat_file(
 
         match create_bos_session_template_resp {
             Ok(bos_sessiontemplate) => println!(
-                "BOS sessiontemplate '{}' created",
-                bos_sessiontemplate["name"].as_str().unwrap()
+                "BOS sessiontemplate name '{}' created",
+                bos_sessiontemplate.as_str().unwrap()
             ),
             Err(error) => eprintln!(
                 "ERROR: BOS session template creation failed.\nReason:\n{}\nExit",

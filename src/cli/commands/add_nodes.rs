@@ -1,4 +1,4 @@
-use mesa::node::utils::validate_xnames;
+use mesa::{hsm, node::utils::validate_xnames};
 
 pub async fn exec(
     shasta_token: &str,
@@ -86,4 +86,26 @@ pub async fn exec(
         "{}",
         serde_json::to_string_pretty(&parent_hsm_group).unwrap()
     );
+
+    // *********************************************************************************************************
+    // UPDATE HSM GROUP MEMBERS IN CSM
+    for xname in new_target_hsm_members {
+        let _ = hsm::group::shasta::http_client::post_member(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            target_hsm_group_name,
+            xname,
+        )
+        .await;
+
+        let _ = hsm::group::shasta::http_client::delete_member(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            parent_hsm_group_name,
+            xname,
+        )
+        .await;
+    }
 }

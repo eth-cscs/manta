@@ -178,7 +178,7 @@ pub fn print_to_terminal_cluster_hw_pattern(
 }
 
 pub fn print_table_summary(hsm_hw_component_summary_vec: &HashMap<String, usize>) {
-    let headers = hsm_hw_component_summary_vec.keys();
+    /* let headers = hsm_hw_component_summary_vec.keys();
 
     let mut table = comfy_table::Table::new();
 
@@ -186,6 +186,18 @@ pub fn print_table_summary(hsm_hw_component_summary_vec: &HashMap<String, usize>
     table.add_row(comfy_table::Row::from(
         hsm_hw_component_summary_vec.values(),
     ));
+
+    println!("{table}"); */
+
+    let headers = ["HW Component", "Quantity"];
+
+    let mut table = comfy_table::Table::new();
+
+    table.set_header(headers);
+
+    for (hw_component, qty) in hsm_hw_component_summary_vec {
+        table.add_row(vec![hw_component, &qty.to_string()]);
+    }
 
     println!("{table}");
 }

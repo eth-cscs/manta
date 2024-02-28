@@ -1,5 +1,10 @@
+use std::collections::HashMap;
+
+use mesa::hsm::group::shasta::utils::update_hsm_group_members;
+
 use crate::cli::commands::apply_hw_cluster::utils::{
     calculate_hsm_hw_component_summary, get_hsm_group_members_from_user_pattern,
+    get_hsm_node_hw_component_counter,
 };
 
 pub async fn exec(
@@ -25,15 +30,136 @@ pub async fn exec(
 
     let (target_hsm_group_name, pattern_hw_component) = pattern_lowercase.split_once(':').unwrap();
 
-    let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
-        get_hsm_group_members_from_user_pattern(
+    let pattern_element_vec: Vec<&str> = pattern_hw_component.split(':').collect();
+
+    let mut user_defined_target_hsm_hw_component_count_hashmap: HashMap<String, usize> =
+        HashMap::new();
+
+    // Check user input is correct
+    for hw_component_counter in pattern_element_vec.chunks(2) {
+        if hw_component_counter[0].parse::<String>().is_ok()
+            && hw_component_counter[1].parse::<usize>().is_ok()
+        {
+            user_defined_target_hsm_hw_component_count_hashmap.insert(
+                hw_component_counter[0].parse::<String>().unwrap(),
+                hw_component_counter[1].parse::<usize>().unwrap(),
+            );
+        } else {
+            log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+            std::process::exit(1);
+        }
+    }
+
+    log::info!(
+        "User defined hw components with counters: {:?}",
+        user_defined_target_hsm_hw_component_count_hashmap
+    );
+
+    let mut user_defined_target_hsm_hw_component_vec: Vec<String> =
+        user_defined_target_hsm_hw_component_count_hashmap
+            .keys()
+            .cloned()
+            .collect();
+
+    user_defined_target_hsm_hw_component_vec.sort();
+
+    // *********************************************************************************************************
+    // PREPREQUISITES - GET DATA - TARGET HSM
+
+    // Get target HSM group members
+    let target_hsm_group_member_vec: Vec<String> =
+        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             target_hsm_group_name,
-            parent_hsm_group_name,
-            pattern_hw_component,
+        )
+        .await;
+
+    // Get HSM hw component counters for target HSM
+    let mut target_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)> =
+        get_hsm_node_hw_component_counter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &user_defined_target_hsm_hw_component_vec,
+            &target_hsm_group_member_vec,
             mem_lcm,
+        )
+        .await;
+
+    // Sort nodes hw counters by node name
+    target_hsm_node_hw_component_count_vec
+        .sort_by_key(|target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone());
+
+    /* log::info!(
+        "HSM '{}' hw component counters: {:?}",
+        target_hsm_group_name,
+        target_hsm_node_hw_component_count_vec
+    ); */
+
+    // Calculate hw component counters (summary) across all node within the HSM group
+    let target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
+        calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+
+    log::info!(
+        "HSM group '{}' hw component summary: {:?}",
+        target_hsm_group_name,
+        target_hsm_hw_component_summary_hashmap
+    );
+
+    // *********************************************************************************************************
+    // PREPREQUISITES - GET DATA - PARENT HSM
+
+    // Get target HSM group members
+    let parent_hsm_group_member_vec: Vec<String> =
+        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            parent_hsm_group_name,
+        )
+        .await;
+
+    // Get HSM hw component counters for parent HSM
+    let mut parent_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)> =
+        get_hsm_node_hw_component_counter(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &user_defined_target_hsm_hw_component_vec,
+            &parent_hsm_group_member_vec,
+            mem_lcm,
+        )
+        .await;
+
+    // Sort nodes hw counters by node name
+    parent_hsm_node_hw_component_count_vec
+        .sort_by_key(|parent_hsm_group_hw_component| parent_hsm_group_hw_component.0.clone());
+
+    /* log::info!(
+        "HSM '{}' hw component counters: {:?}",
+        parent_hsm_group_name,
+        parent_hsm_node_hw_component_count_vec
+    ); */
+
+    // *********************************************************************************************************
+    // CALCULATE COMBINED HSM WITH TARGET HSM AND PARENT HSM DATA
+
+    let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
+        calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
+
+    log::info!(
+        "HSM group '{}' hw component summary: {:?}",
+        parent_hsm_group_name,
+        parent_hsm_hw_component_summary_hashmap
+    );
+
+    let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
+        get_hsm_group_members_from_user_pattern(
+            target_hsm_node_hw_component_count_vec,
+            parent_hsm_node_hw_component_count_vec,
+            user_defined_target_hsm_hw_component_count_hashmap,
         )
         .await;
 
@@ -56,6 +182,43 @@ pub async fn exec(
         .collect::<Vec<String>>();
 
     // *********************************************************************************************************
+    // UPDATE TARGET HSM GROUP IN CSM
+    log::info!(
+        "Updating target HSM group '{}' members",
+        target_hsm_group_name
+    );
+
+    let _ = update_hsm_group_members(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        target_hsm_group_name,
+        &target_hsm_group_member_vec,
+        &target_hsm_node_vec,
+    )
+    .await;
+
+    // *********************************************************************************************************
+    // UPDATE PARENT GROUP IN CSM
+    log::info!(
+        "Updating parent HSM group '{}' members",
+        parent_hsm_group_name
+    );
+
+    let _ = update_hsm_group_members(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        parent_hsm_group_name,
+        &parent_hsm_group_member_vec,
+        &parent_hsm_node_vec,
+    )
+    .await;
+
+    // *********************************************************************************************************
+    // RETURN VALUES
+
+    // *********************************************************************************************************
     // PRINT SOLUTIONS
 
     // Print target HSM data
@@ -64,10 +227,6 @@ pub async fn exec(
         target_hsm_group_name,
         target_hsm_hw_component_summary_hashmap
     );
-    /* println!(
-        "HSM '{}' members: {:?}",
-        target_hsm_group_name, target_hsm_nodes
-    ); */
 
     let target_hsm_group_value = serde_json::json!({
         "label": target_hsm_group_name,
@@ -87,10 +246,6 @@ pub async fn exec(
         parent_hsm_group_name,
         parent_hsm_hw_component_summary_hashmap
     );
-    /* println!(
-        "HSM '{}' members: {:?}",
-        parent_hsm_group_name, parent_hsm_nodes
-    ); */
 
     let parent_hsm_group_value = serde_json::json!({
         "label": parent_hsm_group_name,
@@ -116,137 +271,13 @@ pub mod utils {
 
     // Returns a tuple with 2 list of nodes and its hardware components.
     pub async fn get_hsm_group_members_from_user_pattern(
-        shasta_token: &str,
-        shasta_base_url: &str,
-        shasta_root_cert: &[u8],
-        target_hsm_group_name: &str,
-        parent_hsm_group_name: &str,
-        pattern_hw_components: &str,
-        mem_lcm: u64,
+        target_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)>,
+        parent_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)>,
+        user_defined_target_hsm_hw_component_count_hashmap: HashMap<String, usize>,
     ) -> (
         Vec<(String, HashMap<String, usize>)>,
         Vec<(String, HashMap<String, usize>)>,
     ) {
-        let pattern_element_vec: Vec<&str> = pattern_hw_components.split(':').collect();
-
-        let mut user_defined_target_hsm_hw_component_count_hashmap: HashMap<String, usize> =
-            HashMap::new();
-
-        // Check user input is correct
-        for hw_component_counter in pattern_element_vec.chunks(2) {
-            if hw_component_counter[0].parse::<String>().is_ok()
-                && hw_component_counter[1].parse::<usize>().is_ok()
-            {
-                user_defined_target_hsm_hw_component_count_hashmap.insert(
-                    hw_component_counter[0].parse::<String>().unwrap(),
-                    hw_component_counter[1].parse::<usize>().unwrap(),
-                );
-            } else {
-                log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
-                std::process::exit(1);
-            }
-        }
-
-        log::info!(
-            "User defined hw components with counters: {:?}",
-            user_defined_target_hsm_hw_component_count_hashmap
-        );
-        let mut user_defined_target_hsm_hw_component_vec: Vec<String> =
-            user_defined_target_hsm_hw_component_count_hashmap
-                .keys()
-                .cloned()
-                .collect();
-
-        user_defined_target_hsm_hw_component_vec.sort();
-
-        // *********************************************************************************************************
-        // PREPREQUISITES - GET DATA - TARGET HSM
-
-        // Get target HSM group members
-        let target_hsm_group_member_vec: Vec<String> =
-            mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                target_hsm_group_name,
-            )
-            .await;
-
-        // Get HSM hw component counters for target HSM
-        let mut target_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &user_defined_target_hsm_hw_component_vec,
-            &target_hsm_group_member_vec,
-            mem_lcm,
-        )
-        .await;
-
-        // Sort nodes hw counters by node name
-        target_hsm_node_hw_component_count_vec
-            .sort_by_key(|target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone());
-
-        /* log::info!(
-            "HSM '{}' hw component counters: {:?}",
-            target_hsm_group_name,
-            target_hsm_node_hw_component_count_vec
-        ); */
-
-        // Calculate hw component counters (summary) across all node within the HSM group
-        let target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
-            calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
-
-        log::info!(
-            "HSM group '{}' hw component summary: {:?}",
-            target_hsm_group_name,
-            target_hsm_hw_component_summary_hashmap
-        );
-
-        // *********************************************************************************************************
-        // PREPREQUISITES - GET DATA - PARENT HSM
-
-        // Get target HSM group members
-        let parent_hsm_group_member_vec: Vec<String> =
-            mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                parent_hsm_group_name,
-            )
-            .await;
-
-        // Get HSM hw component counters for parent HSM
-        let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &user_defined_target_hsm_hw_component_vec,
-            &parent_hsm_group_member_vec,
-            mem_lcm,
-        )
-        .await;
-
-        // Sort nodes hw counters by node name
-        parent_hsm_node_hw_component_count_vec
-            .sort_by_key(|parent_hsm_group_hw_component| parent_hsm_group_hw_component.0.clone());
-
-        /* log::info!(
-            "HSM '{}' hw component counters: {:?}",
-            parent_hsm_group_name,
-            parent_hsm_node_hw_component_count_vec
-        ); */
-
-        // Calculate hw component counters (summary) across all node within the HSM group
-        let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
-            calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
-
-        log::info!(
-            "HSM group '{}' hw component summary: {:?}",
-            parent_hsm_group_name,
-            parent_hsm_hw_component_summary_hashmap
-        );
-
         // *********************************************************************************************************
         // CALCULATE COMBINED HSM WITH TARGET HSM AND PARENT HSM DATA
 
@@ -297,7 +328,6 @@ pub mod utils {
 
         let new_target_hsm_node_hw_component_count_vec =
             hw_component_counters_to_move_out_from_combined_hsm;
-
         (
             new_target_hsm_node_hw_component_count_vec,
             combined_target_parent_hsm_node_hw_component_count_vec,

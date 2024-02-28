@@ -3,55 +3,6 @@ use mesa::cfs::configuration::mesa::r#struct::{
     cfs_configuration::Configuration, cfs_configuration_response::CfsConfigurationResponse,
 };
 
-/* pub fn print_table_value(cfs_configuration_value_vec: &Vec<Value>) {
-    let mut table = Table::new();
-
-    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
-
-    for cfs_configuration_value in cfs_configuration_value_vec {
-        let mut layers: Vec<String> = Vec::new();
-
-        if cfs_configuration_value.get("layers").is_some()
-            && cfs_configuration_value["layers"].is_array()
-        {
-            let cfs_configuration_layer_value_vec =
-                cfs_configuration_value["layers"].as_array().unwrap();
-
-            for (i, cfs_configuration_layer_value) in
-                cfs_configuration_layer_value_vec.iter().enumerate()
-            {
-                println!(
-                    "cfs_configuration_layer_value: {}",
-                    cfs_configuration_layer_value
-                );
-                layers.push(format!(
-                    "Layer {}:\n - commit id: {}\n - branch: {}n\n - name: {}\n - clone url: {}\n - playbook: {}",
-                    i,
-                    cfs_configuration_layer_value["commit"].as_str().unwrap(),
-                    cfs_configuration_layer_value["branch"].as_str().unwrap(),
-                    cfs_configuration_layer_value["name"].as_str().unwrap(),
-                    cfs_configuration_layer_value["cloneUrl"].as_str().unwrap(),
-                    cfs_configuration_layer_value["playbook"].as_str().unwrap(),
-                ));
-            }
-        }
-
-        table.add_row(vec![
-            cfs_configuration_value["name"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-            cfs_configuration_value["lastUpdated"]
-                .as_str()
-                .unwrap()
-                .to_string(),
-            layers.join("\n--------------------------\n").to_string(),
-        ]);
-    }
-
-    println!("{table}");
-} */
-
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
 
@@ -101,11 +52,17 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}\n\nName: {}\nBranch: {} / Is up to date? {}\nTag: {}\nCommit date: {}\nAuthor: {}\nCommit ID: {}",
+            "{}\n\nName: {}\nBranch: {} {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}",
             layers,
             layer.name,
             layer.branch.unwrap_or("Not defined".to_string()),
-            layer.most_recent_commit.unwrap_or(false),
+            if let Some(true) = layer.most_recent_commit {
+                "(Up to date)"
+            } else if let Some(false) = layer.most_recent_commit {
+                "(Outdated)"
+            } else {
+                ""
+            },
             layer.tag.unwrap_or("Not defined".to_string()),
             layer.commit_date,
             layer.author,

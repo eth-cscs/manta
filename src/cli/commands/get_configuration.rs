@@ -53,6 +53,7 @@ pub async fn exec(
                 let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
                 let branch_name_opt: Option<&str> = layer.branch.as_deref();
                 let most_recent_commit;
+                let branch_name;
                 let tag_name;
 
                 let repo_ref_vec: Vec<Value> = gitea::http_client::get_all_refs(
@@ -77,11 +78,30 @@ pub async fn exec(
                     // remote git ref found meaning there is a ref with existing commit id
                     log::debug!("Found ref in remote git repo:\n{:#?}", ref_value);
                     let ref_type = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
-                    if let (Some(_branch_name), "commit") = (branch_name_opt, ref_type) {
+                    if ref_type.eq("commit") {
                         // Layer was created specifying a branch name and layer commit id is the
                         // most recent one
                         tag_name = None;
-                        most_recent_commit = Some(true);
+                        branch_name = Some(
+                            ref_value["ref"]
+                                .as_str()
+                                .unwrap()
+                                .trim_start_matches("refs/heads/"),
+                        );
+                        // check if layer commit is the most recent
+                        if ref_value
+                            .pointer("/object/sha")
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                            .eq(layer.commit.as_ref().unwrap())
+                        {
+                            // CFS layer commit is the same as the HEAD of the branch
+                            most_recent_commit = Some(true);
+                        } else {
+                            // CFS Layer commit is outdated
+                            most_recent_commit = Some(false);
+                        }
                     } else if ref_type.eq("tag") {
                         // Layer was created using a tag or a hardcoded commit id that matches a
                         // tag
@@ -91,18 +111,21 @@ pub async fn exec(
                                 .unwrap()
                                 .trim_start_matches("refs/tags/"),
                         );
-                        most_recent_commit = Some(false);
+                        branch_name = branch_name_opt;
+                        most_recent_commit = None;
                     } else {
                         // Layer was created using a hardcoded commit id
                         // In theory this case could never happen because if we found a ref, then
                         // it must be either a branch or a tag
                         tag_name = None;
+                        branch_name = branch_name_opt;
                         most_recent_commit = None;
                     }
                 } else {
                     // No ref found in remote git repo
                     log::debug!("No ref found in remote git repo");
                     tag_name = None;
+                    branch_name = branch_name_opt;
                     most_recent_commit = None;
                 }
 
@@ -139,7 +162,7 @@ pub async fn exec(
                         .unwrap_or(&serde_json::json!("Not defined"))
                         .as_str()
                         .unwrap(),
-                    branch_name_opt,
+                    branch_name,
                     tag_name,
                     most_recent_commit,
                 ));
