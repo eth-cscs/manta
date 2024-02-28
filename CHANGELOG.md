@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.0] - 2024-02-28
+
+### Bug Fixes
+
+- Add dialog asking user to validate SAT file for commands apply
+
 ## [1.27.0] - 2024-02-28
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 - Show more detailed information related to CFS configuration
 - Commands add node, remove, node, add, hw, remove, hw and apply hw
 - Update manta version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.27.0
 
 ### Refactor
 
