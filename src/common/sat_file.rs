@@ -323,7 +323,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
     //     .to_string()
     //     .replace("__DATE__", tag);
 
-    log::info!("Importing image '{}'", image_name);
+    log::info!("Creating CFS session related to build image '{}'", image_name);
 
     // Get CFS configuration related to CFS session in SAT file
     let configuration: String = image_yaml["configuration"]

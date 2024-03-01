@@ -52,18 +52,16 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}\n\nName: {}\nBranch: {} {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}",
+            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}",
             layers,
             layer.name,
-            layer.branch.unwrap_or("Not defined".to_string()),
-            if let Some(true) = layer.most_recent_commit {
+            layer.branch,
+            /* if let true = layer.most_recent_commit {
                 "(Up to date)"
-            } else if let Some(false) = layer.most_recent_commit {
-                "(Outdated)"
             } else {
-                ""
-            },
-            layer.tag.unwrap_or("Not defined".to_string()),
+                "(Outdated)"
+            }, */
+            layer.tag,
             layer.commit_date,
             layer.author,
             layer.commit_id,
