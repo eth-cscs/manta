@@ -138,7 +138,7 @@ pub async fn exec(
 
         let cfs_configuration_name = cfs_configuration.name.to_string();
 
-        log::info!("CFS configuration '{}' created", cfs_configuration_name);
+        println!("CFS configuration '{}' created", cfs_configuration_name);
 
         cfs_configuration_name_vec.push(cfs_configuration_name.clone());
 

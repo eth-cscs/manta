@@ -119,8 +119,6 @@ pub async fn get_configuration_layer_details(
         })
         .collect();
 
-    println!("DEBUG - ref value vec:\n{:#?}", ref_value_vec);
-
     // Check if ref filtering returns an annotated tag, if so, then get the SHA of its
     // commit because it will be needed in case there are branches related to the
     // annotated tag
@@ -132,8 +130,6 @@ pub async fn get_configuration_layer_details(
         let ref_type: &str = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
 
         let mut r#ref = ref_value["ref"].as_str().unwrap().split("/").skip(1);
-
-        println!("DEBUG - ref value:\n{:?}", r#ref_value);
 
         let ref_1 = r#ref.next();
         let ref_2 = r#ref.next();
@@ -157,11 +153,6 @@ pub async fn get_configuration_layer_details(
                 .as_str()
                 .unwrap();
 
-            println!(
-                "DEBUG - annotated tag '{}' commit sha '{}'",
-                tag_name, commit_sha
-            );
-
             let annotated_tag_commit_sha = [commit_id.clone(), commit_sha.to_string()];
 
             ref_value_vec = repo_ref_vec
@@ -180,14 +171,10 @@ pub async fn get_configuration_layer_details(
         }
     }
 
-    println!("DEBUG - ref value vec:\n{:#?}", ref_value_vec);
-
     for ref_value in ref_value_vec {
         log::debug!("Found ref in remote git repo:\n{:#?}", ref_value);
         let ref_type: &str = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
         let mut r#ref = ref_value["ref"].as_str().unwrap().split("/").skip(1);
-
-        println!("DEBUG - ref value:\n{:?}", r#ref_value);
 
         let commit_sha_value: Value;
 
@@ -197,18 +184,15 @@ pub async fn get_configuration_layer_details(
         if ref_type == "commit" {
             // either branch or lightweight tag
             if let (Some("heads"), Some(branch_name_aux)) = (ref_1, ref_2) {
-                println!("DEBUG - branch");
                 // branch
                 branch_name += branch_name_aux
             } else if let (Some("tags"), Some(tag_name_aux)) = (ref_1, ref_2) {
-                println!("DEBUG - lightweight tag");
                 // lightweight tag
                 tag_name += tag_name_aux;
             }
 
             commit_sha = ref_value["url"].as_str().unwrap();
         } else {
-            println!("DEBUG - annotated tag");
             // annotated tag
             tag_name += ref_2.unwrap();
 
@@ -230,10 +214,6 @@ pub async fn get_configuration_layer_details(
 
         // check if layer commit is the most recent
         if commit_sha.eq(layer.commit.as_ref().unwrap()) {
-            println!(
-                "DEBUG - most recent commit: {:?} for ref value: {:?}",
-                layer.commit, ref_value
-            );
             // CFS layer commit is the same as the HEAD of the branch
             most_recent_commit = most_recent_commit || true;
         }
