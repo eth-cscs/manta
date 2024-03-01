@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.4] - 2024-03-01
+
+### Features
+
+- Update command no longer reboot nodes if boot image did not change
+- Update manta version
+
+### Refactor
+
+- Clean code
+
 ## [1.28.3] - 2024-03-01
 
 ### Features
 
 - Prepare to substitute apply configuration, apply image and apply cluster to apply sat-file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.3
 
 ## [1.28.2] - 2024-03-01
 
