@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.2] - 2024-03-01
+
+### Bug Fixes
+
+- Test apple artifacts
+
 ## [1.28.1] - 2024-03-01
 
 ### Features
 
 - Get configuration command shows layer information including tag
 - Update manta version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.1
 
 ### Refactor
 
