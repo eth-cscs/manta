@@ -215,7 +215,7 @@ pub async fn get_configuration_layer_details(
         // check if layer commit is the most recent
         if commit_sha.eq(layer.commit.as_ref().unwrap()) {
             // CFS layer commit is the same as the HEAD of the branch
-            most_recent_commit = most_recent_commit || true;
+            most_recent_commit = true;
         }
     }
 

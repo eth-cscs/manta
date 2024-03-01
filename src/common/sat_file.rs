@@ -140,9 +140,9 @@ pub fn render_jinja2_sat_file_yaml(
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
         // TEMPLATE
         // Read sesson vars file
-        serde_yaml::from_str(&values_file_content).unwrap()
+        serde_yaml::from_str(values_file_content).unwrap()
     } else {
-        serde_yaml::from_str(&sat_file_content).unwrap()
+        serde_yaml::from_str(sat_file_content).unwrap()
     };
 
     if let Some(value_option_vec) = value_cli_vec_opt {
@@ -154,7 +154,7 @@ pub fn render_jinja2_sat_file_yaml(
 
     // Render SAT file template
     let env = minijinja::Environment::new();
-    let sat_file_rendered = env.render_str(&sat_file_content, values_file_yaml).unwrap();
+    let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
 
     log::debug!("SAT file rendered:\n{}", sat_file_rendered);
 
@@ -207,8 +207,8 @@ pub async fn create_cfs_configuration_from_sat_file(
 ///  ref_name_processed)
 ///  - It has not been already processed
 pub fn get_next_image_to_process(
-    image_yaml_vec: &Vec<serde_yaml::Value>,
-    ref_name_processed_vec: &Vec<String>,
+    image_yaml_vec: &[serde_yaml::Value],
+    ref_name_processed_vec: &[String],
 ) -> Option<serde_yaml::Value> {
     image_yaml_vec
         .iter()
@@ -277,11 +277,11 @@ pub async fn import_images_section_in_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &image_yaml,
-            &cray_product_catalog,
+            image_yaml,
+            cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
-            &ref_name_processed_hashmap,
+            ref_name_processed_hashmap,
             // tag,
         )
         .await
@@ -289,7 +289,7 @@ pub async fn import_images_section_in_sat_file(
 
         image_processed_hashmap.insert(image_id.clone(), image_yaml.clone());
 
-        ref_name_processed_hashmap.insert(get_ref_name(&image_yaml), image_id.clone());
+        ref_name_processed_hashmap.insert(get_ref_name(image_yaml), image_id.clone());
 
         next_image_to_process_opt = get_next_image_to_process(
             &image_yaml_vec,
@@ -323,7 +323,10 @@ pub async fn create_image_from_sat_file_serde_yaml(
     //     .to_string()
     //     .replace("__DATE__", tag);
 
-    log::info!("Creating CFS session related to build image '{}'", image_name);
+    log::info!(
+        "Creating CFS session related to build image '{}'",
+        image_name
+    );
 
     // Get CFS configuration related to CFS session in SAT file
     let configuration: String = image_yaml["configuration"]
@@ -475,7 +478,8 @@ pub async fn create_image_from_sat_file_serde_yaml(
             "Image '{}' imported image_id '{}'",
             image_name, base_image_id
         );
-        return Ok(base_image_id);
+
+        Ok(base_image_id)
     } else {
         // Create a CFS session
         log::info!("Creating CFS session");
@@ -512,7 +516,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
         let image_id = cfs_session.get_result_id().unwrap();
         println!("Image '{}' imported image_id '{}'", image_name, image_id);
 
-        return Ok(image_id);
+        Ok(image_id)
     }
 }
 
@@ -521,7 +525,7 @@ async fn process_sat_file_image_product_type_ims_recipe(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     product_details: &serde_json::Value,
-    image_name: &String,
+    image_name: &str,
 ) -> Result<String, ApiError> {
     let recipe_id: String = product_details
         .as_object()
@@ -548,7 +552,7 @@ async fn process_sat_file_image_product_type_ims_recipe(
 
     let ims_job = ims::job::r#struct::JobPostRequest {
         job_type: "create".to_string(),
-        image_root_archive_name: image_name.clone(),
+        image_root_archive_name: image_name.to_string(),
         kernel_file_name: Some("vmlinuz".to_string()),
         initrd_file_name: Some("initrd".to_string()),
         kernel_parameters_file_name: Some("kernel-parameters".to_string()),

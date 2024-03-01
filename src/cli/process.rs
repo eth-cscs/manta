@@ -731,7 +731,7 @@ pub async fn process_cli(
                 )
                 .await;
 
-                Some(target_hsm_group_vec.first().unwrap());
+                target_hsm_group_vec.first().unwrap();
 
                 if let Some(ansible_limit) = hsm_group_members_opt {
                     validate_target_hsm_members(
