@@ -8,6 +8,7 @@ pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
 pub mod apply_node_reset;
+pub mod apply_sat_file;
 pub mod apply_session;
 pub mod config_set_hsm;
 pub mod config_set_log;

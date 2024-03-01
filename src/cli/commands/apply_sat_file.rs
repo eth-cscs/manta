@@ -26,7 +26,6 @@ use crate::{
     },
 };
 
-#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,

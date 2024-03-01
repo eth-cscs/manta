@@ -899,6 +899,65 @@ pub async fn process_cli(
                         .unwrap_or(&false),
                 )
                 .await;
+            } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
+                let target_hsm_group_vec = get_target_hsm_group_vec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    None,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+
+                let cli_value_vec_opt: Option<Vec<String>> =
+                    cli_apply_sat_file.get_many("values").map(|value_vec| {
+                        value_vec
+                            .map(|value: &String| value.replace("__DATE__", &timestamp))
+                            .collect()
+                    });
+
+                let cli_values_file_content_opt: Option<String> = cli_apply_sat_file
+                    .get_one("values-file")
+                    .and_then(|values_file_path: &PathBuf| {
+                        std::fs::read_to_string(values_file_path).ok().map(
+                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                        )
+                    });
+
+                let sat_file_content: String = std::fs::read_to_string(
+                    cli_apply_sat_file
+                        .get_one::<PathBuf>("sat-template-file")
+                        .expect("ERROR: SAT file not found. Exit"),
+                )
+                .expect("ERROR: reading SAT file template. Exit");
+
+                apply_cluster::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    vault_base_url,
+                    vault_secret_path,
+                    vault_role_id,
+                    k8s_api_url,
+                    sat_file_content,
+                    cli_values_file_content_opt,
+                    cli_value_vec_opt,
+                    settings_hsm_group_name_opt,
+                    &target_hsm_group_vec,
+                    cli_apply_sat_file
+                        .get_one::<String>("ansible-verbosity")
+                        .cloned()
+                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
+                    cli_apply_sat_file.get_one::<String>("ansible-passthrough"),
+                    gitea_token,
+                    // &tag,
+                    *cli_apply_sat_file
+                        .get_one::<bool>("do-not-reboot")
+                        .unwrap_or(&false),
+                )
+                .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
                 if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
                     /* apply_node_on::exec(

@@ -14,6 +14,7 @@ use crate::common::{self, cfs_configuration_utils, sat_file};
 /// match with a git repo name after concatenating it with "-config-management" (eg: layer name
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 /// Return CFS configuration name
+#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
 pub async fn exec(
     sat_file_content: String,
     values_file_content_opt: Option<String>,

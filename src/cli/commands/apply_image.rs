@@ -18,6 +18,7 @@ use crate::common::{
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
 /// placeholder is missing in the session name
 /// Return a tuple (<cfs configuration name>, <cfs session name>)
+#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
 pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
