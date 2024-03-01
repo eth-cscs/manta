@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.3] - 2024-03-01
+
+### Features
+
+- Prepare to substitute apply configuration, apply image and apply cluster to apply sat-file
+
 ## [1.28.2] - 2024-03-01
 
 ### Bug Fixes
 
 - Test apple artifacts
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.2
 
 ## [1.28.1] - 2024-03-01
 
