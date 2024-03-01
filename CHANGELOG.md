@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.1] - 2024-03-01
+
+### Features
+
+- Get configuration command shows layer information including tag
+- Update manta version
+
+### Refactor
+
+- Clean code
+
 ## [1.28.0] - 2024-02-28
 
 ### Bug Fixes
 
 - Add dialog asking user to validate SAT file for commands apply
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.0
 
 ## [1.27.0] - 2024-02-28
 
