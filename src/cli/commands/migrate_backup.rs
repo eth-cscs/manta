@@ -11,7 +11,7 @@ use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 /// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
 /// returns Ok(exit_code) or Err() with the description of the error
-pub async fn run_hook(hook: Option<&String>) -> Result<(i32), Box<dyn Error>> {
+pub async fn run_hook(hook: Option<&String>) -> Result<i32, Box<dyn Error>> {
     let mut command = shell(&hook.unwrap());
     // command.stdout(Stdio::piped());
     let output = command.execute_output().unwrap();

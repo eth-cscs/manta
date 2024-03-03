@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::node::r#struct::NodeDetails;
+use mesa::{bss::BootParameters, node::r#struct::NodeDetails};
 use serde_json::Value;
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
@@ -72,101 +72,19 @@ pub fn nodes_to_string_format_discrete_columns(
     members
 }
 
-/* /// Validates a list of xnames.
-/// Checks xnames strings are valid
-/// If hsm_group_name if provided, then checks all xnames belongs to that hsm_group
-pub async fn validate_xnames(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    xnames: &[&str],
-    hsm_group_name_opt: Option<&String>,
-) -> bool {
-    let hsm_group_members: Vec<_> = if let Some(hsm_group_name) = hsm_group_name_opt {
-        hsm::group::shasta::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(hsm_group_name),
-        )
-        .await
-        .unwrap()
-        .first()
-        .unwrap()["members"]["ids"]
-            .as_array()
-            .unwrap()
-            .to_vec()
-            .iter()
-            .map(|xname| xname.as_str().unwrap().to_string())
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
-
-    let xname_re = Regex::new(r"^x\d{4}c[0-7]s([0-9]|[1-5][0-9]|6[0-4])b[0-1]n[0-7]$").unwrap();
-
-    if xnames.iter().any(|xname| {
-        !xname_re.is_match(xname)
-            || (!hsm_group_members.is_empty() && !hsm_group_members.contains(&xname.to_string()))
-    }) {
-        return false;
-    }
-
-    /* for xname in xnames {
-        if !xname_re.is_match(xname) {
-            println!("xname {} not a valid format", xname);
-        }
-
-        if !hsm_group_members.contains(&xname.to_string()) {
-            println!("xname {} not a member of {:?}", xname, hsm_group_members)
-        }
-    } */
-
-    true
-} */
-
-pub fn get_node_vec_booting_image(image_id: &str, boot_param_vec: &[Value]) -> Vec<String> {
+/// Given a list of boot params, this function returns the list of hosts booting an image_id
+pub fn get_node_vec_booting_image(
+    image_id: &str,
+    boot_param_vec: &[BootParameters],
+) -> Vec<String> {
     let mut node_booting_image_vec = boot_param_vec
         .iter()
-        .filter(|boot_param| {
-            boot_param
-                .get("kernel")
-                .and_then(|kernel_value| kernel_value.as_str())
-                .unwrap_or("NA")
-                .strip_prefix("s3://boot-images/")
-                .and_then(|prefix_strip_kernel_path| {
-                    prefix_strip_kernel_path.strip_suffix("/kernel")
-                })
-                .is_some_and(|image_id_candidate| image_id_candidate.eq(image_id))
-        })
-        .flat_map(|boot_param| {
-            boot_param["hosts"]
-                .as_array()
-                .unwrap_or(&Vec::new())
-                .iter()
-                .map(|host| host.as_str().unwrap().to_string())
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<String>>();
+        .cloned()
+        .filter(|boot_param| boot_param.get_boot_image().eq(image_id))
+        .flat_map(|boot_param| boot_param.hosts)
+        .collect::<Vec<_>>();
 
     node_booting_image_vec.sort();
 
     node_booting_image_vec
 }
-
-/* pub async fn get_boot_image_and_nodes_booting_them_vec(
-    image_id_vec: Vec<String>,
-    boot_param_vec: Vec<Value>,
-) -> Vec<(String, Vec<String>)> {
-    let mut boot_image_node_vec = Vec::new();
-
-    for image_id in image_id_vec {
-        let nodes = get_node_vec_booting_image(&image_id, &boot_param_vec);
-
-        if !nodes.is_empty() {
-            boot_image_node_vec.push((image_id, nodes));
-        }
-    }
-
-    boot_image_node_vec
-} */

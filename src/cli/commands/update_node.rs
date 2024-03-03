@@ -1,7 +1,8 @@
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{capmc, cfs, node::utils::validate_xnames};
+use mesa::{bss::BootParameters, capmc, cfs, node::utils::validate_xnames};
+use serde_json::Value;
 
 pub async fn exec(
     shasta_token: &str,
@@ -75,7 +76,7 @@ pub async fn exec(
     }
 
     // Get new image id
-    let (new_image_id_opt, node_boot_params_opt) =
+    let (new_image_id_opt, mut node_boot_params_opt) =
         if let Some(boot_image_cfs_configuration_name) = boot_image_configuration_opt {
             // Get image id related to the boot CFS configuration
             let boot_image_id_opt = get_image_id_from_cfs_configuration_name(
@@ -87,7 +88,7 @@ pub async fn exec(
             .await;
 
             // Check image artifact exists
-            let boot_image_value_vec = if let Some(boot_image_id) = boot_image_id_opt {
+            let boot_image_value_vec: Vec<Value> = if let Some(boot_image_id) = boot_image_id_opt {
                 mesa::ims::image::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
@@ -128,7 +129,7 @@ pub async fn exec(
             // Check if need to reboot. We will reboot if the new boot image is different than the current
             // one
             // Get node boot params
-            let node_boot_params = mesa::bss::http_client::get_boot_params(
+            let node_boot_params: BootParameters = mesa::bss::http_client::get_boot_params(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -144,11 +145,7 @@ pub async fn exec(
             .clone();
 
             // Get current image id
-            let current_image_id = node_boot_params["kernel"]
-                .as_str()
-                .unwrap()
-                .trim_start_matches("s3://boot-images/")
-                .trim_end_matches("/kernel");
+            let current_image_id = node_boot_params.get_boot_image();
 
             // Check if new image id is different to the current one to find out if need to restart
             if current_image_id != new_image_id {
@@ -183,47 +180,15 @@ pub async fn exec(
         );
 
         // Update root kernel param to it uses the new image id
-        let new_kernel_params_vec: Vec<String> = node_boot_params_opt.unwrap()["params"]
-            .as_str()
-            .unwrap()
-            .split_whitespace()
-            .map(|boot_param| {
-                if boot_param.contains("root=") {
-                    let aux = boot_param
-                        .trim_start_matches("root=craycps-s3:s3://boot-images/")
-                        .split_once('/')
-                        .unwrap()
-                        .1;
-
-                    format!(
-                        "root=craycps-s3:s3://boot-images/{}/{}",
-                        new_image_id_opt.clone().unwrap(),
-                        aux
-                    )
-                } else {
-                    boot_param.to_string()
-                }
-            })
-            .collect();
+        if let Some(node_boot_params) = &mut node_boot_params_opt {
+            node_boot_params.set_boot_image(new_image_id_opt.unwrap().as_str());
+        }
 
         let component_patch_rep = mesa::bss::http_client::patch(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
-            &xnames
-                .iter()
-                .map(|xname| xname.to_string())
-                .collect::<Vec<String>>(),
-            Some(&new_kernel_params_vec.join(" ")),
-            // Some(&format!("console=ttyS0,115200 bad_page=panic crashkernel=360M hugepagelist=2m-2g intel_iommu=off intel_pstate=disable iommu.passthrough=on numa_interleave_omit=headless oops=panic pageblock_order=14 rd.neednet=1 rd.retry=10 rd.shell ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.disable_default_svc=0 cxi_core.sct_pid_mask=0xf spire_join_token=${{SPIRE_JOIN_TOKEN}} root=craycps-s3:s3://boot-images/{}/rootfs:37df9a2dc2c4b50679def2193c193c40-230:dvs:api-gw-service-nmn.local:300:nmn0", image_id)),
-            Some(&format!(
-                "s3://boot-images/{}/kernel",
-                new_image_id_opt.clone().unwrap()
-            )),
-            Some(&format!(
-                "s3://boot-images/{}/initrd",
-                new_image_id_opt.unwrap()
-            )),
+            node_boot_params_opt.as_ref().unwrap(),
         )
         .await;
 

@@ -6,6 +6,8 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::bss::BootParameters;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, cfs};
 use serde_json::Value;
 
@@ -39,38 +41,40 @@ pub async fn delete_data_related_cfs_configuration(
     // Check dessired configuration not using any CFS configuration to delete
     //
     // Get all CFS components in CSM
-    let cfs_components = mesa::cfs::component::shasta::http_client::get_multiple_components(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-    )
-    .await
-    .unwrap();
+    let cfs_components: Vec<Value> =
+        mesa::cfs::component::shasta::http_client::get_multiple_components(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
 
     // Check images related to CFS configurations to delete are not used to boot nodes. For
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     //
     // Get all BSS boot params
-    let boot_param_vec = mesa::bss::http_client::get_boot_params(
+    let boot_param_vec: Vec<BootParameters> = mesa::bss::http_client::get_boot_params(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &[],
+        &vec![],
     )
     .await
     .unwrap();
 
     // Get all CFS configurations in CSM
-    let mut cfs_configuration_vec = cfs::configuration::mesa::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-    )
-    .await
-    .unwrap();
+    let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =
+        cfs::configuration::mesa::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+        )
+        .await
+        .unwrap();
 
     cfs::configuration::mesa::utils::filter(
         shasta_token,
@@ -285,31 +289,23 @@ pub async fn delete_data_related_cfs_configuration(
 
     log::info!("Image ids to delete: {:?}", image_id_vec);
 
-    // Get list of CFS session name, CFS configuration name and image id
+    // Get list of CFS session name, CFS configuration name and image id for CFS sessions which
+    // created an image
     let cfs_session_cfs_configuration_image_id_tuple_vec: Vec<(String, String, String)> =
         cfs_session_vec
             .iter()
-            .map(|cfs_session_value| {
+            .filter(|cfs_session| cfs_session.get_result_id().is_some())
+            .map(|cfs_session| {
                 (
-                    cfs_session_value.name.clone().unwrap(),
-                    cfs_session_value
-                        .configuration
-                        .as_ref()
-                        .unwrap()
-                        .name
+                    cfs_session.name.clone().unwrap(),
+                    cfs_session
+                        .get_configuration_name()
                         .as_ref()
                         .unwrap()
                         .clone(),
-                    cfs_session_value
-                        .status
-                        .as_ref()
-                        .unwrap()
-                        .artifacts
-                        .as_ref()
-                        .unwrap()
-                        .first()
-                        .and_then(|artifact| artifact.result_id.as_ref())
-                        .unwrap_or(&"".to_string())
+                    cfs_session
+                        .get_result_id()
+                        .unwrap_or("".to_string())
                         .clone(),
                 )
             })
@@ -328,6 +324,7 @@ pub async fn delete_data_related_cfs_configuration(
             .configuration
             .as_ref()
             .unwrap();
+
         for boot_set_prop in bos_sessiontemplate_value
             .boot_sets
             .as_ref()
@@ -378,7 +375,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // We can't allow any data deletion operation which can jeopardize the system stability,
     // therefore we will filter the list of the CFS configurations and Images used to configure or boot nodes
-    for (cfs_configuration_name, image_id_vec) in cfs_configuration_image_id {
+    for (cfs_configuration_name, mut image_id_vec) in cfs_configuration_image_id {
         let mut nodes_using_cfs_configuration_as_dessired_configuration_vec = cfs_components
             .iter()
             .filter(|cfs_component| {
@@ -399,6 +396,8 @@ pub async fn delete_data_related_cfs_configuration(
                     "CFS configuration '{}' can't be deleted. Reason:\nCFS configuration '{}' used as desired configuration for nodes: {}",
                     cfs_configuration_name, cfs_configuration_name, nodes_using_cfs_configuration_as_dessired_configuration_vec.join(", "));
         }
+
+        image_id_vec.dedup();
 
         for image_id in &image_id_vec {
             let node_vec = get_node_vec_booting_image(image_id, &boot_param_vec);
@@ -432,7 +431,7 @@ pub async fn delete_data_related_cfs_configuration(
     {
         // There are CFS configuraions or Images currently used by nodes. Better to be safe and
         // stop the process
-        eprintln!("Exit");
+        eprintln!("Either images or configurations used by other clusters/nodes. Exit");
         std::process::exit(1);
     } else {
         // We are safe to delete, none of the data selected for deletion is currently used as
@@ -500,11 +499,11 @@ pub async fn delete_data_related_cfs_configuration(
 
     cfs_session_table.set_header(vec!["Name", "Configuration", "Image ID"]);
 
-    for cfs_session_tuple in &cfs_session_cfs_configuration_image_id_tuple_filtered_vec {
+    for cfs_session in &cfs_session_vec {
         cfs_session_table.add_row(vec![
-            cfs_session_tuple.0.clone(),
-            cfs_session_tuple.1.clone(),
-            cfs_session_tuple.2.clone(),
+            cfs_session.name.as_ref().unwrap_or(&"".to_string()),
+            &cfs_session.get_configuration_name().unwrap_or_default(),
+            &cfs_session.get_result_id().unwrap_or_default(),
         ]);
     }
 
