@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.5] - 2024-03-03
+
+### Features
+
+- Update mesa
+
+### Refactor
+
+- Clean code and adapt to new mesa version
+
 ## [1.28.4] - 2024-03-01
 
 ### Features
 
 - Update command no longer reboot nodes if boot image did not change
 - Update manta version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.4
 
 ### Refactor
 
