@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.6] - 2024-03-04
+
+### Bug Fixes
+
+- Remove apply artifacts/targets from CI pipeline
+
 ## [1.28.5] - 2024-03-03
 
 ### Features
 
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.5
 
 ### Refactor
 
