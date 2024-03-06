@@ -7,8 +7,8 @@ use mesa::common::authentication;
 
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
-    apply_ephemeral_env, apply_hw_cluster, apply_image, apply_session, config_set_hsm,
-    config_set_log, config_set_parent_hsm, config_set_site,
+    apply_ephemeral_env, apply_hw_cluster, apply_image, apply_sat_file, apply_session,
+    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
     config_show::{self, get_hsm_name_available_from_jwt_or_all},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
@@ -933,7 +933,7 @@ pub async fn process_cli(
                 )
                 .expect("ERROR: reading SAT file template. Exit");
 
-                apply_cluster::exec(
+                apply_sat_file::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

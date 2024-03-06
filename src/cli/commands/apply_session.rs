@@ -53,7 +53,7 @@ pub async fn exec(
     if ansible_limit.is_none() && hsm_group.is_none() && hsm_group.is_none() {
         // TODO: move this logic to clap in order to manage error messages consistently??? can/should I??? Maybe I should look for input params in the config file if not provided by user???
         eprintln!("Need to specify either ansible-limit or hsm-group or both. (hsm-group value can be provided by cli param or in config file)");
-        std::process::exit(-1);
+        std::process::exit(1);
     }
 
     // * End validation input params
@@ -281,7 +281,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             eprintln!(
                 "The node {} from the list provided is already assigned to a running/pending CFS session. Please try again latter. Exitting", node
             );
-            std::process::exit(-1);
+            std::process::exit(1);
         }
     }
 

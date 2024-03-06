@@ -55,6 +55,7 @@ pub async fn exec(
         "SAT file content:\n{}",
         serde_yaml::to_string(&sat_file_yaml).unwrap()
     );
+
     let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt("Please check the template above and confirm to proceed")
         .interact()
@@ -73,7 +74,7 @@ pub async fn exec(
     let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_yaml_vec = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
 
     // Get inages from SAT YAML file
     let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
@@ -82,7 +83,16 @@ pub async fn exec(
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
     // VALIDATION
-    validate_sat_file_images_section(image_yaml_vec_opt, hsm_group_available_vec);
+    validate_sat_file_images_section(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        image_yaml_vec_opt,
+        configuration_yaml_vec_opt,
+        hsm_group_available_vec,
+    )
+    .await;
+
     // Check HSM groups in session_templates in SAT file section matches the ones in JWT token (keycloak roles) in  file
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
@@ -115,7 +125,7 @@ pub async fn exec(
 
     let mut cfs_configuration_name_vec = Vec::new();
 
-    for configuration_yaml in configuration_yaml_vec.unwrap_or(&vec![]).iter() {
+    for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&vec![]).iter() {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
             common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
@@ -221,7 +231,7 @@ pub fn validate_sat_file_session_template_section(
                         bos_session_template_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
-                std::process::exit(-1);
+                std::process::exit(1);
             }
         }
     }

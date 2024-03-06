@@ -18,7 +18,7 @@ use crate::common::{
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
 /// placeholder is missing in the session name
 /// Return a tuple (<cfs configuration name>, <cfs session name>)
-#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
+#[deprecated(since = "1.28.2", note = "Please use `apply_sat_file` instead")]
 pub async fn exec(
     vault_base_url: &str,
     vault_secret_path: &str,
@@ -76,7 +76,15 @@ pub async fn exec(
     }
 
     // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
-    validate_sat_file_images_section(image_yaml_vec_opt, hsm_group_available_vec);
+    validate_sat_file_images_section(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        image_yaml_vec_opt,
+        configuration_yaml_vec_opt,
+        hsm_group_available_vec,
+    )
+    .await;
 
     let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
         vault_base_url,
@@ -141,13 +149,18 @@ pub async fn exec(
     );
 }
 
-pub fn validate_sat_file_images_section(
+pub async fn validate_sat_file_images_section(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     image_yaml_vec_opt: Option<&Vec<Value>>,
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
     hsm_group_available_vec: &[String],
 ) {
-    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
-    for image_yaml_vec in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        for hsm_group in image_yaml_vec["configuration_group_names"]
+    // Validate 'images' sesion in SAT file
+    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
+        // Validate user has access to HSM groups in image section
+        for hsm_group in image_yaml["configuration_group_names"]
             .as_sequence()
             .unwrap_or(&Vec::new())
             .iter()
@@ -162,11 +175,69 @@ pub fn validate_sat_file_images_section(
                 println!(
                         "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
-                        image_yaml_vec["name"].as_str().unwrap(),
+                        image_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
-                std::process::exit(-1);
+                std::process::exit(1);
             }
+        }
+
+        // Validate base image exists
+        if let Some(image_base_id) = image_yaml["ims"]["id"].as_str() {
+            let image_base_id_exists_rslt = mesa::ims::image::shasta::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                Some(image_base_id),
+            )
+            .await;
+
+            if image_base_id_exists_rslt.is_err() {
+                println!(
+                    "Base iamge id '{}' in image '{}' not found. Exit",
+                    image_base_id,
+                    image_yaml["name"].as_str().unwrap(),
+                );
+                std::process::exit(1);
+            }
+        }
+
+        // Validate CFS configuration exists
+        if let Some(configuration_yaml_vec) = configuration_yaml_vec_opt {
+            let configuration_name = image_yaml["configuration"].as_str().unwrap();
+            let image_configuration_in_sat_file =
+                configuration_yaml_vec.iter().any(|configuration_yaml| {
+                    configuration_yaml["name"]
+                        .as_str()
+                        .unwrap()
+                        .eq(configuration_name)
+                });
+
+            if !image_configuration_in_sat_file {
+                // CFS configuration in image not found in SAT file, searching in CSM
+                if mesa::cfs::configuration::shasta::http_client::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(configuration_name),
+                )
+                .await
+                .is_err()
+                {
+                    println!(
+                        "Configuration '{}' in image '{}' not found. Exit",
+                        configuration_name,
+                        image_yaml["name"].as_str().unwrap(),
+                    );
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            println!(
+                "Image '{}' is missing 'configuration' value. Exit",
+                image_yaml["name"].as_str().unwrap(),
+            );
+            std::process::exit(1);
         }
     }
 }

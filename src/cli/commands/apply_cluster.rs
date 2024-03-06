@@ -26,7 +26,7 @@ use crate::{
     },
 };
 
-#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
+#[deprecated(since = "1.28.2", note = "Please use `apply_sat_file` instead")]
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -74,7 +74,7 @@ pub async fn exec(
     let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_yaml_vec = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
 
     // Get inages from SAT YAML file
     let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
@@ -83,12 +83,23 @@ pub async fn exec(
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
     // VALIDATION
-    validate_sat_file_images_section(image_yaml_vec_opt, hsm_group_available_vec);
+    validate_sat_file_images_section(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        image_yaml_vec_opt,
+        configuration_yaml_vec_opt,
+        hsm_group_available_vec,
+    )
+    .await;
+
     // Check HSM groups in session_templates in SAT file section matches the ones in JWT token (keycloak roles) in  file
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
     validate_sat_file_session_template_section(
         bos_session_template_yaml_vec_opt,
+        image_yaml_vec_opt,
+        configuration_yaml_vec_opt,
         hsm_group_available_vec,
     );
 
@@ -116,7 +127,7 @@ pub async fn exec(
 
     let mut cfs_configuration_name_vec = Vec::new();
 
-    for configuration_yaml in configuration_yaml_vec.unwrap_or(&vec![]).iter() {
+    for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&vec![]).iter() {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
             common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
@@ -186,11 +197,18 @@ pub async fn exec(
     .await;
 }
 
-pub fn validate_sat_file_session_template_section(
+pub async fn validate_sat_file_session_template_section(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
     bos_session_template_list_yaml: Option<&Vec<Value>>,
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
     hsm_group_available_vec: &Vec<String>,
 ) {
+    // Validate sessiontemplate section in SAT file
     for bos_session_template_yaml in bos_session_template_list_yaml.unwrap_or(&vec![]) {
+        // Validate user has access to HSM groups in sessiontemplate
         let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
             bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
         {
@@ -210,7 +228,7 @@ pub fn validate_sat_file_session_template_section(
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
         } else {
-            println!("No HSM group found in session_templates section in SAT file");
+            println!("No HSM group found in session_templates section in SAT file. Exit");
             std::process::exit(1);
         };
 
@@ -222,8 +240,93 @@ pub fn validate_sat_file_session_template_section(
                         bos_session_template_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
-                std::process::exit(-1);
+                std::process::exit(1);
             }
+        }
+
+        // Validate image
+        let image_name_opt: Option<&str> = bos_session_template_yaml["image"].as_str();
+        if let Some(image_name) = image_name_opt {
+            let image_found = image_yaml_vec_opt
+                .unwrap()
+                .iter()
+                .any(|image_yaml_value| image_yaml_value["name"].as_str().unwrap().eq(image_name));
+
+            if !image_found {
+                log::info!(
+                    "Image '{}' linked to session_template section not found in SAT file",
+                    image_name
+                );
+                if mesa::ims::image::utils::get_fuzzy(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    image_name_opt,
+                    Some(1).as_ref(),
+                )
+                .await
+                .is_err()
+                {
+                    log::info!(
+                        "Image '{}' in session_template section not found in CSM. Exit",
+                        image_name
+                    );
+                    eprintln!(
+                        "Image '{}' in session_template section not found in CSM. Exit",
+                        image_name
+                    );
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            eprintln!("Image in session_templates section missing. Exit");
+            std::process::exit(1);
+        }
+
+        // Validate configuration
+        let configuration_name_opt: Option<&str> =
+            bos_session_template_yaml["configuration"].as_str();
+        if let Some(configuration_name) = configuration_name_opt {
+            let configuration_found =
+                configuration_yaml_vec_opt
+                    .unwrap()
+                    .iter()
+                    .any(|configuration_yaml_value| {
+                        configuration_yaml_value["name"]
+                            .as_str()
+                            .unwrap()
+                            .eq(configuration_name)
+                    });
+
+            if !configuration_found {
+                log::info!(
+                    "Configuration '{}' in session_template section not found in SAT file",
+                    configuration_name
+                );
+                if mesa::cfs::configuration::shasta::http_client::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    configuration_name_opt,
+                )
+                .await
+                .is_err()
+                {
+                    log::info!(
+                        "Configuration '{}' in session_template section not found in CSM.",
+                        configuration_name
+                    );
+                    eprintln!(
+                        "Configuration '{}' in session_template section not found in CSM.",
+                        configuration_name
+                    );
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            eprintln!("Configuration in session_template section missing. Exit");
+            std::process::exit(1);
         }
     }
 }
