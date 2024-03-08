@@ -18,7 +18,9 @@ use mesa::{
 use serde_yaml::Value;
 
 use crate::{
-    cli::commands::apply_image::validate_sat_file_images_section,
+    cli::commands::apply_image::{
+        validate_sat_file_configurations_section, validate_sat_file_images_section,
+    },
     common::{
         self,
         jwt_ops::get_claims_from_jwt_token,
@@ -83,6 +85,12 @@ pub async fn exec(
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
     // VALIDATION
+    validate_sat_file_configurations_section(
+        configuration_yaml_vec_opt,
+        image_yaml_vec_opt,
+        bos_session_template_yaml_vec_opt,
+    );
+
     validate_sat_file_images_section(
         shasta_token,
         shasta_base_url,
@@ -97,11 +105,15 @@ pub async fn exec(
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
     validate_sat_file_session_template_section(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         bos_session_template_yaml_vec_opt,
         image_yaml_vec_opt,
         configuration_yaml_vec_opt,
         hsm_group_available_vec,
-    );
+    )
+    .await;
 
     // Process "hardware" section in SAT file
 

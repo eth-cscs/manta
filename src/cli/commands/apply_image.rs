@@ -149,6 +149,23 @@ pub async fn exec(
     );
 }
 
+pub fn validate_sat_file_configurations_section(
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    sessiontemplate_yaml_vec_opt: Option<&Vec<Value>>,
+) {
+    // Validate 'configurations' sections
+    if configuration_yaml_vec_opt.is_some() && !configuration_yaml_vec_opt.unwrap().is_empty() {
+        if !(image_yaml_vec_opt.is_some() && !image_yaml_vec_opt.unwrap().is_empty())
+            && !(sessiontemplate_yaml_vec_opt.is_some()
+                && !sessiontemplate_yaml_vec_opt.unwrap().is_empty())
+        {
+            eprint!("SAT files with configurations only are not allowed. Please define either an image or a session template. Exit");
+            std::process::exit(1);
+        }
+    }
+}
+
 pub async fn validate_sat_file_images_section(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -157,9 +174,17 @@ pub async fn validate_sat_file_images_section(
     configuration_yaml_vec_opt: Option<&Vec<Value>>,
     hsm_group_available_vec: &[String],
 ) {
-    // Validate 'images' sesion in SAT file
+    // Validate 'images' section in SAT file
+    log::info!("Validate 'images' section in SAT file");
     for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        // Validate user has access to HSM groups in image section
+        // Validate image
+        let image_name = image_yaml["name"].as_str().unwrap();
+
+        log::info!("Validate 'image' '{}'", image_name);
+
+        // Validate user has access to HSM groups in 'image' section
+        log::info!("Validate 'image' '{}' HSM groups", image_name);
+
         for hsm_group in image_yaml["configuration_group_names"]
             .as_sequence()
             .unwrap_or(&Vec::new())
@@ -182,50 +207,75 @@ pub async fn validate_sat_file_images_section(
             }
         }
 
-        // Validate base image exists
-        if let Some(image_base_id) = image_yaml["ims"]["id"].as_str() {
+        // Validate base image (image.ims.id)
+        log::info!("Validate 'image' '{}' base image", image_name);
+
+        if let Some(image_base_id_to_find) = image_yaml
+            .get("ims")
+            .and_then(|ims| ims.get("id").and_then(|id| id.as_str()))
+        {
+            log::info!("Searching image.ims.id '{}' in CSM", image_base_id_to_find,);
+
             let image_base_id_exists_rslt = mesa::ims::image::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                Some(image_base_id),
+                Some(image_base_id_to_find),
             )
             .await;
 
             if image_base_id_exists_rslt.is_err() {
                 println!(
-                    "Base iamge id '{}' in image '{}' not found. Exit",
-                    image_base_id,
+                    "Could not find base image id '{}' in image '{}'. Exit",
+                    image_base_id_to_find,
                     image_yaml["name"].as_str().unwrap(),
                 );
                 std::process::exit(1);
             }
+        } else {
+            eprintln!("Image '{}' does not have 'ims.id' value. Exit", image_name);
+            std::process::exit(1);
         }
 
-        // Validate CFS configuration exists
+        // Validate CFS configuration exists (image.configuration)
+        log::info!("Validate 'image' '{}' configuartion", image_name);
         if let Some(configuration_yaml_vec) = configuration_yaml_vec_opt {
             let configuration_name = image_yaml["configuration"].as_str().unwrap();
-            let image_configuration_in_sat_file =
-                configuration_yaml_vec.iter().any(|configuration_yaml| {
-                    configuration_yaml["name"]
-                        .as_str()
-                        .unwrap()
-                        .eq(configuration_name)
-                });
 
-            if !image_configuration_in_sat_file {
+            log::info!(
+                "Searching configuration name '{}' related to image '{}' in SAT file",
+                configuration_name,
+                image_yaml["name"].as_str().unwrap()
+            );
+
+            let mut image_found = configuration_yaml_vec.iter().any(|configuration_yaml| {
+                configuration_yaml["name"]
+                    .as_str()
+                    .unwrap()
+                    .eq(configuration_name)
+            });
+
+            if !image_found {
                 // CFS configuration in image not found in SAT file, searching in CSM
-                if mesa::cfs::configuration::shasta::http_client::get(
+                log::warn!("Configuration not found in SAT file, looking in CSM");
+                log::info!(
+                    "Searching configuration name '{}' related to image '{}' in CSM",
+                    configuration_name,
+                    image_yaml["name"].as_str().unwrap()
+                );
+
+                image_found = mesa::cfs::configuration::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     Some(configuration_name),
                 )
                 .await
-                .is_err()
-                {
+                .is_ok();
+
+                if !image_found {
                     println!(
-                        "Configuration '{}' in image '{}' not found. Exit",
+                        "Could not find configuration '{}' in image '{}' therefore image build will fail. Exit",
                         configuration_name,
                         image_yaml["name"].as_str().unwrap(),
                     );
@@ -234,7 +284,7 @@ pub async fn validate_sat_file_images_section(
             }
         } else {
             println!(
-                "Image '{}' is missing 'configuration' value. Exit",
+                "Image '{}' does not have a 'configuration' value. Exit",
                 image_yaml["name"].as_str().unwrap(),
             );
             std::process::exit(1);

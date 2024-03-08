@@ -18,7 +18,9 @@ use mesa::{
 use serde_yaml::Value;
 
 use crate::{
-    cli::commands::apply_image::validate_sat_file_images_section,
+    cli::commands::apply_image::{
+        validate_sat_file_configurations_section, validate_sat_file_images_section,
+    },
     common::{
         self,
         jwt_ops::get_claims_from_jwt_token,
@@ -83,6 +85,12 @@ pub async fn exec(
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
     // VALIDATION
+    validate_sat_file_configurations_section(
+        configuration_yaml_vec_opt,
+        image_yaml_vec_opt,
+        bos_session_template_yaml_vec_opt,
+    );
+
     validate_sat_file_images_section(
         shasta_token,
         shasta_base_url,
@@ -195,13 +203,31 @@ pub async fn exec(
     .await;
 }
 
-pub fn validate_sat_file_session_template_section(
-    bos_session_template_list_yaml: Option<&Vec<Value>>,
+pub async fn validate_sat_file_session_template_section(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
+    session_template_yaml_vec_opt: Option<&Vec<Value>>,
     hsm_group_available_vec: &Vec<String>,
 ) {
-    for bos_session_template_yaml in bos_session_template_list_yaml.unwrap_or(&vec![]) {
+    // Validate 'session_template' section in SAT file
+    log::info!("Validate 'session_template' section in SAT file");
+    for session_template_yaml in session_template_yaml_vec_opt.unwrap_or(&vec![]) {
+        // Validate session_template
+        let session_template_name = session_template_yaml["name"].as_str().unwrap();
+
+        log::info!("Validate 'session_template' '{}'", session_template_name);
+
+        // Validate user has access to HSM groups in 'session_template' section
+        log::info!(
+            "Validate 'session_template' '{}' HSM groups",
+            session_template_name
+        );
+
         let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
+            session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
@@ -210,7 +236,7 @@ pub fn validate_sat_file_session_template_section(
                 .map(|node| node.as_str().unwrap().to_string())
                 .collect()
         } else if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
+            session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
         {
             boot_sets_compute["node_groups"]
                 .as_sequence()
@@ -228,11 +254,157 @@ pub fn validate_sat_file_session_template_section(
                 println!(
                         "HSM group '{}' in session_templates {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
-                        bos_session_template_yaml["name"].as_str().unwrap(),
+                        session_template_yaml["name"].as_str().unwrap(),
                         hsm_group_available_vec
                     );
                 std::process::exit(1);
             }
+        }
+
+        // Validate boot image (session_template.image)
+        log::info!(
+            "Validate 'session_template' '{}' boot image",
+            session_template_name
+        );
+
+        if let Some(ref_name_to_find) = session_template_yaml
+            .get("image")
+            .and_then(|image| image.get("image_ref"))
+        {
+            // Validate image_ref (session_template.image.image_ref). Search in SAT file for any
+            // image with images[].ref_name
+            log::info!(
+                "Searching ref_name '{}' in SAT file",
+                ref_name_to_find.as_str().unwrap(),
+            );
+
+            let image_ref_name_found = image_yaml_vec_opt.is_some_and(|image_vec| {
+                image_vec.iter().any(|image| {
+                    image
+                        .get("ref_name")
+                        .is_some_and(|ref_name| ref_name.eq(ref_name_to_find))
+                })
+            });
+
+            if !image_ref_name_found {
+                eprintln!(
+                    "Could not find image ref '{}' in SAT file. Exit",
+                    ref_name_to_find.as_str().unwrap()
+                );
+            }
+        } else if let Some(image_name_substr_to_find) = session_template_yaml
+            .get("image")
+            .and_then(|image| image.get("ims").and_then(|ims| ims.get("name")))
+        {
+            // Validate image name (session_template.image.ims.name). Search in SAT file and CSM
+            log::info!(
+                "Searching image name '{}' related to session template '{}' in SAT file",
+                image_name_substr_to_find.as_str().unwrap(),
+                session_template_yaml["name"].as_str().unwrap()
+            );
+
+            let mut image_found = image_yaml_vec_opt.is_some_and(|image_vec| {
+                image_vec.iter().any(|image| {
+                    image
+                        .get("name")
+                        .is_some_and(|name| name.eq(image_name_substr_to_find))
+                })
+            });
+
+            if !image_found {
+                // image not found in SAT file, looking in CSM
+                log::warn!(
+                    "Image name '{}' not found in SAT file, looking in CSM",
+                    image_name_substr_to_find.as_str().unwrap()
+                );
+                log::info!(
+                    "Searching image name '{}' related to session template '{}' in CSM",
+                    image_name_substr_to_find.as_str().unwrap(),
+                    session_template_yaml["name"].as_str().unwrap()
+                );
+
+                image_found = mesa::ims::image::utils::get_fuzzy(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    image_name_substr_to_find.as_str(),
+                    Some(&1),
+                )
+                .await
+                .is_ok();
+            }
+
+            if !image_found {
+                println!(
+                    "Could not find image name '{}' in session_template '{}'. Exit",
+                    image_name_substr_to_find.as_str().unwrap(),
+                    session_template_yaml["name"].as_str().unwrap()
+                );
+            }
+        } else {
+            eprintln!(
+                "Session template '{}' neither have 'image.ref_name' nor 'image.ims.name' values. Exit",
+                session_template_yaml["name"].as_str().unwrap(),
+            );
+            std::process::exit(1);
+        }
+
+        // Validate configuration
+        log::info!(
+            "Validate 'session_template' '{}' configuration",
+            session_template_name
+        );
+
+        if let Some(configuration_to_find_value) = session_template_yaml.get("configuration") {
+            let configuration_to_find = configuration_to_find_value.as_str().unwrap();
+
+            log::info!(
+                "Searching configuration name '{}' related to session template '{}' in CSM in SAT file",
+                configuration_to_find,
+                session_template_yaml["name"].as_str().unwrap()
+            );
+
+            let mut configuration_found =
+                configuration_yaml_vec_opt.is_some_and(|configuration_yaml_vec| {
+                    configuration_yaml_vec.iter().any(|configuration_yaml| {
+                        configuration_yaml.eq(configuration_to_find_value)
+                    })
+                });
+
+            if !configuration_found {
+                // CFS configuration in session_template not found in SAT file, searching in CSM
+                log::warn!("Configuration not found in SAT file, looking in CSM");
+                log::info!(
+                    "Searching configuration name '{}' related to session_template '{}' in CSM",
+                    configuration_to_find,
+                    session_template_yaml["name"].as_str().unwrap()
+                );
+
+                configuration_found = mesa::cfs::configuration::shasta::http_client::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(configuration_to_find),
+                )
+                .await
+                .is_ok();
+
+                if !configuration_found {
+                    println!(
+                        "Could not find configuration '{}' in session_template '{}'. Exit",
+                        configuration_to_find,
+                        session_template_yaml["name"].as_str().unwrap(),
+                    );
+                    std::process::exit(1);
+                }
+            }
+        } else {
+            eprintln!(
+                "Session template '{}' does not have 'configuration' value. Exit",
+                session_template_yaml["name"].as_str().unwrap(),
+            );
+            std::process::exit(1);
         }
     }
 }
