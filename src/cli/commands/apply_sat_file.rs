@@ -17,12 +17,12 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::{
-    cli::commands::apply_image::validate_sat_file_configurations_section,
-    common::{
-        self,
-        jwt_ops::get_claims_from_jwt_token,
-        sat_file::{self, import_images_section_in_sat_file, validate_sat_file_images_section},
+use crate::common::{
+    self,
+    jwt_ops::get_claims_from_jwt_token,
+    sat_file::{
+        self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
+        validate_sat_file_images_section,
     },
 };
 

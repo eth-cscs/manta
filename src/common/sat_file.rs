@@ -1021,6 +1021,25 @@ pub fn validate_sat_file_images_section(
     Ok(())
 }
 
+pub fn validate_sat_file_configurations_section(
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    sessiontemplate_yaml_vec_opt: Option<&Vec<Value>>,
+) {
+    // Validate 'configurations' sections
+    if configuration_yaml_vec_opt.is_some() && !configuration_yaml_vec_opt.unwrap().is_empty() {
+        if !(image_yaml_vec_opt.is_some() && !image_yaml_vec_opt.unwrap().is_empty())
+            && !(sessiontemplate_yaml_vec_opt.is_some()
+                && !sessiontemplate_yaml_vec_opt.unwrap().is_empty())
+        {
+            eprint!(
+                "Incorrect SAT file. Please define either an 'image' or a 'session template'. Exit"
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
