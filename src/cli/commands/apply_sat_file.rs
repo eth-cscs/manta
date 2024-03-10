@@ -116,19 +116,21 @@ pub async fn exec(
     .await
     .unwrap();
 
-    // VALIDATION
-    validate_sat_file_configurations_section(
-        configuration_yaml_vec_opt,
-        image_yaml_vec_opt,
-        bos_session_template_yaml_vec_opt,
-    );
-
     // Get IMS recipes from CSM
     let ims_recipe_vec =
         mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
             .await
             .unwrap();
 
+    // VALIDATION
+    // Validate 'configurations' section
+    validate_sat_file_configurations_section(
+        configuration_yaml_vec_opt,
+        image_yaml_vec_opt,
+        bos_session_template_yaml_vec_opt,
+    );
+
+    // Validate 'images' section
     let image_validation_rslt = validate_sat_file_images_section(
         image_yaml_vec_opt.unwrap(),
         configuration_yaml_vec_opt.unwrap(),
@@ -143,7 +145,7 @@ pub async fn exec(
         eprintln!("{}", error);
     }
 
-    // validation of session_templates section in the SAT file is below
+    // Validate 'session_templte' section
     validate_sat_file_session_template_section(
         shasta_token,
         shasta_base_url,
@@ -400,7 +402,7 @@ pub async fn validate_sat_file_session_template_section(
             let mut configuration_found =
                 configuration_yaml_vec_opt.is_some_and(|configuration_yaml_vec| {
                     configuration_yaml_vec.iter().any(|configuration_yaml| {
-                        configuration_yaml.eq(configuration_to_find_value)
+                        configuration_yaml["name"].eq(configuration_to_find_value)
                     })
                 });
 
