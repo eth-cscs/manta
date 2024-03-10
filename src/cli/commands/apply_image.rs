@@ -11,7 +11,7 @@ use serde_yaml::Value;
 
 use crate::common::{
     self,
-    sat_file::{self, import_images_section_in_sat_file},
+    sat_file::{self, import_images_section_in_sat_file, validate_sat_file_images_section},
 };
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
@@ -75,16 +75,61 @@ pub async fn exec(
         )
     }
 
-    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
-    validate_sat_file_images_section(
+    // Get Cray/HPE product catalog
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
+
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
+
+    // Get configurations from CSM
+    let configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        image_yaml_vec_opt,
-        configuration_yaml_vec_opt,
-        hsm_group_available_vec,
+        None,
     )
-    .await;
+    .await
+    .unwrap();
+
+    // Get images from CSM
+    let image_vec = mesa::ims::image::mesa::http_client::get_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+    )
+    .await
+    .unwrap();
+
+    // Get IMS recipes from CSM
+    let ims_recipe_vec =
+        mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+            .await
+            .unwrap();
+
+    // VALIDATION
+    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
+    let image_validation_rslt = validate_sat_file_images_section(
+        image_yaml_vec_opt.unwrap(),
+        configuration_yaml_vec_opt.unwrap(),
+        hsm_group_available_vec,
+        &cray_product_catalog,
+        image_vec,
+        configuration_vec,
+        ims_recipe_vec,
+    );
+
+    if let Err(error) = image_validation_rslt {
+        eprintln!("{}", error);
+    }
 
     let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
         vault_base_url,
@@ -160,132 +205,8 @@ pub fn validate_sat_file_configurations_section(
             && !(sessiontemplate_yaml_vec_opt.is_some()
                 && !sessiontemplate_yaml_vec_opt.unwrap().is_empty())
         {
-            eprint!("SAT files with configurations only are not allowed. Please define either an image or a session template. Exit");
-            std::process::exit(1);
-        }
-    }
-}
-
-pub async fn validate_sat_file_images_section(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    image_yaml_vec_opt: Option<&Vec<Value>>,
-    configuration_yaml_vec_opt: Option<&Vec<Value>>,
-    hsm_group_available_vec: &[String],
-) {
-    // Validate 'images' section in SAT file
-    log::info!("Validate 'images' section in SAT file");
-    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        // Validate image
-        let image_name = image_yaml["name"].as_str().unwrap();
-
-        log::info!("Validate 'image' '{}'", image_name);
-
-        // Validate user has access to HSM groups in 'image' section
-        log::info!("Validate 'image' '{}' HSM groups", image_name);
-
-        for hsm_group in image_yaml["configuration_group_names"]
-            .as_sequence()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
-            .filter(|&hsm_group| {
-                !hsm_group.eq_ignore_ascii_case("Compute")
-                    && !hsm_group.eq_ignore_ascii_case("Application")
-                    && !hsm_group.eq_ignore_ascii_case("Application_UAN")
-            })
-        {
-            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                println!(
-                        "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
-                        hsm_group,
-                        image_yaml["name"].as_str().unwrap(),
-                        hsm_group_available_vec
-                    );
-                std::process::exit(1);
-            }
-        }
-
-        // Validate base image (image.ims.id)
-        log::info!("Validate 'image' '{}' base image", image_name);
-
-        if let Some(image_base_id_to_find) = image_yaml
-            .get("ims")
-            .and_then(|ims| ims.get("id").and_then(|id| id.as_str()))
-        {
-            log::info!("Searching image.ims.id '{}' in CSM", image_base_id_to_find,);
-
-            let image_base_id_exists_rslt = mesa::ims::image::shasta::http_client::get(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                Some(image_base_id_to_find),
-            )
-            .await;
-
-            if image_base_id_exists_rslt.is_err() {
-                println!(
-                    "Could not find base image id '{}' in image '{}'. Exit",
-                    image_base_id_to_find,
-                    image_yaml["name"].as_str().unwrap(),
-                );
-                std::process::exit(1);
-            }
-        } else {
-            eprintln!("Image '{}' does not have 'ims.id' value. Exit", image_name);
-            std::process::exit(1);
-        }
-
-        // Validate CFS configuration exists (image.configuration)
-        log::info!("Validate 'image' '{}' configuartion", image_name);
-        if let Some(configuration_yaml_vec) = configuration_yaml_vec_opt {
-            let configuration_name = image_yaml["configuration"].as_str().unwrap();
-
-            log::info!(
-                "Searching configuration name '{}' related to image '{}' in SAT file",
-                configuration_name,
-                image_yaml["name"].as_str().unwrap()
-            );
-
-            let mut image_found = configuration_yaml_vec.iter().any(|configuration_yaml| {
-                configuration_yaml["name"]
-                    .as_str()
-                    .unwrap()
-                    .eq(configuration_name)
-            });
-
-            if !image_found {
-                // CFS configuration in image not found in SAT file, searching in CSM
-                log::warn!("Configuration not found in SAT file, looking in CSM");
-                log::info!(
-                    "Searching configuration name '{}' related to image '{}' in CSM",
-                    configuration_name,
-                    image_yaml["name"].as_str().unwrap()
-                );
-
-                image_found = mesa::cfs::configuration::shasta::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(configuration_name),
-                )
-                .await
-                .is_ok();
-
-                if !image_found {
-                    println!(
-                        "Could not find configuration '{}' in image '{}' therefore image build will fail. Exit",
-                        configuration_name,
-                        image_yaml["name"].as_str().unwrap(),
-                    );
-                    std::process::exit(1);
-                }
-            }
-        } else {
-            println!(
-                "Image '{}' does not have a 'configuration' value. Exit",
-                image_yaml["name"].as_str().unwrap(),
+            eprint!(
+                "Incorrect SAT file. Please define either an 'image' or a 'session template'. Exit"
             );
             std::process::exit(1);
         }
