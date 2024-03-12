@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.7] - 2024-03-12
+
+### Co-authored-by
+
+- Manuel Sopena Ballesteros <manuel.sopena@cscs.ch>
+
+### Features
+
+- Improve SAT file validation to improve user feedback
+- Test new cc to build apple target binaries
+
 ## [1.28.6] - 2024-03-04
 
 ### Bug Fixes
 
 - Remove apply artifacts/targets from CI pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.6
 
 ## [1.28.5] - 2024-03-03
 
