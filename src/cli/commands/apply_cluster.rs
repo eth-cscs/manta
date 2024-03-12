@@ -17,12 +17,12 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::{
-    cli::commands::apply_image::validate_sat_file_images_section,
-    common::{
-        self,
-        jwt_ops::get_claims_from_jwt_token,
-        sat_file::{self, import_images_section_in_sat_file},
+use crate::common::{
+    self,
+    jwt_ops::get_claims_from_jwt_token,
+    sat_file::{
+        self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
+        validate_sat_file_images_section,
     },
 };
 
@@ -82,26 +82,80 @@ pub async fn exec(
     // Get inages from SAT YAML file
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
-    // VALIDATION
-    validate_sat_file_images_section(
+    // Get Cray/HPE product catalog
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
+
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
+
+    // Get configurations from CSM
+    let configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        image_yaml_vec_opt,
-        configuration_yaml_vec_opt,
-        hsm_group_available_vec,
+        None,
     )
-    .await;
+    .await
+    .unwrap();
+
+    // Get images from CSM
+    let image_vec = mesa::ims::image::mesa::http_client::get_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+    )
+    .await
+    .unwrap();
+
+    // VALIDATION
+    validate_sat_file_configurations_section(
+        configuration_yaml_vec_opt,
+        image_yaml_vec_opt,
+        bos_session_template_yaml_vec_opt,
+    );
+
+    // Get IMS recipes from CSM
+    let ims_recipe_vec =
+        mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+            .await
+            .unwrap();
+
+    let image_validation_rslt = validate_sat_file_images_section(
+        image_yaml_vec_opt.unwrap(),
+        configuration_yaml_vec_opt.unwrap(),
+        hsm_group_available_vec,
+        &cray_product_catalog,
+        image_vec,
+        configuration_vec,
+        ims_recipe_vec,
+    );
+
+    if let Err(error) = image_validation_rslt {
+        eprintln!("{}", error);
+    }
 
     // Check HSM groups in session_templates in SAT file section matches the ones in JWT token (keycloak roles) in  file
     // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
     // validation of session_templates section in the SAT file is below
     validate_sat_file_session_template_section(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         bos_session_template_yaml_vec_opt,
         image_yaml_vec_opt,
         configuration_yaml_vec_opt,
         hsm_group_available_vec,
-    );
+    )
+    .await;
 
     // Process "hardware" section in SAT file
 

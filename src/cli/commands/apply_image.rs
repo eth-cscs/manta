@@ -11,7 +11,7 @@ use serde_yaml::Value;
 
 use crate::common::{
     self,
-    sat_file::{self, import_images_section_in_sat_file},
+    sat_file::{self, import_images_section_in_sat_file, validate_sat_file_images_section},
 };
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
@@ -75,16 +75,61 @@ pub async fn exec(
         )
     }
 
-    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
-    validate_sat_file_images_section(
+    // Get Cray/HPE product catalog
+    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+    )
+    .await;
+
+    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+        .await
+        .unwrap();
+    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+        .await
+        .unwrap();
+
+    // Get configurations from CSM
+    let configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        image_yaml_vec_opt,
-        configuration_yaml_vec_opt,
-        hsm_group_available_vec,
+        None,
     )
-    .await;
+    .await
+    .unwrap();
+
+    // Get images from CSM
+    let image_vec = mesa::ims::image::mesa::http_client::get_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+    )
+    .await
+    .unwrap();
+
+    // Get IMS recipes from CSM
+    let ims_recipe_vec =
+        mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+            .await
+            .unwrap();
+
+    // VALIDATION
+    // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
+    let image_validation_rslt = validate_sat_file_images_section(
+        image_yaml_vec_opt.unwrap(),
+        configuration_yaml_vec_opt.unwrap(),
+        hsm_group_available_vec,
+        &cray_product_catalog,
+        image_vec,
+        configuration_vec,
+        ims_recipe_vec,
+    );
+
+    if let Err(error) = image_validation_rslt {
+        eprintln!("{}", error);
+    }
 
     let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
         vault_base_url,
@@ -147,97 +192,4 @@ pub async fn exec(
         "List of new image IDs: {:#?}",
         cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
     );
-}
-
-pub async fn validate_sat_file_images_section(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    image_yaml_vec_opt: Option<&Vec<Value>>,
-    configuration_yaml_vec_opt: Option<&Vec<Value>>,
-    hsm_group_available_vec: &[String],
-) {
-    // Validate 'images' sesion in SAT file
-    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        // Validate user has access to HSM groups in image section
-        for hsm_group in image_yaml["configuration_group_names"]
-            .as_sequence()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
-            .filter(|&hsm_group| {
-                !hsm_group.eq_ignore_ascii_case("Compute")
-                    && !hsm_group.eq_ignore_ascii_case("Application")
-                    && !hsm_group.eq_ignore_ascii_case("Application_UAN")
-            })
-        {
-            if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                println!(
-                        "HSM group '{}' in image {} not allowed, List of HSM groups available {:?}. Exit",
-                        hsm_group,
-                        image_yaml["name"].as_str().unwrap(),
-                        hsm_group_available_vec
-                    );
-                std::process::exit(1);
-            }
-        }
-
-        // Validate base image exists
-        if let Some(image_base_id) = image_yaml["ims"]["id"].as_str() {
-            let image_base_id_exists_rslt = mesa::ims::image::shasta::http_client::get(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                Some(image_base_id),
-            )
-            .await;
-
-            if image_base_id_exists_rslt.is_err() {
-                println!(
-                    "Base iamge id '{}' in image '{}' not found. Exit",
-                    image_base_id,
-                    image_yaml["name"].as_str().unwrap(),
-                );
-                std::process::exit(1);
-            }
-        }
-
-        // Validate CFS configuration exists
-        if let Some(configuration_yaml_vec) = configuration_yaml_vec_opt {
-            let configuration_name = image_yaml["configuration"].as_str().unwrap();
-            let image_configuration_in_sat_file =
-                configuration_yaml_vec.iter().any(|configuration_yaml| {
-                    configuration_yaml["name"]
-                        .as_str()
-                        .unwrap()
-                        .eq(configuration_name)
-                });
-
-            if !image_configuration_in_sat_file {
-                // CFS configuration in image not found in SAT file, searching in CSM
-                if mesa::cfs::configuration::shasta::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(configuration_name),
-                )
-                .await
-                .is_err()
-                {
-                    println!(
-                        "Configuration '{}' in image '{}' not found. Exit",
-                        configuration_name,
-                        image_yaml["name"].as_str().unwrap(),
-                    );
-                    std::process::exit(1);
-                }
-            }
-        } else {
-            println!(
-                "Image '{}' is missing 'configuration' value. Exit",
-                image_yaml["name"].as_str().unwrap(),
-            );
-            std::process::exit(1);
-        }
-    }
 }

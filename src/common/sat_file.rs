@@ -8,7 +8,7 @@ use mesa::{
         },
         session::mesa::r#struct::CfsSessionPostRequest,
     },
-    ims::{self, recipe::r#struct::RecipeGetResponse},
+    ims::{self, image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
 };
 use serde::de::Error;
 use serde_yaml::{Mapping, Value};
@@ -48,6 +48,68 @@ use serde_yaml::{Mapping, Value};
 /// key_3: value_3
 /// key_4: new_value_4
 /// ```
+
+pub mod sat_file_image {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Ims {
+        name: String,
+        r#type: String,
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Product {
+        name: String,
+        version: String,
+        r#type: String,
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum ImageBase {
+        Ims { ims: Ims },
+        Product { product: Product },
+        ImageRef { image_ref: String },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct SatFileImage {
+        pub name: String,
+        pub base: ImageBase,
+        pub configuration: Option<String>,
+        pub configuration_group_names: Option<Vec<String>>,
+        pub ref_name: Option<String>,
+        pub description: Option<String>,
+    }
+}
+
+pub mod sat_file_image_old {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Ims {
+        is_recipe: bool,
+        id: String,
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Product {
+        name: String,
+        version: String,
+        r#type: String,
+    }
+
+    pub struct SatFileImage {
+        pub name: String,
+        pub ims: Ims,
+        pub configuration: Option<String>,
+        pub configuration_group_names: Option<Vec<String>>,
+        pub ref_name: Option<String>,
+        pub description: Option<String>,
+    }
+}
+
 fn merge_yaml(base: Value, merge: Value) -> Option<Value> {
     match (base, merge) {
         (Value::Mapping(mut base_map), Value::Mapping(merge_map)) => {
@@ -213,9 +275,9 @@ pub fn get_next_image_to_process(
     image_yaml_vec
         .iter()
         .find(|image_yaml| {
-            let ref_name: &str = &get_ref_name(image_yaml); // Again, because we assume images in
-                                                            // SAT file may or may not have ref_name value, we will use "get_ref_name" function to
-                                                            // get the id of the image
+            let ref_name: &str = &get_image_name_or_ref_name_to_process(image_yaml); // Again, because we assume images in
+                                                                                     // SAT file may or may not have ref_name value, we will use "get_ref_name" function to
+                                                                                     // get the id of the image
 
             let image_base_image_ref_opt: Option<&str> =
                 image_yaml.get("base").and_then(|image_base_yaml| {
@@ -237,7 +299,7 @@ pub fn get_next_image_to_process(
 /// been processed in order to find the next image to process. We assume not all images in the yaml
 /// will have an "image_ref" value, therefore we will use "ref_name" or "name" field if the former
 /// is missing
-pub fn get_ref_name(image_yaml: &serde_yaml::Value) -> String {
+pub fn get_image_name_or_ref_name_to_process(image_yaml: &serde_yaml::Value) -> String {
     if image_yaml.get("ref_name").is_some() {
         image_yaml["ref_name"].as_str().unwrap().to_string()
     } else {
@@ -289,7 +351,10 @@ pub async fn import_images_section_in_sat_file(
 
         image_processed_hashmap.insert(image_id.clone(), image_yaml.clone());
 
-        ref_name_processed_hashmap.insert(get_ref_name(image_yaml), image_id.clone());
+        ref_name_processed_hashmap.insert(
+            get_image_name_or_ref_name_to_process(image_yaml),
+            image_id.clone(),
+        );
 
         next_image_to_process_opt = get_next_image_to_process(
             &image_yaml_vec,
@@ -655,9 +720,9 @@ fn process_sat_file_image_old_version(
             .unwrap()
             .to_string())
     } else {
-        return Err(ApiError::MesaError(
+        Err(ApiError::MesaError(
             "Functionality not built. Exit".to_string(),
-        ));
+        ))
     }
 }
 
@@ -677,11 +742,321 @@ fn process_sat_file_image_ref_name(
         .to_string())
 }
 
+pub fn validate_sat_file_images_section(
+    image_yaml_vec: &Vec<Value>,
+    configuration_yaml_vec: &Vec<Value>,
+    hsm_group_available_vec: &[String],
+    cray_product_catalog: &BTreeMap<String, String>,
+    image_vec: Vec<Image>,
+    configuration_vec: Vec<CfsConfigurationResponse>,
+    ims_recipe_vec: Vec<RecipeGetResponse>,
+) -> Result<(), ApiError> {
+    // Validate 'images' section in SAT file
+    /* log::info!("Validate 'images' section in SAT file");
+    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
+        let sat_image_rslt = if let Ok(image) = serde_yaml::from_value::<sat_file_image::SatFileImage>(image_yaml.clone()) {
+            image
+        }
+        if sat_image_rslt.is_err() {
+            let sat
+        }
+        println!(
+            "DEBUG - SAT image struct from SAT file:\n{:#?}",
+            sat_image_rslt
+        );
+    }
+
+    std::process::exit(0); */
+
+    for image_yaml in image_yaml_vec {
+        // Validate image
+        let image_name = image_yaml["name"].as_str().unwrap();
+
+        log::info!("Validate 'image' '{}'", image_name);
+
+        // Validate base image
+        log::info!("Validate 'image' '{}' base image", image_name);
+
+        if let Some(image_ims_id_to_find) = image_yaml
+            .get("ims")
+            .and_then(|ims| ims.get("id").and_then(|id| id.as_str()))
+        {
+            // Old format
+            log::info!(
+                "Searching image.ims.id (old format - backward compatibility) '{}' in CSM",
+                image_ims_id_to_find,
+            );
+
+            let is_image_base_id_in_csm = image_vec.iter().any(|image| {
+                let image_id = image.id.as_ref().unwrap();
+                image_id.eq(image_ims_id_to_find)
+            });
+
+            if !is_image_base_id_in_csm {
+                return Err(ApiError::MesaError(format!(
+                    "Could not find base image id '{}' in image '{}'. Exit",
+                    image_ims_id_to_find,
+                    image_yaml["name"].as_str().unwrap()
+                )));
+            }
+        } else if image_yaml.get("base").is_some() {
+            // New format
+            if let Some(image_ref_to_find) = image_yaml["base"].get("image_ref") {
+                // Check there is another image with 'ref_name' that matches this 'image_ref'
+                let image_found = image_yaml_vec.iter().any(|image_yaml| {
+                    image_yaml
+                        .get("ref_name")
+                        .is_some_and(|ref_name| ref_name.eq(image_ref_to_find))
+                });
+
+                if !image_found {
+                    return Err(ApiError::MesaError(format!(
+                                "Could not find image with ref name '{}' in SAT file. Cancelling image build proccess. Exit",
+                                image_ref_to_find.as_str().unwrap(),
+                            )));
+                }
+            } else if let Some(image_base_product) = image_yaml["base"].get("product") {
+                // Check if the 'Cray/HPE product' in CSM exists
+
+                log::info!("Image '{}' base.base.product", image_name);
+                log::info!("SAT file - 'image.base.product' job");
+
+                // Base image created from a cray product
+
+                let product_name = image_base_product["name"].as_str().unwrap();
+
+                let product_version = image_base_product["version"].as_str().unwrap();
+
+                let product_type = image_base_product["type"].as_str().unwrap().to_string() + "s";
+
+                let product_catalog_found =
+                    &serde_yaml::from_str::<serde_json::Value>(&cray_product_catalog[product_name])
+                        .unwrap()
+                        .get(product_version)
+                        .is_some_and(|product| product.get(product_type).is_some());
+
+                if !product_catalog_found {
+                    return Err(ApiError::MesaError(format!(
+                        "Product catalog for image '{}' not found. Exit",
+                        image_name
+                    )));
+                }
+            } else if let Some(image_base_ims_yaml) = image_yaml["base"].get("ims") {
+                // Check if the image exists
+
+                log::info!("Image '{}' base.base.ims", image_name);
+                if let Some(image_base_ims_name_yaml) = image_base_ims_yaml.get("name") {
+                    let image_base_ims_name_to_find = image_base_ims_name_yaml.as_str().unwrap();
+
+                    // Search image in SAT file
+
+                    log::info!(
+                        "Searching base image '{}' related to image '{}' in SAT file",
+                        image_base_ims_name_to_find,
+                        image_name
+                    );
+
+                    let mut image_found = image_yaml_vec
+                        .iter()
+                        .any(|image_yaml| image_yaml["name"].eq(image_base_ims_name_yaml));
+
+                    if !image_found {
+                        log::warn!(
+                            "Base image '{}' not found in SAT file, looking in CSM",
+                            image_base_ims_name_to_find
+                        );
+
+                        if let Some(image_base_ims_type_yaml) = image_base_ims_yaml.get("type") {
+                            let image_base_ims_type = image_base_ims_type_yaml.as_str().unwrap();
+                            if image_base_ims_type.eq("recipe") {
+                                // Base IMS type is a recipe
+                                // Search in CSM (IMS Recipe)
+
+                                log::info!(
+                                    "Searching base image recipe '{}' related to image '{}' in CSM",
+                                    image_base_ims_name_to_find,
+                                    image_name
+                                );
+
+                                image_found = ims_recipe_vec
+                                    .iter()
+                                    .any(|recipe| recipe.name.eq(image_base_ims_name_to_find));
+
+                                if !image_found {
+                                    return Err(ApiError::MesaError(format!(
+                                        "Could not find IMS recipe '{}' in CSM. Cancelling image build proccess. Exit",
+                                        image_base_ims_name_to_find,
+                                    )));
+                                }
+                            } else {
+                                // Base IMS type is an image
+                                // Search in CSM (IMS Image)
+
+                                log::info!(
+                                    "Searching base image '{}' related to image '{}' in CSM",
+                                    image_base_ims_name_to_find,
+                                    image_name
+                                );
+
+                                // CFS session sets a custom image name, therefore we can't seach
+                                // for exact image name but search by substring
+                                image_found = image_vec
+                                    .iter()
+                                    .any(|image| image.name.contains(image_base_ims_name_to_find));
+
+                                if !image_found {
+                                    return Err(ApiError::MesaError(format!(
+                                        "Could not find image base '{}' in image '{}'. Cancelling image build proccess. Exit",
+                                        image_base_ims_name_to_find,
+                                        image_name
+                                    )));
+                                }
+                            }
+                        } else {
+                            return Err(ApiError::MesaError(format!(
+                                "Image '{}' is missing the field base.ims.type. Cancelling image build proccess. Exit",
+                                image_base_ims_name_to_find,
+                            )));
+                        }
+                    }
+                } else {
+                    eprintln!(
+                        "Image '{}' is missing the field 'base.ims.name'. Exit",
+                        image_name
+                    );
+                };
+            } else {
+                return Err(ApiError::MesaError(format!(
+                    "Image '{}' yaml not recognised. Exit",
+                    image_name
+                )));
+            }
+        } else {
+            return Err(ApiError::MesaError(format!(
+                "Image '{}' neither have 'ims' nor 'base' value. Exit",
+                image_name
+            )));
+        }
+
+        // Validate CFS configuration exists (image.configuration)
+        log::info!("Validate 'image' '{}' configuration", image_name);
+
+        if let Some(configuration_yaml) = image_yaml.get("configuration") {
+            let configuration_name_to_find = configuration_yaml.as_str().unwrap();
+
+            log::info!(
+                "Searching configuration name '{}' related to image '{}' in SAT file",
+                configuration_name_to_find,
+                image_name
+            );
+
+            let mut configuration_found = configuration_yaml_vec.iter().any(|configuration_yaml| {
+                configuration_yaml["name"]
+                    .as_str()
+                    .unwrap()
+                    .eq(configuration_name_to_find)
+            });
+
+            if !configuration_found {
+                // CFS configuration in image not found in SAT file, searching in CSM
+                log::warn!(
+                    "Configuration '{}' not found in SAT file, looking in CSM",
+                    configuration_name_to_find
+                );
+
+                log::info!(
+                    "Searching configuration name '{}' related to image '{}' in CSM",
+                    configuration_name_to_find,
+                    image_yaml["name"].as_str().unwrap()
+                );
+
+                configuration_found = configuration_vec
+                    .iter()
+                    .any(|configuration| configuration.name.eq(configuration_name_to_find));
+
+                if !configuration_found {
+                    return Err(ApiError::MesaError(format!(
+                        "Could not find configuration '{}' in image '{}'. Cancelling image build proccess. Exit",
+                        configuration_name_to_find,
+                        image_name
+                    )));
+                }
+            }
+
+            // Validate user has access to HSM groups in 'image' section
+            log::info!("Validate 'image' '{}' HSM groups", image_name);
+
+            let configuration_group_names_yaml_vec: Vec<Value> = image_yaml
+                ["configuration_group_names"]
+                .as_sequence()
+                .unwrap_or(&Vec::new())
+                .to_vec();
+
+            if configuration_group_names_yaml_vec.is_empty() {
+                return Err(ApiError::MesaError(format!("Image '{}' must have group name values assigned to it. Canceling image build process. Exit", image_name)));
+            } else {
+                for hsm_group in configuration_group_names_yaml_vec
+                    .iter()
+                    .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
+                    .filter(|&hsm_group| {
+                        !hsm_group.eq_ignore_ascii_case("Compute")
+                            && !hsm_group.eq_ignore_ascii_case("Application")
+                            && !hsm_group.eq_ignore_ascii_case("Application_UAN")
+                    })
+                {
+                    if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
+                        return Err(ApiError::MesaError(format!
+                        (
+                        "HSM group '{}' in image '{}' not allowed, List of HSM groups available:\n{:?}. Exit",
+                        hsm_group,
+                        image_yaml["name"].as_str().unwrap(),
+                        hsm_group_available_vec
+                    )));
+                    }
+                }
+            };
+        }
+    }
+
+    Ok(())
+}
+
+pub fn validate_sat_file_configurations_section(
+    configuration_yaml_vec_opt: Option<&Vec<Value>>,
+    image_yaml_vec_opt: Option<&Vec<Value>>,
+    sessiontemplate_yaml_vec_opt: Option<&Vec<Value>>,
+) {
+    // Validate 'configurations' sections
+    if configuration_yaml_vec_opt.is_some() && !configuration_yaml_vec_opt.unwrap().is_empty() {
+        if !(image_yaml_vec_opt.is_some() && !image_yaml_vec_opt.unwrap().is_empty())
+            && !(sessiontemplate_yaml_vec_opt.is_some()
+                && !sessiontemplate_yaml_vec_opt.unwrap().is_empty())
+        {
+            eprint!(
+                "Incorrect SAT file. Please define either an 'image' or a 'session template'. Exit"
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::common::sat_file::{
-        get_next_image_to_process, get_ref_name, render_jinja2_sat_file_yaml,
+    use std::collections::BTreeMap;
+
+    use mesa::{
+        cfs::configuration::mesa::r#struct::cfs_configuration_response::{
+            ApiError, CfsConfigurationResponse, Layer,
+        },
+        ims::{image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
     };
+
+    use crate::common::sat_file::{
+        get_image_name_or_ref_name_to_process, get_next_image_to_process,
+        render_jinja2_sat_file_yaml,
+    };
+
+    use super::validate_sat_file_images_section;
 
     /// Test function "get_ref_name" so it falls back to "name" field if "ref_name" is missing
     #[test]
@@ -709,7 +1084,7 @@ mod tests {
             &ref_name_processed_vec,
         );
 
-        let image_ref = get_ref_name(&next_image_to_process.unwrap());
+        let image_ref = get_image_name_or_ref_name_to_process(&next_image_to_process.unwrap());
 
         assert!(image_ref == "base_image");
     }
@@ -872,8 +1247,9 @@ mod tests {
         );
     }
 
+    /// Test rendering a SAT template file with the values file
     #[test]
-    fn test_get_sat_file_yaml() {
+    fn test_render_sat_file_yaml_template_with_yaml_values_file() {
         let sat_file_content = r#"
         name: "{{ name }}"
         configurations:
@@ -950,5 +1326,611 @@ mod tests {
             Some(&values_file_content.to_string()),
             Some(var_content),
         );
+    }
+
+    /// Test SAT file
+    /// Test image section in OLD format in SAT file
+    /// Result: FAIL
+    /// Reason: Configuration assigned to an image could not be found
+    #[test]
+    fn test_sat_file_image_section_fails_because_configuration_could_not_be_found_in_old_image_format(
+    ) {
+        let cray_product_catalog = &BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              ims:
+                id: my-image-id
+                is_recipe: false
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &vec![];
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            id: Some("my-image-id".to_string()),
+            created: None,
+            name: "my-image-name".to_string(),
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        assert!(validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes
+        )
+        .is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in OLD format in SAT file
+    /// Result: PASS
+    /// Reason: configuration assigned to image found in SAT
+    #[test]
+    fn test_old_image_format_in_sat_file_pass_because_configuration_found_in_sat() {
+        let cray_product_catalog = &BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              ims:
+                id: my-base-image-id
+                is_recipe: false
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            id: Some("my-base-image-id".to_string()),
+            created: None,
+            name: "my-base-image-name".to_string(),
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        assert!(validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes
+        )
+        .is_ok());
+    }
+
+    /// Test SAT file
+    /// Test image section in OLD format in SAT file
+    /// Result: PASS
+    /// Reason: configuration assigned to image found in CSM
+    #[test]
+    fn test_old_image_format_in_sat_file_pass_because_configuration_found_in_csm() {
+        let cray_product_catalog = &BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              ims:
+                id: my-base-image-id
+                is_recipe: false
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &vec![];
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            id: Some("my-base-image-id".to_string()),
+            created: None,
+            name: "my-base-image-name".to_string(),
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![CfsConfigurationResponse {
+            name: "my-configuration-name".to_string(),
+            last_updated: "2023-10-04T14:15:22Z".to_string(),
+            layers: vec![Layer {
+                clone_url: "fake-url".to_string(),
+                commit: None,
+                name: "my-layer-name".to_string(),
+                playbook: "my-playbook".to_string(),
+                branch: None,
+            }],
+            additional_inventory: None,
+        }];
+
+        let ims_recipes = vec![];
+
+        assert!(validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes
+        )
+        .is_ok());
+    }
+
+    /// Test SAT file
+    /// Test image section in OLD format in SAT file
+    /// Result: FAIL
+    /// Reason: Base image id assigned to an image could not be found
+    #[test]
+    fn test_sat_file_image_section_fails_because_base_image_id_could_not_be_found() {
+        let cray_product_catalog = &BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              ims:
+                id: my-image-id
+                is_recipe: false
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &vec![];
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            id: Some("fake".to_string()),
+            created: None,
+            name: "my-image-name".to_string(),
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        assert!(validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes
+        )
+        .is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: FAIL
+    /// Reason: Base image recipe assigned to an image could not be found in Cray/HPE product catalog
+    #[test]
+    fn test_sat_file_image_section_fails_because_base_image_receipe_could_not_be_found_in_cray_product_catalog(
+    ) {
+        let mut cray_product_catalog = BTreeMap::<String, String>::new();
+        cray_product_catalog.insert("cos".to_string(), "2.2.101:\n  configuration:\n    clone_url: https://vcs.alps.cscs.ch/vcs/cray/cos-config-management.git\n    commit: 7f71cdc5d58f7879dc431b3fd6330296dcb3f7ee\n    import_branch: cray/cos/2.2.101\n    import_date: 2022-06-01 17:57:17.019149\n    ssh_url: git@vcs.alps.cscs.ch:cray/cos-config-management.git\n  images:\n    cray-shasta-compute-sles15sp3.x86_64-2.2.38:\n      id: d737e902-c002-4269-a408-6baa0fb31b4d\n  recipes:\n    cray-shasta-compute-sles15sp3.x86_64-2.2.38:\n      id: 2ffe10da-67f5-47b7-b7fb-de25381498f0".to_string());
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                product:
+                  name: cos
+                  version: "fake-does-not-exists-in-cra-product-catalog"
+                  type: recipe
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: FAIL
+    /// Reason: Base IMS recipe assigned to an image could not be found
+    #[test]
+    fn test_sat_file_image_section_fails_because_base_image_recipe_name_could_not_be_found() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: my-ims-recipe
+                  type: recipe
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![RecipeGetResponse {
+            id: None,
+            created: None,
+            link: None,
+            recipe_type: "".to_string(),
+            linux_distribution: "".to_string(),
+            name: "fake-my-ims-recipe".to_string(),
+        }];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: PASS
+    /// Reason: Base IMS recipe assigned to an image found in CSM
+    #[test]
+    fn test_sat_file_image_section_pass_because_base_image_recipe_name_could_not_be_found() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: my-ims-recipe-name
+                  type: recipe
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![RecipeGetResponse {
+            id: None,
+            created: None,
+            link: None,
+            recipe_type: "".to_string(),
+            linux_distribution: "".to_string(),
+            name: "my-ims-recipe-name".to_string(),
+        }];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_ok());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: FAIL
+    /// Reason: Base IMS image assigned to an image not found in CSM
+    #[test]
+    fn test_sat_file_image_section_fail_because_base_image_name_could_not_be_found() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: fake-my-ims-image-name
+                  type: image
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            name: "my-ims-image-name".to_string(),
+            id: None,
+            created: None,
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: PASS
+    /// Reason: Base IMS image assigned to an image found in CSM
+    #[test]
+    fn test_sat_file_image_section_pass_because_base_image_name_could_not_be_found() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: my-ims-image-name
+                  type: image
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            name: "my-ims-image-name".to_string(),
+            id: None,
+            created: None,
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_ok());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: FAIL
+    /// Reason: HSM groups assigned to an image are wrong
+    #[test]
+    fn test_sat_file_image_section_fail_because_hsm_groups_are_wrong() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: my-ims-image-name
+                  type: image
+              configuration: my-configuration-name
+              configuration_group_names:
+                - Compute
+                - fake-tenant-a
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-configuration-name
+            "#,
+        )
+        .unwrap();
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            name: "my-ims-image-name".to_string(),
+            id: None,
+            created: None,
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_err());
+    }
+
+    /// Test SAT file
+    /// Test image section in NEW format in SAT file
+    /// Result: PASS
+    /// Reason: Image can miss 'configuration' section
+    #[test]
+    fn test_sat_file_image_section_pass_if_configuration_missing() {
+        let cray_product_catalog = BTreeMap::<String, String>::new();
+
+        let image_vec_in_sat_file: &Vec<serde_yaml::Value> = &serde_yaml::from_str(
+            r#"
+            - name: my-image-name
+              base:
+                ims:
+                  name: my-ims-image-name
+                  type: image
+            "#,
+        )
+        .unwrap();
+
+        let configuration_vec_in_sat_file: &Vec<serde_yaml::Value> = &vec![];
+
+        let hsm_group_available_vec = &["tenant-a".to_string()];
+
+        let image_vec_in_csm = vec![Image {
+            name: "my-ims-image-name".to_string(),
+            id: None,
+            created: None,
+            link: None,
+            arch: None,
+        }];
+
+        let configuration_vec_in_csm = vec![];
+
+        let ims_recipes = vec![];
+
+        let validation_rslt: Result<(), ApiError> = validate_sat_file_images_section(
+            image_vec_in_sat_file,
+            configuration_vec_in_sat_file,
+            hsm_group_available_vec,
+            &cray_product_catalog,
+            image_vec_in_csm,
+            configuration_vec_in_csm,
+            ims_recipes,
+        );
+
+        assert!(validation_rslt.is_ok());
     }
 }
