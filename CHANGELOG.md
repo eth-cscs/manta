@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.8] - 2024-03-13
+
+### Bug Fixes
+
+- BUG SAT file session_template validation ignoring previous SAT file version
+
 ## [1.28.7] - 2024-03-12
 
 ### Co-authored-by
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Improve SAT file validation to improve user feedback
 - Test new cc to build apple target binaries
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.7
 
 ## [1.28.6] - 2024-03-04
 
