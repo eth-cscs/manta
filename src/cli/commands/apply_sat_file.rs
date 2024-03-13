@@ -132,8 +132,8 @@ pub async fn exec(
 
     // Validate 'images' section
     let image_validation_rslt = validate_sat_file_images_section(
-        image_yaml_vec_opt.unwrap(),
-        configuration_yaml_vec_opt.unwrap(),
+        image_yaml_vec_opt.unwrap_or(&Vec::new()),
+        configuration_yaml_vec_opt.unwrap_or(&Vec::new()),
         hsm_group_available_vec,
         &cray_product_catalog,
         image_vec,
@@ -285,7 +285,7 @@ pub async fn validate_sat_file_session_template_section(
 
         for hsm_group in bos_session_template_hsm_groups {
             if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
-                println!(
+                eprintln!(
                         "HSM group '{}' in session_templates {} not allowed, List of HSM groups available {:?}. Exit",
                         hsm_group,
                         session_template_yaml["name"].as_str().unwrap(),
@@ -325,12 +325,13 @@ pub async fn validate_sat_file_session_template_section(
                     "Could not find image ref '{}' in SAT file. Exit",
                     ref_name_to_find.as_str().unwrap()
                 );
+                std::process::exit(1);
             }
         } else if let Some(image_name_substr_to_find) = session_template_yaml
             .get("image")
             .and_then(|image| image.get("ims").and_then(|ims| ims.get("name")))
         {
-            // Validate image name (session_template.image.ims.name). Search in SAT file and CSM
+            // VaVjlidate image name (session_template.image.ims.name). Search in SAT file and CSM
             log::info!(
                 "Searching image name '{}' related to session template '{}' in SAT file",
                 image_name_substr_to_find.as_str().unwrap(),
@@ -370,11 +371,40 @@ pub async fn validate_sat_file_session_template_section(
             }
 
             if !image_found {
-                println!(
+                eprintln!(
                     "Could not find image name '{}' in session_template '{}'. Exit",
                     image_name_substr_to_find.as_str().unwrap(),
                     session_template_yaml["name"].as_str().unwrap()
                 );
+                std::process::exit(1);
+            }
+        } else if let Some(image_name_substr_to_find) = session_template_yaml.get("image") {
+            // Backward compatibility
+            // VaVjlidate image name (session_template.image.ims.name). Search in SAT file and CSM
+            log::info!(
+                "Searching image name '{}' related to session template '{}' in CSM - ('sessiontemplate' section in SAT file is outdated - switching to backward compatibility)",
+                image_name_substr_to_find.as_str().unwrap(),
+                session_template_yaml["name"].as_str().unwrap()
+            );
+
+            let image_found = mesa::ims::image::utils::get_fuzzy(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                hsm_group_available_vec,
+                image_name_substr_to_find.as_str(),
+                Some(&1),
+            )
+            .await
+            .is_ok();
+
+            if !image_found {
+                // image not found in SAT file, looking in CSM
+                log::warn!(
+                    "Image name '{}' not found in CSM. Exit",
+                    image_name_substr_to_find.as_str().unwrap()
+                );
+                std::process::exit(1);
             }
         } else {
             eprintln!(
