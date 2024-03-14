@@ -36,12 +36,22 @@ pub async fn process_cli(
     k8s_api_url: &str,
     settings: &Config,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
+    let site_name: String = match settings.get("site") {
+        Ok(site_name) => site_name,
+        Err(_) => {
+            eprintln!(
+                "'site' value in configuration file is missing or does not have a value. Exit"
+            );
+            std::process::exit(1);
+        }
+    };
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
             let shasta_token = &authentication::get_api_token(
                 shasta_base_url,
                 shasta_root_cert,
                 keycloak_base_url,
+                &site_name,
             )
             .await?;
 
@@ -52,6 +62,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
+                    &site_name,
                 )
                 .await?;
 
@@ -70,6 +81,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
+                    &site_name,
                 )
                 .await?;
 
@@ -94,6 +106,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
+                    &site_name,
                 )
                 .await?;
 
@@ -106,6 +119,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
+                    &site_name,
                 )
                 .await?;
 
@@ -116,9 +130,13 @@ pub async fn process_cli(
             }
         }
     } else {
-        let shasta_token =
-            &authentication::get_api_token(shasta_base_url, shasta_root_cert, keycloak_base_url)
-                .await?;
+        let shasta_token = &authentication::get_api_token(
+            shasta_base_url,
+            shasta_root_cert,
+            keycloak_base_url,
+            &site_name,
+        )
+        .await?;
 
         /* let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt(
             shasta_token,
