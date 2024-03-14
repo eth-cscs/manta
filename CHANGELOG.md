@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.9] - 2024-03-14
+
+### Features
+
+- Handle auth tokens for multiple sites at the same time
+
 ## [1.28.8] - 2024-03-13
 
 ### Bug Fixes
 
 - BUG SAT file session_template validation ignoring previous SAT file version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.8
 
 ## [1.28.7] - 2024-03-12
 
