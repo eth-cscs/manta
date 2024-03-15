@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.10] - 2024-03-15
+
+### Features
+
+- Show cfs configuration layer table in different rows
+- User new mesa library version
+
 ## [1.28.9] - 2024-03-14
 
 ### Features
 
 - Handle auth tokens for multiple sites at the same time
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.9
 
 ## [1.28.8] - 2024-03-13
 
