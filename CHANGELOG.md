@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.13] - 2024-03-15
+
+### Features
+
+- Add selection prompmt to delete auth token
+
 ## [1.28.12] - 2024-03-15
 
 ### Bug Fixes
 
 - Config unset hsm command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.12
 
 ## [1.28.11] - 2024-03-15
 
