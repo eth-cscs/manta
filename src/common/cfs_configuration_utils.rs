@@ -15,20 +15,22 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
             let layers_json = &cfs_configuration.layers;
 
             layers = format!(
-                "COMMIT: {} NAME: {}",
+                "NAME:     {}\nPLAYBOOK: {}\nCOMMIT:   {}",
+                layers_json[0].name,
+                layers_json[0].playbook,
                 layers_json[0]
                     .commit
                     .as_ref()
                     .unwrap_or(&"Not defined".to_string()),
-                layers_json[0].name
             );
 
             for layer in layers_json.iter().skip(1) {
                 layers = format!(
-                    "{}\nCOMMIT: {} NAME: {}",
+                    "{}\n\nNAME:     {}\nPLAYBOOK: {}\nCOMMIT:   {}",
                     layers,
+                    layer.name,
+                    layer.playbook,
                     layer.commit.as_ref().unwrap_or(&"Not defined".to_string()),
-                    layer.name
                 );
             }
         }
@@ -52,7 +54,7 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}",
+            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}\nPLAYBOOK: {}",
             layers,
             layer.name,
             layer.branch,
@@ -65,6 +67,7 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
             layer.commit_date,
             layer.author,
             layer.commit_id,
+            layer.playbook
         );
     }
 

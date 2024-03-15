@@ -3,7 +3,7 @@ use mesa::{
         self,
         configuration::mesa::r#struct::{
             cfs_configuration::{Configuration, Layer},
-            cfs_configuration_response::CfsConfigurationResponse,
+            cfs_configuration_response::{self, CfsConfigurationResponse},
         },
     },
     common::gitea,
@@ -54,6 +54,9 @@ pub async fn exec(
                 let layer_details: Layer =
                     get_configuration_layer_details(shasta_root_cert, gitea_token, layer).await;
 
+                println!("DEBUG - layer :\n{:#?}", layer);
+                println!("DEBUG - layer details:\n{}", layer_details);
+
                 layers.push(layer_details);
             }
 
@@ -71,7 +74,7 @@ pub async fn exec(
 pub async fn get_configuration_layer_details(
     shasta_root_cert: &[u8],
     gitea_token: &str,
-    layer: &mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::Layer,
+    layer: &cfs_configuration_response::Layer,
 ) -> Layer {
     let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
     // let branch_name_opt: Option<&str> = layer.branch.as_deref();
@@ -328,6 +331,7 @@ pub async fn get_configuration_layer_details(
             .unwrap(),
         &branch_name,
         &tag_name,
+        &layer.playbook,
         // most_recent_commit,
     )
 }
