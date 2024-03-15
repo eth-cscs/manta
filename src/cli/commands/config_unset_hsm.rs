@@ -3,8 +3,6 @@ use std::{fs, io::Write, path::PathBuf};
 use directories::ProjectDirs;
 use toml_edit::Document;
 
-use crate::common::jwt_ops;
-
 pub async fn exec() {
     // Read configuration file
 

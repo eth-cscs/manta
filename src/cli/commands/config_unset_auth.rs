@@ -1,8 +1,11 @@
 use std::{fs, path::PathBuf};
 
+use dialoguer::Select;
 use directories::ProjectDirs;
 
 pub async fn exec() {
+    let mut auth_token_list: Vec<PathBuf> = vec![];
+
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -10,17 +13,42 @@ pub async fn exec() {
         "manta", /*application*/
     );
 
-    let mut path_to_manta_authentication_token_file =
-        PathBuf::from(project_dirs.unwrap().cache_dir());
+    let path_to_manta_authentication_token_file = PathBuf::from(project_dirs.unwrap().cache_dir());
 
-    path_to_manta_authentication_token_file.push("http"); // ~/.config/manta/config is the file
+    for entry in fs::read_dir(path_to_manta_authentication_token_file).unwrap() {
+        auth_token_list.push(entry.unwrap().path())
+    }
 
-    log::debug!(
-        "Deleting manta authentication file {}",
-        &path_to_manta_authentication_token_file.to_string_lossy()
+    let selection = Select::new()
+        .with_prompt("Please chose the site token to delete from the list below")
+        .default(0)
+        .items(
+            &auth_token_list
+                .iter()
+                .map(|path| path.file_name().unwrap().to_str().unwrap())
+                .collect::<Vec<_>>(),
+        )
+        .interact()
+        .unwrap();
+
+    println!(
+        "Deleting authentication file: {}",
+        auth_token_list[selection]
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
     );
 
-    let _ = fs::remove_file(path_to_manta_authentication_token_file);
+    fs::remove_file(auth_token_list[selection].clone()).unwrap();
 
-    println!("Athentication token file deleted");
+    /* for auth_token in auth_token_list {
+        log::debug!(
+            "Deleting manta authentication file {}",
+            &auth_token.to_string_lossy()
+        );
+        fs::remove_file(auth_token).unwrap();
+    }
+
+    println!("Athentication token file deleted"); */
 }
