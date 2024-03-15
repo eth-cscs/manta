@@ -102,15 +102,15 @@ pub async fn process_cli(
             }
         } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset") {
             if let Some(_cli_config_unset_hsm) = cli_config_unset.subcommand_matches("hsm") {
-                let shasta_token = &authentication::get_api_token(
+                /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
                     &site_name,
                 )
-                .await?;
+                .await?; */
 
-                config_unset_hsm::exec(shasta_token).await;
+                config_unset_hsm::exec().await;
             }
             if let Some(_cli_config_unset_parent_hsm) =
                 cli_config_unset.subcommand_matches("parent-hsm")

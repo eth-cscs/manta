@@ -5,7 +5,7 @@ use toml_edit::Document;
 
 use crate::common::jwt_ops;
 
-pub async fn exec(shasta_token: &str) {
+pub async fn exec() {
     // Read configuration file
 
     // XDG Base Directory Specification
@@ -31,7 +31,7 @@ pub async fn exec(shasta_token: &str) {
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
+    /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap()
@@ -42,7 +42,7 @@ pub async fn exec(shasta_token: &str) {
         .collect::<Vec<String>>();
 
     settings_hsm_available_vec
-        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
 
     log::info!("Unset HSM group");
     doc.remove("hsm_group");
