@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.11] - 2024-03-15
+
+### Bug Fixes
+
+- Format cfs layer data and clean stoud log traces
+
 ## [1.28.10] - 2024-03-15
 
 ### Features
 
 - Show cfs configuration layer table in different rows
 - User new mesa library version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.10
 
 ## [1.28.9] - 2024-03-14
 
