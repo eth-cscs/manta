@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.12] - 2024-03-15
+
+### Bug Fixes
+
+- Config unset hsm command
+
 ## [1.28.11] - 2024-03-15
 
 ### Bug Fixes
 
 - Format cfs layer data and clean stoud log traces
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.11
 
 ## [1.28.10] - 2024-03-15
 
