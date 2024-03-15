@@ -54,9 +54,6 @@ pub async fn exec(
                 let layer_details: Layer =
                     get_configuration_layer_details(shasta_root_cert, gitea_token, layer).await;
 
-                println!("DEBUG - layer :\n{:#?}", layer);
-                println!("DEBUG - layer details:\n{}", layer_details);
-
                 layers.push(layer_details);
             }
 

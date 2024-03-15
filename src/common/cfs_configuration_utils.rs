@@ -15,7 +15,7 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
             let layers_json = &cfs_configuration.layers;
 
             layers = format!(
-                "NAME:     {}\nPLAYBOOK: {}\nCOMMIT:   {}",
+                "Name:     {}\nPlaybook: {}\nCommit:   {}",
                 layers_json[0].name,
                 layers_json[0].playbook,
                 layers_json[0]
@@ -26,7 +26,7 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
 
             for layer in layers_json.iter().skip(1) {
                 layers = format!(
-                    "{}\n\nNAME:     {}\nPLAYBOOK: {}\nCOMMIT:   {}",
+                    "{}\n\nName:     {}\nPlaybook: {}\nCommit:   {}",
                     layers,
                     layer.name,
                     layer.playbook,
@@ -54,7 +54,7 @@ pub fn print_table_details_struct(cfs_configuration: Configuration) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}\nPLAYBOOK: {}",
+            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}\nPlaybook: {}",
             layers,
             layer.name,
             layer.branch,
