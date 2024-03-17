@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.14] - 2024-03-17
+
+### Refactor
+
+- Move tests to /test/ directory
+
 ## [1.28.13] - 2024-03-15
 
 ### Features
 
 - Add selection prompmt to delete auth token
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.13
 
 ## [1.28.12] - 2024-03-15
 
