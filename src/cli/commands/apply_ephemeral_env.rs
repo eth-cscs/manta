@@ -45,7 +45,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        "__test_image_to_delete",
+        "__ephemeral_image",
         image_id,
         user_public_ssh_id_value.as_str().unwrap(),
     )
