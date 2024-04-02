@@ -2,7 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.0] - 2024-04-02
+
+### Bug Fixes
+
+- Stop fetching all HSM groups available to the user if no roles
+
+### Features
+
+- SAT file processing now accepts
+
+### Refactor
+
+- Cean code
+
 ## [1.28.14] - 2024-03-17
+
+### Miscellaneous Tasks
+
+- Release manta version 1.28.14
 
 ### Refactor
 
