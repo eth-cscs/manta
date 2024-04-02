@@ -4,10 +4,12 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{
-        self, configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest,
-        session::mesa::r#struct::CfsSessionPostRequest,
+        self,
+        configuration::mesa::r#struct::cfs_configuration_request::v2::CfsConfigurationRequest,
+        session::mesa::r#struct::v2::CfsSessionPostRequest,
     },
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    error::Error,
     node::utils::validate_xnames,
 };
 
@@ -223,7 +225,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     limit: Option<String>,
     ansible_verbosity: Option<u8>,
     ansible_passthrough: Option<String>,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, Error> {
     // Get ALL sessions
     let cfs_sessions = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
@@ -294,7 +296,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = mesa::cfs::component::shasta::http_client::get_single_component(
+        let component_status = mesa::cfs::component::shasta::http_client::v2::get_single_component(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

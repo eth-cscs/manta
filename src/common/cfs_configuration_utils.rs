@@ -1,6 +1,7 @@
 use comfy_table::Table;
 use mesa::cfs::configuration::mesa::r#struct::{
-    cfs_configuration::Configuration, cfs_configuration_response::CfsConfigurationResponse,
+    cfs_configuration::ConfigurationDetails,
+    cfs_configuration_response::v2::CfsConfigurationResponse,
 };
 
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
@@ -45,7 +46,7 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     println!("{table}");
 }
 
-pub fn print_table_details_struct(cfs_configuration: Configuration) {
+pub fn print_table_details_struct(cfs_configuration: ConfigurationDetails) {
     let mut table = Table::new();
 
     table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);

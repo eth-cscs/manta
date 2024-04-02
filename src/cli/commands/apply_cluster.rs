@@ -1,30 +1,4 @@
-use core::time;
-use std::{
-    collections::HashMap,
-    io::{self, Write},
-};
-
-use dialoguer::theme::ColorfulTheme;
-use mesa::{
-    cfs::{
-        configuration::mesa::r#struct::cfs_configuration_response::{
-            ApiError, CfsConfigurationResponse,
-        },
-        session::mesa::r#struct::CfsSessionGetResponse,
-    },
-    common::kubernetes,
-    ims, {capmc, hsm},
-};
-use serde_yaml::Value;
-
-use crate::common::{
-    self,
-    jwt_ops::get_claims_from_jwt_token,
-    sat_file::{
-        self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
-        validate_sat_file_images_section,
-    },
-};
+use super::apply_sat_file;
 
 #[deprecated(since = "1.28.2", note = "Please use `apply_sat_file` instead")]
 pub async fn exec(
@@ -46,212 +20,28 @@ pub async fn exec(
     // tag: &str,
     do_not_reboot: bool,
 ) {
-    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
-        &sat_file_content,
-        values_file_content_opt.as_ref(),
+    apply_sat_file::exec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+        k8s_api_url,
+        sat_file_content,
+        values_file_content_opt,
         values_cli_opt,
-    );
-
-    println!(
-        "SAT file content:\n{}",
-        serde_yaml::to_string(&sat_file_yaml).unwrap()
-    );
-    let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("Please check the template above and confirm to proceed")
-        .interact()
-        .unwrap();
-
-    if process_sat_file {
-        println!("Proceed and process SAT file");
-    } else {
-        println!("Operation canceled by user. Exit");
-        std::process::exit(0);
-    }
-
-    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
-
-    // Get hardware pattern from SAT YAML file
-    let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
-
-    // Get CFS configurations from SAT YAML file
-    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
-
-    // Get inages from SAT YAML file
-    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
-
-    // Get inages from SAT YAML file
-    let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
-
-    // Get Cray/HPE product catalog
-    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
-        vault_base_url,
-        vault_secret_path,
-        vault_role_id,
-    )
-    .await;
-
-    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
-        .await
-        .unwrap();
-    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
-        .await
-        .unwrap();
-
-    // Get configurations from CSM
-    let configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-    )
-    .await
-    .unwrap();
-
-    // Get images from CSM
-    let image_vec = mesa::ims::image::mesa::http_client::get_all(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-    )
-    .await
-    .unwrap();
-
-    // VALIDATION
-    validate_sat_file_configurations_section(
-        configuration_yaml_vec_opt,
-        image_yaml_vec_opt,
-        bos_session_template_yaml_vec_opt,
-    );
-
-    // Get IMS recipes from CSM
-    let ims_recipe_vec =
-        mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await
-            .unwrap();
-
-    let image_validation_rslt = validate_sat_file_images_section(
-        image_yaml_vec_opt.unwrap(),
-        configuration_yaml_vec_opt.unwrap(),
-        hsm_group_available_vec,
-        &cray_product_catalog,
-        image_vec,
-        configuration_vec,
-        ims_recipe_vec,
-    );
-
-    if let Err(error) = image_validation_rslt {
-        eprintln!("{}", error);
-    }
-
-    // Check HSM groups in session_templates in SAT file section matches the ones in JWT token (keycloak roles) in  file
-    // This is a bit messy... images section in SAT file valiidation is done inside apply_image::exec but the
-    // validation of session_templates section in the SAT file is below
-    validate_sat_file_session_template_section(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        bos_session_template_yaml_vec_opt,
-        image_yaml_vec_opt,
-        configuration_yaml_vec_opt,
-        hsm_group_available_vec,
-    )
-    .await;
-
-    // Process "hardware" section in SAT file
-
-    log::info!("hardware pattern: {:?}", hardware_yaml_value_vec_opt);
-
-    // Process "configurations" section in SAT file
-    //
-    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
-        vault_base_url,
-        vault_secret_path,
-        vault_role_id,
-    )
-    .await;
-
-    let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
-        .await
-        .unwrap();
-    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
-        .await
-        .unwrap();
-
-    let mut cfs_configuration_value_vec = Vec::new();
-
-    let mut cfs_configuration_name_vec = Vec::new();
-
-    for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&vec![]).iter() {
-        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
-            common::sat_file::create_cfs_configuration_from_sat_file(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                gitea_token,
-                &cray_product_catalog,
-                configuration_yaml,
-                // tag,
-            )
-            .await;
-
-        let cfs_configuration = match cfs_configuration_rslt {
-            Ok(cfs_configuration) => cfs_configuration,
-            Err(error) => {
-                eprintln!("{}", error);
-                std::process::exit(1);
-            }
-        };
-
-        let cfs_configuration_name = cfs_configuration.name.to_string();
-
-        println!("CFS configuration '{}' created", cfs_configuration_name);
-
-        cfs_configuration_name_vec.push(cfs_configuration_name.clone());
-
-        cfs_configuration_value_vec.push(cfs_configuration.clone());
-    }
-
-    // Process "images" section in SAT file
-
-    // List of image.ref_name already processed
-    let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
-
-    let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
-        import_images_section_in_sat_file(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &mut ref_name_processed_hashmap,
-            image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
-            &cray_product_catalog,
-            ansible_verbosity_opt,
-            ansible_passthrough_opt,
-            // tag,
-        )
-        .await;
-
-    log::info!(
-        "List of new image IDs: {:?}",
-        cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
-    );
-
-    // Process "session_templates" section in SAT file
-
-    process_session_template_section_in_sat_file(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        ref_name_processed_hashmap,
         hsm_group_param_opt,
         hsm_group_available_vec,
-        sat_file_yaml,
-        // &tag,
+        ansible_verbosity_opt,
+        ansible_passthrough_opt,
+        gitea_token,
         do_not_reboot,
     )
     .await;
 }
 
-pub async fn validate_sat_file_session_template_section(
+/* pub async fn validate_sat_file_session_template_section(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -358,7 +148,7 @@ pub async fn validate_sat_file_session_template_section(
                     "Configuration '{}' in session_template section not found in SAT file",
                     configuration_name
                 );
-                if mesa::cfs::configuration::shasta::http_client::get(
+                if mesa::cfs::configuration::shasta::http_client::v3::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -383,9 +173,9 @@ pub async fn validate_sat_file_session_template_section(
             std::process::exit(1);
         }
     }
-}
+} */
 
-pub async fn process_session_template_section_in_sat_file(
+/* pub async fn process_session_template_section_in_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -548,52 +338,48 @@ pub async fn process_session_template_section_in_sat_file(
 
         // bos_session_template_name.replace("__DATE__", tag);
 
-        let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
+        let mut boot_param_vec = Vec::new();
+
+        for (property, boot_set) in bos_session_template_yaml["bos_parameters"]["boot_sets"]
+            .as_mapping()
+            .unwrap()
         {
-            boot_sets_compute["node_groups"]
+            let kernel_params = boot_set["kernel_parameters"].as_str().unwrap();
+            let arch = boot_set["arch"].as_str().unwrap();
+
+            let bos_session_template_hsm_groups: Vec<String> = boot_set["node_groups"]
                 .as_sequence()
                 .unwrap_or(&vec![])
                 .iter()
                 .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
-        {
-            boot_sets_compute["node_groups"]
-                .as_sequence()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else {
-            println!("No HSM group found in session_templates section in SAT file");
-            std::process::exit(1);
-        };
+                .collect();
 
-        // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups matches with
-        // Check hsm groups in SAT file includes the hsm_group_param
-        let hsm_group = if hsm_group_param_opt.is_some()
-            && !bos_session_template_hsm_groups
-                .iter()
-                .any(|h_g| h_g.eq(hsm_group_param_opt.unwrap()))
-        {
-            eprintln!("HSM group in param does not matches with any HSM groups in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Using HSM group in param as the default");
-            hsm_group_param_opt.unwrap()
-        } else {
-            bos_session_template_hsm_groups.first().unwrap()
-        };
+            // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups matches with
+            // Check hsm groups in SAT file includes the hsm_group_param
+            let hsm_group = if hsm_group_param_opt.is_some()
+                && !bos_session_template_hsm_groups
+                    .iter()
+                    .any(|h_g| h_g.eq(hsm_group_param_opt.unwrap()))
+            {
+                eprintln!("HSM group in param does not matches with any HSM groups in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Using HSM group in param as the default");
+                hsm_group_param_opt.unwrap()
+            } else {
+                bos_session_template_hsm_groups.first().unwrap()
+            };
 
-        let create_bos_session_template_payload =
-            mesa::bos::template::mesa::r#struct::request_payload::BosSessionTemplate::new_for_hsm_group(
-                bos_session_template_configuration_name,
-                bos_session_template_name,
-                ims_image_name,
-                ims_image_path.to_string(),
-                ims_image_type.to_string(),
-                ims_image_etag.to_string(),
-                hsm_group,
-            );
+            boot_param_vec.insert(property, element)
+        }
+
+        let create_bos_session_template_payload = BosSessionTemplate::new_for_hsm_group(
+            bos_session_template_configuration_name,
+            bos_session_template_name,
+            ims_image_name,
+            ims_image_path.to_string(),
+            ims_image_type.to_string(),
+            ims_image_etag.to_string(),
+            hsm_group,
+            kernel_params,
+        );
 
         let create_bos_session_template_resp = mesa::bos::template::shasta::http_client::post(
             shasta_token,
@@ -606,7 +392,7 @@ pub async fn process_session_template_section_in_sat_file(
         match create_bos_session_template_resp {
             Ok(bos_sessiontemplate) => println!(
                 "BOS sessiontemplate name '{}' created",
-                bos_sessiontemplate.as_str().unwrap()
+                bos_sessiontemplate.name
             ),
             Err(error) => eprintln!(
                 "ERROR: BOS session template creation failed.\nReason:\n{}\nExit",
@@ -682,9 +468,9 @@ pub async fn process_session_template_section_in_sat_file(
 
         log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
     }
-}
+} */
 
-pub async fn wait_cfs_session_to_complete(
+/* pub async fn wait_cfs_session_to_complete(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -772,4 +558,4 @@ pub async fn wait_cfs_session_to_complete(
             i += 1;
         }
     }
-}
+} */

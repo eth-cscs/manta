@@ -45,9 +45,7 @@ pub async fn exec(
 
     let settings_hsm_available_vec = realm_access_role_vec; */
 
-    let hsm_group_available: Vec<String> =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 
@@ -112,4 +110,22 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
 
         all_hsm_groups
     }
+}
+
+pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
+    let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
+        .unwrap()
+        .pointer("/realm_access/roles")
+        .unwrap_or(&serde_json::json!([]))
+        .as_array()
+        .unwrap_or(&Vec::new())
+        .iter()
+        .map(|role_value| role_value.as_str().unwrap().to_string())
+        .collect::<Vec<String>>();
+
+    realm_access_role_vec
+        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+
+    realm_access_role_vec.sort();
+    realm_access_role_vec
 }

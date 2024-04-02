@@ -2,8 +2,8 @@ use mesa::{
     cfs::{
         self,
         configuration::mesa::r#struct::{
-            cfs_configuration::{Configuration, Layer},
-            cfs_configuration_response::{self, CfsConfigurationResponse},
+            cfs_configuration::{ConfigurationDetails, LayerDetails},
+            cfs_configuration_response::v2::{CfsConfigurationResponse, Layer},
         },
     },
     common::gitea,
@@ -23,7 +23,7 @@ pub async fn exec(
     output_opt: Option<&String>,
 ) {
     let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-        cfs::configuration::mesa::http_client::get_and_filter(
+        cfs::configuration::mesa::utils::get_and_filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -45,23 +45,27 @@ pub async fn exec(
         );
     } else {
         if cfs_configuration_vec.len() == 1 {
+            // Get CFS configuration details with data from VCS/Gitea
             let most_recent_cfs_configuration: &CfsConfigurationResponse =
                 &cfs_configuration_vec[0];
 
-            let mut layers: Vec<Layer> = vec![];
+            let mut layer_details_vec: Vec<LayerDetails> = vec![];
 
             for layer in &most_recent_cfs_configuration.layers {
-                let layer_details: Layer =
-                    get_configuration_layer_details(shasta_root_cert, gitea_token, layer).await;
+                let layer_details: LayerDetails =
+                    get_configuration_layer_details(shasta_root_cert, gitea_token, layer.clone())
+                        .await;
 
-                layers.push(layer_details);
+                layer_details_vec.push(layer_details);
             }
 
-            crate::common::cfs_configuration_utils::print_table_details_struct(Configuration::new(
-                &most_recent_cfs_configuration.name,
-                &most_recent_cfs_configuration.last_updated,
-                layers,
-            ));
+            crate::common::cfs_configuration_utils::print_table_details_struct(
+                ConfigurationDetails::new(
+                    &most_recent_cfs_configuration.name,
+                    &most_recent_cfs_configuration.last_updated,
+                    layer_details_vec,
+                ),
+            );
         } else {
             print_table_struct(&cfs_configuration_vec);
         }
@@ -71,8 +75,8 @@ pub async fn exec(
 pub async fn get_configuration_layer_details(
     shasta_root_cert: &[u8],
     gitea_token: &str,
-    layer: &cfs_configuration_response::Layer,
-) -> Layer {
+    layer: Layer,
+) -> LayerDetails {
     let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
     // let branch_name_opt: Option<&str> = layer.branch.as_deref();
     let mut most_recent_commit: bool = false;
@@ -84,28 +88,6 @@ pub async fn get_configuration_layer_details(
         gitea::http_client::get_all_refs(&layer.clone_url, gitea_token, shasta_root_cert)
             .await
             .unwrap();
-
-    // Find remote git ref with same commit id as layer we are processing
-    /* let ref_value_opt: Option<&Value> = repo_ref_vec.iter().find(|ref_vec| {
-        ref_vec
-            .pointer("/object/sha")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .eq(&commit_id)
-    }); */
-
-    /* let ref_value_opt: Option<&Value> = repo_ref_vec
-    .iter()
-    .filter(|ref_vec| {
-        ref_vec
-            .pointer("/object/sha")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .eq(&commit_id)
-    })
-    .last(); */
 
     let mut ref_value_vec: Vec<&Value> = repo_ref_vec
         .iter()
@@ -213,82 +195,11 @@ pub async fn get_configuration_layer_details(
         }
 
         // check if layer commit is the most recent
-        if commit_sha.eq(layer.commit.as_ref().unwrap()) {
+        if commit_sha.eq(&layer.commit.clone().unwrap()) {
             // CFS layer commit is the same as the HEAD of the branch
             most_recent_commit = true;
         }
     }
-
-    /* if let Some(ref_value) = ref_value_opt {
-        // remote git ref found meaning there is a ref with existing commit id
-        log::debug!("Found ref in remote git repo:\n{:#?}", ref_value);
-        let ref_type = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
-        if ref_type.eq("commit") {
-            // Layer was created specifying a branch name or a lightweight tag and layer commit id is the
-            // most recent one
-            // tag_name = None;
-            branch_name = Some(
-                ref_value["ref"]
-                    .as_str()
-                    .unwrap()
-                    .trim_start_matches("refs/heads/") // To clean ref value for
-                    // branche
-                    .trim_start_matches("refs/tags/"),
-            );
-            ref_name = Some(
-                ref_value["ref"]
-                    .as_str()
-                    .unwrap()
-                    .trim_start_matches("refs/heads/"),
-            );
-            // check if layer commit is the most recent
-            if ref_value
-                .pointer("/object/sha")
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .eq(layer.commit.as_ref().unwrap())
-            {
-                // CFS layer commit is the same as the HEAD of the branch
-                most_recent_commit = Some(true);
-            } else {
-                // CFS Layer commit is outdated
-                most_recent_commit = Some(false);
-            }
-        } else if ref_type.eq("tag") {
-            // Layer was created using a tag or a hardcoded commit id that matches a
-            // tag
-            // tag_name = Some(
-            //     ref_value["ref"]
-            //         .as_str()
-            //         .unwrap()
-            //         .trim_start_matches("refs/tags/"),
-            // );
-            branch_name = branch_name_opt;
-            ref_name = Some(
-                ref_value["ref"]
-                    .as_str()
-                    .unwrap()
-                    .trim_start_matches("refs/tags/"),
-            );
-            most_recent_commit = None;
-        } else {
-            // Layer was created using a hardcoded commit id
-            // In theory this case could never happen because if we found a ref, then
-            // it must be either a branch or a tag
-            // tag_name = None;
-            branch_name = branch_name_opt;
-            ref_name = branch_name_opt;
-            most_recent_commit = None;
-        }
-    } else {
-        // No ref found in remote git repo
-        log::debug!("No ref found in remote git repo");
-        // tag_name = None;
-        branch_name = branch_name_opt;
-        ref_name = branch_name_opt;
-        most_recent_commit = None;
-    } */
 
     if let Some(cfs_config_layer_branch) = &layer.branch {
         branch_name = cfs_config_layer_branch.to_string();
@@ -309,7 +220,7 @@ pub async fn get_configuration_layer_details(
         serde_json::json!({})
     };
 
-    Layer::new(
+    LayerDetails::new(
         &layer.name,
         layer
             .clone_url

@@ -1,7 +1,7 @@
 use mesa::{
     cfs::{
-        configuration::mesa::r#struct::cfs_configuration_response::CfsConfigurationResponse,
-        session::mesa::r#struct::CfsSessionGetResponse,
+        configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+        session::mesa::r#struct::v2::CfsSessionGetResponse,
     },
     hsm,
 };
@@ -64,45 +64,6 @@ pub async fn get_details(
         let cfs_configuration;
 
         for cfs_session_value in cfs_sessions_value_vec {
-            /* let target_groups = cfs_session_value
-            .target
-            .as_ref()
-            .unwrap()
-            .groups
-            .as_ref()
-            .map(|target_groups| {
-                if target_groups.is_empty() {
-                    Vec::new()
-                } else {
-                    target_groups.to_vec()
-                }
-            })
-            .unwrap(); */
-
-            /* let ansible_limit = cfs_session_value
-            .ansible
-            .as_ref()
-            .unwrap()
-            .limit
-            .as_ref()
-            .map(|ansible_limit| {
-                if ansible_limit.is_empty() {
-                    ""
-                } else {
-                    ansible_limit
-                }
-            })
-            .unwrap(); */
-
-            /* // Check CFS session is linkged to HSM GROUP name or any of its members
-            if target_groups
-                .iter()
-                .map(|target_group| target_group.name.as_str())
-                .collect::<Vec<&str>>()
-                .contains(&hsm_group_name)
-                || ansible_limit.contains(&hsm_group_members)
-            { */
-
             // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
             // members
             let cfs_configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
@@ -134,7 +95,6 @@ pub async fn get_details(
             clusters_details.push(cluster_details);
 
             break;
-            // }
         }
     }
 

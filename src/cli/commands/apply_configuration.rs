@@ -1,9 +1,7 @@
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_response::{
-        ApiError, CfsConfigurationResponse,
-    },
-    common::kubernetes,
+    cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+    common::kubernetes, error::Error,
 };
 use serde_yaml::Value;
 
@@ -14,7 +12,7 @@ use crate::common::{self, cfs_configuration_utils, sat_file};
 /// match with a git repo name after concatenating it with "-config-management" (eg: layer name
 /// "cos" becomes repo name "cos-config-management" which correlates with https://api-gw-service-nmn.local/vcs/api/v1/repos/cray/cos-config-management)
 /// Return CFS configuration name
-#[deprecated(since="1.28.2", note="Please use `apply_sat_file` instead")]
+#[deprecated(since = "1.28.2", note = "Please use `apply_sat_file` instead")]
 pub async fn exec(
     sat_file_content: String,
     values_file_content_opt: Option<String>,
@@ -97,7 +95,7 @@ pub async fn exec(
     let mut cfs_configuration_name_vec = Vec::new();
 
     for configuration_yaml in configuration_yaml_vec {
-        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
             common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,

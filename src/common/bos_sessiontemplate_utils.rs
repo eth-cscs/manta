@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::bos::template::mesa::r#struct::response_payload::BosSessionTemplate;
+use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
 use mesa::node;
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
@@ -33,18 +33,12 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
             };
 
             table.add_row(vec![
-                bos_template.name.as_ref().unwrap(),
-                bos_template
-                    .cfs
-                    .as_ref()
-                    .unwrap()
-                    .configuration
-                    .as_ref()
-                    .unwrap(),
-                &bos_template.enable_cfs.unwrap().to_string(),
-                &node::utils::string_vec_to_multi_line_string(Some(&target), 2),
-                &boot_set.1.etag.unwrap_or("".to_string()),
-                &boot_set.1.path.unwrap(),
+                bos_template.name.clone(),
+                bos_template.cfs.clone().unwrap().configuration.unwrap(),
+                bos_template.enable_cfs.unwrap().to_string(),
+                node::utils::string_vec_to_multi_line_string(Some(&target), 2),
+                boot_set.1.etag.unwrap_or("".to_string()),
+                boot_set.1.path.unwrap(),
             ]);
         }
     }
@@ -174,7 +168,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
             bos_sessiontemplate_value_target
         );
 
-        let bos_sessiontemplate_name = bos_sessiontemplate_value_target.name.as_ref().unwrap();
+        let bos_sessiontemplate_name = &bos_sessiontemplate_value_target.name;
 
         for boot_sets_value in bos_sessiontemplate_value_target
             .boot_sets

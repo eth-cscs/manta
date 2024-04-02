@@ -6,8 +6,9 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use futures::SinkExt;
 use mesa::bss::BootParameters;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::CfsConfigurationResponse;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
 use mesa::{bos, cfs};
 use serde_json::Value;
 
@@ -42,7 +43,7 @@ pub async fn delete_data_related_cfs_configuration(
     //
     // Get all CFS components in CSM
     let cfs_components: Vec<Value> =
-        mesa::cfs::component::shasta::http_client::get_multiple_components(
+        mesa::cfs::component::shasta::http_client::v3::get_multiple_components(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -294,7 +295,7 @@ pub async fn delete_data_related_cfs_configuration(
     let cfs_session_cfs_configuration_image_id_tuple_vec: Vec<(String, String, String)> =
         cfs_session_vec
             .iter()
-            .filter(|cfs_session| cfs_session.get_result_id().is_some())
+            .filter(|cfs_session| cfs_session.get_first_result_id().is_some())
             .map(|cfs_session| {
                 (
                     cfs_session.name.clone().unwrap(),
@@ -304,7 +305,7 @@ pub async fn delete_data_related_cfs_configuration(
                         .unwrap()
                         .clone(),
                     cfs_session
-                        .get_result_id()
+                        .get_first_result_id()
                         .unwrap_or("".to_string())
                         .clone(),
                 )
@@ -316,8 +317,8 @@ pub async fn delete_data_related_cfs_configuration(
         Vec::new();
 
     for bos_sessiontemplate_value in &bos_sessiontemplate_value_vec {
-        let cfs_session_name = bos_sessiontemplate_value.name.as_ref().unwrap();
-        let cfs_configuration_name = bos_sessiontemplate_value
+        let cfs_session_name: &str = bos_sessiontemplate_value.name.as_ref();
+        let cfs_configuration_name: &String = bos_sessiontemplate_value
             .cfs
             .as_ref()
             .unwrap()
@@ -342,7 +343,7 @@ pub async fn delete_data_related_cfs_configuration(
             };
 
             bos_sessiontemplate_cfs_configuration_image_id_tuple_vec.push((
-                &cfs_session_name,
+                cfs_session_name,
                 cfs_configuration_name,
                 image_id,
             ));
@@ -379,7 +380,7 @@ pub async fn delete_data_related_cfs_configuration(
         let mut nodes_using_cfs_configuration_as_dessired_configuration_vec = cfs_components
             .iter()
             .filter(|cfs_component| {
-                cfs_component["desiredConfig"]
+                cfs_component["desired_config"]
                     .as_str()
                     .unwrap()
                     .eq(cfs_configuration_name)
@@ -503,7 +504,7 @@ pub async fn delete_data_related_cfs_configuration(
         cfs_session_table.add_row(vec![
             cfs_session.name.as_ref().unwrap_or(&"".to_string()),
             &cfs_session.get_configuration_name().unwrap_or_default(),
-            &cfs_session.get_result_id().unwrap_or_default(),
+            &cfs_session.get_first_result_id().unwrap_or_default(),
         ]);
     }
 
@@ -575,17 +576,17 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &cfs_configuration_name_vec
+        cfs_configuration_name_vec
             .iter()
             .map(|cfs_config| cfs_config.as_str())
             .collect(),
-        &image_id_vec,
+        image_id_vec,
         // &cfs_components,
-        &cfs_session_cfs_configuration_image_id_tuple_filtered_vec
+        cfs_session_cfs_configuration_image_id_tuple_filtered_vec
             .iter()
             .map(|(session, _, _)| session.as_str())
             .collect(),
-        &bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec
+        bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec
             .into_iter()
             .map(|(sessiontemplate, _, _)| sessiontemplate)
             .collect(),
@@ -602,15 +603,16 @@ pub async fn delete(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    cfs_configuration_name_vec: &Vec<&str>,
-    image_id_vec: &Vec<&str>,
-    cfs_session_name_vec: &Vec<&str>,
-    bos_sessiontemplate_name_vec: &Vec<&str>,
+    cfs_configuration_name_vec: Vec<&str>,
+    image_id_vec: Vec<&str>,
+    cfs_session_name_vec: Vec<&str>,
+    bos_sessiontemplate_name_vec: Vec<&str>,
 ) {
     // DELETE DATA
     //
     // DELETE IMAGES
     for image_id in image_id_vec {
+        log::info!("Deleting IMS image '{}'", image_id);
         let image_deleted_value_rslt = mesa::ims::image::shasta::http_client::delete(
             shasta_token,
             shasta_base_url,
@@ -621,19 +623,20 @@ pub async fn delete(
 
         // process api response
         match image_deleted_value_rslt {
-            Ok(_) => println!("Image deleted: {}", image_id),
+            Ok(_) => println!("IMS image deleted: {}", image_id),
             Err(error) => {
-                let error_response = serde_json::from_str::<Value>(&error.to_string()).unwrap();
-                log::warn!("{}", serde_json::to_string_pretty(&error_response).unwrap());
-                if error_response["status"].as_u64().unwrap() == 404 {
-                    eprintln!("Image id '{}' artifact not found. Continue", image_id);
+                if error.status().unwrap().eq(&404) {
+                    eprintln!(
+                        "Artifact related to image id '{}' not found. Continue",
+                        image_id
+                    );
                 }
             }
         }
     }
 
     // DELETE BOS SESSIONS
-    let bos_session_id_value_vec = mesa::bos::session::shasta::http_client::get(
+    let bos_session_vec = bos::session::shasta::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -643,52 +646,38 @@ pub async fn delete(
     .unwrap();
 
     // Match BOS SESSIONS with the BOS SESSIONTEMPLATE RELATED
-    for bos_session_id_value in bos_session_id_value_vec {
-        let bos_session_value = mesa::bos::session::shasta::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(bos_session_id_value.as_str().unwrap()),
-        )
-        .await
-        .unwrap();
+    for bos_session in bos_session_vec {
+        let bos_session_id = &bos_session.name.unwrap();
+        log::info!("Deleting BOS sesion '{}'", bos_session_id);
 
-        if !bos_session_value.is_empty()
-            && bos_sessiontemplate_name_vec.contains(
-                &bos_session_value.first().unwrap()["templateName"]
-                    .as_str()
-                    .unwrap(),
-            )
-        {
-            mesa::bos::session::shasta::http_client::delete(
+        if bos_sessiontemplate_name_vec.contains(&bos_session.template_name.as_str()) {
+            bos::session::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                bos_session_id_value.as_str().unwrap(),
+                &bos_session_id,
             )
             .await
             .unwrap();
 
             println!(
                 "BOS session deleted: {}",
-                bos_session_id_value.as_str().unwrap() // For some reason CSM API to delete a BOS
-                                                       // session does not returns the BOS session
-                                                       // ID in the payload...
+                bos_session_id // For some reason CSM API to delete a BOS
+                               // session does not returns the BOS session
+                               // ID in the payload...
             );
         } else {
-            log::info!(
-                "Could not find BOS session template related to BOS session {} - Possibly related to a different HSM group or BOS session template was deleted?",
-                bos_session_id_value.as_str().unwrap()
-            );
+            log::debug!("Ignoring BOS session template {}", bos_session_id);
         }
     }
 
     // DELETE CFS SESSIONS
     let max_attempts = 5;
     for cfs_session_name in cfs_session_name_vec {
+        log::info!("Deleting IMS image '{}'", cfs_session_name);
         let mut counter = 0;
         loop {
-            let deletion_rslt = mesa::cfs::session::shasta::http_client::delete(
+            let deletion_rslt = cfs::session::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -696,10 +685,6 @@ pub async fn delete(
             )
             .await;
 
-            /* println!(
-                "CFS session deleted: {}",
-                cfs_session_value["name"].as_str().unwrap()
-            ); */
             if deletion_rslt.is_err() && counter <= max_attempts {
                 log::warn!("Could not delete CFS session {} attempt {} of {}, trying again in 2 seconds...", cfs_session_name, counter, max_attempts);
                 tokio::time::sleep(time::Duration::from_secs(2)).await;
@@ -721,26 +706,19 @@ pub async fn delete(
     // DELETE BOS SESSIONTEMPLATES
     let max_attempts = 5;
     for bos_sessiontemplate_name in bos_sessiontemplate_name_vec {
+        log::info!(
+            "Deleting BOS sessiontemplate '{}'",
+            bos_sessiontemplate_name
+        );
         let mut counter = 0;
         loop {
-            let deletion_rslt = mesa::bos::template::shasta::http_client::delete(
+            let deletion_rslt = mesa::bos::template::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 bos_sessiontemplate_name,
             )
             .await;
-
-            /* match deletion_rslt {
-                Ok(_) => println!(
-                    "BOS sessiontemplate deleted: {}",
-                    bos_sessiontemplate["name"].as_str().unwrap()
-                ),
-                Err(error) => {
-                    let response_error = serde_json::from_str::<Value>(&error.to_string());
-                    log::error!("{:#?}", response_error);
-                }
-            } */
 
             if deletion_rslt.is_err() && counter <= max_attempts {
                 log::warn!("Could not delete BOS sessiontemplate {} attempt {} of {}, trying again in 2 seconds...", bos_sessiontemplate_name, counter, max_attempts);
@@ -763,9 +741,10 @@ pub async fn delete(
     // DELETE CFS CONFIGURATIONS
     let max_attempts = 5;
     for cfs_configuration in cfs_configuration_name_vec {
+        log::info!("Deleting CFS configuration '{}'", cfs_configuration);
         let mut counter = 0;
         loop {
-            let deletion_rslt = cfs::configuration::shasta::http_client::delete(
+            let deletion_rslt = cfs::configuration::shasta::http_client::v3::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

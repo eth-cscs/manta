@@ -1,7 +1,11 @@
 use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{bss::BootParameters, capmc, cfs, node::utils::validate_xnames};
+use mesa::{
+    bss::{self, BootParameters},
+    capmc, cfs, ims,
+    node::utils::validate_xnames,
+};
 use serde_json::Value;
 
 pub async fn exec(
@@ -9,57 +13,14 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name: Option<&String>,
-    boot_image_configuration_opt: Option<&String>,
-    desired_configuration_opt: Option<&String>,
+    new_boot_image_configuration_opt: Option<&String>,
+    new_desired_configuration_optb: Option<&String>,
     xnames: Vec<&str>,
 ) {
     let mut need_restart = false;
 
-    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        desired_configuration_opt.map(|elem| elem.as_str()),
-    )
-    .await;
-
-    // Check desired configuration exists
-    if desired_configuration_detail_list_rslt.is_ok()
-        && !desired_configuration_detail_list_rslt
-            .as_ref()
-            .unwrap()
-            .is_empty()
-    {
-        let desired_configuration_detail_list = desired_configuration_detail_list_rslt.unwrap();
-
-        log::debug!(
-            "CFS configuration resp:\n{:#?}",
-            desired_configuration_detail_list
-        );
-
-        let desired_configuration_name = desired_configuration_detail_list
-            .first()
-            .unwrap()
-            .name
-            .clone();
-
-        log::info!(
-            "Desired configuration '{}' exists",
-            desired_configuration_name
-        );
-    } else {
-        eprintln!(
-            "Desired configuration '{}' does not exists. Exit",
-            desired_configuration_opt.unwrap()
-        );
-        std::process::exit(1);
-    };
-
-    log::info!(
-        "Desired configuration '{}' exists",
-        desired_configuration_opt.unwrap()
-    );
-
+    // Validate
+    //
     // Check user has provided valid XNAMES
     if hsm_group_name.is_some()
         && !validate_xnames(
@@ -75,46 +36,75 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Get new image id
-    let (new_image_id_opt, mut node_boot_params_opt) =
-        if let Some(boot_image_cfs_configuration_name) = boot_image_configuration_opt {
+    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        new_desired_configuration_optb.map(|elem| elem.as_str()),
+    )
+    .await;
+
+    // Check desired configuration exists
+    if desired_configuration_detail_list_rslt.is_err()
+        || desired_configuration_detail_list_rslt.unwrap().is_empty()
+    {
+        eprintln!(
+            "Desired configuration '{}' does not exists. Exit",
+            new_desired_configuration_optb.unwrap()
+        );
+        std::process::exit(1);
+    };
+
+    log::info!(
+        "Desired configuration '{}' exists",
+        new_desired_configuration_optb.unwrap()
+    );
+
+    // Get new boot image id
+    let (new_boot_image_id_opt, mut node_boot_params_opt) =
+        if let Some(new_boot_image_cfs_configuration_name) = new_boot_image_configuration_opt {
             // Get image id related to the boot CFS configuration
-            let boot_image_id_opt = get_image_id_from_cfs_configuration_name(
+            let new_boot_image_id_opt = get_image_id_from_cfs_configuration_name(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                boot_image_cfs_configuration_name.clone(),
+                new_boot_image_cfs_configuration_name.clone(),
             )
             .await;
 
-            // Check image artifact exists
-            let boot_image_value_vec: Vec<Value> = if let Some(boot_image_id) = boot_image_id_opt {
-                mesa::ims::image::shasta::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(&boot_image_id),
-                )
-                .await
-                .unwrap()
-            } else {
+            if new_boot_image_id_opt.is_none() {
                 eprintln!(
-                    "Image ID related to CFS configuration name {} not found. Exit",
-                    boot_image_cfs_configuration_name
+                    "Image ID related to CFS configuration name '{}' not found. Exit",
+                    new_boot_image_cfs_configuration_name
                 );
                 std::process::exit(1);
-            };
+            }
 
-            log::info!(
-                "Boot image found with id '{}'",
-                boot_image_value_vec.first().unwrap()["id"]
-                    .as_str()
-                    .unwrap()
-            );
+            let boot_image_value_vec: Vec<Value> = ims::image::shasta::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                new_boot_image_id_opt.as_deref(),
+            )
+            .await
+            .unwrap();
 
-            log::debug!("image_details_value_vec:\n{:#?}", boot_image_value_vec);
+            if boot_image_value_vec.is_empty() {
+                eprintln!(
+                    "Image ID '{}' not found in CSM. Exit",
+                    new_boot_image_id_opt.unwrap()
+                );
+                std::process::exit(1);
+            }
 
-            let image_path = boot_image_value_vec.first().unwrap()["link"]["path"]
+            let new_boot_image_id = boot_image_value_vec.first().unwrap()["id"]
+                .as_str()
+                .unwrap()
+                .to_string();
+
+            log::info!("Boot image ID '{}' found in CSM", new_boot_image_id);
+
+            /* let image_path = boot_image_value_vec.first().unwrap()["link"]["path"]
                 .as_str()
                 .unwrap()
                 .to_string();
@@ -124,12 +114,12 @@ pub async fn exec(
                 .unwrap()
                 .strip_suffix("/manifest.json")
                 .unwrap()
-                .to_string();
+                .to_string(); */
 
             // Check if need to reboot. We will reboot if the new boot image is different than the current
             // one
             // Get node boot params
-            let node_boot_params: BootParameters = mesa::bss::http_client::get_boot_params(
+            let node_boot_params: BootParameters = bss::http_client::get_boot_params(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -145,16 +135,16 @@ pub async fn exec(
             .clone();
 
             // Get current image id
-            let current_image_id = node_boot_params.get_boot_image();
+            let current_boot_image_id = node_boot_params.get_boot_image();
 
             // Check if new image id is different to the current one to find out if need to restart
-            if current_image_id != new_image_id {
+            if current_boot_image_id != new_boot_image_id {
                 need_restart = true;
             } else {
                 println!("Boot image does not change. No need to reboot.");
             }
 
-            (Some(new_image_id), Some(node_boot_params))
+            (Some(new_boot_image_id), Some(node_boot_params))
         } else {
             (None, None)
         };
@@ -176,12 +166,12 @@ pub async fn exec(
 
         println!(
             "Updating boot configuration to '{}'",
-            boot_image_configuration_opt.unwrap()
+            new_boot_image_configuration_opt.unwrap()
         );
 
         // Update root kernel param to it uses the new image id
         if let Some(node_boot_params) = &mut node_boot_params_opt {
-            node_boot_params.set_boot_image(new_image_id_opt.unwrap().as_str());
+            node_boot_params.set_boot_image(&new_boot_image_id_opt.unwrap());
         }
 
         let component_patch_rep = mesa::bss::http_client::patch(
@@ -201,7 +191,7 @@ pub async fn exec(
 
         // Update desired configuration
 
-        if let Some(desired_configuration_name) = desired_configuration_opt {
+        if let Some(desired_configuration_name) = new_desired_configuration_optb {
             println!(
                 "Updating desired configuration to '{}'",
                 desired_configuration_name

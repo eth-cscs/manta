@@ -2,7 +2,7 @@ build = "build.rs"
 
 [package]
 edition = "2021"
-authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>"]
+authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
 name = "manta"
 description = "Another CLI for basic/simple Shasta operations"
 version = "1.28.14"
@@ -10,12 +10,13 @@ license-file = "LICENSE"
 documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
 homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
 repository = "https://github.com/eth-cscs/manta"
+keywords = ["cli", "Cray Management System", "productivity"]
 publish = false                                                         # cargo dist --> Avoid publishing to crates.io
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.33.2"
+mesa = "0.34.0"
 # mesa = { path = "../mesa" } # Only for development purposes
 strum = "0.25.0"
 strum_macros = "0.25"

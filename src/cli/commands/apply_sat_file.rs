@@ -6,23 +6,31 @@ use std::{
 
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
+    bos::{
+        self,
+        session::shasta::http_client::v2::{BosSession, Operation},
+        template::mesa::r#struct::v2::{BootSet, BosSessionTemplate, Cfs},
+    },
     cfs::{
-        configuration::mesa::r#struct::cfs_configuration_response::{
-            ApiError, CfsConfigurationResponse,
-        },
-        session::mesa::r#struct::CfsSessionGetResponse,
+        self,
+        configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+        session::mesa::r#struct::v2::CfsSessionGetResponse,
     },
     common::kubernetes,
-    ims, {capmc, hsm},
+    error::Error,
+    hsm, ims,
 };
 use serde_yaml::Value;
 
-use crate::common::{
-    self,
-    jwt_ops::get_claims_from_jwt_token,
-    sat_file::{
-        self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
-        validate_sat_file_images_section,
+use crate::{
+    cli::{commands::apply_hw_cluster, process::validate_target_hsm_members},
+    common::{
+        self,
+        jwt_ops::get_claims_from_jwt_token,
+        sat_file::{
+            self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
+            validate_sat_file_images_section,
+        },
     },
 };
 
@@ -98,7 +106,7 @@ pub async fn exec(
         .unwrap();
 
     // Get configurations from CSM
-    let configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
+    let configuration_vec = cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -143,6 +151,7 @@ pub async fn exec(
 
     if let Err(error) = image_validation_rslt {
         eprintln!("{}", error);
+        std::process::exit(1);
     }
 
     // Validate 'session_templte' section
@@ -161,14 +170,69 @@ pub async fn exec(
 
     log::info!("hardware pattern: {:?}", hardware_yaml_value_vec_opt);
 
+    if let Some(hw_component_pattern_vec) = hardware_yaml_value_vec_opt {
+        for hw_component_pattern in hw_component_pattern_vec {
+            let target_hsm_group_name = hw_component_pattern["target"].as_str().unwrap();
+            let parent_hsm_group_name = hw_component_pattern["parent"].as_str().unwrap();
+
+            if let Some(pattern) = hw_component_pattern
+                .get("pattern")
+                .and_then(|pattern_value| pattern_value.as_str())
+            {
+                log::info!("Processing hw component pattern for '{}' for target HSM group '{}' and parent HSM group '{}'", pattern, target_hsm_group_name, parent_hsm_group_name);
+
+                apply_hw_cluster::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                    parent_hsm_group_name,
+                    pattern,
+                )
+                .await;
+            } else if let Some(nodes) = hw_component_pattern
+                .get("nodespattern")
+                .and_then(|pattern_value| pattern_value.as_str())
+            {
+                let hsm_group_members_vec: Vec<String> =
+                    hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                    )
+                    .await;
+                let new_target_hsm_group_members_vec: Vec<String> = nodes
+                    .split(',')
+                    .filter(|node| !hsm_group_members_vec.contains(&node.to_string()))
+                    .map(|node| node.to_string())
+                    .collect();
+
+                log::info!(
+                    "Processing new nodes '{}' for target HSM group '{}'",
+                    nodes,
+                    target_hsm_group_name,
+                );
+
+                let _ = hsm::group::shasta::utils::update_hsm_group_members(
+                    target_hsm_group_name,
+                    &hsm_group_members_vec,
+                    &new_target_hsm_group_members_vec,
+                )
+                .await;
+            }
+        }
+    }
+
     // Process "configurations" section in SAT file
     //
+    log::info!("Process configurations section in SAT file");
     let mut cfs_configuration_value_vec = Vec::new();
 
     let mut cfs_configuration_name_vec = Vec::new();
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&vec![]).iter() {
-        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
             common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
@@ -445,7 +509,7 @@ pub async fn validate_sat_file_session_template_section(
                     session_template_yaml["name"].as_str().unwrap()
                 );
 
-                configuration_found = mesa::cfs::configuration::shasta::http_client::get(
+                configuration_found = cfs::configuration::shasta::http_client::v2::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -489,27 +553,36 @@ pub async fn process_session_template_section_in_sat_file(
         .as_sequence()
         .unwrap_or(&empty_vec);
 
-    for bos_session_template_yaml in bos_session_template_list_yaml {
-        let image_details: ims::image::r#struct::Image = if let Some(bos_session_template_image) =
-            bos_session_template_yaml.get("image")
+    let mut bos_st_created_vec: Vec<BosSessionTemplate> = Vec::new();
+
+    for bos_sessiontemplate_yaml in bos_session_template_list_yaml {
+        let bos_sessiontemplate: BosSessionTemplate =
+            serde_yaml::from_value(bos_sessiontemplate_yaml.clone()).unwrap();
+
+        log::debug!("BOS sessiontemplate from yaml:\n{:#?}", bos_sessiontemplate);
+
+        let image_details: ims::image::r#struct::Image = if let Some(bos_sessiontemplate_image) =
+            bos_sessiontemplate_yaml.get("image")
         {
-            if let Some(bos_session_template_image_ims) = bos_session_template_image.get("ims") {
+            if let Some(bos_sessiontemplate_image_ims) = bos_sessiontemplate_image.get("ims") {
+                // Get boot image to configure the nodes
                 if let Some(bos_session_template_image_ims_name) =
-                    bos_session_template_image_ims.get("name")
+                    bos_sessiontemplate_image_ims.get("name")
                 {
+                    // BOS sessiontemplate boot image defined by name
                     let bos_session_template_image_name = bos_session_template_image_ims_name
                         .as_str()
                         .unwrap()
                         .to_string();
 
                     // Get base image details
-                    mesa::ims::image::utils::get_fuzzy(
+                    ims::image::utils::get_fuzzy(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         hsm_group_available_vec,
                         Some(&bos_session_template_image_name),
-                        None,
+                        Some(&1),
                     )
                     .await
                     .unwrap()
@@ -517,13 +590,35 @@ pub async fn process_session_template_section_in_sat_file(
                     .unwrap()
                     .0
                     .clone()
+                } else if let Some(bos_session_template_image_ims_id) =
+                    bos_sessiontemplate_image_ims.get("id")
+                {
+                    // BOS sessiontemplate boot image defined by id
+                    let bos_session_template_image_id = bos_session_template_image_ims_id
+                        .as_str()
+                        .unwrap()
+                        .to_string();
+
+                    // Get base image details
+                    ims::image::mesa::http_client::get(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        Some(&bos_session_template_image_id),
+                    )
+                    .await
+                    .unwrap()
+                    .first()
+                    .unwrap()
+                    .clone()
                 } else {
-                    eprintln!("ERROR: no 'image.ims.name' section in session_template.\nExit");
+                    eprintln!("ERROR: neither 'image.ims.name' nor 'image.ims.id' fields defined in session_template.\nExit");
                     std::process::exit(1);
                 }
             } else if let Some(bos_session_template_image_image_ref) =
-                bos_session_template_image.get("image_ref")
+                bos_sessiontemplate_image.get("image_ref")
             {
+                // BOS sessiontemplate boot image defined by image_ref
                 let image_ref = bos_session_template_image_image_ref
                     .as_str()
                     .unwrap()
@@ -546,7 +641,7 @@ pub async fn process_session_template_section_in_sat_file(
                 .first()
                 .unwrap()
                 .clone()
-            } else if let Some(image_name_substring) = bos_session_template_image.as_str() {
+            } else if let Some(image_name_substring) = bos_sessiontemplate_image.as_str() {
                 let image_name = image_name_substring;
                 // let image_name = image_name_substring.replace("__DATE__", tag);
 
@@ -554,7 +649,7 @@ pub async fn process_session_template_section_in_sat_file(
                 // Get base image details
                 log::info!("Looking for IMS image which name contains '{}'", image_name);
 
-                let image_vec = mesa::ims::image::utils::get_fuzzy(
+                let image_vec = ims::image::utils::get_fuzzy(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -565,6 +660,7 @@ pub async fn process_session_template_section_in_sat_file(
                 .await
                 .unwrap();
 
+                // Validate/check if image exists
                 if image_vec.is_empty() {
                     eprintln!(
                         "ERROR: Could not find an image which name contains '{}'. Exit",
@@ -586,7 +682,7 @@ pub async fn process_session_template_section_in_sat_file(
         log::info!("Image with name '{}' found", image_details.name);
 
         // Get CFS configuration to configure the nodes
-        let bos_session_template_configuration_name = bos_session_template_yaml["configuration"]
+        let bos_session_template_configuration_name = bos_sessiontemplate_yaml["configuration"]
             .as_str()
             .unwrap()
             .to_string();
@@ -598,7 +694,7 @@ pub async fn process_session_template_section_in_sat_file(
             bos_session_template_configuration_name
         );
 
-        let cfs_configuration_vec_rslt = mesa::cfs::configuration::mesa::http_client::get(
+        let cfs_configuration_vec_rslt = cfs::configuration::mesa::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -629,93 +725,254 @@ pub async fn process_session_template_section_in_sat_file(
         let ims_image_path = &image_details.link.as_ref().unwrap().path;
         let ims_image_type = &image_details.link.as_ref().unwrap().r#type;
 
-        let bos_session_template_name = bos_session_template_yaml["name"]
+        let bos_sessiontemplate_name = bos_sessiontemplate_yaml["name"]
             .as_str()
             .unwrap_or("")
             .to_string();
 
         // bos_session_template_name.replace("__DATE__", tag);
 
-        let bos_session_template_hsm_groups: Vec<String> = if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("compute")
+        let mut boot_set_vec: HashMap<String, BootSet> = HashMap::new();
+
+        for (parameter, boot_set) in bos_sessiontemplate_yaml["bos_parameters"]["boot_sets"]
+            .as_mapping()
+            .unwrap()
         {
-            boot_sets_compute["node_groups"]
-                .as_sequence()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else if let Some(boot_sets_compute) =
-            bos_session_template_yaml["bos_parameters"]["boot_sets"].get("uan")
-        {
-            boot_sets_compute["node_groups"]
-                .as_sequence()
-                .unwrap_or(&vec![])
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect()
-        } else {
-            println!("No HSM group found in session_templates section in SAT file");
-            std::process::exit(1);
+            let kernel_parameters = boot_set["kernel_parameters"].as_str().unwrap();
+            let arch_opt = boot_set["arch"].as_str().map(|value| value.to_string());
+
+            let node_roles_groups_opt: Option<Vec<String>> = boot_set
+                .get("node_roles_groups")
+                .and_then(|node_roles_groups| {
+                    node_roles_groups
+                        .as_sequence()
+                        .and_then(|node_role_groups| {
+                            node_role_groups
+                                .iter()
+                                .map(|hsm_group_value| {
+                                    hsm_group_value
+                                        .as_str()
+                                        .map(|hsm_group| hsm_group.to_string())
+                                })
+                                .collect()
+                        })
+                });
+
+            // Validate/check user can create BOS sessiontemplates based on node roles. Users
+            // with tenant role are not allowed to create BOS sessiontemplates based on node roles
+            // however admin tenants are allowed to create BOS sessiontemplates based on node roles
+            if !hsm_group_available_vec.is_empty()
+                && node_roles_groups_opt
+                    .clone()
+                    .is_some_and(|node_roles_groups| !node_roles_groups.is_empty())
+            {
+                eprintln!("User type tenant can't user node roles in BOS sessiontemplate. Exit");
+                std::process::exit(1);
+            }
+
+            let node_groups_opt: Option<Vec<String>> =
+                boot_set.get("node_groups").and_then(|node_groups_value| {
+                    node_groups_value.as_sequence().and_then(|node_group| {
+                        node_group
+                            .iter()
+                            .map(|hsm_group_value| {
+                                hsm_group_value
+                                    .as_str()
+                                    .map(|hsm_group| hsm_group.to_string())
+                            })
+                            .collect()
+                    })
+                });
+
+            // Validate/check HSM groups in YAML file session_templates.bos_parameters.boot_sets.<parameter>.node_groups matches with
+            // Check hsm groups in SAT file includes the hsm_group_param
+            for node_group in node_groups_opt.clone().unwrap_or_default() {
+                if !hsm_group_available_vec.contains(&node_group.to_string()) {
+                    eprintln!("User does not have access to HSM group '{}' in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Exit", node_group);
+                    std::process::exit(1);
+                }
+            }
+
+            // Validate user has access to the xnames in the BOS sessiontemplate
+            let node_list_opt: Option<Vec<String>> =
+                boot_set.get("node_list").and_then(|node_list_value| {
+                    node_list_value.as_sequence().and_then(|node_list| {
+                        node_list
+                            .into_iter()
+                            .map(|node_value_value| {
+                                node_value_value
+                                    .as_str()
+                                    .map(|node_value| node_value.to_string())
+                            })
+                            .collect()
+                    })
+                });
+
+            // Validate user has access to the list of nodes in BOS sessiontemplate
+            if let Some(node_list) = &node_list_opt {
+                validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    node_list.iter().map(|node| node.to_string()).collect(),
+                )
+                .await;
+            }
+
+            let cfs = Cfs {
+                // clone_url: None,
+                // branch: None,
+                // commit: None,
+                // playbook: None,
+                configuration: Some(bos_session_template_configuration_name.clone()),
+            };
+
+            let rootfs_provider = boot_set["rootfs_provider"]
+                .as_str()
+                .map(|value| value.to_string());
+            let rootfs_provider_passthrough = boot_set["rootfs_provider_passthrough"]
+                .as_str()
+                .map(|value| value.to_string());
+
+            let boot_set = BootSet {
+                name: None,
+                // boot_ordinal: Some(2),
+                // shutdown_ordinal: None,
+                path: Some(ims_image_path.to_string()),
+                r#type: Some(ims_image_type.to_string()),
+                etag: Some(ims_image_etag.to_string()),
+                kernel_parameters: Some(kernel_parameters.to_string()),
+                // network: Some("nmn".to_string()),
+                node_list: node_list_opt,
+                node_roles_groups: node_roles_groups_opt, // TODO: investigate whether this value can be a list
+                // of nodes and if it is process it properly
+                node_groups: node_groups_opt,
+                rootfs_provider,
+                rootfs_provider_passthrough,
+                cfs: Some(cfs),
+                arch: arch_opt,
+            };
+
+            boot_set_vec.insert(parameter.as_str().unwrap().to_string(), boot_set);
+        }
+
+        /* let create_bos_session_template_payload = BosSessionTemplate::new_for_hsm_group(
+            bos_session_template_configuration_name,
+            bos_session_template_name,
+            ims_image_name,
+            ims_image_path.to_string(),
+            ims_image_type.to_string(),
+            ims_image_etag.to_string(),
+            hsm_group,
+        ); */
+
+        let cfs = Cfs {
+            // clone_url: None,
+            // branch: None,
+            // commit: None,
+            // playbook: None,
+            configuration: Some(bos_session_template_configuration_name),
         };
 
-        // Check HSM groups in YAML file session_templates.bos_parameters.boot_sets.compute.node_groups matches with
-        // Check hsm groups in SAT file includes the hsm_group_param
-        let hsm_group = if hsm_group_param_opt.is_some()
-            && !bos_session_template_hsm_groups
-                .iter()
-                .any(|h_g| h_g.eq(hsm_group_param_opt.unwrap()))
-        {
-            eprintln!("HSM group in param does not matches with any HSM groups in SAT file under session_templates.bos_parameters.boot_sets.compute.node_groups section. Using HSM group in param as the default");
-            hsm_group_param_opt.unwrap()
-        } else {
-            bos_session_template_hsm_groups.first().unwrap()
+        let create_bos_session_template_payload = BosSessionTemplate {
+            // template_url: None,
+            name: None,
+            description: None,
+            // cfs_url: None,
+            // cfs_branch: None,
+            enable_cfs: Some(true),
+            cfs: Some(cfs),
+            // partition: None,
+            boot_sets: Some(boot_set_vec),
+            links: None,
+            tenant: None,
         };
 
-        let create_bos_session_template_payload =
-            mesa::bos::template::mesa::r#struct::request_payload::BosSessionTemplate::new_for_hsm_group(
-                bos_session_template_configuration_name,
-                bos_session_template_name,
-                ims_image_name,
-                ims_image_path.to_string(),
-                ims_image_type.to_string(),
-                ims_image_etag.to_string(),
-                hsm_group,
-            );
-
-        let create_bos_session_template_resp = mesa::bos::template::shasta::http_client::post(
+        let create_bos_session_template_resp = bos::template::shasta::http_client::v2::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &create_bos_session_template_payload,
+            &bos_sessiontemplate_name,
         )
         .await;
 
         match create_bos_session_template_resp {
-            Ok(bos_sessiontemplate) => println!(
-                "BOS sessiontemplate name '{}' created",
-                bos_sessiontemplate.as_str().unwrap()
-            ),
+            Ok(bos_sessiontemplate) => {
+                println!(
+                    "BOS sessiontemplate name '{}' created",
+                    bos_sessiontemplate_name
+                );
+
+                bos_st_created_vec.push(bos_sessiontemplate)
+            }
             Err(error) => eprintln!(
                 "ERROR: BOS session template creation failed.\nReason:\n{}\nExit",
                 error
             ),
         }
+    }
 
-        // Create BOS session. Note: reboot operation shuts down the nodes and they may not start
-        // up... hence we will split the reboot into 2 operations shutdown and start
+    // Create BOS session. Note: reboot operation shuts down the nodes and they may not start
+    // up... hence we will split the reboot into 2 operations shutdown and start
 
-        if do_not_reboot {
-            log::info!("Reboot canceled by user");
-        } else {
-            log::info!("Rebooting nodes");
+    if do_not_reboot {
+        log::info!("Reboot canceled by user");
+    } else {
+        log::info!("Rebooting");
+
+        for bos_st in bos_st_created_vec {
+            let bos_sessiontemplate_name = bos_st.name.clone().unwrap();
+
+            log::info!(
+                "Creating BOS session for BOS sessiontemplate '{}' to reboot",
+                bos_sessiontemplate_name
+            );
+
+            let bos_session = BosSession {
+                name: None,
+                tenant: None,
+                operation: Some(Operation::Reboot),
+                template_name: bos_sessiontemplate_name,
+                limit: None,
+                stage: None,
+                include_disabled: None,
+                status: None,
+                description: None,
+                components: None,
+            };
+
+            let create_bos_session_resp = bos::session::shasta::http_client::v2::post(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                bos_session,
+            )
+            .await;
+
+            match create_bos_session_resp {
+                Ok(bos_session) => {
+                    println!(
+                        "BOS session '{}' for BOS sessiontemplate '{}' created",
+                        bos_session["name"].as_str().unwrap(),
+                        bos_st.name.unwrap()
+                    )
+                }
+                Err(error) => eprintln!(
+                    "ERROR: BOS session for BOS sessiontemplate '{}' creation failed.\nReason:\n{}\nExit",
+                    bos_st.name.unwrap(),
+                    error
+                ),
+            }
+
+            /* log::info!("Rebooting nodes");
             // Get nodes members of HSM group
             // Get HSM group details
             let hsm_group_details = hsm::group::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                Some(hsm_group),
+                Some(node_groups),
             )
             .await;
 
@@ -762,16 +1019,66 @@ pub async fn process_session_template_section_in_sat_file(
             if create_bos_boot_session_resp.is_err() {
                 eprintln!("Error creating BOS boot session. Exit");
                 std::process::exit(1);
-            }
+            } */
         }
-
-        // Audit
-        let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
     }
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
 }
 
+// TODO: Document and move to mod bos/session/utils
+pub async fn wait_bos_session_to_complete_or_force_reboot(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    bos_session: &BosSession,
+) -> Result<(), Error> {
+    // Get nodes related to BOS session
+    let bos_st = mesa::bos::template::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&bos_session.template_name),
+    )
+    .await
+    .unwrap()
+    .first()
+    .cloned()
+    .unwrap();
+
+    let mut nodes = Vec::new();
+
+    for (_, boot_set) in bos_st.boot_sets.unwrap() {
+        if let Some(node_group_vec) = boot_set.node_groups {
+            let mut xname_vec = mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &node_group_vec,
+            )
+            .await;
+
+            nodes.append(&mut xname_vec);
+        }
+
+        if let Some(mut node_vec) = boot_set.node_list {
+            nodes.append(&mut node_vec);
+        }
+
+        // TODO: Add logic to process nodes by role (boot_set.nodes_roles_group). Only admins
+        // should be able to do this or is TAPMS clever enough to break down roles per tenant???
+    }
+
+    // Get nodes power status
+    // Wait till power state is what we expect
+
+    Ok(())
+}
+
+// TODO: Document and move to mod cfs/session/utils
 pub async fn wait_cfs_session_to_complete(
     shasta_token: &str,
     shasta_base_url: &str,

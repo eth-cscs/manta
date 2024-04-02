@@ -17,7 +17,7 @@ pub async fn exec(
     );
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
-        mesa::ims::public_keys::http_client::get_single(
+        mesa::ims::image::utils::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

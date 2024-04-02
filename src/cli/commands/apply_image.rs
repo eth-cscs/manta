@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_response::{
-        ApiError, CfsConfigurationResponse,
-    },
-    common::kubernetes,
+    cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+    common::kubernetes, error::Error,
 };
 use serde_yaml::Value;
 
@@ -129,6 +127,7 @@ pub async fn exec(
 
     if let Err(error) = image_validation_rslt {
         eprintln!("{}", error);
+        std::process::exit(1);
     }
 
     let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
@@ -148,7 +147,7 @@ pub async fn exec(
     let mut cfs_configuration_hashmap = HashMap::new();
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        let cfs_configuration_rslt: Result<CfsConfigurationResponse, ApiError> =
+        let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
             common::sat_file::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,

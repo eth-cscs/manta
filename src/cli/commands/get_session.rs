@@ -23,7 +23,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    if cfs_session_name_opt.is_none() {
+    if !hsm_group_name_vec.is_empty() {
         mesa::cfs::session::mesa::utils::filter_by_hsm(
             shasta_token,
             shasta_base_url,

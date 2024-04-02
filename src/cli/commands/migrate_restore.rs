@@ -4,7 +4,9 @@ use dialoguer::Confirm;
 use humansize::DECIMAL;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::CfsConfigurationRequest;
+use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::v2::CfsConfigurationRequest;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
 use mesa::hsm::group::mesa::http_client::{create_new_hsm_group, delete_hsm_group};
 use mesa::hsm::r#struct::HsmGroup;
 use mesa::ims::image::mesa::utils::update_image;
@@ -269,6 +271,7 @@ pub async fn exec(
 
     // ========================================================================================================
 }
+
 async fn create_bos_sessiontemplate(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -276,87 +279,105 @@ async fn create_bos_sessiontemplate(
     bos_file: &String,
     ims_image_id: &String,
 ) {
-    let bos_data =
-        fs::read_to_string(PathBuf::from(bos_file)).expect("Unable to read BOS JSON file");
+    let file_content =
+        File::open(bos_file).expect(&format!("Unable to read BOS JSON file '{}'", bos_file));
 
-    let bos_json: serde_json::Value =
-        serde_json::from_str(&bos_data).expect("BOS JSON file does not have correct format.");
+    let bos_json: BosSessionTemplate = serde_json::from_reader(BufReader::new(file_content))
+        .expect("BOS JSON file does not have correct format.");
 
-    let bos_sessiontemplate_name = bos_json["name"].clone().to_string().replace('"', "");
+    let bos_sessiontemplate_name = bos_json.name;
+
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    match bos::template::mesa::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await
-    {
-        Ok(mut vector) => {
-            vector.retain(|bos_sessiontemplate| {
-                bos_sessiontemplate
-                    .name
-                    .eq(&Option::from(bos_sessiontemplate_name.clone()))
-            });
-            log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
+    let vector = bos::template::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&bos_sessiontemplate_name),
+    )
+    .await
+    .unwrap_or_else(|error| {
+        eprint!(
+            "Error: unable to query CSM to get list of BOS sessiontemplates. Error returned: {}",
+            error
+        );
+        std::process::exit(1);
+    });
 
-            if !vector.is_empty() {
-                println!("There already exists a BOS sessiontemplate with name {}. It can be replaced, but it's dangerous.", &bos_sessiontemplate_name);
-                let confirmation = Confirm::new()
-                    .with_prompt("Do you want to overwrite it?")
-                    .interact()
-                    .unwrap();
+    log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
 
-                if !confirmation {
-                    println!("Looks like you do not want to continue, bailing out.");
-                    std::process::exit(2)
-                } else {
-                    match bos::template::shasta::http_client::delete(shasta_token,
-                                                                          shasta_base_url,
-                                                                          shasta_root_cert, &bos_sessiontemplate_name).await {
-                        Ok(_) => log::debug!("Ok BOS session template {}, deleted.", &bos_sessiontemplate_name),
-                        Result::Err(err1) => panic!("Error, unable to delete BOS session template. Cannot continue. Error: {}", err1),
-                    };
-                }
-            }
-            let mut bos_sessiontemplate: bos::template::mesa::r#struct::request_payload::BosSessionTemplate =
-                serde_json::from_str(bos_data.as_str()).unwrap();
-            // This is as ugly as it can be
-            // println!("Path: {}", bos_sessiontemplate.clone().boot_sets.clone().unwrap().compute.clone().unwrap().path.clone().unwrap().to_string());
-            let path_modified = format!("s3://boot-images/{}/manifest.json", ims_image_id);
-            bos_sessiontemplate
-                .boot_sets
-                .as_mut()
-                .unwrap()
-                .compute
-                .as_mut()
-                .unwrap()
-                .path = Some(path_modified);
+    if !vector.is_empty() {
+        println!("There already exists a BOS sessiontemplate with name {}. It can be replaced, but it's dangerous.", &bos_sessiontemplate_name);
+        let confirmation = Confirm::new()
+            .with_prompt("Do you want to overwrite it?")
+            .interact()
+            .unwrap();
 
-            log::debug!("BOS sessiontemplate loaded:\n{:#?}", bos_sessiontemplate);
-            log::debug!("BOS sessiontemplate modified:\n{:#?}", &bos_sessiontemplate);
-
-            match bos::template::shasta::http_client::post(
+        if !confirmation {
+            println!("Looks like you do not want to continue, bailing out.");
+            std::process::exit(2)
+        } else {
+            match bos::template::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &bos_sessiontemplate,
+                &bos_sessiontemplate_name,
             )
             .await
             {
-                Ok(_result) => println!(
-                    "Ok, BOS session template {} created successfully.",
+                Ok(_) => log::debug!(
+                    "Ok BOS session template {}, deleted.",
                     &bos_sessiontemplate_name
                 ),
-                Err(e1) => panic!(
-                    "Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}",
-                    e1
+                Result::Err(err1) => panic!(
+                    "Error, unable to delete BOS session template. Cannot continue. Error: {}",
+                    err1
                 ),
-            }
+            };
         }
-        Err(e) => panic!(
-            "Error, unable to query CSM to get list of BOS sessiontemplates. Error returned: {}",
-            e
+    }
+
+    let file_content =
+        File::open(bos_file).expect(&format!("Unable to read BOS JSON file '{}'", bos_file));
+
+    let mut bos_sessiontemplate: BosSessionTemplate =
+        serde_json::from_reader(BufReader::new(file_content))
+            .expect("BOS JSON file does not have correct format.");
+
+    // This is as ugly as it can be
+    // println!("Path: {}", bos_sessiontemplate.clone().boot_sets.clone().unwrap().compute.clone().unwrap().path.clone().unwrap().to_string());
+    let path_modified = format!("s3://boot-images/{}/manifest.json", ims_image_id);
+    bos_sessiontemplate
+        .boot_sets
+        .as_mut()
+        .unwrap()
+        .get_mut("compute")
+        .unwrap()
+        .path = Some(path_modified);
+
+    log::debug!("BOS sessiontemplate loaded:\n{:#?}", bos_sessiontemplate);
+    log::debug!("BOS sessiontemplate modified:\n{:#?}", &bos_sessiontemplate);
+
+    match bos::template::shasta::http_client::v1::post(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &bos_sessiontemplate,
+    )
+    .await
+    {
+        Ok(_result) => println!(
+            "Ok, BOS session template {} created successfully.",
+            &bos_sessiontemplate_name
+        ),
+        Err(e1) => panic!(
+            "Error, unable to create BOS sesiontemplate. Error returned by CSM API: {}",
+            e1
         ),
     }
 }
+
 /// Creates a CFS config on the current CSM system, based on the CFS file generated by manta migrate backup
 /// panics with an error message if creation fails
 async fn create_cfs_config(
@@ -365,90 +386,92 @@ async fn create_cfs_config(
     shasta_root_cert: &[u8],
     cfs_file: &String,
 ) {
-    let cfs_data =
-        fs::read_to_string(PathBuf::from(cfs_file)).expect("Unable to read CFS JSON file");
+    let file_content =
+        File::open(cfs_file).expect(&format!("Unable to read CFS JSON file '{}'", cfs_file));
 
-    let cfs_json: serde_json::Value =
-        serde_json::from_str(&cfs_data).expect("CFS JSON file does not have correct format.");
+    let cfs_configuration: CfsConfigurationResponse =
+        serde_json::from_reader(BufReader::new(file_content))
+            .expect("CFS JSON file does not have correct format.");
 
     // CFS needs to be cleaned up when loading into the system, the filed lastUpdate should not exist
-    let cfs_config_name = cfs_json["name"].clone().to_string().replace('"', "");
+    let cfs_config_name = cfs_configuration.name;
 
     // Get all CFS configurations, this is ugly
-    match cfs::configuration::shasta::http_client::get(
+    let cfs_config_vec = cfs::configuration::shasta::http_client::v3::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        None,
+        Some(&cfs_config_name),
+    )
+    .await
+    .unwrap_or_else(|error| {
+        eprint!(
+            "Error: Unable to fetch CFS configuration. Error returned by CSM API: {}",
+            error
+        );
+        std::process::exit(1);
+    });
+
+    if !cfs_config_vec.is_empty() {
+        println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
+        let confirmation = Confirm::new()
+            .with_prompt("Do you want to overwrite it?")
+            .interact()
+            .unwrap();
+
+        if !confirmation {
+            println!("Looks like you do not want to continue, bailing out.");
+            std::process::exit(2)
+        }
+
+        match cfs::configuration::shasta::http_client::v3::delete(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            cfs_config_name.as_str(),
+        )
+        .await
+        {
+            Ok(_) => log::debug!("Ok CFS configuration {}, deleted.", cfs_config_name),
+            Result::Err(error) => panic!(
+                "Error, unable to delete configuration. Cannot continue. Error: {}",
+                error
+            ),
+        };
+    }
+    // At this point we're sure there's either no CFS config with that name
+    // or that the user wants to overwrite it, so let's do it
+
+    let file_content =
+        File::open(cfs_file).expect(&format!("Unable to read CFS JSON file '{}'", cfs_file));
+
+    let cfs_configuration: CfsConfigurationRequest =
+        serde_json::from_reader(BufReader::new(file_content))
+            .expect("CFS JSON file does not have correct format.");
+
+    log::debug!("CFS config:\n{:#?}", &cfs_configuration);
+
+    match cfs::configuration::mesa::http_client::put(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &cfs_configuration,
+        cfs_config_name.as_str(),
     )
     .await
     {
-        Ok(get_cfs_configuration_api_response) => {
-            let mut cfs_config_vec: Vec<CfsConfigurationRequest> =
-                serde_json::from_str(&get_cfs_configuration_api_response.text().await.unwrap())
-                    .unwrap();
-            cfs_config_vec.retain(|cfs_configuration| cfs_configuration.name == cfs_config_name);
-
-            if !cfs_config_vec.is_empty() {
-                println!("There already exists a CFS configuration with name {}. It can be replaced, but it's dangerous as it can trigger automated node reconfiguration.", &cfs_config_name);
-                let confirmation = Confirm::new()
-                    .with_prompt("Do you want to overwrite it?")
-                    .interact()
-                    .unwrap();
-
-                if !confirmation {
-                    println!("Looks like you do not want to continue, bailing out.");
-                    std::process::exit(2)
-                } else {
-                    match cfs::configuration::shasta::http_client::delete(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        cfs_config_name.as_str(),
-                    )
-                    .await
-                    {
-                        Ok(_) => log::debug!("Ok CFS configuration {}, deleted.", cfs_config_name),
-                        Result::Err(err1) => panic!(
-                            "Error, unable to delete configuration. Cannot continue. Error: {}",
-                            err1
-                        ),
-                    };
-                }
-            }
-            // At this point we're sure there's either no CFS config with that name
-            // or that the user wants to overwrite it, so let's do it
-
-            let cfs_config: CfsConfigurationRequest =
-                serde_json::from_str(cfs_data.as_str()).unwrap();
-            log::debug!("CFS config:\n{:#?}", &cfs_config);
-            match cfs::configuration::mesa::http_client::put(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &cfs_config,
-                cfs_config_name.as_str(),
-            )
-            .await
-            {
-                Ok(result) => {
-                    log::debug!("Ok, result: {:#?}", result);
-                    println!(
-                        "Ok, CFS configuration {} created successfully.",
-                        &cfs_config_name
-                    );
-                }
-                Err(e1) => panic!(
-                    "Error, unable to create CFS configuration. Error returned by CSM API: {}",
-                    e1
-                ),
-            }
+        Ok(result) => {
+            log::debug!("Ok, result: {:#?}", result);
+            println!(
+                "Ok, CFS configuration {} created successfully.",
+                &cfs_config_name
+            );
         }
-        Err(e) => panic!(
-            "Error, unable to query CSM to get list of CFS configurations. Error returned: {}",
-            e
+        Err(e1) => panic!(
+            "Error, unable to create CFS configuration. Error returned by CSM API: {}",
+            e1
         ),
-    };
+    }
 }
 /// Add the image manifest field to an IMS image record
 /// the manifest field will be: s3://boot-images/{ims_image_id}/manifest.json

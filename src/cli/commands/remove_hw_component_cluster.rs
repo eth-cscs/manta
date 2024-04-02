@@ -264,17 +264,9 @@ pub async fn exec(
     // *********************************************************************************************************
     // UPDATE HSM GROUP MEMBERS IN CSM
     for xname in nodes_moved_from_target_hsm {
-        let _ = hsm::group::shasta::http_client::delete_member(
-            parent_hsm_group_name,
-            &xname,
-        )
-        .await;
+        let _ = hsm::group::shasta::http_client::delete_member(parent_hsm_group_name, &xname).await;
 
-        let _ = hsm::group::shasta::http_client::post_member(
-            target_hsm_group_name,
-            &xname,
-        )
-        .await;
+        let _ = hsm::group::shasta::http_client::post_member(target_hsm_group_name, &xname).await;
     }
 
     let target_hsm_group_value = serde_json::json!({
