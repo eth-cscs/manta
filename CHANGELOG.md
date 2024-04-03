@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.1] - 2024-04-03
+
+### Bug Fixes
+
+- CFS layer branch lookup not printing branch name properly if they
+
+### Refactor
+
+- Clean code
+
 ## [1.29.0] - 2024-04-02
 
 ### Bug Fixes
@@ -11,6 +21,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - SAT file processing now accepts
+
+### Miscellaneous Tasks
+
+- Release manta version 1.29.0
 
 ### Refactor
 
