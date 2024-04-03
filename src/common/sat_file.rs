@@ -920,7 +920,6 @@ pub fn filter_product_catalog_images(
             )))
         } else {
             let image_key = image_key_vec.first().cloned().unwrap();
-            println!("DEBUG - Image found: {:#?}", image_key);
             Ok(image_map.get(image_key).unwrap()["id"]
                 .as_str()
                 .unwrap()
@@ -945,7 +944,6 @@ pub fn filter_product_catalog_images(
             )))
         } else {
             let image_key = image_key_vec.first().cloned().unwrap();
-            println!("DEBUG - Image found: {:#?}", image_key);
             Ok(image_map.get(image_key).unwrap()["id"]
                 .as_str()
                 .unwrap()
@@ -974,7 +972,6 @@ pub fn filter_product_catalog_images(
             )))
         } else {
             let image_key = image_key_vec.first().cloned().unwrap();
-            println!("DEBUG - Image found: {:#?}", image_key);
             Ok(image_map.get(image_key).unwrap()["id"]
                 .as_str()
                 .unwrap()
@@ -1119,7 +1116,6 @@ pub fn validate_sat_file_images_section(
                 if let Some(filter) = image_base_product.get("filter") {
                     let image_recipe_id =
                         filter_product_catalog_images(filter, image_map, image_name);
-                    println!("DEBUG - image found: {:#?}", image_recipe_id);
                     image_recipe_id.is_ok()
                 } else {
                     // There is no 'image.product.filter' value defined in SAT file. Check Cray

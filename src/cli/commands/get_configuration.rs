@@ -161,22 +161,23 @@ pub async fn get_configuration_layer_details(
         let commit_sha_value: Value;
 
         let ref_1 = r#ref.next();
-        let ref_2 = r#ref.next();
+        // let ref_2 = r#ref.next();
+        let ref_2 = r#ref.collect::<Vec<_>>().join("/");
 
         if ref_type == "commit" {
             // either branch or lightweight tag
-            if let (Some("heads"), Some(branch_name_aux)) = (ref_1, ref_2) {
+            if let (Some("heads"), branch_name_aux) = (ref_1, ref_2.clone()) {
                 // branch
-                branch_name += branch_name_aux
-            } else if let (Some("tags"), Some(tag_name_aux)) = (ref_1, ref_2) {
+                branch_name += &branch_name_aux;
+            } else if let (Some("tags"), tag_name_aux) = (ref_1, ref_2) {
                 // lightweight tag
-                tag_name += tag_name_aux;
+                tag_name += &tag_name_aux;
             }
 
             commit_sha = ref_value["url"].as_str().unwrap();
         } else {
             // annotated tag
-            tag_name += ref_2.unwrap();
+            tag_name += &ref_2;
 
             commit_sha_value = gitea::http_client::get_commit_from_tag(
                 ref_value["url"].as_str().unwrap(),
