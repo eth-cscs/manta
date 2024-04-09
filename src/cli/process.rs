@@ -487,8 +487,10 @@ pub async fn process_cli(
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec(
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                     hsm_group_name_arg_opt.unwrap_or(None),
                     settings_hsm_group_name_opt,
                 )
