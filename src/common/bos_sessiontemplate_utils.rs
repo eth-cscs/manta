@@ -9,7 +9,6 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
         "Name",
         "Cfs Configuration",
         "Cfs Enabled",
-        "Type",
         "Target",
         "Compute Etag",
         "Compute Path",
