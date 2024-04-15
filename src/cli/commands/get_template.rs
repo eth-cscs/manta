@@ -12,7 +12,7 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    let bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
+    let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -20,6 +20,14 @@ pub async fn exec(
     )
     .await
     .unwrap_or_default();
+
+    mesa::bos::template::mesa::utils::filter(
+        &mut bos_sessiontemplate_vec,
+        hsm_group_name_vec,
+        hsm_member_vec,
+        limit_number_opt,
+    )
+    .await;
 
     if bos_sessiontemplate_vec.is_empty() {
         println!("No BOS template found!");
