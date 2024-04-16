@@ -1,4 +1,4 @@
-use mesa::ims::image::r#struct::Image;
+use mesa::{cfs::session::mesa::r#struct::v2::CfsSessionPostRequest, ims::image::r#struct::Image};
 
 use crate::common;
 
@@ -7,6 +7,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name_vec: &Vec<String>,
+    status_opt: Option<&String>,
     cfs_session_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
     output_opt: Option<&String>,
@@ -17,6 +18,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        status_opt,
         cfs_session_name_opt,
         None,
     )

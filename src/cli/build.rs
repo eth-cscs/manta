@@ -275,6 +275,8 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
         .aliases(["s", "se", "ses", "sess", "sssn"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <SESSION_NAME> "session name"))
+        .arg(arg!(-s --status <SESSION_STATUS> "filter results by session status")
+            .value_parser(["pending", "running", "complete"]))
         .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS sessions created")

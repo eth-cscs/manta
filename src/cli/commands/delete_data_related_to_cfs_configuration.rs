@@ -175,6 +175,7 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_root_cert,
         None,
         None,
+        None,
     )
     .await
     .unwrap();

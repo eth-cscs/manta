@@ -1093,6 +1093,7 @@ pub async fn wait_cfs_session_to_complete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+            None,
             Some(&cfs_session.name.as_ref().unwrap().to_string()),
             Some(true),
         )

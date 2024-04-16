@@ -126,6 +126,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
         shasta_base_url,
         shasta_root_cert,
         None,
+        None,
         Some(true),
     )
     .await

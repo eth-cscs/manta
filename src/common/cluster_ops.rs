@@ -46,6 +46,7 @@ pub async fn get_details(
             shasta_root_cert,
             None,
             None,
+            None,
         )
         .await
         .unwrap();

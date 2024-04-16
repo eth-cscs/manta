@@ -508,6 +508,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     &target_hsm_group_vec,
+                    cli_get_session.get_one::<String>("status"),
                     cli_get_session.get_one::<String>("name"),
                     limit,
                     cli_get_session.get_one("output"),
