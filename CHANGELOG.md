@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.2] - 2024-04-16
+
+### Bug Fixes
+
+- Bug filtering CFS sessions through HSM groups
+- Fix bug filtering bos sessiontemplate by HSM group
+- Print BOS sessiontemplate information properly by removing the type column in table
+
+### Features
+
+- Add functionality to filter CFS sessions by state
+
 ## [1.29.1] - 2024-04-03
 
 ### Bug Fixes
 
 - CFS layer branch lookup not printing branch name properly if they
+
+### Miscellaneous Tasks
+
+- Release manta version 1.29.1
 
 ### Refactor
 
