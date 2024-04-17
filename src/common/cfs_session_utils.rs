@@ -92,6 +92,12 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
 }
 
 pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) {
+    let table = get_table_struct(get_cfs_session_value_list);
+
+    println!("{table}");
+}
+
+pub fn get_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) -> Table {
     let mut table = Table::new();
 
     table.set_header(vec![
@@ -111,7 +117,7 @@ pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse
         table.add_row(cfs_session_struct_to_vec(cfs_session_value.clone()));
     }
 
-    println!("{table}");
+    table
 }
 
 pub async fn get_image_id_related_to_cfs_configuration(

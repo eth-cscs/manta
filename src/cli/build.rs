@@ -98,16 +98,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .subcommand(subcommand_update_hsm_group(hsm_group)),
         )
         .subcommand(
-            Command::new("log")
-                .alias("l")
-                .arg_required_else_help(true)
-                .about("Get CFS session logs")
-                .arg(arg!(<SESSION_NAME> "session name"))
-                // .arg(
-                //     arg!(-l --"layer-id" <VALUE> "layer id")
-                //         .required(false)
-                //         .value_parser(value_parser!(u8)),
-                // ),
+            subcommand_log(hsm_group)
         )
         .subcommand(
             Command::new("console")
@@ -793,4 +784,22 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(<NODE_NAME> "Node name")),
                 ),
         )
+}
+
+pub fn subcommand_log(hsm_group_opt: Option<&String>) -> Command {
+    let mut log = Command::new("log")
+        .alias("l")
+        .about("get cfs session logs")
+        .arg(arg!([SESSION_NAME] "show logs related to session name"));
+
+    match hsm_group_opt {
+        None => {
+            log = 
+                log.arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
+                    .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]));
+        },
+        Some(_) => {}
+    }
+
+    log
 }

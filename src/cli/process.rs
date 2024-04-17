@@ -508,8 +508,8 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     &target_hsm_group_vec,
-                    cli_get_session.get_one::<String>("min_age"),
-                    cli_get_session.get_one::<String>("max_age"),
+                    cli_get_session.get_one::<String>("min-age"),
+                    cli_get_session.get_one::<String>("max-age"),
                     cli_get_session.get_one::<String>("status"),
                     cli_get_session.get_one::<String>("name"),
                     limit,
@@ -1181,7 +1181,7 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-            let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("hsm-group").unwrap_or(None);
+            let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("cluster").unwrap_or(None);
 
             let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                 shasta_token,

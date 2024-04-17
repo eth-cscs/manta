@@ -1,6 +1,6 @@
 use mesa::{common::kubernetes, hsm};
 
-use crate::common::vault::http_client::fetch_shasta_k8s_secrets;
+use crate::common::{self, vault::http_client::fetch_shasta_k8s_secrets};
 
 pub async fn exec(
     shasta_token: &str,
@@ -45,20 +45,9 @@ pub async fn exec(
         shasta_root_cert,
         &mut cfs_sessions_resp,
         hsm_name_vec,
-        None,
+        Some(&1),
     )
     .await;
-    /* let cfs_sessions_resp = mesa::cfs::session::shasta::http_client::filter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_vec,
-        session_name,
-        None,
-        None,
-    )
-    .await
-    .unwrap(); */
 
     if cfs_sessions_resp.is_empty() {
         println!("No CFS session found");
@@ -76,14 +65,21 @@ pub async fn exec(
     )
     .await;
 
-    let cfs_session_name: &str = cfs_sessions_resp.last().unwrap().name.as_ref().unwrap();
-
     let shasta_k8s_secrets =
         fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+
+    log::info!(
+        "Get logs for CFS session:\n{}",
+        common::cfs_session_utils::get_table_struct(&cfs_sessions_resp)
+    );
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
 
-    kubernetes::print_cfs_session_logs(client, cfs_session_name).await;
+    kubernetes::print_cfs_session_logs(
+        client,
+        cfs_sessions_resp.first().unwrap().name.as_ref().unwrap(),
+    )
+    .await;
 }

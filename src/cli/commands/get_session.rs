@@ -143,17 +143,6 @@ pub async fn exec(
         }
     }
 
-    /* cfs_session_vec = mesa::mesa::cfs::session::http_client::utils::filter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &mut cfs_session_vec,
-        hsm_group_name_vec,
-        cfs_session_name_opt,
-        limit_number_opt,
-    )
-    .await; */
-
     if output_opt.is_some() && output_opt.unwrap().eq("json") {
         println!(
             "{}",
