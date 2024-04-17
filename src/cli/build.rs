@@ -274,12 +274,14 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("session")
         .aliases(["s", "se", "ses", "sess", "sssn"])
         .about("Get information from Shasta CFS session")
-        .arg(arg!(-n --name <SESSION_NAME> "session name"))
-        .arg(arg!(-s --status <SESSION_STATUS> "filter results by session status")
+        .arg(arg!(-n --name <SESSION_NAME> "Return only sessions with the given session name"))
+        .arg(arg!(-a --"min-age" <MIN_AGE> "Return only sessions older than the given age. Age is given in the format '1d' or '6h'"))
+        .arg(arg!(-A --"max-age" <MAX_AGE> "Return only sessions younger than the given age. Age is given in the format '1d' or '6h'"))
+        .arg(arg!(-s --status <SESSION_STATUS> "Return only sessions with the given status")
             .value_parser(["pending", "running", "complete"]))
-        .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
+        .arg(arg!(-m --"most-recent" "Return only the most recent session created (equivalent to --limit 1)"))
         .arg(
-            arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS sessions created")
+            arg!(-l --limit <VALUE> "Return only last <VALUE> sessions created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
         .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]));
