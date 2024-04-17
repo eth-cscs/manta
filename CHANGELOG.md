@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.5] - 2024-04-17
+
+### Features
+
+- Print most recent CFS session logs related to a cluster
+
+### Refactor
+
+- Fix mesa library location
+
 ## [1.29.4] - 2024-04-17
 
 ### Features
 
 - Add new feature to filter CFS sessions by min_age and max_age parameters
+
+### Miscellaneous Tasks
+
+- Release manta version 1.29.4
 
 ## [1.29.3] - 2024-04-17
 
