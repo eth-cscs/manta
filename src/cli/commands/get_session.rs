@@ -1,4 +1,4 @@
-use mesa::{cfs::session::mesa::r#struct::v2::CfsSessionPostRequest, ims::image::r#struct::Image};
+use mesa::ims::image::r#struct::Image;
 
 use crate::common;
 

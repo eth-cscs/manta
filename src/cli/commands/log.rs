@@ -20,6 +20,8 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         None,
+        None,
+        None,
         session_name_opt,
         None,
     )

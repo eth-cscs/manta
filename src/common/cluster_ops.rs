@@ -47,6 +47,8 @@ pub async fn get_details(
             None,
             None,
             None,
+            None,
+            None,
         )
         .await
         .unwrap();

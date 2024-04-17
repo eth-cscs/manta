@@ -22,6 +22,8 @@ pub async fn exec(
         shasta_base_url,
         shasta_root_cert,
         None,
+        None,
+        None,
         Some(&cfs_session_name.to_string()),
         Some(false),
     )

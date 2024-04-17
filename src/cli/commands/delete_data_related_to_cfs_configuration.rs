@@ -6,7 +6,6 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use futures::SinkExt;
 use mesa::bss::BootParameters;
 use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
 use mesa::{bos, cfs};
@@ -173,6 +172,8 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        None,
+        None,
         None,
         None,
         None,

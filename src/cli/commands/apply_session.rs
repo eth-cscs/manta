@@ -234,6 +234,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         None,
         None,
         None,
+        None,
+        None,
     )
     .await?;
 
