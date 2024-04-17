@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.3] - 2024-04-17
+
+### Features
+
+- Add new feature to filter CFS sessions by min_age and max_age parameters
+
 ## [1.29.2] - 2024-04-16
 
 ### Bug Fixes
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add functionality to filter CFS sessions by state
+
+### Miscellaneous Tasks
+
+- Release manta version 1.29.2
 
 ## [1.29.1] - 2024-04-03
 
