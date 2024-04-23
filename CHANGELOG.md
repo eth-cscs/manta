@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.0] - 2024-04-23
+
+### Bug Fixes
+
+- Update mesa library
+- Restore BOS sessiontemplate to v1
+- Restore BOS session to v1
+- Improve BOS sessiontemplate by processing multiple boot_sets
+- Improve BOS sessiontemplate by passing kernel parameters from SAT
+- Process multiple BOS sessiontemplate in SAT file
+
 ## [1.29.5] - 2024-04-17
 
 ### Features
 
 - Print most recent CFS session logs related to a cluster
+
+### Miscellaneous Tasks
+
+- Release manta version 1.29.5
 
 ### Refactor
 
