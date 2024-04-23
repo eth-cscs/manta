@@ -308,7 +308,7 @@ async fn create_bos_sessiontemplate(
     log::debug!("BOS sessiontemplate filtered: {:#?}", vector);
 
     if !vector.is_empty() {
-        println!("There already exists a BOS sessiontemplate with name {}. It can be replaced, but it's dangerous.", &bos_sessiontemplate_name);
+        println!("There already exists a BOS sessiontemplate with name '{}'. It can be replaced, but it's dangerous.", &bos_sessiontemplate_name);
         let confirmation = Confirm::new()
             .with_prompt("Do you want to overwrite it?")
             .interact()
