@@ -9,12 +9,12 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
         "XNAME",
         "NID",
         "Power Status",
-        "Desired Configuration",
+        "Runtime Configuration",
         "Configuration Status",
         "Enabled",
         "Error Count",
         // "Tags",
-        "Boot configuration",
+        "Boot Image configuration",
         "Image ID (Boot param)",
     ]);
 

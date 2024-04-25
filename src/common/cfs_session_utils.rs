@@ -10,7 +10,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .unwrap_or("".to_string())
             .to_string(),
     );
-    result.push(
+    /* result.push(
         cfs_session
             .ansible
             .as_ref()
@@ -29,7 +29,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .as_ref()
             .unwrap()
             .to_string(),
-    );
+    ); */
     result.push(
         cfs_session
             .status
@@ -104,8 +104,8 @@ pub fn get_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>)
         "Session Name",
         "Configuration Name",
         "Start",
-        "Passthrough",
-        "Verbosity",
+        /* "Passthrough",
+        "Verbosity", */
         "Status",
         "Succeeded",
         "Target Def",
