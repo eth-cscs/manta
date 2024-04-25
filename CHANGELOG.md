@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.1] - 2024-04-25
+
+### Refactor
+
+- Remove 2 columns from the CFS session output table
+- Rename "DEsired Configuration" to "Running configuration" in
+
 ## [1.30.0] - 2024-04-23
 
 ### Bug Fixes
@@ -12,6 +19,10 @@ All notable changes to this project will be documented in this file.
 - Improve BOS sessiontemplate by processing multiple boot_sets
 - Improve BOS sessiontemplate by passing kernel parameters from SAT
 - Process multiple BOS sessiontemplate in SAT file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.30.0
 
 ## [1.29.5] - 2024-04-17
 
