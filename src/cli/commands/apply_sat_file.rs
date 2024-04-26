@@ -217,7 +217,9 @@ pub async fn exec(
                     target_hsm_group_name,
                 );
 
-                let _ = hsm::group::shasta::utils::update_hsm_group_members(
+                let _ = hsm::group::shasta::utils::update_hsm_group_members(shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                     target_hsm_group_name,
                     &hsm_group_members_vec,
                     &new_target_hsm_group_members_vec,

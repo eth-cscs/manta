@@ -189,6 +189,9 @@ pub async fn exec(
     );
 
     let _ = update_hsm_group_members(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         target_hsm_group_name,
         &target_hsm_group_member_vec,
         &target_hsm_node_vec,
@@ -203,6 +206,9 @@ pub async fn exec(
     );
 
     let _ = update_hsm_group_members(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
         parent_hsm_group_name,
         &parent_hsm_group_member_vec,
         &parent_hsm_node_vec,
