@@ -15,6 +15,8 @@ pub async fn exec(
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
     pattern: &str,
+    dryrun: bool,
+    create_hsm_group: bool
 ) {
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 

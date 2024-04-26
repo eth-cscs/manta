@@ -324,6 +324,16 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                 )
                 .await;
+                let target_hsm_group_name_arg_opt =
+                    cli_add_hw_configuration.get_one::<String>("target-cluster");
+
+                let dryrun  = *cli_add_hw_configuration
+                    .get_one::<bool>("no-dryrun")
+                    .unwrap_or(&true);
+
+                let create_hsm_group  = *cli_add_hw_configuration
+                    .get_one::<bool>("create-hsm-group")
+                    .unwrap_or(&false);
 
                 add_hw_component_cluster::exec(
                     shasta_token,
@@ -334,9 +344,20 @@ pub async fn process_cli(
                     cli_add_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
+                    dryrun,
+                    create_hsm_group,
                 )
                 .await;
             } else if let Some(cli_add_nodes) = cli_add.subcommand_matches("nodes") {
+                let nodryrun  = *cli_add_nodes
+                    .get_one::<bool>("no-dryrun")
+                    .unwrap_or(&true);
+
+                let create_hsm_group  = *cli_add_nodes
+                    .get_one::<bool>("create-hsm-group")
+                    .unwrap_or(&false);
+
+
                 add_nodes::exec(
                     shasta_token,
                     shasta_base_url,
@@ -344,6 +365,8 @@ pub async fn process_cli(
                     cli_add_nodes.get_one::<String>("target-cluster").unwrap(),
                     cli_add_nodes.get_one::<String>("parent-cluster").unwrap(),
                     cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
+                    nodryrun,
+                    create_hsm_group
                 )
                 .await;
             }

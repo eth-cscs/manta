@@ -7,11 +7,35 @@ pub async fn exec(
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
     xname_string: &str,
+    nodryrun: bool,
+    create_hsm_group: bool,
 ) {
     let new_target_hsm_members = xname_string
         .split(',')
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
+    match mesa::hsm::group::mesa::http_client::get(shasta_token,
+                                                shasta_base_url,
+                                                shasta_root_cert,
+                                                Some(&target_hsm_group_name.to_string())).await {
+        Ok(_) => log::debug!("The HSM group {} exists, good.",target_hsm_group_name),
+        Err(error) => {
+            if create_hsm_group {
+                log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+                if nodryrun {
+                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, &[], "false", "", &[])
+                        .await.expect("Unable to create new HSM group");
+                } else {
+                    log::error!("Dryrun selected, cannot create the new group continue.");
+                    std::process::exit(1);
+                }
+            }
+            else {
+                log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+                std::process::exit(1);
+            }
+        }
+    };
 
     if !validate_xnames(
         shasta_token,
@@ -89,9 +113,13 @@ pub async fn exec(
 
     // *********************************************************************************************************
     // UPDATE HSM GROUP MEMBERS IN CSM
-    for xname in new_target_hsm_members {
-        let _ = hsm::group::shasta::http_client::post_member(target_hsm_group_name, xname).await;
+    if nodryrun {
+        log::info!("Dryrun enabled, not modifying the HSM groups on the system.")
+    } else {
+        for xname in new_target_hsm_members {
+            let _ = hsm::group::shasta::http_client::post_member(target_hsm_group_name, xname).await;
 
-        let _ = hsm::group::shasta::http_client::delete_member(parent_hsm_group_name, xname).await;
+            let _ = hsm::group::shasta::http_client::delete_member(parent_hsm_group_name, xname).await;
+        }
     }
 }
