@@ -117,6 +117,7 @@ pub async fn exec(
         log::info!("Dryrun enabled, not modifying the HSM groups on the system.")
     } else {
         for xname in new_target_hsm_members {
+            // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
             let _ = hsm::group::shasta::http_client::post_member(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, xname).await;
 
             let _ = hsm::group::shasta::http_client::delete_member(shasta_token, shasta_base_url, shasta_root_cert, parent_hsm_group_name, xname).await;
