@@ -409,6 +409,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_remove_nodes) = cli_remove.subcommand_matches("nodes") {
+                let nodryrun  = *cli_remove_nodes
+                    .get_one::<bool>("no-dryrun")
+                    .unwrap_or(&true);
+
+                let delete_hsm_group  = *cli_remove_nodes
+                    .get_one::<bool>("delete-hsm-group")
+                    .unwrap_or(&false);
+
                 remove_nodes::exec(
                     shasta_token,
                     shasta_base_url,
@@ -420,6 +428,8 @@ pub async fn process_cli(
                         .get_one::<String>("parent-cluster")
                         .unwrap(),
                     cli_remove_nodes.get_one::<String>("XNAMES").unwrap(),
+                    nodryrun,
+                    delete_hsm_group
                 )
                 .await;
             }
