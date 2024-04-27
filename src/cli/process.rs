@@ -1126,6 +1126,64 @@ pub async fn process_cli(
                         .unwrap(),
                 )
                 .await;
+            } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
+                if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
+                    let hsm_group_name_arg_opt =
+                        cli_apply_boot_nodes.get_one::<String>("HSM_GROUP_NAME");
+
+                    if hsm_group_name_arg_opt.is_some() {
+                        get_target_hsm_group_vec_or_all(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            hsm_group_name_arg_opt,
+                            settings_hsm_group_name_opt,
+                        )
+                        .await;
+                    }
+
+                    update_node::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        None,
+                        cli_apply_boot_nodes.get_one::<String>("boot-image"),
+                        cli_apply_boot_nodes.get_one::<String>("desired-configuration"),
+                        cli_apply_boot_nodes
+                            .get_one::<String>("XNAMES")
+                            .unwrap()
+                            .split(',')
+                            .map(|xname| xname.trim())
+                            .collect(),
+                    )
+                    .await;
+                } else if let Some(cli_apply_boot_cluster) =
+                    cli_apply_boot.subcommand_matches("cluster")
+                {
+                    let hsm_group_name_arg_opt =
+                        cli_apply_boot_cluster.get_one::<String>("CLUSTER_NAME");
+
+                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    update_hsm_group::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        None,
+                        cli_apply_boot_cluster.get_one::<String>("boot-image"),
+                        cli_apply_boot_cluster.get_one::<String>("desired-configuration"),
+                        target_hsm_group_vec.first().unwrap(),
+                    )
+                    .await;
+                }
             }
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
@@ -1147,6 +1205,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     hsm_group_name_arg_opt,
+                    None,
                     cli_update_node.get_one::<String>("boot-image"),
                     cli_update_node.get_one::<String>("desired-configuration"),
                     cli_update_node
@@ -1174,6 +1233,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    None,
                     cli_update_hsm_group.get_one::<String>("boot-image"),
                     cli_update_hsm_group.get_one::<String>("desired-configuration"),
                     target_hsm_group_vec.first().unwrap(),

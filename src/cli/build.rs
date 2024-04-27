@@ -62,11 +62,18 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
                 .subcommand(subcommand_apply_sat_file(/* hsm_group */))
+                .subcommand(Command::new("boot")
+                    .alias("b")
+                    .arg_required_else_help(true)
+                    .about("Change boot operations")
+                    .subcommand(subcommand_apply_boot_nodes(hsm_group))
+                    .subcommand(subcommand_apply_boot_cluster(hsm_group))
+                )
                 .subcommand(
                     Command::new("node")
                         .aliases(["n", "nod"])
                         .arg_required_else_help(true)
-                        .about("Make changes to nodes")
+                        .about("DEPRECATED - Please use 'manta power' instead.\nPower management for a list of nodes")
                         .subcommand(subcommand_apply_node_on(hsm_group))
                         .subcommand(subcommand_apply_node_off(hsm_group))
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
@@ -632,7 +639,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_nodes = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
+        .about("DEPRECATED - Please use 'manta apply boot nodes' instead.\nUpdates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
         .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
 
@@ -647,27 +654,6 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         None => update_nodes.arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME")),
     };
 
-    /* update_nodes = update_nodes.group(
-        ArgGroup::new("boot-image_or_desired-configuration")
-            .args(["boot-image", "desired-configuration"]),
-    ); */
-
-    /* update_nodes = update_nodes.groups([
-        ArgGroup::new("update-node-boot_or_update-node-desired-configuration")
-            .args(["boot", "desired-configuration"]),
-        ArgGroup::new("update-node-args").args(["XNAMES", "CFS_CONFIG"]),
-    ]); */
-
-    /* update_node = update_node
-        .group(
-            ArgGroup::new("boot_and_config")
-                .args(["boot-image", "configuration"])
-                .required(true),
-        )
-        .group(ArgGroup::new("config").args(["CFS_CONFIG"]));
-
-    update_node = update_node.group(ArgGroup::new("boot-config_or_config").args(["boot_and_config", "config"])); */
-
     update_nodes
 }
 
@@ -675,7 +661,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
+        .about("DEPRECATED - Please use 'manta apply boot cluster' instead.\nUpdates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
         .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
 
@@ -685,6 +671,45 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     };
 
     update_hsm_group
+}
+
+pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
+    let mut apply_boot_nodes = Command::new("nodes")
+        .aliases(["n", "node"])
+        .arg_required_else_help(true)
+        .about("Update the boot parameters (boot image id, runtime configuration and kernel parameters) for a list of nodes. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot nodes --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
+        .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
+        .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
+        .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"));
+
+    apply_boot_nodes = apply_boot_nodes
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
+
+    apply_boot_nodes = match hsm_group {
+        Some(_) => apply_boot_nodes,
+        None => apply_boot_nodes.arg(arg!([CLUSTER_GROUP_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME")),
+    };
+
+    apply_boot_nodes
+}
+
+pub fn subcommand_apply_boot_cluster(hsm_group: Option<&String>) -> Command {
+    let mut apply_boot_cluster = Command::new("cluster")
+        .alias("c")
+        .arg_required_else_help(true)
+        .about("Update the boot parameters (boot image id, runtime configuration and kernel params) for all nodes in a cluster. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot cluster --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
+        .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
+        .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
+        .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"));
+
+    apply_boot_cluster = match hsm_group {
+        Some(_) => apply_boot_cluster,
+        None => apply_boot_cluster.arg(arg!(<CLUSTER_NAME> "Cluster name").required(true)),
+    };
+
+    apply_boot_cluster
 }
 
 pub fn subcommand_migrate_backup() -> Command {
@@ -794,10 +819,10 @@ pub fn subcommand_log(hsm_group_opt: Option<&String>) -> Command {
 
     match hsm_group_opt {
         None => {
-            log = 
+            log =
                 log.arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
                     .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]));
-        },
+        }
         Some(_) => {}
     }
 

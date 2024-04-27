@@ -13,8 +13,9 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name: Option<&String>,
+    new_boot_image_id_opt: Option<&String>,
     new_boot_image_configuration_opt: Option<&String>,
-    new_desired_configuration_optb: Option<&String>,
+    new_runtime_configuration_optb: Option<&String>,
     xnames: Vec<&str>,
 ) {
     let mut need_restart = false;
@@ -36,28 +37,28 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    let desired_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+    let runtime_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        new_desired_configuration_optb.map(|elem| elem.as_str()),
+        new_runtime_configuration_optb.map(|elem| elem.as_str()),
     )
     .await;
 
     // Check desired configuration exists
-    if desired_configuration_detail_list_rslt.is_err()
-        || desired_configuration_detail_list_rslt.unwrap().is_empty()
+    if runtime_configuration_detail_list_rslt.is_err()
+        || runtime_configuration_detail_list_rslt.unwrap().is_empty()
     {
         eprintln!(
             "Desired configuration '{}' does not exists. Exit",
-            new_desired_configuration_optb.unwrap()
+            new_runtime_configuration_optb.unwrap()
         );
         std::process::exit(1);
     };
 
     log::info!(
         "Desired configuration '{}' exists",
-        new_desired_configuration_optb.unwrap()
+        new_runtime_configuration_optb.unwrap()
     );
 
     // Get new boot image id
@@ -104,20 +105,6 @@ pub async fn exec(
 
             log::info!("Boot image ID '{}' found in CSM", new_boot_image_id);
 
-            /* let image_path = boot_image_value_vec.first().unwrap()["link"]["path"]
-                .as_str()
-                .unwrap()
-                .to_string();
-
-            let new_image_id = image_path
-                .strip_prefix("s3://boot-images/")
-                .unwrap()
-                .strip_suffix("/manifest.json")
-                .unwrap()
-                .to_string(); */
-
-            // Check if need to reboot. We will reboot if the new boot image is different than the current
-            // one
             // Get node boot params
             let node_boot_params: BootParameters = bss::http_client::get_boot_params(
                 shasta_token,
@@ -191,7 +178,7 @@ pub async fn exec(
 
         // Update desired configuration
 
-        if let Some(desired_configuration_name) = new_desired_configuration_optb {
+        if let Some(desired_configuration_name) = new_runtime_configuration_optb {
             println!(
                 "Updating desired configuration to '{}'",
                 desired_configuration_name
