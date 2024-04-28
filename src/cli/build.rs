@@ -646,9 +646,6 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     update_nodes = update_nodes
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
 
-    /* update_nodes = update_nodes
-    .arg(arg!(<CFS_CONFIG> "CFS configuration name used to boot and configure the nodes")); */
-
     update_nodes = match hsm_group {
         Some(_) => update_nodes,
         None => update_nodes.arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME")),
@@ -681,14 +678,15 @@ pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
         .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
-        .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"));
+        // .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"))
+        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
 
     apply_boot_nodes = apply_boot_nodes
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
 
     apply_boot_nodes = match hsm_group {
         Some(_) => apply_boot_nodes,
-        None => apply_boot_nodes.arg(arg!([CLUSTER_GROUP_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME")),
+        None => apply_boot_nodes.arg(arg!([CLUSTER_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME")),
     };
 
     apply_boot_nodes
@@ -702,7 +700,8 @@ pub fn subcommand_apply_boot_cluster(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
         .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
-        .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"));
+        // .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"))
+        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
 
     apply_boot_cluster = match hsm_group {
         Some(_) => apply_boot_cluster,

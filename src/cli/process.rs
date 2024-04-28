@@ -1129,7 +1129,7 @@ pub async fn process_cli(
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
                     let hsm_group_name_arg_opt =
-                        cli_apply_boot_nodes.get_one::<String>("HSM_GROUP_NAME");
+                        cli_apply_boot_nodes.get_one::<String>("CLUSTER_NAME");
 
                     if hsm_group_name_arg_opt.is_some() {
                         get_target_hsm_group_vec_or_all(
@@ -1147,9 +1147,9 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         hsm_group_name_arg_opt,
-                        None,
                         cli_apply_boot_nodes.get_one::<String>("boot-image"),
-                        cli_apply_boot_nodes.get_one::<String>("desired-configuration"),
+                        cli_apply_boot_nodes.get_one::<String>("boot-image-configuration"),
+                        cli_apply_boot_nodes.get_one::<String>("runtime-configuration"),
                         cli_apply_boot_nodes
                             .get_one::<String>("XNAMES")
                             .unwrap()
@@ -1177,9 +1177,9 @@ pub async fn process_cli(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        None,
                         cli_apply_boot_cluster.get_one::<String>("boot-image"),
-                        cli_apply_boot_cluster.get_one::<String>("desired-configuration"),
+                        cli_apply_boot_cluster.get_one::<String>("boot-image-configuration"),
+                        cli_apply_boot_cluster.get_one::<String>("runtime-configuration"),
                         target_hsm_group_vec.first().unwrap(),
                     )
                     .await;

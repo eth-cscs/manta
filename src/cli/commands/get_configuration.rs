@@ -113,7 +113,7 @@ pub async fn get_configuration_layer_details(
 
         let mut r#ref = ref_value["ref"].as_str().unwrap().split("/").skip(1);
 
-        let ref_1 = r#ref.next();
+        let _ref_1 = r#ref.next();
         let ref_2 = r#ref.next();
 
         if ref_type == "tag" {

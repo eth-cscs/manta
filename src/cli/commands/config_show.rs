@@ -7,8 +7,8 @@ use crate::common::jwt_ops;
 /// Prints Manta's configuration on screen
 pub async fn exec(
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
+    _shasta_base_url: &str,
+    _shasta_root_cert: &[u8],
     settings: &Config,
 ) {
     // Read configuration file

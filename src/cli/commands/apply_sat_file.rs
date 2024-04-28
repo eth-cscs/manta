@@ -8,7 +8,6 @@ use dialoguer::theme::ColorfulTheme;
 use mesa::{
     bos::{
         self,
-        session::shasta::http_client::v1,
         template::mesa::r#struct::v1::{BootSet, BosSessionTemplate, Cfs},
     },
     cfs::{
@@ -24,7 +23,7 @@ use serde_yaml::Value;
 
 use crate::{
     cli::{
-        commands::{apply_hw_cluster, power_reset_cluster, power_reset_nodes},
+        commands::{apply_hw_cluster, power_reset_nodes},
         process::validate_target_hsm_members,
     },
     common::{
@@ -545,7 +544,7 @@ pub async fn process_session_template_section_in_sat_file(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     ref_name_processed_hashmap: HashMap<String, String>,
-    hsm_group_param_opt: Option<&String>,
+    _hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     sat_file_yaml: Value,
     // tag: &str,
@@ -559,7 +558,7 @@ pub async fn process_session_template_section_in_sat_file(
     let mut bos_st_created_vec: Vec<String> = Vec::new();
 
     for bos_sessiontemplate_yaml in bos_session_template_list_yaml {
-        let bos_sessiontemplate: BosSessionTemplate =
+        let _bos_sessiontemplate: BosSessionTemplate =
             serde_yaml::from_value(bos_sessiontemplate_yaml.clone()).unwrap();
 
         let image_details: ims::image::r#struct::Image = if let Some(bos_sessiontemplate_image) =
@@ -721,7 +720,7 @@ pub async fn process_session_template_section_in_sat_file(
             std::process::exit(1);
         }
 
-        let ims_image_name = image_details.name.to_string();
+        let _ims_image_name = image_details.name.to_string();
         let ims_image_etag = image_details.link.as_ref().unwrap().etag.as_ref().unwrap();
         let ims_image_path = &image_details.link.as_ref().unwrap().path;
         let ims_image_type = &image_details.link.as_ref().unwrap().r#type;
@@ -740,7 +739,7 @@ pub async fn process_session_template_section_in_sat_file(
             .unwrap()
         {
             let kernel_parameters = boot_set["kernel_parameters"].as_str().unwrap();
-            let arch_opt = boot_set["arch"].as_str().map(|value| value.to_string());
+            let _arch_opt = boot_set["arch"].as_str().map(|value| value.to_string());
 
             let node_roles_groups_opt: Option<Vec<String>> = boot_set
                 .get("node_roles_groups")

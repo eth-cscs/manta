@@ -29,12 +29,12 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
-    watch_logs_opt: Option<&bool>,
+    _watch_logs_opt: Option<&bool>,
     // tag: &str,
     hsm_group_available_vec: &[String],
     k8s_api_url: &str,
     gitea_token: &str,
-    output_opt: Option<&String>,
+    _output_opt: Option<&String>,
 ) {
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,

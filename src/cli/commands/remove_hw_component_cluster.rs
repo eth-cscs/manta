@@ -211,7 +211,7 @@ pub async fn exec(
 
     parent_hsm_node_vec.sort();
 
-    let parent_hsm_hw_component_summary =
+    let _parent_hsm_hw_component_summary =
         calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
     // Calculate hw component counters (summary) across all node within the HSM group
