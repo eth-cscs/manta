@@ -2,7 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.0] - 2024-04-28
+
+### Bug Fixes
+
+- Bug in `apply hw cluster` command where nodes in final target hsm group would not be accurate if both target and parent hsm groups have nodes in common
+- Disable DHAT crate since it is not beind used
+
+### Features
+
+- Add new method to change boot parameters `manta apply boot`
+- Add new argument to set the image id to a cluster or nodes for
+- Update mesa
+- Add tests to `apply hw cluster` functionality
+
+### Refactor
+
+- Clean code
+- Comment code
+
 ## [1.30.1] - 2024-04-25
+
+### Miscellaneous Tasks
+
+- Release manta version 1.30.1
 
 ### Refactor
 
