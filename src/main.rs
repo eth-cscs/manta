@@ -12,8 +12,8 @@ use crate::common::log_ops;
 async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     //println!("async main");
     // DHAT (profiling)
-    #[cfg(feature = "dhat-heap")]
-    let _profiler = dhat::Profiler::new_heap();
+    // #[cfg(feature = "dhat-heap")]
+    // let _profiler = dhat::Profiler::new_heap();
 
     let settings = common::config_ops::get_configuration();
 

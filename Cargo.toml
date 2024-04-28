@@ -49,7 +49,7 @@ comfy-table = "6.1.1"                                                      # use
 tracing-subscriber = "0.3.16"
 termion = "2.0.1"                                                          # used by manta_console to enable terminal raw and also to print text in color
 crossterm = "0.27.0"
-dhat = "0.3.2"                                                             # used for memory profiling
+# dhat = "0.3.2"                                                             # used for memory profiling
 base64 = "0.13.1"
 exitcode = "1.1.2"
 digest = "0.10.7"
@@ -68,6 +68,10 @@ clap_complete = "*"
 opt-level = "s" # Tell `rustc` to optimize for small code size.
 #incremental = true
 debug = 1
+
+#[features]
+#dhat-heap = []    # if you are doing heap profiling
+#dhat-ad-hoc = []  # if you are doing ad hoc profiling
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
@@ -103,7 +107,3 @@ pre-release-hook = [
   "--tag",
   "{{version}}",
 ] # [Generates CHANGELOG automatically] (https://github.com/crate-ci/cargo-release/blob/master/docs/faq.md#maintaining-changelog) using [git cliff](https://github.com/orhun/git-cliff) as a dependency
-
-#[features]
-#dhat-heap = []    # if you are doing heap profiling
-#dhat-ad-hoc = []  # if you are doing ad hoc profiling
