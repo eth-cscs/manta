@@ -327,7 +327,7 @@ pub async fn process_cli(
                 let target_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("target-cluster");
 
-                let dryrun  = *cli_add_hw_configuration
+                let nodryrun  = *cli_add_hw_configuration
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
 
@@ -344,7 +344,7 @@ pub async fn process_cli(
                     cli_add_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
-                    dryrun,
+                    nodryrun,
                     create_hsm_group,
                 )
                 .await;
