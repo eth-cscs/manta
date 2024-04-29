@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.1] - 2024-04-29
+
+### Features
+
+- Update mesa version
+
+### Refactor
+
+- Manta get cluster --> rename table results column names
+
 ## [1.31.0] - 2024-04-28
 
 ### Bug Fixes
@@ -15,6 +25,10 @@ All notable changes to this project will be documented in this file.
 - Add new argument to set the image id to a cluster or nodes for
 - Update mesa
 - Add tests to `apply hw cluster` functionality
+
+### Miscellaneous Tasks
+
+- Release manta version 1.31.0
 
 ### Refactor
 
