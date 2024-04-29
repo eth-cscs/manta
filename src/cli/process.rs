@@ -373,6 +373,14 @@ pub async fn process_cli(
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
             if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
             {
+                let nodryrun  = *cli_remove_hw_configuration
+                    .get_one::<bool>("no-dryrun")
+                    .unwrap_or(&true);
+
+                let delete_hsm_group  = *cli_remove_hw_configuration
+                    .get_one::<bool>("delete-hsm-group")
+                    .unwrap_or(&false);
+
                 let target_hsm_group_name_arg_opt =
                     cli_remove_hw_configuration.get_one::<String>("target-cluster");
 
@@ -385,9 +393,12 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let parent_hsm_group_name_arg_opt =
-                    cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
+                // let parent_hsm_group_name_arg_opt =
+                //     cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
 
+                let parent_hsm_group_name_arg_opt =
+                    cli_remove_hw_configuration.get_one::<String>("parent-cluster");
+                
                 let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -406,6 +417,8 @@ pub async fn process_cli(
                     cli_remove_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
+                    nodryrun,
+                    delete_hsm_group,
                 )
                 .await;
             } else if let Some(cli_remove_nodes) = cli_remove.subcommand_matches("nodes") {
