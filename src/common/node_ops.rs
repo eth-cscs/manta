@@ -14,8 +14,8 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
         "Enabled",
         "Error Count",
         // "Tags",
-        "Boot Image configuration",
-        "Image ID (Boot param)",
+        "Image Configuration",
+        "Image ID",
     ]);
 
     for node_status in nodes_status {
