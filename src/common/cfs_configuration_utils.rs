@@ -55,7 +55,7 @@ pub fn print_table_details_struct(cfs_configuration: ConfigurationDetails) {
 
     for layer in cfs_configuration.config_layers {
         layers = format!(
-            "{}\n\nName: {}\nBranch: {}\nTag: {}\nCommit date: {}\nAuthor: {}\nSHA: {}\nPlaybook: {}",
+            "{}\n\nName:     {}\nBranch:   {}\nTag:      {}\nDate:     {}\nAuthor:   {}\nCommit:   {}\nPlaybook: {}",
             layers,
             layer.name,
             layer.branch,
