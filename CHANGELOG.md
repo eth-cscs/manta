@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.2] - 2024-04-30
+
+### Features
+
+- Format data in manta get configuration -n
+
 ## [1.31.1] - 2024-04-29
 
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.31.1
 
 ### Refactor
 
