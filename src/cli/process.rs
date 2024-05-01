@@ -1,9 +1,13 @@
-use std::{io::IsTerminal, path::PathBuf};
+use std::{any::Any, io::IsTerminal, path::PathBuf};
 
+use chrono::NaiveDateTime;
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
 use mesa::common::authentication;
+use substring::Substring;
+
+use crate::{cli::commands::validate_local_repo, common::local_git_repo};
 
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
@@ -474,6 +478,7 @@ pub async fn process_cli(
                     };
 
                 get_configuration::exec(
+                    gitea_base_url,
                     gitea_token,
                     shasta_token,
                     shasta_base_url,
@@ -1417,7 +1422,7 @@ pub async fn process_cli(
             // INPUT VALIDATION - Check since date is prior until date
             if since_opt.is_some() && until_opt.is_some() && since_opt.unwrap() > until_opt.unwrap()
             {
-                println!("since date can't be after until date. Exit");
+                eprintln!("ERROR - 'since' date can't be after 'until' date. Exit");
                 std::process::exit(1);
             }
 
@@ -1433,6 +1438,15 @@ pub async fn process_cli(
                 yes,
             )
             .await;
+        } else if let Some(cli_validate_local_repo) =
+            cli_root.subcommand_matches("validate-local-repo")
+        {
+            let repo_path = cli_validate_local_repo
+                .get_one::<String>("repo-path")
+                .unwrap();
+
+            validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
+                .await;
         }
     }
 

@@ -368,7 +368,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         // Check if all changes in local repo has been commited locally
         if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
             if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt("Your local repo has changes not commited. Do you want to continue?")
+                .with_prompt("Your local repo has uncommitted changes. Do you want to continue?")
                 .interact()
                 .unwrap()
             {
@@ -382,14 +382,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
             }
         }
 
-        // Check site.yml file exists inside repo folder
+        /* // Check site.yml file exists inside repo folder
         if !Path::new(repo.path()).exists() {
             eprintln!(
-                "site.yaml file does not exists in {}",
+                "site.yaml or 'playbook' file does not exists in {}",
                 repo.path().display()
             );
             std::process::exit(1);
-        }
+        } */
 
         // Get repo name
         let repo_ref_origin = repo.find_remote("origin").unwrap();
@@ -405,6 +405,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
         let timestamp = local_last_commit.time().seconds();
         let tm = chrono::NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
+
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
         let layer_summary = vec![

@@ -13,6 +13,7 @@ use serde_json::Value;
 use crate::common::cfs_configuration_utils::print_table_struct;
 
 pub async fn exec(
+    gitea_base_url: &str,
     gitea_token: &str,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -52,9 +53,13 @@ pub async fn exec(
             let mut layer_details_vec: Vec<LayerDetails> = vec![];
 
             for layer in &most_recent_cfs_configuration.layers {
-                let layer_details: LayerDetails =
-                    get_configuration_layer_details(shasta_root_cert, gitea_token, layer.clone())
-                        .await;
+                let layer_details: LayerDetails = get_configuration_layer_details(
+                    shasta_root_cert,
+                    gitea_base_url,
+                    gitea_token,
+                    layer.clone(),
+                )
+                .await;
 
                 layer_details_vec.push(layer_details);
             }
@@ -74,6 +79,7 @@ pub async fn exec(
 
 pub async fn get_configuration_layer_details(
     shasta_root_cert: &[u8],
+    gitea_base_url: &str,
     gitea_token: &str,
     layer: Layer,
 ) -> LayerDetails {
@@ -84,10 +90,14 @@ pub async fn get_configuration_layer_details(
     let mut tag_name: String = "".to_string();
     let mut commit_sha;
 
-    let repo_ref_vec: Vec<Value> =
-        gitea::http_client::get_all_refs(&layer.clone_url, gitea_token, shasta_root_cert)
-            .await
-            .unwrap();
+    let repo_ref_vec: Vec<Value> = gitea::http_client::get_all_refs_from_repo_url(
+        gitea_base_url,
+        gitea_token,
+        &layer.clone_url,
+        shasta_root_cert,
+    )
+    .await
+    .unwrap();
 
     let mut ref_value_vec: Vec<&Value> = repo_ref_vec
         .iter()
@@ -209,7 +219,7 @@ pub async fn get_configuration_layer_details(
     let commit_id_opt = layer.commit.as_ref();
 
     let gitea_commit_details: serde_json::Value = if let Some(commit_id) = commit_id_opt {
-        gitea::http_client::get_commit_details(
+        gitea::http_client::get_commit_details_from_internal_url(
             &layer.clone_url,
             commit_id,
             gitea_token,

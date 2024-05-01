@@ -127,6 +127,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 ),
         )
         .subcommand(subcommand_delete(hsm_group))
+        .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_config())
 }
 
@@ -826,4 +827,11 @@ pub fn subcommand_log(hsm_group_opt: Option<&String>) -> Command {
     }
 
     log
+}
+
+pub fn subcommand_validate_local_repo() -> Command {
+    Command::new("validate-local-repo")
+        .alias("vlr")
+        .about("Check all tags and HEAD information related to a local repo exists in Gitea")
+        .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
