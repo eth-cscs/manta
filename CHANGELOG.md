@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.0] - 2024-05-01
+
+### Bug Fixes
+
+- Command get cfs configuration details failing in fetching details
+
+### Features
+
+- Local repo validation against gitea
+
 ## [1.31.2] - 2024-04-30
 
 ### Features
 
 - Format data in manta get configuration -n
+
+### Miscellaneous Tasks
+
+- Release manta version 1.31.2
 
 ## [1.31.1] - 2024-04-29
 
