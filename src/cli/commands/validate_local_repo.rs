@@ -29,14 +29,6 @@ pub async fn exec(
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
-    // Check if all changes in local repo has been commited locally
-    if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
-        println!("Uncommitted changes found");
-        exit_code = 1;
-    } else {
-        println!("All changes committed");
-    }
-
     // Get repo name
     let repo_ref_origin = repo.find_remote("origin").unwrap();
 
@@ -55,16 +47,24 @@ pub async fn exec(
     let head_commit_id = local_last_commit.id();
     let head_commit_summary = local_last_commit.summary();
 
-    println!("head commit id: {}", head_commit_id);
+    // println!("HEAD commit id: {}", head_commit_id);
     println!(
-        "head commit summary: {}",
+        "HEAD commit summary: {}",
         head_commit_summary.unwrap_or_default()
     );
 
     println!(
-        "head commit time: {}",
+        "HEAD commit time: {}",
         NaiveDateTime::from_timestamp(local_last_commit.time().seconds(), 0)
     );
+
+    // Check if all changes in local repo has been commited locally
+    if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
+        println!("Local changes committed: ❌");
+        exit_code = 1;
+    } else {
+        println!("Local changes committed: ✅");
+    }
 
     let remote_ref_value_vec = mesa::common::gitea::http_client::get_all_refs(
         gitea_base_url,
@@ -81,22 +81,6 @@ pub async fn exec(
         .map(|ref_value| ref_value["ref"].as_str().unwrap())
         .collect();
 
-    // Validate tags
-    let local_tags = repo.tag_names(None).unwrap();
-
-    for local_tag_rslt in &local_tags {
-        let tag = local_tag_rslt.unwrap();
-        if remote_ref_vec
-            .iter()
-            .any(|remote_tag| remote_tag.contains(&tag))
-        {
-            println!("tag {}: ✅", tag);
-        } else {
-            exit_code = 1;
-            println!("tag {}: ❌", tag);
-        }
-    }
-
     // Validate HEAD local branch
     let branches = repo
         .branches(Some(git2::BranchType::Local))
@@ -111,10 +95,10 @@ pub async fn exec(
                 .iter()
                 .any(|remote_ref| remote_ref.contains(branch_name))
             {
-                println!("branch {}: ✅", branch_name);
+                println!("HEAD branch '{}': ✅", branch_name);
             } else {
                 exit_code = 1;
-                println!("branch {}: ❌", branch_name);
+                println!("HEAD branch '{}': ❌", branch_name);
             }
         }
     }
@@ -130,10 +114,26 @@ pub async fn exec(
     .await;
 
     if gitea_commit_details.is_ok() {
-        println!("Commit ID {}: ✅", head_commit_id);
+        println!("HEAD commit id {}: ✅", head_commit_id);
     } else {
-        println!("Commit ID {}: ❌", head_commit_id);
+        println!("HEAD commit id {}: ❌", head_commit_id);
         exit_code = 1;
+    }
+
+    // Validate tags
+    let local_tags = repo.tag_names(None).unwrap();
+
+    for local_tag_rslt in &local_tags {
+        let tag = local_tag_rslt.unwrap();
+        if remote_ref_vec
+            .iter()
+            .any(|remote_tag| remote_tag.contains(&tag))
+        {
+            println!("tag {}: ✅", tag);
+        } else {
+            exit_code = 1;
+            println!("tag {}: ❌", tag);
+        }
     }
 
     println!("Repo synced? {}", exit_code == 0);
