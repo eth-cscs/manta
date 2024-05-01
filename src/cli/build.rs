@@ -386,6 +386,7 @@ pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("images")
         .aliases(["i", "img", "imag", "image"])
         .about("Get image information")
+        .arg(arg!(-i --id <VALUE> "Image ID"))
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
                 .value_parser(value_parser!(u8).range(1..)),

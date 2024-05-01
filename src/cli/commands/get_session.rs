@@ -103,7 +103,7 @@ pub async fn exec(
                     .first()
                     .unwrap()
                     .result_id
-                    .as_deref();
+                    .as_ref();
 
                 let new_image_vec_rslt: Result<Vec<Image>, _> =
                     mesa::ims::image::mesa::http_client::get(
@@ -111,7 +111,7 @@ pub async fn exec(
                         shasta_base_url,
                         shasta_root_cert,
                         // hsm_group_name_vec,
-                        cfs_session_image_id,
+                        cfs_session_image_id.map(|elem| elem.as_str()),
                     )
                     .await;
 

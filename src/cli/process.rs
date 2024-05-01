@@ -650,6 +650,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     &target_hsm_group_vec,
+                    cli_get_images.get_one::<String>("id"),
                     cli_get_images.get_one::<u8>("limit"),
                 )
                 .await;

@@ -9,12 +9,17 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name_vec: &[String],
+    id_opt: Option<&String>,
     limit_number: Option<&u8>,
 ) {
-    let mut image_vec: Vec<Image> =
-        image::mesa::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await
-            .unwrap();
+    let mut image_vec: Vec<Image> = image::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        id_opt.map(|elem| elem.as_str()),
+    )
+    .await
+    .unwrap();
 
     let image_detail_vec: Vec<(Image, String, String)> = image::utils::filter(
         shasta_token,
