@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.1] - 2024-05-01
+
+### Features
+
+- Filter image by id
+- Update mesa version
+
+### Refactor
+
+- Clean output of command validate-local-repo
+
 ## [1.32.0] - 2024-05-01
 
 ### Bug Fixes
@@ -11,6 +22,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Local repo validation against gitea
+
+### Miscellaneous Tasks
+
+- Release manta version 1.32.0
 
 ## [1.31.2] - 2024-04-30
 
