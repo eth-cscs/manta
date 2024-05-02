@@ -315,9 +315,10 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         )
         .await?;
 
-        let hsm_component_status_state = &hsm_component_status_rslt["Components"]
-            .as_array()
-            .unwrap()
+        let hsm_component_status_state = &hsm_component_status_rslt
+            // ["Components"]
+            // .as_array()
+            // .unwrap()
             .first()
             .unwrap()["State"];
 

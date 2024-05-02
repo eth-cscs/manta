@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    io::{self, Write},
     sync::Arc,
     time::Instant,
 };
@@ -28,7 +29,7 @@ pub async fn exec(
     .unwrap()
     .clone();
 
-    log::info!(
+    log::debug!(
         "Get HW artifacts for nodes in HSM group '{:?}' and members {:?}",
         hsm_group_value["label"],
         hsm_group_value["members"]
@@ -47,8 +48,17 @@ pub async fn exec(
     let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher number of concurrent tasks won't
                                            // make it faster
 
+    let num_hsm_group_members = hsm_group_target_members.len();
+    // Calculate number of digits of a number
+    let width = num_hsm_group_members.checked_ilog10().unwrap_or(0) as usize + 1;
+
     // Get HW inventory details for target HSM group
-    for hsm_member in hsm_group_target_members.clone() {
+    for (i, hsm_member) in hsm_group_target_members.iter().enumerate() {
+        print!(
+            "\rGetting hw component for node '{hsm_member}' [{i:>width$}/{num_hsm_group_members}]"
+        );
+        io::stdout().flush().unwrap();
+
         let shasta_token_string = shasta_token.to_string(); // TODO: make it static
         let shasta_base_url_string = shasta_base_url.to_string(); // TODO: make it static
         let shasta_root_cert_vec = shasta_root_cert.to_vec();
@@ -56,10 +66,11 @@ pub async fn exec(
                                                         //
         let permit = Arc::clone(&sem).acquire_owned().await;
 
-        log::info!("Getting HW inventory details for node '{}'", hsm_member);
+        // log::debug!("Getting HW inventory details for node '{}'", hsm_member);
+
         tasks.spawn(async move {
             let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
-            mesa::hsm::hw_inventory::shasta::http_client::get_hw_inventory(
+            mesa::hsm::hw_inventory::shasta::http_client::get(
                 &shasta_token_string,
                 &shasta_base_url_string,
                 &shasta_root_cert_vec,
@@ -70,13 +81,13 @@ pub async fn exec(
         });
     }
 
+    println!();
+
     while let Some(message) = tasks.join_next().await {
-        if let Ok(mut node_hw_inventory) = message {
-            node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap().clone();
-            let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
-            hsm_summary.push(node_summary);
+        if let Ok(node_hw_inventory) = message {
+            hsm_summary.push(node_hw_inventory);
         } else {
-            log::error!("Failed procesing/fetching node hw information");
+            log::error!("Failed fetching node hw information");
         }
     }
 

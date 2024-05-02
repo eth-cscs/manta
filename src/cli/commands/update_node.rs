@@ -4,7 +4,7 @@ use crate::{
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    bss::{self, BootParameters},
+    bss::{self, bootparameters::BootParameters},
     cfs,
     node::utils::validate_xnames,
 };
@@ -59,20 +59,21 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let mut current_node_boot_params: BootParameters = bss::http_client::get_boot_params(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap()
-    .first_mut()
-    .unwrap()
-    .clone();
+    let mut current_node_boot_params: BootParameters =
+        bss::bootparameters::http_client::get_boot_params(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &xnames
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap()
+        .first_mut()
+        .unwrap()
+        .clone();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
@@ -123,7 +124,7 @@ pub async fn exec(
 
             println!("Updating boot image to '{}'", new_boot_image_id);
 
-            let component_patch_rep = mesa::bss::http_client::patch(
+            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,

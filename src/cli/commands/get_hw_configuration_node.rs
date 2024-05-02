@@ -20,7 +20,18 @@ pub async fn exec(
     .await
     .unwrap();
 
-    node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap();
+    // node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap();
+
+    node_hw_inventory = match node_hw_inventory.pointer("/Nodes/0") {
+        Some(node_value) => node_value,
+        None => {
+            eprintln!(
+                "ERROR - json section '/Node' missing in json response API for node '{}'",
+                xname
+            );
+            std::process::exit(1);
+        }
+    };
 
     if let Some(type_artifact) = type_artifact_opt {
         node_hw_inventory = &node_hw_inventory

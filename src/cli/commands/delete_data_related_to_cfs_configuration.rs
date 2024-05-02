@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::bss::BootParameters;
+use mesa::bss::bootparameters::BootParameters;
 use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
 use mesa::{bos, cfs};
 use serde_json::Value;
@@ -56,14 +56,15 @@ pub async fn delete_data_related_cfs_configuration(
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     //
     // Get all BSS boot params
-    let boot_param_vec: Vec<BootParameters> = mesa::bss::http_client::get_boot_params(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &vec![],
-    )
-    .await
-    .unwrap();
+    let boot_param_vec: Vec<BootParameters> =
+        mesa::bss::bootparameters::http_client::get_boot_params(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &vec![],
+        )
+        .await
+        .unwrap();
 
     // Get all CFS configurations in CSM
     let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =

@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::{bss::BootParameters, node::r#struct::NodeDetails};
+use mesa::{bss::bootparameters::BootParameters, node::r#struct::NodeDetails};
 use serde_json::Value;
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
