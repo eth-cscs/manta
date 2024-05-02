@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.2] - 2024-05-02
+
+### Bug Fixes
+
+- Error management improvement
+
+### Features
+
+- Add semaphores when making multiples calls to CSM APIs to throttle
+- Upgrade mesa version
+
 ## [1.32.1] - 2024-05-01
 
 ### Features
 
 - Filter image by id
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.32.1
 
 ### Refactor
 
