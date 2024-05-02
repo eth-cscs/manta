@@ -432,8 +432,8 @@ pub fn subcommand_apply_hw_configuration() -> Command {
             .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
             .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
             .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-            .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
-            .arg(arg!(-d --"delete-hsm-group" "If the target HSM group is empty after this action, remove it."))
+            .arg(arg!(-c --"create-target-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
+            .arg(arg!(-d --"delete-empty-parent-hsm-group" "If the target HSM group is empty after this action, remove it."))
 
                     // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
         )

@@ -721,7 +721,18 @@ pub async fn process_cli(
                         settings_hsm_group_name_opt,
                     )
                     .await;
+                    let nodryrun  = *cli_apply_hw_cluster
+                        .get_one::<bool>("no-dryrun")
+                        .unwrap_or(&true);
 
+                    let create_target_hsm_group  = *cli_apply_hw_cluster
+                        .get_one::<bool>("create-target-hsm-group")
+                        .unwrap_or(&true);
+
+                    let delete_empty_parent_hsm_group  = *cli_apply_hw_cluster
+                        .get_one::<bool>("delete-empty-parent-hsm-group")
+                        .unwrap_or(&true);                    
+                    
                     apply_hw_cluster::exec(
                         shasta_token,
                         shasta_base_url,
@@ -729,6 +740,9 @@ pub async fn process_cli(
                         target_hsm_group_vec.first().unwrap(),
                         parent_hsm_group_vec.first().unwrap(),
                         cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
+                        nodryrun,
+                        create_target_hsm_group,
+                        delete_empty_parent_hsm_group,
                     )
                     .await;
                 }

@@ -183,7 +183,8 @@ pub async fn exec(
                 .and_then(|pattern_value| pattern_value.as_str())
             {
                 log::info!("Processing hw component pattern for '{}' for target HSM group '{}' and parent HSM group '{}'", pattern, target_hsm_group_name, parent_hsm_group_name);
-
+                // When applying a SAT file, I'm assuming the user doesn't want to create new HSM groups or delete empty parent hsm groups
+                // But this could be changed.
                 apply_hw_cluster::exec(
                     shasta_token,
                     shasta_base_url,
@@ -191,6 +192,9 @@ pub async fn exec(
                     target_hsm_group_name,
                     parent_hsm_group_name,
                     pattern,
+                    true,
+                    false,
+                    false,
                 )
                 .await;
             } else if let Some(nodes) = hw_component_pattern
