@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.3] - 2024-05-02
+
+### Bug Fixes
+
+- Update boot only chaning the boot image of one node
+
+### Features
+
+- Refactor template output information
+- Improve user feecback when restarting nodes
+
 ## [1.32.2] - 2024-05-02
 
 ### Bug Fixes
@@ -12,6 +23,10 @@ All notable changes to this project will be documented in this file.
 
 - Add semaphores when making multiples calls to CSM APIs to throttle
 - Upgrade mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.32.2
 
 ## [1.32.1] - 2024-05-01
 
