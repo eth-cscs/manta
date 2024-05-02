@@ -12,7 +12,7 @@ pub async fn exec(
     )
     .await;
 
-    let _ = mesa::capmc::http_client::node_power_reset::post_sync_vec(
+    let _ = mesa::capmc::http_client::node_power_reset::post_sync(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

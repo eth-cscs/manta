@@ -59,7 +59,7 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let mut current_node_boot_params: BootParameters =
+    let mut current_node_boot_params: Vec<BootParameters> =
         bss::bootparameters::http_client::get_boot_params(
             shasta_token,
             shasta_base_url,
@@ -70,10 +70,7 @@ pub async fn exec(
                 .collect::<Vec<String>>(),
         )
         .await
-        .unwrap()
-        .first_mut()
-        .unwrap()
-        .clone();
+        .unwrap();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
@@ -104,7 +101,11 @@ pub async fn exec(
     // Update boot image
     // Check if boot image changes and notify the user and update the node boot params struct
     if let Some(new_boot_image_id) = new_boot_image_id_opt {
-        if new_boot_image_id != current_node_boot_params.get_boot_image() {
+        let boot_params_to_update_vec: Vec<&BootParameters> = current_node_boot_params
+            .iter()
+            .filter(|boot_param| boot_param.get_boot_image() != new_boot_image_id)
+            .collect();
+        if !boot_params_to_update_vec.is_empty() {
             if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(format!(
                 "New boot image detected. This operation will reboot the nodes so they can boot with the new image:\n{:?}\nDo you want to continue?",
@@ -120,26 +121,31 @@ pub async fn exec(
             }
 
             // Update boot image
-            current_node_boot_params.set_boot_image(&new_boot_image_id);
+            for mut boot_parameter in current_node_boot_params {
+                boot_parameter.set_boot_image(&new_boot_image_id);
 
-            println!("Updating boot image to '{}'", new_boot_image_id);
+                println!(
+                    "Updating '{:?}' boot image to '{}'",
+                    boot_parameter.hosts, new_boot_image_id
+                );
 
-            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
-                shasta_base_url,
-                shasta_token,
-                shasta_root_cert,
-                &current_node_boot_params,
-            )
-            .await;
+                let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+                    shasta_base_url,
+                    shasta_token,
+                    shasta_root_cert,
+                    &boot_parameter,
+                )
+                .await;
 
-            log::debug!(
-                "Component boot parameters resp:\n{:#?}",
-                component_patch_rep
-            );
+                log::debug!(
+                    "Component boot parameters resp:\n{:#?}",
+                    component_patch_rep
+                );
+            }
 
             need_restart = true;
         } else {
-            log::info!("Boot image does not change. No need to reboot.");
+            println!("Boot image did not change. No need to reboot.");
         }
     } else {
         log::info!("Boot image not defined. No need to reboot.");

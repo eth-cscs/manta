@@ -7,7 +7,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
 
     table.set_header(vec![
         "Name",
-        "Boot Image ID",
+        "Image ID",
         "Runtime Configuration",
         "Cfs Enabled",
         "Target",
