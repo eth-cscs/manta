@@ -7,11 +7,11 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
 
     table.set_header(vec![
         "Name",
-        "Cfs Configuration",
+        "Boot Image ID",
+        "Runtime Configuration",
         "Cfs Enabled",
         "Target",
         "Compute Etag",
-        "Compute Path",
     ]);
 
     for bos_template in bos_sessiontemplate_vec {
@@ -33,11 +33,17 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
 
             table.add_row(vec![
                 bos_template.name.clone(),
+                boot_set
+                    .1
+                    .path
+                    .unwrap()
+                    .trim_start_matches("s3://boot-images/")
+                    .trim_end_matches("/manifest.json")
+                    .to_string(),
                 bos_template.cfs.clone().unwrap().configuration.unwrap(),
                 bos_template.enable_cfs.unwrap().to_string(),
                 node::utils::string_vec_to_multi_line_string(Some(&target), 2),
                 boot_set.1.etag.unwrap_or("".to_string()),
-                boot_set.1.path.unwrap(),
             ]);
         }
     }
