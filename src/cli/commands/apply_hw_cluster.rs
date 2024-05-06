@@ -306,10 +306,10 @@ pub mod utils {
         // Get parent HSM group members
         // Calculate nomarlized score for each hw component type in as much HSM groups as possible
         // related to the stakeholders using these nodes
-        let combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
-            String,
-            f32,
-        > = calculate_scarcity_scores(&combined_target_parent_hsm_node_hw_component_count_vec)
+        let hw_component_scarcity_scores_hashmap: HashMap<String, f32> =
+            calculate_hw_component_scarcity_scores(
+                &combined_target_parent_hsm_node_hw_component_count_vec,
+            )
             .await;
 
         // *********************************************************************************************************
@@ -317,6 +317,7 @@ pub mod utils {
         // HSM (SUBSTRACT USER INPUT SUMMARY FROM INITIAL COMBINED HSM SUMMARY)
         let mut final_combined_target_parent_hsm_hw_component_summary =
             user_defined_target_hsm_hw_component_count_hashmap.clone();
+
         for (hw_component, qty) in combined_target_parent_hsm_hw_component_summary_hashmap {
             final_combined_target_parent_hsm_hw_component_summary
                 .entry(hw_component)
@@ -331,7 +332,7 @@ pub mod utils {
                     .into_keys()
                     .collect::<Vec<String>>(),
                 &mut combined_target_parent_hsm_node_hw_component_count_vec,
-                &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
+                &hw_component_scarcity_scores_hashmap,
             );
 
         let new_target_hsm_node_hw_component_count_vec =
@@ -358,9 +359,9 @@ pub mod utils {
             HashMap<String, usize>,
         )>, // list
         // of hw component counters in target HSM group
-        hw_component_type_normalized_scores_hashmap: &HashMap<String, f32>, // hw
-                                                                            // component type score for as much hsm groups related to the stakeholders usinjkjjjjkj these
-                                                                            // nodes
+        hw_component_scarcity_scores_hashmap: &HashMap<String, f32>, // hw
+                                                                     // component type score for as much hsm groups related to the stakeholders using these
+                                                                     // nodes
     ) -> Vec<(String, HashMap<String, usize>)> {
         ////////////////////////////////
         // Initialize
@@ -377,7 +378,7 @@ pub mod utils {
                 combination_target_parent_hsm_node_hw_component_count_vec,
                 &combination_target_parent_hsm_hw_component_summary_hashmap,
                 user_defined_hsm_hw_components_count_hashmap,
-                hw_component_type_normalized_scores_hashmap,
+                hw_component_scarcity_scores_hashmap,
             );
 
         let mut nodes_migrated_from_combination_target_parent_hsm: Vec<(
@@ -464,7 +465,7 @@ pub mod utils {
                     combination_target_parent_hsm_node_hw_component_count_vec,
                     &combination_target_parent_hsm_hw_component_summary_hashmap,
                     user_defined_hsm_hw_components_count_hashmap,
-                    hw_component_type_normalized_scores_hashmap,
+                    hw_component_scarcity_scores_hashmap,
                 );
 
             // Get best candidate
@@ -639,7 +640,9 @@ pub mod utils {
         nodes_migrated_from_target_hsm
     } */
 
-    pub async fn calculate_scarcity_scores(
+    /// Calculate a score for each hw component the user has access to. Scaricity scales with value hence
+    /// high value means high scarcity
+    /* pub async fn calculate_hw_component_scarcity_scores(
         hsm_node_hw_component_count: &Vec<(String, HashMap<String, usize>)>,
     ) -> HashMap<String, f32> {
         let total_num_nodes = hsm_node_hw_component_count.len();
@@ -674,8 +677,51 @@ pub mod utils {
         );
 
         hw_component_scarcity_score_hashmap
-    }
+    } */
 
+    pub async fn calculate_hw_component_scarcity_scores(
+        hsm_node_hw_component_count: &Vec<(String, HashMap<String, usize>)>,
+    ) -> HashMap<String, f32> {
+        let total_num_hw_components: usize = hsm_node_hw_component_count
+            .iter()
+            .flat_map(|(_, hw_component_qty_hashmap)| {
+                hw_component_qty_hashmap
+                    .iter()
+                    .map(|(_, hw_component_qty)| hw_component_qty)
+            })
+            .sum();
+
+        let mut hw_component_vec: Vec<&String> = hsm_node_hw_component_count
+            .iter()
+            .flat_map(|(_, hw_component_counter_hashmap)| hw_component_counter_hashmap.keys())
+            .collect();
+
+        hw_component_vec.sort();
+        hw_component_vec.dedup();
+
+        let mut hw_component_scarcity_score_hashmap: HashMap<String, f32> = HashMap::new();
+        for hw_component in hw_component_vec {
+            let mut hsm_hw_component_count = 0;
+
+            for (_, hw_component_counter_hashmap) in hsm_node_hw_component_count {
+                if let Some(hw_component_qty) = hw_component_counter_hashmap.get(hw_component) {
+                    hsm_hw_component_count += hw_component_qty;
+                }
+            }
+
+            hw_component_scarcity_score_hashmap.insert(
+                hw_component.to_string(),
+                (total_num_hw_components as f32) / (hsm_hw_component_count as f32),
+            );
+        }
+
+        log::info!(
+            "Hw component scarcity scores: {:?}",
+            hw_component_scarcity_score_hashmap
+        );
+
+        hw_component_scarcity_score_hashmap
+    }
     /// Calculates a normalized score for each hw component in HSM group based on component
     /// scarcity.
     pub fn calculate_hsm_node_scores_from_final_hsm(
@@ -932,6 +978,27 @@ pub mod utils {
         let mut node_hw_component_pattern_vec = Vec::new();
 
         for actual_hw_component_pattern in processor_and_accelerator_lowercase {
+            // TEST
+            /* let hw_component_pattern_list_vec: Vec<Vec<&str>> = hw_component_pattern_list
+                .iter()
+                .map(|elem| elem.split(' ').collect())
+                .collect();
+            println!(
+                "DEBUG - \nactual_hw_component_pattern: {:?}\nhw_component_pattern_list_vec: {:?}",
+                actual_hw_component_pattern, hw_component_pattern_list_vec
+            );
+            for elem_vec in hw_component_pattern_list_vec {
+                if elem_vec
+                    .iter()
+                    .all(|elem| actual_hw_component_pattern.contains(elem))
+                {
+                    println!("DEBUG - there is a match!");
+                    node_hw_component_pattern_vec.push(elem_vec.join(" "));
+                } else {
+                    node_hw_component_pattern_vec.push(actual_hw_component_pattern.clone());
+                }
+            } */
+            // END TEST
             if let Some(hw_component_pattern) = hw_component_pattern_list
                 .iter()
                 .find(|&hw_component| actual_hw_component_pattern.contains(hw_component))
@@ -1008,7 +1075,7 @@ pub mod utils {
                 } else if node_pattern_hashmap.contains_key(hw_component) {
                     let counter = node_pattern_hashmap.get(hw_component).unwrap();
                     row.push(
-                        comfy_table::Cell::new(format!("⚠️ ({})", counter)) // NOTE: emojis
+                        comfy_table::Cell::new(format!("⚠️  ({})", counter)) // NOTE: emojis
                             // can also be printed using unicode like \u{26A0}
                             .fg(Color::Yellow)
                             .set_alignment(comfy_table::CellAlignment::Center),

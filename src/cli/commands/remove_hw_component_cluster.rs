@@ -6,7 +6,7 @@ use serde_json::Value;
 use tokio::sync::Semaphore;
 
 use crate::cli::commands::apply_hw_cluster::utils::{
-    calculate_hsm_hw_component_summary, calculate_scarcity_scores,
+    calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
     get_hsm_node_hw_component_counter,
 };
 
@@ -168,7 +168,10 @@ pub async fn exec(
     let combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
         String,
         f32,
-    > = calculate_scarcity_scores(&combined_target_parent_hsm_node_hw_component_count_vec).await;
+    > = calculate_hw_component_scarcity_scores(
+        &combined_target_parent_hsm_node_hw_component_count_vec,
+    )
+    .await;
 
     // *********************************************************************************************************
     // CALCULATE FINAL HSM GROUP HW COMPONENT COUNTERS (SUMMARY) AND DELTAS Calculate the hw components the target HSM group should have after applying the deltas

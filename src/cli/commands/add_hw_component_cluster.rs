@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::hsm::{self};
 
 use crate::cli::commands::apply_hw_cluster::utils::{
-    calculate_hsm_hw_component_summary, calculate_scarcity_scores,
+    calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
     get_hsm_node_hw_component_counter,
 };
 
@@ -122,7 +122,7 @@ pub async fn exec(
     // Calculate nomarlized score for each hw component type in as much HSM groups as possible
     // related to the stakeholders using these nodes
     let parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<String, f32> =
-        calculate_scarcity_scores(&parent_hsm_node_hw_component_count_vec).await;
+        calculate_hw_component_scarcity_scores(&parent_hsm_node_hw_component_count_vec).await;
 
     // *********************************************************************************************************
     // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
