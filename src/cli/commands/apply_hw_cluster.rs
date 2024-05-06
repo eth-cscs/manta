@@ -783,36 +783,44 @@ pub mod utils {
     /// Calculates a normalized score for each hw component in HSM group based on component
     /// scarcity.
     pub fn calculate_hsm_node_scores_from_final_hsm(
-        hsm_node_hw_component_count_vec: &Vec<(String, HashMap<String, usize>)>,
-        final_hsm_hw_component_summary_hashmap: &HashMap<String, usize>,
+        parent_hsm_node_hw_component_count_vec: &Vec<(String, HashMap<String, usize>)>,
+        parent_hsm_hw_component_summary_hashmap: &HashMap<String, usize>,
         final_hsm_summary_hashmap: &HashMap<String, usize>,
-        hw_component_type_scores_hashmap: &HashMap<String, f32>,
+        hw_component_scarcity_scores_hashmap: &HashMap<String, f32>,
     ) -> Vec<(String, f32)> {
         let mut node_score_vec: Vec<(String, f32)> = Vec::new();
 
-        for (xname, hw_component_count) in hsm_node_hw_component_count_vec {
+        for (xname, hw_component_count) in parent_hsm_node_hw_component_count_vec {
             let mut node_score: f32 = 0.0;
             for (hw_component, qty) in hw_component_count {
                 if final_hsm_summary_hashmap.get(hw_component).is_none() {
+                    // final/user request does NOT contain hw component
                     // negative - current hw component counter in HSM group is not requested by the user therefor we should
                     // penalize this node
-                    node_score -=
-                        hw_component_type_scores_hashmap.get(hw_component).unwrap() * *qty as f32;
+                    node_score -= hw_component_scarcity_scores_hashmap
+                        .get(hw_component)
+                        .unwrap()
+                        * *qty as f32;
                 } else {
+                    // final/user request does contain hw component
                     if final_hsm_summary_hashmap.get(hw_component).unwrap()
-                        < final_hsm_hw_component_summary_hashmap
+                        < parent_hsm_hw_component_summary_hashmap
                             .get(hw_component)
                             .unwrap()
                     {
-                        // positive - current hw component counter in target HSM group are higher than
+                        // positive - current hw component counter in parent/combined HSM group are higher than
                         // final (user requested) hw component counter therefore we remove this node
-                        node_score += hw_component_type_scores_hashmap.get(hw_component).unwrap()
+                        node_score += hw_component_scarcity_scores_hashmap
+                            .get(hw_component)
+                            .unwrap()
                             * *qty as f32;
                     } else {
-                        // negative - current hw component counter in target HSM group is lower or
+                        // negative - current hw component counter in parent/combined HSM group is lower or
                         // equal than final (user requested) hw component counter therefor we should
                         // penalize this node
-                        node_score -= hw_component_type_scores_hashmap.get(hw_component).unwrap()
+                        node_score -= hw_component_scarcity_scores_hashmap
+                            .get(hw_component)
+                            .unwrap()
                             * *qty as f32;
                     }
                 }
