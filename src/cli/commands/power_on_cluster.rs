@@ -4,7 +4,7 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     hsm_group_name_arg_opt: Option<&String>,
 ) {
-    let xname_vec = mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

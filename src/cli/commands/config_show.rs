@@ -95,16 +95,13 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         realm_access_role_vec.sort();
         realm_access_role_vec
     } else {
-        let mut all_hsm_groups = mesa::hsm::group::shasta::http_client::get_all(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-        )
-        .await
-        .unwrap()
-        .iter()
-        .map(|hsm_value| hsm_value["label"].as_str().unwrap().to_string())
-        .collect::<Vec<String>>();
+        let mut all_hsm_groups =
+            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+                .await
+                .unwrap()
+                .iter()
+                .map(|hsm_value| hsm_value.label.clone())
+                .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
 

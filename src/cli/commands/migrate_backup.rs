@@ -173,7 +173,7 @@ pub async fn exec(
             .unwrap()[0]
             .clone()
             .replace('\"', "");
-        let hsm_group_json = match mesa::hsm::group::shasta::http_client::get(
+        let hsm_group_json = match mesa::hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

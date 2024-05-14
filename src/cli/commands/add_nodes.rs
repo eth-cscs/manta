@@ -14,23 +14,36 @@ pub async fn exec(
         .split(',')
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
-    match mesa::hsm::group::mesa::http_client::get(shasta_token,
-                                                shasta_base_url,
-                                                shasta_root_cert,
-                                                Some(&target_hsm_group_name.to_string())).await {
-        Ok(_) => log::debug!("The HSM group {} exists, good.",target_hsm_group_name),
-        Err(error) => {
+    match mesa::hsm::group::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&target_hsm_group_name.to_string()),
+    )
+    .await
+    {
+        Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
+        Err(_) => {
             if create_hsm_group {
                 log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, &[], "false", "", &[])
-                        .await.expect("Unable to create new HSM group");
+                    mesa::hsm::group::http_client::create_new_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        &[],
+                        "false",
+                        "",
+                        &[],
+                    )
+                    .await
+                    .expect("Unable to create new HSM group");
                 } else {
                     log::error!("Dryrun selected, cannot create the new group continue.");
                     std::process::exit(1);
                 }
-            }
-            else {
+            } else {
                 log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
                 std::process::exit(1);
             }
@@ -52,7 +65,7 @@ pub async fn exec(
 
     // get list of target HSM group members
     let mut target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -73,7 +86,7 @@ pub async fn exec(
 
     // get list of parent HSM group members
     let mut parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -118,9 +131,23 @@ pub async fn exec(
     } else {
         for xname in new_target_hsm_members {
             // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
-            let _ = hsm::group::shasta::http_client::post_member(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, xname).await;
+            let _ = hsm::group::http_client::post_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_name,
+                xname,
+            )
+            .await;
 
-            let _ = hsm::group::shasta::http_client::delete_member(shasta_token, shasta_base_url, shasta_root_cert, parent_hsm_group_name, xname).await;
+            let _ = hsm::group::http_client::delete_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                parent_hsm_group_name,
+                xname,
+            )
+            .await;
         }
     }
 }

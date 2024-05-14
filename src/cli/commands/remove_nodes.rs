@@ -1,4 +1,3 @@
-use mesa::hsm::group::mesa::http_client::delete_hsm_group;
 use mesa::{hsm, node::utils::validate_xnames};
 
 pub async fn exec(
@@ -16,7 +15,7 @@ pub async fn exec(
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
 
-    match mesa::hsm::group::mesa::http_client::get(
+    match mesa::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -25,7 +24,7 @@ pub async fn exec(
     .await
     {
         Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
-        Err(error) => {
+        Err(_) => {
             log::error!(
                 "HSM group {} does not exist, cannot remove xnames from it and cannot continue.",
                 target_hsm_group_name.to_string()
@@ -48,7 +47,7 @@ pub async fn exec(
 
     // get list of target HSM group members
     let mut target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -64,7 +63,7 @@ pub async fn exec(
 
     // get list of parent HSM group members
     let mut parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -107,7 +106,7 @@ pub async fn exec(
         for xname in new_target_hsm_members {
             // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
 
-            let _ = hsm::group::shasta::http_client::delete_member(
+            let _ = hsm::group::http_client::delete_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -116,7 +115,7 @@ pub async fn exec(
             )
             .await;
 
-            let _ = hsm::group::shasta::http_client::post_member(
+            let _ = hsm::group::http_client::post_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -128,7 +127,7 @@ pub async fn exec(
         if target_hsm_group_member_vec.is_empty() {
             if delete_hsm_group {
                 log::info!("HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",target_hsm_group_name);
-                match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
+                match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                 shasta_base_url,
                                                                 shasta_root_cert,
                                                                 &target_hsm_group_name.to_string())

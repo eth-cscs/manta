@@ -1,7 +1,7 @@
 use mesa::hsm;
 use std::collections::HashMap;
 
-use mesa::hsm::group::shasta::utils::update_hsm_group_members;
+use mesa::hsm::group::utils::update_hsm_group_members;
 
 use crate::cli::commands::apply_hw_cluster::utils::{
     calculate_hsm_hw_component_summary, get_hsm_group_members_from_user_pattern,
@@ -70,7 +70,7 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - TARGET HSM
 
-    match mesa::hsm::group::mesa::http_client::get(
+    match mesa::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -83,7 +83,7 @@ pub async fn exec(
             if create_target_hsm_group {
                 log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(
+                    mesa::hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -108,7 +108,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -153,7 +153,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -273,7 +273,7 @@ pub async fn exec(
         if parent_group_will_be_empty {
             if delete_empty_parent_hsm_group {
                 log::info!("Parent HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
-                match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
+                match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
                                                                       shasta_root_cert,
                                                                       &parent_hsm_group_name.to_string())
@@ -998,7 +998,7 @@ pub mod utils {
         user_defined_hw_profile_vec: Vec<String>,
     ) -> (String, Vec<String>, Vec<u64>) {
         let node_hw_inventory_value =
-            mesa::hsm::hw_inventory::shasta::http_client::get_hw_inventory(
+            mesa::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
                 &shasta_token,
                 &shasta_base_url,
                 &shasta_root_cert,
@@ -1039,12 +1039,12 @@ pub mod utils {
         node_hw_inventory_value: &Value,
         hw_component_pattern_list: Vec<String>,
     ) -> (Vec<String>, Vec<u64>) {
-        let processor_vec = mesa::hsm::hw_inventory::shasta::utils::get_list_processor_model_from_hw_inventory_value(
+        let processor_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
 
-        let accelerator_vec = mesa::hsm::hw_inventory::shasta::utils::get_list_accelerator_model_from_hw_inventory_value(
+        let accelerator_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
@@ -1089,7 +1089,7 @@ pub mod utils {
             }
         }
 
-        let memory_vec = mesa::hsm::hw_inventory::shasta::utils::get_list_memory_capacity_from_hw_inventory_value(
+        let memory_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();

@@ -1,6 +1,5 @@
 use comfy_table::{Cell, Table};
 use mesa::{bss::bootparameters::BootParameters, node::r#struct::NodeDetails};
-use serde_json::Value;
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();
@@ -35,7 +34,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
     println!("{table}");
 }
 
-pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<Value>>) -> String {
+pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<String>>) -> String {
     if let Some(nodes_content) = nodes {
         nodes_to_string_format_discrete_columns(nodes, nodes_content.len() + 1)
     } else {
@@ -44,14 +43,14 @@ pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<Value>>) -> String {
 }
 
 pub fn nodes_to_string_format_discrete_columns(
-    nodes: Option<&Vec<Value>>,
+    nodes: Option<&Vec<String>>,
     num_columns: usize,
 ) -> String {
     let mut members: String;
 
     match nodes {
         Some(nodes) if !nodes.is_empty() => {
-            members = nodes[0].as_str().unwrap().to_string(); // take first element
+            members = nodes[0].clone(); // take first element
 
             for (i, _) in nodes.iter().enumerate().skip(1) {
                 // iterate for the rest of the list
@@ -63,7 +62,7 @@ pub fn nodes_to_string_format_discrete_columns(
                     members.push(',');
                 }
 
-                members.push_str(nodes[i].as_str().unwrap());
+                members.push_str(&nodes[i]);
             }
         }
         _ => members = "".to_string(),
@@ -87,4 +86,43 @@ pub fn get_node_vec_booting_image(
     node_booting_image_vec.sort();
 
     node_booting_image_vec
+}
+
+pub async fn get_node_info(
+    shasta_base_url: &str,
+    shasta_token: &str,
+    shasta_root_cert: &[u8],
+    xnames: &[String],
+) {
+    // Get BSS boot parameter
+    //
+    let boot_parameters = mesa::bss::bootparameters::http_client::get_boot_params(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        xnames,
+    )
+    .await
+    .unwrap();
+    // IMS image from BSS boot parameter
+    //
+    let images: Vec<String> = boot_parameters
+        .iter()
+        .map(|boot_parameter| boot_parameter.get_boot_image())
+        .collect();
+    // Get CFS sessions
+    //
+    // Filter CFS sessions for image
+    //
+    // Get CFS configuration related to IMS image
+    //
+    // If no CFS session found --> switch to BOS sessiontemplate
+    // Get BOS sessiontemplates
+    //
+    // Filter BOS sessiontemplate for image
+    //
+    // If no BOS sessiontemplate found --> ERROR
+    //
+    // Get CFS configuration related to IMS image
+    // Return
 }

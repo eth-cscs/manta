@@ -1,13 +1,11 @@
-use std::{any::Any, io::IsTerminal, path::PathBuf};
+use std::{io::IsTerminal, path::PathBuf};
 
-use chrono::NaiveDateTime;
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
 use mesa::common::authentication;
-use substring::Substring;
 
-use crate::{cli::commands::validate_local_repo, common::local_git_repo};
+use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
@@ -331,11 +329,11 @@ pub async fn process_cli(
                 let target_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("target-cluster");
 
-                let nodryrun  = *cli_add_hw_configuration
+                let nodryrun = *cli_add_hw_configuration
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
 
-                let create_hsm_group  = *cli_add_hw_configuration
+                let create_hsm_group = *cli_add_hw_configuration
                     .get_one::<bool>("create-hsm-group")
                     .unwrap_or(&false);
 
@@ -353,14 +351,11 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_add_nodes) = cli_add.subcommand_matches("nodes") {
-                let nodryrun  = *cli_add_nodes
-                    .get_one::<bool>("no-dryrun")
-                    .unwrap_or(&true);
+                let nodryrun = *cli_add_nodes.get_one::<bool>("no-dryrun").unwrap_or(&true);
 
-                let create_hsm_group  = *cli_add_nodes
+                let create_hsm_group = *cli_add_nodes
                     .get_one::<bool>("create-hsm-group")
                     .unwrap_or(&false);
-
 
                 add_nodes::exec(
                     shasta_token,
@@ -370,18 +365,18 @@ pub async fn process_cli(
                     cli_add_nodes.get_one::<String>("parent-cluster").unwrap(),
                     cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
                     nodryrun,
-                    create_hsm_group
+                    create_hsm_group,
                 )
                 .await;
             }
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
             if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
             {
-                let nodryrun  = *cli_remove_hw_configuration
+                let nodryrun = *cli_remove_hw_configuration
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
 
-                let delete_hsm_group  = *cli_remove_hw_configuration
+                let delete_hsm_group = *cli_remove_hw_configuration
                     .get_one::<bool>("delete-hsm-group")
                     .unwrap_or(&false);
 
@@ -402,7 +397,7 @@ pub async fn process_cli(
 
                 let parent_hsm_group_name_arg_opt =
                     cli_remove_hw_configuration.get_one::<String>("parent-cluster");
-                
+
                 let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -426,11 +421,11 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_remove_nodes) = cli_remove.subcommand_matches("nodes") {
-                let nodryrun  = *cli_remove_nodes
+                let nodryrun = *cli_remove_nodes
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
 
-                let delete_hsm_group  = *cli_remove_nodes
+                let delete_hsm_group = *cli_remove_nodes
                     .get_one::<bool>("delete-hsm-group")
                     .unwrap_or(&false);
 
@@ -446,7 +441,7 @@ pub async fn process_cli(
                         .unwrap(),
                     cli_remove_nodes.get_one::<String>("XNAMES").unwrap(),
                     nodryrun,
-                    delete_hsm_group
+                    delete_hsm_group,
                 )
                 .await;
             }
@@ -579,14 +574,13 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let hsm_member_vec =
-                    mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &target_hsm_group_vec,
-                    )
-                    .await;
+                let hsm_member_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &target_hsm_group_vec,
+                )
+                .await;
 
                 let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
                     Some(limit)
@@ -727,18 +721,18 @@ pub async fn process_cli(
                         settings_hsm_group_name_opt,
                     )
                     .await;
-                    let nodryrun  = *cli_apply_hw_cluster
+                    let nodryrun = *cli_apply_hw_cluster
                         .get_one::<bool>("no-dryrun")
                         .unwrap_or(&true);
 
-                    let create_target_hsm_group  = *cli_apply_hw_cluster
+                    let create_target_hsm_group = *cli_apply_hw_cluster
                         .get_one::<bool>("create-target-hsm-group")
                         .unwrap_or(&true);
 
-                    let delete_empty_parent_hsm_group  = *cli_apply_hw_cluster
+                    let delete_empty_parent_hsm_group = *cli_apply_hw_cluster
                         .get_one::<bool>("delete-empty-parent-hsm-group")
-                        .unwrap_or(&true);                    
-                    
+                        .unwrap_or(&true);
+
                     apply_hw_cluster::exec(
                         shasta_token,
                         shasta_base_url,
@@ -1607,14 +1601,13 @@ pub async fn validate_target_hsm_members(
     )
     .await;
 
-    let all_xnames_user_has_access =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &hsm_groups_user_has_access,
-        )
-        .await;
+    let all_xnames_user_has_access = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &hsm_groups_user_has_access,
+    )
+    .await;
 
     // Check user has access to all xnames he is requesting
     if hsm_group_members_opt

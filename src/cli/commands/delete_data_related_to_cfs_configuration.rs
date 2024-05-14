@@ -38,7 +38,7 @@ pub async fn delete_data_related_cfs_configuration(
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //
 
-    // Check dessired configuration not using any CFS configuration to delete
+    // Check CFS configurations to delete not used as a desired configuration
     //
     // Get all CFS components in CSM
     let cfs_components: Vec<Value> =
@@ -87,7 +87,7 @@ pub async fn delete_data_related_cfs_configuration(
     )
     .await;
 
-    // Filter CFS configurations based on user input
+    // Filter CFS configurations based on user input (date range or configuration name)
     if let (Some(since), Some(until)) = (since_opt, until_opt) {
         cfs_configuration_vec.retain(|cfs_configuration| {
             let date = chrono::DateTime::parse_from_rfc3339(&cfs_configuration.last_updated)

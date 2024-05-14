@@ -5,14 +5,13 @@ use mesa::{
     },
     hsm,
 };
-use serde_json::Value;
 
 #[derive(Debug)]
 pub struct ClusterDetails {
     pub hsm_group_label: String,
     pub most_recent_cfs_configuration_name_created: CfsConfigurationResponse,
     pub most_recent_cfs_session_name_created: CfsSessionGetResponse,
-    pub members: Vec<Value>,
+    pub members: Vec<String>,
 }
 
 pub async fn get_details(
@@ -24,7 +23,7 @@ pub async fn get_details(
     let mut clusters_details = vec![];
 
     // Get HSM groups matching cluster name
-    let hsm_groups = hsm::group::shasta::http_client::get_hsm_group_vec(
+    let hsm_groups = hsm::group::http_client::get_hsm_group_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -33,8 +32,8 @@ pub async fn get_details(
     .await
     .unwrap();
 
-    for hsm_group in hsm_groups {
-        let hsm_group_name = hsm_group["label"].as_str().unwrap();
+    for hsm_group in &hsm_groups {
+        let hsm_group_name = &hsm_group.label;
 
         /* let hsm_group_members: String =
         hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(","); */
@@ -92,7 +91,7 @@ pub async fn get_details(
                 hsm_group_label: hsm_group_name.to_string(),
                 most_recent_cfs_configuration_name_created: cfs_configuration.clone(),
                 most_recent_cfs_session_name_created: cfs_session_value,
-                members: hsm_group["members"]["ids"].as_array().unwrap().clone(),
+                members: hsm::group::utils::get_member_vec_from_hsm_group(hsm_group),
             };
 
             clusters_details.push(cluster_details);

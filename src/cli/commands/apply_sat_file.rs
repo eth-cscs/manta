@@ -201,7 +201,7 @@ pub async fn exec(
                 .and_then(|pattern_value| pattern_value.as_str())
             {
                 let hsm_group_members_vec: Vec<String> =
-                    hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+                    hsm::group::utils::get_member_vec_from_hsm_group_name(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -220,7 +220,8 @@ pub async fn exec(
                     target_hsm_group_name,
                 );
 
-                let _ = hsm::group::shasta::utils::update_hsm_group_members(shasta_token,
+                let _ = hsm::group::utils::update_hsm_group_members(
+                    shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_name,
@@ -984,7 +985,7 @@ pub async fn process_session_template_section_in_sat_file(
                 let mut xnames = Vec::new();
                 for hsm in bos_sessiontemplate.get_target_hsm().iter() {
                     xnames.append(
-                        &mut hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+                        &mut hsm::group::utils::get_member_vec_from_hsm_group_name(
                             shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -1098,7 +1099,7 @@ pub async fn wait_bos_session_v2_to_complete_or_force_reboot(
 
     for (_, boot_set) in bos_st.boot_sets.unwrap() {
         if let Some(node_group_vec) = boot_set.node_groups {
-            let mut xname_vec = mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
+            let mut xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

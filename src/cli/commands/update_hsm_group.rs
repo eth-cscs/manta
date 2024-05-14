@@ -15,7 +15,7 @@ pub async fn exec(
 ) {
     // Get nodes members of HSM group
     // Get HSM group details
-    let hsm_group_details_rslt = hsm::group::shasta::http_client::get(
+    let hsm_group_details_rslt = hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -31,12 +31,8 @@ pub async fn exec(
     };
 
     // Get list of xnames in HSM group
-    let nodes: Vec<&str> = hsm_group_details[0]["members"]["ids"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|node| node.as_str().unwrap())
-        .collect();
+    let nodes: Vec<String> =
+        hsm::group::utils::get_member_vec_from_hsm_group(hsm_group_details.first().unwrap());
 
     update_node::exec(
         shasta_token,
@@ -46,7 +42,7 @@ pub async fn exec(
         boot_image_id,
         boot_image_configuration_opt,
         desired_configuration_opt,
-        nodes.clone(),
+        nodes.iter().map(|node| node.as_str()).collect(),
     )
     .await;
 }

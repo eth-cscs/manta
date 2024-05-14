@@ -15,7 +15,7 @@ pub async fn exec(
 ) {
     // Take all nodes for all hsm_groups found and put them in a Vec
     let mut hsm_groups_node_list: Vec<String> =
-        hsm::group::shasta::utils::get_member_vec_from_hsm_name_vec(
+        hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

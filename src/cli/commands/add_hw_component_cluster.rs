@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm::{self};
+use mesa::hsm;
 
 use crate::cli::commands::apply_hw_cluster::utils::{
     calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
@@ -16,27 +16,40 @@ pub async fn exec(
     parent_hsm_group_name: &str,
     pattern: &str,
     nodryrun: bool,
-    create_hsm_group: bool
+    create_hsm_group: bool,
 ) {
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 
-    match mesa::hsm::group::mesa::http_client::get(shasta_token,
-                                                   shasta_base_url,
-                                                   shasta_root_cert,
-                                                   Some(&target_hsm_group_name.to_string())).await {
-        Ok(_) => log::debug!("The HSM group {} exists, good.",target_hsm_group_name),
+    match mesa::hsm::group::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&target_hsm_group_name.to_string()),
+    )
+    .await
+    {
+        Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
         Err(_) => {
             if create_hsm_group {
                 log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, &[], "false", "", &[])
-                        .await.expect("Unable to create new HSM group");
+                    mesa::hsm::group::http_client::create_new_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        &[],
+                        "false",
+                        "",
+                        &[],
+                    )
+                    .await
+                    .expect("Unable to create new HSM group");
                 } else {
                     log::error!("Dryrun selected, cannot create the new group and continue.");
                     std::process::exit(1);
                 }
-            }
-            else {
+            } else {
                 log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
                 std::process::exit(1);
             }
@@ -90,7 +103,7 @@ pub async fn exec(
 
     // Get parent HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -175,7 +188,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let mut target_hsm_node_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -265,9 +278,23 @@ pub async fn exec(
         log::info!("Dryrun enabled, not modifying the HSM groups on the system.")
     } else {
         for xname in nodes_moved_from_parent_hsm {
-            let _ = hsm::group::shasta::http_client::delete_member(shasta_token, shasta_base_url, shasta_root_cert, parent_hsm_group_name, &xname).await;
+            let _ = hsm::group::http_client::delete_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                parent_hsm_group_name,
+                &xname,
+            )
+            .await;
 
-            let _ = hsm::group::shasta::http_client::post_member(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, &xname).await;
+            let _ = hsm::group::http_client::post_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_name,
+                &xname,
+            )
+            .await;
         }
     }
     let target_hsm_group_value = serde_json::json!({

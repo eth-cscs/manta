@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
@@ -92,12 +92,7 @@ pub async fn exec(
         // Take all nodes for all hsm_groups found and put them in a Vec
         hsm_groups_node_list = hsm_group_list
             .iter()
-            .flat_map(|hsm_group| {
-                hsm_group
-                    .members
-                    .iter()
-                    .map(|xname| xname.as_str().unwrap())
-            })
+            .flat_map(|hsm_group| hsm_group.members.iter().map(|xname| xname.as_str()))
             .collect();
 
         if !ansible_limit_nodes.is_empty() {
@@ -307,7 +302,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         )
         .await?;
 
-        let hsm_component_status_rslt = mesa::hsm::component_status::shasta::http_client::get(
+        let hsm_component_status_rslt = mesa::hsm::component_status::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

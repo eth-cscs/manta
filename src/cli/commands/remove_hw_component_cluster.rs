@@ -20,7 +20,7 @@ pub async fn exec(
     nodryrun: bool,
     delete_hsm_group: bool,
 ) {
-    match mesa::hsm::group::mesa::http_client::get(
+    match mesa::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -29,7 +29,7 @@ pub async fn exec(
     .await
     {
         Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
-        Err(error) => {
+        Err(_) => {
             log::error!(
                 "HSM group {} does not exist, cannot remove hw from it and cannot continue.",
                 target_hsm_group_name.to_string()
@@ -86,7 +86,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -111,7 +111,7 @@ pub async fn exec(
         );
         if nodryrun && delete_hsm_group {
             log::info!("The option to delete empty groups has been selected, removing it.");
-            match hsm::group::mesa::http_client::delete_hsm_group(
+            match hsm::group::http_client::delete_hsm_group(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -158,7 +158,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
+        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -322,7 +322,7 @@ pub async fn exec(
         for xname in nodes_moved_from_target_hsm {
             // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
 
-            let _ = hsm::group::shasta::http_client::delete_member(
+            let _ = hsm::group::http_client::delete_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -331,7 +331,7 @@ pub async fn exec(
             )
             .await;
 
-            let _ = hsm::group::shasta::http_client::post_member(
+            let _ = hsm::group::http_client::post_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -343,7 +343,7 @@ pub async fn exec(
         if target_group_will_be_empty {
             if delete_hsm_group {
                 log::info!("HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",target_hsm_group_name);
-                match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
+                match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
                                                                       shasta_root_cert,
                                                                       &target_hsm_group_name.to_string())
@@ -784,14 +784,15 @@ pub async fn get_node_hw_component_count(
     hsm_member: &str,
     user_defined_hw_profile_vec: Vec<String>,
 ) -> (String, Vec<String>, Vec<u64>) {
-    let node_hw_inventory_value = mesa::hsm::hw_inventory::shasta::http_client::get_hw_inventory(
-        &shasta_token,
-        &shasta_base_url,
-        &shasta_root_cert,
-        hsm_member,
-    )
-    .await
-    .unwrap();
+    let node_hw_inventory_value =
+        mesa::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+            &shasta_token,
+            &shasta_base_url,
+            &shasta_root_cert,
+            hsm_member,
+        )
+        .await
+        .unwrap();
 
     let node_hw_profile = get_node_hw_properties_from_value(
         &node_hw_inventory_value,
@@ -983,13 +984,13 @@ pub fn get_node_hw_properties_from_value(
     hw_component_pattern_list: Vec<String>,
 ) -> (Vec<String>, Vec<u64>) {
     let processor_vec =
-        mesa::hsm::hw_inventory::shasta::utils::get_list_processor_model_from_hw_inventory_value(
+        mesa::hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
 
     let accelerator_vec =
-        mesa::hsm::hw_inventory::shasta::utils::get_list_accelerator_model_from_hw_inventory_value(
+        mesa::hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
@@ -1018,7 +1019,7 @@ pub fn get_node_hw_properties_from_value(
     }
 
     let memory_vec =
-        mesa::hsm::hw_inventory::shasta::utils::get_list_memory_capacity_from_hw_inventory_value(
+        mesa::hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
