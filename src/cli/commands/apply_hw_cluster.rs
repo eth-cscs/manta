@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-use k8s_openapi::url::form_urlencoded::Target;
 use mesa::hsm;
+use std::collections::HashMap;
 
 use mesa::hsm::group::shasta::utils::update_hsm_group_members;
 
@@ -18,7 +17,7 @@ pub async fn exec(
     pattern: &str,
     nodryrun: bool,
     create_target_hsm_group: bool,
-    delete_empty_parent_hsm_group: bool
+    delete_empty_parent_hsm_group: bool,
 ) {
     // *********************************************************************************************************
     // PREPREQUISITES - FORMAT USER INPUT
@@ -71,30 +70,42 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - TARGET HSM
 
-    match mesa::hsm::group::mesa::http_client::get(shasta_token,
-                                                   shasta_base_url,
-                                                   shasta_root_cert,
-                                                   Some(&target_hsm_group_name.to_string())).await {
-        Ok(_) => log::debug!("Target HSM group {} exists, good.",target_hsm_group_name),
+    match mesa::hsm::group::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&target_hsm_group_name.to_string()),
+    )
+    .await
+    {
+        Ok(_) => log::debug!("Target HSM group {} exists, good.", target_hsm_group_name),
         Err(_) => {
             if create_target_hsm_group {
                 log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, &[], "false", "", &[])
-                        .await.expect("Unable to create new target HSM group");
+                    mesa::hsm::group::mesa::http_client::create_new_hsm_group(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_name,
+                        &[],
+                        "false",
+                        "",
+                        &[],
+                    )
+                    .await
+                    .expect("Unable to create new target HSM group");
                 } else {
                     log::error!("Dryrun selected, cannot create the new group and continue.");
                     std::process::exit(1);
                 }
-            }
-            else {
+            } else {
                 log::error!("Target HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
                 std::process::exit(1);
             }
         }
     };
-    
-    
+
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =
         mesa::hsm::group::shasta::utils::get_member_vec_from_hsm_group_name(
@@ -233,9 +244,10 @@ pub async fn exec(
             target_hsm_group_name,
             &target_hsm_group_member_vec,
             &target_hsm_node_vec,
-        ).await;
+        )
+        .await;
     }
-    
+
     // *********************************************************************************************************
     // UPDATE PARENT GROUP IN CSM
     log::info!(
@@ -247,7 +259,8 @@ pub async fn exec(
     } else {
         // The parent group might be out of resources after applying this, so it's safe to check
         // if there are still nodes there and, delete it after moving out the resources.
-        let parent_group_will_be_empty = &target_hsm_group_member_vec.len() == &parent_hsm_group_member_vec.len();
+        let parent_group_will_be_empty =
+            &target_hsm_group_member_vec.len() == &parent_hsm_group_member_vec.len();
         let _ = update_hsm_group_members(
             shasta_token,
             shasta_base_url,
@@ -255,14 +268,15 @@ pub async fn exec(
             parent_hsm_group_name,
             &parent_hsm_group_member_vec,
             &parent_hsm_node_vec,
-        ).await;
+        )
+        .await;
         if parent_group_will_be_empty {
             if delete_empty_parent_hsm_group {
                 log::info!("Parent HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
                 match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
                                                                       shasta_root_cert,
-                                                                      parent_hsm_group_name.to_string().as_mut_string())
+                                                                      &parent_hsm_group_name.to_string())
                     .await {
                     Ok(_) => log::info!("HSM group removed successfully."),
                     Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)

@@ -59,7 +59,7 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let mut current_node_boot_params: Vec<BootParameters> =
+    let current_node_boot_params: Vec<BootParameters> =
         bss::bootparameters::http_client::get_boot_params(
             shasta_token,
             shasta_base_url,

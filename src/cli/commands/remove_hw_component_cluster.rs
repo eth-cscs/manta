@@ -1,7 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use k8s_openapi::url::form_urlencoded::Target;
 use mesa::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
@@ -21,14 +20,20 @@ pub async fn exec(
     nodryrun: bool,
     delete_hsm_group: bool,
 ) {
-
-    match mesa::hsm::group::mesa::http_client::get(shasta_token,
-                                                   shasta_base_url,
-                                                   shasta_root_cert,
-                                                   Some(&target_hsm_group_name.to_string())).await {
-        Ok(_) => log::debug!("The HSM group {} exists, good.",target_hsm_group_name),
+    match mesa::hsm::group::mesa::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        Some(&target_hsm_group_name.to_string()),
+    )
+    .await
+    {
+        Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
         Err(error) => {
-            log::error!("HSM group {} does not exist, cannot remove hw from it and cannot continue.", target_hsm_group_name.to_string());
+            log::error!(
+                "HSM group {} does not exist, cannot remove hw from it and cannot continue.",
+                target_hsm_group_name.to_string()
+            );
             std::process::exit(1);
         }
     }
@@ -100,23 +105,32 @@ pub async fn exec(
     )
     .await;
     if target_hsm_node_hw_component_count_vec.is_empty() {
-        log::info!("The target HSM group {} is already empty, cannot remove hardware from it.", target_hsm_group_name);
+        log::info!(
+            "The target HSM group {} is already empty, cannot remove hardware from it.",
+            target_hsm_group_name
+        );
         if nodryrun && delete_hsm_group {
             log::info!("The option to delete empty groups has been selected, removing it.");
-            match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
-                                                                  shasta_base_url,
-                                                                  shasta_root_cert,
-                                                                  target_hsm_group_name.to_string().as_mut_string())
-                .await {
+            match hsm::group::mesa::http_client::delete_hsm_group(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &target_hsm_group_name.to_string(),
+            )
+            .await
+            {
                 Ok(_) => {
                     log::info!("HSM group removed successfully, we are done with this action.");
-                    return
-                },
-                Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
+                    return;
+                }
+                Err(e2) => log::debug!(
+                    "Error removing the HSM group. This always fails, ignore please. Reported: {}",
+                    e2
+                ),
             };
         } else {
             log::info!("The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action.");
-            return
+            return;
         }
     }
     // sort nodes hw counters by node name
@@ -303,13 +317,28 @@ pub async fn exec(
     if !nodryrun {
         log::info!("Dry run enabled, not modifying the HSM groups on the system.")
     } else {
-        let target_group_will_be_empty = &target_hsm_group_member_vec.len() == &nodes_moved_from_target_hsm.len();
+        let target_group_will_be_empty =
+            &target_hsm_group_member_vec.len() == &nodes_moved_from_target_hsm.len();
         for xname in nodes_moved_from_target_hsm {
             // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
 
-            let _ = hsm::group::shasta::http_client::delete_member(shasta_token, shasta_base_url, shasta_root_cert, target_hsm_group_name, xname.as_str()).await;
+            let _ = hsm::group::shasta::http_client::delete_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_name,
+                xname.as_str(),
+            )
+            .await;
 
-            let _ = hsm::group::shasta::http_client::post_member(shasta_token, shasta_base_url,shasta_root_cert, parent_hsm_group_name, xname.as_str()).await;
+            let _ = hsm::group::shasta::http_client::post_member(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                parent_hsm_group_name,
+                xname.as_str(),
+            )
+            .await;
         }
         if target_group_will_be_empty {
             if delete_hsm_group {
@@ -317,7 +346,7 @@ pub async fn exec(
                 match hsm::group::mesa::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
                                                                       shasta_root_cert,
-                                                                      target_hsm_group_name.to_string().as_mut_string())
+                                                                      &target_hsm_group_name.to_string())
                     .await {
                     Ok(_) => log::info!("HSM group removed successfully."),
                     Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
