@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.4] - 2024-05-20
+
+### Bug Fixes
+
+- Improve the way hw component scarcity scores is calculated
+- Print log messages
+
+### Features
+
+- Update hsm group members
+- Update mesa version
+- Update mesa version
+
+### Refactor
+
+- Change var names
+
 ## [1.32.3] - 2024-05-02
 
 ### Bug Fixes
@@ -12,6 +29,10 @@ All notable changes to this project will be documented in this file.
 
 - Refactor template output information
 - Improve user feecback when restarting nodes
+
+### Miscellaneous Tasks
+
+- Release manta version 1.32.3
 
 ## [1.32.2] - 2024-05-02
 
@@ -731,6 +752,28 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
+- Github actions publishing mac m1
+- Github actions publishing mac m1
+- Github actions publishing mac m1
+- Github actions publishing mac m1
+- Github actions publishing mac m1
+- Github actions publishing mac m1
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
+- Add macos build to releases
 - Add releases for other OS
 - Add releases for other OS
 - Remove windows as a target
@@ -741,231 +784,33 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 1.20.7
+- Release manta version 1.20.8
+- Release manta version 1.20.9
+- Release manta version 1.20.10
+- Release manta version 1.20.11
+- Release manta version 1.20.12
+- Release manta version 1.20.13
+- Release manta version 1.20.14
+- Release manta version 1.20.15
+- Release manta version 1.20.16
+- Release manta version 1.20.17
+- Release manta version 1.20.18
+- Release manta version 1.20.19
+- Release manta version 1.20.20
+- Release manta version 1.20.21
+- Release manta version 1.20.22
+- Release manta version 1.20.23
+- Release manta version 1.20.24
+- Release manta version 1.20.25
+- Release manta version 1.20.26
+- Release manta version 1.20.27
+- Release manta version 1.20.28
 - Release manta version 1.20.29
 - Release manta version 1.20.30
 - Release manta version 1.20.31
 - Release manta version 1.20.32
 - Release manta version 1.20.33
-
-## [1.20.28] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.28
-
-## [1.20.27] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.27
-
-## [1.20.26] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.26
-
-## [1.20.25] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.25
-
-## [1.20.24] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.24
-
-## [1.20.23] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.23
-
-## [1.20.22] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.22
-
-## [1.20.21] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.21
-
-## [1.20.20] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.20
-
-## [1.20.19] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.19
-
-## [1.20.18] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.18
-
-## [1.20.17] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.17
-
-## [1.20.16] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.16
-
-## [1.20.15] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.15
-
-## [1.20.14] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.14
-
-## [1.20.13] - 2024-01-26
-
-### Bug Fixes
-
-- Add macos build to releases
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.13
-
-## [1.20.12] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.12
-
-## [1.20.11] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.11
-
-## [1.20.10] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.10
-
-## [1.20.9] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.9
-
-## [1.20.8] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.8
-
-## [1.20.7] - 2024-01-26
-
-### Bug Fixes
-
-- Github actions publishing mac m1
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.7
 
 ## [1.20.6] - 2024-01-26
 
@@ -1012,6 +857,7 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
+- Add migrate subcommand
 - Merge migration functionality
 
 ### Co-authored-by
@@ -1020,21 +866,12 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 1.20.1
 - Release manta version 1.20.2
 
 ### Refactor
 
 - Apply clippy suggestions
-
-## [1.20.1] - 2024-01-23
-
-### Bug Fixes
-
-- Add migrate subcommand
-
-### Miscellaneous Tasks
-
-- Release manta version 1.20.1
 
 ## [1.20.0] - 2024-01-22
 
