@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.32.4] - 2024-05-20
+## [1.32.5] - 2024-05-20
 
 ### Bug Fixes
 
@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - Update hsm group members
 - Update mesa version
 - Update mesa version
+- Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.32.4
 
 ### Refactor
 
