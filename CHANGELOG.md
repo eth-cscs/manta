@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] - 2024-05-21
+
+### Features
+
+- Get configuration with details now shows CFS configuration derivatives (CFS sessions, BOS sessiontemplate and IMS images related to a CFS configuration)
+
 ## [1.32.5] - 2024-05-20
 
 ### Bug Fixes
@@ -19,6 +25,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta version 1.32.4
+- Release manta version 1.32.5
 
 ### Refactor
 
