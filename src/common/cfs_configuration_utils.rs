@@ -1,7 +1,14 @@
 use comfy_table::Table;
-use mesa::cfs::configuration::mesa::r#struct::{
-    cfs_configuration::ConfigurationDetails,
-    cfs_configuration_response::v2::CfsConfigurationResponse,
+use mesa::{
+    bos::template::mesa::r#struct::v1::BosSessionTemplate,
+    cfs::{
+        configuration::mesa::r#struct::{
+            cfs_configuration::ConfigurationDetails,
+            cfs_configuration_response::v2::CfsConfigurationResponse,
+        },
+        session::mesa::r#struct::v2::CfsSessionGetResponse,
+    },
+    ims::image::r#struct::Image,
 };
 
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
@@ -46,10 +53,20 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     println!("{table}");
 }
 
-pub fn print_table_details_struct(cfs_configuration: ConfigurationDetails) {
+pub fn print_table_details_struct(
+    cfs_configuration: ConfigurationDetails,
+    cfs_session_vec_opt: Option<Vec<CfsSessionGetResponse>>,
+    bos_sessiontemplate_vec_opt: Option<Vec<BosSessionTemplate>>,
+    image_vec_opt: Option<Vec<Image>>,
+) {
     let mut table = Table::new();
 
-    table.set_header(vec!["Configuration Name", "Last updated", "Layers"]);
+    table.set_header(vec![
+        "Configuration Name",
+        "Last updated",
+        "Layers",
+        "Derivatives",
+    ]);
 
     let mut layers: String = String::new();
 
@@ -72,41 +89,36 @@ pub fn print_table_details_struct(cfs_configuration: ConfigurationDetails) {
         );
     }
 
-    layers = layers.trim_start_matches("\n\n").to_string();
+    let mut derivatives: String = String::new();
 
-    /* if !cfs_configuration.config_layers.is_empty() {
-        layers = format!(
-            "Name: {}\nCommit date: {}\nAuthor: {}\nBranch: {} Most recent?: {}\nTag: {}\nCommit ID: {}",
-            cfs_configuration.config_layers[0].name,
-            cfs_configuration.config_layers[0].commit_date,
-            cfs_configuration.config_layers[0].author,
-            cfs_configuration.config_layers[0]
-                .branch
-                .as_ref()
-                .unwrap_or(&"Not deinfed".to_string()),
-            cfs_configuration.config_layers[0].most_recent_commit.as_ref().unwrap_or(&"Not defined".to_string()).to_string(),
-            cfs_configuration.config_layers[0].tag.as_ref().unwrap_or(&"Not defined".to_string()),
-            cfs_configuration.config_layers[0].commit_id,
-        );
-
-        for i in 1..cfs_configuration.config_layers.len() {
-            let layer = &cfs_configuration.config_layers[i];
-            layers = format!(
-                "{}\n\nName: {}\nCommit date: {}\nAuthor: {}\nBranch: {}\nCommit ID: {}",
-                layers,
-                layer.name,
-                layer.commit_date,
-                layer.author,
-                layer.branch.as_ref().unwrap_or(&"Not defined".to_string()),
-                layer.commit_id,
-            );
+    if let Some(cfs_session_vec) = cfs_session_vec_opt {
+        derivatives = derivatives + "CFS sessions:";
+        for cfs_session in cfs_session_vec {
+            derivatives = derivatives + "\n - " + &cfs_session.name.unwrap();
         }
-    } */
+    }
+
+    if let Some(bos_sessiontemplate_vec) = bos_sessiontemplate_vec_opt {
+        derivatives = derivatives + "\n\nBOS sessiontemplates:";
+        for bos_sessiontemplate in bos_sessiontemplate_vec {
+            derivatives = derivatives + "\n - " + &bos_sessiontemplate.name;
+        }
+    }
+
+    if let Some(image_vec) = image_vec_opt {
+        derivatives = derivatives + "\n\nIMS images:";
+        for image in image_vec {
+            derivatives = derivatives + "\n - " + &image.name;
+        }
+    }
+
+    layers = layers.trim_start_matches("\n\n").to_string();
 
     table.add_row(vec![
         cfs_configuration.name,
         cfs_configuration.last_updated,
         layers,
+        derivatives,
     ]);
 
     println!("{table}");

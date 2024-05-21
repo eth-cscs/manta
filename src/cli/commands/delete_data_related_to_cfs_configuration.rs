@@ -236,6 +236,7 @@ pub async fn delete_data_related_cfs_configuration(
         cfs::session::mesa::utils::get_image_id_from_cfs_session_vec(&cfs_session_vec);
 
     // Get image ids from BOS session template related to CFS configuration to delete
+    // NOTE: This assumes runtime configuration and boot image configuration are the same
     let image_id_from_bos_sessiontemplate_vec =
         bos::template::shasta::utils::get_image_id_from_bos_sessiontemplate_vec(
             &bos_sessiontemplate_value_vec,

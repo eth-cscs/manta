@@ -64,12 +64,24 @@ pub async fn exec(
                 layer_details_vec.push(layer_details);
             }
 
+            let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
+                mesa::cfs::configuration::mesa::utils::get_derivatives(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &most_recent_cfs_configuration.name,
+                )
+                .await;
+
             crate::common::cfs_configuration_utils::print_table_details_struct(
                 ConfigurationDetails::new(
                     &most_recent_cfs_configuration.name,
                     &most_recent_cfs_configuration.last_updated,
                     layer_details_vec,
                 ),
+                cfs_session_vec_opt,
+                bos_sessiontemplate_vec_opt,
+                image_vec_opt,
             );
         } else {
             print_table_struct(&cfs_configuration_vec);
