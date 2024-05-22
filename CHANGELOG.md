@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.0] - 2024-05-22
+
+### Features
+
+- Update mesa library
+- Filter CFS configurations by name through glob pattern matching
+
 ## [1.33.0] - 2024-05-21
 
 ### Features
 
 - Get configuration with details now shows CFS configuration derivatives (CFS sessions, BOS sessiontemplate and IMS images related to a CFS configuration)
+
+### Miscellaneous Tasks
+
+- Release manta version 1.33.0
 
 ## [1.32.5] - 2024-05-20
 
