@@ -257,6 +257,7 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
         .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <CONFIGURATION_NAME> "configuration name"))
+        .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
         .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")

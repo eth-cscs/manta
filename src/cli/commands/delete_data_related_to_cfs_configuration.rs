@@ -82,6 +82,7 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_base_url,
         shasta_root_cert,
         &mut cfs_configuration_vec,
+        None,
         &vec![hsm_group_name_opt.unwrap().to_string()],
         None,
     )

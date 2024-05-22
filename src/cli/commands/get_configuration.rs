@@ -19,6 +19,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     configuration_name: Option<&String>,
+    configuration_name_pattern: Option<&String>,
     hsm_group_name_vec: &Vec<String>,
     limit: Option<&u8>,
     output_opt: Option<&String>,
@@ -29,6 +30,7 @@ pub async fn exec(
             shasta_base_url,
             shasta_root_cert,
             configuration_name.map(|elem| elem.as_str()),
+            configuration_name_pattern.map(|elem| elem.as_str()),
             hsm_group_name_vec,
             limit,
         )
