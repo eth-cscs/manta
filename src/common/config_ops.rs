@@ -20,15 +20,22 @@ pub fn get_configuration() -> Config {
     let mut config_path = get_configuration_file_path();
     config_path.push("config.toml"); // ~/.config/manta/config is the file
 
-    ::config::Config::builder()
+    let config_rslt = ::config::Config::builder()
         .add_source(::config::File::from(config_path))
         .add_source(
             ::config::Environment::with_prefix("MANTA")
                 .try_parsing(true)
                 .prefix_separator("_"),
         )
-        .build()
-        .unwrap()
+        .build();
+
+    match config_rslt {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("Error processing config.toml file. Reason:\n{}", error);
+            std::process::exit(1);
+        }
+    }
 }
 
 pub fn get_csm_root_cert_content(site: &str) -> Vec<u8> {
