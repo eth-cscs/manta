@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.0] - 2024-05-23
+
+### Features
+
+- New command 'get cluster <cluster name> --output summary'
+
 ## [1.34.0] - 2024-05-22
 
 ### Features
 
 - Update mesa library
 - Filter CFS configurations by name through glob pattern matching
+
+### Miscellaneous Tasks
+
+- Release manta version 1.34.0
 
 ## [1.33.0] - 2024-05-21
 
