@@ -98,7 +98,7 @@ installers = ["shell", "homebrew"]
 dist = true
 # Publish jobs to run in CI
 pr-run-mode = "plan"
-
+# Publish jobs to run in CI
 publish-jobs = ["homebrew"]
 
 # Config for `cargo release`
