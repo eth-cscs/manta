@@ -43,7 +43,7 @@ futures = "0.3.28"
 # futures-util = "0.3.24"
 clap = { version = "4.3.21", features = ["derive", "cargo", "wrap_help"] }
 clap_complete = "4.3.2"
-git2 = { version = "0.18.1", features = ["vendored-openssl"] }
+git2 = { version = "0.18.1", features = ["vendored-openssl"] }              # Keep vendored-openssl feature, otherwise CI/CD pipeline will fail building apple images
 # git2 = { version = "0.18.1" }
 dialoguer = "0.11.0"
 substring = "1.4.5"
