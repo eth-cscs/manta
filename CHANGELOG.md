@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.2] - 2024-05-28
+
+### Bug Fixes
+
+- Update rust toolchain and cargo-dist in CI pipeline
+
 ## [1.35.1] - 2024-05-28
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.35.1
 
 ### Refactor
 
