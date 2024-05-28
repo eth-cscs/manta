@@ -122,6 +122,7 @@ pub async fn exec(
         // included = ansible_limit_nodes
         xname_list = ansible_limit_nodes;
     }
+
     // * End Process/validate hsm group value (and ansible limit)
 
     // Remove duplicates in xname_list
@@ -441,7 +442,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = CfsConfigurationRequest::create_from_repos(
+    let cfs_configuration = crate::common::cfs_configuration_utils::create_from_repos(
         gitea_token,
         gitea_base_url,
         shasta_root_cert,

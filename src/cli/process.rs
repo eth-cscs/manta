@@ -800,7 +800,8 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
-                let hsm_group_name_arg_opt = cli_apply_session.try_get_one("hsm-group");
+                let hsm_group_name_arg_opt: Option<&String> =
+                    cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
 
                 let hsm_group_members_opt = cli_apply_session.get_one::<String>("ansible-limit");
 
@@ -808,7 +809,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_arg_opt.unwrap_or(None),
+                    hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
                 .await;
@@ -839,7 +840,7 @@ pub async fn process_cli(
                     shasta_root_cert,
                     k8s_api_url,
                     cli_apply_session.get_one::<String>("name").cloned(),
-                    Some(target_hsm_group_vec.first().unwrap()),
+                    hsm_group_name_arg_opt,
                     cli_apply_session
                         .get_many("repo-path")
                         .unwrap()
