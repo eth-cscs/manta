@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.5] - 2024-05-28
+
+### Bug Fixes
+
+- Update rust toolchain and cargo-dist in CI pipeline
+
 ## [1.35.4] - 2024-05-28
 
 ### Bug Fixes
 
 - Update rust toolchain and cargo-dist in CI pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.35.4
 
 ## [1.35.3] - 2024-05-28
 
