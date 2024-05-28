@@ -85,9 +85,9 @@ lto = "thin"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.8.1"
+cargo-dist-version = "0.14.1"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.75.0"
+rust-toolchain-version = "1.78.0"
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
 # CI backends to support
