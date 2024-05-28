@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.7] - 2024-05-28
+
+### Bug Fixes
+
+- Try to fix ci/cd pipeline building openssl-sys
+
 ## [1.35.6] - 2024-05-28
 
 ### Bug Fixes
 
 - Init cargo dist
+
+### Miscellaneous Tasks
+
+- Release manta version 1.35.6
 
 ## [1.35.5] - 2024-05-28
 
