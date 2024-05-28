@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.1] - 2024-05-28
+
+### Bug Fixes
+
+- Bug in apply session processing the wrong HSM group
+
+### Features
+
+- Update mesa version
+
+### Refactor
+
+- Clean code
+- Clean crates
+
 ## [1.35.0] - 2024-05-23
 
 ### Features
 
 - New command 'get cluster <cluster name> --output summary'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.35.0
 
 ## [1.34.0] - 2024-05-22
 
