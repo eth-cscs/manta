@@ -1235,9 +1235,6 @@ pub async fn process_cli(
                     )
                     .await;
 
-                    println!("DEBUG - 000");
-                    std::process::exit(0);
-
                     update_hsm_group::exec(
                         shasta_token,
                         shasta_base_url,
