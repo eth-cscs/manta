@@ -54,6 +54,8 @@ pub async fn exec(
     gitea_token: &str,
     // tag: &str,
     do_not_reboot: bool,
+    prehook: Option<&String>,
+    posthook: Option<&String>,
 ) {
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
@@ -70,6 +72,18 @@ pub async fn exec(
         .with_prompt("Please check the template above and confirm to proceed")
         .interact()
         .unwrap();
+
+    println!();
+    if prehook.is_some() {
+        println!("Running the pre-hook {}", &prehook.unwrap());
+        match crate::common::hooks::run_hook(prehook).await {
+            Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                std::process::exit(2);
+            }
+        };
+    }
 
     if process_sat_file {
         println!("Proceed and process SAT file");
@@ -308,6 +322,17 @@ pub async fn exec(
         do_not_reboot,
     )
     .await;
+
+    if posthook.is_some() {
+        println!("Running the post-hook {}", &posthook.unwrap());
+        match crate::common::hooks::run_hook(posthook).await {
+            Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                std::process::exit(2);
+            }
+        };
+    }
 }
 
 pub async fn validate_sat_file_session_template_section(

@@ -1,4 +1,3 @@
-use crate::cli::commands::migrate_backup::run_hook;
 use chrono::Local;
 use dialoguer::Confirm;
 use humansize::DECIMAL;
@@ -85,7 +84,7 @@ pub async fn exec(
         hsm_file.unwrap()
     );
     if prehook.is_some() {
-        match crate::cli::commands::migrate_backup::check_hook_perms(prehook).await {
+        match crate::common::hooks::check_hook_perms(prehook).await {
             Ok(_) => log::debug!("Pre-hook script exists and is executable."),
             Err(e) => {
                 log::error!("{}. File: {}", e, &prehook.unwrap());
@@ -94,7 +93,7 @@ pub async fn exec(
         };
     }
     if posthook.is_some() {
-        match crate::cli::commands::migrate_backup::check_hook_perms(posthook).await {
+        match crate::common::hooks::check_hook_perms(posthook).await {
             Ok(_) => log::debug!("Post-hook script exists and is executable."),
             Err(e) => {
                 log::error!("{}. File: {}", e, &posthook.unwrap());
@@ -178,7 +177,7 @@ pub async fn exec(
     println!();
     if prehook.is_some() {
         println!("Running the pre-hook {}", &prehook.unwrap());
-        match run_hook(prehook).await {
+        match crate::common::hooks::run_hook(prehook).await {
             Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
             Err(_error) => {
                 log::error!("{}", _error);
@@ -259,7 +258,7 @@ pub async fn exec(
     .await;
     if posthook.is_some() {
         println!("Running the post-hook {}", &posthook.unwrap());
-        match run_hook(posthook).await {
+        match crate::common::hooks::run_hook(posthook).await {
             Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
             Err(_error) => {
                 log::error!("{}", _error);
