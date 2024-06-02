@@ -2,12 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.0] - 2024-06-02
+
+### Bug Fixes
+
+- Cli help
+
+### Co-authored-by
+
+- Manuel Sopena Ballesteros <manuel.sopena@cscs.ch>
+
+### Features
+
+- Apply sat command now support pre and port hooks
+
 ## [1.35.8] - 2024-05-29
 
 ### Bug Fixes
 
 - Enable openssl-vendores feature got git2 crate to avoid breaking apple images during CI/CD pipeline
 - Update boot parameters
+
+### Miscellaneous Tasks
+
+- Release manta version 1.35.8
 
 ## [1.35.7] - 2024-05-28
 
