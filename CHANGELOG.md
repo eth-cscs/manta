@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.1] - 2024-06-02
+
+### Bug Fixes
+
+- Use new mesa library to fix issue getting commit id details form gitea
+
 ## [1.36.0] - 2024-06-02
 
 ### Bug Fixes
@@ -15,6 +21,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Apply sat command now support pre and port hooks
+
+### Miscellaneous Tasks
+
+- Release manta version 1.36.0
 
 ## [1.35.8] - 2024-05-29
 
