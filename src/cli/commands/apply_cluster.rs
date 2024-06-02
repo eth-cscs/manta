@@ -37,6 +37,8 @@ pub async fn exec(
         ansible_passthrough_opt,
         gitea_token,
         do_not_reboot,
+        None,
+        None,
     )
     .await;
 }

@@ -3,11 +3,7 @@ use std::path::PathBuf;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    cfs::{
-        self,
-        configuration::mesa::r#struct::cfs_configuration_request::v2::CfsConfigurationRequest,
-        session::mesa::r#struct::v2::CfsSessionPostRequest,
-    },
+    cfs::{self, session::mesa::r#struct::v2::CfsSessionPostRequest},
     common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
     node::utils::validate_xnames,

@@ -1,7 +1,4 @@
-use execute::{shell, Execute};
 use humansize::DECIMAL;
-use is_executable::IsExecutable;
-use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::process::exit;
@@ -9,47 +6,6 @@ use std::process::exit;
 use crate::cli::commands::migrate_restore;
 use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
-/// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
-/// returns Ok(exit_code) or Err() with the description of the error
-pub async fn run_hook(hook: Option<&String>) -> Result<i32, Box<dyn Error>> {
-    let mut command = shell(&hook.unwrap());
-    // command.stdout(Stdio::piped());
-    let output = command.execute_output().unwrap();
-    // println!("{}", String::from_utf8(output.stdout).unwrap());
-    if let Some(exit_code) = output.status.code() {
-        if exit_code != 0 {
-            Err("The hook failed with return code {}")?;
-            eprintln!(
-                "Error: the hook failed with return code={}. I will not continue.",
-                exit_code
-            );
-        } else {
-            return Ok(exit_code);
-        }
-    } else {
-        Err("Error: the hook was interrupted, will not continue.")?;
-    }
-    println!("Done with the hook.");
-    Ok(0)
-}
-
-/// Checks that the hook exists and is executable
-/// returns Ok if all good, an error message otherwise
-pub async fn check_hook_perms(hook: Option<&String>) -> Result<(), Box<dyn Error>> {
-    if hook.is_some() {
-        let hookpath = Path::new(hook.unwrap());
-        if !&hookpath.exists() {
-            Err("Error: the hook file does not exist.")?;
-        } else if !&hookpath.is_executable() {
-            Err("Error: the hook file is not executable does not exist.")?;
-        } else {
-            return Ok(());
-        }
-    } else {
-        Err("Hook is empty")?;
-    }
-    Ok(())
-}
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -67,7 +23,7 @@ pub async fn exec(
         &posthook.unwrap_or(&"none".to_string()),
     );
     if prehook.is_some() {
-        match check_hook_perms(prehook).await {
+        match crate::common::hooks::check_hook_perms(prehook).await {
             Ok(_r) => log::debug!("Pre-hook script exists and is executable."),
             Err(e) => {
                 log::error!("{}. File: {}", e, &prehook.unwrap());
@@ -75,7 +31,7 @@ pub async fn exec(
             }
         };
         println!("Running the pre-hook {}", &prehook.unwrap());
-        match run_hook(prehook).await {
+        match crate::common::hooks::run_hook(prehook).await {
             Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
             Err(_error) => {
                 log::error!("{}", _error);
@@ -84,7 +40,7 @@ pub async fn exec(
         };
     }
     if posthook.is_some() {
-        match check_hook_perms(posthook).await {
+        match crate::common::hooks::check_hook_perms(posthook).await {
             Ok(_) => log::debug!("Post-hook script exists and is executable."),
             Err(e) => {
                 log::error!("{}. File: {}", e, &posthook.unwrap());
@@ -317,7 +273,7 @@ pub async fn exec(
                         }
                         if posthook.is_some() {
                             println!("Running the post-hook {}", &posthook.unwrap());
-                            match run_hook(posthook).await {
+                            match crate::common::hooks::run_hook(posthook).await {
                                 Ok(_code) => {
                                     log::debug!("Post-hook script completed ok. RT={}", _code)
                                 }

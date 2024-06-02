@@ -1016,6 +1016,9 @@ pub async fn process_cli(
                 )
                 .expect("ERROR: reading SAT file template. Exit");
 
+                let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
+                let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
+
                 apply_sat_file::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1039,6 +1042,8 @@ pub async fn process_cli(
                     *cli_apply_sat_file
                         .get_one::<bool>("do-not-reboot")
                         .unwrap_or(&false),
+                    prehook,
+                    posthook,
                 )
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

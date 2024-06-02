@@ -54,7 +54,37 @@ pub async fn exec(
     gitea_token: &str,
     // tag: &str,
     do_not_reboot: bool,
+    prehook: Option<&String>,
+    posthook: Option<&String>,
 ) {
+    // Validate Pre-hook
+    if prehook.is_some() {
+        match crate::common::hooks::check_hook_perms(prehook).await {
+            Ok(_r) => println!(
+                "Pre-hook script '{}' exists and is executable.",
+                prehook.unwrap()
+            ),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &prehook.unwrap());
+                std::process::exit(2);
+            }
+        };
+    }
+
+    // Validate Post-hook
+    if posthook.is_some() {
+        match crate::common::hooks::check_hook_perms(posthook).await {
+            Ok(_) => println!(
+                "Post-hook script '{}' exists and is executable.",
+                posthook.unwrap()
+            ),
+            Err(e) => {
+                log::error!("{}. File: {}", e, &posthook.unwrap());
+                std::process::exit(2);
+            }
+        };
+    }
+
     let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
@@ -70,6 +100,20 @@ pub async fn exec(
         .with_prompt("Please check the template above and confirm to proceed")
         .interact()
         .unwrap();
+
+    println!();
+
+    // Run/process Pre-hook
+    if prehook.is_some() {
+        println!("Running the pre-hook '{}'", &prehook.unwrap());
+        match crate::common::hooks::run_hook(prehook).await {
+            Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                std::process::exit(2);
+            }
+        };
+    }
 
     if process_sat_file {
         println!("Proceed and process SAT file");
@@ -100,6 +144,7 @@ pub async fn exec(
     )
     .await;
 
+    // Get k8s credentials needed to check HPE/Cray product catalog in k8s
     let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
@@ -308,6 +353,18 @@ pub async fn exec(
         do_not_reboot,
     )
     .await;
+
+    // Run/process Post-hook
+    if posthook.is_some() {
+        println!("Running the post-hook '{}'", &posthook.unwrap());
+        match crate::common::hooks::run_hook(posthook).await {
+            Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
+            Err(_error) => {
+                log::error!("{}", _error);
+                std::process::exit(2);
+            }
+        };
+    }
 }
 
 pub async fn validate_sat_file_session_template_section(
@@ -451,6 +508,34 @@ pub async fn validate_sat_file_session_template_section(
                 );
                 std::process::exit(1);
             }
+        } else if let Some(image_id) = session_template_yaml
+            .get("image")
+            .and_then(|image| image.get("ims").and_then(|ims| ims.get("id")))
+        {
+            // Validate image id (session_template.image.ims.id). Search in SAT file and CSM
+            log::info!(
+                "Searching image id '{}' related to session template '{}' in CSM",
+                image_id.as_str().unwrap(),
+                session_template_yaml["name"].as_str().unwrap()
+            );
+
+            let image_found = mesa::ims::image::shasta::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                image_id.as_str(),
+            )
+            .await
+            .is_ok();
+
+            if !image_found {
+                eprintln!(
+                    "Could not find image id '{}' in session_template '{}'. Exit",
+                    image_id.as_str().unwrap(),
+                    session_template_yaml["name"].as_str().unwrap()
+                );
+                std::process::exit(1);
+            }
         } else if let Some(image_name_substr_to_find) = session_template_yaml.get("image") {
             // Backward compatibility
             // VaVjlidate image name (session_template.image.ims.name). Search in SAT file and CSM
@@ -481,7 +566,7 @@ pub async fn validate_sat_file_session_template_section(
             }
         } else {
             eprintln!(
-                "Session template '{}' neither have 'image.ref_name' nor 'image.ims.name' values. Exit",
+                "Session template '{}' must have one of these entries 'image.ref_name', 'image.ims.name' or 'image.ims.id' values. Exit",
                 session_template_yaml["name"].as_str().unwrap(),
             );
             std::process::exit(1);
