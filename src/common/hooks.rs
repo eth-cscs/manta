@@ -31,7 +31,8 @@ pub async fn run_hook(hook: Option<&String>) -> Result<i32, Box<dyn Error>> {
 /// returns Ok if all good, an error message otherwise
 pub async fn check_hook_perms(hook: Option<&String>) -> Result<(), Box<dyn Error>> {
     if hook.is_some() {
-        let hookpath = Path::new(hook.unwrap());
+        let program_name = hook.unwrap().split(" ").nth(0).unwrap();
+        let hookpath = Path::new(program_name);
         if !&hookpath.exists() {
             Err("Error: the hook file does not exist.")?;
         } else if !&hookpath.is_executable() {
