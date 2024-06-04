@@ -237,18 +237,20 @@ pub async fn delete_data_related_cfs_configuration(
         cfs_configuration_name_vec.contains(&cfs_configuration_value.name)
     });
 
-    // Get image ids from CFS sessions and BOS sessiontemplate related to CFS configuration to delete
+    // Get image ids from CFS sessions related to CFS configuration to delete
     let image_id_from_cfs_session_vec =
         cfs::session::mesa::utils::get_image_id_from_cfs_session_vec(&cfs_session_vec);
 
-    // Get image ids from BOS session template related to CFS configuration to delete
+    /* // Get image ids from BOS session template related to CFS configuration to delete
     // NOTE: This assumes runtime configuration and boot image configuration are the same
+    // NOTE: DON'T DELETE IMAGES FROM BOS SESSIONTEMPLATE BASED ON CONFGURATION NAME SINCE BOOT
+    // IMAGE MAY HABE BEEN CREATED USING A DIFFERENT CONFIGURATION
     let image_id_from_bos_sessiontemplate_vec =
         bos::template::shasta::utils::get_image_id_from_bos_sessiontemplate_vec(
             &bos_sessiontemplate_value_vec,
-        );
+        ); */
 
-    // Combine image ids from CFS session and BOS session template
+    /* // Combine image ids from CFS session and BOS session template
     let mut image_id_vec: Vec<&str> = [
         image_id_from_cfs_session_vec
             .iter()
@@ -259,7 +261,11 @@ pub async fn delete_data_related_cfs_configuration(
             .map(|elem| elem.as_str())
             .collect::<Vec<&str>>(),
     ]
-    .concat();
+    .concat(); */
+    let mut image_id_vec = image_id_from_cfs_session_vec
+        .iter()
+        .map(|elem| elem.as_str())
+        .collect::<Vec<&str>>();
 
     image_id_vec.sort();
     image_id_vec.dedup();

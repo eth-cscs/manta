@@ -498,7 +498,7 @@ pub async fn process_cli(
                     )
                     .await;
                 }
-            } else if let Some(cli_get_configuration) = cli_get.subcommand_matches("configuration")
+            } else if let Some(cli_get_configuration) = cli_get.subcommand_matches("configurations")
             {
                 let hsm_group_name_arg_rslt = cli_get_configuration.try_get_one("hsm-group");
 
@@ -531,7 +531,7 @@ pub async fn process_cli(
                     cli_get_configuration.get_one("output"),
                 )
                 .await;
-            } else if let Some(cli_get_session) = cli_get.subcommand_matches("session") {
+            } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -563,7 +563,7 @@ pub async fn process_cli(
                     cli_get_session.get_one("output"),
                 )
                 .await;
-            } else if let Some(cli_get_template) = cli_get.subcommand_matches("template") {
+            } else if let Some(cli_get_template) = cli_get.subcommand_matches("templates") {
                 let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
