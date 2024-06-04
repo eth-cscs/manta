@@ -39,7 +39,11 @@ Manta aggregates information from multiple sources:
 
 ## Configuration
 
-Manta needs a configuration file in `${HOME}/.config/manta/config.toml` like shown below
+Manta follows the [XDG base directory specification](https://github.com/adrg/xdg/blob/master/README.md#xdg-base-directory). 
+Manta configuration file can be found under one of the following locations:
+
+> Linux: $HOME/.config/manta/config.toml
+> MacOS: ~/Library/Application Support/manta/config.toml
 
 ```bash
 log = "info"

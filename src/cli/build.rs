@@ -212,6 +212,7 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
                 .arg_required_else_help(true)
                 .about("Deletes CFS configurations, CFS sessions, BOS sessiontemplates, BOS sessions and images related to CFS configuration/s.")
                 .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and IMS images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
+                .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
                 .arg(arg!(-y --"yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted"))
@@ -253,8 +254,8 @@ pub fn subcommand_get_hw_components() -> Command {
 }
 
 pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_configuration = Command::new("configuration")
-        .aliases(["c", "cfg", "conf", "config", "cnfgrtn"])
+    let mut get_cfs_configuration = Command::new("configurations")
+        .aliases(["c", "cfg", "conf", "config", "cnfgrtn", "configuration"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <CONFIGURATION_NAME> "configuration name"))
         .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
@@ -281,8 +282,8 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_session = Command::new("session")
-        .aliases(["s", "se", "ses", "sess", "sssn"])
+    let mut get_cfs_session = Command::new("sessions")
+        .aliases(["s", "se", "ses", "sess", "sssn", "session"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <SESSION_NAME> "Return only sessions with the given session name"))
         .arg(arg!(-a --"min-age" <MIN_AGE> "Return only sessions older than the given age. Age is given in the format '1d' or '6h'"))
@@ -311,8 +312,8 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
-    let mut get_bos_template = Command::new("template")
-        .aliases(["t", "tplt", "templ", "tmplt"])
+    let mut get_bos_template = Command::new("templates")
+        .aliases(["t", "tplt", "templ", "tmplt", "template"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <TEMPLATE_NAME> "template name"))
         .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))

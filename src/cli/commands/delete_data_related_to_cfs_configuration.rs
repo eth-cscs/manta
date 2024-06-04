@@ -22,7 +22,8 @@ pub async fn delete_data_related_cfs_configuration(
     shasta_root_cert: &[u8],
     hsm_group_name_opt: Option<&String>,
     hsm_name_available_vec: Vec<String>,
-    cfs_configuration_name_opt: Option<&String>,
+    configuration_name_opt: Option<&String>,
+    configuration_name_pattern: Option<&String>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
     yes: &bool,
@@ -77,12 +78,14 @@ pub async fn delete_data_related_cfs_configuration(
         .await
         .unwrap();
 
+    // Filter CFS configurations related to HSM group, configuration name or configuration name
+    // pattern
     cfs::configuration::mesa::utils::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         &mut cfs_configuration_vec,
-        None,
+        configuration_name_pattern.map(|elem| elem.as_str()),
         &vec![hsm_group_name_opt.unwrap().to_string()],
         None,
     )
@@ -97,7 +100,7 @@ pub async fn delete_data_related_cfs_configuration(
 
             since <= date && date < until
         });
-    } else if let Some(cfs_configuration_name) = cfs_configuration_name_opt {
+    } else if let Some(cfs_configuration_name) = configuration_name_opt {
         cfs_configuration_vec.retain(|cfs_configuration| {
             cfs_configuration
                 .name
@@ -125,6 +128,7 @@ pub async fn delete_data_related_cfs_configuration(
     .await
     .unwrap();
 
+    // Filter BOS sessiontemplate related to a HSM group
     mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_value_vec,
         &hsm_name_available_vec,
@@ -183,6 +187,7 @@ pub async fn delete_data_related_cfs_configuration(
     .await
     .unwrap();
 
+    // Filter CFS sessions related to a HSM group
     mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
@@ -478,10 +483,10 @@ pub async fn delete_data_related_cfs_configuration(
         && bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec.is_empty()
     {
         print!("Nothing to delete.");
-        if cfs_configuration_name_opt.is_some() {
+        if configuration_name_opt.is_some() {
             print!(
                 " Could not find information related to CFS configuration '{}'",
-                cfs_configuration_name_opt.unwrap()
+                configuration_name_opt.unwrap()
             );
         }
         if since_opt.is_some() && until_opt.is_some() {

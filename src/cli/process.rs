@@ -1473,6 +1473,8 @@ pub async fn process_cli(
 
             let cfs_configuration_name_opt = cli_delete.get_one::<String>("configuration-name");
 
+            let cfs_configuration_name_pattern = cli_delete.get_one::<String>("pattern");
+
             let yes = cli_delete.get_one::<bool>("yes").unwrap_or(&false);
 
             let hsm_group_name_opt = if settings_hsm_group_name_opt.is_some() {
@@ -1495,6 +1497,7 @@ pub async fn process_cli(
                 hsm_group_name_opt,
                 target_hsm_group_vec,
                 cfs_configuration_name_opt,
+                cfs_configuration_name_pattern,
                 since_opt,
                 until_opt,
                 yes,
