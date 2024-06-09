@@ -122,8 +122,10 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    // let sat_file_yaml: Value = serde_yaml::from_str(&file_content).unwrap();
-
+    // GET DATA
+    //
+    // Get data from SAT YAML file
+    //
     // Get hardware pattern from SAT YAML file
     let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
 
@@ -137,6 +139,8 @@ pub async fn exec(
     let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
 
     // Get Cray/HPE product catalog
+    //
+    // Get k8s secrets
     let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
         vault_base_url,
         vault_secret_path,
@@ -148,10 +152,16 @@ pub async fn exec(
     let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
         .await
         .unwrap();
+
+    // Get HPE product catalog from k8s
     let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
         .await
         .unwrap();
 
+    // TODO: multiple API calls to CSM sequentially
+    //
+    // Get data from CSM
+    //
     // Get configurations from CSM
     let configuration_vec = cfs::configuration::mesa::http_client::get(
         shasta_token,
@@ -178,6 +188,7 @@ pub async fn exec(
             .unwrap();
 
     // VALIDATION
+    //
     // Validate 'configurations' section
     validate_sat_file_configurations_section(
         configuration_yaml_vec_opt,
@@ -213,8 +224,9 @@ pub async fn exec(
     )
     .await;
 
+    // PROCESS SAT FILE
+    //
     // Process "hardware" section in SAT file
-
     log::info!("hardware pattern: {:?}", hardware_yaml_value_vec_opt);
 
     if let Some(hw_component_pattern_vec) = hardware_yaml_value_vec_opt {
@@ -316,7 +328,7 @@ pub async fn exec(
     }
 
     // Process "images" section in SAT file
-
+    //
     // List of image.ref_name already processed
     let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
 
@@ -340,7 +352,7 @@ pub async fn exec(
     );
 
     // Process "session_templates" section in SAT file
-
+    //
     process_session_template_section_in_sat_file(
         shasta_token,
         shasta_base_url,

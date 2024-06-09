@@ -983,12 +983,25 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                /* let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     None,
                     settings_hsm_group_name_opt,
+                )
+                .await; */
+
+                // IMPORTANT: FOR SAT FILE, THERE IS NO POINT TO CONSIDER LOCKED HSM GROUP NAME IN
+                // CONFIG FILE SINCE SAT FILES MAY USE MULTIPLE HSM GROUPS. THEREFORE HSM GROUP
+                // VALIDATION CAN'T BE DONE AGAINST CONFIG FILE OR CLI HSM GROUP ARGUMENT AGAINST
+                // HSM GROUPS AVAILABLE ACCORDING TO KEYCLOAK ROLES BUT HSM GROUPS IN SAT FILE VS
+                // KEYCLOAK ROLES. BECAUASE OF THIS, THERE IS NO VALUE IN CALLING
+                // 'get_target_hsm_group_vec_or_all' FUNCTION
+                let target_hsm_group_vec = config_show::get_hsm_name_available_from_jwt_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
                 )
                 .await;
 
