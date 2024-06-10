@@ -1058,27 +1058,6 @@ pub mod utils {
         let mut node_hw_component_pattern_vec = Vec::new();
 
         for actual_hw_component_pattern in processor_and_accelerator_lowercase {
-            // TEST
-            /* let hw_component_pattern_list_vec: Vec<Vec<&str>> = hw_component_pattern_list
-                .iter()
-                .map(|elem| elem.split(' ').collect())
-                .collect();
-            println!(
-                "DEBUG - \nactual_hw_component_pattern: {:?}\nhw_component_pattern_list_vec: {:?}",
-                actual_hw_component_pattern, hw_component_pattern_list_vec
-            );
-            for elem_vec in hw_component_pattern_list_vec {
-                if elem_vec
-                    .iter()
-                    .all(|elem| actual_hw_component_pattern.contains(elem))
-                {
-                    println!("DEBUG - there is a match!");
-                    node_hw_component_pattern_vec.push(elem_vec.join(" "));
-                } else {
-                    node_hw_component_pattern_vec.push(actual_hw_component_pattern.clone());
-                }
-            } */
-            // END TEST
             if let Some(hw_component_pattern) = hw_component_pattern_list
                 .iter()
                 .find(|&hw_component| actual_hw_component_pattern.contains(hw_component))
@@ -1102,12 +1081,6 @@ pub mod utils {
         hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
         hsm_score_vec: &[(String, f32)],
     ) {
-        /* println!("DEBUG - hsm_hw_pattern_vec:\n{:?}", hsm_hw_pattern_vec);
-        println!(
-            "DEBUG - hsm_density_score_hashmap:\n{:?}",
-            hsm_density_score_hashmap
-        ); */
-
         let hsm_hw_component_vec: Vec<String> = hsm_hw_pattern_vec
             .iter()
             .flat_map(|(_xname, node_pattern_hashmap)| node_pattern_hashmap.keys().cloned())
@@ -1118,8 +1091,6 @@ pub mod utils {
 
         all_hw_component_vec.sort();
         all_hw_component_vec.dedup();
-
-        // println!("DEBUG - all_hw_component_vec : {:?}", all_hw_component_vec);
 
         let mut table = comfy_table::Table::new();
 

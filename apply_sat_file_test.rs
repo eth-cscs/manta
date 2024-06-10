@@ -271,14 +271,6 @@ mod tests {
 
         let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
-        /* let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(sat_file_content).unwrap();
-        let mut values_file_yaml: serde_yaml::Mapping =
-            serde_yaml::from_str(values_file_content).unwrap();
-        println!("DEBUG - mapping:\n{:#?}", values_file_yaml);
-        for map in values_file_yaml.iter() {
-            println!("DEBUG - map: {:#?}", map);
-        } */
-
         render_jinja2_sat_file_yaml(
             &sat_file_content.to_string(),
             Some(&values_file_content.to_string()),

@@ -995,21 +995,6 @@ pub fn validate_sat_file_images_section(
     ims_recipe_vec: Vec<RecipeGetResponse>,
 ) -> Result<(), Error> {
     // Validate 'images' section in SAT file
-    /* log::info!("Validate 'images' section in SAT file");
-    for image_yaml in image_yaml_vec_opt.unwrap_or(&Vec::new()) {
-        let sat_image_rslt = if let Ok(image) = serde_yaml::from_value::<sat_file_image::SatFileImage>(image_yaml.clone()) {
-            image
-        }
-        if sat_image_rslt.is_err() {
-            let sat
-        }
-        println!(
-            "DEBUG - SAT image struct from SAT file:\n{:#?}",
-            sat_image_rslt
-        );
-    }
-
-    std::process::exit(0); */
 
     for image_yaml in image_yaml_vec {
         // Validate image
