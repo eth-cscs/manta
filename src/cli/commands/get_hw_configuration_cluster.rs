@@ -55,7 +55,7 @@ pub async fn exec(
     // Get HW inventory details for target HSM group
     for (i, hsm_member) in hsm_group_target_members.iter().enumerate() {
         print!(
-            "\rGetting hw component for node '{hsm_member}' [{i:>width$}/{num_hsm_group_members}]"
+            "\rGetting hw components for node '{hsm_member}' [{i:>width$}/{num_hsm_group_members}]"
         );
         io::stdout().flush().unwrap();
 

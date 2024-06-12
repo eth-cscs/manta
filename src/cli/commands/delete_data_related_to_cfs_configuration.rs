@@ -58,7 +58,7 @@ pub async fn delete_data_related_cfs_configuration(
     //
     // Get all BSS boot params
     let boot_param_vec: Vec<BootParameters> =
-        mesa::bss::bootparameters::http_client::get_boot_params(
+        mesa::bss::bootparameters::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

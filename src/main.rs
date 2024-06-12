@@ -30,18 +30,30 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .get("shasta_base_url")
         .unwrap()
         .to_string();
-    let vault_base_url = site_detail_value.get("vault_base_url").unwrap().to_string();
-    let vault_role_id = site_detail_value.get("vault_role_id").unwrap().to_string();
+    let vault_base_url = site_detail_value
+        .get("vault_base_url")
+        .expect("vault_base_url value missing in configuration file")
+        .to_string();
+    let vault_role_id = site_detail_value
+        .get("vault_role_id")
+        .expect("vault_role_id value missing in configuration file")
+        .to_string();
     let vault_secret_path = site_detail_value
         .get("vault_secret_path")
         .unwrap()
         .to_string();
-    let gitea_base_url = site_detail_value.get("gitea_base_url").unwrap().to_string();
+    let gitea_base_url = site_detail_value
+        .get("gitea_base_url")
+        .expect("gitea_base_url value missing in configuration file")
+        .to_string();
     let keycloak_base_url = site_detail_value
         .get("keycloak_base_url")
-        .unwrap()
+        .expect("keycloak_base_url value missing in configuration file")
         .to_string();
-    let k8s_api_url = site_detail_value.get("k8s_api_url").unwrap().to_string();
+    let k8s_api_url = site_detail_value
+        .get("k8s_api_url")
+        .expect("k8s_api_url value missing in configuration file")
+        .to_string();
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
 
@@ -54,7 +66,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
 
-    let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&site_name);
+    let root_ca_cert_file = site_detail_value
+        .get("root_ca_cert_file")
+        .expect("k8s_root_cert_file value missing in configuration file")
+        .to_string();
+
+    let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
 
     let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,

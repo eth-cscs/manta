@@ -1190,7 +1190,8 @@ pub mod utils {
 
         let mut tasks = tokio::task::JoinSet::new();
 
-        let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher number of concurrent tasks won't
+        let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher
+                                               // number of concurrent tasks won't make it faster
 
         // Calculate HSM group hw component counters
         // List of node hw component counters belonging to target hsm group
@@ -1208,6 +1209,7 @@ pub mod utils {
             // println!("user_defined_hw_profile_vec_aux: {:?}", user_defined_hw_profile_vec_aux);
             tasks.spawn(async move {
                 let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
+
                 get_node_hw_component_count(
                     shasta_token_string,
                     shasta_base_url_string,

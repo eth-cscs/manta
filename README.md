@@ -62,6 +62,7 @@ k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+root_ca_cert_file = "alps_root_cert.pem"
 ```
 
 Manta can log user's operations in `/var/log/manta/` (Linux) or `${PWD}` (MacOS), please make sure this folder exists and the current user has `rwx` access to it
@@ -87,6 +88,7 @@ chmod 777 -R /var/log/manta
 | sites.site_name.vault_role_id       | yes         | config file                   | role id related to Hashicorp Vault base URL approle authentication                                                                                                   | b15517de-cabb-06ba-af98-633d216c6d99  |
 | sites.site_name.vault_secret_path   | yes         | config file                   | path in vault to find secrets                                                                                                                                        | shasta | prealps                      |
 | sites.site_name.shasta_base_url     | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
+| root_ca_cert_file                   | yes         | config file                   | file name with the CSM root CA. This certificate is used to trust the CSM server                                                                                     | alpsm_root_cert.pem                   |
 
 ### A note on certificates
 

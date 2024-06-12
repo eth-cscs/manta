@@ -59,18 +59,17 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let current_node_boot_params: Vec<BootParameters> =
-        bss::bootparameters::http_client::get_boot_params(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &xnames
-                .iter()
-                .map(|xname| xname.to_string())
-                .collect::<Vec<String>>(),
-        )
-        .await
-        .unwrap();
+    let current_node_boot_params: Vec<BootParameters> = bss::bootparameters::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &xnames
+            .iter()
+            .map(|xname| xname.to_string())
+            .collect::<Vec<String>>(),
+    )
+    .await
+    .unwrap();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
