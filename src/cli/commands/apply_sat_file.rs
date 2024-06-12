@@ -212,7 +212,7 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Validate 'session_templte' section
+    // Validate 'session_template' section
     validate_sat_file_session_template_section(
         shasta_token,
         shasta_base_url,
