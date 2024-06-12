@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.37.0] - 2024-06-12
+
+### FEAT
+
+- Add new config file parameter to store CSM CA public root filename
+
+### FIX
+
+- Improve errors in configuration file
+
 ## [1.36.3] - 2024-06-12
 
 ### FEAT
 
 - Update manta version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.36.3
 
 ### Refactor
 
