@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.3] - 2024-06-12
+
+### FEAT
+
+- Update manta version
+
+### Refactor
+
+- Clean code
+
 ## [1.36.2] - 2024-06-09
 
 ### Bug Fixes
@@ -12,6 +22,10 @@ All notable changes to this project will be documented in this file.
 
 - Delete now does not deletes images from BOS sessiontemplate params.
 - Process cli with wrong commands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.36.2
 
 ### REFACTOR
 
