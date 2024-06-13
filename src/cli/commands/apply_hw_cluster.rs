@@ -132,12 +132,6 @@ pub async fn exec(
     target_hsm_node_hw_component_count_vec
         .sort_by_key(|target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone());
 
-    /* log::info!(
-        "HSM '{}' hw component counters: {:?}",
-        target_hsm_group_name,
-        target_hsm_node_hw_component_count_vec
-    ); */
-
     // Calculate hw component counters (summary) across all node within the HSM group
     let target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
         calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
@@ -176,12 +170,6 @@ pub async fn exec(
     // Sort nodes hw counters by node name
     parent_hsm_node_hw_component_count_vec
         .sort_by_key(|parent_hsm_group_hw_component| parent_hsm_group_hw_component.0.clone());
-
-    /* log::info!(
-        "HSM '{}' hw component counters: {:?}",
-        parent_hsm_group_name,
-        parent_hsm_node_hw_component_count_vec
-    ); */
 
     // *********************************************************************************************************
     // VALIDATE USER INPUT - CHECK HARDWARE REQUIREMENTS REQUESTED BY USER CAN BE FULFILLED
@@ -415,7 +403,7 @@ pub mod utils {
 
         // Downscale combined HSM group
         let hw_component_counters_to_move_out_from_combined_hsm =
-            crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
+            crate::cli::commands::apply_hw_cluster::utils::calculate_target_hsm_pin(
                 &final_combined_target_parent_hsm_hw_component_summary.clone(),
                 &final_combined_target_parent_hsm_hw_component_summary
                     .into_keys()
@@ -458,10 +446,12 @@ pub mod utils {
         }
     }
 
-    /// Removes as much nodes as it can from the target HSM group
-    /// Returns a tuple with 2 vecs, the left one is the new target HSM group while the left one is
-    /// the one containing the nodes removed from the target HSM
-    pub fn downscale_from_final_hsm_group(
+    /// Generates a list of tuples with xnames and the hardware summary for each node. This method
+    /// keeps as much nodes from the target HSM group as it can, this is good to minimize the
+    /// number of nodes being changed in the cluster
+    /// Returns a list of tuples, the first element is the xname and the last element is a hardware
+    /// summary of the node
+    pub fn calculate_target_hsm_pin(
         user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>, // hw
         // components summary the target hsm group should have according to user requests (this is
         // equivalent to target_hsm_node_hw_component_count_vec minus
