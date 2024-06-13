@@ -4,6 +4,7 @@ pub mod apply_cluster;
 pub mod apply_configuration;
 pub mod apply_ephemeral_env;
 pub mod apply_hw_cluster;
+pub mod apply_hw_cluster_2;
 pub mod apply_image;
 pub mod apply_node_off;
 pub mod apply_node_on;
@@ -43,4 +44,3 @@ pub mod remove_nodes;
 pub mod update_hsm_group;
 pub mod update_node;
 pub mod validate_local_repo;
-

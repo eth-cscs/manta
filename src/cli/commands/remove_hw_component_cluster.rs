@@ -237,7 +237,7 @@ pub async fn exec(
 
     // Downscale parent HSM group
     let hw_component_counters_to_move_out_from_target_hsm =
-        crate::cli::commands::apply_hw_cluster::utils::downscale_from_final_hsm_group(
+        crate::cli::commands::apply_hw_cluster_2::utils::downscale_from_final_hsm_group(
             &final_target_hsm_hw_component_summary.clone(),
             &final_target_hsm_hw_component_summary
                 .into_keys()
