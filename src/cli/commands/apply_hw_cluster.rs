@@ -205,7 +205,7 @@ pub async fn exec(
     }
 
     // *********************************************************************************************************
-    // CALCULATE THE NEW NODES TO TARGET HSM
+    // CONVERT THE HARDWARE DESCRIPTION INTO A SET OF NODES IN TARGET HSM
 
     let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
         resolve_hw_description_to_xnames(
@@ -401,18 +401,17 @@ pub mod utils {
                 .and_modify(|current_qty| *current_qty = qty - *current_qty);
         }
 
-        // Downscale combined HSM group
-        let hw_component_counters_to_move_out_from_combined_hsm =
-            crate::cli::commands::apply_hw_cluster::utils::calculate_target_hsm_pin(
-                &final_combined_target_parent_hsm_hw_component_summary.clone(),
-                &final_combined_target_parent_hsm_hw_component_summary
-                    .into_keys()
-                    .collect::<Vec<String>>(),
-                &mut combined_target_parent_hsm_node_hw_component_count_vec,
-                &mut target_hsm_node_hw_component_count_vec,
-                &mut parent_hsm_node_hw_component_count_vec,
-                &hw_component_scarcity_scores_hashmap,
-            );
+        // Calculate new target HSM group
+        let hw_component_counters_to_move_out_from_combined_hsm = calculate_target_hsm_pin(
+            &final_combined_target_parent_hsm_hw_component_summary.clone(),
+            &final_combined_target_parent_hsm_hw_component_summary
+                .into_keys()
+                .collect::<Vec<String>>(),
+            &mut combined_target_parent_hsm_node_hw_component_count_vec,
+            &mut target_hsm_node_hw_component_count_vec,
+            &mut parent_hsm_node_hw_component_count_vec,
+            &hw_component_scarcity_scores_hashmap,
+        );
 
         let new_target_hsm_node_hw_component_count_vec =
             hw_component_counters_to_move_out_from_combined_hsm;
@@ -422,7 +421,12 @@ pub mod utils {
         )
     }
 
-    pub fn get_best_candidate_to_downscale_migrate_f32_score(
+    /// Pin means this function should be used when the user wants to keep as much nodes in
+    /// original target HSM group as possible. Use case for this:
+    ///  - cluster upscaling or downscaling in same site and want to minimize the impact on running
+    ///  applications
+    ///  - defining final state for a cluster
+    pub fn get_best_candidate_in_hsm_pin(
         hsm_score_vec: &mut [(String, f32)],
         hsm_hw_component_vec: &[(String, HashMap<String, usize>)],
     ) -> Option<((String, f32), HashMap<String, usize>)> {
@@ -444,6 +448,43 @@ pub mod utils {
         } else {
             None
         }
+    }
+
+    pub fn get_best_candidate_in_target_and_parent_hsm_pin(
+        target_hsm_node_score_tuple_vec: &mut [(String, f32)],
+        parent_hsm_node_score_tuple_vec: &mut [(String, f32)],
+        target_hsm_node_hw_component_count_vec: &mut Vec<(String, HashMap<String, usize>)>,
+        parent_hsm_node_hw_component_count_vec: &Vec<(String, HashMap<String, usize>)>,
+    ) -> Option<((String, f32), HashMap<String, usize>)> {
+        // Get best candidate in 'target' HSM group
+        let target_best_candidate_tuple = get_best_candidate_in_hsm_pin(
+            target_hsm_node_score_tuple_vec,
+            target_hsm_node_hw_component_count_vec,
+        );
+
+        // Get best candidate in 'parent' HSM group
+        let parent_best_candidate_tuple = get_best_candidate_in_hsm_pin(
+            parent_hsm_node_score_tuple_vec,
+            parent_hsm_node_hw_component_count_vec,
+        );
+
+        // If best candidate exists (in 'target' HSM group), then use it. Otherwise, use the one in 'parent' HSM group
+        if target_best_candidate_tuple.is_some() {
+            target_best_candidate_tuple
+        } else if parent_best_candidate_tuple.is_some() {
+            parent_best_candidate_tuple
+        } else {
+            None
+        }
+
+        /* if let Some(target_best_candidate) = target_best_candidate_tuple {
+            target_best_candidate
+        } else if let Some(parent_best_candidate) = parent_best_candidate_tuple {
+            parent_best_candidate
+        } else {
+            eprintln!("ERROR - No best candidate found.");
+            std::process::exit(1);
+        } */
     }
 
     /// Generates a list of tuples with xnames and the hardware summary for each node. This method
@@ -528,17 +569,19 @@ pub mod utils {
             HashMap<String, usize>,
         )> = Vec::new();
 
-        // Get best candidate in 'target' HSM group
-        let target_best_candidate_tuple = get_best_candidate_to_downscale_migrate_f32_score(
-            &mut target_hsm_node_score_tuple_vec,
-            target_hsm_node_hw_component_count_vec,
-        );
+        /* // Get best candidate in 'target' HSM group
+        let target_best_candidate_tuple =
+            get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
+                &mut target_hsm_node_score_tuple_vec,
+                target_hsm_node_hw_component_count_vec,
+            );
 
         // Get best candidate in 'parent' HSM group
-        let parent_best_candidate_tuple = get_best_candidate_to_downscale_migrate_f32_score(
-            &mut parent_hsm_node_score_tuple_vec,
-            parent_hsm_node_hw_component_count_vec,
-        );
+        let parent_best_candidate_tuple =
+            get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
+                &mut parent_hsm_node_score_tuple_vec,
+                parent_hsm_node_hw_component_count_vec,
+            );
 
         // If best candidate exists (in 'target' HSM group), then use it. Otherwise, use the one in 'parent' HSM group
         let (mut best_candidate, mut best_candidate_counters) =
@@ -549,12 +592,23 @@ pub mod utils {
             } else {
                 eprintln!("ERROR - No best candidate found.");
                 std::process::exit(1);
-            };
+            }; */
+
+        let (mut best_candidate, mut best_candidate_counters) =
+            get_best_candidate_in_target_and_parent_hsm_pin(
+                &mut target_hsm_node_score_tuple_vec,
+                &mut parent_hsm_node_score_tuple_vec,
+                target_hsm_node_hw_component_count_vec,
+                parent_hsm_node_hw_component_count_vec,
+            )
+            .unwrap_or_else(|| {
+                eprintln!("ERROR - No best candidate found.");
+                std::process::exit(1);
+            });
 
         // Check if we need to keep iterating
         let mut work_to_do = keep_iterating_final_hsm(
             user_defined_hsm_hw_components_count_hashmap,
-            // &best_candidate_counters,
             &combination_target_parent_hsm_hw_component_summary_hashmap,
         );
 
@@ -666,17 +720,19 @@ pub mod utils {
                     .or_insert(vec![node.clone()]);
             }
 
-            // Get best candidate in 'target' HSM group
-            let target_best_candidate_tuple = get_best_candidate_to_downscale_migrate_f32_score(
-                &mut target_hsm_node_score_tuple_vec,
-                target_hsm_node_hw_component_count_vec,
-            );
+            /* // Get best candidate in 'target' HSM group
+            let target_best_candidate_tuple =
+                get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
+                    &mut target_hsm_node_score_tuple_vec,
+                    target_hsm_node_hw_component_count_vec,
+                );
 
             // Get best candidate in 'parent' HSM group
-            let parent_best_candidate_tuple = get_best_candidate_to_downscale_migrate_f32_score(
-                &mut parent_hsm_node_score_tuple_vec,
-                parent_hsm_node_hw_component_count_vec,
-            );
+            let parent_best_candidate_tuple =
+                get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
+                    &mut parent_hsm_node_score_tuple_vec,
+                    parent_hsm_node_hw_component_count_vec,
+                );
 
             // If best candidate exists (in 'target' HSM group), then use it. Otherwise, use the one in 'parent' HSM group
             (best_candidate, best_candidate_counters) =
@@ -687,7 +743,16 @@ pub mod utils {
                 } else {
                     eprintln!("ERROR - No best candidate found.");
                     std::process::exit(1);
-                };
+                }; */
+
+            (best_candidate, best_candidate_counters) =
+                get_best_candidate_in_target_and_parent_hsm_pin(
+                    &mut target_hsm_node_score_tuple_vec,
+                    &mut parent_hsm_node_score_tuple_vec,
+                    target_hsm_node_hw_component_count_vec,
+                    parent_hsm_node_hw_component_count_vec,
+                )
+                .expect("ERROR - No best candidate found.");
 
             // Check if we need to keep iterating
             work_to_do = keep_iterating_final_hsm(
@@ -1278,6 +1343,7 @@ pub async fn test_hsm_hw_management_1() {
     assert!(success)
 }
 
+/// Test pinning
 #[tokio::test]
 pub async fn test_hsm_hw_management_2() {
     let user_request_hw_summary = HashMap::from([("epyc".to_string(), 8)]);
@@ -1430,7 +1496,7 @@ pub async fn test_hsm_hw_management_2() {
 
     let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
         resolve_hw_description_to_xnames(
-            hsm_zinal_hw_counters,
+            hsm_zinal_hw_counters.clone(),
             hsm_nodes_free_hw_conters,
             user_request_hw_summary.clone(),
         )
@@ -1450,6 +1516,7 @@ pub async fn test_hsm_hw_management_2() {
     );
 
     // Check if user request is fulfilled
+    // Check new target HSM group hw summary fulfills the user request
     let mut success = true;
     for (hw_component, qty) in user_request_hw_summary {
         if target_hsm_hw_summary.get(&hw_component).is_none()
@@ -1459,6 +1526,17 @@ pub async fn test_hsm_hw_management_2() {
             success = false;
         }
     }
+
+    // Check pinning and the number of xnames in new target HSM group maximizes the ones in the old
+    // target HSM group
+    success = success
+        && target_hsm_node_hw_component_count_vec
+            .iter()
+            .all(|(new_target_xname, _)| {
+                hsm_zinal_hw_counters
+                    .iter()
+                    .any(|(old_target_xname, _)| old_target_xname == new_target_xname)
+            });
 
     println!("DEBUG - success? {}", success);
 

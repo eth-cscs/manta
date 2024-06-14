@@ -132,12 +132,6 @@ pub async fn exec(
     target_hsm_node_hw_component_count_vec
         .sort_by_key(|target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone());
 
-    /* log::info!(
-        "HSM '{}' hw component counters: {:?}",
-        target_hsm_group_name,
-        target_hsm_node_hw_component_count_vec
-    ); */
-
     // Calculate hw component counters (summary) across all node within the HSM group
     let target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
         calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
@@ -177,28 +171,41 @@ pub async fn exec(
     parent_hsm_node_hw_component_count_vec
         .sort_by_key(|parent_hsm_group_hw_component| parent_hsm_group_hw_component.0.clone());
 
-    /* log::info!(
-        "HSM '{}' hw component counters: {:?}",
-        parent_hsm_group_name,
-        parent_hsm_node_hw_component_count_vec
-    ); */
+    // *********************************************************************************************************
+    // VALIDATE USER INPUT - CHECK HARDWARE REQUIREMENTS REQUESTED BY USER CAN BE FULFILLED
+    // CHECK USER HAS ACCESS TO REQUESTED HW COMPONENTS
+    // CHECK USER HAS ACCESS TO ENOUGH QUANTITY OF HW RESOURCES REQUESTED
+
+    let mut combined_target_parent_hsm_node_hw_component_count_vec =
+        parent_hsm_node_hw_component_count_vec.clone();
+
+    for elem in &target_hsm_node_hw_component_count_vec {
+        if !parent_hsm_node_hw_component_count_vec
+            .iter()
+            .any(|(xname, _)| xname.eq(&elem.0))
+        {
+            combined_target_parent_hsm_node_hw_component_count_vec.push(elem.clone());
+        }
+    }
+
+    let combined_target_parent_hsm_hw_component_summary_hashmap =
+        calculate_hsm_hw_component_summary(&combined_target_parent_hsm_node_hw_component_count_vec);
+
+    for (hw_component, qty) in &user_defined_target_hsm_hw_component_count_hashmap {
+        if combined_target_parent_hsm_hw_component_summary_hashmap
+            .get(hw_component)
+            .is_some_and(|value| value >= qty)
+        {
+            // We are ok, user has access to enough resources to fullfill its request
+        } else {
+            // There are not enough resources to fulfill the user request
+            eprintln!("ERROR - there are not enough resources to fulfill user request.");
+            std::process::exit(1);
+        }
+    }
 
     // *********************************************************************************************************
-    // CALCULATE 'COMBINED HSM'
-    // COMBINED HSM is the result of combining all nodes from TARGET HSM and PARENT HSM into a
-    // single pool
-
-    let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
-        calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
-
-    log::info!(
-        "HSM group '{}' hw component summary: {:?}",
-        parent_hsm_group_name,
-        parent_hsm_hw_component_summary_hashmap
-    );
-
-    // *********************************************************************************************************
-    // CALCULATE NODES TO MOVE FROM COMBINED HSM TO TARGET HSM
+    // CONVERT THE HARDWARE DESCRIPTION INTO A SET OF NODES IN TARGET HSM
 
     let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
         resolve_hw_description_to_xnames(
@@ -338,8 +345,6 @@ pub mod utils {
     use serde_json::Value;
     use tokio::sync::Semaphore;
 
-    use crate::cli::commands::remove_hw_component_cluster::get_best_candidate_to_downscale_migrate_f32_score;
-
     // Returns a tuple (target_hsm, parent_hsm) with 2 list of nodes and its hardware components.
     // The left tuple element are the nodes moved from the
     pub async fn resolve_hw_description_to_xnames(
@@ -352,18 +357,18 @@ pub mod utils {
     ) {
         // *********************************************************************************************************
         // CALCULATE 'COMBINED HSM' WITH TARGET HSM AND PARENT HSM ELEMENTS COMBINED
-        // NOTE: PARENT HSM many contain elements in TARGET HSM, we need to only add those xnames
+        // NOTE: PARENT HSM may contain elements in TARGET HSM, we need to only add those xnames
         // which are not part of PARENT HSM already
 
         let mut combined_target_parent_hsm_node_hw_component_count_vec =
             parent_hsm_node_hw_component_count_vec.clone();
 
-        for elem in target_hsm_node_hw_component_count_vec {
+        for elem in &target_hsm_node_hw_component_count_vec {
             if !parent_hsm_node_hw_component_count_vec
                 .iter()
                 .any(|(xname, _)| xname.eq(&elem.0))
             {
-                combined_target_parent_hsm_node_hw_component_count_vec.push(elem);
+                combined_target_parent_hsm_node_hw_component_count_vec.push(elem.clone());
             }
         }
 
@@ -396,16 +401,15 @@ pub mod utils {
                 .and_modify(|current_qty| *current_qty = qty - *current_qty);
         }
 
-        // Downscale combined HSM group
-        let hw_component_counters_to_move_out_from_combined_hsm =
-            crate::cli::commands::apply_hw_cluster_2::utils::calculate_target_hsm_unpin(
-                &final_combined_target_parent_hsm_hw_component_summary.clone(),
-                &final_combined_target_parent_hsm_hw_component_summary
-                    .into_keys()
-                    .collect::<Vec<String>>(),
-                &mut combined_target_parent_hsm_node_hw_component_count_vec,
-                &hw_component_scarcity_scores_hashmap,
-            );
+        // Calculate new target HSM group
+        let hw_component_counters_to_move_out_from_combined_hsm = calculate_target_hsm_unpin(
+            &final_combined_target_parent_hsm_hw_component_summary.clone(),
+            &final_combined_target_parent_hsm_hw_component_summary
+                .into_keys()
+                .collect::<Vec<String>>(),
+            &mut combined_target_parent_hsm_node_hw_component_count_vec,
+            &hw_component_scarcity_scores_hashmap,
+        );
 
         let new_target_hsm_node_hw_component_count_vec =
             hw_component_counters_to_move_out_from_combined_hsm;
@@ -413,6 +417,36 @@ pub mod utils {
             new_target_hsm_node_hw_component_count_vec,
             combined_target_parent_hsm_node_hw_component_count_vec,
         )
+    }
+
+    /// Unpin means this function was defined to be used when user does not want to pin nodes in
+    /// target HSM, meaning, the user does not care if the new nodes in target HSM group are new or
+    /// existing nodes from original target HSM group. User cases for this:
+    ///  - minimize fragmentation
+    ///  - migrating cluster across different sites
+    ///  - operating deltas (eg adding or removing nodes to/from existing HSM group)
+    pub fn get_best_candidate_in_hsm_unpin(
+        hsm_score_vec: &mut [(String, f32)],
+        hsm_hw_component_vec: &[(String, HashMap<String, usize>)],
+    ) -> Option<((String, f32), HashMap<String, usize>)> {
+        if hsm_score_vec.is_empty() || hsm_hw_component_vec.is_empty() {
+            return None;
+        }
+
+        hsm_score_vec.sort_by_key(|elem| elem.0.clone());
+        hsm_score_vec.sort_by(|b, a| a.1.partial_cmp(&b.1).unwrap());
+
+        // Get node with highest normalized score (best candidate)
+        let best_candidate: (String, f32) = hsm_score_vec.first().unwrap().clone();
+
+        if let Some(best_candiate) = hsm_hw_component_vec
+            .iter()
+            .find(|(node, _)| node.eq(&best_candidate.0))
+        {
+            Some((best_candidate, best_candiate.1.clone()))
+        } else {
+            None
+        }
     }
 
     /// Generates a list of tuples with xnames and the hardware summary for each node. This method
@@ -461,11 +495,14 @@ pub mod utils {
         )> = Vec::new();
 
         // Get best candidate
-        let (mut best_candidate, mut best_candidate_counters) =
-            get_best_candidate_to_downscale_migrate_f32_score(
-                &mut combination_target_parent_hsm_node_score_tuple_vec,
-                combination_target_parent_hsm_node_hw_component_count_vec,
-            );
+        let (mut best_candidate, mut best_candidate_counters) = get_best_candidate_in_hsm_unpin(
+            &mut combination_target_parent_hsm_node_score_tuple_vec,
+            combination_target_parent_hsm_node_hw_component_count_vec,
+        )
+        .unwrap_or_else(|| {
+            eprintln!("ERROR - No best candidate found.");
+            std::process::exit(1);
+        });
 
         // Check if we need to keep iterating
         let mut work_to_do = keep_iterating_final_hsm(
@@ -543,17 +580,18 @@ pub mod utils {
                 );
 
             // Get best candidate
-            (best_candidate, best_candidate_counters) =
-                get_best_candidate_to_downscale_migrate_f32_score(
-                    &mut target_hsm_node_score_tuple_vec,
-                    combination_target_parent_hsm_node_hw_component_count_vec,
-                );
+            (best_candidate, best_candidate_counters) = get_best_candidate_in_hsm_unpin(
+                &mut target_hsm_node_score_tuple_vec,
+                combination_target_parent_hsm_node_hw_component_count_vec,
+            )
+            .unwrap_or_else(|| {
+                eprintln!("ERROR - No best candidate found.");
+                std::process::exit(1);
+            });
 
             // Check if we need to keep iterating
             work_to_do = keep_iterating_final_hsm(
                 user_defined_hsm_hw_components_count_hashmap,
-                // &best_candidate_counters,
-                // &downscale_deltas,
                 &combination_target_parent_hsm_hw_component_summary_hashmap,
             );
 
