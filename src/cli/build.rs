@@ -865,13 +865,12 @@ pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> C
     let mut set_runtime_ciguration = Command::new("runtime-configuration")
         .alias("rc")
         .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to be set"))
-        .group(ArgGroup::new("cluster_or_xnames").args(["hsm-group", "xnames"]));
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to be set"));
 
     match hsm_group_opt {
         None => {
             set_runtime_ciguration = set_runtime_ciguration
-                .arg(arg!(-x --"xnames" <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(ArgGroup::new("cluster_or_session_name").args(["hsm-group", "xnames"]));
         }

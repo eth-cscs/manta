@@ -301,6 +301,12 @@ pub async fn process_cli(
                     .await;
                 }
             }
+        } else if let Some(cli_set) = cli_root.subcommand_matches("set") {
+            if let Some(cli_add_hw_configuration) =
+                cli_set.subcommand_matches("runtime-configuration")
+            {
+                println!("SET RUNTIME CONFIGURATION");
+            }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
                 let target_hsm_group_name_arg_opt =
