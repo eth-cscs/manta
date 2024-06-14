@@ -63,6 +63,12 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
             )
         )
         .subcommand(
+            Command::new("set")
+                .alias("s")
+                .arg_required_else_help(true)
+                .about("Set specific features on cluster nodes or a list of nodes")
+                .subcommand(subcommand_set_runtime_configuration(hsm_group)))
+        .subcommand(
             Command::new("apply")
                 .alias("a")
                 .arg_required_else_help(true)
@@ -419,7 +425,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
     Command::new("get")
         .alias("g")
         .arg_required_else_help(true)
-        .about("Get information from Shasta system")
+        .about("Get information from CSM system")
         .subcommand(subcommand_get_hw_components())
         .subcommand(subcommand_get_cfs_session(hsm_group))
         .subcommand(subcommand_get_cfs_configuration(hsm_group))
@@ -853,4 +859,27 @@ pub fn subcommand_validate_local_repo() -> Command {
         .alias("vlr")
         .about("Check all tags and HEAD information related to a local repo exists in Gitea")
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
+}
+
+pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> Command {
+    let mut set_runtime_ciguration = Command::new("runtime-configuration")
+        .alias("rc")
+        .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to be set"))
+        .group(ArgGroup::new("cluster_or_xnames").args(["hsm-group", "xnames"]));
+
+    match hsm_group_opt {
+        None => {
+            set_runtime_ciguration = set_runtime_ciguration
+                .arg(arg!(-x --"xnames" <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .group(ArgGroup::new("cluster_or_session_name").args(["hsm-group", "xnames"]));
+        }
+        Some(_) => {
+            set_runtime_ciguration = set_runtime_ciguration
+                .arg(arg!(-x --"xnames" <XNAMES> "List of nodes to set runtime configuration"));
+        }
+    }
+
+    set_runtime_ciguration
 }
