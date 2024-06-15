@@ -18,7 +18,7 @@ use super::commands::{
     get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
     get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    remove_nodes, update_hsm_group, update_node,
+    remove_nodes, set_boot_image, set_runtime_configuration, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -302,10 +302,144 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_set) = cli_root.subcommand_matches("set") {
-            if let Some(cli_add_hw_configuration) =
+            if let Some(cli_set_runtime_configuration) =
                 cli_set.subcommand_matches("runtime-configuration")
             {
-                println!("SET RUNTIME CONFIGURATION");
+                let hsm_group_name_arg_opt = cli_set_runtime_configuration.try_get_one("hsm-group");
+
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_arg_opt.unwrap_or(None),
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let target_hsm_group_vec_opt = if target_hsm_group_vec.is_empty() {
+                    None
+                } else {
+                    Some(&target_hsm_group_vec)
+                };
+
+                let xname_vec_opt = cli_set_runtime_configuration
+                    .get_one::<String>("xnames")
+                    .map(|xnames| {
+                        xnames
+                            .split(",")
+                            .map(|elem| elem.to_string())
+                            .collect::<Vec<String>>()
+                    });
+
+                let configuration_name = cli_set_runtime_configuration
+                    .get_one::<String>("configuration")
+                    .unwrap(); // clap should validate the argument
+
+                let result = set_runtime_configuration::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    configuration_name,
+                    target_hsm_group_vec_opt,
+                    xname_vec_opt.as_ref(),
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
+            } else if let Some(cli_set_boot_image) = cli_set.subcommand_matches("boot-image") {
+                let hsm_group_name_arg_opt = cli_set_boot_image.try_get_one("hsm-group");
+
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_arg_opt.unwrap_or(None),
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let target_hsm_group_vec_opt = if target_hsm_group_vec.is_empty() {
+                    None
+                } else {
+                    Some(&target_hsm_group_vec)
+                };
+
+                let xname_vec_opt = cli_set_boot_image
+                    .get_one::<String>("xnames")
+                    .map(|xnames| {
+                        xnames
+                            .split(",")
+                            .map(|elem| elem.to_string())
+                            .collect::<Vec<String>>()
+                    });
+
+                let boot_image = cli_set_boot_image.get_one::<String>("boot-image").unwrap(); // clap should validate the argument
+
+                let result = set_boot_image::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    boot_image,
+                    target_hsm_group_vec_opt,
+                    xname_vec_opt.as_ref(),
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
+            } else if let Some(cli_set_boot_configuration) =
+                cli_set.subcommand_matches("boot-configuration")
+            {
+                let hsm_group_name_arg_opt = cli_set_boot_configuration.try_get_one("hsm-group");
+
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_arg_opt.unwrap_or(None),
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let target_hsm_group_vec_opt = if target_hsm_group_vec.is_empty() {
+                    None
+                } else {
+                    Some(&target_hsm_group_vec)
+                };
+
+                let xname_vec_opt =
+                    cli_set_boot_configuration
+                        .get_one::<String>("xnames")
+                        .map(|xnames| {
+                            xnames
+                                .split(",")
+                                .map(|elem| elem.to_string())
+                                .collect::<Vec<String>>()
+                        });
+
+                let configuration_name = cli_set_boot_configuration
+                    .get_one::<String>("configuration")
+                    .unwrap(); // clap should validate the argument
+
+                let result = set_boot_configuration::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    configuration_name,
+                    target_hsm_group_vec_opt,
+                    xname_vec_opt.as_ref(),
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
             }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {

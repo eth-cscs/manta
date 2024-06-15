@@ -67,7 +67,9 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .alias("s")
                 .arg_required_else_help(true)
                 .about("Set specific features on cluster nodes or a list of nodes")
-                .subcommand(subcommand_set_runtime_configuration(hsm_group)))
+                .subcommand(subcommand_set_runtime_configuration(hsm_group))
+                .subcommand(subcommand_set_boot_configuration(hsm_group))
+                .subcommand(subcommand_set_boot_image(hsm_group)))
         .subcommand(
             Command::new("apply")
                 .alias("a")
@@ -862,23 +864,70 @@ pub fn subcommand_validate_local_repo() -> Command {
 }
 
 pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_runtime_ciguration = Command::new("runtime-configuration")
+    let mut set_runtime_configuration = Command::new("runtime-configuration")
         .alias("rc")
         .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to be set"));
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true));
 
     match hsm_group_opt {
         None => {
-            set_runtime_ciguration = set_runtime_ciguration
+            set_runtime_configuration = set_runtime_configuration
                 .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-                .group(ArgGroup::new("cluster_or_session_name").args(["hsm-group", "xnames"]));
+                .group(
+                    ArgGroup::new("cluster_or_session_name")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                );
         }
-        Some(_) => {
-            set_runtime_ciguration = set_runtime_ciguration
-                .arg(arg!(-x --"xnames" <XNAMES> "List of nodes to set runtime configuration"));
-        }
+        Some(_) => {}
     }
 
-    set_runtime_ciguration
+    set_runtime_configuration
+}
+
+pub fn subcommand_set_boot_image(hsm_group_opt: Option<&String>) -> Command {
+    let mut set_boot_image = Command::new("runtime-configuration")
+        .alias("bi")
+        .about("Set boot image to boot a set of nodes or all nodes in a cluster")
+        .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true));
+
+    match hsm_group_opt {
+        None => {
+            set_boot_image = set_boot_image
+                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .group(
+                    ArgGroup::new("cluster_or_session_name")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                );
+        }
+        Some(_) => {}
+    }
+
+    set_boot_image
+}
+
+pub fn subcommand_set_boot_configuration(hsm_group_opt: Option<&String>) -> Command {
+    let mut set_boot_image = Command::new("boot-configuration")
+        .alias("bc")
+        .about("Set boot configuration to boot a set of nodes or all nodes in a cluster. The algorithm will look for the most recent image id created with the provided configuration name and assign it to the nodes.")
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true));
+
+    match hsm_group_opt {
+        None => {
+            set_boot_image = set_boot_image
+                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .group(
+                    ArgGroup::new("cluster_or_session_name")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                );
+        }
+        Some(_) => {}
+    }
+
+    set_boot_image
 }
