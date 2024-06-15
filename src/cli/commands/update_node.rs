@@ -39,7 +39,7 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Check new runtime configuration exists
+    // Check new configuration exists and exit otherwise
     let runtime_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
