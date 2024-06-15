@@ -1,21 +1,22 @@
-# MANTA
+# Wellcome to Manta
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
-Manta is a frontend cli to interact with Shasta, it uses [mesa](https://crates.io/crates/mesa) for all Shasta interaction.
+Manta is a frontend cli to interact and extend CSM, it uses [mesa](https://github.com/eth-cscs/mesa) as a backend to interact with CSM.
 
 Manta's goals:
 
- - release operators from repetitive tasks.
- - provide quick system feedback.
+ - Release operators from repetitive tasks.
+ - Provide quick system feedback.
+ - Simplify CICD pipelines
 
 Manta aggregates information from multiple sources:
 
- - Shasta Keycloak
- - Shasta API
- - Shasta K8s API
+ - CSM Keycloak
+ - CSM API
+ - CSM K8s API
  - local git repo
- - Gitea API (Shasta VCS)
+ - Gitea API (CSM VCS)
  - Hashicorp Vault
 
 ## Features
@@ -394,3 +395,4 @@ cargo run -r --features dhat-heap -- get session
 ##### View results (dhat-heap.json file)
 
 https://nnethercote.github.io/dh_view/dh_view.html
+

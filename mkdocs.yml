@@ -1,0 +1,28 @@
+site_name: Manta Documentation
+site_url: https://eth-cscs.github.io/manta
+repo_url: https://github.com/eth-cscs/manta
+repo_name: eth-cscs/manta
+
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Basic Operations: basic_operations.md
+  - Cluster mgmt with SAT file: cluster_mgmt_with_sat_file.md
+  - Cluster migration: cluster_migration.md
+  - Security: security.md
+  - FAQ: faq.md
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
