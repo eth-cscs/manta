@@ -23,7 +23,7 @@ use serde_yaml::Value;
 
 use crate::{
     cli::{
-        commands::{apply_hw_cluster, power_reset_nodes},
+        commands::{apply_hw_cluster_pin, power_reset_nodes},
         process::validate_target_hsm_members,
     },
     common::{
@@ -241,7 +241,7 @@ pub async fn exec(
                 log::info!("Processing hw component pattern for '{}' for target HSM group '{}' and parent HSM group '{}'", pattern, target_hsm_group_name, parent_hsm_group_name);
                 // When applying a SAT file, I'm assuming the user doesn't want to create new HSM groups or delete empty parent hsm groups
                 // But this could be changed.
-                apply_hw_cluster::exec(
+                apply_hw_cluster_pin::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
