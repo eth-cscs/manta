@@ -9,8 +9,8 @@ use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
-    apply_ephemeral_env, apply_hw_cluster_pin, apply_image, apply_sat_file, apply_session,
-    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
+    apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_image, apply_sat_file,
+    apply_session, config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
     config_show::{self, get_hsm_name_available_from_jwt_or_all},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
@@ -734,18 +734,37 @@ pub async fn process_cli(
                         .get_one::<bool>("delete-empty-parent-hsm-group")
                         .unwrap_or(&true);
 
-                    apply_hw_cluster_pin::exec(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        target_hsm_group_vec.first().unwrap(),
-                        parent_hsm_group_vec.first().unwrap(),
-                        cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
-                        nodryrun,
-                        create_target_hsm_group,
-                        delete_empty_parent_hsm_group,
-                    )
-                    .await;
+                    let is_unpin = cli_apply_hw_cluster
+                        .get_one::<bool>("unpin-nodes")
+                        .unwrap_or(&false);
+
+                    if *is_unpin {
+                        apply_hw_cluster_unpin::exec(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            target_hsm_group_vec.first().unwrap(),
+                            parent_hsm_group_vec.first().unwrap(),
+                            cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
+                            nodryrun,
+                            create_target_hsm_group,
+                            delete_empty_parent_hsm_group,
+                        )
+                        .await;
+                    } else {
+                        apply_hw_cluster_pin::exec(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            target_hsm_group_vec.first().unwrap(),
+                            parent_hsm_group_vec.first().unwrap(),
+                            cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
+                            nodryrun,
+                            create_target_hsm_group,
+                            delete_empty_parent_hsm_group,
+                        )
+                        .await;
+                    }
                 }
             } else if let Some(cli_apply_configuration) =
                 cli_apply.subcommand_matches("configuration")
