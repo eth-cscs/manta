@@ -43,6 +43,7 @@ pub mod remove_hw_component_cluster;
 pub mod remove_nodes;
 pub mod set_boot_configuration;
 pub mod set_boot_image;
+pub mod set_kernel_parameters;
 pub mod set_runtime_configuration;
 pub mod update_hsm_group;
 pub mod update_node;
