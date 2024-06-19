@@ -69,7 +69,8 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .about("Set specific features on cluster nodes or a list of nodes")
                 .subcommand(subcommand_set_runtime_configuration(hsm_group))
                 .subcommand(subcommand_set_boot_configuration(hsm_group))
-                .subcommand(subcommand_set_boot_image(hsm_group)))
+                .subcommand(subcommand_set_boot_image(hsm_group))
+                .subcommand(subcommand_set_kernel_params(hsm_group)))
         .subcommand(
             Command::new("apply")
                 .alias("a")
@@ -922,7 +923,30 @@ pub fn subcommand_set_boot_configuration(hsm_group_opt: Option<&String>) -> Comm
                 .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(
-                    ArgGroup::new("cluster_or_session_name")
+                    ArgGroup::new("cluster_or_xnames")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                );
+        }
+        Some(_) => {}
+    }
+
+    set_boot_image
+}
+
+pub fn subcommand_set_kernel_params(hsm_group_opt: Option<&String>) -> Command {
+    let mut set_boot_image = Command::new("kernel-parameters")
+        .alias("kp")
+        .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster.")
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "List of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true));
+
+    match hsm_group_opt {
+        None => {
+            set_boot_image = set_boot_image
+                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .group(
+                    ArgGroup::new("cluster_or_xnames")
                         .args(["hsm-group", "xnames"])
                         .required(true),
                 );
