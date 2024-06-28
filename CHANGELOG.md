@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.1] - 2024-06-28
+
+### Bug Fixes
+
+- Improve deprecated messages
+
 ## [1.38.0] - 2024-06-28
 
 ### Bug Fixes
@@ -15,6 +21,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Integrate "pin" and "unpin" features to "apply hw cluster" command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.38.0
 
 ### Refactor
 
