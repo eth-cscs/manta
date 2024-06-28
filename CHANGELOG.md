@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.0] - 2024-06-28
+
+### Bug Fixes
+
+- Update mesa version
+
+### FEAT
+
+- Command 'apply hw cluster' now can reuse nodes in 'target' HSM group
+
+### Features
+
+- Integrate "pin" and "unpin" features to "apply hw cluster" command
+
+### Refactor
+
+- Clean code
+- Code housekeeping
+- Rename apply_hw_cluster modules according to pin and unpin strategy
+
 ## [1.37.0] - 2024-06-12
 
 ### FEAT
@@ -11,6 +31,10 @@ All notable changes to this project will be documented in this file.
 ### FIX
 
 - Improve errors in configuration file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.37.0
 
 ## [1.36.3] - 2024-06-12
 
