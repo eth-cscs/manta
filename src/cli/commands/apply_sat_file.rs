@@ -92,7 +92,7 @@ pub async fn exec(
     );
 
     println!(
-        "#### SAT file content ####:\n{}",
+        "#### SAT file content ####\n{}",
         serde_yaml::to_string(&sat_file_yaml).unwrap()
     );
 
