@@ -83,7 +83,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                     Command::new("node")
                         .aliases(["n", "nod"])
                         .arg_required_else_help(true)
-                        .about("Power management for a list of nodes.\nDeprecated - Please use 'manta power' command instead.")
+                        .about("DEPRECATED - Please use 'manta power' command instead.\nPower management for a list of nodes")
                         .subcommand(subcommand_apply_node_on(hsm_group))
                         .subcommand(subcommand_apply_node_off(hsm_group))
                         .subcommand(subcommand_apply_node_reset(hsm_group)),
@@ -358,7 +358,7 @@ pub fn subcommand_get_cluster_details(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
     let mut get_node = Command::new("nodes")
         .aliases(["n", "node", "nd"])
-        .about("Get members of a HSM group.\nDeprecated - Please use 'manta get cluster' command instead.")
+        .about("DEPRECATED - Please use 'manta get cluster' command instead.\nGet members of a HSM group")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
@@ -378,7 +378,7 @@ pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
     let mut get_hsm_group = Command::new("hsm-groups")
         .aliases(["h", "hg", "hsm", "hsmgrps"])
-        .about("Get HSM groups details.\nDeprecated - Do not use this command.");
+        .about("DEPRECATED - Please do not use this command.\nGet HSM groups details");
 
     match hsm_group {
         None => {
@@ -489,7 +489,7 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
     let mut apply_configuration = Command::new("configuration")
         .aliases(["conf", "config"])
         .arg_required_else_help(true)
-        .about("Create a CFS configuration.\nDeprecated - Please use 'manta apply sat-file' command instead.")
+        .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration")
         // .about("Create a CFS configuration")
         .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
         .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
@@ -521,7 +521,7 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
     Command::new("image")
         .aliases(["i", "img", "imag"])
         .arg_required_else_help(true)
-        .about("Create a CFS configuration and a CFS image.\nDeprecated - Please use 'manta apply sat-file' command instead.")
+        .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration and a CFS image")
         // .about("Create a CFS configuration and a CFS image")
         .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
         .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
@@ -544,7 +544,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
     Command::new("cluster")
         .aliases(["clus","clstr"])
         .arg_required_else_help(true)
-        .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session.\nDeprecated - Please use 'manta apply sat-file' command instead.")
+        .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
         // .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
         .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
         .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
@@ -586,7 +586,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
 
 pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
-        .about("Start nodes.\nDeprecated - Please use 'manta power on' command instead.")
+        .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-r --reason <TEXT> "reason to power on"));
@@ -610,7 +610,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
 pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
-        .about("Shutdown nodes.\nDeprecated - Please use 'manta power off' command instead.")
+        .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to power off"));
@@ -635,7 +635,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
     let mut apply_node_reset = Command::new("reset")
         .aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
-        .about("Restart nodes.\nDeprecated - Please use 'manta power reset' command instead.")
+        .about("DEPRECATED - Please use 'manta power reset' command instead.\nRestart nodes")
         .arg(arg!(<XNAMES> "nodes' xnames"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to reset"));
@@ -660,7 +660,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
     let mut update_nodes = Command::new("nodes")
         .aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>\nDeprecated - Please use 'manta apply boot nodes' command instead.")
+        .about("DEPRECATED - Please use 'manta apply boot nodes' command instead.\nUpdates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
         .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
 
@@ -679,7 +679,7 @@ pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
     let mut update_hsm_group = Command::new("hsm-group")
         .aliases(["h", "hsm"])
         .arg_required_else_help(true)
-        .about("Updates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>\nDeprecated - Please use 'manta apply boot cluster' command instead.")
+        .about("DEPRECATED - Please use 'manta apply boot cluster' command instead.\nUpdates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
         .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
 
