@@ -8,7 +8,8 @@ use dialoguer::theme::ColorfulTheme;
 use mesa::{
     bos::{
         self,
-        template::mesa::r#struct::v1::{BootSet, BosSessionTemplate, Cfs},
+        session::shasta::http_client::v2::{BosSession, Operation},
+        template::mesa::r#struct::v2::{BootSet, BosSessionTemplate, Cfs},
     },
     cfs::{
         self,
@@ -843,7 +844,7 @@ pub async fn process_session_template_section_in_sat_file(
             .unwrap()
         {
             let kernel_parameters = boot_set["kernel_parameters"].as_str().unwrap();
-            let _arch_opt = boot_set["arch"].as_str().map(|value| value.to_string());
+            let arch_opt = boot_set["arch"].as_str().map(|value| value.to_string());
 
             let node_roles_groups_opt: Option<Vec<String>> = boot_set
                 .get("node_roles_groups")
@@ -923,13 +924,13 @@ pub async fn process_session_template_section_in_sat_file(
                 .await;
             }
 
-            // let cfs = Cfs {
-            //     clone_url: None,
-            //     branch: None,
-            //     commit: None,
-            //     playbook: None,
-            //     configuration: Some(bos_session_template_configuration_name.clone()),
-            // };
+            let cfs = Cfs {
+                // clone_url: None,
+                // branch: None,
+                // commit: None,
+                // playbook: None,
+                configuration: Some(bos_session_template_configuration_name.clone()),
+            };
 
             let rootfs_provider = Some("cpss3".to_string());
             let rootfs_provider_passthrough = boot_set["rootfs_provider_passthrough"]
@@ -938,21 +939,21 @@ pub async fn process_session_template_section_in_sat_file(
 
             let boot_set = BootSet {
                 name: None,
-                boot_ordinal: Some(2),
-                shutdown_ordinal: None,
+                // boot_ordinal: Some(2),
+                // shutdown_ordinal: None,
                 path: Some(ims_image_path.to_string()),
                 r#type: Some(ims_image_type.to_string()),
                 etag: Some(ims_image_etag.to_string()),
                 kernel_parameters: Some(kernel_parameters.to_string()),
-                network: Some("nmn".to_string()),
+                // network: Some("nmn".to_string()),
                 node_list: node_list_opt,
                 node_roles_groups: node_roles_groups_opt, // TODO: investigate whether this value can be a list
                 // of nodes and if it is process it properly
                 node_groups: node_groups_opt,
                 rootfs_provider,
                 rootfs_provider_passthrough,
-                // cfs: Some(cfs),
-                // arch: arch_opt,
+                cfs: Some(cfs),
+                arch: arch_opt,
             };
 
             boot_set_vec.insert(parameter.as_str().unwrap().to_string(), boot_set);
@@ -969,32 +970,35 @@ pub async fn process_session_template_section_in_sat_file(
         ); */
 
         let cfs = Cfs {
-            clone_url: None,
-            branch: None,
-            commit: None,
-            playbook: None,
+            // clone_url: None,
+            // branch: None,
+            // commit: None,
+            // playbook: None,
             configuration: Some(bos_session_template_configuration_name),
         };
 
         let create_bos_session_template_payload = BosSessionTemplate {
-            template_url: None,
-            name: bos_sessiontemplate_name.clone(),
+            // template_url: None,
+            // name: Some(bos_sessiontemplate_name.clone()),
+            name: None,
             description: None,
-            cfs_url: None,
-            cfs_branch: None,
+            // cfs_url: None,
+            // cfs_branch: None,
             enable_cfs: Some(true),
             cfs: Some(cfs),
-            partition: None,
+            // partition: None,
             boot_sets: Some(boot_set_vec),
             links: None,
-            // tenant: None,
+            tenant: None,
         };
 
-        let create_bos_session_template_resp = bos::template::shasta::http_client::v1::post(
+        let create_bos_session_template_resp = bos::template::shasta::http_client::v2::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &create_bos_session_template_payload,
+            // &create_bos_session_template_payload.name.as_ref().unwrap(),
+            &bos_sessiontemplate_name,
         )
         .await;
 
@@ -1005,7 +1009,7 @@ pub async fn process_session_template_section_in_sat_file(
                     bos_sessiontemplate_name
                 );
 
-                bos_st_created_vec.push(bos_sessiontemplate)
+                bos_st_created_vec.push(bos_sessiontemplate.name.unwrap())
             }
             Err(error) => eprintln!(
                 "ERROR: BOS session template creation failed.\nReason:\n{}\nExit",
@@ -1028,7 +1032,19 @@ pub async fn process_session_template_section_in_sat_file(
                 bos_st_name
             );
 
-            /* let bos_session = BosSession {
+            // BOS session v1
+            /* let create_bos_session_resp = bos::session::shasta::http_client::v1::post(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &bos_st_name,
+                "reboot",
+                None,
+            )
+            .await; */
+
+            // BOS session v2
+            let bos_session = BosSession {
                 name: None,
                 tenant: None,
                 operation: Some(Operation::Reboot),
@@ -1039,21 +1055,19 @@ pub async fn process_session_template_section_in_sat_file(
                 status: None,
                 description: None,
                 components: None,
-            }; */
+            };
 
-            let create_bos_session_resp = bos::session::shasta::http_client::v1::post(
+            let create_bos_session_resp = bos::session::shasta::http_client::v2::post(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &bos_st_name,
-                "reboot",
-                None,
+                bos_session,
             )
             .await;
 
             match create_bos_session_resp {
                 Ok(bos_session) => {
-                    log::info!("K8s job relates to BOS session v1 '{}'", bos_session["job"].as_str().unwrap());
+                    // log::info!("K8s job relates to BOS session v1 '{}'", bos_session["job"].as_str().unwrap());
                     println!(
                         "BOS session for BOS sessiontemplate '{}' created",
                         bos_st_name
