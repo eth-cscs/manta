@@ -56,7 +56,13 @@ pub async fn exec(
             .pointer("/ssh_containers/0/connection_info/customer_access/host")
             .cloned()
             .unwrap(),
-        Err(_) => std::process::exit(1),
+        Err(error) => {
+            eprintln!(
+                "ERROR: could not create ephemeral environment. Reason:\n{:#?}\nExit",
+                error
+            );
+            std::process::exit(1);
+        }
     };
 
     // if block.unwrap() {

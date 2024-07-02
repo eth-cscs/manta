@@ -889,7 +889,7 @@ pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> C
 }
 
 pub fn subcommand_set_boot_image(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_boot_image = Command::new("runtime-configuration")
+    let mut set_boot_image = Command::new("boot-image")
         .alias("bi")
         .about("Set boot image to boot a set of nodes or all nodes in a cluster")
         .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true));
