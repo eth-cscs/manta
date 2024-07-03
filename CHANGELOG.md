@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.0] - 2024-07-03
+
+### Bug Fixes
+
+- Power on nodes not managing power state properly
+
+### Features
+
+- New config parameters to specify audit file location
+
+### Refactor
+
+- Update documentation
+
 ## [1.40.0] - 2024-07-03
 
 ### Bug Fixes
@@ -23,6 +37,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta version 1.39.0
+- Release manta version 1.40.0
 
 ### Refactor
 
