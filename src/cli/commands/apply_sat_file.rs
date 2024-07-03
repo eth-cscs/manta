@@ -16,7 +16,7 @@ use mesa::{
         configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
         session::mesa::r#struct::v2::CfsSessionGetResponse,
     },
-    common::kubernetes,
+    common::{jwt_ops::get_claims_from_jwt_token, kubernetes},
     error::Error,
     hsm, ims,
 };
@@ -29,7 +29,6 @@ use crate::{
     },
     common::{
         self,
-        jwt_ops::get_claims_from_jwt_token,
         sat_file::{
             self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
             validate_sat_file_images_section,

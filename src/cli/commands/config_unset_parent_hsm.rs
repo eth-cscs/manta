@@ -1,9 +1,8 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
+use mesa::common::jwt_ops;
 use toml_edit::Document;
-
-use crate::common::jwt_ops;
 
 pub async fn exec(shasta_token: &str) {
     // Read configuration file

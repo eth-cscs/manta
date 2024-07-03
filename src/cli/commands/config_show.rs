@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use config::{Config, Value};
-
-use crate::common::jwt_ops;
+use mesa::common::jwt_ops::get_claims_from_jwt_token;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
@@ -78,7 +77,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
 ) -> Vec<String> {
-    let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
+    let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap_or(&serde_json::json!([]))
@@ -110,7 +109,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
 }
 
 pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
-    let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
+    let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
         .unwrap_or(&serde_json::json!([]))

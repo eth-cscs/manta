@@ -57,7 +57,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
 
-    log_ops::configure(log_level); // log4rs programatically configuration
+    let audit_file_path = if let Ok(audit_file) = settings.get_string("audit_file") {
+        audit_file
+    } else {
+        "/var/log/manta/requests.log".to_string()
+    };
+
+    log_ops::configure(log_level, audit_file_path.as_str()); // log4rs programatically configuration
 
     if let Some(socks_proxy) = site_detail_value.get("socks5_proxy") {
         std::env::set_var("SOCKS5", socks_proxy.to_string());

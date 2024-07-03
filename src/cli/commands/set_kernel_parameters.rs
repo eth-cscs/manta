@@ -1,11 +1,11 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, bootparameters::BootParameters},
+    common::jwt_ops::get_claims_from_jwt_token,
     error::Error,
 };
 
-use crate::cli::commands::power_reset_nodes;
-
+/// Updates the kernel parameters for a set of nodes
+/// reboots the nodes which kernel params have changed
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -16,7 +16,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
     println!("Set kernel parameters");
 
-    let mut need_restart = false;
+    let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
         mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
@@ -49,25 +49,49 @@ pub async fn exec(
 
     // Update kernel parameters
     for mut boot_parameter in current_node_boot_params {
-        boot_parameter.kernel = kernel_params.to_string();
+        if boot_parameter.kernel.eq(kernel_params) {
+            boot_parameter.kernel = kernel_params.to_string();
 
-        println!(
-            "Updating '{:?}' kernel parameters to '{}'",
-            boot_parameter.hosts, kernel_params
-        );
+            println!(
+                "Updating '{:?}' kernel parameters to '{}'",
+                boot_parameter.hosts, kernel_params
+            );
 
-        let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
-            shasta_base_url,
+            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+                shasta_base_url,
+                shasta_token,
+                shasta_root_cert,
+                &boot_parameter,
+            )
+            .await;
+
+            log::debug!(
+                "Component boot parameters resp:\n{:#?}",
+                component_patch_rep
+            );
+
+            xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
+        }
+    }
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec_opt.unwrap());
+
+    // Reboot if needed
+    if xname_to_reboot_vec.is_empty() {
+        println!("Nothing to change. Exit");
+    } else {
+        let _ = mesa::capmc::http_client::node_power_reset::post_sync_vec(
             shasta_token,
+            shasta_base_url,
             shasta_root_cert,
-            &boot_parameter,
+            xname_to_reboot_vec,
+            Some("Update kernel parameters".to_string()),
+            true,
         )
         .await;
-
-        log::debug!(
-            "Component boot parameters resp:\n{:#?}",
-            component_patch_rep
-        );
     }
 
     Ok(())

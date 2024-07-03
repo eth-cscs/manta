@@ -1,4 +1,4 @@
-use crate::common::jwt_ops::get_claims_from_jwt_token;
+use mesa::common::jwt_ops::get_claims_from_jwt_token;
 
 pub async fn exec(
     shasta_token: &str,

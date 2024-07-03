@@ -1,6 +1,7 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, bootparameters::BootParameters},
+    common::jwt_ops::get_claims_from_jwt_token,
     error::Error,
 };
 
@@ -21,6 +22,8 @@ pub async fn exec(
     println!("Set runtime-configuration");
 
     let mut need_restart = false;
+
+    let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
         mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
@@ -72,47 +75,51 @@ pub async fn exec(
 
         // Update boot image
         for mut boot_parameter in current_node_boot_params {
-            boot_parameter.set_boot_image(&image_id);
+            if boot_parameter.get_boot_image().eq(image_id) {
+                boot_parameter.set_boot_image(&image_id);
+                println!(
+                    "Updating '{:?}' boot image to '{}'",
+                    boot_parameter.hosts, image_id
+                );
 
-            println!(
-                "Updating '{:?}' boot image to '{}'",
-                boot_parameter.hosts, image_id
-            );
+                let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+                    shasta_base_url,
+                    shasta_token,
+                    shasta_root_cert,
+                    &boot_parameter,
+                )
+                .await;
 
-            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
-                shasta_base_url,
-                shasta_token,
-                shasta_root_cert,
-                &boot_parameter,
-            )
-            .await;
+                log::debug!(
+                    "Component boot parameters resp:\n{:#?}",
+                    component_patch_rep
+                );
 
-            log::debug!(
-                "Component boot parameters resp:\n{:#?}",
-                component_patch_rep
-            );
+                xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
+            }
         }
-
-        need_restart = true;
     } else {
         println!("Boot image did not change. No need to reboot.");
     }
 
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec_opt.unwrap());
+
     // Reboot if needed
-    if need_restart {
-        log::info!("Restarting nodes");
-
-        let nodes: Vec<String> = xnames.into_iter().map(|xname| xname.to_string()).collect();
-
-        power_reset_nodes::exec(
+    if xname_to_reboot_vec.is_empty() {
+        println!("Nothing to change. Exit");
+    } else {
+        let _ = mesa::capmc::http_client::node_power_reset::post_sync_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            nodes,
-            None,
+            xname_to_reboot_vec,
+            Some("Update kernel parameters".to_string()),
             true,
         )
-        .await
+        .await;
     }
 
     Ok(())

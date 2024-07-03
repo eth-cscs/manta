@@ -4,12 +4,14 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{self, session::mesa::r#struct::v2::CfsSessionPostRequest},
-    common::{kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    common::{
+        jwt_ops::get_claims_from_jwt_token, kubernetes,
+        vault::http_client::fetch_shasta_k8s_secrets,
+    },
     error::Error,
     node::utils::validate_xnames,
 };
 
-use crate::common::jwt_ops::get_claims_from_jwt_token;
 use k8s_openapi::chrono;
 use substring::Substring;
 
