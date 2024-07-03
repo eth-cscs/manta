@@ -2,15 +2,15 @@
 
 ## Configuration
 
-Manta follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) ([folder mapping per OS](https://gist.github.com/roalcantara/107ba66dfa3b9d023ac9329e639bc58c#correlations)) to find files. The configuration file needs to be under `$XDG_CONFIG_HOME/manta/` folder.
+By default, Manta follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) ([folder mapping per OS](https://gist.github.com/roalcantara/107ba66dfa3b9d023ac9329e639bc58c#correlations)) to find files. The configuration file needs to be under `$XDG_CONFIG_HOME/manta/` folder.
 
-Manta configuration file can be found under one of the following locations:
+By default, Manta configuration file can be found under one of the following locations:
 
 > - Linux: $HOME/.config/manta/config.toml
 > - MacOS: $HOME/Library/Application Support/manta/config.toml
 
 ```bash
-mkdir -p ~/.config/manta
+mkdir -p /home/msopena/.config/manta
 
 cat >> ~/.config/manta/config.toml <<EOF
 log = "info"
@@ -32,17 +32,13 @@ root_ca_cert_file = "alps_root_cert.pem"
 EOF
 ```
 
-Manta can log user's operations in `/var/log/manta/` (Linux) or `${PWD}` (MacOS), please make sure this folder exists and the current user has `rwx` access to it
-
-```bash
-mkdir /var/log/manta
-chmod 777 -R /var/log/manta
-```
+Alternatively, an environment variable could be used to tell Manta where to find the configuration file `MANTA_CONFIG=/home/msopena/my_config.toml manta config show`
 
 ## Legend:
 
 | Name                                | mandatory   | Type                          | Description                                                                                                                                                          | Example                               |
 | ----------------------------------- | ----------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| MANTA_CONFIG                        | no          | env                           | path to manta configuration file. If missing, then `$XDG_CONFIG/manta/confog.toml` will be used                                                                      | $HOME/my_confog.toml                  |
 | MANTA_CSM_TOKEN                     | no          | env                           | CSM authentication token, if this env var is missing, then manta will prompt use for credentials against CSM keycloak                                                |                                       |
 | log                                 | no          | config file                   | log details/verbosity                                                                                                                                                | off/error/warn/info/debug/trace       |
 | hsm_group                           | no          | config                        | If exists, then it will filter/restrict the hsm groups and/or xnames targeted by the cli command                                                                     | psi-dev                               |

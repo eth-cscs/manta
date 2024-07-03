@@ -13,6 +13,7 @@ nav:
   - Basic Operations: basic_operations.md
   - Cluster mgmt with SAT file: cluster_mgmt_with_sat_file.md
   - Cluster migration: cluster_migration.md
+  - Audit: audit.md
   - Security: security.md
   - FAQ: faq.md
 
