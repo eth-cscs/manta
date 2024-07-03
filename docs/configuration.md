@@ -51,7 +51,8 @@ Alternatively, an environment variable could be used to tell Manta where to find
 | sites.site_name.vault_role_id       | yes         | config file                   | role id related to Hashicorp Vault base URL approle authentication                                                                                                   | b15517de-cabb-06ba-af98-633d216c6d99  |
 | sites.site_name.vault_secret_path   | yes         | config file                   | path in vault to find secrets                                                                                                                                        | shasta | prealps                      |
 | sites.site_name.shasta_base_url     | yes         | config file                   | Shasta API base URL for Shasta related jobs submission                                                                                                               | https://api-gw-service-nmn.local/apis |
-| root_ca_cert_file                   | yes         | config file                   | file name with the CSM root CA. This certificate is used to trust the CSM server                                                                                     | alps_root_cert.pem                   |
+| root_ca_cert_file                   | yes         | config file                   | file name with the CSM root CA. This certificate is used to trust the CSM server                                                                                     | alps_root_cert.pem                    |
+| config_file                         | no          | config file                   | path to audit file location                                                                                                                                          | $HOME/audit_file.log                  |
 
 ## Add CSM root certificate token
 
