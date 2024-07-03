@@ -17,8 +17,18 @@ pub fn get_configuration_file_path() -> PathBuf {
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
 pub fn get_configuration() -> Config {
-    let mut config_path = get_configuration_file_path();
-    config_path.push("config.toml"); // ~/.config/manta/config is the file
+    // Get config file path
+    // Get config file path from ENV var
+    let config_path = if let Ok(env_config_file_string) = std::env::var("MANTA_CONFIG") {
+        let mut env_config_file = std::path::PathBuf::new();
+        env_config_file.push(env_config_file_string);
+        env_config_file
+    } else {
+        // Get default config file path ($XDG_CONFIG/manta/config.toml
+        let mut config_path = get_configuration_file_path();
+        config_path.push("config.toml"); // ~/.config/manta/config is the file
+        config_path
+    };
 
     let config_rslt = ::config::Config::builder()
         .add_source(::config::File::from(config_path))
@@ -32,7 +42,10 @@ pub fn get_configuration() -> Config {
     match config_rslt {
         Ok(config) => config,
         Err(error) => {
-            eprintln!("Error processing config.toml file. Reason:\n{}", error);
+            eprintln!(
+                "Error processing manta configuration file. Reason:\n{}",
+                error
+            );
             std::process::exit(1);
         }
     }

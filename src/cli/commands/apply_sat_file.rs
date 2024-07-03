@@ -1112,15 +1112,15 @@ pub async fn process_session_template_section_in_sat_file(
                 bos_sessiontemplate.get_target_xname()
             };
 
-            power_reset_nodes::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                xnames,
-                Some("Force BOS session reboot".to_string()),
-                true,
-            )
-            .await;
+            // power_reset_nodes::exec(
+            //     shasta_token,
+            //     shasta_base_url,
+            //     shasta_root_cert,
+            //     xnames,
+            //     Some("Force BOS session reboot".to_string()),
+            //     true,
+            // )
+            // .await;
         }
     }
 
@@ -1206,7 +1206,7 @@ pub async fn wait_cfs_session_to_complete(
         mesa::cfs::session::mesa::utils::filter_by_hsm(
             shasta_token,
             shasta_base_url,
-            shasta_root_cert,
+            shasa_root_cert,
             &mut cfs_session_vec,
             hsm_group_available_vec,
             Some(&1),
