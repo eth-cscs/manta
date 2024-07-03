@@ -1121,62 +1121,6 @@ pub async fn process_session_template_section_in_sat_file(
                 true,
             )
             .await;
-
-            /* log::info!("Rebooting nodes");
-            // Get nodes members of HSM group
-            // Get HSM group details
-            let hsm_group_details = hsm::group::shasta::http_client::get(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                Some(node_groups),
-            )
-            .await;
-
-            // Get list of xnames in HSM group
-            let nodes: Vec<String> = hsm_group_details.unwrap().first().unwrap()["members"]["ids"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|node| node.as_str().unwrap().to_string())
-                .collect();
-
-            // Create CAPMC operation shutdown
-            let capmc_shutdown_nodes_resp = capmc::http_client::node_power_off::post_sync(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                nodes.clone(),
-                Some("Shut down cluster to apply changes".to_string()),
-                true,
-            )
-            .await;
-
-            log::debug!(
-                "CAPMC shutdown nodes response:\n{:#?}",
-                capmc_shutdown_nodes_resp
-            );
-
-            // Create BOS session operation start
-            let create_bos_boot_session_resp = mesa::bos::session::shasta::http_client::post(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &create_bos_session_template_payload.name,
-                "boot",
-                Some(&nodes.join(",")),
-            )
-            .await;
-
-            log::debug!(
-                "Create BOS boot session response:\n{:#?}",
-                create_bos_boot_session_resp
-            );
-
-            if create_bos_boot_session_resp.is_err() {
-                eprintln!("Error creating BOS boot session. Exit");
-                std::process::exit(1);
-            } */
         }
     }
 
