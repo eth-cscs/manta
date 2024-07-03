@@ -2,17 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.39.0] - 2024-07-03
+## [1.40.0] - 2024-07-03
 
 ### Bug Fixes
 
-- Arggroup bug
-- Fix import
-- Update mesa version
-- Improve deprecated messages
 - Improve cli help
 - Migrate from BOS v1 to BOS v2
+- Arggroup bug
+- Fix import
 - IMS job creation returns CSM error msg is request failt
+
+### Features
+
+- Add cli command
+- Add new command `manta set boot-image`
+- Add new command `manta set boot-configuration`
+- New env var MANTA_CONFIG to set the path for the configuration file
+- Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.39.0
+
+### Refactor
+
+- Clean code
+
+## [1.38.1] - 2024-06-28
+
+### Bug Fixes
+
+- Improve deprecated messages
+
+### Miscellaneous Tasks
+
+- Release manta version 1.38.1
+
+## [1.38.0] - 2024-06-28
+
+### Bug Fixes
+
+- Update mesa version
 
 ### FEAT
 
@@ -20,24 +50,17 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Add cli command
-- Add new command `manta set boot-image`
-- Add new command `manta set boot-configuration`
 - Integrate "pin" and "unpin" features to "apply hw cluster" command
-- New env var MANTA_CONFIG to set the path for the configuration file
-- Update mesa version
 
 ### Miscellaneous Tasks
 
 - Release manta version 1.38.0
-- Release manta version 1.38.1
 
 ### Refactor
 
 - Clean code
 - Code housekeeping
 - Rename apply_hw_cluster modules according to pin and unpin strategy
-- Clean code
 
 ## [1.37.0] - 2024-06-12
 
