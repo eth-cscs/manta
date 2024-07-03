@@ -1,18 +1,8 @@
 log = "info"
-# socks5_proxy = "socks5h://127.0.0.1:1080"
-# shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
-# keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
-# gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
-# k8s_api_url = "https://10.252.1.12:6442"
-# # vault_base_url = "https://vault.svc.cscs.ch" # vault in fulen
-# # vault_role_id = "f9a867ff-2a05-cfda-10b1-bbae7591ff58" # vault in fulen
-# vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
-# vault_secret_path = "shasta"
-# vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
-# # hsm_available = [ "psi-dev", "psitds" ]
-# # hsm_group = "psi-dev"
 
 site = "alps"
+parent_hsm_group = "nodes_free"
+audit_file = "/home/msopena/manta_audit.log"
 
 [sites]
 
@@ -27,7 +17,7 @@ k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
-parent_hsm_group = "nodes_free"
+root_ca_cert_file = "alps_root_cert.pem"
 
 [sites.prealps]
 socks5_proxy = "socks5h://127.0.0.1:1081"
@@ -38,15 +28,15 @@ k8s_api_url = "https://10.252.1.2:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "prealps"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+root_ca_cert_file = "prealps_root_cert.pem"
 
-# [sites.alpsm]
-# socks5_proxy = "socks5h://127.0.0.1:1080"
-# shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
-# keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
-# gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
-# k8s_api_url = "https://10.252.1.12:6442"
-# # vault_base_url = "https://vault.svc.cscs.ch" # vault in fulen
-# # vault_role_id = "f9a867ff-2a05-cfda-10b1-bbae7591ff58" # vault in fulen
-# vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
-# vault_secret_path = "shasta-meteo"
-# vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+[sites.alpsm]
+socks5_proxy = "socks5h://127.0.0.1:1082"
+shasta_base_url = "https://api.cmn.alpsm.cscs.ch/apis"
+keycloak_base_url = "https://api.cmn.alpsm.cscs.ch/keycloak"
+gitea_base_url = "https://api.cmn.alpsm.cscs.ch/vcs"
+k8s_api_url = "https://10.252.1.2:6442"
+vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
+vault_secret_path = "alpsm"
+vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch, this doesn't change for the whole CSCS
+root_ca_cert_file = "alpsm_root_cert.pem"
