@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.1] - 2024-07-04
+
+### Refactor
+
+- Clean code
+
 ## [1.41.0] - 2024-07-03
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - New config parameters to specify audit file location
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.0
 
 ### Refactor
 
