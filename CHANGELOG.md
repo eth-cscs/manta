@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.2] - 2024-07-04
+
+### Bug Fixes
+
+- Fix CICD error by mesa dependency in Cargo.toml
+
 ## [1.41.1] - 2024-07-04
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.1
 
 ### Refactor
 
