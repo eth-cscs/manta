@@ -99,10 +99,10 @@ pub async fn get_configuration_layer_details(
 ) -> LayerDetails {
     let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
     // let branch_name_opt: Option<&str> = layer.branch.as_deref();
-    let mut most_recent_commit: bool = false;
+    // let mut most_recent_commit: bool = false;
     let mut branch_name: String = "".to_string();
     let mut tag_name: String = "".to_string();
-    let mut commit_sha;
+    let commit_sha;
 
     let repo_ref_vec: Vec<Value> = gitea::http_client::get_all_refs_from_repo_url(
         gitea_base_url,
@@ -182,7 +182,7 @@ pub async fn get_configuration_layer_details(
         let ref_type: &str = ref_value.pointer("/object/type").unwrap().as_str().unwrap();
         let mut r#ref = ref_value["ref"].as_str().unwrap().split("/").skip(1);
 
-        let commit_sha_value: Value;
+        // let commit_sha_value: Value;
 
         let ref_1 = r#ref.next();
         // let ref_2 = r#ref.next();
@@ -198,32 +198,32 @@ pub async fn get_configuration_layer_details(
                 tag_name += &tag_name_aux;
             }
 
-            commit_sha = ref_value["url"].as_str().unwrap();
+            // commit_sha = ref_value["url"].as_str().unwrap();
         } else {
             // annotated tag
             tag_name += &ref_2;
 
-            commit_sha_value = gitea::http_client::get_commit_from_tag(
+            /* commit_sha_value = gitea::http_client::get_commit_from_tag(
                 ref_value["url"].as_str().unwrap(),
                 &tag_name,
                 gitea_token,
                 shasta_root_cert,
             )
             .await
-            .unwrap();
+            .unwrap(); */
 
-            commit_sha = commit_sha_value
-                .pointer("/commit/sha")
-                .unwrap()
-                .as_str()
-                .unwrap();
+            /* commit_sha = commit_sha_value
+            .pointer("/commit/sha")
+            .unwrap()
+            .as_str()
+            .unwrap(); */
         }
 
-        // check if layer commit is the most recent
+        /* // check if layer commit is the most recent
         if commit_sha.eq(&layer.commit.clone().unwrap()) {
             // CFS layer commit is the same as the HEAD of the branch
             most_recent_commit = true;
-        }
+        } */
     }
 
     if let Some(cfs_config_layer_branch) = &layer.branch {

@@ -319,7 +319,7 @@ pub fn has_conflicts(
     Ok(())
 }
 
-pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), Box<dyn Error>> {
+/* pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), Box<dyn Error>> {
     let head_commit = repo.reference_to_annotated_commit(&repo.head()?)?;
     let mut remote_aux = repo.find_remote("origin")?;
     let remote_branch = "apply-dynamic-target-session";
@@ -327,7 +327,7 @@ pub fn fetch_and_check_conflicts(repo: &Repository) -> core::result::Result<(), 
     has_conflicts(repo, &head_commit, &fetch_commit)?;
 
     Ok(())
-}
+} */
 
 /* #[cfg(test)]
 mod tests {

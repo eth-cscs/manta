@@ -74,7 +74,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let root_ca_cert_file = site_detail_value
         .get("root_ca_cert_file")
-        .expect("k8s_root_cert_file value missing in configuration file")
+        .expect("'root_cert_file' value missing in configuration file")
         .to_string();
 
     let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);

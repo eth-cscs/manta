@@ -515,8 +515,7 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                 )
                 .await;
-                let target_hsm_group_name_arg_opt =
-                    cli_add_hw_configuration.get_one::<String>("target-cluster");
+                let _ = cli_add_hw_configuration.get_one::<String>("target-cluster");
 
                 let nodryrun = *cli_add_hw_configuration
                     .get_one::<bool>("no-dryrun")
@@ -768,7 +767,7 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &target_hsm_group_vec,
+                    target_hsm_group_vec.clone(),
                 )
                 .await;
 
@@ -1869,7 +1868,7 @@ pub async fn validate_target_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &hsm_groups_user_has_access,
+        hsm_groups_user_has_access.clone(),
     )
     .await;
 

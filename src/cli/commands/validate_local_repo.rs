@@ -17,7 +17,6 @@ pub async fn exec(
         Ok(repo) => repo,
         Err(_) => {
             eprintln!("Could not find a git repo in {}", repo_path);
-            exit_code = 1;
             std::process::exit(1);
         }
     };

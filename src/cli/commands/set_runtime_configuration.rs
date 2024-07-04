@@ -15,7 +15,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            hsm_group_name_vec,
+            hsm_group_name_vec.clone(),
         )
         .await
     } else if let Some(xname_vec) = xname_vec_opt {

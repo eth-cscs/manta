@@ -1132,13 +1132,12 @@ pub async fn test_hsm_hw_management_1() {
         ),
     ];
 
-    let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
-        resolve_hw_description_to_xnames(
-            hsm_zinal_hw_counters,
-            hsm_nodes_free_hw_conters,
-            user_request_hw_summary.clone(),
-        )
-        .await;
+    let (target_hsm_node_hw_component_count_vec, _) = resolve_hw_description_to_xnames(
+        hsm_zinal_hw_counters,
+        hsm_nodes_free_hw_conters,
+        user_request_hw_summary.clone(),
+    )
+    .await;
 
     println!(
         "DEBUG - target HSM group:\n{:#?}",
@@ -1319,13 +1318,12 @@ pub async fn test_hsm_hw_management_2() {
         ),
     ];
 
-    let (target_hsm_node_hw_component_count_vec, parent_hsm_node_hw_component_count_vec) =
-        resolve_hw_description_to_xnames(
-            hsm_zinal_hw_counters,
-            hsm_nodes_free_hw_conters,
-            user_request_hw_summary.clone(),
-        )
-        .await;
+    let (target_hsm_node_hw_component_count_vec, _) = resolve_hw_description_to_xnames(
+        hsm_zinal_hw_counters,
+        hsm_nodes_free_hw_conters,
+        user_request_hw_summary.clone(),
+    )
+    .await;
 
     println!(
         "DEBUG - target HSM group:\n{:#?}",

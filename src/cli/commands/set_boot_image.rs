@@ -5,8 +5,6 @@ use mesa::{
     error::Error,
 };
 
-use crate::cli::commands::power_reset_nodes;
-
 /// Set boot image to a set of nodes. This function updates the desired_configuration for the node
 /// boot params.
 /// If the new image is different than existing one, then the nodes will reboot. This is mandatory
@@ -21,8 +19,6 @@ pub async fn exec(
 ) -> Result<(), Error> {
     println!("Set runtime-configuration");
 
-    let mut need_restart = false;
-
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
@@ -30,7 +26,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            hsm_group_name_vec,
+            hsm_group_name_vec.clone(),
         )
         .await
     } else if let Some(xname_vec) = xname_vec_opt {

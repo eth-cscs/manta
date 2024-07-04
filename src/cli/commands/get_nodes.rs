@@ -22,7 +22,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            hsm_name_vec,
+            hsm_name_vec.to_vec(),
         )
         .await;
 

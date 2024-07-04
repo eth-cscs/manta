@@ -23,10 +23,7 @@ use mesa::{
 use serde_yaml::Value;
 
 use crate::{
-    cli::{
-        commands::{apply_hw_cluster_pin, power_reset_nodes},
-        process::validate_target_hsm_members,
-    },
+    cli::{commands::apply_hw_cluster_pin, process::validate_target_hsm_members},
     common::{
         self,
         sat_file::{
@@ -1065,7 +1062,7 @@ pub async fn process_session_template_section_in_sat_file(
             .await;
 
             match create_bos_session_resp {
-                Ok(bos_session) => {
+                Ok(_) => {
                     // log::info!("K8s job relates to BOS session v1 '{}'", bos_session["job"].as_str().unwrap());
                     println!(
                         "BOS session for BOS sessiontemplate '{}' created",
@@ -1090,7 +1087,7 @@ pub async fn process_session_template_section_in_sat_file(
 
             let bos_sessiontemplate = bos_sessiontemplate_vec.first().unwrap();
 
-            let xnames = if !bos_sessiontemplate.get_target_hsm().is_empty() {
+            let _ = if !bos_sessiontemplate.get_target_hsm().is_empty() {
                 // Get list of XNAMES for all HSM groups
                 let mut xnames = Vec::new();
                 for hsm in bos_sessiontemplate.get_target_hsm().iter() {
@@ -1157,7 +1154,7 @@ pub async fn wait_bos_session_v2_to_complete_or_force_reboot(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &node_group_vec,
+                node_group_vec.to_vec(),
             )
             .await;
 
