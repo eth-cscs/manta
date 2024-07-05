@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.4] - 2024-07-05
+
+### Bug Fixes
+
+- Update mesa vesion to fix local repo validation bug
+
 ## [1.41.3] - 2024-07-05
 
 ### Bug Fixes
 
 - Update cargo dist and stdout logs
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.3
 
 ## [1.41.2] - 2024-07-04
 
