@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.5] - 2024-07-05
+
+### Bug Fixes
+
+- Error management when any HSM group in JWT token does not exists
+
 ## [1.41.4] - 2024-07-05
 
 ### Bug Fixes
 
 - Update mesa vesion to fix local repo validation bug
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.4
 
 ## [1.41.3] - 2024-07-05
 
