@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.3] - 2024-07-05
+
+### Bug Fixes
+
+- Update cargo dist and stdout logs
+
 ## [1.41.2] - 2024-07-04
 
 ### Bug Fixes
