@@ -85,13 +85,13 @@ lto = "thin"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.8.1"
+cargo-dist-version = "0.18.0"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "1.78.0"
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
 # CI backends to support
-ci = ["github"]
+ci = "github"
 # The installers to generate for each app
 installers = ["shell", "homebrew"]
 # Whether to consider the binaries in a package for distribution (defaults true)
@@ -100,6 +100,8 @@ dist = true
 pr-run-mode = "plan"
 # Publish jobs to run in CI
 publish-jobs = ["homebrew"]
+# Whether to install an updater program
+install-updater = false
 
 # Config for `cargo release`
 [package.metadata.release]

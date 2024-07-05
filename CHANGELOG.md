@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Fix CICD error by mesa dependency in Cargo.toml
 
+### Miscellaneous Tasks
+
+- Release manta version 1.41.2
+
 ## [1.41.1] - 2024-07-04
 
 ### Miscellaneous Tasks

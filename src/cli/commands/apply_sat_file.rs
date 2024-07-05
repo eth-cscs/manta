@@ -622,8 +622,8 @@ pub async fn validate_sat_file_session_template_section(
                 .is_ok();
 
                 if !configuration_found {
-                    println!(
-                        "Could not find configuration '{}' in session_template '{}'. Exit",
+                    eprintln!(
+                        "ERROR - Could not find configuration '{}' in session_template '{}'. Exit",
                         configuration_to_find,
                         session_template_yaml["name"].as_str().unwrap(),
                     );
