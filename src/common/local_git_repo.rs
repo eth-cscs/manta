@@ -342,14 +342,10 @@ mod tests {
         let username = "crayvcs";
         let password = "f557a93bc816235de79534d835e48cc1037375bca3850acaa67d27a672a991cf";
 
-        println!("DEBUG - 0");
-
         cb.credentials(|_, _, _| git2::Cred::userpass_plaintext(username, password));
 
         let repo = git2::Repository::init("fake_repo").unwrap();
         git2::opts::set_ssl_cert_file("/home/msopena/.config/manta/opa-gpm-cmn-alps-cscs-ch-chain.pem");
-
-        println!("DEBUG - 1");
 
         /* // TODO: CLEAN THIS!!!
         cb.credentials(|url, username_from_url, allowed_types| {
@@ -416,8 +412,6 @@ mod tests {
         // Perform a download and also update tips
         fo.download_tags(git2::AutotagOption::All);
 
-        println!("DEBUG - 2");
-
         let remote_rslt = repo.remote("csm-gitea", url);
 
         let mut remote = match remote_rslt {
@@ -428,12 +422,8 @@ mod tests {
             }
         };
 
-        println!("DEBUG - 3");
-
         println!("Fetching remote {} for repo", remote.name().unwrap());
         remote.fetch(&["main"], Some(&mut fo), None).unwrap();
-
-        println!("DEBUG - 4");
 
         // If there are local objects (we got a thin pack), then tell the user
         // how many objects we saved from having to cross the network.
