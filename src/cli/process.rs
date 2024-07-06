@@ -722,7 +722,7 @@ pub async fn process_cli(
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec: Vec<String> = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -738,11 +738,16 @@ pub async fn process_cli(
                     cli_get_session.get_one::<u8>("limit")
                 };
 
+                let xname_vec_opt: Option<Vec<&str>> = cli_get_session
+                    .get_one::<String>("xnames")
+                    .map(|xname_str| xname_str.split(',').map(|xname| xname.trim()).collect());
+
                 get_session::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &target_hsm_group_vec,
+                    Some(target_hsm_group_vec),
+                    xname_vec_opt,
                     cli_get_session.get_one::<String>("min-age"),
                     cli_get_session.get_one::<String>("max-age"),
                     cli_get_session.get_one::<String>("status"),

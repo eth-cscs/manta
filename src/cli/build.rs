@@ -304,12 +304,18 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
             arg!(-l --limit <VALUE> "Return only last <VALUE> sessions created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]));
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-x --xnames <XNAMES> "List of xnames"));
 
     match hsm_group {
         None => {
-            get_cfs_session =
-                get_cfs_session.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+            get_cfs_session = get_cfs_session
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+                .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
+                    "hsm-group",
+                    "xnames",
+                    "name",
+                ]))
         }
         Some(_) => {}
     }

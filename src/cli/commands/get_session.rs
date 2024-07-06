@@ -6,7 +6,8 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &Vec<String>,
+    hsm_group_name_vec_opt: Option<Vec<String>>,
+    xname_vec_opt: Option<Vec<&str>>,
     min_age_opt: Option<&String>,
     max_age_opt: Option<&String>,
     status_opt: Option<&String>,
@@ -14,7 +15,10 @@ pub async fn exec(
     limit_number_opt: Option<&u8>,
     output_opt: Option<&String>,
 ) {
-    log::info!("Get CFS sessions for HSM groups: {:?}", hsm_group_name_vec);
+    log::info!(
+        "Get CFS sessions for HSM groups: {:?}",
+        hsm_group_name_vec_opt
+    );
 
     let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
@@ -29,13 +33,27 @@ pub async fn exec(
     .await
     .unwrap();
 
-    if !hsm_group_name_vec.is_empty() {
-        mesa::cfs::session::mesa::utils::filter_by_hsm(
+    if let Some(hsm_group_name_vec) = hsm_group_name_vec_opt {
+        if !hsm_group_name_vec.is_empty() {
+            mesa::cfs::session::mesa::utils::filter_by_hsm(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &mut cfs_session_vec,
+                &hsm_group_name_vec,
+                limit_number_opt,
+            )
+            .await;
+        }
+    }
+
+    if let Some(xname_vec) = xname_vec_opt {
+        mesa::cfs::session::mesa::utils::filter_by_xname(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             &mut cfs_session_vec,
-            hsm_group_name_vec,
+            xname_vec.as_slice(),
             limit_number_opt,
         )
         .await;
