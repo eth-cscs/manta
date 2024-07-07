@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.0] - 2024-07-07
+
+### Bug Fixes
+
+- Ansible-passthrough
+- Ignore system hsm groups in SAT file, JWT and functions to get all
+
+### Features
+
+- Update mesa version
+
 ## [1.41.6] - 2024-07-07
 
 ### Bug Fixes
@@ -12,6 +23,10 @@ All notable changes to this project will be documented in this file.
 
 - Update mesa
 - Get sessions related to xnames
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.6
 
 ### Refactor
 
