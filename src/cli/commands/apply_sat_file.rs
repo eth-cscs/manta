@@ -885,6 +885,12 @@ pub async fn process_session_template_section_in_sat_file(
                     })
                 });
 
+            //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
+            //wide operations instead of using roles
+            let node_groups_opt = Some(mesa::hsm::group::hacks::filter_system_hsm_group_names(
+                node_groups_opt.unwrap_or_default(),
+            ));
+
             // Validate/check HSM groups in YAML file session_templates.bos_parameters.boot_sets.<parameter>.node_groups matches with
             // Check hsm groups in SAT file includes the hsm_group_param
             for node_group in node_groups_opt.clone().unwrap_or_default() {

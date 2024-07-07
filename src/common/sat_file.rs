@@ -529,6 +529,10 @@ pub async fn create_image_from_sat_file_serde_yaml(
         .map(|group_name| group_name.as_str().unwrap().to_string())
         .collect();
 
+    //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
+    //wide operations instead of using roles
+    let groups_name = mesa::hsm::group::hacks::filter_system_hsm_group_names(groups_name);
+
     let base_image_id: String;
 
     // Get/process base image
@@ -1256,24 +1260,25 @@ pub fn validate_sat_file_images_section(
             // Validate user has access to HSM groups in 'image' section
             log::info!("Validate 'image' '{}' HSM groups", image_name);
 
-            let configuration_group_names_yaml_vec: Vec<Value> = image_yaml
-                ["configuration_group_names"]
-                .as_sequence()
-                .unwrap_or(&Vec::new())
-                .to_vec();
+            let configuration_group_names_vec: Vec<String> =
+                serde_yaml::from_value(image_yaml["configuration_group_names"].clone())
+                    .unwrap_or(Vec::new());
 
-            if configuration_group_names_yaml_vec.is_empty() {
+            //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
+            //wide operations instead of using roles
+            let configuration_group_names_vec =
+                mesa::hsm::group::hacks::filter_system_hsm_group_names(
+                    configuration_group_names_vec,
+                );
+
+            if configuration_group_names_vec.is_empty() {
                 return Err(Error::Message(format!("Image '{}' must have group name values assigned to it. Canceling image build process. Exit", image_name)));
             } else {
-                for hsm_group in configuration_group_names_yaml_vec
-                    .iter()
-                    .map(|hsm_group_yaml| hsm_group_yaml.as_str().unwrap())
-                    .filter(|&hsm_group| {
-                        !hsm_group.eq_ignore_ascii_case("Compute")
-                            && !hsm_group.eq_ignore_ascii_case("Application")
-                            && !hsm_group.eq_ignore_ascii_case("Application_UAN")
-                    })
-                {
+                for hsm_group in configuration_group_names_vec.iter().filter(|&hsm_group| {
+                    !hsm_group.eq_ignore_ascii_case("Compute")
+                        && !hsm_group.eq_ignore_ascii_case("Application")
+                        && !hsm_group.eq_ignore_ascii_case("Application_UAN")
+                }) {
                     if !hsm_group_available_vec.contains(&hsm_group.to_string()) {
                         return Err(Error::Message(format!
                         (
