@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.6] - 2024-07-07
+
+### Bug Fixes
+
+- Workaround system hsm groups filtering
+
+### Features
+
+- Update mesa
+- Get sessions related to xnames
+
+### Refactor
+
+- Clean code
+
 ## [1.41.5] - 2024-07-05
 
 ### Bug Fixes
 
 - Error management when any HSM group in JWT token does not exists
+
+### Miscellaneous Tasks
+
+- Release manta version 1.41.5
 
 ## [1.41.4] - 2024-07-05
 
