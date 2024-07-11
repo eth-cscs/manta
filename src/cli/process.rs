@@ -1256,6 +1256,12 @@ pub async fn process_cli(
                 )
                 .expect("ERROR: reading SAT file template. Exit");
 
+                let ansible_passthrough_env = settings.get::<String>("ansible_passthrough").ok();
+                let ansible_passthrough_cli_arg = cli_apply_sat_file
+                    .get_one::<String>("ansible-passthrough")
+                    .cloned();
+                let ansible_passthrough = ansible_passthrough_env.or(ansible_passthrough_cli_arg);
+
                 let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
@@ -1276,7 +1282,7 @@ pub async fn process_cli(
                         .get_one::<String>("ansible-verbosity")
                         .cloned()
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
-                    cli_apply_sat_file.get_one::<String>("ansible-passthrough"),
+                    ansible_passthrough.as_ref(),
                     gitea_token,
                     // &tag,
                     *cli_apply_sat_file
