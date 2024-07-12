@@ -822,9 +822,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
-                println!("Deprecated - Please use 'manta get cluster' command instead.");
-                log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
-
                 let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -835,6 +832,14 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                 )
                 .await;
+
+                let output_opt = cli_get_node.get_one::<String>("output");
+
+                if output_opt.is_some_and(|output| output == "table" || output == "summary") {
+                    println!("Deprecated - Please use 'manta get cluster' command instead.");
+                } else {
+                    log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
+                }
 
                 get_nodes::exec(
                     shasta_token,
@@ -847,12 +852,11 @@ pub async fn process_cli(
                     *cli_get_node
                         .get_one::<bool>("xnames-only-one-line")
                         .unwrap_or(&false),
-                    cli_get_node.get_one::<String>("output"),
+                    output_opt,
                     false,
                 )
                 .await;
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
-                println!("Deprecated - Do not use this command.");
                 log::warn!("Deprecated - Do not use this command.");
 
                 let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
@@ -968,7 +972,6 @@ pub async fn process_cli(
             } else if let Some(cli_apply_configuration) =
                 cli_apply.subcommand_matches("configuration")
             {
-                println!("Deprecated - Please use 'manta apply sat-file' command instead.");
                 log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
 
                 get_target_hsm_group_vec_or_all(
@@ -1080,7 +1083,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
-                println!("Deprecated - Please use 'manta apply sat-file' command instead.");
                 log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
 
                 get_target_hsm_group_vec_or_all(
@@ -1148,7 +1150,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
-                println!("Deprecated - Please use 'manta apply sat-file' command instead.");
                 log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -1294,7 +1295,6 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
                 if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                    println!("Deprecated - Please use 'manta power on' command instead.");
                     log::warn!("Deprecated - Please use 'manta power on' command instead.");
 
                     /* apply_node_on::exec(
@@ -1336,7 +1336,6 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                    println!("Deprecated - Please use 'manta power off' command instead.");
                     log::warn!("Deprecated - Please use 'manta power off' command instead.");
 
                     /* apply_node_off::exec(
@@ -1382,7 +1381,6 @@ pub async fn process_cli(
                 } else if let Some(cli_apply_node_reset) =
                     cli_apply_node.subcommand_matches("reset")
                 {
-                    println!("Deprecated - Please use 'manta power reset' command instead.");
                     log::warn!("Deprecated - Please use 'manta power reset' command instead.");
 
                     /* apply_node_reset::exec(
@@ -1450,7 +1448,6 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
-                    println!("Deprecated - Please use 'manta power' command instead.");
                     log::warn!("Deprecated - Please use 'manta power' command instead.");
 
                     let hsm_group_name_arg_opt =
@@ -1512,7 +1509,6 @@ pub async fn process_cli(
             }
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
-                println!("Deprecated - Please use 'manta apply boot nodes' command instead.");
                 log::warn!("Deprecated - Please use 'manta apply boot nodes' command instead.");
 
                 let hsm_group_name_arg_opt = cli_update_node.get_one::<String>("HSM_GROUP_NAME");
@@ -1545,7 +1541,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
-                println!("Deprecated - Please use 'manta apply boot cluster' command instead.");
                 log::warn!("Deprecated - Please use 'manta apply boot cluster' command instead.");
 
                 let hsm_group_name_arg_opt =
