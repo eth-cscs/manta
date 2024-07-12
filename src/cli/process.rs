@@ -836,7 +836,7 @@ pub async fn process_cli(
                 let output_opt = cli_get_node.get_one::<String>("output");
 
                 if output_opt.is_some_and(|output| output == "table" || output == "summary") {
-                    println!("Deprecated - Please use 'manta get cluster' command instead.");
+                    eprintln!("Deprecated - Please use 'manta get cluster' command instead.");
                 } else {
                     log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
                 }
