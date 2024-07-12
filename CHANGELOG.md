@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.3] - 2024-07-12
+
+### Bug Fixes
+
+- Move deprecated messages in command get nodes to log when output is json
+
 ## [1.42.2] - 2024-07-12
 
 ### Bug Fixes
 
 - Move deprecated messages in command get nodes to log when output is json
+
+### Miscellaneous Tasks
+
+- Release manta version 1.42.2
 
 ## [1.42.1] - 2024-07-11
 
