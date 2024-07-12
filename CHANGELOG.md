@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.2] - 2024-07-12
+
+### Bug Fixes
+
+- Move deprecated messages in command get nodes to log when output is json
+
 ## [1.42.1] - 2024-07-11
 
 ### Features
 
 - Apply sat now accepts ansible_passthrough argument as env var
+
+### Miscellaneous Tasks
+
+- Release manta version 1.42.1
 
 ## [1.42.0] - 2024-07-07
 
