@@ -316,11 +316,18 @@ pub fn render_jinja2_sat_file_yaml(
     values_file_content_opt: Option<&String>,
     value_cli_vec_opt: Option<Vec<String>>,
 ) -> Value {
+    let env = minijinja::Environment::new();
+
     let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
         // TEMPLATE
         // Read sesson vars file
-        serde_yaml::from_str(values_file_content).unwrap()
+        let values_file_yaml: Value = serde_yaml::from_str(values_file_content).unwrap();
+        // Render session vars file
+        let values_file_rendered = env
+            .render_str(values_file_content, values_file_yaml)
+            .expect("ERROR - Error parsing values file to YAML. Exit");
+        serde_yaml::from_str(&values_file_rendered).unwrap()
     } else {
         serde_yaml::from_str(sat_file_content).unwrap()
     };
@@ -333,7 +340,6 @@ pub fn render_jinja2_sat_file_yaml(
     }
 
     // Render SAT file template
-    let env = minijinja::Environment::new();
     let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
 
     let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
