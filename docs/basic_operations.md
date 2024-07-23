@@ -658,7 +658,7 @@ manta set boot-configuration --xnames x1001c1s5b0n0,x1001c1s5b0n1 --configuratio
 
 ## Set kernel parameters
 
-???+ info "**Do not use rootfs**"
+???+ info "**Do not use `rootfs`**"
       The `rootfs` kernel parameter is managed automatically when changing the boot image, do not add `rootfs` kernel param in this command
 
 Normal version
