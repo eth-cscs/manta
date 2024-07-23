@@ -658,5 +658,31 @@ manta set boot-configuration --xnames x1001c1s5b0n0,x1001c1s5b0n1 --configuratio
 
 ## Set kernel parameters
 
-??? info "**WIP**"
-    This is work in progress
+???+ info "**Do not use rootfs**"
+      The `rootfs` kernel parameter is managed automatically when changing the boot image, do not add `rootfs` kernel param in this command
+
+Normal version
+
+```bash
+manta set kernel-parameters ...
+```
+
+Short version
+
+```bash
+manta s kp ...
+```
+
+eg:
+
+Set/update boot configuration for all nodes in a cluster
+
+```bash
+manta set kernel-parameters --hsm-group zinal --kernel-parameters "console=ttyS0,115200 bad_page=panic crashkernel=512M hugepagelist=2m-2g intel_pstate=disable iommu.passthrough=on numa_balancing=disable numa_interleave_omit=headless oops=panic pageblock_order=14 pcie_ports=native rd.retry=10 rd.shell split_lock_detect=off systemd.unified_cgroup_hierarchy=1 ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}"
+```
+
+Set/update boot configuration for a list of nodes
+
+```bash
+manta set kernel-parameters --xnames x1001c1s5b0n0,x1001c1s5b0n1 --kernel-parameters "console=ttyS0,115200 bad_page=panic crashkernel=512M hugepagelist=2m-2g intel_pstate=disable iommu.passthrough=on numa_balancing=disable numa_interleave_omit=headless oops=panic pageblock_order=14 pcie_ports=native rd.retry=10 rd.shell split_lock_detect=off systemd.unified_cgroup_hierarchy=1 ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}
+```
