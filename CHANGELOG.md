@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.0] - 2024-07-23
+
+### Features
+
+- Copy ansible templating functionality and session vars file is both a ninja template and a values file, 'manta apply sat' will render the values file with itself
+
 ## [1.42.3] - 2024-07-12
 
 ### Bug Fixes
 
 - Move deprecated messages in command get nodes to log when output is json
+
+### Miscellaneous Tasks
+
+- Release manta version 1.42.3
 
 ## [1.42.2] - 2024-07-12
 
