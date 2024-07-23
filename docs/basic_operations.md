@@ -437,32 +437,224 @@ nid003129 login:
 
 ## Power management
 
-### Power on
+### Power on cluster
 
+Normal version
 
-### Power off
+```bash
+manta power on cluster <cluster name>
+```
 
+Short version
 
-### Power reset
+```bash
+manta p on c <cluster name>
+```
 
+eg:
+
+Power on cluster `zinal`
+
+```bash
+manta p on c zinal
+```
+
+### Power on nodes
+
+Normal version
+
+```bash
+manta power on nodes <list of nodes>
+```
+
+Short version
+
+```bash
+manta p on n <list of nodes>
+```
+
+eg:
+
+Power on a list of nodes
+
+```bash
+manta p on n x1001c1s5b0n0,x1001c1s5b0n1
+```
+
+### Power off cluster
+
+Normal version
+
+```bash
+manta power off cluster <cluster name>
+```
+
+Short version
+
+```bash
+manta p off c <cluster name>
+```
+
+eg:
+
+Power off cluster `zinal`
+
+```bash
+manta p off c zinal
+```
+
+### Power off nodes
+
+Normal version
+
+```bash
+manta power off nodes <list of nodes>
+```
+
+Short version
+
+```bash
+manta p off n <list of nodes>
+```
+
+eg:
+
+Power off a list of nodes
+
+```bash
+manta p off n x1001c1s5b0n0,x1001c1s5b0n1
+```
+
+### Power reset cluster
+
+Normal version
+
+```bash
+manta power reset cluster <cluster name>
+```
+
+Short version
+
+```bash
+manta p reset c <cluster name>
+```
+
+eg:
+
+Power reset cluster `zinal`
+
+```bash
+manta p reset c zinal
+```
+
+### Power reset nodes
+
+Normal version
+
+```bash
+manta power reset nodes <list of nodes>
+```
+
+Short version
+
+```bash
+manta p reset n <list of nodes>
+```
+
+eg:
+
+Power reset a list of nodes
+
+```bash
+manta p reset n x1001c1s5b0n0,x1001c1s5b0n1
+```
 
 ## Set runtime configuration
 
-??? info "**WIP**"
-    This is work in progress
+Normal version
+
+```bash
+manta set runtime-configuration ...
+```
+
+Short version
+
+```bash
+manta s rc ...
+```
+
+eg:
+
+Set/update runtime configuration for all nodes in a cluster
+
+```bash
+manta set runtime-configuration --hsm-group zinal --configuration my_configuration
+```
+
+Set/update runtime configuration for a list of nodes
+
+```bash
+manta set runtime-configuration --xnames x1001c1s5b0n0,x1001c1s5b0n1 --configuration my_configuration
+```
 
 ## Set boot image
-
-??? info "**WIP**"
-    This is work in progress
 
 ???+ warning "**Highly discourage**"
       Use this command only if `manta set boot-configuration` fails because it can't find the sessions linking the configuration with the image (meaning information in the system has been deleted)
 
+Normal version
+
+```bash
+manta set boot-image ...
+```
+
+Short version
+
+```bash
+manta s bi ...
+```
+
+eg:
+
+Set/update boot image for all nodes in a cluster
+
+```bash
+manta set boot-image --hsm-group zinal --image-id e2ce82f0-e7ba-4f36-9f5c-750346599600
+```
+
+Set/update runtime configuration for a list of nodes
+
+```bash
+manta set boot-image --xnames x1001c1s5b0n0,x1001c1s5b0n1 --image-id e2ce82f0-e7ba-4f36-9f5c-750346599600
+```
+
 ## Set boot configuration
 
-??? info "**WIP**"
-    This is work in progress
+Normal version
+
+```bash
+manta set boot-configuration ...
+```
+
+Short version
+
+```bash
+manta s bc ...
+```
+
+eg:
+
+Set/update boot configuration for all nodes in a cluster
+
+```bash
+manta set boot-configuration --hsm-group zinal --configuration my-configuration
+```
+
+Set/update boot configuration for a list of nodes
+
+```bash
+manta set boot-configuration --xnames x1001c1s5b0n0,x1001c1s5b0n1 --configuration my-configuration
+```
 
 ## Set kernel parameters
 
