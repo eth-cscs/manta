@@ -78,6 +78,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .about("Make changes to Shasta system")
                 .subcommand(subcommand_apply_hw_configuration())
                 .subcommand(subcommand_apply_configuration(hsm_group))
+                .subcommand(subcommand_apply_template())
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
                 .subcommand(subcommand_apply_sat_file(/* hsm_group */))
@@ -555,6 +556,19 @@ pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
 }
 
+pub fn subcommand_apply_template(/* hsm_group: Option<&String> */) -> Command {
+    Command::new("template")
+        .aliases(["t", "temp"])
+        .arg_required_else_help(true)
+        .about("Create a BOS session based on a BOS sessiontemplate and operation")
+        .arg(arg!(-t --"template-name" <VALUE> "BOS sessiontemplate name.").required(true))
+        .arg(
+            arg!(-o --"operation" <VALUE> "Operation.")
+                .value_parser(["boot", "reboot", "shutdown"])
+                .required(true),
+        )
+}
+
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
     Command::new("cluster")
         .aliases(["clus","clstr"])
@@ -585,7 +599,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
         .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
         .arg(arg!(-V --"values" <VALUES_PATH> ... "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
-        .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot."))
+        .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot.").action(ArgAction::SetTrue))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["1", "2", "3", "4"])
             .num_args(1)
@@ -593,7 +607,9 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
             .default_value("2")
             .default_missing_value("2"))
         .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session to create an image. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
-        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
+        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts").action(ArgAction::SetTrue))
+        .arg(arg!(-i --"image-only" "Only process `configurations` and `images` sections in SAT file. The `session_templates` section will be ignored.").action(ArgAction::SetTrue))
+        .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
         .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing SAT file. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
         .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after processing SAT file successfully. Use \" or \'.\neg: --post-hook \"echo hello\"."))

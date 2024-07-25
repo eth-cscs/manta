@@ -49,10 +49,11 @@ pub async fn exec(
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     gitea_token: &str,
-    // tag: &str,
     do_not_reboot: bool,
     prehook: Option<&String>,
     posthook: Option<&String>,
+    image_only: bool,
+    session_template_only: bool,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -329,39 +330,43 @@ pub async fn exec(
     // List of image.ref_name already processed
     let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
 
-    let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
-        import_images_section_in_sat_file(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &mut ref_name_processed_hashmap,
-            image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
-            &cray_product_catalog,
-            ansible_verbosity_opt,
-            ansible_passthrough_opt,
-            // tag,
-        )
-        .await;
+    if session_template_only == false {
+        let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
+            import_images_section_in_sat_file(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &mut ref_name_processed_hashmap,
+                image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
+                &cray_product_catalog,
+                ansible_verbosity_opt,
+                ansible_passthrough_opt,
+                // tag,
+            )
+            .await;
 
-    log::info!(
-        "List of new image IDs: {:?}",
-        cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
-    );
+        log::info!(
+            "List of new image IDs: {:?}",
+            cfs_session_created_hashmap.keys().collect::<Vec<&String>>()
+        );
+    }
 
     // Process "session_templates" section in SAT file
     //
-    process_session_template_section_in_sat_file(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        ref_name_processed_hashmap,
-        hsm_group_param_opt,
-        hsm_group_available_vec,
-        sat_file_yaml,
-        // &tag,
-        do_not_reboot,
-    )
-    .await;
+    if image_only == false {
+        process_session_template_section_in_sat_file(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            ref_name_processed_hashmap,
+            hsm_group_param_opt,
+            hsm_group_available_vec,
+            sat_file_yaml,
+            // &tag,
+            do_not_reboot,
+        )
+        .await;
+    }
 
     // Run/process Post-hook
     if posthook.is_some() {
@@ -648,7 +653,6 @@ pub async fn process_session_template_section_in_sat_file(
     _hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     sat_file_yaml: Value,
-    // tag: &str,
     do_not_reboot: bool,
 ) {
     let empty_vec = Vec::new();

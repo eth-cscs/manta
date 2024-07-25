@@ -73,7 +73,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        bos,
+        bos.map(|value| value.as_str()),
     )
     .await
     .unwrap();

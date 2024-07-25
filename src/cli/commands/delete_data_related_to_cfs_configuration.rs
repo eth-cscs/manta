@@ -57,15 +57,14 @@ pub async fn delete_data_related_cfs_configuration(
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     //
     // Get all BSS boot params
-    let boot_param_vec: Vec<BootParameters> =
-        mesa::bss::bootparameters::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &vec![],
-        )
-        .await
-        .unwrap();
+    let boot_param_vec: Vec<BootParameters> = mesa::bss::bootparameters::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &vec![],
+    )
+    .await
+    .unwrap();
 
     // Get all CFS configurations in CSM
     let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =
@@ -333,7 +332,7 @@ pub async fn delete_data_related_cfs_configuration(
         Vec::new();
 
     for bos_sessiontemplate_value in &bos_sessiontemplate_value_vec {
-        let cfs_session_name: &str = bos_sessiontemplate_value.name.as_ref();
+        let cfs_session_name: &str = bos_sessiontemplate_value.name.as_ref().unwrap();
         let cfs_configuration_name: &String = bos_sessiontemplate_value
             .cfs
             .as_ref()

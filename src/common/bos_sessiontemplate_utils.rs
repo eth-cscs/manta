@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
+use mesa::bos::template::mesa::r#struct::v2::BosSessionTemplate;
 use mesa::node;
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
@@ -15,6 +15,11 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
     ]);
 
     for bos_template in bos_sessiontemplate_vec {
+        let enable_cfs = bos_template
+            .enable_cfs
+            .map(|value| value.to_string())
+            .unwrap_or("N/A".to_string());
+
         for boot_set in bos_template.boot_sets.unwrap() {
             let target: Vec<String> = if boot_set.1.node_groups.is_some() {
                 // NOTE: very
@@ -32,7 +37,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
             };
 
             table.add_row(vec![
-                bos_template.name.clone(),
+                bos_template.name.clone().unwrap(),
                 boot_set
                     .1
                     .path
@@ -41,7 +46,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
                     .trim_end_matches("/manifest.json")
                     .to_string(),
                 bos_template.cfs.clone().unwrap().configuration.unwrap(),
-                bos_template.enable_cfs.unwrap().to_string(),
+                enable_cfs.clone(),
                 node::utils::string_vec_to_multi_line_string(Some(&target), 2),
                 boot_set.1.etag.unwrap_or("".to_string()),
             ]);
@@ -173,7 +178,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
             bos_sessiontemplate_value_target
         );
 
-        let bos_sessiontemplate_name = &bos_sessiontemplate_value_target.name;
+        let bos_sessiontemplate_name = &bos_sessiontemplate_value_target.name.as_ref().unwrap();
 
         for boot_sets_value in bos_sessiontemplate_value_target
             .boot_sets

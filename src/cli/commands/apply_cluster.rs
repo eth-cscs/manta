@@ -39,6 +39,8 @@ pub async fn exec(
         do_not_reboot,
         None,
         None,
+        false,
+        false,
     )
     .await;
 }

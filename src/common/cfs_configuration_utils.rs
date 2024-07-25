@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use comfy_table::Table;
 use mesa::{
-    bos::template::mesa::r#struct::v1::BosSessionTemplate,
+    bos::template::mesa::r#struct::v2::BosSessionTemplate,
     cfs::{
         configuration::mesa::r#struct::{
             cfs_configuration::ConfigurationDetails,
@@ -108,7 +108,7 @@ pub fn print_table_details_struct(
     if let Some(bos_sessiontemplate_vec) = bos_sessiontemplate_vec_opt {
         derivatives = derivatives + "\n\nBOS sessiontemplates:";
         for bos_sessiontemplate in bos_sessiontemplate_vec {
-            derivatives = derivatives + "\n - " + &bos_sessiontemplate.name;
+            derivatives = derivatives + "\n - " + &bos_sessiontemplate.name.unwrap();
         }
     }
 

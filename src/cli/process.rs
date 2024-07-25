@@ -10,7 +10,8 @@ use crate::cli::commands::validate_local_repo;
 use super::commands::{
     self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
     apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_image, apply_sat_file,
-    apply_session, config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
+    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
+    config_set_site,
     config_show::{self, get_hsm_name_available_from_jwt_or_all},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
@@ -1285,12 +1286,24 @@ pub async fn process_cli(
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     ansible_passthrough.as_ref(),
                     gitea_token,
-                    // &tag,
-                    *cli_apply_sat_file
-                        .get_one::<bool>("do-not-reboot")
-                        .unwrap_or(&false),
+                    cli_apply_sat_file.get_flag("do-not-reboot"),
                     prehook,
                     posthook,
+                    cli_apply_sat_file.get_flag("image-only"),
+                    cli_apply_sat_file.get_flag("sessiontemplate-only"),
+                )
+                .await;
+            } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
+                apply_template::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_apply_template
+                        .get_one::<String>("template-name")
+                        .expect("template-name parameter missing"),
+                    cli_apply_template
+                        .get_one::<String>("operation")
+                        .expect("operation parameter missing"),
                 )
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {

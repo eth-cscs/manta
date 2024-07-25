@@ -12,14 +12,24 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    let mut bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
+    let bos_sessiontemplate_vec_rslt = mesa::bos::template::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        bos_sessiontemplate_name_opt,
+        bos_sessiontemplate_name_opt.map(|value| value.as_str()),
     )
-    .await
-    .unwrap_or_default();
+    .await;
+
+    let mut bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
+        Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
+        Err(e) => {
+            eprintln!(
+                "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+                e
+            );
+            std::process::exit(1);
+        }
+    };
 
     mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_vec,
