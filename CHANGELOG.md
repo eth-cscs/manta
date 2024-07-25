@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.44.0] - 2024-07-25
+
+### Features
+
+- Apply sat command now has arguments to chose whether images or
+- Migration to BOS v2
+- New command `apply template` to create a BOS v2 session based on
+
 ## [1.43.0] - 2024-07-23
 
 ### Features
 
 - Copy ansible templating functionality and session vars file is both a ninja template and a values file, 'manta apply sat' will render the values file with itself
+
+### Miscellaneous Tasks
+
+- Release manta version 1.43.0
 
 ## [1.42.3] - 2024-07-12
 
