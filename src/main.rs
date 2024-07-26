@@ -30,20 +30,22 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .get("shasta_base_url")
         .expect("shasta_base_url value missing in configuration file")
         .to_string();
-    let shasta_barebone_url = shasta_base_url
-        .strip_suffix("/api")
+    let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
+        // old configuration file. TODO: remove this when needed in the future and all users are
+        // using the right configuration file
+        .strip_suffix("/apis")
         .unwrap_or(&shasta_base_url);
-    let shasta_api_url = shasta_base_url.to_owned() + "/apis";
+    let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
     /* let gitea_base_url = site_detail_value
     .get("gitea_base_url")
     .expect("gitea_base_url value missing in configuration file")
     .to_string(); */
-    let gitea_base_url = shasta_base_url.to_owned() + "/vcs";
+    let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
     /* let keycloak_base_url = site_detail_value
     .get("keycloak_base_url")
     .expect("keycloak_base_url value missing in configuration file")
     .to_string(); */
-    let keycloak_base_url = shasta_base_url.to_owned() + "/keycloak";
+    let keycloak_base_url = shasta_barebone_url.to_owned() + "/keycloak";
     let k8s_api_url = site_detail_value
         .get("k8s_api_url")
         .expect("k8s_api_url value missing in configuration file")
