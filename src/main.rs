@@ -28,7 +28,25 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let shasta_base_url = site_detail_value
         .get("shasta_base_url")
-        .unwrap()
+        .expect("shasta_base_url value missing in configuration file")
+        .to_string();
+    let shasta_barebone_url = shasta_base_url
+        .strip_suffix("/api")
+        .unwrap_or(&shasta_base_url);
+    let shasta_api_url = shasta_base_url.to_owned() + "/apis";
+    /* let gitea_base_url = site_detail_value
+    .get("gitea_base_url")
+    .expect("gitea_base_url value missing in configuration file")
+    .to_string(); */
+    let gitea_base_url = shasta_base_url.to_owned() + "/vcs";
+    /* let keycloak_base_url = site_detail_value
+    .get("keycloak_base_url")
+    .expect("keycloak_base_url value missing in configuration file")
+    .to_string(); */
+    let keycloak_base_url = shasta_base_url.to_owned() + "/keycloak";
+    let k8s_api_url = site_detail_value
+        .get("k8s_api_url")
+        .expect("k8s_api_url value missing in configuration file")
         .to_string();
     let vault_base_url = site_detail_value
         .get("vault_base_url")
@@ -41,18 +59,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let vault_secret_path = site_detail_value
         .get("vault_secret_path")
         .unwrap()
-        .to_string();
-    let gitea_base_url = site_detail_value
-        .get("gitea_base_url")
-        .expect("gitea_base_url value missing in configuration file")
-        .to_string();
-    let keycloak_base_url = site_detail_value
-        .get("keycloak_base_url")
-        .expect("keycloak_base_url value missing in configuration file")
-        .to_string();
-    let k8s_api_url = site_detail_value
-        .get("k8s_api_url")
-        .expect("k8s_api_url value missing in configuration file")
         .to_string();
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
@@ -93,7 +99,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let cli_result = crate::cli::process::process_cli(
         matches,
         &keycloak_base_url,
-        &shasta_base_url,
+        &shasta_api_url,
         &shasta_root_cert,
         &vault_base_url,
         &vault_secret_path,
