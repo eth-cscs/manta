@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.0] - 2024-07-26
+
+### Features
+
+- Simplify config file
+- Update mesa
+
+### Refactor
+
+- Clean config file
+- Clean config file
+
 ## [1.44.0] - 2024-07-25
 
 ### Features
@@ -9,6 +21,10 @@ All notable changes to this project will be documented in this file.
 - Apply sat command now has arguments to chose whether images or
 - Migration to BOS v2
 - New command `apply template` to create a BOS v2 session based on
+
+### Miscellaneous Tasks
+
+- Release manta version 1.44.0
 
 ## [1.43.0] - 2024-07-23
 
