@@ -1,5 +1,8 @@
-log = "info"
+log = "error"
+
 site = "alps"
+parent_hsm_group = "nodes_free"
+audit_file = "/tmp/manta_audit.log"
 
 [sites]
 
@@ -12,7 +15,7 @@ k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
-parent_hsm_group = "nodes_free"
+root_ca_cert_file = "alps_root_cert.pem"
 
 [sites.prealps]
 socks5_proxy = "socks5h://127.0.0.1:1081"
@@ -23,3 +26,5 @@ k8s_api_url = "https://10.252.1.2:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "prealps"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+root_ca_cert_file = "prealps_root_cert.pem"
+
