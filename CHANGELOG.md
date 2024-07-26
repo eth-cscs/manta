@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.1] - 2024-07-26
+
+### Bug Fixes
+
+- Bug managing urls in config file
+
 ## [1.45.0] - 2024-07-26
 
 ### Features
 
 - Simplify config file
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.45.0
 
 ### Refactor
 
