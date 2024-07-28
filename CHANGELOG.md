@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.3] - 2024-07-28
+
+### Features
+
+- Update mesa version
+
 ## [1.45.2] - 2024-07-28
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Subcommand "apply boot" now has a new argument to set new kernel
 - Subcommand "apply template" now sets "reboot" as default operation
+
+### Miscellaneous Tasks
+
+- Release manta version 1.45.2
 
 ### Refactor
 
