@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.2] - 2024-07-28
+
+### Bug Fixes
+
+- Bug in subcommand "apply template" where "limit" argument was not
+
+### Features
+
+- Subcommand "apply boot" now has a new argument to set new kernel
+- Subcommand "apply template" now sets "reboot" as default operation
+
+### Refactor
+
+- Rename subcommand "power node" to "power nodes"
+
 ## [1.45.1] - 2024-07-26
 
 ### Bug Fixes
 
 - Bug managing urls in config file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.45.1
 
 ## [1.45.0] - 2024-07-26
 
