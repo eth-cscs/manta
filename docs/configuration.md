@@ -21,9 +21,7 @@ site = "alps"
 
 [sites.alps]
 socks5_proxy = "socks5h://127.0.0.1:1080"
-shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
-keycloak_base_url = "https://api.cmn.alps.cscs.ch/keycloak"
-gitea_base_url = "https://api.cmn.alps.cscs.ch/vcs"
+shasta_base_url = "https://api.cmn.alps.cscs.ch"
 k8s_api_url = "https://10.252.1.12:6442"
 vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "shasta"
