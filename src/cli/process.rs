@@ -180,7 +180,7 @@ pub async fn process_cli(
                         target_hsm_group_vec.first(),
                     )
                     .await;
-                } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("node") {
+                } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
                     let xname_vec: Vec<String> = cli_power_on_node
                         .get_one::<String>("NODE_NAME")
                         .unwrap()
@@ -226,7 +226,7 @@ pub async fn process_cli(
                         target_hsm_group_vec.first(),
                     )
                     .await;
-                } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("node") {
+                } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
                     let xname_vec: Vec<String> = cli_power_off_node
                         .get_one::<String>("NODE_NAME")
                         .unwrap()
@@ -275,7 +275,7 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
-                    cli_power_reset.subcommand_matches("node")
+                    cli_power_reset.subcommand_matches("nodes")
                 {
                     let xname_vec: Vec<String> = cli_power_reset_node
                         .get_one::<String>("NODE_NAME")
@@ -1304,6 +1304,7 @@ pub async fn process_cli(
                     cli_apply_template
                         .get_one::<String>("operation")
                         .expect("operation parameter missing"),
+                    cli_apply_template.get_one::<String>("limit"),
                 )
                 .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
@@ -1461,8 +1462,6 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
-                    log::warn!("Deprecated - Please use 'manta power' command instead.");
-
                     let hsm_group_name_arg_opt =
                         cli_apply_boot_nodes.get_one::<String>("CLUSTER_NAME");
 
@@ -1485,6 +1484,7 @@ pub async fn process_cli(
                         cli_apply_boot_nodes.get_one::<String>("boot-image"),
                         cli_apply_boot_nodes.get_one::<String>("boot-image-configuration"),
                         cli_apply_boot_nodes.get_one::<String>("runtime-configuration"),
+                        cli_apply_boot_nodes.get_one::<String>("kernel-parameters"),
                         cli_apply_boot_nodes
                             .get_one::<String>("XNAMES")
                             .unwrap()
@@ -1515,6 +1515,7 @@ pub async fn process_cli(
                         cli_apply_boot_cluster.get_one::<String>("boot-image"),
                         cli_apply_boot_cluster.get_one::<String>("boot-image-configuration"),
                         cli_apply_boot_cluster.get_one::<String>("runtime-configuration"),
+                        cli_apply_boot_cluster.get_one::<String>("kernel-parameters"),
                         target_hsm_group_vec.first().unwrap(),
                     )
                     .await;
@@ -1545,6 +1546,7 @@ pub async fn process_cli(
                     None,
                     cli_update_node.get_one::<String>("boot-image"),
                     cli_update_node.get_one::<String>("desired-configuration"),
+                    cli_update_node.get_one::<String>("kernel-parameters"),
                     cli_update_node
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -1575,6 +1577,7 @@ pub async fn process_cli(
                     None,
                     cli_update_hsm_group.get_one::<String>("boot-image"),
                     cli_update_hsm_group.get_one::<String>("desired-configuration"),
+                    cli_update_hsm_group.get_one::<String>("kernel-parameters"),
                     target_hsm_group_vec.first().unwrap(),
                 )
                 .await;
@@ -1869,7 +1872,7 @@ pub async fn get_target_hsm_group_vec(
 /// Validate user has access to a list of HSM group members provided.
 /// HSM members user is asking for are taken from cli command
 /// Exit if user does not have access to any of the members provided. By not having access to a HSM
-/// members means, the node bleongs to an HSM group which the user does not have access
+/// members means, the node belongs to an HSM group which the user does not have access
 pub async fn validate_target_hsm_members(
     shasta_token: &str,
     shasta_base_url: &str,

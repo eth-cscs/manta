@@ -565,8 +565,9 @@ pub fn subcommand_apply_template(/* hsm_group: Option<&String> */) -> Command {
         .arg(
             arg!(-o --"operation" <VALUE> "Operation.")
                 .value_parser(["boot", "reboot", "shutdown"])
-                .required(true),
+                .default_value("reboot"),
         )
+        .arg(arg!(-l --"limit" <VALUE> "comma separated list of nodes or HSM groups to apply the BOS sessiontemplate. If missing, default targets in BOS sessiontemplate will apply."))
 }
 
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
@@ -693,7 +694,8 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta apply boot nodes' command instead.\nUpdates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
-        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
+        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"));
 
     update_nodes = update_nodes
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
@@ -728,9 +730,9 @@ pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel parameters) for a list of nodes. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot nodes --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
         .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
-        .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
-        .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
-        // .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"))
+        .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
+        .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to the nodes while booting"))
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
 
     apply_boot_nodes = apply_boot_nodes
@@ -750,9 +752,9 @@ pub fn subcommand_apply_boot_cluster(hsm_group: Option<&String>) -> Command {
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel params) for all nodes in a cluster. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot cluster --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
         .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
-        .arg(arg!(-b --"boot-image-configuration" <CFS_CONFIG_NAME> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
-        .arg(arg!(-r --"runtime-configuration" <CFS_CONFIG_NAME> "CFS configuration name to configure the nodes after booting"))
-        // .arg(arg!(-k --"kernel-params" <VALUE> "Kernel boot parameters to assigned to the nodes while booting"))
+        .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
+        .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
 
     apply_boot_cluster = match hsm_group {
@@ -806,10 +808,10 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
-                    Command::new("node")
-                        .alias("n")
+                    Command::new("nodes")
+                        .aliases(["n", "node"])
                         .arg_required_else_help(true)
-                        .about("Command to power on a group of nodes")
+                        .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --reason <TEXT> "reason to power on"))
                         .arg(arg!(<NODE_NAME> "Node name")),
                 ),
@@ -828,10 +830,10 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
-                    Command::new("node")
-                        .alias("n")
+                    Command::new("nodes")
+                        .aliases(["n", "node"])
                         .arg_required_else_help(true)
-                        .about("Command to power off a group of nodes")
+                        .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power off"))
                         .arg(arg!(<NODE_NAME> "Node name")),
@@ -851,10 +853,10 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
-                    Command::new("node")
-                        .alias("n")
+                    Command::new("nodes")
+                        .aliases(["n", "node"])
                         .arg_required_else_help(true)
-                        .about("Command to power reset a group of nodes")
+                        .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
                         .arg(arg!(<NODE_NAME> "Node name")),

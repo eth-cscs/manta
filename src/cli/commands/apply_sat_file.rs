@@ -1059,7 +1059,6 @@ pub async fn process_session_template_section_in_sat_file(
                 stage: None,
                 include_disabled: None,
                 status: None,
-                description: None,
                 components: None,
             };
 

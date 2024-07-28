@@ -11,6 +11,7 @@ pub async fn exec(
     boot_image_id: Option<&String>,
     boot_image_configuration_opt: Option<&String>,
     desired_configuration_opt: Option<&String>,
+    kernel_paremeters_opt: Option<&String>,
     hsm_group_name: &String,
 ) {
     // Get nodes members of HSM group
@@ -42,6 +43,7 @@ pub async fn exec(
         boot_image_id,
         boot_image_configuration_opt,
         desired_configuration_opt,
+        kernel_paremeters_opt,
         nodes.iter().map(|node| node.as_str()).collect(),
     )
     .await;

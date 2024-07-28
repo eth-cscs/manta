@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     cli::commands::power_reset_nodes, common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
@@ -14,10 +16,10 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name: Option<&String>,
-    // new_kernel_params_opt: Option<&String>,
     new_boot_image_id_opt: Option<&String>,
     new_boot_image_configuration_opt: Option<&String>,
     new_runtime_configuration_opt: Option<&String>,
+    new_kernel_parameters_opt: Option<&String>,
     xnames: Vec<&str>,
 ) {
     let mut need_restart = false;
@@ -59,17 +61,18 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let current_node_boot_params: Vec<BootParameters> = bss::bootparameters::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap();
+    let mut current_node_boot_param_vec: Vec<BootParameters> =
+        bss::bootparameters::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &xnames
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
@@ -97,50 +100,56 @@ pub async fn exec(
             None
         };
 
+    // Update BSS BOOT PARAMETERS
+    //
+    // IMPORTANT: ALWAYS SET KERNEL PARAMS BEFORE BOOT IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT
+    // IMAGE, THEREFORE IF USER WANTS TO CHANGE BOTH KERNEL PARAMS AND BOOT IMAGE, THEN, CHANGING
+    //
+    // THE BOOT IMAGE LATER WILL MAKE SURE WE PUT IN PLACE THE RIGHT BOOT IMAGE
+    // Update kernel parameters
+    if let Some(new_kernel_parameters) = new_kernel_parameters_opt {
+        // Update boot params
+        current_node_boot_param_vec
+            .iter_mut()
+            .for_each(|boot_parameter| {
+                log::info!(
+                    "Updating '{:?}' kernel parameters to '{}'",
+                    boot_parameter.hosts,
+                    new_kernel_parameters
+                );
+
+                boot_parameter.add_kernel_params(&new_kernel_parameters);
+                boot_parameter.upsert_boot_image(&boot_parameter.get_boot_image());
+            });
+
+        need_restart = true;
+    }
+
+    // IMPORTANT: ALWAYS SET KERNEL PARAMS BEFORE BOOT IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT
+    // IMAGE, THEREFORE IF USER WANTS TO CHANGE BOTH KERNEL PARAMS AND BOOT IMAGE, THEN, CHANGING
+    //
     // Update boot image
+    //
     // Check if boot image changes and notify the user and update the node boot params struct
     if let Some(new_boot_image_id) = new_boot_image_id_opt {
-        let boot_params_to_update_vec: Vec<&BootParameters> = current_node_boot_params
+        let boot_params_to_update_vec: Vec<&BootParameters> = current_node_boot_param_vec
             .iter()
             .filter(|boot_param| boot_param.get_boot_image() != new_boot_image_id)
             .collect();
+
         if !boot_params_to_update_vec.is_empty() {
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(format!(
-                "New boot image detected. This operation will reboot the nodes so they can boot with the new image:\n{:?}\nDo you want to continue?",
-                xnames
-            ))
-                .interact()
-                .unwrap()
-            {
-                log::info!("Continue",);
-            } else {
-                println!("Cancelled by user. Aborting.");
-                std::process::exit(0);
-            }
+            // Update boot params
+            current_node_boot_param_vec
+                .iter_mut()
+                .for_each(|boot_parameter| {
+                    log::info!(
+                        "Updating '{:?}' boot image to '{}'",
+                        boot_parameter.hosts,
+                        new_boot_image_id
+                    );
 
-            // Update boot image
-            for mut boot_parameter in current_node_boot_params {
-                boot_parameter.set_boot_image(&new_boot_image_id);
-
-                println!(
-                    "Updating '{:?}' boot image to '{}'",
-                    boot_parameter.hosts, new_boot_image_id
-                );
-
-                let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
-                    shasta_base_url,
-                    shasta_token,
-                    shasta_root_cert,
-                    &boot_parameter,
-                )
-                .await;
-
-                log::debug!(
-                    "Component boot parameters resp:\n{:#?}",
-                    component_patch_rep
-                );
-            }
+                    boot_parameter.update_boot_image(&new_boot_image_id);
+                });
 
             need_restart = true;
         } else {
@@ -148,6 +157,36 @@ pub async fn exec(
         }
     } else {
         log::info!("Boot image not defined. No need to reboot.");
+    }
+
+    if Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!(
+            "This operation will reboot the nodes below:\n{:?}\nDo you want to continue?",
+            xnames
+        ))
+        .interact()
+        .unwrap()
+    {
+        log::info!("Continue",);
+    } else {
+        println!("Cancelled by user. Aborting.");
+        std::process::exit(0);
+    }
+
+    // Update boot params
+    for boot_parameter in current_node_boot_param_vec {
+        let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+            shasta_base_url,
+            shasta_token,
+            shasta_root_cert,
+            &boot_parameter,
+        )
+        .await;
+
+        log::debug!(
+            "Component boot parameters resp:\n{:#?}",
+            component_patch_rep
+        );
     }
 
     // Update desired configuration

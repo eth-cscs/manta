@@ -10,7 +10,7 @@ pub async fn exec(
     reason_opt: Option<String>,
     force: bool,
 ) {
-    let mut nodes_reseted = Vec::new();
+    /* let mut nodes_reseted = Vec::new();
 
     let mut tasks = tokio::task::JoinSet::new();
 
@@ -43,5 +43,21 @@ pub async fn exec(
         if let Ok(node_power_status) = message {
             nodes_reseted.push(node_power_status);
         }
-    }
+    } */
+
+    post_sync(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        xname_vec.clone(),
+        reason_opt,
+        force,
+    )
+    .await
+    .unwrap();
+
+    // Audit
+    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
 }
