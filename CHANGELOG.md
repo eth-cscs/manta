@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.3] - 2024-07-29
+
+### Features
+
+- Add new command  to get the list of kernel parameters for a list of nodes or a cluster
+- New argument in  command to filter the list of kernel parameters listed
+
 ## [1.46.2] - 2024-07-29
 
 ### Features
 
 - New output option `table-wide` for command `manta get cluster` to
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.2
 
 ### Refactor
 
