@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use config::Config;
+use config::{Config, FileFormat, FileSourceFile};
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use serde::Serialize;
@@ -71,10 +71,9 @@ pub fn get_default_ca_cert_file_path() -> PathBuf {
     ca_cert_file_path
 }
 
-/// Reads configuration parameters related to manta from environment variables or file. If both
-/// defiend, then environment variables takes preference
-pub fn get_configuration() -> Config {
-    // Get config file path
+/// Get Manta configuration full path. Configuration may be the default one or specified by user.
+/// This function also validates if the config file is TOML format
+pub fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
     // Get config file path from ENV var
     let config_file_path = if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
         let mut env_config_file = std::path::PathBuf::new();
@@ -85,18 +84,30 @@ pub fn get_configuration() -> Config {
         get_default_config_file_path()
     };
 
+    // Validate if config file exists
     if !config_file_path.exists() {
         // Configuration file does not exists --> create a new configuration file
         create_new_config_file(Some(&config_file_path));
     }
 
-    // Overwrite manta configuration values from envs
+    // Validate config file and check format (toml) is correct
     let config_file = config::File::new(
         config_file_path
             .to_str()
             .expect("Configuration file name not defined"),
         config::FileFormat::Toml,
     );
+
+    config_file
+}
+
+/// Reads configuration parameters related to manta from environment variables or file. If both
+/// defiend, then environment variables takes preference
+pub fn get_configuration() -> Config {
+    // Get config file path
+    let config_file = get_config_file_path();
+
+    // Process config file
     let config_rslt = ::config::Config::builder()
         .add_source(config_file)
         .add_source(
