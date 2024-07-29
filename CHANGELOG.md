@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.1] - 2024-07-29
+
+### Bug Fixes
+
+- Bugs managing config file
+
+### Refactor
+
+- Clean code
+
 ## [1.46.0] - 2024-07-29
 
 ### Features
 
 - Config file autogeneration
 - Config file autogeneration
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.0
 
 ## [1.45.3] - 2024-07-28
 
