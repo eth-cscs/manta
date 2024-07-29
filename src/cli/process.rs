@@ -936,6 +936,9 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     xnames,
+                    cli_get_kernel_parameters
+                        .get_one::<String>("filter")
+                        .cloned(),
                 )
                 .await;
             }

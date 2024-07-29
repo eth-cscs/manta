@@ -435,7 +435,8 @@ pub fn subcommand_get_kernel_parameters(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("kernel-parameters")
         .alias("k")
         .about("Get kernel-parameters information")
-        .arg(arg!(-n --xnames <XNAMES> "List of xnames to retreive the kernel parameters from"));
+        .arg(arg!(-n --xnames <XNAMES> "List of xnames to retreive the kernel parameters from"))
+        .arg(arg!(-f --filter <KEYS> "List of kernel parameter keys to filter. eg: console bad_page crashkernel hugepagelist root"));
 
     match hsm_group {
         None => {
