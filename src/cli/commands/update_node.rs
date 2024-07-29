@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     cli::commands::power_reset_nodes, common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
