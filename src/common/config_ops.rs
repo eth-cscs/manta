@@ -260,17 +260,17 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     file.write_all(config_file_content.as_bytes()).unwrap();
 }
 
-pub fn get_csm_root_cert_content(file_name: &str) -> Vec<u8> {
-    let mut config_path = get_default_config_file_path();
-    config_path.push(file_name);
+pub fn get_csm_root_cert_content(file_path: &str) -> Vec<u8> {
+    /* let mut config_path = get_default_config_file_path();
+    config_path.push(file_path); */
 
     let mut buf = Vec::new();
-    let root_cert_file_rslt = File::open(config_path);
+    let root_cert_file_rslt = File::open(file_path);
 
     let _ = match root_cert_file_rslt {
         Ok(mut file) => file.read_to_end(&mut buf),
         Err(_) => {
-            eprintln!("Root cert file for CSM not found. Exit");
+            eprintln!("Root cert file '{}' for CSM not found. Exit", file_path);
             std::process::exit(1);
         }
     };

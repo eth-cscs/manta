@@ -357,7 +357,7 @@ pub fn subcommand_get_cluster_details(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "json", "summary"]).default_value("table"));
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"));
 
     match hsm_group {
         None => {
