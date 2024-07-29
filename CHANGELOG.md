@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.0] - 2024-07-29
+
+### Features
+
+- Config file autogeneration
+- Config file autogeneration
+
 ## [1.45.3] - 2024-07-28
 
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.45.3
 
 ## [1.45.2] - 2024-07-28
 
