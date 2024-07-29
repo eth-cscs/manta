@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.2] - 2024-07-29
+
+### Features
+
+- New output option `table-wide` for command `manta get cluster` to
+
+### Refactor
+
+- Housekeeping code managing config file
+- Code cleaning and housekeeping
+
 ## [1.46.1] - 2024-07-29
 
 ### Bug Fixes
 
 - Bugs managing config file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.1
 
 ### Refactor
 
