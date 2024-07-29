@@ -30,7 +30,18 @@ pub struct MantaConfiguration {
     sites: HashMap<String, Site>,
 }
 
-pub fn get_default_config_file_path() -> PathBuf {
+pub fn get_default_config_path() -> PathBuf {
+    // XDG Base Directory Specification
+    let project_dirs = ProjectDirs::from(
+        "local", /*qualifier*/
+        "cscs",  /*organization*/
+        "manta", /*application*/
+    );
+
+    PathBuf::from(project_dirs.unwrap().config_dir())
+}
+
+pub fn get_default_manta_config_file_path() -> PathBuf {
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -43,7 +54,7 @@ pub fn get_default_config_file_path() -> PathBuf {
     config_file_path
 }
 
-pub fn get_default_log_file_path() -> PathBuf {
+pub fn get_default_manta_audit_file_path() -> PathBuf {
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -57,7 +68,7 @@ pub fn get_default_log_file_path() -> PathBuf {
     log_file_path
 }
 
-pub fn get_default_ca_cert_file_path() -> PathBuf {
+pub fn get_default_mgmt_plane_ca_cert_file_path() -> PathBuf {
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
         "local", /*qualifier*/
@@ -81,7 +92,7 @@ pub fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
         env_config_file
     } else {
         // Get default config file path ($XDG_CONFIG/manta/config.toml
-        get_default_config_file_path()
+        get_default_manta_config_file_path()
     };
 
     // Validate if config file exists
@@ -159,7 +170,11 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
 
     let audit_file: String = Input::new()
         .with_prompt("Type full path for the audit file")
-        .default(get_default_log_file_path().to_string_lossy().to_string())
+        .default(
+            get_default_manta_audit_file_path()
+                .to_string_lossy()
+                .to_string(),
+        )
         .show_default(true)
         .allow_empty(true)
         .interact_text()
@@ -218,7 +233,7 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let root_ca_cert_file: String = Input::new()
         .with_prompt("Type full path for the CA public certificate file")
         .default(
-            get_default_ca_cert_file_path()
+            get_default_mgmt_plane_ca_cert_file_path()
                 .to_string_lossy()
                 .to_string(),
         )
@@ -253,7 +268,7 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let config_file_path = if let Some(config_file_path) = config_file_path_opt {
         PathBuf::from(config_file_path)
     } else {
-        get_default_config_file_path()
+        get_default_manta_config_file_path()
     };
 
     let mut file = File::create(config_file_path.clone()).unwrap();
@@ -261,19 +276,20 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
 }
 
 pub fn get_csm_root_cert_content(file_path: &str) -> Vec<u8> {
-    /* let mut config_path = get_default_config_file_path();
-    config_path.push(file_path); */
-
     let mut buf = Vec::new();
     let root_cert_file_rslt = File::open(file_path);
 
-    let _ = match root_cert_file_rslt {
-        Ok(mut file) => file.read_to_end(&mut buf),
-        Err(_) => {
-            eprintln!("Root cert file '{}' for CSM not found. Exit", file_path);
-            std::process::exit(1);
-        }
+    let file_rslt = if root_cert_file_rslt.is_err() {
+        let mut config_path = get_default_config_path();
+        config_path.push(file_path);
+        File::open(config_path)
+    } else {
+        root_cert_file_rslt
     };
+
+    let mut file = file_rslt.expect("CA public root file cound not be found.");
+
+    let _ = file.read_to_end(&mut buf);
 
     buf
 }
