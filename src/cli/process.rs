@@ -16,11 +16,11 @@ use super::commands::{
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    get_configuration, get_hsm, get_hw_configuration_node, get_images, get_nodes, get_session,
-    get_template, migrate_backup, power_off_cluster, power_off_nodes, power_on_cluster,
-    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    remove_nodes, set_boot_configuration, set_boot_image, set_kernel_parameters,
-    set_runtime_configuration, update_hsm_group, update_node,
+    get_configuration, get_hsm, get_hw_configuration_node, get_images, get_kernel_parameters,
+    get_nodes, get_session, get_template, migrate_backup, power_off_cluster, power_off_nodes,
+    power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
+    remove_hw_component_cluster, remove_nodes, set_boot_configuration, set_boot_image,
+    set_kernel_parameters, set_runtime_configuration, update_hsm_group, update_node,
 };
 
 pub async fn process_cli(
@@ -897,6 +897,45 @@ pub async fn process_cli(
                     &target_hsm_group_vec,
                     cli_get_images.get_one::<String>("id"),
                     cli_get_images.get_one::<u8>("limit"),
+                )
+                .await;
+            } else if let Some(cli_get_kernel_parameters) =
+                cli_get.subcommand_matches("kernel-parameters")
+            {
+                let hsm_group_name_arg_opt =
+                    cli_get_kernel_parameters.get_one::<String>("hsm-group");
+
+                let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
+                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_vec,
+                    )
+                    .await
+                } else {
+                    cli_get_kernel_parameters
+                        .get_one::<String>("xnames")
+                        .expect("Neither HSM group nor xnames defined")
+                        .split(",")
+                        .map(|value| value.to_string())
+                        .collect()
+                };
+
+                let _ = get_kernel_parameters::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xnames,
                 )
                 .await;
             }

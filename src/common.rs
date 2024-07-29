@@ -5,6 +5,7 @@ pub mod cluster_ops;
 pub mod config_ops;
 pub mod hooks;
 pub mod ims_ops;
+pub mod kernel_parameters_ops;
 pub mod local_git_repo;
 pub mod log_ops;
 pub mod node_ops;

@@ -25,6 +25,7 @@ pub mod get_hsm;
 pub mod get_hw_configuration_cluster;
 pub mod get_hw_configuration_node;
 pub mod get_images;
+pub mod get_kernel_parameters;
 pub mod get_nodes;
 pub mod get_session;
 pub mod get_template;

@@ -431,6 +431,23 @@ pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
     get_cfs_session
 }
 
+pub fn subcommand_get_kernel_parameters(hsm_group: Option<&String>) -> Command {
+    let mut get_cfs_session = Command::new("kernel-parameters")
+        .alias("k")
+        .about("Get kernel-parameters information")
+        .arg(arg!(-n --xnames <XNAMES> "List of xnames to retreive the kernel parameters from"));
+
+    match hsm_group {
+        None => {
+            get_cfs_session =
+                get_cfs_session.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "List kernel parameters for all nodes in a HSM group name"))
+        }
+        Some(_) => {}
+    }
+
+    get_cfs_session
+}
+
 pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
     Command::new("get")
         .alias("g")
@@ -444,6 +461,7 @@ pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_get_cluster_details(hsm_group))
         .subcommand(subcommand_get_hsm_groups_details(hsm_group))
         .subcommand(subcommand_get_images(hsm_group))
+        .subcommand(subcommand_get_kernel_parameters(hsm_group))
 }
 
 pub fn subcommand_apply_hw_configuration() -> Command {
@@ -620,7 +638,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
         .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
         .arg_required_else_help(true)
-        .arg(arg!(<XNAMES> "nodes' xnames"))
+        .arg(arg!(<XNAMES> "List of xnames to power on"))
         .arg(arg!(-r --reason <TEXT> "reason to power on"));
 
     match hsm_group {
@@ -643,7 +661,7 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
-        .arg(arg!(<XNAMES> "nodes' xnames"))
+        .arg(arg!(<XNAMES> "List of xnames to power off"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to power off"));
 
@@ -668,7 +686,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
         .aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power reset' command instead.\nRestart nodes")
-        .arg(arg!(<XNAMES> "nodes' xnames"))
+        .arg(arg!(<XNAMES> "List of xnames to power on"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to reset"));
 
@@ -813,7 +831,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --reason <TEXT> "reason to power on"))
-                        .arg(arg!(<NODE_NAME> "Node name")),
+                        .arg(arg!(<NODE_NAME> "List of xnames to power on")),
                 ),
         )
         .subcommand(
@@ -836,7 +854,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power off"))
-                        .arg(arg!(<NODE_NAME> "Node name")),
+                        .arg(arg!(<NODE_NAME> "List of xnames to power off")),
                 ),
         )
         .subcommand(
@@ -859,7 +877,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
-                        .arg(arg!(<NODE_NAME> "Node name")),
+                        .arg(arg!(<NODE_NAME> "List of xnames to power reset")),
                 ),
         )
 }
