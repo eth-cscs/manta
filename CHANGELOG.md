@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.6] - 2024-07-30
+
+### Bug Fixes
+
+- Update mesa version
+
 ## [1.46.5] - 2024-07-30
 
 ### Bug Fixes
 
 - Config autogenerator allows to provide an empty socks5 proxy value
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.5
 
 ## [1.46.4] - 2024-07-29
 
