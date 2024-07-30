@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.5] - 2024-07-30
+
+### Bug Fixes
+
+- Config autogenerator allows to provide an empty socks5 proxy value
+- Update mesa version
+
 ## [1.46.4] - 2024-07-29
 
 ### Bug Fixes
 
 - Config param  will search for either full path or file inside /home/msopena/.config/manta/
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.4
 
 ## [1.46.3] - 2024-07-29
 
