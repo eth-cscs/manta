@@ -12,7 +12,7 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct Site {
-    socks5_proxy: String,
+    socks5_proxy: Option<String>,
     shasta_base_url: String,
     k8s_api_url: String,
     vault_base_url: String,
@@ -116,6 +116,7 @@ pub async fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> 
 /// defiend, then environment variables takes preference
 pub async fn get_configuration() -> Config {
     // Get config file path
+
     let config_file = get_config_file_path().await;
 
     // Process config file
@@ -233,13 +234,27 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .interact_text()
         .unwrap();
 
-    // Get the right socks5 proxy value based on if client can reach backend api or not
-    let socks5_proxy = Input::new()
-            .with_prompt("Note: If CSM backend API is not reacheable, then you may need a SOCKS5 proxy.\nPlease type socks5 proxy URL")
-            .with_initial_text("socks5h://127.0.0.1:1080".to_string())
-            .allow_empty(true)
-            .interact_text()
-            .unwrap();
+    println!("Testing connectivity to CSM backend, please wait ...");
+
+    let test_backend_api =
+        mesa::common::authentication::test_connectivity_to_backend(&shasta_base_url).await;
+
+    let mut socks5_proxy = if test_backend_api {
+        println!("This machine can access CSM API, no need to setup SOCKS5 proxy");
+        None
+    } else {
+        println!("This machine cannot access CSM API, configuring SOCKS5 proxy");
+
+        // Get the right socks5 proxy value based on if client can reach backend api or not
+        Some(
+            Input::new()
+                .with_prompt("Please type socks5 proxy URL")
+                .default("socks5h://127.0.0.1:1080".to_string())
+                .allow_empty(true)
+                .interact_text()
+                .unwrap(),
+        )
+    };
 
     let site_details = Site {
         socks5_proxy,
