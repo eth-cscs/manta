@@ -187,10 +187,11 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .interact_text()
         .unwrap();
 
+    // TODO: test if client has network access from this machine to endpoints, if not, then ask to
+    // enter socks5 proxy value, otherwise leave it empty
     let socks5_proxy: String = Input::new()
         .with_prompt("Type socks5 proxy URL")
-        .default("socks5h://127.0.0.1:1080".to_string())
-        .show_default(true)
+        .with_initial_text("socks5h://127.0.0.1:1080".to_string())
         .allow_empty(true)
         .interact_text()
         .unwrap();
@@ -271,8 +272,15 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         get_default_manta_config_file_path()
     };
 
-    let mut file = File::create(config_file_path.clone()).unwrap();
-    file.write_all(config_file_content.as_bytes()).unwrap();
+    let mut config_file = File::create(config_file_path.clone()).unwrap();
+    config_file
+        .write_all(config_file_content.as_bytes())
+        .unwrap();
+
+    eprintln!(
+        "Configuration file '{}' created",
+        config_file_path.to_string_lossy()
+    )
 }
 
 pub fn get_csm_root_cert_content(file_path: &str) -> Vec<u8> {
