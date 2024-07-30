@@ -15,7 +15,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // #[cfg(feature = "dhat-heap")]
     // let _profiler = dhat::Profiler::new_heap();
 
-    let settings = common::config_ops::get_configuration();
+    let settings = common::config_ops::get_configuration().await;
 
     let site_name = settings.get_string("site").unwrap();
     let site_detail_hashmap = settings.get_table("sites").unwrap();

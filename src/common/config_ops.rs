@@ -84,7 +84,7 @@ pub fn get_default_mgmt_plane_ca_cert_file_path() -> PathBuf {
 
 /// Get Manta configuration full path. Configuration may be the default one or specified by user.
 /// This function also validates if the config file is TOML format
-pub fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
+pub async fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
     // Get config file path from ENV var
     let config_file_path = if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
         let mut env_config_file = std::path::PathBuf::new();
@@ -98,7 +98,7 @@ pub fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
     // Validate if config file exists
     if !config_file_path.exists() {
         // Configuration file does not exists --> create a new configuration file
-        create_new_config_file(Some(&config_file_path));
+        create_new_config_file(Some(&config_file_path)).await;
     }
 
     // Validate config file and check format (toml) is correct
@@ -114,9 +114,9 @@ pub fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
 
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
-pub fn get_configuration() -> Config {
+pub async fn get_configuration() -> Config {
     // Get config file path
-    let config_file = get_config_file_path();
+    let config_file = get_config_file_path().await;
 
     // Process config file
     let config_rslt = ::config::Config::builder()
@@ -141,7 +141,7 @@ pub fn get_configuration() -> Config {
     }
 }
 
-pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
+pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     eprintln!("Confguration file not found. Please introduce values below:");
     /* let log: String = Input::new()
     .with_prompt("Please enter a value for param 'log'")
@@ -153,7 +153,7 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let log_level_values = vec!["error", "info", "warning", "debug", "trace"];
 
     let log_selection = Select::new()
-        .with_prompt("Select 'log verbosity' level from the options below")
+        .with_prompt("Please select 'log verbosity' level from the list below")
         .items(&log_level_values)
         .default(0)
         .interact()
@@ -169,7 +169,7 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     stdin().read_line(&mut parent_hsm_group).unwrap(); */
 
     let audit_file: String = Input::new()
-        .with_prompt("Type full path for the audit file")
+        .with_prompt("Please type full path for the audit file")
         .default(
             get_default_manta_audit_file_path()
                 .to_string_lossy()
@@ -181,58 +181,49 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .unwrap();
 
     let site: String = Input::new()
-        .with_prompt("Type site name")
+        .with_prompt("Please type site name")
         .default("alps".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
-    // TODO: test if client has network access from this machine to endpoints, if not, then ask to
-    // enter socks5 proxy value, otherwise leave it empty
-    let socks5_proxy: String = Input::new()
-        .with_prompt("Type socks5 proxy URL")
-        .with_initial_text("socks5h://127.0.0.1:1080".to_string())
-        .allow_empty(true)
-        .interact_text()
-        .unwrap();
-
     let shasta_base_url: String = Input::new()
-        .with_prompt("Type site management plane URL")
+        .with_prompt("Please type site management plane URL")
         .default("https://api.cmn.alps.cscs.ch".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
     let k8s_api_url: String = Input::new()
-        .with_prompt("Type kubernetes api URL")
+        .with_prompt("Please type kubernetes api URL")
         .default("https://10.252.1.12:6442".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
     let vault_base_url: String = Input::new()
-        .with_prompt("Type Hashicorp Vault URL")
+        .with_prompt("Please type Hashicorp Vault URL")
         .default("https://hashicorp-vault.cscs.ch:8200".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
     let vault_secret_path: String = Input::new()
-        .with_prompt("Type Hashicorp Vault secret path")
+        .with_prompt("Please type Hashicorp Vault secret path")
         .default("shasta".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
     let vault_role_id: String = Input::new()
-        .with_prompt("Type Hashicorp Vault role id")
+        .with_prompt("Please type Hashicorp Vault role id")
         .default("b15517de-cabb-06ba-af98-633d216c6d99".to_string())
         .show_default(true)
         .interact_text()
         .unwrap();
 
     let root_ca_cert_file: String = Input::new()
-        .with_prompt("Type full path for the CA public certificate file")
+        .with_prompt("Please type full path for the CA public certificate file")
         .default(
             get_default_mgmt_plane_ca_cert_file_path()
                 .to_string_lossy()
@@ -241,6 +232,14 @@ pub fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .show_default(true)
         .interact_text()
         .unwrap();
+
+    // Get the right socks5 proxy value based on if client can reach backend api or not
+    let socks5_proxy = Input::new()
+            .with_prompt("Note: If CSM backend API is not reacheable, then you may need a SOCKS5 proxy.\nPlease type socks5 proxy URL")
+            .with_initial_text("socks5h://127.0.0.1:1080".to_string())
+            .allow_empty(true)
+            .interact_text()
+            .unwrap();
 
     let site_details = Site {
         socks5_proxy,
