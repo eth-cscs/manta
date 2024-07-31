@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.10] - 2024-07-31
+
+### Bug Fixes
+
+- Authentication bug
+
+### Refactor
+
+- Improve cli help text
+
 ## [1.46.9] - 2024-07-31
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.9
 
 ### Refactor
 
