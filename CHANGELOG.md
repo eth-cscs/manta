@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.8] - 2024-07-31
+
+### Features
+
+- Update mesa library
+
 ## [1.46.7] - 2024-07-30
 
 ### Features
 
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.7
 
 ## [1.46.6] - 2024-07-30
 
