@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::ims::image::{self, r#struct::Image};
 
@@ -48,7 +49,15 @@ pub async fn exec(
         table.add_row(vec![
             image_details.0.id.as_ref().unwrap(),
             &image_details.0.name,
-            image_details.0.created.as_ref().unwrap(),
+            &image_details
+                .0
+                .created
+                .as_ref()
+                .unwrap()
+                .parse::<DateTime<Local>>()
+                .unwrap()
+                .format("%d/%m/%Y %H:%M")
+                .to_string(),
             &image_details.1,
             &image_details.2,
         ]);

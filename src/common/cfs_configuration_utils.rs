@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use chrono::{DateTime, Local, Utc};
 use comfy_table::Table;
 use mesa::{
     bos::template::mesa::r#struct::v2::BosSessionTemplate,
@@ -52,7 +53,13 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
 
         table.add_row(vec![
             cfs_configuration.name.clone(),
-            cfs_configuration.last_updated.clone(),
+            cfs_configuration
+                .last_updated
+                .clone()
+                .parse::<DateTime<Local>>()
+                .unwrap()
+                .format("%d/%m/%Y %H:%M")
+                .to_string(),
             layers,
         ]);
     }
@@ -123,7 +130,12 @@ pub fn print_table_details_struct(
 
     table.add_row(vec![
         cfs_configuration.name,
-        cfs_configuration.last_updated,
+        cfs_configuration
+            .last_updated
+            .parse::<DateTime<Local>>()
+            .unwrap()
+            .format("%d/%m/%Y %H:%M")
+            .to_string(),
         layers,
         derivatives,
     ]);
