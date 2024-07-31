@@ -31,7 +31,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .about("WIP - Add nodes to a cluster")
                 .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving to."))
                 .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving nodes from the target cluster."))
-                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
+                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
             )
@@ -56,7 +56,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .arg_required_else_help(true)
                 .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving from (resources move from here)."))
                 .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving nodes from the target cluster (resources move here)."))
-                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0"))
+                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
 
@@ -251,7 +251,7 @@ pub fn subcommand_get_hw_components() -> Command {
                 .visible_alias("n")
                 .arg_required_else_help(true)
                 .about("Get hw components for some nodes")
-                .arg(arg!(<XNAMES> "List of xnames separated by commas").required(true))
+                .arg(arg!(<XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'").required(true))
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
                 .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
 
@@ -306,7 +306,7 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         )
         .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
-        .arg(arg!(-x --xnames <XNAMES> "List of xnames"));
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
 
     match hsm_group {
         None => {
@@ -435,8 +435,8 @@ pub fn subcommand_get_kernel_parameters(hsm_group: Option<&String>) -> Command {
     let mut get_cfs_session = Command::new("kernel-parameters")
         .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
-        .arg(arg!(-n --xnames <XNAMES> "List of xnames to retreive the kernel parameters from"))
-        .arg(arg!(-f --filter <KEYS> "List of kernel parameter keys to filter. eg: console bad_page crashkernel hugepagelist root"));
+        .arg(arg!(-n --xnames <XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+        .arg(arg!(-f --filter <KEYS> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"));
 
     match hsm_group {
         None => {
@@ -586,7 +586,7 @@ pub fn subcommand_apply_template(/* hsm_group: Option<&String> */) -> Command {
                 .value_parser(["boot", "reboot", "shutdown"])
                 .default_value("reboot"),
         )
-        .arg(arg!(-l --"limit" <VALUE> "comma separated list of nodes or HSM groups to apply the BOS sessiontemplate. If missing, default targets in BOS sessiontemplate will apply."))
+        .arg(arg!(-l --"limit" <VALUE> "Comma separated list of nodes or HSM groups to apply the BOS sessiontemplate. If missing, default targets in BOS sessiontemplate will apply."))
 }
 
 pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
@@ -639,7 +639,7 @@ pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
     let mut apply_node_on = Command::new("on")
         .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
         .arg_required_else_help(true)
-        .arg(arg!(<XNAMES> "List of xnames to power on"))
+        .arg(arg!(<XNAMES> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-r --reason <TEXT> "reason to power on"));
 
     match hsm_group {
@@ -662,7 +662,7 @@ pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
     let mut apply_node_off = Command::new("off")
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
-        .arg(arg!(<XNAMES> "List of xnames to power off"))
+        .arg(arg!(<XNAMES> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to power off"));
 
@@ -687,7 +687,7 @@ pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
         .visible_aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power reset' command instead.\nRestart nodes")
-        .arg(arg!(<XNAMES> "List of xnames to power on"))
+        .arg(arg!(<XNAMES> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
         .arg(arg!(-r --reason <TEXT> "reason to reset"));
 
@@ -717,7 +717,7 @@ pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"));
 
     update_nodes = update_nodes
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
 
     update_nodes = match hsm_group {
         Some(_) => update_nodes,
@@ -755,7 +755,7 @@ pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
 
     apply_boot_nodes = apply_boot_nodes
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated"));
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
 
     apply_boot_nodes = match hsm_group {
         Some(_) => apply_boot_nodes,
@@ -832,7 +832,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --reason <TEXT> "reason to power on"))
-                        .arg(arg!(<NODE_NAME> "List of xnames to power on")),
+                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )
         .subcommand(
@@ -855,7 +855,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power off"))
-                        .arg(arg!(<NODE_NAME> "List of xnames to power off")),
+                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )
         .subcommand(
@@ -878,7 +878,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
-                        .arg(arg!(<NODE_NAME> "List of xnames to power reset")),
+                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )
 }
@@ -917,7 +917,7 @@ pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> C
     match hsm_group_opt {
         None => {
             set_runtime_configuration = set_runtime_configuration
-                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(
                     ArgGroup::new("cluster_or_session_name")
@@ -940,7 +940,7 @@ pub fn subcommand_set_boot_image(hsm_group_opt: Option<&String>) -> Command {
     match hsm_group_opt {
         None => {
             set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(
                     ArgGroup::new("cluster_or_session_name")
@@ -963,7 +963,7 @@ pub fn subcommand_set_boot_configuration(hsm_group_opt: Option<&String>) -> Comm
     match hsm_group_opt {
         None => {
             set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(
                     ArgGroup::new("cluster_or_xnames")
@@ -981,12 +981,12 @@ pub fn subcommand_set_kernel_params(hsm_group_opt: Option<&String>) -> Command {
     let mut set_boot_image = Command::new("kernel-parameters")
         .visible_alias("kp")
         .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster.")
-        .arg(arg!(-k --"kernel-parameters" <VALUE> "List of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true));
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true));
 
     match hsm_group_opt {
         None => {
             set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "List of nodes to set runtime configuration"))
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
                 .group(
                     ArgGroup::new("cluster_or_xnames")
