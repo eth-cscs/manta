@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.11] - 2024-07-31
+
+### Features
+
+- Format datetime when listing configurations and images
+
 ## [1.46.10] - 2024-07-31
 
 ### Bug Fixes
 
 - Authentication bug
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.10
 
 ### Refactor
 
