@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.9] - 2024-07-31
+
+### Refactor
+
+- Add aliases to help command
+
 ## [1.46.8] - 2024-07-31
 
 ### Features
 
 - Update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.8
 
 ## [1.46.7] - 2024-07-30
 
