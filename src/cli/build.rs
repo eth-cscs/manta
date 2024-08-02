@@ -10,7 +10,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
         .subcommand(subcommand_power())
-        .subcommand(subcommand_get(hsm_group))
+        .subcommand(subcommand_get())
         .subcommand(Command::new("add")
             .arg_required_else_help(true)
             .about("WIP - Add hw components to cluster")
@@ -67,17 +67,17 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .visible_alias("s")
                 .arg_required_else_help(true)
                 .about("Set specific features on cluster nodes or a list of nodes")
-                .subcommand(subcommand_set_runtime_configuration(hsm_group))
-                .subcommand(subcommand_set_boot_configuration(hsm_group))
-                .subcommand(subcommand_set_boot_image(hsm_group))
-                .subcommand(subcommand_set_kernel_params(hsm_group)))
+                .subcommand(subcommand_set_runtime_configuration())
+                .subcommand(subcommand_set_boot_configuration())
+                .subcommand(subcommand_set_boot_image())
+                .subcommand(subcommand_set_kernel_params()))
         .subcommand(
             Command::new("apply")
                 .visible_alias("a")
                 .arg_required_else_help(true)
                 .about("Make changes to Shasta system")
                 .subcommand(subcommand_apply_hw_configuration())
-                .subcommand(subcommand_apply_configuration(hsm_group))
+                .subcommand(subcommand_apply_configuration())
                 .subcommand(subcommand_apply_template())
                 .subcommand(subcommand_apply_image(/* hsm_group */))
                 .subcommand(subcommand_apply_cluster(/* hsm_group */))
@@ -86,19 +86,19 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                     .visible_alias("b")
                     .arg_required_else_help(true)
                     .about("Change boot operations")
-                    .subcommand(subcommand_apply_boot_nodes(hsm_group))
-                    .subcommand(subcommand_apply_boot_cluster(hsm_group))
+                    .subcommand(subcommand_apply_boot_nodes())
+                    .subcommand(subcommand_apply_boot_cluster())
                 )
                 .subcommand(
                     Command::new("node")
                         .visible_aliases(["n", "nod"])
                         .arg_required_else_help(true)
                         .about("DEPRECATED - Please use 'manta power' command instead.\nPower management for a list of nodes")
-                        .subcommand(subcommand_apply_node_on(hsm_group))
-                        .subcommand(subcommand_apply_node_off(hsm_group))
-                        .subcommand(subcommand_apply_node_reset(hsm_group)),
+                        .subcommand(subcommand_apply_node_on())
+                        .subcommand(subcommand_apply_node_off())
+                        .subcommand(subcommand_apply_node_reset()),
                 )
-                .subcommand(subcommand_apply_session(hsm_group))
+                .subcommand(subcommand_apply_session())
                 .subcommand(Command::new("ephemeral-environment")
                     .visible_aliases(["ee", "eph", "ephemeral"])
                     .arg_required_else_help(true)
@@ -121,8 +121,8 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .visible_alias("u")
                 .arg_required_else_help(true)
                 .about("Update nodes power status or boot params")
-                .subcommand(subcommand_update_nodes(hsm_group))
-                .subcommand(subcommand_update_hsm_group(hsm_group)),
+                .subcommand(subcommand_update_nodes())
+                .subcommand(subcommand_update_hsm_group()),
         )
         .subcommand(
             subcommand_log(hsm_group)
@@ -146,7 +146,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                         .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
                 ),
         )
-        .subcommand(subcommand_delete(hsm_group))
+        .subcommand(subcommand_delete())
         .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_config())
 }
@@ -217,8 +217,8 @@ pub fn subcommand_config() -> Command {
         )
 }
 
-pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
-    let mut delete = Command::new("delete")
+pub fn subcommand_delete() -> Command {
+    Command::new("delete")
                 .arg_required_else_help(true)
                 .about("Deletes CFS configurations, CFS sessions, BOS sessiontemplates, BOS sessions and images related to CFS configuration/s.")
                 .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and IMS images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
@@ -226,17 +226,8 @@ pub fn subcommand_delete(hsm_group: Option<&String>) -> Command {
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
                 .arg(arg!(-y --"yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted"))
-                .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"));
-
-    match hsm_group {
-        None => {
-            delete =
-                delete.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
-        }
-        Some(_) => {}
-    }
-
-    delete
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
+                .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"))
 }
 
 pub fn subcommand_get_hw_components() -> Command {
@@ -263,8 +254,8 @@ pub fn subcommand_get_hw_components() -> Command {
         .subcommand(command_get_hs_configuration_node)
 }
 
-pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_configuration = Command::new("configurations")
+pub fn subcommand_get_cfs_configuration() -> Command {
+    Command::new("configurations")
         .visible_aliases(["c", "cfg", "conf", "config", "cnfgrtn", "configuration"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <CONFIGURATION_NAME> "configuration name"))
@@ -274,25 +265,13 @@ pub fn subcommand_get_cfs_configuration(hsm_group: Option<&String>) -> Command {
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]));
-
-    match hsm_group {
-        None => {
-            get_cfs_configuration = get_cfs_configuration
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"])).arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
-        }
-        Some(_) => {}
-    }
-
-    get_cfs_configuration = get_cfs_configuration
-        .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]));
-
-    get_cfs_configuration
+        .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
 }
 
-pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_session = Command::new("sessions")
+pub fn subcommand_get_cfs_session() -> Command {
+    Command::new("sessions")
         .visible_aliases(["s", "se", "ses", "sess", "sssn", "session"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <SESSION_NAME> "Return only sessions with the given session name"))
@@ -306,29 +285,18 @@ pub fn subcommand_get_cfs_session(hsm_group: Option<&String>) -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         )
         .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
-
-    match hsm_group {
-        None => {
-            get_cfs_session = get_cfs_session
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
                     "hsm-group",
                     "xnames",
                     "name",
                 ]))
-        }
-        Some(_) => {}
-    }
-
-    get_cfs_session =
-        get_cfs_session.group(ArgGroup::new("session_limit").args(["most-recent", "limit"]));
-
-    get_cfs_session
+        .group(ArgGroup::new("session_limit").args(["most-recent", "limit"]))
 }
 
-pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
-    let mut get_bos_template = Command::new("templates")
+pub fn subcommand_get_bos_template() -> Command {
+    Command::new("templates")
         .visible_aliases(["t", "tplt", "templ", "tmplt", "template"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <TEMPLATE_NAME> "template name"))
@@ -336,133 +304,76 @@ pub fn subcommand_get_bos_template(hsm_group: Option<&String>) -> Command {
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of BOS templates created")
                 .value_parser(value_parser!(u8).range(1..)),
-        );
-
-    match hsm_group {
-        None => {
-            get_bos_template = get_bos_template
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"]))
-        }
-        Some(_) => {}
-    }
-
-    get_bos_template
+        )
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"]))
 }
 
-pub fn subcommand_get_cluster_details(hsm_group: Option<&String>) -> Command {
-    let mut get_node = Command::new("cluster")
+pub fn subcommand_get_cluster_details() -> Command {
+    Command::new("cluster")
         .visible_aliases(["C", "clstr"])
         .about("Get cluster details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"));
-
-    match hsm_group {
-        None => {
-            get_node = get_node
-                .arg_required_else_help(true)
-                .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-        }
-        Some(_) => {}
-    }
-
-    get_node
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
+        .arg_required_else_help(true)
+        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 }
 
-pub fn subcommand_get_node(hsm_group: Option<&String>) -> Command {
-    let mut get_node = Command::new("nodes")
+pub fn subcommand_get_node() -> Command {
+    Command::new("nodes")
         .visible_aliases(["n", "node", "nd"])
         .about("DEPRECATED - Please use 'manta get cluster' command instead.\nGet members of a HSM group")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "json", "summary"]).default_value("table"));
-
-    match hsm_group {
-        None => {
-            get_node = get_node
-                .arg_required_else_help(true)
-                .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-        }
-        Some(_) => {}
-    }
-
-    get_node
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "json", "summary"]).default_value("table"))
+        .arg_required_else_help(true)
+        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 }
 
-pub fn subcommand_get_hsm_groups_details(hsm_group: Option<&String>) -> Command {
-    let mut get_hsm_group = Command::new("hsm-groups")
+pub fn subcommand_get_hsm_groups_details() -> Command {
+    Command::new("hsm-groups")
         .visible_aliases(["h", "hg", "hsm", "hsmgrps"])
-        .about("DEPRECATED - Please do not use this command.\nGet HSM groups details");
-
-    match hsm_group {
-        None => {
-            get_hsm_group = get_hsm_group
-                .arg_required_else_help(true)
-                .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-        }
-        Some(_) => {
-            get_hsm_group = get_hsm_group.arg_required_else_help(false);
-        }
-    }
-
-    get_hsm_group
+        .about("DEPRECATED - Please do not use this command.\nGet HSM groups details")
+        .arg_required_else_help(true)
+        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 }
 
-pub fn subcommand_get_images(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_session = Command::new("images")
+pub fn subcommand_get_images() -> Command {
+    Command::new("images")
         .visible_aliases(["i", "img", "imag", "image"])
         .about("Get image information")
         .arg(arg!(-i --id <VALUE> "Image ID"))
         .arg(
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
                 .value_parser(value_parser!(u8).range(1..)),
-        );
-
-    match hsm_group {
-        None => {
-            get_cfs_session =
-                get_cfs_session.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-        }
-        Some(_) => {}
-    }
-
-    get_cfs_session
+        )
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
 }
 
-pub fn subcommand_get_kernel_parameters(hsm_group: Option<&String>) -> Command {
-    let mut get_cfs_session = Command::new("kernel-parameters")
+pub fn subcommand_get_kernel_parameters() -> Command {
+    Command::new("kernel-parameters")
         .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
         .arg(arg!(-n --xnames <XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
-        .arg(arg!(-f --filter <KEYS> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"));
-
-    match hsm_group {
-        None => {
-            get_cfs_session =
-                get_cfs_session.arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "List kernel parameters for all nodes in a HSM group name"))
-        }
-        Some(_) => {}
-    }
-
-    get_cfs_session
+        .arg(arg!(-f --filter <KEYS> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'")).arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "List kernel parameters for all nodes in a HSM group name"))
 }
 
-pub fn subcommand_get(hsm_group: Option<&String>) -> Command {
+pub fn subcommand_get() -> Command {
     Command::new("get")
         .visible_alias("g")
         .arg_required_else_help(true)
         .about("Get information from CSM system")
         .subcommand(subcommand_get_hw_components())
-        .subcommand(subcommand_get_cfs_session(hsm_group))
-        .subcommand(subcommand_get_cfs_configuration(hsm_group))
-        .subcommand(subcommand_get_bos_template(hsm_group))
-        .subcommand(subcommand_get_node(hsm_group))
-        .subcommand(subcommand_get_cluster_details(hsm_group))
-        .subcommand(subcommand_get_hsm_groups_details(hsm_group))
-        .subcommand(subcommand_get_images(hsm_group))
-        .subcommand(subcommand_get_kernel_parameters(hsm_group))
+        .subcommand(subcommand_get_cfs_session())
+        .subcommand(subcommand_get_cfs_configuration())
+        .subcommand(subcommand_get_bos_template())
+        .subcommand(subcommand_get_node())
+        .subcommand(subcommand_get_cluster_details())
+        .subcommand(subcommand_get_hsm_groups_details())
+        .subcommand(subcommand_get_images())
+        .subcommand(subcommand_get_kernel_parameters())
 }
 
 pub fn subcommand_apply_hw_configuration() -> Command {
@@ -486,8 +397,8 @@ pub fn subcommand_apply_hw_configuration() -> Command {
         )
 }
 
-pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
-    let mut apply_session = Command::new("session")
+pub fn subcommand_apply_session() -> Command {
+    Command::new("session")
         .visible_aliases(["s", "se", "ses", "sess", "sssn"])
         .arg_required_else_help(true)
         .about("Runs the ansible script in local directory against HSM group or xnames.\nNote: the local repo must alrady exists in Shasta VCS")
@@ -502,26 +413,14 @@ pub fn subcommand_apply_session(hsm_group: Option<&String>) -> Command {
             // .require_equals(true)
             .default_value("2")
             .default_missing_value("2"))
-        .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true));
-
-    apply_session = match hsm_group {
-        Some(_) => {
-            apply_session
-                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
-        }
-        None => {
-            apply_session
-                .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).required(true))
-        }
-    };
-
-    apply_session
+        .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
+        .arg(arg!(-l --"ansible-limit" <VALUE> "Ansible limit. Target xnames to the CFS session. Note: ansible-limit must be a subset of hsm-group if both parameters are provided").required(true))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .group(ArgGroup::new("hsm-group_or_ansible-limit").args(["hsm-group", "ansible-limit"]).required(true))
 }
 
-pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
-    let mut apply_configuration = Command::new("configuration")
+pub fn subcommand_apply_configuration() -> Command {
+    Command::new("configuration")
         .visible_aliases(["conf", "config"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration")
@@ -535,16 +434,7 @@ pub fn subcommand_apply_configuration(hsm_group: Option<&String>) -> Command {
         // .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
         // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
         // .group(ArgGroup::new("req_flag_file").arg("file"))
-        ;
-
-    match hsm_group {
-        Some(_) => {}
-        None => apply_configuration = apply_configuration.arg(
-            arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"),
-        ),
-    };
-
-    apply_configuration
+        .arg( arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"))
 }
 
 /// Creates an image based on a list of Ansible scripts (CFS layers) and assigns the image to a HSM
@@ -635,116 +525,75 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after processing SAT file successfully. Use \" or \'.\neg: --post-hook \"echo hello\"."))
 }
 
-pub fn subcommand_apply_node_on(hsm_group: Option<&String>) -> Command {
-    let mut apply_node_on = Command::new("on")
+pub fn subcommand_apply_node_on() -> Command {
+    Command::new("on")
         .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-r --reason <TEXT> "reason to power on"));
-
-    match hsm_group {
-        None => {
-            apply_node_on = apply_node_on
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(
-                    ArgGroup::new("hsm-group_or_xnames")
-                        .args(["hsm-group", "XNAMES"])
-                        .multiple(true),
-                )
-        }
-        Some(_) => {}
-    };
-
-    apply_node_on
+        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .group(
+            ArgGroup::new("hsm-group_or_xnames")
+            .args(["hsm-group", "XNAMES"])
+            .multiple(true),
+        )
 }
 
-pub fn subcommand_apply_node_off(hsm_group: Option<&String>) -> Command {
-    let mut apply_node_off = Command::new("off")
+pub fn subcommand_apply_node_off() -> Command {
+    Command::new("off")
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
         .arg(arg!(<XNAMES> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-        .arg(arg!(-r --reason <TEXT> "reason to power off"));
-
-    match hsm_group {
-        None => {
-            apply_node_off = apply_node_off
+        .arg(arg!(-r --reason <TEXT> "reason to power off"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(
                     ArgGroup::new("hsm-group_or_xnames")
                         .args(["hsm-group", "XNAMES"])
                         .multiple(true),
                 )
-        }
-        Some(_) => {}
-    };
-
-    apply_node_off
 }
 
-pub fn subcommand_apply_node_reset(hsm_group: Option<&String>) -> Command {
-    let mut apply_node_reset = Command::new("reset")
+pub fn subcommand_apply_node_reset() -> Command {
+    Command::new("reset")
         .visible_aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power reset' command instead.\nRestart nodes")
         .arg(arg!(<XNAMES> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-        .arg(arg!(-r --reason <TEXT> "reason to reset"));
-
-    match hsm_group {
-        None => {
-            apply_node_reset = apply_node_reset
+        .arg(arg!(-r --reason <TEXT> "reason to reset"))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(
                     ArgGroup::new("hsm-group_or_xnames")
                         .args(["hsm-group", "XNAMES"])
                         .multiple(true),
                 )
-        }
-        Some(_) => {}
-    };
-
-    apply_node_reset
 }
 
-pub fn subcommand_update_nodes(hsm_group: Option<&String>) -> Command {
-    let mut update_nodes = Command::new("nodes")
+pub fn subcommand_update_nodes() -> Command {
+    Command::new("nodes")
         .visible_aliases(["n", "node", "nd"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta apply boot nodes' command instead.\nUpdates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
         .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"))
-        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"));
-
-    update_nodes = update_nodes
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
-
-    update_nodes = match hsm_group {
-        Some(_) => update_nodes,
-        None => update_nodes.arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME")),
-    };
-
-    update_nodes
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME"))
 }
 
-pub fn subcommand_update_hsm_group(hsm_group: Option<&String>) -> Command {
-    let mut update_hsm_group = Command::new("hsm-group")
+pub fn subcommand_update_hsm_group() -> Command {
+    Command::new("hsm-group")
         .visible_aliases(["h", "hsm"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta apply boot cluster' command instead.\nUpdates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
         .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
-        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"));
-
-    update_hsm_group = match hsm_group {
-        Some(_) => update_hsm_group,
-        None => update_hsm_group.arg(arg!(<HSM_GROUP_NAME> "HSM group name").required(true)),
-    };
-
-    update_hsm_group
+        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"))
+        .arg(arg!(<HSM_GROUP_NAME> "HSM group name").required(true))
 }
 
-pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
-    let mut apply_boot_nodes = Command::new("nodes")
+pub fn subcommand_apply_boot_nodes() -> Command {
+    Command::new("nodes")
         .visible_aliases(["n", "node"])
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel parameters) for a list of nodes. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot nodes --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
@@ -752,21 +601,13 @@ pub fn subcommand_apply_boot_nodes(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to the nodes while booting"))
-        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
-
-    apply_boot_nodes = apply_boot_nodes
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"));
-
-    apply_boot_nodes = match hsm_group {
-        Some(_) => apply_boot_nodes,
-        None => apply_boot_nodes.arg(arg!([CLUSTER_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME")),
-    };
-
-    apply_boot_nodes
+        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
+        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!([CLUSTER_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME"))
 }
 
-pub fn subcommand_apply_boot_cluster(hsm_group: Option<&String>) -> Command {
-    let mut apply_boot_cluster = Command::new("cluster")
+pub fn subcommand_apply_boot_cluster() -> Command {
+    Command::new("cluster")
         .visible_alias("c")
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel params) for all nodes in a cluster. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot cluster --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
@@ -774,14 +615,8 @@ pub fn subcommand_apply_boot_cluster(hsm_group: Option<&String>) -> Command {
         .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
-        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]));
-
-    apply_boot_cluster = match hsm_group {
-        Some(_) => apply_boot_cluster,
-        None => apply_boot_cluster.arg(arg!(<CLUSTER_NAME> "Cluster name").required(true)),
-    };
-
-    apply_boot_cluster
+        .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
+        .arg(arg!(<CLUSTER_NAME> "Cluster name").required(true))
 }
 
 pub fn subcommand_migrate_backup() -> Command {
@@ -908,94 +743,58 @@ pub fn subcommand_validate_local_repo() -> Command {
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
 
-pub fn subcommand_set_runtime_configuration(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_runtime_configuration = Command::new("runtime-configuration")
+pub fn subcommand_set_runtime_configuration() -> Command {
+    Command::new("runtime-configuration")
         .visible_alias("rc")
         .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true));
-
-    match hsm_group_opt {
-        None => {
-            set_runtime_configuration = set_runtime_configuration
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-                .group(
-                    ArgGroup::new("cluster_or_session_name")
-                        .args(["hsm-group", "xnames"])
-                        .required(true),
-                );
-        }
-        Some(_) => {}
-    }
-
-    set_runtime_configuration
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .group(
+            ArgGroup::new("cluster_or_session_name")
+           .args(["hsm-group", "xnames"])
+           .required(true),
+        )
 }
 
-pub fn subcommand_set_boot_image(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_boot_image = Command::new("boot-image")
+pub fn subcommand_set_boot_image() -> Command {
+    Command::new("boot-image")
         .visible_alias("bi")
         .about("Set boot image to boot a set of nodes or all nodes in a cluster")
-        .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true));
-
-    match hsm_group_opt {
-        None => {
-            set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-                .group(
-                    ArgGroup::new("cluster_or_session_name")
-                        .args(["hsm-group", "xnames"])
-                        .required(true),
-                );
-        }
-        Some(_) => {}
-    }
-
-    set_boot_image
+        .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true))
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .group(
+            ArgGroup::new("cluster_or_session_name")
+            .args(["hsm-group", "xnames"])
+            .required(true),
+        )
 }
 
-pub fn subcommand_set_boot_configuration(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_boot_image = Command::new("boot-configuration")
+pub fn subcommand_set_boot_configuration() -> Command {
+    Command::new("boot-configuration")
         .visible_alias("bc")
         .about("Set boot configuration to boot a set of nodes or all nodes in a cluster. The algorithm will look for the most recent image id created with the provided configuration name and assign it to the nodes.")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true));
-
-    match hsm_group_opt {
-        None => {
-            set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-                .group(
-                    ArgGroup::new("cluster_or_xnames")
-                        .args(["hsm-group", "xnames"])
-                        .required(true),
-                );
-        }
-        Some(_) => {}
-    }
-
-    set_boot_image
+        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .group(
+            ArgGroup::new("cluster_or_xnames")
+                .args(["hsm-group", "xnames"])
+                .required(true),
+        )
 }
 
-pub fn subcommand_set_kernel_params(hsm_group_opt: Option<&String>) -> Command {
-    let mut set_boot_image = Command::new("kernel-parameters")
+pub fn subcommand_set_kernel_params() -> Command {
+    Command::new("kernel-parameters")
         .visible_alias("kp")
         .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster.")
-        .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true));
-
-    match hsm_group_opt {
-        None => {
-            set_boot_image = set_boot_image
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-                .group(
-                    ArgGroup::new("cluster_or_xnames")
-                        .args(["hsm-group", "xnames"])
-                        .required(true),
-                );
-        }
-        Some(_) => {}
-    }
-
-    set_boot_image
+        .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true))
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .group(
+            ArgGroup::new("cluster_or_xnames")
+                .args(["hsm-group", "xnames"])
+                .required(true),
+        )
 }
