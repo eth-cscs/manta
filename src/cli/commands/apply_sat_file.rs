@@ -20,7 +20,8 @@ use mesa::{
     error::Error,
     hsm, ims,
 };
-use serde_yaml::Value;
+use serde_yaml::{Mapping, Value};
+use termion::color;
 
 use crate::{
     cli::{commands::apply_hw_cluster_pin, process::validate_target_hsm_members},
@@ -83,15 +84,31 @@ pub async fn exec(
         };
     }
 
-    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+    let mut sat_template_file_yaml: Mapping = sat_file::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
         values_cli_opt,
-    );
+    )
+    .as_mapping_mut()
+    .unwrap()
+    .clone();
+
+    // Filter either images or session_templates section according to user request
+    if image_only {
+        sat_template_file_yaml.remove_entry("session_templates");
+    }
+
+    if session_template_only {
+        sat_template_file_yaml.remove_entry("images");
+    }
+
+    let sat_template_file_yaml: Value = serde_yaml::to_value(sat_template_file_yaml).unwrap();
 
     println!(
-        "#### SAT file content ####\n{}",
-        serde_yaml::to_string(&sat_file_yaml).unwrap()
+        "{}#### SAT file content ####{}\n{}",
+        color::Fg(color::Blue),
+        color::Fg(color::Reset),
+        serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
     );
 
     let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
@@ -125,16 +142,17 @@ pub async fn exec(
     // Get data from SAT YAML file
     //
     // Get hardware pattern from SAT YAML file
-    let hardware_yaml_value_vec_opt = sat_file_yaml["hardware"].as_sequence();
+    let hardware_yaml_value_vec_opt = sat_template_file_yaml["hardware"].as_sequence();
 
     // Get CFS configurations from SAT YAML file
-    let configuration_yaml_vec_opt = sat_file_yaml["configurations"].as_sequence();
+    let configuration_yaml_vec_opt = sat_template_file_yaml["configurations"].as_sequence();
 
     // Get inages from SAT YAML file
-    let image_yaml_vec_opt = sat_file_yaml["images"].as_sequence();
+    let image_yaml_vec_opt = sat_template_file_yaml["images"].as_sequence();
 
     // Get inages from SAT YAML file
-    let bos_session_template_yaml_vec_opt = sat_file_yaml["session_templates"].as_sequence();
+    let bos_session_template_yaml_vec_opt =
+        sat_template_file_yaml["session_templates"].as_sequence();
 
     // Get Cray/HPE product catalog
     //
@@ -361,7 +379,7 @@ pub async fn exec(
             ref_name_processed_hashmap,
             hsm_group_param_opt,
             hsm_group_available_vec,
-            sat_file_yaml,
+            sat_template_file_yaml,
             // &tag,
             do_not_reboot,
         )

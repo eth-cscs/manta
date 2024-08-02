@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::{
     bos::template::mesa::r#struct::v2::BosSessionTemplate,

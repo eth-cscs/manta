@@ -318,12 +318,13 @@ pub fn render_jinja2_sat_file_yaml(
 ) -> Value {
     let env = minijinja::Environment::new();
 
+    // Render session values file
     let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
         log::info!("'Session vars' file provided. Going to process SAT file as a template.");
-        // TEMPLATE
-        // Read sesson vars file
+        // Read sesson vars file and parse it to YAML
         let values_file_yaml: Value = serde_yaml::from_str(values_file_content).unwrap();
-        // Render session vars file
+        // Render session vars file with itself (copying ansible behaviour where the ansible vars
+        // file is also a jinja template and combine both vars and values in it)
         let values_file_rendered = env
             .render_str(values_file_content, values_file_yaml)
             .expect("ERROR - Error parsing values file to YAML. Exit");
@@ -339,7 +340,7 @@ pub fn render_jinja2_sat_file_yaml(
         }
     }
 
-    // Render SAT file template
+    // render sat template file
     let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
 
     let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
