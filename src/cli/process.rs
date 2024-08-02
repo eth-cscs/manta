@@ -1843,8 +1843,8 @@ pub async fn get_target_hsm_group_vec_or_all(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    cli_param_hsm_group: Option<&String>,
-    config_file_or_env_hsm_group: Option<&String>,
+    hsm_group_cli_arg_opt: Option<&String>,
+    hsm_group_env_or_config_file_opt: Option<&String>,
 ) -> Vec<String> {
     let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt_or_all(
         shasta_token,
@@ -1853,11 +1853,17 @@ pub async fn get_target_hsm_group_vec_or_all(
     )
     .await;
 
-    let target_hsm_group_opt = if let Some(hsm_group_name) = config_file_or_env_hsm_group {
+    let target_hsm_group_opt = if hsm_group_cli_arg_opt.is_some() {
+        hsm_group_cli_arg_opt
+    } else {
+        hsm_group_env_or_config_file_opt
+    };
+
+    /* let target_hsm_group_opt = if let Some(hsm_group_name) = hsm_group_env_or_config_file_opt {
         Some(hsm_group_name)
     } else {
-        cli_param_hsm_group
-    };
+        hsm_group_cli_arg_opt
+    }; */
 
     if let Some(target_hsm_group) = target_hsm_group_opt {
         if !hsm_name_available_vec.contains(target_hsm_group) {
