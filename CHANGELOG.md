@@ -2,11 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.12] - 2024-08-03
+
+### Bug Fixes
+
+- Cli hsm argument has preference vs hsm in config file
+- Log command ignores default hsm group and checks CFS session is linked to any HSM group the user has access to
+
+### Features
+
+- Filter sat file rendering accoring to whether user use arguments
+- Cli won't hide hsm-group arguments if default hsm has been setup
+- Datetime timezone conversion format modified with "seconds"
+- Datetime timezone conversion functionality extended to command
+
+### Refactor
+
+- Rename test file
+- Code housekeeping
+
 ## [1.46.11] - 2024-07-31
 
 ### Features
 
 - Format datetime when listing configurations and images
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.11
 
 ## [1.46.10] - 2024-07-31
 
