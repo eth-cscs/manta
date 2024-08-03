@@ -58,7 +58,7 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
                 .clone()
                 .parse::<DateTime<Local>>()
                 .unwrap()
-                .format("%d/%m/%Y %H:%M")
+                .format("%d/%m/%Y %H:%M:%S")
                 .to_string(),
             layers,
         ]);
@@ -134,7 +134,7 @@ pub fn print_table_details_struct(
             .last_updated
             .parse::<DateTime<Local>>()
             .unwrap()
-            .format("%d/%m/%Y %H:%M")
+            .format("%d/%m/%Y %H:%M:%S")
             .to_string(),
         layers,
         derivatives,

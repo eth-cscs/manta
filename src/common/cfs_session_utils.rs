@@ -1,7 +1,13 @@
+use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::cfs::{self, session::mesa::r#struct::v2::CfsSessionGetResponse};
 
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
+    let start_time_utc_str = cfs_session
+        .get_start_time()
+        .and_then(|date_time| Some(date_time.to_string() + "Z"))
+        .unwrap_or("".to_string());
+
     let mut result = vec![cfs_session.name.clone().unwrap()];
     result.push(cfs_session.configuration.clone().unwrap().name.unwrap());
     result.push(
@@ -31,6 +37,14 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .to_string(),
     ); */
     result.push(
+        start_time_utc_str
+            .parse::<DateTime<Local>>()
+            .unwrap()
+            .format("%d/%m/%Y %H:%M:%S")
+            .to_string(),
+        /* result.push(
+        cfs_session.get_start_time().unwrap_or("".to_string()), */
+        /* result.push(
         cfs_session
             .status
             .as_ref()
@@ -41,7 +55,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .status
             .as_ref()
             .unwrap_or(&"".to_string())
-            .to_string(),
+            .to_string(), */
     );
     result.push(cfs_session.is_success().to_string());
     result.push(

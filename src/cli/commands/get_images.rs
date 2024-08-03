@@ -56,7 +56,7 @@ pub async fn exec(
                 .unwrap()
                 .parse::<DateTime<Local>>()
                 .unwrap()
-                .format("%d/%m/%Y %H:%M")
+                .format("%d/%m/%Y %H:%M:%S")
                 .to_string(),
             &image_details.1,
             &image_details.2,
