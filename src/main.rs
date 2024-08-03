@@ -40,36 +40,43 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .get("gitea_base_url")
     .expect("gitea_base_url value missing in configuration file")
     .to_string(); */
+    log::debug!("config - shasta_api_url:  {shasta_api_url}");
     let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
     /* let keycloak_base_url = site_detail_value
     .get("keycloak_base_url")
     .expect("keycloak_base_url value missing in configuration file")
     .to_string(); */
+    log::debug!("config - gitea_base_url:  {gitea_base_url}");
     let keycloak_base_url = shasta_barebone_url.to_owned() + "/keycloak";
     let k8s_api_url = site_detail_value
         .get("k8s_api_url")
         .expect("k8s_api_url value missing in configuration file")
         .to_string();
+    log::debug!("config - k8s_api_url:  {k8s_api_url}");
     let vault_base_url = site_detail_value
         .get("vault_base_url")
         .expect("vault_base_url value missing in configuration file")
         .to_string();
+    log::debug!("config - vault_base_url:  {vault_base_url}");
     let vault_role_id = site_detail_value
         .get("vault_role_id")
         .expect("vault_role_id value missing in configuration file")
         .to_string();
+    log::debug!("config - vault_role_id:  {vault_role_id}");
     let vault_secret_path = site_detail_value
         .get("vault_secret_path")
         .unwrap()
         .to_string();
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
+    log::debug!("config - log_level:  {log_level}");
 
     let audit_file_path = if let Ok(audit_file) = settings.get_string("audit_file") {
         audit_file
     } else {
         "/var/log/manta/requests.log".to_string()
     };
+    log::debug!("config - audit_file_path:  {audit_file_path}");
 
     log_ops::configure(log_level, audit_file_path.as_str()); // log4rs programatically configuration
 
@@ -78,6 +85,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         if !socks_proxy.is_empty() {
             std::env::set_var("SOCKS5", socks_proxy.to_string());
             log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
+            log::debug!("config - socks_proxy:  {socks_proxy}");
+        } else {
+            log::debug!("config - socks_proxy:  Not defined");
         }
     }
 
@@ -87,6 +97,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .get("root_ca_cert_file")
         .expect("'root_cert_file' value missing in configuration file")
         .to_string();
+    log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
 
     let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
 
