@@ -15,7 +15,7 @@ pub async fn exec(
     hsm_group_config: Option<&String>,
 ) {
     // Get CFS sessions
-    let cfs_sessions_resp_opt = mesa::cfs::session::mesa::http_client::get(
+    let cfs_sessions_vec_opt = mesa::cfs::session::mesa::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -27,7 +27,7 @@ pub async fn exec(
     )
     .await;
 
-    let mut cfs_sessions_resp = match cfs_sessions_resp_opt {
+    let mut cfs_sessions_vec = match cfs_sessions_vec_opt {
         Ok(cfs_sessions_resp) => cfs_sessions_resp,
         Err(error) => {
             eprintln!(
@@ -43,13 +43,13 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        &mut cfs_sessions_resp,
+        &mut cfs_sessions_vec,
         hsm_name_vec,
         Some(&1),
     )
     .await;
 
-    if cfs_sessions_resp.is_empty() {
+    if cfs_sessions_vec.is_empty() {
         println!("No CFS session found");
         std::process::exit(0);
     }
@@ -61,7 +61,7 @@ pub async fn exec(
         shasta_root_cert,
         hsm_group_config,
         session_name_opt,
-        &cfs_sessions_resp,
+        &cfs_sessions_vec,
     )
     .await;
 
@@ -70,7 +70,7 @@ pub async fn exec(
 
     log::info!(
         "Get logs for CFS session:\n{}",
-        common::cfs_session_utils::get_table_struct(&cfs_sessions_resp)
+        common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
     );
 
     let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
@@ -79,7 +79,7 @@ pub async fn exec(
 
     kubernetes::print_cfs_session_logs(
         client,
-        cfs_sessions_resp.first().unwrap().name.as_ref().unwrap(),
+        cfs_sessions_vec.first().unwrap().name.as_ref().unwrap(),
     )
     .await;
 }

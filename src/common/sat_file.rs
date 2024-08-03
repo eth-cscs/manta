@@ -178,6 +178,77 @@ pub mod sat_file_image {
     }
 }
 
+/// struct to represent the `configurations` section in SAT file
+pub mod sat_file_configuration {
+    use serde::{Deserialize, Serialize};
+
+    pub enum ProductType {
+        ProductVersion {
+            name: String,
+            version: String,
+        },
+        ProductVersionBranch {
+            name: String,
+            version: Option<String>,
+            branch: String,
+        },
+        ProductVersionCommit {
+            name: String,
+            version: Option<String>,
+            commit: String,
+        },
+    }
+
+    pub struct Product {
+        name: Option<String>,
+        playbook: Option<String>,
+        special_parameter: Option<String>,
+        product: ProductType,
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub enum Git {
+        GitCommit { url: String, commit: String },
+        GitBranch { url: String, branch: String },
+        GitTag { url: String, tag: String },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Layer {
+        pub name: Option<String>,
+        #[serde(default = "default_playbook")]
+        pub playbook: String, // This field is optional but with default value. Therefore we won't
+        // make it optional
+        pub git: Git,
+    }
+
+    fn default_playbook() -> String {
+        "site.yml".to_string()
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub enum Inventory {
+        InventoryCommit {
+            name: Option<String>,
+            url: String,
+            commit: String,
+        },
+        InventoryBranch {
+            name: Option<String>,
+            url: String,
+            branch: String,
+        },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Configuration {
+        pub name: String,
+        pub description: Option<String>,
+        pub layers: Vec<Layer>,
+        pub additional_inventory: Inventory,
+    }
+}
+
 pub mod sat_file_image_old {
     use serde::{Deserialize, Serialize};
 

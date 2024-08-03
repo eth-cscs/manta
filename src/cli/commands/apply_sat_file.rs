@@ -95,10 +95,12 @@ pub async fn exec(
 
     // Filter either images or session_templates section according to user request
     if image_only {
+        // Remove section "session_templates"
         sat_template_file_yaml.remove_entry("session_templates");
     }
 
     if session_template_only {
+        // Remove section "images"
         sat_template_file_yaml.remove_entry("images");
     }
 
