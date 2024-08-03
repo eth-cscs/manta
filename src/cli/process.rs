@@ -1625,7 +1625,15 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-            let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("cluster").unwrap_or(None);
+            // Get all HSM groups the user has access
+            let target_hsm_group_vec = get_hsm_name_available_from_jwt_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+            )
+            .await;
+
+            /* let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("cluster").unwrap_or(None);
 
             let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                 shasta_token,
@@ -1634,7 +1642,7 @@ pub async fn process_cli(
                 hsm_group_name_arg_opt,
                 settings_hsm_group_name_opt,
             )
-            .await;
+            .await; */
 
             commands::log::exec(
                 // cli_log,
