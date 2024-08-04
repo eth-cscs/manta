@@ -11,10 +11,17 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
     let mut result = vec![cfs_session.name.clone().unwrap()];
     result.push(cfs_session.configuration.clone().unwrap().name.unwrap());
     result.push(
-        cfs_session
+        start_time_utc_str
+            .parse::<DateTime<Local>>()
+            .unwrap()
+            .format("%d/%m/%Y %H:%M:%S")
+            .to_string(),
+        /* result.push(
+        cfs_session.get_start_time().unwrap_or("".to_string()), */
+        /* cfs_session
             .get_start_time()
             .unwrap_or("".to_string())
-            .to_string(),
+            .to_string(), */
     );
     /* result.push(
         cfs_session
@@ -37,14 +44,6 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .to_string(),
     ); */
     result.push(
-        start_time_utc_str
-            .parse::<DateTime<Local>>()
-            .unwrap()
-            .format("%d/%m/%Y %H:%M:%S")
-            .to_string(),
-        /* result.push(
-        cfs_session.get_start_time().unwrap_or("".to_string()), */
-        /* result.push(
         cfs_session
             .status
             .as_ref()
@@ -55,7 +54,7 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
             .status
             .as_ref()
             .unwrap_or(&"".to_string())
-            .to_string(), */
+            .to_string(),
     );
     result.push(cfs_session.is_success().to_string());
     result.push(
