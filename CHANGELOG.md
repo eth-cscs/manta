@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.13] - 2024-08-04
+
+### Bug Fixes
+
+- Get session table showing formatted stated time in status cell
+
+### Features
+
+- Print config in log debug
+
 ## [1.46.12] - 2024-08-03
 
 ### Bug Fixes
@@ -15,6 +25,10 @@ All notable changes to this project will be documented in this file.
 - Cli won't hide hsm-group arguments if default hsm has been setup
 - Datetime timezone conversion format modified with "seconds"
 - Datetime timezone conversion functionality extended to command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.12
 
 ### Refactor
 
