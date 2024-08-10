@@ -13,13 +13,24 @@ use mesa::{
     error::Error,
     ims::{self, image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
 };
+use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use serde_yaml::{Mapping, Value};
 
-use self::sat_file_bos_sessiontemplate::SessionTemplate;
+use self::sessiontemplate::SessionTemplate;
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct SatFile {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub configurations: Vec<configuration::Configuration>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<image::Image>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub session_templates: Vec<sessiontemplate::SessionTemplate>,
+}
 
 /// struct to represent the `session_templates` section in SAT file
-pub mod sat_file_bos_sessiontemplate {
+pub mod sessiontemplate {
     use std::collections::HashMap;
 
     use serde::{Deserialize, Serialize};
@@ -33,15 +44,17 @@ pub mod sat_file_bos_sessiontemplate {
     }
 
     #[derive(Deserialize, Serialize, Debug)]
-    pub enum Image {
-        Ims(ImsAux),
-        ImageRef(String),
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum ImsDetails {
+        Name { name: String },
+        Id { id: String },
     }
 
     #[derive(Deserialize, Serialize, Debug)]
-    pub enum ImsAux {
-        Name(String),
-        Id(String),
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum Image {
+        Ims { ims: ImsDetails },
+        ImageRef(String),
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -51,13 +64,21 @@ pub mod sat_file_bos_sessiontemplate {
 
     #[derive(Deserialize, Serialize, Debug)]
     pub struct BootSet {
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub arch: Option<Arch>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub kernel_parameters: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub network: Option<String>,
-        pub node_list: Option<String>,
-        pub node_roles_group: Option<String>,
-        pub node_groups: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_list: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_roles_group: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub node_groups: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub rootfs_provider: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub rootfs_provider_passthrough: Option<String>,
     }
 
@@ -66,6 +87,7 @@ pub mod sat_file_bos_sessiontemplate {
         X86,
         ARM,
         Other,
+        Unknown,
     }
 }
 
@@ -98,7 +120,7 @@ impl TryFrom<SessionTemplate> for BosSessionTemplate {
                 etag: None,
                 kernel_parameters: None,
                 network: Some("nmn".to_string()),
-                node_list: boot_set.node_list.map(|node_list| {
+                /* node_list: boot_set.node_list.map(|node_list| {
                     node_list
                         .split(",")
                         .map(|value| value.to_string())
@@ -115,7 +137,10 @@ impl TryFrom<SessionTemplate> for BosSessionTemplate {
                         .split(",")
                         .map(|value| value.to_string())
                         .collect::<Vec<String>>()
-                }),
+                }), */
+                node_list: boot_set.node_list,
+                node_roles_groups: boot_set.node_roles_group,
+                node_groups: boot_set.node_groups,
                 rootfs_provider: Some("cpss3".to_string()),
                 rootfs_provider_passthrough: boot_set.rootfs_provider_passthrough,
             };
@@ -143,46 +168,82 @@ impl TryFrom<SessionTemplate> for BosSessionTemplate {
 }
 
 /// struct to represent the `images` section in SAT file
-pub mod sat_file_image {
+pub mod image {
     use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Serialize, Debug)]
-    pub struct Ims {
-        name: String,
-        r#type: String,
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum Arch {
+        #[serde(rename(serialize = "aarch64", deserialize = "aarch64"))]
+        Aarch64,
+        #[serde(rename(serialize = "x86_64", deserialize = "x86_64"))]
+        X86_64,
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum Ims {
+        Name { name: String, r#type: String },
+        Id { id: String, r#type: String },
+        BackwardCompatible { is_recipe: Option<bool>, id: String },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum Filter {
+        Prefix { prefix: String },
+        Wildcard { wildcard: String },
+        Arch { arch: Arch },
     }
 
     #[derive(Deserialize, Serialize, Debug)]
     pub struct Product {
         name: String,
-        version: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        version: Option<String>,
         r#type: String,
+        filter: Filter,
     }
 
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
-    pub enum ImageBase {
+    pub enum Base {
         Ims { ims: Ims },
         Product { product: Product },
         ImageRef { image_ref: String },
     }
 
+    // Used for backguard compatibility
     #[derive(Deserialize, Serialize, Debug)]
-    pub struct SatFileImage {
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum BaseOrIms {
+        Base { base: Base },
+        Ims { ims: Ims },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    pub struct Image {
         pub name: String,
-        pub base: ImageBase,
+        #[serde(flatten)]
+        pub base_or_ims: BaseOrIms,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub configuration: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub configuration_group_names: Option<Vec<String>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub ref_name: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub description: Option<String>,
     }
 }
 
 /// struct to represent the `configurations` section in SAT file
-pub mod sat_file_configuration {
+pub mod configuration {
     use serde::{Deserialize, Serialize};
 
-    pub enum ProductType {
+    #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum Product {
         ProductVersion {
             name: String,
             version: String,
@@ -199,14 +260,8 @@ pub mod sat_file_configuration {
         },
     }
 
-    pub struct Product {
-        name: Option<String>,
-        playbook: Option<String>,
-        special_parameter: Option<String>,
-        product: ProductType,
-    }
-
     #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Git {
         GitCommit { url: String, commit: String },
         GitBranch { url: String, branch: String },
@@ -214,12 +269,20 @@ pub mod sat_file_configuration {
     }
 
     #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum LayerType {
+        Git { git: Git },
+        Product { product: Product },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
     pub struct Layer {
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub name: Option<String>,
         #[serde(default = "default_playbook")]
         pub playbook: String, // This field is optional but with default value. Therefore we won't
-        // make it optional
-        pub git: Git,
+        #[serde(flatten)]
+        pub layer_type: LayerType,
     }
 
     fn default_playbook() -> String {
@@ -227,13 +290,16 @@ pub mod sat_file_configuration {
     }
 
     #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Inventory {
         InventoryCommit {
+            #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<String>,
             url: String,
             commit: String,
         },
         InventoryBranch {
+            #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<String>,
             url: String,
             branch: String,
@@ -243,9 +309,11 @@ pub mod sat_file_configuration {
     #[derive(Deserialize, Serialize, Debug)]
     pub struct Configuration {
         pub name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub description: Option<String>,
         pub layers: Vec<Layer>,
-        pub additional_inventory: Inventory,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub additional_inventory: Option<Inventory>,
     }
 }
 
@@ -414,7 +482,44 @@ pub fn render_jinja2_sat_file_yaml(
     // render sat template file
     let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
 
-    let sat_file_yaml: Value = serde_yaml::from_str::<Value>(&sat_file_rendered).unwrap();
+    let sat_file_yaml: Value = serde_yaml::from_str(&sat_file_rendered).unwrap();
+
+    sat_file_yaml
+}
+
+pub fn render_jinja2_sat_file_struct(
+    sat_file_content: &String,
+    values_file_content_opt: Option<&String>,
+    value_cli_vec_opt: Option<Vec<String>>,
+) -> SatFile {
+    let env = minijinja::Environment::new();
+
+    // Render session values file
+    let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
+        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
+        // Read sesson vars file and parse it to YAML
+        let values_file_yaml: Value = serde_yaml::from_str(values_file_content).unwrap();
+        // Render session vars file with itself (copying ansible behaviour where the ansible vars
+        // file is also a jinja template and combine both vars and values in it)
+        let values_file_rendered = env
+            .render_str(values_file_content, values_file_yaml)
+            .expect("ERROR - Error parsing values file to YAML. Exit");
+        serde_yaml::from_str(&values_file_rendered).unwrap()
+    } else {
+        serde_yaml::from_str(sat_file_content).unwrap()
+    };
+
+    if let Some(value_option_vec) = value_cli_vec_opt {
+        for value_option in value_option_vec {
+            let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
+            values_file_yaml = merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
+        }
+    }
+
+    // render sat template file
+    let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
+
+    let sat_file_yaml: SatFile = serde_yaml::from_str(&sat_file_rendered).unwrap();
 
     sat_file_yaml
 }
