@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.14] - 2024-08-11
+
+### Features
+
+- Filter sat file template data base on cli arguments
+- Apply sat file can now filter by image or sessiontemplate
+
 ## [1.46.13] - 2024-08-04
 
 ### Bug Fixes
@@ -11,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Print config in log debug
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.13
 
 ## [1.46.12] - 2024-08-03
 
