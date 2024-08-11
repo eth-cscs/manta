@@ -20,7 +20,7 @@ use mesa::{
     error::Error,
     hsm, ims,
 };
-use serde_yaml::{Mapping, Value};
+use serde_yaml::Value;
 use termion::color;
 
 use crate::{
@@ -28,10 +28,8 @@ use crate::{
     common::{
         self,
         sat_file::{
-            self,
-            image::Ims,
-            import_images_section_in_sat_file,
-            sessiontemplate::{self, Image, ImsDetails},
+            self, import_images_section_in_sat_file,
+            sessiontemplate::{Image, ImsDetails},
             validate_sat_file_configurations_section, validate_sat_file_images_section, SatFile,
         },
     },
@@ -103,58 +101,7 @@ pub async fn exec(
 
     // Filter either images or session_templates section according to user request
     //
-    // Clean SAT template file if user only wan'ts to process the 'images' section. In this case,
-    // we will remove 'session_templates' section from SAT fiel and also the entries in
-    // 'configurations' section not used
-    if image_only {
-        let configuration_name_image_vec: Vec<String> = sat_template
-            .images
-            .iter()
-            .filter_map(|sat_template_image| sat_template_image.configuration.clone())
-            .collect();
-
-        // Remove configurations not used by any image
-        sat_template
-            .configurations
-            .retain(|configuration| configuration_name_image_vec.contains(&configuration.name));
-
-        // Remove section "session_templates"
-        sat_template.session_templates = Vec::new();
-    }
-
-    // Clean SAT template file if user only wan'ts to process the 'session_template' section. In this case,
-    // we will remove 'images' section from SAT fiel and also the entries in
-    // 'configurations' section not used
-    if session_template_only {
-        let configuration_name_sessiontemplate_vec: Vec<String> = sat_template
-            .session_templates
-            .iter()
-            .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
-            .collect();
-
-        // Remove configurations not used by any sessiontemplate
-        sat_template.configurations.retain(|configuration| {
-            configuration_name_sessiontemplate_vec.contains(&configuration.name)
-        });
-
-        let image_name_sessiontemplate_vec: Vec<String> = sat_template
-            .session_templates
-            .iter()
-            .filter_map(|sessiontemplate| match &sessiontemplate.image {
-                Image::ImageRef(name) => Some(name),
-                Image::Ims { ims } => match ims {
-                    ImsDetails::Name { name } => Some(name),
-                    ImsDetails::Id { .. } => None,
-                },
-            })
-            .cloned()
-            .collect();
-
-        // Remove images not used by any sessiontemplate
-        sat_template
-            .images
-            .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
-    }
+    sat_template.filter(image_only, session_template_only);
 
     let sat_template_file_yaml: Value = serde_yaml::to_value(sat_template).unwrap();
 

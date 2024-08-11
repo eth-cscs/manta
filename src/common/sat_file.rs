@@ -11,7 +11,7 @@ use mesa::{
         session::mesa::r#struct::v2::CfsSessionPostRequest,
     },
     error::Error,
-    ims::{self, image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
+    ims,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
@@ -29,6 +29,61 @@ pub struct SatFile {
     pub session_templates: Vec<sessiontemplate::SessionTemplate>,
 }
 
+impl SatFile {
+    /// Filter either images or session_templates section according to user request
+    pub fn filter(&mut self, image_only: bool, session_template_only: bool) {
+        // Clean SAT template file if user only wan'ts to process the 'images' section. In this case,
+        // we will remove 'session_templates' section from SAT fiel and also the entries in
+        // 'configurations' section not used
+        if image_only {
+            let configuration_name_image_vec: Vec<String> = self
+                .images
+                .iter()
+                .filter_map(|sat_template_image| sat_template_image.configuration.clone())
+                .collect();
+
+            // Remove configurations not used by any image
+            self.configurations
+                .retain(|configuration| configuration_name_image_vec.contains(&configuration.name));
+
+            // Remove section "session_templates"
+            self.session_templates = Vec::new();
+        }
+
+        // Clean SAT template file if user only wan'ts to process the 'session_template' section. In this case,
+        // we will remove 'images' section from SAT fiel and also the entries in
+        // 'configurations' section not used
+        if session_template_only {
+            let configuration_name_sessiontemplate_vec: Vec<String> = self
+                .session_templates
+                .iter()
+                .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
+                .collect();
+
+            // Remove configurations not used by any sessiontemplate
+            self.configurations.retain(|configuration| {
+                configuration_name_sessiontemplate_vec.contains(&configuration.name)
+            });
+
+            let image_name_sessiontemplate_vec: Vec<String> = self
+                .session_templates
+                .iter()
+                .filter_map(|sessiontemplate| match &sessiontemplate.image {
+                    sessiontemplate::Image::ImageRef(name) => Some(name),
+                    sessiontemplate::Image::Ims { ims } => match ims {
+                        sessiontemplate::ImsDetails::Name { name } => Some(name),
+                        sessiontemplate::ImsDetails::Id { .. } => None,
+                    },
+                })
+                .cloned()
+                .collect();
+
+            // Remove images not used by any sessiontemplate
+            self.images
+                .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
+        }
+    }
+}
 /// struct to represent the `session_templates` section in SAT file
 pub mod sessiontemplate {
     use std::collections::HashMap;
@@ -982,7 +1037,7 @@ async fn process_sat_file_image_ims_type_recipe(
     let recipe_name = sat_file_image_base_ims_value_yaml["name"].as_str().unwrap();
 
     // Get all IMS recipes
-    let recipe_detail_vec: Vec<RecipeGetResponse> =
+    let recipe_detail_vec: Vec<ims::recipe::r#struct::RecipeGetResponse> =
         ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
             .await
             .unwrap();
@@ -1177,9 +1232,9 @@ pub fn validate_sat_file_images_section(
     configuration_yaml_vec: &Vec<Value>,
     hsm_group_available_vec: &[String],
     cray_product_catalog: &BTreeMap<String, String>,
-    image_vec: Vec<Image>,
+    image_vec: Vec<ims::image::r#struct::Image>,
     configuration_vec: Vec<CfsConfigurationResponse>,
-    ims_recipe_vec: Vec<RecipeGetResponse>,
+    ims_recipe_vec: Vec<ims::recipe::r#struct::RecipeGetResponse>,
 ) -> Result<(), Error> {
     // Validate 'images' section in SAT file
 
@@ -1202,10 +1257,11 @@ pub fn validate_sat_file_images_section(
                 image_ims_id_to_find,
             );
 
-            let is_image_base_id_in_csm = image_vec.iter().any(|image| {
-                let image_id = image.id.as_ref().unwrap();
-                image_id.eq(image_ims_id_to_find)
-            });
+            let is_image_base_id_in_csm =
+                image_vec.iter().any(|image: &ims::image::r#struct::Image| {
+                    let image_id = image.id.as_ref().unwrap();
+                    image_id.eq(image_ims_id_to_find)
+                });
 
             if !is_image_base_id_in_csm {
                 return Err(Error::Message(format!(
