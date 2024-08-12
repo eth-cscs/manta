@@ -99,7 +99,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .to_string();
     log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
 
-    let shasta_root_cert = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
+    let shasta_root_cert_rslt = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
+
+    let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
+        shasta_root_cert
+    } else {
+        eprintln!(
+            "ERROR - CA public root file '{}' not found. Exit",
+            root_ca_cert_file
+        );
+        std::process::exit(1);
+    };
 
     let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,

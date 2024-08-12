@@ -8,6 +8,7 @@ use std::{
 use config::{Config, FileFormat, FileSourceFile};
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
+use mesa::error::Error;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -280,12 +281,18 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let config_file_content = toml::to_string(&config_toml).unwrap();
 
     // Create configuration file on user's location, otherwise use default path
+    //
+    // Create PathBuf to store the manta config file specified by user or get default one
     let config_file_path = if let Some(config_file_path) = config_file_path_opt {
         PathBuf::from(config_file_path)
     } else {
         get_default_manta_config_file_path()
     };
 
+    // Create directories if needed
+    let _ = std::fs::create_dir_all(config_file_path.parent().unwrap());
+
+    // Create manta config file
     let mut config_file = File::create(config_file_path.clone()).unwrap();
     config_file
         .write_all(config_file_content.as_bytes())
@@ -297,7 +304,7 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     )
 }
 
-pub fn get_csm_root_cert_content(file_path: &str) -> Vec<u8> {
+pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
     let mut buf = Vec::new();
     let root_cert_file_rslt = File::open(file_path);
 
@@ -309,9 +316,14 @@ pub fn get_csm_root_cert_content(file_path: &str) -> Vec<u8> {
         root_cert_file_rslt
     };
 
-    let mut file = file_rslt.expect("CA public root file cound not be found.");
+    match file_rslt {
+        Ok(mut file) => {
+            let _ = file.read_to_end(&mut buf);
 
-    let _ = file.read_to_end(&mut buf);
-
-    buf
+            Ok(buf)
+        }
+        Err(_) => Err(Error::Message(
+            "CA public root file cound not be found.".to_string(),
+        )),
+    }
 }
