@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.15] - 2024-08-12
+
+### Refactor
+
+- Migrate code to migrate nodes between hsm groups to mesa
+
+### Fis
+
+- Bug when creating manta config file and CA root public cert file does not exists
+
 ## [1.46.14] - 2024-08-11
 
 ### Features
 
 - Filter sat file template data base on cli arguments
 - Apply sat file can now filter by image or sessiontemplate
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.14
 
 ## [1.46.13] - 2024-08-04
 
