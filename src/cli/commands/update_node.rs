@@ -154,21 +154,24 @@ pub async fn exec(
             println!("Boot image did not change. No need to reboot.");
         }
     } else {
+        need_restart = false;
         log::info!("Boot image not defined. No need to reboot.");
     }
 
-    if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!(
-            "This operation will reboot the nodes below:\n{:?}\nDo you want to continue?",
-            xnames
-        ))
-        .interact()
-        .unwrap()
-    {
-        log::info!("Continue",);
-    } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
+    if need_restart {
+        if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!(
+                "This operation will reboot the nodes below:\n{:?}\nDo you want to continue?",
+                xnames
+            ))
+            .interact()
+            .unwrap()
+        {
+            log::info!("Continue",);
+        } else {
+            println!("Cancelled by user. Aborting.");
+            std::process::exit(0);
+        }
     }
 
     // Update boot params
