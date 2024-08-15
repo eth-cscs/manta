@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.16] - 2024-08-15
+
+### Bug Fixes
+
+- Fix issue when changing runtie configuration would trigger manta asking user confirmation to reboot the nodes
+
 ## [1.46.15] - 2024-08-12
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.15
 
 ### Refactor
 
