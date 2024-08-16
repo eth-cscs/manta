@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.17] - 2024-08-16
+
+### Bug Fixes
+
+- Improve error management when processing SAT files
+
 ## [1.46.16] - 2024-08-15
 
 ### Bug Fixes
 
 - Fix issue when changing runtie configuration would trigger manta asking user confirmation to reboot the nodes
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.16
 
 ## [1.46.15] - 2024-08-12
 
