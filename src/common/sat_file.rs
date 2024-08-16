@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
+use image::Image;
 use mesa::{
     bos::template::mesa::r#struct::v1::{BootSet, BosSessionTemplate, Cfs},
     cfs::{
@@ -21,12 +22,12 @@ use self::sessiontemplate::SessionTemplate;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct SatFile {
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub configurations: Vec<configuration::Configuration>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub images: Vec<image::Image>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub session_templates: Vec<sessiontemplate::SessionTemplate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub configurations: Option<Vec<configuration::Configuration>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub images: Option<Vec<image::Image>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_templates: Option<Vec<sessiontemplate::SessionTemplate>>,
 }
 
 impl SatFile {
@@ -36,37 +37,60 @@ impl SatFile {
         // we will remove 'session_templates' section from SAT fiel and also the entries in
         // 'configurations' section not used
         if image_only {
-            let configuration_name_image_vec: Vec<String> = self
-                .images
-                .iter()
-                .filter_map(|sat_template_image| sat_template_image.configuration.clone())
-                .collect();
+            let image_vec_opt: Option<&Vec<Image>> = self.images.as_ref();
+
+            let configuration_name_image_vec: Vec<String> = match image_vec_opt {
+                Some(image_vec) => image_vec
+                    .iter()
+                    .filter_map(|sat_template_image| sat_template_image.configuration.clone())
+                    .collect(),
+                None => {
+                    eprintln!("'images' section missing in SAT file");
+                    std::process::exit(1);
+                }
+            };
 
             // Remove configurations not used by any image
             self.configurations
+                .as_mut()
+                .unwrap_or(&mut Vec::new())
                 .retain(|configuration| configuration_name_image_vec.contains(&configuration.name));
 
             // Remove section "session_templates"
-            self.session_templates = Vec::new();
+            self.session_templates = None;
         }
 
         // Clean SAT template file if user only wan'ts to process the 'session_template' section. In this case,
         // we will remove 'images' section from SAT fiel and also the entries in
         // 'configurations' section not used
         if session_template_only {
-            let configuration_name_sessiontemplate_vec: Vec<String> = self
-                .session_templates
-                .iter()
-                .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
-                .collect();
+            let sessiontemplate_vec_opt: Option<&Vec<SessionTemplate>> =
+                self.session_templates.as_ref();
+
+            let configuration_name_sessiontemplate_vec: Vec<String> = match sessiontemplate_vec_opt
+            {
+                Some(sessiontemplate_vec) => sessiontemplate_vec
+                    .iter()
+                    .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
+                    .collect(),
+                None => {
+                    eprintln!("ERROR - 'session_templates' section not defined in SAT file");
+                    std::process::exit(1);
+                }
+            };
 
             // Remove configurations not used by any sessiontemplate
-            self.configurations.retain(|configuration| {
-                configuration_name_sessiontemplate_vec.contains(&configuration.name)
-            });
+            self.configurations
+                .as_mut()
+                .unwrap_or(&mut Vec::new())
+                .retain(|configuration| {
+                    configuration_name_sessiontemplate_vec.contains(&configuration.name)
+                });
 
             let image_name_sessiontemplate_vec: Vec<String> = self
                 .session_templates
+                .as_ref()
+                .unwrap_or(&Vec::new())
                 .iter()
                 .filter_map(|sessiontemplate| match &sessiontemplate.image {
                     sessiontemplate::Image::ImageRef(name) => Some(name),
@@ -80,6 +104,8 @@ impl SatFile {
 
             // Remove images not used by any sessiontemplate
             self.images
+                .as_mut()
+                .unwrap_or(&mut Vec::new())
                 .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
         }
     }
@@ -527,9 +553,18 @@ pub fn render_jinja2_sat_file_yaml(
         serde_yaml::from_str(sat_file_content).unwrap()
     };
 
+    // Convert variable values sent by cli argument from dot notation to yaml format
+    log::debug!("Convert variable values sent by cli argument from dot notation to yaml format");
     if let Some(value_option_vec) = value_cli_vec_opt {
         for value_option in value_option_vec {
-            let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
+            let cli_var_context_yaml_rslt = dot_notation_to_yaml(&value_option);
+            let cli_var_context_yaml = match cli_var_context_yaml_rslt {
+                Ok(value) => value,
+                Err(e) => {
+                    eprintln!("ERROR - {:#?}", e);
+                    panic!();
+                }
+            };
             values_file_yaml = merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
         }
     }
