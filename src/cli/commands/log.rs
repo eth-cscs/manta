@@ -77,9 +77,14 @@ pub async fn exec(
         .await
         .unwrap();
 
-    kubernetes::print_cfs_session_logs(
+    let log_rslt = kubernetes::print_cfs_session_logs(
         client,
         cfs_sessions_vec.first().unwrap().name.as_ref().unwrap(),
     )
     .await;
+
+    if let Err(e) = log_rslt {
+        eprintln!("ERROR - {e}. Exit");
+        std::process::exit(1);
+    }
 }

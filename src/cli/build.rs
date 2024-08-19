@@ -149,6 +149,12 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_delete())
         .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_config())
+        .subcommand(Command::new("stop-session")
+            .visible_alias("ss")
+            .arg_required_else_help(true)
+            .about("Stops a session")
+            .arg(arg!(<SESSION_NAME> "Session name to stop").required(true))
+        )
 }
 
 pub fn subcommand_config() -> Command {

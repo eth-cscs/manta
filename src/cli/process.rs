@@ -1837,6 +1837,86 @@ pub async fn process_cli(
 
             validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
                 .await;
+        } else if let Some(cli_stop_session) = cli_root.subcommand_matches("stop-session") {
+            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                settings_hsm_group_name_opt,
+            )
+            .await;
+
+            println!(
+                "DEBUG - HSM groups user has access?\n{:?}",
+                target_hsm_group_vec
+            );
+
+            let session_name = cli_stop_session
+                .get_one::<String>("SESSION_NAME")
+                .expect("Session name argument must be provided");
+
+            // Check session exists
+            let cfs_session_vec_rslt = mesa::cfs::session::mesa::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                None,
+                None,
+                Some(session_name),
+                None,
+            )
+            .await;
+
+            let mut cfs_session_vec = match cfs_session_vec_rslt {
+                Ok(cfs_session_vec) => cfs_session_vec,
+                Err(e) => {
+                    eprintln!("ERROR - Problem fetching sessions.\n{:#?}", e);
+                    std::process::exit(1);
+                }
+            };
+
+            // Check session belongs to a cluster the user has access
+            mesa::cfs::session::mesa::utils::filter_by_hsm(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &mut cfs_session_vec,
+                &target_hsm_group_vec,
+                None,
+            )
+            .await;
+
+            if cfs_session_vec.is_empty() {
+                println!("No session found!");
+                std::process::exit(0);
+            } else if cfs_session_vec.len() > 1 {
+                eprintln!("ERROR - More than one session found. Exit");
+                std::process::exit(1);
+            }
+
+            let cfs_session_name = cfs_session_vec.first().unwrap().clone().name.unwrap();
+
+            log::info!("Deleting pod related to session '{}'", cfs_session_name);
+
+            // Delete pod related to session
+            let _ = mesa::common::kubernetes::delete_session_pod(
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
+                &cfs_session_name,
+            )
+            .await;
+
+            // * if session is a runtime session then:
+            // Get retry_policy
+            // Set CFS components error_count == retry_policy so CFS batcher stops retrying running
+            // the CFS session
+            // * endif
+
+            println!("STOP SESSION {session_name}");
         }
     }
 
