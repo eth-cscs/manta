@@ -4,6 +4,7 @@ use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
 use mesa::common::authentication;
+use serde_json::Value;
 
 use crate::cli::commands::validate_local_repo;
 
@@ -1896,7 +1897,8 @@ pub async fn process_cli(
                 std::process::exit(1);
             }
 
-            let cfs_session_name = cfs_session_vec.first().unwrap().clone().name.unwrap();
+            let cfs_session = cfs_session_vec.first().unwrap();
+            let cfs_session_name = cfs_session.clone().name.unwrap();
 
             log::info!("Deleting pod related to session '{}'", cfs_session_name);
 
@@ -1912,8 +1914,58 @@ pub async fn process_cli(
 
             // * if session is a runtime session then:
             // Get retry_policy
+            let cfs_session_target_definition = cfs_session.get_target_def().unwrap();
+            let retry_policy = if cfs_session_target_definition != "dynamic" {
+                mesa::cfs::component::shasta::http_client::v3::get_options(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                )
+                .await
+                .unwrap()["default_batcher_retry_policy"]
+                    .as_str()
+                    .unwrap()
+            } else {
+                log::info!(
+                    "CFS session target definition is 'dynamic'. Pod has been deleted. Exit"
+                );
+                std::process::exit(0)
+            };
+
             // Set CFS components error_count == retry_policy so CFS batcher stops retrying running
-            // the CFS session
+            let xname_vec = if let Some(target_hsm) = cfs_session.get_target_hsm() {
+                mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm,
+                )
+                .await
+            } else {
+                cfs_session.get_target_xname().unwrap()
+            };
+
+            // Update CFS component error_count
+            let cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &xname_vec,
+            )
+            .await
+            .unwrap();
+
+            for mut cfs_component in cfs_component_vec {
+                cfs_component.error_count = retry_policy.parse().unwrap();
+            }
+
+            mesa::cfs::component::shasta::http_client::v3::patch_component_list(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                cfs_component_vec,
+            )
+            .await;
             // * endif
 
             println!("STOP SESSION {session_name}");
