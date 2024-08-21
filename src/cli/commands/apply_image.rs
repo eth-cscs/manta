@@ -33,6 +33,7 @@ pub async fn exec(
     // tag: &str,
     hsm_group_available_vec: &[String],
     k8s_api_url: &str,
+    gitea_base_url: &str,
     gitea_token: &str,
     _output_opt: Option<&String>,
 ) {
@@ -152,6 +153,7 @@ pub async fn exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
+                gitea_base_url,
                 gitea_token,
                 &cray_product_catalog,
                 configuration_yaml,

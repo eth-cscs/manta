@@ -28,9 +28,8 @@ use crate::{
     common::{
         self,
         sat_file::{
-            self, import_images_section_in_sat_file,
-            sessiontemplate::{Image, ImsDetails},
-            validate_sat_file_configurations_section, validate_sat_file_images_section, SatFile,
+            self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
+            validate_sat_file_images_section, SatFile,
         },
     },
 };
@@ -50,6 +49,7 @@ pub async fn exec(
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
+    gitea_base_url: &str,
     gitea_token: &str,
     do_not_reboot: bool,
     prehook: Option<&String>,
@@ -318,6 +318,7 @@ pub async fn exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
+                gitea_base_url,
                 gitea_token,
                 &cray_product_catalog,
                 configuration_yaml,

@@ -152,7 +152,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .subcommand(Command::new("stop-running-session")
             .visible_alias("srs")
             .arg_required_else_help(true)
-            .about("Stops a session")
+            .about("WIP - Stops a session")
             .arg(arg!(<SESSION_NAME> "Session name to stop").required(true))
         )
 }

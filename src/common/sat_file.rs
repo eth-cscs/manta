@@ -107,6 +107,10 @@ impl SatFile {
                 .as_mut()
                 .unwrap_or(&mut Vec::new())
                 .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
+
+            if self.images.as_ref().is_some_and(|images| images.is_empty()) {
+                self.images = None;
+            }
         }
     }
 }
@@ -325,10 +329,6 @@ pub mod configuration {
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Product {
-        ProductVersion {
-            name: String,
-            version: String,
-        },
         ProductVersionBranch {
             name: String,
             version: Option<String>,
@@ -338,6 +338,10 @@ pub mod configuration {
             name: String,
             version: Option<String>,
             commit: String,
+        },
+        ProductVersion {
+            name: String,
+            version: String,
         },
     }
 
@@ -618,6 +622,7 @@ pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    gitea_base_url: &str,
     gitea_token: &str,
     cray_product_catalog: &BTreeMap<String, String>,
     sat_file_configuration_yaml: &serde_yaml::Value,
@@ -630,6 +635,7 @@ pub async fn create_cfs_configuration_from_sat_file(
 
     let mut cfs_configuration = CfsConfigurationRequest::from_sat_file_serde_yaml(
         shasta_root_cert,
+        gitea_base_url,
         gitea_token,
         sat_file_configuration_yaml,
         cray_product_catalog,

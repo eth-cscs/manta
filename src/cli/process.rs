@@ -1061,6 +1061,7 @@ pub async fn process_cli(
                     vault_secret_path,
                     vault_role_id,
                     k8s_api_url,
+                    gitea_base_url,
                     gitea_token,
                     // &tag,
                     cli_apply_configuration.get_one::<String>("output"),
@@ -1188,6 +1189,7 @@ pub async fn process_cli(
                     // &tag,
                     &hsm_group_available_vec,
                     k8s_api_url,
+                    gitea_base_url,
                     gitea_token,
                     cli_apply_image.get_one::<String>("output"),
                 )
@@ -1246,6 +1248,7 @@ pub async fn process_cli(
                         .cloned()
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     cli_apply_cluster.get_one::<String>("ansible-passthrough"),
+                    gitea_base_url,
                     gitea_token,
                     // &tag,
                     *cli_apply_cluster
@@ -1327,6 +1330,7 @@ pub async fn process_cli(
                         .cloned()
                         .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
                     ansible_passthrough.as_ref(),
+                    gitea_base_url,
                     gitea_token,
                     cli_apply_sat_file.get_flag("do-not-reboot"),
                     prehook,
