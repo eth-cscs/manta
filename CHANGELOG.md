@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.18] - 2024-08-21
+
+### Bug Fixes
+
+- Improve error management when get logs command fails
+
+### Features
+
+- Add new method to stop a cfs session
+- Improve functionality to stop a cfs session
+- Stop running session checks is session to stop is actually running, otherwise, it gracefulyl stops
+- Apply sat command now translates git branches to commit id when
+
 ## [1.46.17] - 2024-08-16
 
 ### Bug Fixes
 
 - Improve error management when processing SAT files
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.17
 
 ## [1.46.16] - 2024-08-15
 
