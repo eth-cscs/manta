@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.19] - 2024-08-22
+
+### Bug Fixes
+
+- But in set subcommand
+
+### Refactor
+
+- Clean code
+
 ## [1.46.18] - 2024-08-21
 
 ### Bug Fixes
@@ -14,6 +24,10 @@ All notable changes to this project will be documented in this file.
 - Improve functionality to stop a cfs session
 - Stop running session checks is session to stop is actually running, otherwise, it gracefulyl stops
 - Apply sat command now translates git branches to commit id when
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.18
 
 ## [1.46.17] - 2024-08-16
 
