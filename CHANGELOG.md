@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.20] - 2024-08-22
+
+### Refactor
+
+- Rename get kernel-parameters argument
+
 ## [1.46.19] - 2024-08-22
 
 ### Bug Fixes
 
 - But in set subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.19
 
 ### Refactor
 
