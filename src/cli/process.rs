@@ -456,8 +456,6 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt = cli_set_kernel_parameters.get_one("hsm-group");
                 let xnames_arg_opt = cli_set_kernel_parameters.get_one::<String>("xnames");
 
-                println!("DEBUG - hsm group: {:?}", hsm_group_name_arg_opt);
-
                 let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
                     Some(
                         get_target_hsm_group_vec_or_all(
