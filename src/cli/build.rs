@@ -362,7 +362,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
         .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
-        .arg(arg!(-n --xnames <XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
         .arg(arg!(-f --filter <KEYS> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'")).arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "List kernel parameters for all nodes in a HSM group name"))
 }
 
