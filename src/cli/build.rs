@@ -754,8 +754,8 @@ pub fn subcommand_set_runtime_configuration() -> Command {
         .visible_alias("rc")
         .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
         .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
         .group(
             ArgGroup::new("cluster_or_session_name")
            .args(["hsm-group", "xnames"])
@@ -768,8 +768,8 @@ pub fn subcommand_set_boot_image() -> Command {
         .visible_alias("bi")
         .about("Set boot image to boot a set of nodes or all nodes in a cluster")
         .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true))
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
         .group(
             ArgGroup::new("cluster_or_session_name")
             .args(["hsm-group", "xnames"])
@@ -782,8 +782,8 @@ pub fn subcommand_set_boot_configuration() -> Command {
         .visible_alias("bc")
         .about("Set boot configuration to boot a set of nodes or all nodes in a cluster. The algorithm will look for the most recent image id created with the provided configuration name and assign it to the nodes.")
         .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
         .group(
             ArgGroup::new("cluster_or_xnames")
                 .args(["hsm-group", "xnames"])
