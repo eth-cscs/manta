@@ -88,7 +88,7 @@ This project is already integrated with github actions through 'cargo release' a
 cargo release <bump level> --execute
 ```
 
-> chose your [bump level](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) accordingly
+> choose your [bump level](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) accordingly
 
 If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
 

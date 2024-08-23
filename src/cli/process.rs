@@ -200,7 +200,7 @@ pub async fn process_cli(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        xname_vec,
+                        &xname_vec,
                         cli_power_on_node.get_one::<String>("reason").cloned(),
                     )
                     .await;
@@ -1401,7 +1401,7 @@ pub async fn process_cli(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        xname_vec,
+                        &xname_vec,
                         cli_apply_node_on.get_one::<String>("reason").cloned(),
                     )
                     .await;

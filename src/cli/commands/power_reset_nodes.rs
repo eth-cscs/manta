@@ -1,6 +1,6 @@
-use std::time;
-
 use mesa::{common::jwt_ops::get_claims_from_jwt_token, error::Error, pcs};
+
+use crate::common;
 
 pub async fn exec(
     shasta_token: &str,
@@ -28,7 +28,7 @@ pub async fn exec(
         "soft-restart"
     };
 
-    let node_reset_rslt = pcs::transitions::http_client::post_block(
+    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
         shasta_token,
         shasta_root_cert,
@@ -37,7 +37,7 @@ pub async fn exec(
     )
     .await;
 
-    match node_reset_rslt {
+    let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
         Err(e) => {
             /* eprintln!(
@@ -60,7 +60,7 @@ pub async fn exec(
         }
     };
 
-    println!("Done");
+    common::pcs_utils::print_summary_table(power_mgmt_summary);
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();

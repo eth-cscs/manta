@@ -158,7 +158,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
 }
 
 pub fn subcommand_config() -> Command {
-    // Enforce user to chose a HSM group is hsm_available config param is not empty. This is to
+    // Enforce user to choose a HSM group is hsm_available config param is not empty. This is to
     // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
     // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
     // will be able to access any HSM. The security meassures for this is to setup sticky bit to

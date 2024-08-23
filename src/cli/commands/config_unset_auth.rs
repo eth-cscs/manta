@@ -20,7 +20,7 @@ pub async fn exec() {
     }
 
     let selection = Select::new()
-        .with_prompt("Please chose the site token to delete from the list below")
+        .with_prompt("Please choose the site token to delete from the list below")
         .default(0)
         .items(
             &auth_token_list

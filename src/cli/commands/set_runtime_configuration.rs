@@ -1,3 +1,4 @@
+use dialoguer::theme::ColorfulTheme;
 use mesa::error::Error;
 
 pub async fn exec(
@@ -25,6 +26,21 @@ pub async fn exec(
             "Setting runtime configuration without a list of nodes".to_string(),
         ));
     };
+
+    println!(
+        "Set runtime configuration:\n{:?}\n For nodes:\n{:?}",
+        configuration_name, xnames
+    );
+
+    let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Please confirm to proceed")
+        .interact()
+        .unwrap();
+
+    if !proceed {
+        println!("Operation canceled by the user. Exit");
+        std::process::exit(1);
+    }
 
     // TODO: try to not modify the CFS component directly but create a new BOS sessiontemplate,
     // this requires using BOS sessions v2

@@ -112,8 +112,16 @@ pub async fn exec(
         serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
     );
 
+    if !image_only {
+        println!(
+            "{}#### This operation will reboot the nodes ####{}",
+            color::Fg(color::Red),
+            color::Fg(color::Reset),
+        );
+    }
+
     let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("Please check the template above and confirm to proceed")
+        .with_prompt("Please check the template above and confirm to proceed.")
         .interact()
         .unwrap();
 

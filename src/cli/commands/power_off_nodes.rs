@@ -1,4 +1,10 @@
-use mesa::{common::jwt_ops::get_claims_from_jwt_token, pcs::transitions::r#struct::Location};
+use mesa::{
+    common::jwt_ops::get_claims_from_jwt_token,
+    error::Error,
+    pcs::{self, transitions::r#struct::Location},
+};
+
+use crate::common;
 
 pub async fn exec(
     shasta_token: &str,
@@ -22,7 +28,7 @@ pub async fn exec(
 
     let operation = if force { "force-off" } else { "soft-off" };
 
-    let _ = mesa::pcs::transitions::http_client::post(
+    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
         shasta_token,
         shasta_root_cert,
@@ -31,10 +37,35 @@ pub async fn exec(
     )
     .await;
 
+    let power_mgmt_summary = match power_mgmt_summary_rslt {
+        Ok(value) => value,
+        Err(e) => {
+            /* eprintln!(
+                "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
+                xname_vec, error_msg
+            );
+            std::process::exit(1); */
+            let error_msg = match e {
+                Error::CsmError(value) => serde_json::to_string_pretty(&value).unwrap(),
+                Error::SerdeError(value) => value.to_string(),
+                Error::IoError(value) => value.to_string(),
+                Error::NetError(value) => value.to_string(),
+                Error::Message(value) => value.to_string(),
+            };
+            eprintln!(
+                "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
+                xname_vec, error_msg
+            );
+            std::process::exit(1);
+        }
+    };
+
+    common::pcs_utils::print_summary_table(power_mgmt_summary);
+
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
 
     /* // Check Nodes are shutdown
     let _ = capmc::http_client::node_power_status::post(

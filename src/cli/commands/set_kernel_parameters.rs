@@ -1,3 +1,4 @@
+use dialoguer::theme::ColorfulTheme;
 use mesa::{
     bss::{self, bootparameters::BootParameters},
     common::jwt_ops::get_claims_from_jwt_token,
@@ -46,6 +47,21 @@ pub async fn exec(
     )
     .await
     .unwrap();
+
+    println!(
+        "Set kernel params:\n{:?}\n For nodes:\n{:?}",
+        kernel_params, xnames
+    );
+
+    let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("Please confirm to proceed")
+        .interact()
+        .unwrap();
+
+    if !proceed {
+        println!("Operation canceled by the user. Exit");
+        std::process::exit(1);
+    }
 
     // Update kernel parameters
     for mut boot_parameter in current_node_boot_params {

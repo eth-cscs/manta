@@ -316,7 +316,7 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Apply sat command now has arguments to chose whether images or
+- Apply sat command now has arguments to choose whether images or
 - Migration to BOS v2
 - New command `apply template` to create a BOS v2 session based on
 
