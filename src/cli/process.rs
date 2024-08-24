@@ -161,32 +161,39 @@ pub async fn process_cli(
         if let Some(cli_power) = cli_root.subcommand_matches("power") {
             if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
                 if let Some(cli_power_on_cluster) = cli_power_on.subcommand_matches("cluster") {
-                    let hsm_group_name_arg_opt =
-                        cli_power_on_cluster.get_one::<String>("CLUSTER_NAME");
+                    let hsm_group_name_arg = cli_power_on_cluster
+                        .get_one::<String>("CLUSTER_NAME")
+                        .expect("The 'cluster name' argument must have a value");
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
+                        Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
                     .await;
+
+                    let target_hsm_group = target_hsm_group_vec
+                        .first()
+                        .expect("The 'cluster name' argument must have a value");
 
                     power_on_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        target_hsm_group_vec.first(),
+                        target_hsm_group,
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
                     let xname_vec: Vec<String> = cli_power_on_node
                         .get_one::<String>("NODE_NAME")
-                        .unwrap()
+                        .expect("The 'xnames' argument must have values")
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
+
+                    let reason = cli_power_on_node.get_one::<String>("reason").cloned();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -201,38 +208,54 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         &xname_vec,
-                        cli_power_on_node.get_one::<String>("reason").cloned(),
+                        reason,
                     )
                     .await;
                 }
             } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
                 if let Some(cli_power_off_cluster) = cli_power_off.subcommand_matches("cluster") {
-                    let hsm_group_name_arg_opt =
-                        cli_power_off_cluster.get_one::<String>("CLUSTER_NAME");
+                    let hsm_group_name_arg = cli_power_off_cluster
+                        .get_one::<String>("CLUSTER_NAME")
+                        .expect("The 'cluster name' argument must have a value");
+
+                    let force = cli_power_off_cluster
+                        .get_one::<bool>("force")
+                        .expect("The 'force' argument must have a value");
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
+                        Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
                     .await;
+
+                    let target_hsm_group = target_hsm_group_vec
+                        .first()
+                        .expect("The 'cluster name' argument must have a value");
 
                     power_off_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        target_hsm_group_vec.first(),
+                        target_hsm_group,
+                        *force,
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
                     let xname_vec: Vec<String> = cli_power_off_node
                         .get_one::<String>("NODE_NAME")
-                        .unwrap()
+                        .expect("The 'xnames' argument must have values")
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
+
+                    let force = cli_power_off_node
+                        .get_one::<bool>("force")
+                        .expect("The 'force' argument must have a value");
+
+                    let reason = cli_power_off_node.get_one::<String>("reason").cloned();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -247,31 +270,41 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         &xname_vec,
-                        cli_power_off_node.get_one::<String>("reason").cloned(),
-                        *cli_power_off_node.get_one::<bool>("force").unwrap(),
+                        reason,
+                        *force,
                     )
                     .await;
                 }
             } else if let Some(cli_power_reset) = cli_power.subcommand_matches("reset") {
                 if let Some(cli_power_reset_cluster) = cli_power_reset.subcommand_matches("cluster")
                 {
-                    let hsm_group_name_arg_opt =
-                        cli_power_reset_cluster.get_one::<String>("CLUSTER_NAME");
+                    let hsm_group_name_arg = cli_power_reset_cluster
+                        .get_one::<String>("CLUSTER_NAME")
+                        .expect("The 'cluster name' argument must have a value");
+
+                    let force = cli_power_reset_cluster
+                        .get_one::<bool>("force")
+                        .expect("The 'force' argument must have a value");
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
+                        Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
                     .await;
+
+                    let target_hsm_group = target_hsm_group_vec
+                        .first()
+                        .expect("Power off cluster must operate against a cluster");
 
                     power_reset_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        target_hsm_group_vec.first(),
+                        target_hsm_group,
+                        *force,
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
@@ -279,10 +312,16 @@ pub async fn process_cli(
                 {
                     let xname_vec: Vec<String> = cli_power_reset_node
                         .get_one::<String>("NODE_NAME")
-                        .unwrap()
+                        .expect("The 'xnames' argument must have values")
                         .split(',')
                         .map(|xname| xname.trim().to_string())
                         .collect();
+
+                    let force = cli_power_reset_node
+                        .get_one::<bool>("force")
+                        .expect("The 'force' argument must have a value");
+
+                    let reason = cli_power_reset_node.get_one::<String>("reason").cloned();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -297,8 +336,8 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         &xname_vec,
-                        cli_power_reset_node.get_one::<String>("reason").cloned(),
-                        *cli_power_reset_node.get_one::<bool>("force").unwrap(),
+                        reason,
+                        *force,
                     )
                     .await;
                 }

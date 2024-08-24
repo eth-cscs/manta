@@ -112,14 +112,6 @@ pub async fn exec(
         serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
     );
 
-    if !image_only {
-        println!(
-            "{}#### This operation will reboot the nodes ####{}",
-            color::Fg(color::Red),
-            color::Fg(color::Reset),
-        );
-    }
-
     let process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt("Please check the template above and confirm to proceed.")
         .interact()
@@ -1097,10 +1089,11 @@ pub async fn process_session_template_section_in_sat_file(
             .await;
 
             match create_bos_session_resp {
-                Ok(_) => {
+                Ok(bos_session) => {
                     // log::info!("K8s job relates to BOS session v1 '{}'", bos_session["job"].as_str().unwrap());
                     println!(
-                        "BOS session for BOS sessiontemplate '{}' created",
+                        "BOS session '{}' for BOS sessiontemplate '{}' created",
+                        bos_session["name"].as_str().unwrap(),
                         bos_st_name
                     )
                 }

@@ -36,7 +36,7 @@ pub async fn exec(
                 Error::Message(value) => value.to_string(),
             };
             eprintln!(
-                "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
+                "ERROR - Could not on node/s '{:?}'. Reason:\n{}",
                 xname_vec, error_msg
             );
             std::process::exit(1);
@@ -48,7 +48,7 @@ pub async fn exec(
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
 
     /* // Check Nodes are shutdown
     let _ = capmc::http_client::node_power_status::post(
