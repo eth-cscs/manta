@@ -271,7 +271,8 @@ pub fn subcommand_get_cfs_configuration() -> Command {
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"])).arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
         .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
 }
@@ -665,6 +666,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on all nodes in a cluster")
                         .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
@@ -673,6 +675,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )
@@ -687,6 +690,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
@@ -696,6 +700,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )
@@ -710,6 +715,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
@@ -719,6 +725,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
                 ),
         )

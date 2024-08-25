@@ -178,11 +178,14 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
+                    let output: &str = cli_power_on.get_one::<String>("output").unwrap();
+
                     power_on_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group,
+                        output,
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
@@ -194,6 +197,7 @@ pub async fn process_cli(
                         .collect();
 
                     let reason = cli_power_on_node.get_one::<String>("reason").cloned();
+                    let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -209,6 +213,7 @@ pub async fn process_cli(
                         shasta_root_cert,
                         &xname_vec,
                         reason,
+                        output,
                     )
                     .await;
                 }
@@ -221,6 +226,7 @@ pub async fn process_cli(
                     let force = cli_power_off_cluster
                         .get_one::<bool>("force")
                         .expect("The 'force' argument must have a value");
+                    let output: &str = cli_power_off_cluster.get_one::<String>("output").unwrap();
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
@@ -241,6 +247,7 @@ pub async fn process_cli(
                         shasta_root_cert,
                         target_hsm_group,
                         *force,
+                        output,
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
@@ -256,6 +263,7 @@ pub async fn process_cli(
                         .expect("The 'force' argument must have a value");
 
                     let reason = cli_power_off_node.get_one::<String>("reason").cloned();
+                    let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -272,6 +280,7 @@ pub async fn process_cli(
                         &xname_vec,
                         reason,
                         *force,
+                        output,
                     )
                     .await;
                 }
@@ -285,6 +294,8 @@ pub async fn process_cli(
                     let force = cli_power_reset_cluster
                         .get_one::<bool>("force")
                         .expect("The 'force' argument must have a value");
+
+                    let output: &str = cli_power_reset_cluster.get_one::<String>("output").unwrap();
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
@@ -305,6 +316,7 @@ pub async fn process_cli(
                         shasta_root_cert,
                         target_hsm_group,
                         *force,
+                        output,
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
@@ -322,6 +334,7 @@ pub async fn process_cli(
                         .expect("The 'force' argument must have a value");
 
                     let reason = cli_power_reset_node.get_one::<String>("reason").cloned();
+                    let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
 
                     let _ = validate_target_hsm_members(
                         shasta_token,
@@ -338,6 +351,7 @@ pub async fn process_cli(
                         &xname_vec,
                         reason,
                         *force,
+                        output,
                     )
                     .await;
                 }
@@ -1428,6 +1442,9 @@ pub async fn process_cli(
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
+                    let output = "table"; // 'apply node on' subcommand does not have output
+                                          // argument so we are forcing the value
+
                     validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
@@ -1442,6 +1459,7 @@ pub async fn process_cli(
                         shasta_root_cert,
                         &xname_vec,
                         cli_apply_node_on.get_one::<String>("reason").cloned(),
+                        output,
                     )
                     .await;
                 } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
@@ -1470,6 +1488,9 @@ pub async fn process_cli(
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
+                    let output = "table"; // 'apply node off' subcommand does not have output
+                                          // argument so we are forcing the value
+
                     let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
@@ -1485,6 +1506,7 @@ pub async fn process_cli(
                         &xname_vec,
                         cli_apply_node_off.get_one::<String>("reason").cloned(),
                         *cli_apply_node_off.get_one::<bool>("force").unwrap(),
+                        output,
                     )
                     .await;
                 } else if let Some(cli_apply_node_reset) =
@@ -1517,6 +1539,8 @@ pub async fn process_cli(
                         .map(|xname| xname.trim().to_string())
                         .collect();
 
+                    let output = "table"; // 'apply node off' subcommand does not have output
+                                          // argument so we are forcing the value
                     let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
@@ -1532,6 +1556,7 @@ pub async fn process_cli(
                         &xname_vec,
                         cli_apply_node_reset.get_one::<String>("reason").cloned(),
                         *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
+                        output,
                     )
                     .await;
                 }

@@ -8,6 +8,7 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     xname_vec: &Vec<String>,
     reason_opt: Option<String>,
+    output: &str,
 ) {
     let operation = "on";
 
@@ -43,7 +44,7 @@ pub async fn exec(
         }
     };
 
-    common::pcs_utils::print_summary_table(power_mgmt_summary);
+    common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();

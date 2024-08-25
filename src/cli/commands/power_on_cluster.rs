@@ -7,6 +7,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name_arg_opt: &str,
+    output: &str,
 ) {
     let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
@@ -59,7 +60,7 @@ pub async fn exec(
         }
     };
 
-    common::pcs_utils::print_summary_table(power_mgmt_summary);
+    common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();

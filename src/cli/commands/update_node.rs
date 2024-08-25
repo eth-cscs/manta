@@ -225,6 +225,7 @@ pub async fn exec(
             &nodes,
             None,
             true,
+            "table",
         )
         .await
     }

@@ -13,6 +13,7 @@ pub async fn exec(
     xname_vec: &Vec<String>,
     reason_opt: Option<String>,
     force: bool,
+    output: &str,
 ) {
     // Create 'location' list with all the xnames to operate
     let mut location_vec: Vec<Location> = Vec::new();
@@ -60,7 +61,7 @@ pub async fn exec(
         }
     };
 
-    common::pcs_utils::print_summary_table(power_mgmt_summary);
+    common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
