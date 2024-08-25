@@ -2,7 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.0] - 2024-08-25
+
+### Features
+
+- Power management operations report
+- Set kernel parameters command asks user for confirmation
+- Add pcs utils
+- Power management commands now accept a new argument 'output' to change the output format
+- Update mesa
+- Power management commands now accept a new argument 'output' to change the output format
+- Add pcs utils
+- Power management operations report
+- Set kernel parameters command asks user for confirmation
+
+### Refactor
+
+- Clean code
+- Integration with PCS
+- Clean code
+- Integration with PCS
+
 ## [1.46.20] - 2024-08-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.46.20
 
 ### Refactor
 
@@ -316,7 +341,7 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Apply sat command now has arguments to choose whether images or
+- Apply sat command now has arguments to chose whether images or
 - Migration to BOS v2
 - New command `apply template` to create a BOS v2 session based on
 
