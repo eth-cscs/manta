@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.1] - 2024-08-25
+
+### Bug Fixes
+
+- Update Cargo.toml
+
 ## [1.47.0] - 2024-08-25
 
 ### Features
@@ -15,6 +21,10 @@ All notable changes to this project will be documented in this file.
 - Add pcs utils
 - Power management operations report
 - Set kernel parameters command asks user for confirmation
+
+### Miscellaneous Tasks
+
+- Release manta version 1.47.0
 
 ### Refactor
 
