@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.2] - 2024-09-05
+
+### Bug Fixes
+
+- Improve cli interface of 'get kernel-parameters' subcommand
+
 ## [1.47.1] - 2024-08-25
 
 ### Bug Fixes
 
 - Update Cargo.toml
+
+### Miscellaneous Tasks
+
+- Release manta version 1.47.1
 
 ## [1.47.0] - 2024-08-25
 
