@@ -1957,7 +1957,7 @@ pub async fn process_cli(
                 }
             };
 
-            // Check session belongs to a cluster the user has access
+            // Check if the session to stop belongs to a cluster the user has access
             mesa::cfs::session::mesa::utils::filter_by_hsm(
                 shasta_token,
                 shasta_base_url,
@@ -1980,7 +1980,7 @@ pub async fn process_cli(
             let cfs_session_name = cfs_session.clone().name.unwrap();
 
             // * if session is not running running then:
-            // Cancel operation - finish gracefully
+            // Cancel operation - exit gracefully
             if cfs_session
                 .status
                 .as_ref()
@@ -2014,6 +2014,7 @@ pub async fn process_cli(
             let cfs_session_target_definition = cfs_session.get_target_def().unwrap();
             let cfs_global_options = if cfs_session_target_definition == "dynamic" {
                 // The CFS session is of type 'target dynamic' (runtime CFS batcher)
+                log::info!("CFS session target definition is 'dynamic'.");
                 mesa::cfs::component::shasta::http_client::v3::get_options(
                     shasta_token,
                     shasta_base_url,
@@ -2021,12 +2022,16 @@ pub async fn process_cli(
                 )
                 .await
                 .unwrap()
-            } else {
+            } else if cfs_session_target_definition == "image" {
                 // The CFS session is not of type 'target dynamic' (runtime CFS batcher)
-                log::info!(
-                    "CFS session target definition is 'dynamic'. Pod has been deleted. Exit"
-                );
+                log::info!("CFS session target definition is 'image'. Pod has been deleted. Exit");
                 std::process::exit(0)
+            } else {
+                eprintln!(
+                    "CFS session target definition is '{}'. Don't know how to continue. Exit",
+                    cfs_session_target_definition
+                );
+                std::process::exit(1);
             };
 
             let retry_policy = cfs_global_options["default_batcher_retry_policy"]
@@ -2045,6 +2050,8 @@ pub async fn process_cli(
             } else {
                 cfs_session.get_target_xname().unwrap()
             };
+
+            log::debug!("List of xnames to set 'error_count' to {}", retry_policy);
 
             // Update CFS component error_count
             let mut cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
@@ -2071,7 +2078,7 @@ pub async fn process_cli(
             .await; */
             // * endif
 
-            println!("STOP SESSION {session_name}");
+            println!("Session '{session_name}' has been stopped.");
         }
     }
 
