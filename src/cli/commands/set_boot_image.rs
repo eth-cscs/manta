@@ -18,7 +18,7 @@ pub async fn exec(
     xname_vec_opt: Option<&Vec<String>>,
     output: &str,
 ) -> Result<(), Error> {
-    let mut xname_to_reboot_vec: Vec<String> = Vec::new();
+    let xname_to_reboot_vec: Vec<String>;
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
         mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(

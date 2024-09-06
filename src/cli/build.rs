@@ -779,7 +779,7 @@ pub fn subcommand_set_boot_image() -> Command {
         .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true))
         .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "summary", "details"]).default_value("summary"))
+        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
         .group(
             ArgGroup::new("cluster_or_session_name")
             .args(["hsm-group", "xnames"])
