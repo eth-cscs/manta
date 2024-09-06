@@ -95,7 +95,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let root_ca_cert_file = site_detail_value
         .get("root_ca_cert_file")
-        .expect("'root_cert_file' value missing in configuration file")
+        .expect("'root_ca_cert_file' value missing in configuration file")
         .to_string();
     log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
 

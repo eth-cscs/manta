@@ -16,9 +16,8 @@ pub async fn exec(
     image_id: &str,
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
+    output: &str,
 ) -> Result<(), Error> {
-    println!("Set runtime-configuration");
-
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
@@ -38,7 +37,7 @@ pub async fn exec(
     };
 
     // Get current node boot params
-    let current_node_boot_params: Vec<BootParameters> = bss::bootparameters::http_client::get(
+    let mut current_node_boot_params: Vec<BootParameters> = bss::bootparameters::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -50,11 +49,85 @@ pub async fn exec(
     .await
     .unwrap();
 
-    let any_boot_image_change = current_node_boot_params
+    log::debug!("Current boot parameters:\n{:#?}", current_node_boot_params);
+
+    // Compare which nodes will get a new boot image and create a list with the new boot for those
+    // nodes which boot image changes parameters for those nodes
+    current_node_boot_params.retain(|boot_parameter| !boot_parameter.get_boot_image().eq(image_id));
+
+    xname_to_reboot_vec = current_node_boot_params
+        .iter()
+        .flat_map(|boot_parameter| boot_parameter.hosts.clone())
+        .collect();
+
+    if !current_node_boot_params.is_empty() {
+        // Ask user for confirmation
+        let user_configuration_msg = format!(
+                "New boot image '{}' detected. This operation will reboot the nodes below so they can boot with the new image:\n{:?}\nDo you want to continue?",
+                image_id,
+                xname_to_reboot_vec.join(", ")
+            );
+        if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(user_configuration_msg)
+            .interact()
+            .unwrap()
+        {
+            log::info!("Continue",);
+        } else {
+            println!("Cancelled by user. Aborting.");
+            std::process::exit(0);
+        }
+
+        // Update boot parameters
+        for mut boot_parameter in current_node_boot_params {
+            boot_parameter.update_boot_image(&image_id);
+            eprintln!(
+                "Updating {:?} boot image to '{}'",
+                boot_parameter.hosts.join(", "),
+                image_id
+            );
+
+            let _ = mesa::bss::bootparameters::http_client::patch(
+                shasta_base_url,
+                shasta_token,
+                shasta_root_cert,
+                &boot_parameter,
+            )
+            .await;
+        }
+
+        // Audit
+        let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+
+        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", 
+            jwt_claims["name"].as_str().unwrap(), 
+            jwt_claims["preferred_username"].as_str().unwrap(), 
+            xname_vec_opt.unwrap());
+
+        // Reboot if needed
+        if xname_to_reboot_vec.is_empty() {
+            println!("Nothing to change. Exit");
+        } else {
+            crate::cli::commands::power_reset_nodes::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &xname_to_reboot_vec,
+                None,
+                true,
+                output,
+            )
+            .await;
+        }
+    } else {
+        println!("Boot image did not change. No need to reboot.");
+    }
+
+    /* let is_boot_image_change = current_node_boot_params
         .iter()
         .any(|boot_param| boot_param.get_boot_image() != image_id);
 
-    if any_boot_image_change {
+    if is_boot_image_change {
         if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(format!(
                 "New boot image detected. This operation will reboot the nodes so they can boot with the new image:\n{:?}\nDo you want to continue?",
@@ -69,16 +142,19 @@ pub async fn exec(
                 std::process::exit(0);
             }
 
-        // Update boot image
-        for mut boot_parameter in current_node_boot_params {
-            if boot_parameter.get_boot_image().eq(image_id) {
+        /* for mut boot_parameter in current_node_boot_params {
+            log::debug!("boot parameters:\n{:#?}", boot_parameter);
+            // Get list of xnames which boot image is different to the new one, those are the nodes
+            // we which boot parameters will change
+            if !boot_parameter.get_boot_image().eq(image_id) {
                 boot_parameter.update_boot_image(&image_id);
-                println!(
-                    "Updating '{:?}' boot image to '{}'",
-                    boot_parameter.hosts, image_id
+                eprintln!(
+                    "Updating {:?} boot image to '{}'",
+                    boot_parameter.hosts.join(", "),
+                    image_id
                 );
 
-                let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+                let _ = mesa::bss::bootparameters::http_client::patch(
                     shasta_base_url,
                     shasta_token,
                     shasta_root_cert,
@@ -86,16 +162,21 @@ pub async fn exec(
                 )
                 .await;
 
-                log::debug!(
-                    "Component boot parameters resp:\n{:#?}",
-                    component_patch_rep
-                );
-
                 xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
             }
-        }
+        } */
     } else {
         println!("Boot image did not change. No need to reboot.");
+    }
+
+    for boot_parameter in current_node_boot_params {
+        let _ = mesa::bss::bootparameters::http_client::patch(
+            shasta_base_url,
+            shasta_token,
+            shasta_root_cert,
+            &boot_parameter,
+        )
+        .await;
     }
 
     // Audit
@@ -116,7 +197,7 @@ pub async fn exec(
             true,
         )
         .await;
-    }
+    } */
 
     Ok(())
 }

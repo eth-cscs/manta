@@ -18,8 +18,6 @@ pub async fn exec(
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
 ) -> Result<(), Error> {
-    println!("Set runtime-configuration");
-
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {

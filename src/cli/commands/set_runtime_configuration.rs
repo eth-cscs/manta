@@ -9,8 +9,6 @@ pub async fn exec(
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
 ) -> Result<(), Error> {
-    println!("Set runtime-configuration");
-
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
         mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,

@@ -437,7 +437,11 @@ pub async fn process_cli(
                     None
                 };
 
-                let boot_image = cli_set_boot_image.get_one::<String>("boot-image").unwrap(); // clap should validate the argument
+                let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
+
+                let output = cli_set_boot_image
+                    .get_one::<String>("output")
+                    .expect("ERROR - output argument in cli missing");
 
                 let result = set_boot_image::exec(
                     shasta_token,
@@ -446,6 +450,7 @@ pub async fn process_cli(
                     boot_image,
                     target_hsm_group_vec_opt.as_ref(),
                     xname_vec_opt.as_ref(),
+                    output,
                 )
                 .await;
 
