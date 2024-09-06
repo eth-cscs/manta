@@ -2,11 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.48.0] - 2024-09-06
+
+### Bug Fixes
+
+- Command "set boot-image" argument mismatch
+- Error message when 'root_ca_cert' param in config file is missing
+
+### Features
+
+- Command 'set boot-image' use PCS module to restart nodes
+- Command 'set'boot-image' filters boot parameters and nodes to boot
+- Command 'set boot-image' accepts new argument 'output' to print
+
+### Fex
+
+- Command 'set boot-image' output argument default value
+
+### Rafactor
+
+- Clean code
+
 ## [1.47.2] - 2024-09-05
 
 ### Bug Fixes
 
 - Improve cli interface of 'get kernel-parameters' subcommand
+
+### Miscellaneous Tasks
+
+- Release manta version 1.47.2
 
 ## [1.47.1] - 2024-08-25
 
