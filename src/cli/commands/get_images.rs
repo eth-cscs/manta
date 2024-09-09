@@ -32,6 +32,8 @@ pub async fn exec(
     )
     .await;
 
+    log::debug!("Image list already filtered:\n{:#?}", image_detail_vec);
+
     // Print data
     let mut table = Table::new();
 
