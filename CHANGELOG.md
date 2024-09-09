@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.0] - 2024-09-09
+
+### Features
+
+- Update mesa version
+
 ## [1.48.0] - 2024-09-06
 
 ### Bug Fixes
@@ -14,6 +20,10 @@ All notable changes to this project will be documented in this file.
 - Command 'set boot-image' use PCS module to restart nodes
 - Command 'set'boot-image' filters boot parameters and nodes to boot
 - Command 'set boot-image' accepts new argument 'output' to print
+
+### Miscellaneous Tasks
+
+- Release manta version 1.48.0
 
 ### Fex
 
