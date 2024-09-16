@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.1] - 2024-09-16
+
+### Features
+
+- Subcommand get kernel parameters group kernel parameters by xnames
+
 ## [1.49.0] - 2024-09-09
 
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.49.0
 
 ## [1.48.0] - 2024-09-06
 
