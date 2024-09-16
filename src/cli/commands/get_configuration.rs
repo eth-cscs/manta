@@ -233,14 +233,21 @@ pub async fn get_configuration_layer_details(
     let commit_id_opt = layer.commit.as_ref();
 
     let gitea_commit_details: serde_json::Value = if let Some(commit_id) = commit_id_opt {
-        gitea::http_client::get_commit_details_from_internal_url(
+        let commit_details_rslt = gitea::http_client::get_commit_details_from_internal_url(
             &layer.clone_url,
             commit_id,
             gitea_token,
             shasta_root_cert,
         )
-        .await
-        .unwrap_or(serde_json::json!({}))
+        .await;
+
+        match commit_details_rslt {
+            Ok(commit_details) => commit_details,
+            Err(_) => {
+                log::error!("Could not find details for commit '{}'", commit_id);
+                serde_json::json!({})
+            }
+        }
     } else {
         serde_json::json!({})
     };
