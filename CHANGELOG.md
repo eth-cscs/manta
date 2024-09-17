@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.2] - 2024-09-17
+
+### Features
+
+- Improve performance when running command "get cluster"
+
 ## [1.49.1] - 2024-09-16
 
 ### Features
 
 - Subcommand get kernel parameters group kernel parameters by xnames
+
+### Miscellaneous Tasks
+
+- Release manta version 1.49.1
 
 ## [1.49.0] - 2024-09-09
 
