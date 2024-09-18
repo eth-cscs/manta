@@ -9,6 +9,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
     table.set_header(vec![
         "XNAME",
         "NID",
+        "HSM",
         "Power Status",
         "Runtime Configuration",
         "Configuration Status",
@@ -22,6 +23,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
         table.add_row(vec![
             Cell::new(node_status.xname),
             Cell::new(node_status.nid),
+            Cell::new(node_status.hsm),
             Cell::new(node_status.power_status),
             Cell::new(node_status.desired_configuration),
             Cell::new(node_status.configuration_status),
@@ -41,6 +43,7 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
     table.set_header(vec![
         "XNAME",
         "NID",
+        "HSM",
         "Power Status",
         "Runtime Configuration",
         "Configuration Status",
@@ -78,6 +81,7 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
         table.add_row(vec![
             Cell::new(node_status.xname),
             Cell::new(node_status.nid),
+            Cell::new(node_status.hsm),
             Cell::new(node_status.power_status),
             Cell::new(node_status.desired_configuration),
             Cell::new(node_status.configuration_status),
