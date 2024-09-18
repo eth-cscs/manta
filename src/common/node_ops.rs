@@ -20,19 +20,17 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
     ]);
 
     for node_status in nodes_status {
+        let mut node_vec: Vec<String> = node_status
+            .hsm
+            .split(",")
+            .map(|xname_str| xname_str.trim().to_string())
+            .collect();
+        node_vec.sort();
+
         table.add_row(vec![
             Cell::new(node_status.xname),
             Cell::new(node_status.nid),
-            Cell::new(nodes_to_string_format_discrete_columns(
-                Some(
-                    &(node_status
-                        .hsm
-                        .split(",")
-                        .map(|xname_str| xname_str.trim().to_string())
-                        .collect()),
-                ),
-                1,
-            )),
+            Cell::new(nodes_to_string_format_discrete_columns(Some(&node_vec), 1)),
             Cell::new(node_status.power_status),
             Cell::new(node_status.desired_configuration),
             Cell::new(node_status.configuration_status),
@@ -87,19 +85,17 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
             kernel_params_string.push_str(kernel_param);
         }
 
+        let mut node_vec: Vec<String> = node_status
+            .hsm
+            .split(",")
+            .map(|xname_str| xname_str.trim().to_string())
+            .collect();
+        node_vec.sort();
+
         table.add_row(vec![
             Cell::new(node_status.xname),
             Cell::new(node_status.nid),
-            Cell::new(nodes_to_string_format_discrete_columns(
-                Some(
-                    &(node_status
-                        .hsm
-                        .split(",")
-                        .map(|xname_str| xname_str.trim().to_string())
-                        .collect()),
-                ),
-                1,
-            )),
+            Cell::new(nodes_to_string_format_discrete_columns(Some(&node_vec), 1)),
             Cell::new(node_status.power_status),
             Cell::new(node_status.desired_configuration),
             Cell::new(node_status.configuration_status),
