@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.4] - 2024-09-18
+
+### Features
+
+- 'get cluster' command now displays the list of HSM groups in multiple lines to make better use of screen real estate
+
 ## [1.49.3] - 2024-09-18
 
 ### Features
 
 - Add HSM group name in 'get cluster' command output
+
+### Miscellaneous Tasks
+
+- Release manta version 1.49.3
 
 ## [1.49.2] - 2024-09-17
 
