@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.3] - 2024-09-18
+
+### Features
+
+- Add HSM group name in 'get cluster' command output
+
 ## [1.49.2] - 2024-09-17
 
 ### Features
 
 - Improve performance when running command "get cluster"
+
+### Miscellaneous Tasks
+
+- Release manta version 1.49.2
 
 ## [1.49.1] - 2024-09-16
 
