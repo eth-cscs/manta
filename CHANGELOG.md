@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.0] - 2024-09-18
+
+### Features
+
+- New command 'get nodes' to query a list of xnames from different HSM groups
+
 ## [1.49.5] - 2024-09-18
 
 ### Features
 
 - Command 'get cluster' sorts the HSM groups each node belongs to
+
+### Miscellaneous Tasks
+
+- Release manta version 1.49.5
 
 ## [1.49.4] - 2024-09-18
 
