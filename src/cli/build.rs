@@ -328,7 +328,18 @@ pub fn subcommand_get_cluster_details() -> Command {
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 }
 
-pub fn subcommand_get_node() -> Command {
+pub fn subcommand_get_node_details() -> Command {
+    Command::new("nodes")
+        .visible_aliases(["n", "node", "nd"])
+        .about("Get node details")
+        .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
+        .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
+        .arg_required_else_help(true)
+        .arg(arg!(<XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+}
+
+/* pub fn subcommand_get_node() -> Command {
     Command::new("nodes")
         .visible_aliases(["n", "node", "nd"])
         .about("DEPRECATED - Please use 'manta get cluster' command instead.\nGet members of a HSM group")
@@ -337,7 +348,7 @@ pub fn subcommand_get_node() -> Command {
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-}
+} */
 
 pub fn subcommand_get_hsm_groups_details() -> Command {
     Command::new("hsm-groups")
@@ -378,8 +389,9 @@ pub fn subcommand_get() -> Command {
         .subcommand(subcommand_get_cfs_session())
         .subcommand(subcommand_get_cfs_configuration())
         .subcommand(subcommand_get_bos_template())
-        .subcommand(subcommand_get_node())
+        // .subcommand(subcommand_get_node())
         .subcommand(subcommand_get_cluster_details())
+        .subcommand(subcommand_get_node_details())
         .subcommand(subcommand_get_hsm_groups_details())
         .subcommand(subcommand_get_images())
         .subcommand(subcommand_get_kernel_parameters())

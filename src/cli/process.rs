@@ -16,9 +16,9 @@ use super::commands::{
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    get_configuration, get_hsm, get_hw_configuration_node, get_images, get_kernel_parameters,
-    get_nodes, get_session, get_template, migrate_backup, power_off_cluster, power_off_nodes,
-    power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
+    get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
+    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup, power_off_cluster,
+    power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
     remove_hw_component_cluster, remove_nodes, set_boot_configuration, set_boot_image,
     set_kernel_parameters, set_runtime_configuration, update_hsm_group, update_node,
 };
@@ -863,8 +863,8 @@ pub async fn process_cli(
                     limit_number_opt,
                 )
                 .await;
-            } else if let Some(cli_get_node) = cli_get.subcommand_matches("cluster") {
-                let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
+            } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
+                let hsm_group_name_arg_opt = cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
@@ -875,56 +875,88 @@ pub async fn process_cli(
                 )
                 .await;
 
-                get_nodes::exec(
+                get_cluster::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     &target_hsm_group_vec,
-                    *cli_get_node
+                    *cli_get_cluster
                         .get_one::<bool>("nids-only-one-line")
                         .unwrap_or(&false),
-                    *cli_get_node
+                    *cli_get_cluster
                         .get_one::<bool>("xnames-only-one-line")
                         .unwrap_or(&false),
-                    cli_get_node.get_one::<String>("output"),
-                    *cli_get_node.get_one::<bool>("status").unwrap_or(&false),
+                    cli_get_cluster.get_one::<String>("output"),
+                    *cli_get_cluster.get_one::<bool>("status").unwrap_or(&false),
                 )
                 .await;
-            } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
-                let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
+            } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
+                // Get list of nodes from cli argument
+                let node_vec: Vec<String> = cli_get_nodes
+                    .get_one::<String>("XNAMES")
+                    .expect("ERROR - need list of xnames")
+                    .clone()
+                    .split(",")
+                    .map(|xname_str| xname_str.trim().to_string())
+                    .collect();
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                // Validate user has access to list of xnames
+                validate_target_hsm_members(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
+                    node_vec.clone(),
                 )
                 .await;
-
-                let output_opt = cli_get_node.get_one::<String>("output");
-
-                if output_opt.is_some_and(|output| output == "table" || output == "summary") {
-                    eprintln!("Deprecated - Please use 'manta get cluster' command instead.");
-                } else {
-                    log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
-                }
 
                 get_nodes::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &target_hsm_group_vec,
-                    *cli_get_node
+                    node_vec.clone(),
+                    *cli_get_nodes
                         .get_one::<bool>("nids-only-one-line")
                         .unwrap_or(&false),
-                    *cli_get_node
-                        .get_one::<bool>("xnames-only-one-line")
-                        .unwrap_or(&false),
-                    output_opt,
                     false,
+                    cli_get_nodes.get_one::<String>("output"),
+                    *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false),
                 )
                 .await;
+            /* } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
+            let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
+
+            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                hsm_group_name_arg_opt,
+                settings_hsm_group_name_opt,
+            )
+            .await;
+
+            let output_opt = cli_get_node.get_one::<String>("output");
+
+            if output_opt.is_some_and(|output| output == "table" || output == "summary") {
+                eprintln!("Deprecated - Please use 'manta get cluster' command instead.");
+            } else {
+                log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
+            }
+
+            get_nodes::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_vec,
+                *cli_get_node
+                    .get_one::<bool>("nids-only-one-line")
+                    .unwrap_or(&false),
+                *cli_get_node
+                    .get_one::<bool>("xnames-only-one-line")
+                    .unwrap_or(&false),
+                output_opt,
+                false,
+            )
+            .await; */
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
                 log::warn!("Deprecated - Do not use this command.");
 

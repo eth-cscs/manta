@@ -20,6 +20,7 @@ pub mod config_unset_parent_hsm;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
 pub mod delete_data_related_to_cfs_configuration;
+pub mod get_cluster;
 pub mod get_configuration;
 pub mod get_hsm;
 pub mod get_hw_configuration_cluster;

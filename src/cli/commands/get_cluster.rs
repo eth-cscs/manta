@@ -1,3 +1,5 @@
+use mesa::hsm;
+
 use crate::common::node_ops;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
@@ -5,19 +7,29 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    mut node_list: Vec<String>,
+    hsm_name_vec: &[String],
     silent: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
     status: bool,
 ) {
-    node_list.sort();
+    // Take all nodes for all hsm_groups found and put them in a Vec
+    let mut hsm_groups_node_list: Vec<String> =
+        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_name_vec.to_vec(),
+        )
+        .await;
+
+    hsm_groups_node_list.sort();
 
     let node_details_list = mesa::node::utils::get_node_details(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        node_list.to_vec(),
+        hsm_groups_node_list,
     )
     .await;
 
