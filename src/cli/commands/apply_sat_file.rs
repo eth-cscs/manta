@@ -56,6 +56,7 @@ pub async fn exec(
     posthook: Option<&String>,
     image_only: bool,
     session_template_only: bool,
+    debug_on_failure: bool,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -244,6 +245,8 @@ pub async fn exec(
     // Process "hardware" section in SAT file
     log::info!("hardware pattern: {:?}", hardware_yaml_value_vec_opt);
 
+    // Process "clusters" section
+    //
     if let Some(hw_component_pattern_vec) = hardware_yaml_value_vec_opt {
         for hw_component_pattern in hw_component_pattern_vec {
             let target_hsm_group_name = hw_component_pattern["target"].as_str().unwrap();
@@ -359,7 +362,7 @@ pub async fn exec(
                 &cray_product_catalog,
                 ansible_verbosity_opt,
                 ansible_passthrough_opt,
-                // tag,
+                debug_on_failure,
             )
             .await;
 

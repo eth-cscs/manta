@@ -155,11 +155,13 @@ pub async fn connect_to_console(
                         input.write_all(&message).await?;
                     },
                     Some(Err(message)) => {
-                       input.write_all(format!("#*#* stdin {:?}", &message).as_bytes()).await?;
+                       crossterm::terminal::disable_raw_mode()?;
+                       log::error!("ERROR: Console stdin {:?}", &message);
                        break
                     },
                     None => {
-                        input.write_all("stdin None".as_bytes()).await?;
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::info!("NONE (No input): Console stdin");
                         break
                     },
                 }
@@ -171,19 +173,24 @@ pub async fn connect_to_console(
                         stdout.flush().await?;
                     },
                     Some(Err(message)) => {
-                       input.write_all(format!("#*#* stdout {:?}", &message).as_bytes()).await?;
+                       crossterm::terminal::disable_raw_mode()?;
+                       log::error!("ERROR: Console stdout: {:?}", &message);
                        break
                     },
                     None => {
-                        input.write_all("stdout None".as_bytes()).await?;
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::info!("Exit console");
                         break
                     },
                 }
             },
             result = &mut handle_terminal_size_handle => {
                 match result {
-                    Ok(_) => crossterm::terminal::disable_raw_mode()?,
-                    Err(e) => { crossterm::terminal::disable_raw_mode()?; println!("Error getting terminal size: {e:?}") }
+                    Ok(_) => log::info!("End of terminal size stream"),
+                    Err(e) => {
+                        crossterm::terminal::disable_raw_mode()?;
+                        log::error!("Error getting terminal size: {e:?}")
+                    }
                 }
             },
         };

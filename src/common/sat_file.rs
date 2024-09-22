@@ -9,7 +9,7 @@ use mesa::{
             cfs_configuration_request::v2::CfsConfigurationRequest,
             cfs_configuration_response::v2::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v2::CfsSessionPostRequest,
+        session::mesa::r#struct::v3::CfsSessionPostRequest,
     },
     error::Error,
     ims,
@@ -716,7 +716,7 @@ pub async fn import_images_section_in_sat_file(
     cray_product_catalog: &BTreeMap<String, String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
-    // tag: &str,
+    debug_on_failure: bool, // tag: &str,
 ) -> HashMap<String, serde_yaml::Value> {
     // Get an image to process (the image either has no dependency or it's image dependency has
     // already ben processed)
@@ -742,7 +742,7 @@ pub async fn import_images_section_in_sat_file(
             ansible_verbosity_opt,
             ansible_passthrough_opt,
             ref_name_processed_hashmap,
-            // tag,
+            debug_on_failure,
         )
         .await
         .unwrap();
@@ -775,7 +775,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
     ref_name_image_id_hashmap: &HashMap<String, String>,
-    // tag: &str,
+    debug_on_failure: bool,
 ) -> Result<String, Error> {
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
@@ -792,7 +792,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
     );
 
     // Get CFS configuration related to CFS session in SAT file
-    let configuration: String = image_yaml["configuration"]
+    let configuration_name: String = image_yaml["configuration"]
         .as_str()
         .unwrap_or_default()
         .to_string();
@@ -968,7 +968,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
         ));
     }
 
-    if configuration.is_empty() {
+    if configuration_name.is_empty() {
         log::info!("No CFS session needs to be created since there is no CFS configuration assigned to this image");
         println!(
             "Image '{}' imported image_id '{}'",
@@ -983,13 +983,18 @@ pub async fn create_image_from_sat_file_serde_yaml(
         // Create CFS session
         let cfs_session = CfsSessionPostRequest::new(
             image_name.clone(),
-            configuration,
+            configuration_name,
+            None,
+            None,
             None,
             ansible_verbosity_opt,
             ansible_passthrough_opt.cloned(),
             true,
             Some(groups_name.to_vec()),
             Some(base_image_id),
+            None,
+            debug_on_failure,
+            Some(image_name.clone()),
         );
 
         let cfs_session = cfs::session::mesa::http_client::post_sync(

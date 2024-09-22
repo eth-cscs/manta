@@ -185,7 +185,7 @@ pub async fn exec(
             &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
-            // tag,
+            false,
         )
         .await;
 

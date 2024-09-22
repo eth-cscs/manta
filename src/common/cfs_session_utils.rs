@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::cfs::{self, session::mesa::r#struct::v2::CfsSessionGetResponse};
+use mesa::cfs::{self, session::mesa::r#struct::v3::CfsSessionGetResponse};
 
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let start_time_utc_str = cfs_session

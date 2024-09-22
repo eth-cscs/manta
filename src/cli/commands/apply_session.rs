@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    cfs::{self, session::mesa::r#struct::v2::CfsSessionPostRequest},
+    cfs::{self, session::mesa::r#struct::v3::CfsSessionPostRequest},
     common::{
         jwt_ops::get_claims_from_jwt_token, kubernetes,
         vault::http_client::fetch_shasta_k8s_secrets,
@@ -478,7 +478,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         }
     };
 
-    // Create CFS session
+    // Create dynamic CFS session
     let cfs_session_name = format!(
         "{}-{}",
         cfs_configuration_name,
@@ -489,10 +489,15 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         cfs_session_name,
         cfs_configuration_name.clone(),
         limit,
+        None,
+        None,
         ansible_verbosity,
         ansible_passthrough,
         false,
         None,
+        None,
+        None,
+        false,
         None,
     );
 

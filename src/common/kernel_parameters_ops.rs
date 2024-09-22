@@ -5,7 +5,7 @@ use mesa::bss::bootparameters::BootParameters;
 
 pub fn print_table(
     boot_parameters_vec: Vec<BootParameters>,
-    kernel_params_key_to_filter_opt: Option<String>,
+    kernel_params_key_to_filter_opt: Option<&String>,
 ) {
     let mut kernel_params_key_vec: Vec<String> =
         if let Some(highlight) = kernel_params_key_to_filter_opt {

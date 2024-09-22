@@ -1005,6 +1005,12 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt =
                     cli_get_kernel_parameters.get_one::<String>("hsm-group");
 
+                let output: &String = cli_get_kernel_parameters
+                    .get_one("output")
+                    .expect("ERROR - output value missing");
+
+                let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
+
                 let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
                     let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
@@ -1036,9 +1042,8 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     xnames,
-                    cli_get_kernel_parameters
-                        .get_one::<String>("filter")
-                        .cloned(),
+                    filter_opt,
+                    output,
                 )
                 .await;
             }
@@ -1408,9 +1413,17 @@ pub async fn process_cli(
                     .get_one::<String>("ansible-passthrough")
                     .cloned();
                 let ansible_passthrough = ansible_passthrough_env.or(ansible_passthrough_cli_arg);
+                let ansible_verbosity: Option<u8> = cli_apply_sat_file
+                    .get_one::<String>("ansible-verbosity")
+                    .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap());
+
+                let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
 
                 let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
+
+                let debug_on_failure: bool =
+                    *cli_apply_sat_file.get_one("debug-on-failure").unwrap();
 
                 apply_sat_file::exec(
                     shasta_token,
@@ -1425,18 +1438,16 @@ pub async fn process_cli(
                     cli_value_vec_opt,
                     settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
-                    cli_apply_sat_file
-                        .get_one::<String>("ansible-verbosity")
-                        .cloned()
-                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
+                    ansible_verbosity,
                     ansible_passthrough.as_ref(),
                     gitea_base_url,
                     gitea_token,
-                    cli_apply_sat_file.get_flag("do-not-reboot"),
+                    do_not_reboot,
                     prehook,
                     posthook,
                     cli_apply_sat_file.get_flag("image-only"),
                     cli_apply_sat_file.get_flag("sessiontemplate-only"),
+                    debug_on_failure,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {

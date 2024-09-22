@@ -49,12 +49,12 @@ pub async fn exec(
     .unwrap();
 
     println!(
-        "Set kernel params:\n{:?}\n For nodes:\n{:?}",
+        "Set kernel params:\n{:?}\nFor nodes:\n{:?}",
         kernel_params, xnames
     );
 
     let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("Please confirm to proceed")
+        .with_prompt("This operation will reboot the nodes. Please confirm to proceed")
         .interact()
         .unwrap();
 
@@ -93,7 +93,7 @@ pub async fn exec(
     // Audit
     let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec_opt.unwrap());
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xnames);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
