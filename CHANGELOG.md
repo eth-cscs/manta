@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.2] - 2024-09-22
+
+### Bug Fixes
+
+- Delete CFS session
+
+### Features
+
+- Update mesa library
+
 ## [1.50.1] - 2024-09-22
 
 ### Bug Fixes
@@ -14,6 +24,10 @@ All notable changes to this project will be documented in this file.
 - Add 'debug' argument to 'apply sat' command
 - Migrate CFS API to v3
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.1
 
 ## [1.50.0] - 2024-09-18
 
