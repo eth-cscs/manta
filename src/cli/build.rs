@@ -149,11 +149,11 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .subcommand(subcommand_delete())
         .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_config())
-        .subcommand(Command::new("stop-running-session")
-            .visible_alias("srs")
+        .subcommand(Command::new("delete-session")
+            .visible_alias("ds")
             .arg_required_else_help(true)
-            .about("WIP - Stops a session")
-            .arg(arg!(<SESSION_NAME> "Session name to stop").required(true))
+            .about("WIP - Deletes a session")
+            .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
         )
 }
 

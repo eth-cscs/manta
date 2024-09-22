@@ -3,7 +3,7 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::common::authentication;
+use mesa::{cfs::component::shasta::r#struct::v2::ComponentRequest, common::authentication};
 
 use crate::cli::commands::validate_local_repo;
 
@@ -1963,9 +1963,7 @@ pub async fn process_cli(
 
             validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
                 .await;
-        } else if let Some(cli_stop_running_session) =
-            cli_root.subcommand_matches("stop-running-session")
-        {
+        } else if let Some(cli_delete_session) = cli_root.subcommand_matches("delete-session") {
             let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                 shasta_token,
                 shasta_base_url,
@@ -1975,12 +1973,7 @@ pub async fn process_cli(
             )
             .await;
 
-            println!(
-                "DEBUG - HSM groups user has access?\n{:?}",
-                target_hsm_group_vec
-            );
-
-            let session_name = cli_stop_running_session
+            let session_name = cli_delete_session
                 .get_one::<String>("SESSION_NAME")
                 .expect("Session name argument must be provided");
 
@@ -2027,35 +2020,7 @@ pub async fn process_cli(
             let cfs_session = cfs_session_vec.first().unwrap();
             let cfs_session_name = cfs_session.clone().name.unwrap();
 
-            // * if session is not running running then:
-            // Cancel operation - exit gracefully
-            if cfs_session
-                .status
-                .as_ref()
-                .unwrap()
-                .session
-                .as_ref()
-                .unwrap()
-                .status
-                .as_ref()
-                .unwrap()
-                != "running"
-            {
-                println!("Session '{}' is not running. Exit", cfs_session_name);
-                std::process::exit(0);
-            }
-
-            log::info!("Deleting pod related to session '{}'", cfs_session_name);
-
-            // Delete pod related to session
-            let _ = mesa::common::kubernetes::delete_session_pod(
-                vault_base_url,
-                vault_secret_path,
-                vault_role_id,
-                k8s_api_url,
-                &cfs_session_name,
-            )
-            .await;
+            log::info!("Deleting session '{}'", cfs_session_name);
 
             // * if session is of type dynamic (runtime session) then:
             // Get retry_policy
@@ -2072,7 +2037,30 @@ pub async fn process_cli(
                 .unwrap()
             } else if cfs_session_target_definition == "image" {
                 // The CFS session is not of type 'target dynamic' (runtime CFS batcher)
-                log::info!("CFS session target definition is 'image'. Pod has been deleted. Exit");
+
+                // * if session is of type image then:
+                // CFS sessions used to create an image can't be deleted for the sake of keeping the
+                // link to the CFS configuration used to create the resulted image
+                if !cfs_session.get_result_id_vec().is_empty() {
+                    println!("Session '{}' was used to build an image. Sessions of type 'image' can't be deleted. Exit", cfs_session_name);
+                    std::process::exit(0);
+                }
+
+                let cfs_configuration_name = cfs_session.get_configuration_name().unwrap();
+
+                // Delete CFS configuration related to the CFS session to delete
+                log::info!(
+                    "CFS session target definition is 'image'. Session has been deleted. Deleting configuration '{}'. Exit", cfs_configuration_name
+                );
+
+                let _ = mesa::cfs::configuration::shasta::http_client::v2::delete(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &cfs_configuration_name,
+                )
+                .await;
+
                 std::process::exit(0)
             } else {
                 eprintln!(
@@ -2083,7 +2071,7 @@ pub async fn process_cli(
             };
 
             let retry_policy = cfs_global_options["default_batcher_retry_policy"]
-                .as_str()
+                .as_u64()
                 .unwrap();
 
             // Set CFS components error_count == retry_policy so CFS batcher stops retrying running
@@ -2099,10 +2087,15 @@ pub async fn process_cli(
                 cfs_session.get_target_xname().unwrap()
             };
 
-            log::debug!("List of xnames to set 'error_count' to {}", retry_policy);
+            log::info!(
+                "Set 'error_count' {} to xnames {:?}",
+                retry_policy,
+                xname_vec
+            );
 
             // Update CFS component error_count
-            let mut cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
+            // Get original CFS components
+            let cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2111,22 +2104,43 @@ pub async fn process_cli(
             .await
             .unwrap();
 
-            for cfs_component in &mut cfs_component_vec {
-                cfs_component.error_count = Some(retry_policy.parse().unwrap());
+            // Convert CFS components to another struct we can use for CFS component PUT API
+            let mut cfs_component_request_vec = Vec::new();
+
+            for cfs_component in cfs_component_vec {
+                let mut cfs_component_request: ComponentRequest =
+                    ComponentRequest::from(cfs_component);
+                cfs_component_request.error_count = Some(retry_policy);
+                cfs_component_request_vec.push(cfs_component_request);
             }
 
-            println!("DEBUG - new CFS components:\n{:#?}", cfs_component_vec);
-
-            /* let _ = mesa::cfs::component::shasta::http_client::v2::patch_component_list(
+            let put_rslt_vec = mesa::cfs::component::shasta::http_client::v2::put_component_list(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                cfs_component_vec,
+                cfs_component_request_vec,
             )
-            .await; */
-            // * endif
+            .await;
 
-            println!("Session '{session_name}' has been stopped.");
+            for put_rslt in put_rslt_vec {
+                if let Err(e) = put_rslt {
+                    eprintln!(
+                        "ERROR - Could not update error_count on compnents. Reason:\n{}",
+                        e
+                    );
+                }
+            }
+
+            // Delete CFS session
+            let _ = mesa::cfs::session::shasta::http_client::v3::delete(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &cfs_session_name,
+            )
+            .await;
+
+            println!("Session '{session_name}' has been deleted.");
         }
     }
 
