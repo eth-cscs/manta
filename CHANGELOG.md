@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.1] - 2024-09-22
+
+### Bug Fixes
+
+- Command 'console target-ansible' breaking local terminal when
+
+### Features
+
+- Add 'output' argument to 'get kernel-parameters' command
+- Add 'debug' argument to 'apply sat' command
+- Migrate CFS API to v3
+- Update mesa version
+
 ## [1.50.0] - 2024-09-18
 
 ### Features
 
 - New command 'get nodes' to query a list of xnames from different HSM groups
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.0
 
 ## [1.49.5] - 2024-09-18
 
