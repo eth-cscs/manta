@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.3] - 2024-09-23
+
+### Bug Fixes
+
+- Command 'get kernel-parameters' for a cluster combined with filter not grouping hsm groups correctly
+
 ## [1.50.2] - 2024-09-22
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.2
 
 ## [1.50.1] - 2024-09-22
 
