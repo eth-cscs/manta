@@ -102,7 +102,7 @@ pub async fn exec(
         log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", 
             jwt_claims["name"].as_str().unwrap(), 
             jwt_claims["preferred_username"].as_str().unwrap(), 
-            xname_vec_opt.unwrap());
+            xnames);
 
         // Reboot if needed
         if xname_to_reboot_vec.is_empty() {

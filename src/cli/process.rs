@@ -3,7 +3,8 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::{cfs::component::shasta::r#struct::v2::ComponentRequest, common::authentication};
+use mesa::cfs::component::shasta::r#struct::v2::ComponentRequest;
+use mesa::common::authentication;
 
 use crate::cli::commands::validate_local_repo;
 
@@ -16,11 +17,12 @@ use super::commands::{
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
-    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup, power_off_cluster,
-    power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
-    remove_hw_component_cluster, remove_nodes, set_boot_configuration, set_boot_image,
-    set_kernel_parameters, set_runtime_configuration, update_hsm_group, update_node,
+    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
+    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
+    power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
+    power_reset_nodes, remove_hw_component_cluster, remove_nodes, set_boot_configuration,
+    set_boot_image, set_kernel_parameters, set_runtime_configuration, update_hsm_group,
+    update_node,
 };
 
 pub async fn process_cli(
@@ -1422,9 +1424,6 @@ pub async fn process_cli(
                 let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
-                let debug_on_failure: bool =
-                    *cli_apply_sat_file.get_one("debug-on-failure").unwrap();
-
                 apply_sat_file::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1447,7 +1446,7 @@ pub async fn process_cli(
                     posthook,
                     cli_apply_sat_file.get_flag("image-only"),
                     cli_apply_sat_file.get_flag("sessiontemplate-only"),
-                    debug_on_failure,
+                    true,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
@@ -1975,9 +1974,23 @@ pub async fn process_cli(
 
             let session_name = cli_delete_session
                 .get_one::<String>("SESSION_NAME")
-                .expect("Session name argument must be provided");
+                .expect("'session-name' argument must be provided");
 
-            // Check session exists
+            let dry_run: &bool = cli_delete_session
+                .get_one("dry-run")
+                .expect("'dry-run' argument must be provided");
+
+            delete_sessions::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_vec,
+                session_name,
+                dry_run,
+            )
+            .await;
+
+            /* // Check session exists
             let cfs_session_vec_rslt = mesa::cfs::session::mesa::http_client::get(
                 shasta_token,
                 shasta_base_url,
@@ -2140,7 +2153,7 @@ pub async fn process_cli(
             )
             .await;
 
-            println!("Session '{session_name}' has been deleted.");
+            println!("Session '{session_name}' has been deleted."); */
         }
     }
 
