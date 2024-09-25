@@ -3,7 +3,6 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::cfs::component::shasta::r#struct::v2::ComponentRequest;
 use mesa::common::authentication;
 
 use crate::cli::commands::validate_local_repo;
@@ -1092,7 +1091,7 @@ pub async fn process_cli(
                         .unwrap_or(&false);
 
                     if *is_unpin {
-                        apply_hw_cluster_unpin::exec(
+                        apply_hw_cluster_unpin::command::exec(
                             shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -1105,7 +1104,7 @@ pub async fn process_cli(
                         )
                         .await;
                     } else {
-                        apply_hw_cluster_pin::exec(
+                        apply_hw_cluster_pin::command::exec(
                             shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -1980,7 +1979,7 @@ pub async fn process_cli(
                 .get_one("dry-run")
                 .expect("'dry-run' argument must be provided");
 
-            delete_sessions::exec(
+            delete_sessions::command::exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

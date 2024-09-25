@@ -25,11 +25,11 @@ use termion::color;
 
 use crate::{
     cli::{commands::apply_hw_cluster_pin, process::validate_target_hsm_members},
-    common::{
-        self,
-        sat_file::{
-            self, import_images_section_in_sat_file, validate_sat_file_configurations_section,
-            validate_sat_file_images_section, SatFile,
+    common::sat_file::{
+        sat_file_utils::{self, SatFile},
+        sat_file_utils::{
+            import_images_section_in_sat_file, validate_sat_file_configurations_section,
+            validate_sat_file_images_section,
         },
     },
 };
@@ -86,7 +86,7 @@ pub async fn exec(
         };
     }
 
-    let sat_template_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+    let sat_template_file_yaml: Value = sat_file_utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
         values_cli_opt,
@@ -259,7 +259,7 @@ pub async fn exec(
                 log::info!("Processing hw component pattern for '{}' for target HSM group '{}' and parent HSM group '{}'", pattern, target_hsm_group_name, parent_hsm_group_name);
                 // When applying a SAT file, I'm assuming the user doesn't want to create new HSM groups or delete empty parent hsm groups
                 // But this could be changed.
-                apply_hw_cluster_pin::exec(
+                apply_hw_cluster_pin::command::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -317,7 +317,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&vec![]).iter() {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
-            common::sat_file::create_cfs_configuration_from_sat_file(
+            sat_file_utils::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

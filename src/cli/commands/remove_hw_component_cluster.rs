@@ -5,7 +5,7 @@ use mesa::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use crate::cli::commands::apply_hw_cluster_pin::utils::{
+use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
     calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
     get_hsm_node_hw_component_counter,
 };
@@ -225,7 +225,7 @@ pub async fn exec(
 
     // Downscale parent HSM group
     let hw_component_counters_to_move_out_from_target_hsm =
-        crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
+        crate::cli::commands::apply_hw_cluster_unpin::command::utils::calculate_target_hsm_unpin(
             &final_target_hsm_hw_component_summary.clone(),
             &final_target_hsm_hw_component_summary
                 .into_keys()

@@ -7,9 +7,8 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::common::{
-    self,
-    sat_file::{self, import_images_section_in_sat_file, validate_sat_file_images_section},
+use crate::common::sat_file::sat_file_utils::{
+    self, import_images_section_in_sat_file, validate_sat_file_images_section,
 };
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
@@ -37,7 +36,7 @@ pub async fn exec(
     gitea_token: &str,
     _output_opt: Option<&String>,
 ) {
-    let sat_file_yaml: Value = sat_file::render_jinja2_sat_file_yaml(
+    let sat_file_yaml: Value = sat_file_utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
         values_cli_opt,
@@ -149,7 +148,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
-            common::sat_file::create_cfs_configuration_from_sat_file(
+            sat_file_utils::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
