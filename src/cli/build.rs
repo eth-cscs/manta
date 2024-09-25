@@ -152,7 +152,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
         .subcommand(Command::new("delete-session")
             .visible_alias("ds")
             .arg_required_else_help(true)
-            .about("WIP - Deletes a session")
+            .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
             .arg(arg!(-d --"dry-run" "Session name to delete").action(ArgAction::SetTrue))
             .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
         )

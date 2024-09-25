@@ -72,22 +72,32 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
         .unwrap_or(&Vec::new())
         .is_empty()
     {
-        cfs_session
+        let mut target_aux = cfs_session
             .target
+            .as_ref()
             .unwrap()
             .groups
+            .as_ref()
             .unwrap()
             .iter()
             .map(|group| group.name.to_string())
-            .collect::<Vec<String>>()
-            .join("\n")
+            .collect::<Vec<String>>();
+        target_aux.sort();
+        target_aux.join("\n")
     } else {
-        cfs_session
+        let mut target_aux: Vec<String> = cfs_session
             .ansible
+            .as_ref()
             .unwrap()
             .limit
+            .as_ref()
+            .cloned()
             .unwrap_or_default()
-            .replace(',', "\n")
+            .split(',')
+            .map(|xname| xname.to_string())
+            .collect();
+        target_aux.sort();
+        target_aux.join("\n")
     };
     result.push(target);
     result.push(

@@ -1,11 +1,7 @@
-use mesa::hsm;
 use std::collections::HashMap;
 
-use mesa::hsm::group::utils::update_hsm_group_members;
-
 use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
-    calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
-    resolve_hw_description_to_xnames,
+    calculate_hsm_hw_component_summary, resolve_hw_description_to_xnames,
 };
 
 #[tokio::test]
