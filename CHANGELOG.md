@@ -2,11 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.4] - 2024-09-27
+
+### Bug Fixes
+
+- Fix unit tests
+- Unit tests
+- Imports
+- Mesa repo
+
+### Features
+
+- Debug is always while creating an image form sat file
+- Command 'delete-session' has a new 'dry-run' command
+- 'delete session' command also cleans images when target is 'image'
+- Improve cli description message for command 'delete session:wa'
+
+### Refactor
+
+- Organise modules
+
 ## [1.50.3] - 2024-09-23
 
 ### Bug Fixes
 
 - Command 'get kernel-parameters' for a cluster combined with filter not grouping hsm groups correctly
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.3
 
 ## [1.50.2] - 2024-09-22
 
