@@ -85,40 +85,38 @@ pub fn get_default_mgmt_plane_ca_cert_file_path() -> PathBuf {
 
 /// Get Manta configuration full path. Configuration may be the default one or specified by user.
 /// This function also validates if the config file is TOML format
-pub async fn get_config_file_path() -> config::File<FileSourceFile, FileFormat> {
+pub async fn get_config_file_path() -> PathBuf {
     // Get config file path from ENV var
-    let config_file_path = if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
+    if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
         let mut env_config_file = std::path::PathBuf::new();
         env_config_file.push(env_config_file_name);
         env_config_file
     } else {
         // Get default config file path ($XDG_CONFIG/manta/config.toml
         get_default_manta_config_file_path()
-    };
-
-    // Validate if config file exists
-    if !config_file_path.exists() {
-        // Configuration file does not exists --> create a new configuration file
-        create_new_config_file(Some(&config_file_path)).await;
     }
-
-    // Validate config file and check format (toml) is correct
-    let config_file = config::File::new(
-        config_file_path
-            .to_str()
-            .expect("Configuration file name not defined"),
-        config::FileFormat::Toml,
-    );
-
-    config_file
 }
 
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
 pub async fn get_configuration() -> Config {
     // Get config file path
+    let config_file_path = get_config_file_path().await;
 
-    let config_file = get_config_file_path().await;
+    // If config file does not exists, then use config file generator to create a default config
+    // file
+    if !config_file_path.exists() {
+        // Configuration file does not exists --> create a new configuration file
+        create_new_config_file(Some(&config_file_path)).await;
+    };
+
+    // Process config file and check format (toml) is correct
+    let config_file = config::File::new(
+        config_file_path
+            .to_str()
+            .expect("Configuration file name not defined"),
+        config::FileFormat::Toml,
+    );
 
     // Process config file
     let config_rslt = ::config::Config::builder()

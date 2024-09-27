@@ -15,6 +15,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // #[cfg(feature = "dhat-heap")]
     // let _profiler = dhat::Profiler::new_heap();
 
+    // Process input params
+    let matches = crate::cli::build::build_cli().get_matches();
+
     let settings = common::config_ops::get_configuration().await;
 
     let site_name = settings.get_string("site").unwrap();
@@ -83,7 +86,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     if let Some(socks_proxy) = site_detail_value.get("socks5_proxy") {
         let socks_proxy = socks_proxy.to_string();
         if !socks_proxy.is_empty() {
-            std::env::set_var("SOCKS5", socks_proxy.to_string());
+            std::env::set_var("SOCKS5", socks_proxy.clone());
             log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
             log::debug!("config - socks_proxy:  {socks_proxy}");
         } else {
@@ -118,9 +121,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     )
     .await
     .unwrap();
-
-    // Process input params
-    let matches = crate::cli::build::build_cli(settings_hsm_group_name_opt.as_ref()).get_matches();
 
     let cli_result = crate::cli::process::process_cli(
         matches,

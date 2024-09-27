@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
 
-pub fn build_cli(hsm_group: Option<&String>) -> Command {
+pub fn build_cli() -> Command {
     Command::new(env!("CARGO_PKG_NAME"))
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
@@ -125,7 +125,7 @@ pub fn build_cli(hsm_group: Option<&String>) -> Command {
                 .subcommand(subcommand_update_hsm_group()),
         )
         .subcommand(
-            subcommand_log(hsm_group)
+            subcommand_log()
         )
         .subcommand(
             Command::new("console")
@@ -746,22 +746,13 @@ pub fn subcommand_power() -> Command {
         )
 }
 
-pub fn subcommand_log(hsm_group_opt: Option<&String>) -> Command {
-    let mut log = Command::new("log")
+pub fn subcommand_log() -> Command {
+    Command::new("log")
         .visible_alias("l")
         .about("get cfs session logs")
-        .arg(arg!([SESSION_NAME] "show logs related to session name"));
-
-    match hsm_group_opt {
-        None => {
-            log =
-                log.arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
-                    .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]));
-        }
-        Some(_) => {}
-    }
-
-    log
+        .arg(arg!([SESSION_NAME] "show logs related to session name"))
+        .arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
+        .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]))
 }
 
 pub fn subcommand_validate_local_repo() -> Command {
