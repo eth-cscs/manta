@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.6] - 2024-09-27
+
+### Bug Fixes
+
+- Error checking cli help if manta not fully configured
+
 ## [1.50.5] - 2024-09-27
 
 ### Features
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta version 1.50.4
+- Release manta version 1.50.5
 
 ## [1.50.4] - 2024-09-27
 
