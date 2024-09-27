@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.5] - 2024-09-27
+
+### Features
+
+- Upgrade mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.4
+
 ## [1.50.4] - 2024-09-27
 
 ### Bug Fixes
@@ -17,6 +27,10 @@ All notable changes to this project will be documented in this file.
 - Command 'delete-session' has a new 'dry-run' command
 - 'delete session' command also cleans images when target is 'image'
 - Improve cli description message for command 'delete session:wa'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.4
 
 ### Refactor
 
