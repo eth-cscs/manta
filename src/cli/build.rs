@@ -153,7 +153,7 @@ pub fn build_cli() -> Command {
             .visible_alias("ds")
             .arg_required_else_help(true)
             .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
-            .arg(arg!(-d --"dry-run" "Session name to delete").action(ArgAction::SetTrue))
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
             .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
         )
 }
@@ -529,9 +529,9 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg_required_else_help(true)
         .about("Process a SAT file and creates the configurations, images, boot parameters and runtime configurations. If runtime configuration and boot parameters are defined, then, reboots the nodes to configure.\nThe ansible container for the session building the image will remain running after an Ansible failure.  The container will remain running for a number of seconds specified by the 'debug_wait_time options'")
         // .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
-        .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
-        .arg(arg!(-V --"values" <VALUES_PATH> ... "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
+        .arg(arg!(-t --"sat-template-file" <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
+        .arg(arg!(-f --"values-file" <VALUE> "If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-V --"values" <VALUE> ... "If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
         .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot.").action(ArgAction::SetTrue))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["1", "2", "3", "4"])
@@ -545,6 +545,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))
         .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing SAT file. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
         .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after processing SAT file successfully. Use \" or \'.\neg: --post-hook \"echo hello\"."))
+    // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_apply_node_on() -> Command {

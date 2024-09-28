@@ -155,6 +155,7 @@ pub async fn exec(
                 &cray_product_catalog,
                 configuration_yaml,
                 // tag,
+                false,
             )
             .await;
 
@@ -182,6 +183,7 @@ pub async fn exec(
             &cray_product_catalog,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
+            false,
             false,
         )
         .await;

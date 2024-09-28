@@ -106,6 +106,7 @@ pub async fn exec(
                 &cray_product_catalog,
                 configuration_yaml,
                 // tag,
+                false,
             )
             .await;
 

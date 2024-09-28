@@ -4,7 +4,7 @@ build = "build.rs"
 edition = "2021"
 authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
 name = "manta"
-description = "Another CLI for basic/simple Shasta operations"
+description = "Another CLI for ALPS"
 version = "1.50.7"
 license-file = "LICENSE"
 documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
@@ -16,7 +16,7 @@ publish = false                                                         # cargo 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.41.7"
+mesa = "0.41.8"
 # mesa = { path = "../mesa" } # Only for development purposes
 strum = "0.25.0"
 strum_macros = "0.25"
@@ -64,6 +64,7 @@ indicatif = "0.17.7"
 execute = "0.2.13"
 is_executable = "1.0.1"
 minijinja = "1.0.12"
+uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 
 [build-dependencies]
 clap = "*"

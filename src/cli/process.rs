@@ -1418,10 +1418,19 @@ pub async fn process_cli(
                     .get_one::<String>("ansible-verbosity")
                     .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap());
 
-                let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
-
                 let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
+
+                let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
+
+                /* let dry_run: bool = *cli_apply_sat_file.get_one("dry-run").unwrap();
+                // If dry_run is true, then no need to reboot because no changes to the system are
+                // applied, otherwise, depends on user input
+                let do_not_reboot: bool = if dry_run {
+                    false
+                } else {
+                    cli_apply_sat_file.get_flag("do-not-reboot")
+                }; */
 
                 apply_sat_file::command::exec(
                     shasta_token,
@@ -1446,6 +1455,7 @@ pub async fn process_cli(
                     cli_apply_sat_file.get_flag("image-only"),
                     cli_apply_sat_file.get_flag("sessiontemplate-only"),
                     true,
+                    false,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
