@@ -25,7 +25,7 @@ pub fn build_cli() -> Command {
                 .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
 
             )
-            .subcommand(Command::new("nodes")
+            /* .subcommand(Command::new("nodes")
                 .visible_aliases(["n", "node"])
                 .arg_required_else_help(true)
                 .about("WIP - Add nodes to a cluster")
@@ -34,7 +34,7 @@ pub fn build_cli() -> Command {
                 .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
-            )
+            ) */
         )
         .subcommand(Command::new("remove")
             .visible_alias("r")
@@ -50,7 +50,7 @@ pub fn build_cli() -> Command {
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
             )
-            .subcommand(Command::new("nodes")
+            /* .subcommand(Command::new("nodes")
                 .visible_aliases(["n", "node"])
                 .about("WIP - Remove nodes to a cluster")
                 .arg_required_else_help(true)
@@ -60,7 +60,7 @@ pub fn build_cli() -> Command {
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
 
-            )
+            ) */
         )
         .subcommand(
             Command::new("set")
@@ -108,13 +108,24 @@ pub fn build_cli() -> Command {
                     .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
                 ),
         )
-        .subcommand(
-            Command::new("migrate")
+        .subcommand( Command::new("migrate")
                 .visible_alias("m")
                 .arg_required_else_help(true)
-                .about("WIP - Migrate vCluster")
-                .subcommand(subcommand_migrate_backup())
-                .subcommand(subcommand_migrate_restore()),
+                .subcommand(Command::new("vCluster")
+                    .visible_aliases(["c", "clstr"])
+                    .about("WIP - Migrate vCluster")
+                    .subcommand(subcommand_migrate_backup())
+                    .subcommand(subcommand_migrate_restore())
+                )
+                .subcommand(Command::new("nodes")
+                    .visible_aliases(["n", "node"])
+                    .arg_required_else_help(true)
+                    .about("Migrate nodes across vClusters")
+                    .arg(arg!(-f --from <VALUE> "The name of the source vCluster from which the compute nodes will be moved."))
+                    .arg(arg!(-t --to <VALUE> "The name of the target vCluster to which the compute nodes will be moved."))
+                    .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
+                    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+                ),
         )
         .subcommand(
             Command::new("update")

@@ -40,7 +40,7 @@ pub async fn exec(
                 .await
                 .expect("Unable to create new HSM group");
             } else {
-                log::error!("Dryrun selected, cannot create the new group continue.");
+                log::error!("Dry-run selected, cannot create the new group continue.");
                 std::process::exit(1);
             }
         } else {

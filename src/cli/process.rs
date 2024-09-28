@@ -609,6 +609,7 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_add_nodes) = cli_add.subcommand_matches("nodes") {
+                log::warn!("Deprecated - Please use 'manta migrate nodes' command instead.");
                 let nodryrun = *cli_add_nodes.get_one::<bool>("no-dryrun").unwrap_or(&true);
 
                 let create_hsm_group = *cli_add_nodes
@@ -679,6 +680,7 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_remove_nodes) = cli_remove.subcommand_matches("nodes") {
+                log::warn!("Deprecated - Please use 'manta migrate nodes' command instead.");
                 let nodryrun = *cli_remove_nodes
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
@@ -1858,42 +1860,70 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
-            if let Some(cli_migrate) = cli_migrate.subcommand_matches("backup") {
-                let bos = cli_migrate.get_one::<String>("bos");
-                let destination = cli_migrate.get_one::<String>("destination");
-                let prehook = cli_migrate.get_one::<String>("pre-hook");
-                let posthook = cli_migrate.get_one::<String>("post-hook");
-                migrate_backup::exec(
+            if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
+                let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
+
+                let from: &String = cli_migrate_nodes
+                    .get_one("from")
+                    .expect("from value is mandatory");
+                let to: &String = cli_migrate_nodes
+                    .get_one("to")
+                    .expect("to value is mandatory");
+
+                let xnames_string: &String = cli_migrate_nodes.get_one("XNAMES").unwrap();
+
+                add_nodes::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    bos,
-                    destination,
-                    prehook,
-                    posthook,
+                    to,
+                    from,
+                    xnames_string,
+                    !dry_run,
+                    false,
                 )
                 .await;
-            } else if let Some(cli_migrate) = cli_migrate.subcommand_matches("restore") {
-                let bos_file = cli_migrate.get_one::<String>("bos-file");
-                let cfs_file = cli_migrate.get_one::<String>("cfs-file");
-                let hsm_file = cli_migrate.get_one::<String>("hsm-file");
-                let ims_file = cli_migrate.get_one::<String>("ims-file");
-                let image_dir = cli_migrate.get_one::<String>("image-dir");
-                let prehook = cli_migrate.get_one::<String>("pre-hook");
-                let posthook = cli_migrate.get_one::<String>("post-hook");
-                commands::migrate_restore::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    bos_file,
-                    cfs_file,
-                    hsm_file,
-                    ims_file,
-                    image_dir,
-                    prehook,
-                    posthook,
-                )
-                .await;
+            } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
+                if let Some(cli_migrate_vcluster_backup) = cli_migrate.subcommand_matches("backup")
+                {
+                    let bos = cli_migrate_vcluster_backup.get_one::<String>("bos");
+                    let destination = cli_migrate_vcluster_backup.get_one::<String>("destination");
+                    let prehook = cli_migrate_vcluster_backup.get_one::<String>("pre-hook");
+                    let posthook = cli_migrate_vcluster_backup.get_one::<String>("post-hook");
+                    migrate_backup::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        bos,
+                        destination,
+                        prehook,
+                        posthook,
+                    )
+                    .await;
+                } else if let Some(cli_migrate_vcluster_restore) =
+                    cli_migrate.subcommand_matches("restore")
+                {
+                    let bos_file = cli_migrate_vcluster_restore.get_one::<String>("bos-file");
+                    let cfs_file = cli_migrate_vcluster_restore.get_one::<String>("cfs-file");
+                    let hsm_file = cli_migrate_vcluster_restore.get_one::<String>("hsm-file");
+                    let ims_file = cli_migrate_vcluster_restore.get_one::<String>("ims-file");
+                    let image_dir = cli_migrate_vcluster_restore.get_one::<String>("image-dir");
+                    let prehook = cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
+                    let posthook = cli_migrate_vcluster_restore.get_one::<String>("post-hook");
+                    commands::migrate_restore::exec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        bos_file,
+                        cfs_file,
+                        hsm_file,
+                        ims_file,
+                        image_dir,
+                        prehook,
+                        posthook,
+                    )
+                    .await;
+                }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
             let hsm_group_name_arg_opt = cli_delete.get_one::<String>("hsm-group"); // For now, we
