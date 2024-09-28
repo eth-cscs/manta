@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.7] - 2024-09-28
+
+### Refactor
+
+- Apply_sat_file code
+
 ## [1.50.6] - 2024-09-27
 
 ### Bug Fixes
 
 - Error checking cli help if manta not fully configured
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.6
 
 ## [1.50.5] - 2024-09-27
 
