@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.8] - 2024-09-28
+
+### Features
+
+- Init code for apply sat file dry-run
+- New command 'migrate nodes' to move compute nodes from one cluster
+
+### Refactor
+
+- Clean code
+- Remove commands 'add nodes' and 'remove nodes' since they have been changed to 'migrate nodes'
+
 ## [1.50.7] - 2024-09-28
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.7
 
 ### Refactor
 
