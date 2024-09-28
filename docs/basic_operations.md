@@ -686,3 +686,29 @@ Set/update boot configuration for a list of nodes
 ```bash
 manta set kernel-parameters --xnames x1001c1s5b0n0,x1001c1s5b0n1 --kernel-parameters "console=ttyS0,115200 bad_page=panic crashkernel=512M hugepagelist=2m-2g intel_pstate=disable iommu.passthrough=on numa_balancing=disable numa_interleave_omit=headless oops=panic pageblock_order=14 pcie_ports=native rd.retry=10 rd.shell split_lock_detect=off systemd.unified_cgroup_hierarchy=1 ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}
 ```
+
+## Migrate nodes across clusters
+
+Move a list of nodes from one cluster to another
+
+Normal version
+
+```bash
+manta migrate nodes ...
+```
+
+Short version
+
+```bash
+manta m n ...
+```
+
+eg:
+
+Move node 'x1001c1s7b0n0' from cluster 'zinal_cta' to cluster 'zinal_tds'
+
+```bash
+manta m n -d -f zinal_cta -t zinal_tds x1001c1s7b0n0`
+HSM 'zinal_tds' members: ["x1001c1s7b0n0", "x1001c1s7b0n1"]
+HSM 'zinal_cta' members: []
+```
