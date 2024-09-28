@@ -1423,7 +1423,7 @@ pub async fn process_cli(
                 let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
-                apply_sat_file::exec(
+                apply_sat_file::command::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

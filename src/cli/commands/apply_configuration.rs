@@ -5,7 +5,7 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::common::{cfs_configuration_utils, sat_file::sat_file_utils};
+use crate::{cli::commands::apply_sat_file::utils, common::cfs_configuration_utils};
 
 /// Creates a configuration from a sat file
 /// NOTE: this method manages 2 types of methods [git, product]. For type product, the name must
@@ -29,7 +29,7 @@ pub async fn exec(
     // tag: &str,
     output_opt: Option<&String>,
 ) -> anyhow::Result<Vec<String>> {
-    let sat_file_yaml: Value = sat_file_utils::render_jinja2_sat_file_yaml(
+    let sat_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
         values_cli_opt,
@@ -97,7 +97,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
-            sat_file_utils::create_cfs_configuration_from_sat_file(
+            utils::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

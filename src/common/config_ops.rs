@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use config::{Config, FileFormat, FileSourceFile};
+use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use mesa::error::Error;

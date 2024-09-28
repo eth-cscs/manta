@@ -7,9 +7,7 @@ use mesa::{
 };
 use serde_yaml::Value;
 
-use crate::common::sat_file::sat_file_utils::{
-    self, import_images_section_in_sat_file, validate_sat_file_images_section,
-};
+use crate::cli::commands::apply_sat_file::utils;
 
 /// Creates a CFS configuration and a CFS session from a CSCS SAT file.
 /// Note: this method will fail if session name collide. This case happens if the __DATE__
@@ -36,7 +34,7 @@ pub async fn exec(
     gitea_token: &str,
     _output_opt: Option<&String>,
 ) {
-    let sat_file_yaml: Value = sat_file_utils::render_jinja2_sat_file_yaml(
+    let sat_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
         values_cli_opt,
@@ -115,7 +113,7 @@ pub async fn exec(
 
     // VALIDATION
     // Check HSM groups in images section in SAT file matches the HSM group in JWT (keycloak roles)
-    let image_validation_rslt = validate_sat_file_images_section(
+    let image_validation_rslt = utils::validate_sat_file_images_section(
         image_yaml_vec_opt.unwrap(),
         configuration_yaml_vec_opt.unwrap(),
         hsm_group_available_vec,
@@ -148,7 +146,7 @@ pub async fn exec(
 
     for configuration_yaml in configuration_yaml_vec_opt.unwrap_or(&Vec::new()) {
         let cfs_configuration_rslt: Result<CfsConfigurationResponse, Error> =
-            sat_file_utils::create_cfs_configuration_from_sat_file(
+            utils::create_cfs_configuration_from_sat_file(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -175,7 +173,7 @@ pub async fn exec(
     let mut ref_name_processed_hashmap: HashMap<String, String> = HashMap::new();
 
     let cfs_session_created_hashmap: HashMap<String, serde_yaml::Value> =
-        import_images_section_in_sat_file(
+        utils::import_images_section_in_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

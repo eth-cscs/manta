@@ -8,7 +8,7 @@ use mesa::{
     ims::{image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
 };
 
-use crate::common::sat_file::sat_file_utils::{
+use crate::cli::commands::apply_sat_file::utils::{
     get_image_name_or_ref_name_to_process, get_next_image_in_sat_file_to_process,
     render_jinja2_sat_file_yaml, validate_sat_file_images_section,
 };

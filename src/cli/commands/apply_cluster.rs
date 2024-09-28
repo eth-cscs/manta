@@ -21,7 +21,7 @@ pub async fn exec(
     // tag: &str,
     do_not_reboot: bool,
 ) {
-    apply_sat_file::exec(
+    apply_sat_file::command::exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
