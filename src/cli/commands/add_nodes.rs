@@ -4,11 +4,11 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
-    xname_string: &str,
+    xname_to_move_string: &str,
     nodryrun: bool,
     create_hsm_group: bool,
 ) {
-    let new_target_hsm_members = xname_string
+    let xname_to_move_vec = xname_to_move_string
         .split(',')
         .map(|xname| xname.trim())
         .collect::<Vec<&str>>();
@@ -49,14 +49,28 @@ pub async fn exec(
         }
     }
 
-    mesa::hsm::group::utils::migrate_hsm_members(
+    let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         target_hsm_group_name,
         parent_hsm_group_name,
-        new_target_hsm_members,
+        xname_to_move_vec,
         nodryrun,
     )
     .await;
+
+    match node_migration_rslt {
+        Ok((target_hsm_group_member_vec, parent_hsm_group_member_vec)) => {
+            println!(
+                "HSM '{}' members: {:?}",
+                target_hsm_group_name, target_hsm_group_member_vec
+            );
+            println!(
+                "HSM '{}' members: {:?}",
+                parent_hsm_group_name, parent_hsm_group_member_vec
+            );
+        }
+        Err(e) => eprintln!("{}", e),
+    }
 }
