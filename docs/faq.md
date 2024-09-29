@@ -202,8 +202,6 @@ $ manta set runtime-configuration -H my_cluster -c my_configuration
 
 **A:** 
 
-!!! warning "WIP"
-
 `manta set runtime-configuration` command won't reboot nodes
 
 ---
@@ -211,8 +209,6 @@ $ manta set runtime-configuration -H my_cluster -c my_configuration
 **Q: How to set kernel parameters for a cluster?**
 
 **A:** 
-
-!!! warning "WIP"
 
 `manta set kernel -H my_cluster -k "ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=${SPIRE_JOIN_TOKEN}"`
 
@@ -224,8 +220,6 @@ $ manta set runtime-configuration -H my_cluster -c my_configuration
 **Q: How to update node boot images?**
 
 **A:** 
-
-!!! warning "WIP"
 
 To update the boot image based on a configuration name (recomended) for all the nodes in a cluster `manta set boot-image -H my_cluster -c my_configuration_name`
 To update the boot image based on an image id for all the nodes in a cluster `manta set boot-image -H my_cluster -i dbc5300c-3c98-4384-a7a7-28e628cbff43`
