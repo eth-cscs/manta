@@ -240,3 +240,22 @@ To update the boot image based on an image id for all the nodes in a cluster `ma
 2. Check manta is using the right site `manta config show`. This command should ask user to authenticate again since the auth token was deleted in the previous command
 
 
+---
+
+**Q: error: failed to load manifest for dependency `mesa`**
+
+**A:** 
+
+This is caused because cargo tries to access mesa library code from local filesystem instead of crates.io repository. To fix this, make sure mesa dependency in Cargo.toml looks as below:
+
+```
+
+...
+
+[dependencies]
+# mesa = "0.37.7"
+mesa = { path = "../mesa" } # Only for development purposes
+
+...
+
+```
