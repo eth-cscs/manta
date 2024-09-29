@@ -1872,6 +1872,27 @@ pub async fn process_cli(
 
                 let xnames_string: &String = cli_migrate_nodes.get_one("XNAMES").unwrap();
 
+                // Validate user has access to 'from' HSM group
+                let _ = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(from),
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                // Validate user has access to 'to' HSM group
+                let _ = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(to),
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                // Migrate nodes
                 add_nodes::exec(
                     shasta_token,
                     shasta_base_url,
