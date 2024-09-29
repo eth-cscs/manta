@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.10] - 2024-09-29
+
+### Bug Fixes
+
+- Command 'migrate nodes' validate HSM groups
+
+### Refactor
+
+- Housekeeping with module files
+
 ## [1.50.9] - 2024-09-29
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.9
 
 ### Refactor
 
