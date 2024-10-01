@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.12] - 2024-10-01
+
+### Features
+
+- Update mesa version
+
 ## [1.50.11] - 2024-10-01
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.11
 
 ### Refactor
 
