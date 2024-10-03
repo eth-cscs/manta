@@ -179,7 +179,7 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
-                    let output: &str = cli_power_on.get_one::<String>("output").unwrap();
+                    let output: &str = cli_power_on_cluster.get_one::<String>("output").unwrap();
 
                     power_on_cluster::exec(
                         shasta_token,
