@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.14] - 2024-10-03
+
+### Bug Fixes
+
+- Set kernel parameters
+
 ## [1.50.13] - 2024-10-03
 
 ### Bug Fixes
 
 - Argument parsing in 'power on cluster' command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.13
 
 ## [1.50.12] - 2024-10-01
 
