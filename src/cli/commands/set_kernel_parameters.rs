@@ -31,7 +31,7 @@ pub async fn exec(
         xname_vec.clone()
     } else {
         return Err(Error::Message(
-            "Setting runtime configuration without a list of nodes".to_string(),
+            "ERROR - Setting kernel parameters without a list of nodes".to_string(),
         ));
     };
 
@@ -65,7 +65,7 @@ pub async fn exec(
 
     // Update kernel parameters
     for mut boot_parameter in current_node_boot_params {
-        if boot_parameter.kernel.eq(kernel_params) {
+        if !boot_parameter.kernel.eq(kernel_params) {
             boot_parameter.kernel = kernel_params.to_string();
 
             println!(
@@ -99,13 +99,14 @@ pub async fn exec(
     if xname_to_reboot_vec.is_empty() {
         println!("Nothing to change. Exit");
     } else {
-        let _ = mesa::capmc::http_client::node_power_reset::post_sync_vec(
+        crate::cli::commands::power_reset_nodes::exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            xname_to_reboot_vec,
-            Some("Update kernel parameters".to_string()),
+            &xname_to_reboot_vec,
+            None,
             true,
+            "table",
         )
         .await;
     }
