@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.16] - 2024-10-04
+
+### Features
+
+- Migrate to CFS configuration v3
+
 ## [1.50.15] - 2024-10-04
 
 ### Bug Fixes
@@ -9,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - Remove cli commands deprecated
 - Command 'apply boot node'
 - Command 'set kernel-parameters'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.15
 
 ## [1.50.14] - 2024-10-03
 
