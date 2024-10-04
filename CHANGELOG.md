@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.15] - 2024-10-04
+
+### Bug Fixes
+
+- Remove cli commands deprecated
+- Command 'apply boot node'
+- Command 'set kernel-parameters'
+
 ## [1.50.14] - 2024-10-03
 
 ### Bug Fixes
 
 - Set kernel parameters
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.14
 
 ## [1.50.13] - 2024-10-03
 
