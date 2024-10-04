@@ -3,7 +3,7 @@ use mesa::{
         self,
         configuration::mesa::r#struct::{
             cfs_configuration::{ConfigurationDetails, LayerDetails},
-            cfs_configuration_response::v2::{CfsConfigurationResponse, Layer},
+            cfs_configuration_response::v3::{CfsConfigurationResponse, Layer},
         },
     },
     common::gitea,

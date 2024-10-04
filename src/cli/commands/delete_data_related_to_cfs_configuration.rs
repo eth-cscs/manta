@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::bootparameters::BootParameters;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v3::CfsConfigurationResponse;
 use mesa::{bos, cfs};
 use serde_json::Value;
 

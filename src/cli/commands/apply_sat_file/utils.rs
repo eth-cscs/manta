@@ -10,8 +10,8 @@ use mesa::{
     cfs::{
         self,
         configuration::mesa::r#struct::{
-            cfs_configuration_request::v2::CfsConfigurationRequest,
-            cfs_configuration_response::v2::CfsConfigurationResponse,
+            cfs_configuration_request::v3::CfsConfigurationRequest,
+            cfs_configuration_response::v3::CfsConfigurationResponse,
         },
         session::mesa::r#struct::v3::CfsSessionPostRequest,
     },
@@ -635,20 +635,22 @@ pub async fn create_cfs_configuration_from_sat_file(
         sat_file_configuration_yaml
     );
 
-    let mut cfs_configuration = CfsConfigurationRequest::from_sat_file_serde_yaml(
-        shasta_root_cert,
-        gitea_base_url,
-        gitea_token,
-        sat_file_configuration_yaml,
-        cray_product_catalog,
-    )
-    .await;
+    let (cfs_configuration_name, mut cfs_configuration) =
+        CfsConfigurationRequest::from_sat_file_serde_yaml(
+            shasta_root_cert,
+            gitea_base_url,
+            gitea_token,
+            sat_file_configuration_yaml,
+            cray_product_catalog,
+        )
+        .await;
 
     if !dry_run {
         cfs::configuration::mesa::utils::create(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+            &cfs_configuration_name,
             &mut cfs_configuration,
         )
         .await
@@ -656,7 +658,7 @@ pub async fn create_cfs_configuration_from_sat_file(
         println!("Create CFS configuration:\n{:#?}", cfs_configuration);
 
         let cfs_configuration = CfsConfigurationResponse {
-            name: cfs_configuration.name,
+            name: cfs_configuration_name,
             last_updated: "".to_string(),
             layers: Vec::new(),
             additional_inventory: None,

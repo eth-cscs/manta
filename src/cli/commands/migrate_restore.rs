@@ -4,14 +4,22 @@ use humansize::DECIMAL;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
 use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_request::v2::CfsConfigurationRequest;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
-use mesa::hsm::group::http_client::{create_new_hsm_group, delete_hsm_group};
-use mesa::hsm::group::r#struct::HsmGroup;
-use mesa::ims::image::mesa::utils::update_image;
-use mesa::ims::image::r#struct::{Image, ImsImageRecord2Update, Link};
-use mesa::ims::image::utils::{get_fuzzy, register_new_image};
-use mesa::ims::s3::{s3_auth, s3_multipart_upload_object, s3_upload_object, BAR_FORMAT};
+use mesa::cfs::configuration::mesa::r#struct::{
+    cfs_configuration_request::v3::CfsConfigurationRequest,
+    cfs_configuration_response::v3::CfsConfigurationResponse,
+};
+use mesa::hsm::group::{
+    http_client::{create_new_hsm_group, delete_hsm_group},
+    r#struct::HsmGroup,
+};
+use mesa::ims::{
+    image::{
+        mesa::utils::update_image,
+        r#struct::{Image, ImsImageRecord2Update, Link},
+        utils::{get_fuzzy, register_new_image},
+    },
+    s3::{s3_auth, s3_multipart_upload_object, s3_upload_object, BAR_FORMAT},
+};
 use mesa::{bos, cfs};
 use serde::{Deserialize, Serialize};
 use std::fs;

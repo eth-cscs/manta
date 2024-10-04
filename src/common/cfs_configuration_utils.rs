@@ -7,8 +7,8 @@ use mesa::{
     cfs::{
         configuration::mesa::r#struct::{
             cfs_configuration::ConfigurationDetails,
-            cfs_configuration_request::v2::{CfsConfigurationRequest, Layer},
-            cfs_configuration_response::v2::CfsConfigurationResponse,
+            cfs_configuration_request::v3::{CfsConfigurationRequest, Layer},
+            cfs_configuration_response::v3::CfsConfigurationResponse,
         },
         session::mesa::r#struct::v3::CfsSessionGetResponse,
     },
@@ -152,7 +152,7 @@ pub async fn create_from_repos(
 ) -> CfsConfigurationRequest {
     // Create CFS configuration
     let mut cfs_configuration = CfsConfigurationRequest::new();
-    cfs_configuration.name = cfs_configuration_name.to_string();
+    // cfs_configuration.name = cfs_configuration_name.to_string();
 
     for repo_path in &repos {
         // Get repo from path
@@ -215,13 +215,13 @@ pub async fn create_from_repos(
 
         // Create CFS layer
         let cfs_layer = Layer::new(
-            clone_url,
+            Some(clone_url),
             Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
-            format!(
+            Some(format!(
                 "{}-{}",
                 repo_name.substring(0, repo_name.len()),
                 chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-            ),
+            )),
             String::from("site.yml"),
             None,
             None,
