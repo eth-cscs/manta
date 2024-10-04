@@ -1,6 +1,6 @@
 use mesa::hsm;
 
-use crate::cli::commands::update_node;
+use crate::cli::commands::apply_boot_node;
 
 /// Updates boot params and desired configuration for all nodes that belongs to a HSM group
 /// If boot params defined, then nodes in HSM group will be rebooted
@@ -35,7 +35,7 @@ pub async fn exec(
     let nodes: Vec<String> =
         hsm::group::utils::get_member_vec_from_hsm_group(hsm_group_details.first().unwrap());
 
-    update_node::exec(
+    apply_boot_node::exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

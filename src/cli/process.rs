@@ -8,7 +8,7 @@ use mesa::common::authentication;
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes, apply_cluster, apply_configuration,
+    self, add_hw_component_cluster, add_nodes, apply_boot_node, apply_cluster, apply_configuration,
     apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_image, apply_sat_file,
     apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
     config_set_site,
@@ -21,7 +21,6 @@ use super::commands::{
     power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
     power_reset_nodes, remove_hw_component_cluster, remove_nodes, set_boot_configuration,
     set_boot_image, set_kernel_parameters, set_runtime_configuration, update_hsm_group,
-    update_node,
 };
 
 pub async fn process_cli(
@@ -1234,136 +1233,136 @@ pub async fn process_cli(
                         .unwrap_or(&false),
                 )
                 .await;
-            } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
-                log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
+            /* } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
+            log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
 
-                get_target_hsm_group_vec_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    None,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
+            get_target_hsm_group_vec_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                settings_hsm_group_name_opt,
+            )
+            .await;
 
-                let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                )
-                .await;
+            let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+            )
+            .await;
 
-                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-                let cli_value_vec_opt: Option<Vec<String>> =
-                    cli_apply_image.get_many("values").map(|value_vec| {
-                        value_vec
-                            .map(|value: &String| value.replace("__DATE__", &timestamp))
-                            .collect()
-                    });
+            let cli_value_vec_opt: Option<Vec<String>> =
+                cli_apply_image.get_many("values").map(|value_vec| {
+                    value_vec
+                        .map(|value: &String| value.replace("__DATE__", &timestamp))
+                        .collect()
+                });
 
-                let cli_values_file_content_opt: Option<String> = cli_apply_image
-                    .get_one("values-file")
-                    .and_then(|values_file_path: &PathBuf| {
-                        std::fs::read_to_string(values_file_path).ok().map(
-                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
-                        )
-                    });
+            let cli_values_file_content_opt: Option<String> = cli_apply_image
+                .get_one("values-file")
+                .and_then(|values_file_path: &PathBuf| {
+                    std::fs::read_to_string(values_file_path).ok().map(
+                        |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                    )
+                });
 
-                let sat_file_content: String = std::fs::read_to_string(
-                    cli_apply_image
-                        .get_one::<PathBuf>("sat-template-file")
-                        .expect("ERROR: SAT file not found. Exit"),
-                )
-                .expect("ERROR: reading SAT file template. Exit");
+            let sat_file_content: String = std::fs::read_to_string(
+                cli_apply_image
+                    .get_one::<PathBuf>("sat-template-file")
+                    .expect("ERROR: SAT file not found. Exit"),
+            )
+            .expect("ERROR: reading SAT file template. Exit");
 
-                apply_image::exec(
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
-                    sat_file_content,
-                    cli_values_file_content_opt,
-                    cli_value_vec_opt,
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    // base_image_id,
-                    cli_apply_image
-                        .get_one::<String>("ansible-verbosity")
-                        .cloned()
-                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
-                    cli_apply_image.get_one::<String>("ansible-passthrough"),
-                    cli_apply_image.get_one::<bool>("watch-logs"),
-                    // &tag,
-                    &hsm_group_available_vec,
-                    k8s_api_url,
-                    gitea_base_url,
-                    gitea_token,
-                    cli_apply_image.get_one::<String>("output"),
-                )
-                .await;
-            } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
-                log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
+            apply_image::exec(
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                sat_file_content,
+                cli_values_file_content_opt,
+                cli_value_vec_opt,
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                // base_image_id,
+                cli_apply_image
+                    .get_one::<String>("ansible-verbosity")
+                    .cloned()
+                    .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
+                cli_apply_image.get_one::<String>("ansible-passthrough"),
+                cli_apply_image.get_one::<bool>("watch-logs"),
+                // &tag,
+                &hsm_group_available_vec,
+                k8s_api_url,
+                gitea_base_url,
+                gitea_token,
+                cli_apply_image.get_one::<String>("output"),
+            )
+            .await; */
+            /* } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
+            log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    None,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
+            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                settings_hsm_group_name_opt,
+            )
+            .await;
 
-                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
+            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
-                let cli_value_vec_opt: Option<Vec<String>> =
-                    cli_apply_cluster.get_many("values").map(|value_vec| {
-                        value_vec
-                            .map(|value: &String| value.replace("__DATE__", &timestamp))
-                            .collect()
-                    });
+            let cli_value_vec_opt: Option<Vec<String>> =
+                cli_apply_cluster.get_many("values").map(|value_vec| {
+                    value_vec
+                        .map(|value: &String| value.replace("__DATE__", &timestamp))
+                        .collect()
+                });
 
-                let cli_values_file_content_opt: Option<String> = cli_apply_cluster
-                    .get_one("values-file")
-                    .and_then(|values_file_path: &PathBuf| {
-                        std::fs::read_to_string(values_file_path).ok().map(
-                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
-                        )
-                    });
+            let cli_values_file_content_opt: Option<String> = cli_apply_cluster
+                .get_one("values-file")
+                .and_then(|values_file_path: &PathBuf| {
+                    std::fs::read_to_string(values_file_path).ok().map(
+                        |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
+                    )
+                });
 
-                let sat_file_content: String = std::fs::read_to_string(
-                    cli_apply_cluster
-                        .get_one::<PathBuf>("sat-template-file")
-                        .expect("ERROR: SAT file not found. Exit"),
-                )
-                .expect("ERROR: reading SAT file template. Exit");
+            let sat_file_content: String = std::fs::read_to_string(
+                cli_apply_cluster
+                    .get_one::<PathBuf>("sat-template-file")
+                    .expect("ERROR: SAT file not found. Exit"),
+            )
+            .expect("ERROR: reading SAT file template. Exit");
 
-                apply_cluster::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
-                    k8s_api_url,
-                    sat_file_content,
-                    cli_values_file_content_opt,
-                    cli_value_vec_opt,
-                    settings_hsm_group_name_opt,
-                    &target_hsm_group_vec,
-                    cli_apply_cluster
-                        .get_one::<String>("ansible-verbosity")
-                        .cloned()
-                        .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
-                    cli_apply_cluster.get_one::<String>("ansible-passthrough"),
-                    gitea_base_url,
-                    gitea_token,
-                    // &tag,
-                    *cli_apply_cluster
-                        .get_one::<bool>("do-not-reboot")
-                        .unwrap_or(&false),
-                )
-                .await;
+            apply_cluster::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
+                sat_file_content,
+                cli_values_file_content_opt,
+                cli_value_vec_opt,
+                settings_hsm_group_name_opt,
+                &target_hsm_group_vec,
+                cli_apply_cluster
+                    .get_one::<String>("ansible-verbosity")
+                    .cloned()
+                    .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
+                cli_apply_cluster.get_one::<String>("ansible-passthrough"),
+                gitea_base_url,
+                gitea_token,
+                // &tag,
+                *cli_apply_cluster
+                    .get_one::<bool>("do-not-reboot")
+                    .unwrap_or(&false),
+            )
+            .await; */
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
                 /* let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
@@ -1460,20 +1459,20 @@ pub async fn process_cli(
                     false,
                 )
                 .await;
-            } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
-                apply_template::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    cli_apply_template
-                        .get_one::<String>("template-name")
-                        .expect("template-name parameter missing"),
-                    cli_apply_template
-                        .get_one::<String>("operation")
-                        .expect("operation parameter missing"),
-                    cli_apply_template.get_one::<String>("limit"),
-                )
-                .await;
+            /* } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
+            apply_template::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                cli_apply_template
+                    .get_one::<String>("template-name")
+                    .expect("template-name parameter missing"),
+                cli_apply_template
+                    .get_one::<String>("operation")
+                    .expect("operation parameter missing"),
+                cli_apply_template.get_one::<String>("limit"),
+            )
+            .await; */
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
                 if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
                     log::warn!("Deprecated - Please use 'manta power on' command instead.");
@@ -1654,7 +1653,7 @@ pub async fn process_cli(
                         .await;
                     }
 
-                    update_node::exec(
+                    apply_boot_node::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1716,7 +1715,7 @@ pub async fn process_cli(
                     .await;
                 }
 
-                update_node::exec(
+                apply_boot_node::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

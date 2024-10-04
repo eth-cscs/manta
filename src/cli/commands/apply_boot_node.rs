@@ -117,7 +117,7 @@ pub async fn exec(
                 );
 
                 boot_parameter.add_kernel_params(&new_kernel_parameters);
-                boot_parameter.upsert_boot_image(&boot_parameter.get_boot_image());
+                boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
             });
 
         need_restart = true;
