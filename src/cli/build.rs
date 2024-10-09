@@ -791,7 +791,7 @@ pub fn subcommand_set_runtime_configuration() -> Command {
 pub fn subcommand_set_boot_image() -> Command {
     Command::new("boot-image")
         .visible_alias("bi")
-        .about("Set boot image to boot a set of nodes or all nodes in a cluster")
+        .about("Set boot image to boot a set of nodes or all nodes in a cluster. This command preprocess node's kernel parameters.")
         .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true))
         .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
@@ -820,7 +820,7 @@ pub fn subcommand_set_boot_configuration() -> Command {
 pub fn subcommand_set_kernel_params() -> Command {
     Command::new("kernel-parameters")
         .visible_alias("kp")
-        .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster.")
+        .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster. This command literally replaces boot params without preprocessing.")
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true))
         .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
