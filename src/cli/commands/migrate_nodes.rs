@@ -7,7 +7,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     target_hsm_group_name: &str,
-    parent_hsm_group_name: &str,
+    // parent_hsm_group_name: &str,
     xname_requested_hostlist: &str,
     nodryrun: bool,
     create_hsm_group: bool,
@@ -61,6 +61,16 @@ pub async fn exec(
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();
 
+    println!(
+        "DEBUG - nodes in hostlist: {}, nodes hostlist filtered by cluster/group: {}",
+        xname_requested_vec.len(),
+        xname_to_move_vec.len()
+    );
+    for (hsm_group_name, hsm_group_members) in &hsm_group_summary {
+        println!("{}: {}", hsm_group_name, hsm_group_members.len());
+    }
+    println!("DEBUG - xnames to move: {:?}", xname_to_move_vec);
+
     if mesa::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -97,33 +107,37 @@ pub async fn exec(
         }
     }
 
-    let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        target_hsm_group_name,
-        parent_hsm_group_name,
-        xname_to_move_vec
-            .iter()
-            .map(|xname| xname.as_str())
-            .collect(),
-        nodryrun,
-    )
-    .await;
+    // Migrate nodes
+    for (parent_hsm_group_name, parent_members) in hsm_group_summary {
+        println!(
+            "DEBUG - migrate nodes {:?} from '{}' to '{}'",
+            parent_members, parent_hsm_group_name, target_hsm_group_name
+        );
+        let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            target_hsm_group_name,
+            &parent_hsm_group_name,
+            parent_members.iter().map(|xname| xname.as_str()).collect(),
+            nodryrun,
+        )
+        .await;
 
-    match node_migration_rslt {
-        Ok((mut target_hsm_group_member_vec, mut parent_hsm_group_member_vec)) => {
-            target_hsm_group_member_vec.sort();
-            parent_hsm_group_member_vec.sort();
-            println!(
-                "HSM '{}' members: {:?}",
-                target_hsm_group_name, target_hsm_group_member_vec
-            );
-            println!(
-                "HSM '{}' members: {:?}",
-                parent_hsm_group_name, parent_hsm_group_member_vec
-            );
+        match node_migration_rslt {
+            Ok((mut target_hsm_group_member_vec, mut parent_hsm_group_member_vec)) => {
+                target_hsm_group_member_vec.sort();
+                parent_hsm_group_member_vec.sort();
+                println!(
+                    "HSM '{}' members: {:?}",
+                    target_hsm_group_name, target_hsm_group_member_vec
+                );
+                println!(
+                    "HSM '{}' members: {:?}",
+                    parent_hsm_group_name, parent_hsm_group_member_vec
+                );
+            }
+            Err(e) => eprintln!("{}", e),
         }
-        Err(e) => eprintln!("{}", e),
     }
 }

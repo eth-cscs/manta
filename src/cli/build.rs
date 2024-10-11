@@ -426,8 +426,6 @@ pub fn subcommand_apply_hw_configuration() -> Command {
             .arg(arg!(-c --"create-target-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
             .arg(arg!(-d --"delete-empty-parent-hsm-group" "If the target HSM group is empty after this action, remove it."))
             .arg(arg!(-u --"unpin-nodes" "It will try to get any nodes available."))
-
-                    // .arg(arg!(-f --file <SAT_FILE> "file with hw configuration details").value_parser(value_parser!(PathBuf)).required(true))
         )
 }
 

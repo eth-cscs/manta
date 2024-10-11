@@ -34,6 +34,7 @@ pub mod get_session;
 pub mod get_template;
 pub mod log;
 pub mod migrate_backup;
+pub mod migrate_nodes;
 pub mod migrate_restore;
 pub mod power_off_cluster;
 pub mod power_off_nodes;
