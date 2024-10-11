@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.17] - 2024-10-11
+
+### Features
+
+- Migration node command now accepts a hostlist as list of input nodes
+
+### Refactor
+
+- Update cli docs
+
 ## [1.50.16] - 2024-10-04
 
 ### Features
 
 - Migrate to CFS configuration v3
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.16
 
 ## [1.50.15] - 2024-10-04
 
