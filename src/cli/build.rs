@@ -122,8 +122,8 @@ pub fn build_cli() -> Command {
                     .arg_required_else_help(true)
                     .about("Migrate nodes across vClusters")
                     .arg(arg!(-f --from <VALUE> "The name of the source vCluster from which the compute nodes will be moved."))
-                    .arg(arg!(-t --to <VALUE> "The name of the target vCluster to which the compute nodes will be moved."))
-                    .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
+                    .arg(arg!(-t --to <VALUE> "The name of the target vCluster to which the compute nodes will be moved.").required(true))
+                    .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'").required(true))
                     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
                 ),
         )

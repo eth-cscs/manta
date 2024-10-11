@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-
-use hostlist_parser::parse;
-
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -12,45 +8,17 @@ pub async fn exec(
     nodryrun: bool,
     create_hsm_group: bool,
 ) {
-    // Get list of nodes the user is targeting
-    //
-    // Expand hostlist to a list of xnames
-    let xname_requested_vec = parse(xname_requested_hostlist)
-        .expect("Error - `host_list` crate could not parse hostlist");
-
-    println!("DEBUG - hostlist expanded: {:?}", xname_requested_vec);
-
-    // Get final list of xnames to operate on
-    // Get list of HSM groups available
-    // NOTE: HSM available are the ones the user has access to
-    // let hsm_group_name_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
-
-    // Get all HSM groups in the system
-    // FIXME: client should not fetch all info in backend. Create a method in backend to do provide
-    // information already filtered to the client:
-    // mesa::hsm::groups::utils::get_hsm_group_available_vec(shasta_token, shasta_base_url,
-    // shasta_root_cert) -> Vec<HsmGroup> to get the list of HSM available to the user and return
-    // a Vec of HsmGroups the user has access to
-    let hsm_group_vec_all =
-        mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await
-            .expect("Error - fetching HSM groups");
-
-    // Create a summary of HSM groups and the list of members filtered by the list of nodes the
-    // user is targeting
-    let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
-    for hsm_group in hsm_group_vec_all {
-        let hsm_group_name: String = hsm_group.label;
-        let hsm_group_members: Vec<String> = hsm_group.members.unwrap().ids.unwrap();
-        let xname_filtered: Vec<String> = hsm_group_members
-            .iter()
-            .filter(|&xname| xname_requested_vec.contains(&xname))
-            .cloned()
-            .collect();
-        if !xname_filtered.is_empty() {
-            hsm_group_summary.insert(hsm_group_name, xname_filtered);
-        }
-    }
+    // Get HashMap with HSM groups and members curated for this request.
+    // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
+    // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
+    // hostlist have been removed
+    let hsm_group_summary = crate::common::node_ops::get_curated_hsm_group_from_hostlist(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        xname_requested_hostlist,
+    )
+    .await;
 
     // Get list of xnames available
     let mut xname_to_move_vec: Vec<&String> = hsm_group_summary
