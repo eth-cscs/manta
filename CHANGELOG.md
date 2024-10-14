@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.51.0] - 2024-10-14
+
+### Features
+
+- Add new command 'apply template' to crate a new BOS session from a BOS sessiontemplate
+
 ## [1.50.18] - 2024-10-14
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Prepare HSM goup operations for next version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.18
 
 ### Refactor
 
