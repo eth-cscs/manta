@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.51.3] - 2024-10-14
+
+### Features
+
+- 'get template' command now prints data in json format
+
 ## [1.51.2] - 2024-10-14
 
 ### Bug Fixes
 
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.51.2
 
 ## [1.51.1] - 2024-10-14
 
