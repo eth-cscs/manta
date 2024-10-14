@@ -169,9 +169,9 @@ pub async fn exec(
         .await;
 
         match create_bos_session_rslt {
-             Ok(_) => println!(
-                 "Template for nodes {:?} updated to '{}'.\nPlease wait a few minutes for CFS batcher to start. Otherwise reboot the nodes manually.",
-                 limit_vec_opt, bos_sessiontemplate_name
+             Ok(bos_session) => println!(
+                 "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
+                 bos_session["name"].as_str().unwrap(), bos_sessiontemplate_name
              ),
              Err(e) => eprintln!(
                  "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit", e),
