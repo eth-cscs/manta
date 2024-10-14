@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.51.1] - 2024-10-14
+
+### Bug Fixes
+
+- Improve output message
+
 ## [1.51.0] - 2024-10-14
 
 ### Features
 
 - Add new command 'apply template' to crate a new BOS session from a BOS sessiontemplate
+
+### Miscellaneous Tasks
+
+- Release manta version 1.51.0
 
 ## [1.50.18] - 2024-10-14
 
