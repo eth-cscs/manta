@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.51.2] - 2024-10-14
+
+### Bug Fixes
+
+- Update mesa
+
 ## [1.51.1] - 2024-10-14
 
 ### Bug Fixes
 
 - Improve output message
+
+### Miscellaneous Tasks
+
+- Release manta version 1.51.1
 
 ## [1.51.0] - 2024-10-14
 
