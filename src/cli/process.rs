@@ -844,6 +844,10 @@ pub async fn process_cli(
             } else if let Some(cli_get_template) = cli_get.subcommand_matches("templates") {
                 let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
 
+                let output: &String = cli_get_template
+                    .get_one("output")
+                    .expect("ERROR - output must be a valid value");
+
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -877,6 +881,7 @@ pub async fn process_cli(
                     &hsm_member_vec,
                     cli_get_template.get_one::<String>("name"),
                     limit_number_opt,
+                    output,
                 )
                 .await;
             } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {

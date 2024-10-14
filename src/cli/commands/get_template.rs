@@ -6,6 +6,7 @@ pub async fn exec(
     hsm_member_vec: &[String],
     bos_sessiontemplate_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
+    output: &str,
 ) {
     log::info!(
         "Get BOS sessiontemplates for HSM groups: {:?}",
@@ -43,6 +44,13 @@ pub async fn exec(
         println!("No BOS template found!");
         std::process::exit(0);
     } else {
-        crate::common::bos_sessiontemplate_utils::print_table_struct(bos_sessiontemplate_vec);
+        if output == "table" {
+            crate::common::bos_sessiontemplate_utils::print_table_struct(bos_sessiontemplate_vec);
+        } else if output == "json" {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&bos_sessiontemplate_vec).unwrap()
+            );
+        }
     }
 }

@@ -265,7 +265,7 @@ pub fn subcommand_get_hw_components() -> Command {
                 .arg_required_else_help(true)
                 .about("Get hw components for a cluster")
                 .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json", "summary", "details"]).default_value("summary"));
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json", "summary", "details"]).default_value("summary"));
 
     let command_get_hs_configuration_node = Command::new("node")
                 .visible_alias("n")
@@ -273,7 +273,7 @@ pub fn subcommand_get_hw_components() -> Command {
                 .about("Get hw components for some nodes")
                 .arg(arg!(<XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'").required(true))
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]));
+                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
 
     Command::new("hw-component")
         .visible_alias("hw")
@@ -294,7 +294,7 @@ pub fn subcommand_get_cfs_configuration() -> Command {
             arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of CFS configurations created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (table) format").value_parser(["json"]))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
                 .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
         .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
@@ -314,7 +314,7 @@ pub fn subcommand_get_cfs_session() -> Command {
             arg!(-l --limit <VALUE> "Return only last <VALUE> sessions created")
                 .value_parser(value_parser!(u8).range(1..)),
         )
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (table) format").value_parser(["json"]))
         .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
         .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
@@ -336,6 +336,7 @@ pub fn subcommand_get_bos_template() -> Command {
                 .value_parser(value_parser!(u8).range(1..)),
         )
         .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json", "table"]).default_value("table"))
         .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"]))
 }
 
@@ -346,7 +347,7 @@ pub fn subcommand_get_cluster_details() -> Command {
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 }
@@ -357,7 +358,7 @@ pub fn subcommand_get_node_details() -> Command {
         .about("Get node details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
 }
@@ -368,7 +369,7 @@ pub fn subcommand_get_node_details() -> Command {
         .about("DEPRECATED - Please use 'manta get cluster' command instead.\nGet members of a HSM group")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (tabular) format").value_parser(["table", "json", "summary"]).default_value("table"))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
 } */
@@ -472,7 +473,7 @@ pub fn subcommand_apply_configuration() -> Command {
         .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
         .arg(arg!(-V --"values" <VALUES_PATH> ... "If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
         // .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
         // .arg(arg!(-n --name <VALUE> "Configuration name"))
         // .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").value_parser(value_parser!(PathBuf)))
         // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
@@ -505,7 +506,7 @@ pub fn subcommand_apply_configuration() -> Command {
             .default_missing_value("2"))
         .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
 } */
 
 /* pub fn subcommand_apply_template(/* hsm_group: Option<&String> */) -> Command {
@@ -540,7 +541,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
             .default_missing_value("2"))
         .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (tabular) format").value_parser(["json"]))
+        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
 }
 
 pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
