@@ -3,7 +3,7 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::common::authentication;
+use mesa::{common::authentication, error::Error};
 
 use crate::cli::commands::validate_local_repo;
 
@@ -12,7 +12,7 @@ use super::commands::{
     apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_image, apply_sat_file,
     apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
     config_set_site,
-    config_show::{self, get_hsm_name_available_from_jwt_or_all},
+    config_show::{self, get_hsm_name_available_from_jwt, get_hsm_name_available_from_jwt_or_all},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
@@ -615,12 +615,26 @@ pub async fn process_cli(
                     .get_one::<bool>("create-hsm-group")
                     .unwrap_or(&false);
 
+                let target_hsm_name_vec: Vec<String> = cli_add_nodes
+                    .get_one::<String>("target-cluster")
+                    .expect("Error - target cluster is mandatory")
+                    .split(",")
+                    .map(|hsm_name| hsm_name.trim().to_string())
+                    .collect();
+
+                let parent_hsm_name_vec: Vec<String> = cli_add_nodes
+                    .get_one::<String>("parent-cluster")
+                    .expect("Error - parent cluster is mandatory")
+                    .split(",")
+                    .map(|hsm_name| hsm_name.trim().to_string())
+                    .collect();
+
                 add_nodes::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    cli_add_nodes.get_one::<String>("target-cluster").unwrap(),
-                    cli_add_nodes.get_one::<String>("parent-cluster").unwrap(),
+                    target_hsm_name_vec,
+                    parent_hsm_name_vec,
                     cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
                     nodryrun,
                     create_hsm_group,
@@ -1862,27 +1876,33 @@ pub async fn process_cli(
             if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
                 let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
 
-                let from: &String = cli_migrate_nodes
-                    .get_one("from")
-                    .expect("from value is mandatory");
+                let from_opt: Option<&String> = cli_migrate_nodes.get_one("from");
                 let to: &String = cli_migrate_nodes
                     .get_one("to")
                     .expect("to value is mandatory");
 
                 let xnames_string: &String = cli_migrate_nodes.get_one("XNAMES").unwrap();
 
-                // Validate user has access to 'from' HSM group
-                let _ = get_target_hsm_group_vec_or_all(
+                // Get target hsm group from either cli arguments or config and validate
+                let from_rslt = get_target_hsm_name_group_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some(from),
+                    from_opt,
                     settings_hsm_group_name_opt,
                 )
                 .await;
 
-                // Validate user has access to 'to' HSM group
-                let _ = get_target_hsm_group_vec_or_all(
+                let from = match from_rslt {
+                    Ok(from) => from,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(1);
+                    }
+                };
+
+                // Validate 'to' hsm groups
+                let to_rslt = get_target_hsm_name_group_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1890,6 +1910,14 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                 )
                 .await;
+
+                let to = match to_rslt {
+                    Ok(to) => to,
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(1);
+                    }
+                };
 
                 // Migrate nodes
                 add_nodes::exec(
@@ -2219,10 +2247,69 @@ pub async fn process_cli(
     Ok(())
 }
 
+pub fn validate_hsm_groups(
+    target_hsm_name_vec: &Vec<String>,
+    hsm_name_available_vec: Vec<String>,
+) -> Result<(), Error> {
+    for target_hsm_name in target_hsm_name_vec {
+        if !hsm_name_available_vec.contains(&target_hsm_name) {
+            let err_msg = format!(
+                "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
+                target_hsm_name,
+                hsm_name_available_vec.join(", ")
+            );
+
+            return Err(Error::Message(err_msg));
+        }
+    }
+
+    Ok(())
+}
 /// Returns a list of HSM groups the user is expected to work with.
 /// This method will exit if the user is asking for HSM group not allowed
-/// If the user did not requested any HSM group, then it will return all HSM groups he has access
-/// to
+/// If the user did not requested any HSM group, then it will return all HSM
+/// groups he has access to
+/// hsm_group_cli_arg_opt: may contain a comma separated list of HSM groups defined in CLI command
+/// arguments
+/// hsm_group_env_or_config_file_opt: may contain a comma separated list of HSM groups defined in
+/// either environment variable or configuration file
+pub async fn get_target_hsm_name_group_vec(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    hsm_group_cli_arg_opt: Option<&String>,
+    hsm_group_env_or_config_file_opt: Option<&String>,
+) -> Result<Vec<String>, Error> {
+    let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt_or_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+    )
+    .await;
+
+    let target_hsm_name_vec = if let Some(hsm_group_cli_arg) = hsm_group_cli_arg_opt {
+        hsm_group_cli_arg
+            .split(",")
+            .map(|hsm_group| hsm_group.trim().to_string())
+            .collect()
+    } else if let Some(hsm_group_env_or_config_file) = hsm_group_env_or_config_file_opt {
+        hsm_group_env_or_config_file
+            .split(",")
+            .map(|hsm_group| hsm_group.trim().to_string())
+            .collect()
+    } else {
+        hsm_name_available_vec.clone()
+    };
+
+    validate_hsm_groups(&target_hsm_name_vec, hsm_name_available_vec);
+
+    Ok(target_hsm_name_vec.clone())
+}
+
+/// Returns a list of HSM groups the user is expected to work with.
+/// This method will exit if the user is asking for HSM group not allowed
+/// If the user did not requested any HSM group, then it will return all HSM
+/// groups he has access to
 pub async fn get_target_hsm_group_vec_or_all(
     shasta_token: &str,
     shasta_base_url: &str,
