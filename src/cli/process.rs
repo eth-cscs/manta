@@ -1473,38 +1473,39 @@ pub async fn process_cli(
                     false,
                 )
                 .await;
-            /* } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
-            apply_template::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                cli_apply_template
-                    .get_one::<String>("template-name")
-                    .expect("template-name parameter missing"),
-                cli_apply_template
-                    .get_one::<String>("operation")
-                    .expect("operation parameter missing"),
-                cli_apply_template.get_one::<String>("limit"),
-            )
-            .await; */
+            } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
+                let bos_session_name_opt: Option<&String> = cli_apply_template.get_one("name");
+                let bos_sessiontemplate_name: &String = cli_apply_template
+                    .get_one("template")
+                    .expect("ERROR - template name is mandatory");
+                let limit_opt: Option<&String> = cli_apply_template.get_one("limit");
+                let bos_session_operation: &String = cli_apply_template
+                    .get_one("operation")
+                    .expect("ERROR - operation is mandatory");
+
+                let include_disabled: bool = *cli_apply_template
+                    .get_one("include-disabled")
+                    .expect("ERROR - include disabled must have a value");
+
+                let dry_run: bool = *cli_apply_template
+                    .get_one("dry-run")
+                    .expect("ERROR - dry-run must have a value");
+
+                apply_template::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos_session_name_opt,
+                    &bos_sessiontemplate_name,
+                    &bos_session_operation,
+                    limit_opt,
+                    include_disabled,
+                    dry_run,
+                )
+                .await;
             } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
                 if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
                     log::warn!("Deprecated - Please use 'manta power on' command instead.");
-
-                    /* apply_node_on::exec(
-                        settings_hsm_group_name_opt,
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        cli_apply_node_on
-                            .get_one::<String>("XNAMES")
-                            .unwrap()
-                            .split(',')
-                            .map(|xname| xname.trim())
-                            .collect(),
-                        cli_apply_node_on.get_one::<String>("reason").cloned(),
-                    )
-                    .await; */
 
                     let xname_vec: Vec<String> = cli_apply_node_on
                         .get_one::<String>("XNAMES")
@@ -1712,6 +1713,101 @@ pub async fn process_cli(
                     .await;
                 }
             }
+            /* else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
+                let name_opt: Option<&String> = cli_apply_template.get_one("name");
+                let template_name: &String = cli_apply_template
+                    .get_one("template")
+                    .expect("ERROR - template name is mandatory");
+                let limit_opt: Option<&String> = cli_apply_template.get_one("limit");
+                let operation: &String = cli_apply_template
+                    .get_one("operation")
+                    .expect("ERROR - operation is mandatory");
+
+                let operation =
+                    mesa::bos::session::shasta::http_client::v2::Operation::from_str(operation)
+                        .expect("ERROR - operation not valid");
+
+                let include_disabled: bool = *cli_apply_template
+                    .get_one("include-disabled")
+                    .expect("ERROR - include disabled must have a value");
+
+                let dry_run: bool = *cli_apply_template
+                    .get_one("dry-run")
+                    .expect("ERROR - dry-run must have a value");
+
+                // Validate BOS sessiontemplate exists and user has access to it
+                let bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    Some(template_name),
+                )
+                .await
+                .expect("ERROR - template not found.");
+
+                let bos_sessiontemplate = bos_sessiontemplate_vec
+                    .first()
+                    .expect("ERROR - template not found");
+
+                if !bos_sessiontemplate.get_target_hsm().is_empty() {
+                    // Validate if user has access to HSM groups in BOS session template
+                    let hsm_group_name_vec = bos_sessiontemplate.get_target_hsm();
+
+                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_rslt.unwrap_or(None),
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+
+                    // validate_hsm_groups(shasta_root_cert, shasta_root_cert, shasta_root_cert, hsm_group_name_vec),await;
+                    get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        Some(&target_hsm_group_vec.join(",")),
+                        settings_hsm_group_name_opt,
+                    )
+                    .await;
+                } else {
+                    // Validate if user has access to xnames in BOS session template
+                    let xname_vec = bos_sessiontemplate.get_target_xname();
+
+                    let _ = validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.clone(),
+                    )
+                    .await;
+                }
+
+                let bos_session = mesa::bos::session::shasta::http_client::v2::BosSession {
+                    name: name_opt.cloned(),
+                    tenant: None,
+                    operation: Some(operation),
+                    template_name: template_name.clone(),
+                    limit: limit_opt.cloned(),
+                    stage: None,
+                    components: None,
+                    include_disabled: Some(include_disabled),
+                    status: None,
+                };
+
+                if dry_run {
+                    println!("dry-run - BOS session to create:\n{:#?}", bos_session);
+                } else {
+                    let _ = mesa::bos::session::shasta::http_client::v2::post(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        bos_session,
+                    )
+                    .await;
+                }
+            } */
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
                 log::warn!("Deprecated - Please use 'manta apply boot nodes' command instead.");
@@ -2420,7 +2516,7 @@ pub async fn validate_target_hsm_members(
     {
         hsm_group_members_opt
     } else {
-        println!("Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit", hsm_group_members_opt.join(","), hsm_groups_user_has_access.join(","));
+        println!("Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit", hsm_group_members_opt.join(", "), hsm_groups_user_has_access.join(", "));
         std::process::exit(1);
     }
 }

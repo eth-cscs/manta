@@ -6,9 +6,12 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    bos_session_name_opt: Option<&String>,
     bos_sessiontemplate_name: &str,
     bos_session_operation: &str,
     limit_opt: Option<&String>,
+    include_disabled: bool,
+    dry_run: bool,
 ) {
     //***********************************************************
     // GET DATA
@@ -43,14 +46,18 @@ pub async fn exec(
     } else {
         bos_sessiontemplate_vec.first().unwrap()
     };
+
     // END GET DATA
     //***********************************************************
 
     //***********************************************************
     // VALIDATION
     //
-    // Validate user has access to the HSM groups and/or xnames in the BOS sessiontemplate
+    log::info!("Start BOS sessiontemplate validation");
+
+    // Validate user has access to the BOS sessiontemplate targets (either HSM groups or xnames)
     //
+    log::info!("Validate user has access to HSM group in BOS sessiontemplate");
     let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
     let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
         mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
@@ -74,20 +81,58 @@ pub async fn exec(
 
     // Validate user has access to the xnames defined in `limit` argument
     //
+    log::info!("Validate user has access to xnames in BOS sessiontemplate");
     let limit_vec_opt = if let Some(limit) = limit_opt {
         let limit_vec: Vec<String> = limit.split(",").map(|value| value.to_string()).collect();
+        let mut xnames_to_validate_access_vec = Vec::new();
+        for limit_value in &limit_vec {
+            log::info!("Check if limit value '{}', is an xname", limit_value);
+            if mesa::node::utils::validate_xname_format(limit_value) {
+                // limit_value is an xname
+                log::info!("limit value '{}' is an xname", limit_value);
+                xnames_to_validate_access_vec.push(limit_value.to_string());
+            } else if let Some(mut hsm_members_vec) =
+                mesa::hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    limit_value,
+                )
+                .await
+            {
+                // limit_value is an HSM group
+                log::info!(
+                    "Check if limit value '{}', is an HSM group name",
+                    limit_value
+                );
+
+                xnames_to_validate_access_vec.append(&mut hsm_members_vec);
+            } else {
+                // limit_value neither is an xname nor an HSM group
+                panic!(
+                    "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
+                    limit_value
+                );
+            }
+        }
+
+        log::info!("Validate list of xnames translated from 'limit argument'");
+
         let _ = validate_target_hsm_members(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            limit_vec.clone(),
+            xnames_to_validate_access_vec,
         )
         .await;
+
+        log::info!("Access to '{}' granted. Continue.", limit);
 
         Some(limit_vec)
     } else {
         None
     };
+
     // END VALIDATION
     //***********************************************************
 
@@ -97,8 +142,7 @@ pub async fn exec(
     // Create BOS session request payload
     //
     let bos_session = bos::session::shasta::http_client::v2::BosSession {
-        // name: Some(bos_sessiontemplate_name.to_string()),
-        name: None,
+        name: bos_session_name_opt.cloned(),
         tenant: None,
         operation: bos::session::shasta::http_client::v2::Operation::from_str(
             bos_session_operation,
@@ -108,27 +152,30 @@ pub async fn exec(
         limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
         stage: Some(false),
         components: None,
-        include_disabled: None,
+        include_disabled: Some(include_disabled),
         status: None,
     };
 
-    let create_bos_session_rslt = bos::session::shasta::http_client::v2::post(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        bos_session,
-    )
-    .await;
+    if dry_run {
+        println!("Dry-run enabled. No changes persisted into the system");
+        println!("BOS session info:\n{:#?}", bos_session);
+    } else {
+        let create_bos_session_rslt = bos::session::shasta::http_client::v2::post(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            bos_session,
+        )
+        .await;
 
-    match create_bos_session_rslt {
-        Ok(_) => println!(
-            "Template for nodes {:?} updated to '{}'.\nPlease wait a few minutes for CFS batcher to start. Otherwise reboot the nodes manually.",
-            limit_vec_opt, bos_sessiontemplate_name
-        ),
-        Err(e) => eprintln!(
-            "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit",
-            e
-        ),
+        match create_bos_session_rslt {
+             Ok(_) => println!(
+                 "Template for nodes {:?} updated to '{}'.\nPlease wait a few minutes for CFS batcher to start. Otherwise reboot the nodes manually.",
+                 limit_vec_opt, bos_sessiontemplate_name
+             ),
+             Err(e) => eprintln!(
+                 "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit", e),
+         }
     }
     // END CREATE BOS SESSION
     //***********************************************************
