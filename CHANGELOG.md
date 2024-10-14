@@ -2,11 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.18] - 2024-10-14
+
+### Bug Fixes
+
+- Set mandatory arguments to migrate nodes command
+
+### Features
+
+- Prepare HSM goup operations for next version
+
+### Refactor
+
+- Create new function to get a curated list of hosts from a
+
 ## [1.50.17] - 2024-10-11
 
 ### Features
 
 - Migration node command now accepts a hostlist as list of input nodes
+
+### Miscellaneous Tasks
+
+- Release manta version 1.50.17
 
 ### Refactor
 
