@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 
+/// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     target_hsm_name_vec: Vec<String>,
-    parent_hsm_name_vec: Vec<String>,
     xname_requested_hostlist: &str,
     nodryrun: bool,
-    create_hsm_group: bool,
+    remove_empty_hsm_group: bool,
 ) {
+    // Filter xnames to the ones members to HSM groups the user has access to
+    //
     // Get HashMap with HSM groups and members curated for this request.
     // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
     // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
@@ -23,8 +25,8 @@ pub async fn exec(
         )
         .await;
 
-    // Keep HSM groups based on list of parent HSM groups provided
-    hsm_group_summary.retain(|hsm_name, _xname_vec| parent_hsm_name_vec.contains(hsm_name));
+    // Keep HSM groups based on list of target HSM groups provided
+    hsm_group_summary.retain(|hsm_name, _xname_vec| target_hsm_name_vec.contains(hsm_name));
 
     // Get list of xnames available
     let mut xname_to_move_vec: Vec<&String> = hsm_group_summary
@@ -53,36 +55,23 @@ pub async fn exec(
         {
             log::debug!("The HSM group {} exists, good.", target_hsm_name);
         } else {
-            if create_hsm_group {
+            if remove_empty_hsm_group {
                 log::info!(
                     "HSM group {} does not exist, it will be created",
                     target_hsm_name
                 );
-                /* mesa::hsm::group::http_client::create_new_hsm_group(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &target_hsm_name,
-                    &[],
-                    "false",
-                    "",
-                    &[],
-                )
-                .await
-                .expect("Unable to create new HSM group"); */
             } else {
                 log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_name);
                 std::process::exit(1);
             }
         }
 
-        for (parent_hsm_name, xname_to_move_vec) in &hsm_group_summary {
-            let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
+        for (target_hsm_name, xname_to_move_vec) in &hsm_group_summary {
+            let node_migration_rslt = mesa::hsm::group::utils::remove_hsm_members(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 &target_hsm_name,
-                &parent_hsm_name,
                 xname_to_move_vec
                     .iter()
                     .map(|xname| xname.as_str())
@@ -92,16 +81,11 @@ pub async fn exec(
             .await;
 
             match node_migration_rslt {
-                Ok((mut target_hsm_group_member_vec, mut parent_hsm_group_member_vec)) => {
+                Ok(mut target_hsm_group_member_vec) => {
                     target_hsm_group_member_vec.sort();
-                    parent_hsm_group_member_vec.sort();
                     println!(
                         "HSM '{}' members: {:?}",
                         target_hsm_name, target_hsm_group_member_vec
-                    );
-                    println!(
-                        "HSM '{}' members: {:?}",
-                        parent_hsm_name, parent_hsm_group_member_vec
                     );
                 }
                 Err(e) => eprintln!("{}", e),

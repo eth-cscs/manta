@@ -10,6 +10,8 @@ pub async fn exec(
     nodryrun: bool,
     create_hsm_group: bool,
 ) {
+    // Filter xnames to the ones members to HSM groups the user has access to
+    //
     // Get HashMap with HSM groups and members curated for this request.
     // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
     // the hostlist input. Also, each HSM goup member list is also curated so xnames not in

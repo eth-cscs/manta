@@ -178,6 +178,22 @@ pub fn build_cli() -> Command {
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
             .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
         )
+        .subcommand(Command::new("add-nodes-to-groups")
+            .visible_aliases(["ag"])
+            .about("Add nodes to a list of groups")
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+            .arg(arg!(-g --groups <VALUE> "Comma separated list of groups"))
+            .arg(arg!(-c --create "Create the group if missing"))
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+        )
+       .subcommand(Command::new("delete-nodes-from-groups")
+           .visible_aliases(["dg"])
+           .about("Remove nodes from groups")
+           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+           .arg(arg!(-g --groups <VALUE> "Comma separated list of groups"))
+           .arg(arg!(-c --clean "Delete the group if empty"))
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+       )
 }
 
 pub fn subcommand_config() -> Command {

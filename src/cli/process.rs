@@ -8,19 +8,20 @@ use mesa::{common::authentication, error::Error};
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes, apply_boot_node, apply_cluster, apply_configuration,
-    apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_image, apply_sat_file,
-    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
-    config_set_site,
+    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node, apply_cluster,
+    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin,
+    apply_image, apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
+    config_set_parent_hsm, config_set_site,
     config_show::{self, get_hsm_name_available_from_jwt, get_hsm_name_available_from_jwt_or_all},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
     get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
-    power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
-    power_reset_nodes, remove_hw_component_cluster, remove_nodes, set_boot_configuration,
-    set_boot_image, set_kernel_parameters, set_runtime_configuration, update_hsm_group,
+    migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
+    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
+    remove_nodes_from_hsm_groups, set_boot_configuration, set_boot_image, set_kernel_parameters,
+    set_runtime_configuration, update_hsm_group,
 };
 
 pub async fn process_cli(
@@ -607,39 +608,6 @@ pub async fn process_cli(
                     create_hsm_group,
                 )
                 .await;
-            } else if let Some(cli_add_nodes) = cli_add.subcommand_matches("nodes") {
-                log::warn!("Deprecated - Please use 'manta migrate nodes' command instead.");
-                let nodryrun = *cli_add_nodes.get_one::<bool>("no-dryrun").unwrap_or(&true);
-
-                let create_hsm_group = *cli_add_nodes
-                    .get_one::<bool>("create-hsm-group")
-                    .unwrap_or(&false);
-
-                let target_hsm_name_vec: Vec<String> = cli_add_nodes
-                    .get_one::<String>("target-cluster")
-                    .expect("Error - target cluster is mandatory")
-                    .split(",")
-                    .map(|hsm_name| hsm_name.trim().to_string())
-                    .collect();
-
-                let parent_hsm_name_vec: Vec<String> = cli_add_nodes
-                    .get_one::<String>("parent-cluster")
-                    .expect("Error - parent cluster is mandatory")
-                    .split(",")
-                    .map(|hsm_name| hsm_name.trim().to_string())
-                    .collect();
-
-                add_nodes::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_name_vec,
-                    parent_hsm_name_vec,
-                    cli_add_nodes.get_one::<String>("XNAMES").unwrap(),
-                    nodryrun,
-                    create_hsm_group,
-                )
-                .await;
             }
         } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
             if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
@@ -688,31 +656,6 @@ pub async fn process_cli(
                     cli_remove_hw_configuration
                         .get_one::<String>("pattern")
                         .unwrap(),
-                    nodryrun,
-                    delete_hsm_group,
-                )
-                .await;
-            } else if let Some(cli_remove_nodes) = cli_remove.subcommand_matches("nodes") {
-                log::warn!("Deprecated - Please use 'manta migrate nodes' command instead.");
-                let nodryrun = *cli_remove_nodes
-                    .get_one::<bool>("no-dryrun")
-                    .unwrap_or(&true);
-
-                let delete_hsm_group = *cli_remove_nodes
-                    .get_one::<bool>("delete-hsm-group")
-                    .unwrap_or(&false);
-
-                remove_nodes::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    cli_remove_nodes
-                        .get_one::<String>("target-cluster")
-                        .unwrap(),
-                    cli_remove_nodes
-                        .get_one::<String>("parent-cluster")
-                        .unwrap(),
-                    cli_remove_nodes.get_one::<String>("XNAMES").unwrap(),
                     nodryrun,
                     delete_hsm_group,
                 )
@@ -943,41 +886,6 @@ pub async fn process_cli(
                     *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false),
                 )
                 .await;
-            /* } else if let Some(cli_get_node) = cli_get.subcommand_matches("nodes") {
-            let hsm_group_name_arg_opt = cli_get_node.get_one::<String>("HSM_GROUP_NAME");
-
-            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                hsm_group_name_arg_opt,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let output_opt = cli_get_node.get_one::<String>("output");
-
-            if output_opt.is_some_and(|output| output == "table" || output == "summary") {
-                eprintln!("Deprecated - Please use 'manta get cluster' command instead.");
-            } else {
-                log::warn!("Deprecated - Please use 'manta get cluster' command instead.");
-            }
-
-            get_nodes::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                target_hsm_group_vec,
-                *cli_get_node
-                    .get_one::<bool>("nids-only-one-line")
-                    .unwrap_or(&false),
-                *cli_get_node
-                    .get_one::<bool>("xnames-only-one-line")
-                    .unwrap_or(&false),
-                output_opt,
-                false,
-            )
-            .await; */
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
                 log::warn!("Deprecated - Do not use this command.");
 
@@ -1718,101 +1626,6 @@ pub async fn process_cli(
                     .await;
                 }
             }
-            /* else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
-                let name_opt: Option<&String> = cli_apply_template.get_one("name");
-                let template_name: &String = cli_apply_template
-                    .get_one("template")
-                    .expect("ERROR - template name is mandatory");
-                let limit_opt: Option<&String> = cli_apply_template.get_one("limit");
-                let operation: &String = cli_apply_template
-                    .get_one("operation")
-                    .expect("ERROR - operation is mandatory");
-
-                let operation =
-                    mesa::bos::session::shasta::http_client::v2::Operation::from_str(operation)
-                        .expect("ERROR - operation not valid");
-
-                let include_disabled: bool = *cli_apply_template
-                    .get_one("include-disabled")
-                    .expect("ERROR - include disabled must have a value");
-
-                let dry_run: bool = *cli_apply_template
-                    .get_one("dry-run")
-                    .expect("ERROR - dry-run must have a value");
-
-                // Validate BOS sessiontemplate exists and user has access to it
-                let bos_sessiontemplate_vec = mesa::bos::template::mesa::http_client::get(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(template_name),
-                )
-                .await
-                .expect("ERROR - template not found.");
-
-                let bos_sessiontemplate = bos_sessiontemplate_vec
-                    .first()
-                    .expect("ERROR - template not found");
-
-                if !bos_sessiontemplate.get_target_hsm().is_empty() {
-                    // Validate if user has access to HSM groups in BOS session template
-                    let hsm_group_name_vec = bos_sessiontemplate.get_target_hsm();
-
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_rslt.unwrap_or(None),
-                        settings_hsm_group_name_opt,
-                    )
-                    .await;
-
-                    // validate_hsm_groups(shasta_root_cert, shasta_root_cert, shasta_root_cert, hsm_group_name_vec),await;
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        Some(&target_hsm_group_vec.join(",")),
-                        settings_hsm_group_name_opt,
-                    )
-                    .await;
-                } else {
-                    // Validate if user has access to xnames in BOS session template
-                    let xname_vec = bos_sessiontemplate.get_target_xname();
-
-                    let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
-                }
-
-                let bos_session = mesa::bos::session::shasta::http_client::v2::BosSession {
-                    name: name_opt.cloned(),
-                    tenant: None,
-                    operation: Some(operation),
-                    template_name: template_name.clone(),
-                    limit: limit_opt.cloned(),
-                    stage: None,
-                    components: None,
-                    include_disabled: Some(include_disabled),
-                    status: None,
-                };
-
-                if dry_run {
-                    println!("dry-run - BOS session to create:\n{:#?}", bos_session);
-                } else {
-                    let _ = mesa::bos::session::shasta::http_client::v2::post(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        bos_session,
-                    )
-                    .await;
-                }
-            } */
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
                 log::warn!("Deprecated - Please use 'manta apply boot nodes' command instead.");
@@ -1908,19 +1721,6 @@ pub async fn process_cli(
                 settings_hsm_group_name_opt,
             )
             .await;
-        /* } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
-        console_node::exec(
-            hsm_group,
-            // cli_console,
-            shasta_token,
-            shasta_base_url,
-            vault_base_url,
-            vault_secret_path,
-            vault_role_id,
-            k8s_api_url,
-            cli_console.get_one::<String>("XNAME").unwrap(),
-        )
-        .await; */
         } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
             if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
                 if !std::io::stdout().is_terminal() {
@@ -2021,7 +1821,7 @@ pub async fn process_cli(
                 };
 
                 // Migrate nodes
-                add_nodes::exec(
+                migrate_nodes_between_hsm_groups::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2177,171 +1977,56 @@ pub async fn process_cli(
                 dry_run,
             )
             .await;
+        } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
+            let nodryrun = *cli_add_nodes.get_one::<bool>("dry-run").unwrap_or(&true);
 
-            /* // Check session exists
-            let cfs_session_vec_rslt = mesa::cfs::session::mesa::http_client::get(
+            let create_hsm_group = *cli_add_nodes.get_one::<bool>("create").unwrap_or(&false);
+
+            let nodes = cli_add_nodes.get_one::<String>("nodes").unwrap();
+
+            let target_hsm_name_vec: Vec<String> = cli_add_nodes
+                .get_one::<String>("groups")
+                .expect("Error - target cluster is mandatory")
+                .split(",")
+                .map(|hsm_name| hsm_name.trim().to_string())
+                .collect();
+
+            add_nodes_to_hsm_groups::exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                None,
-                None,
-                None,
-                Some(session_name),
-                None,
+                target_hsm_name_vec,
+                nodes,
+                nodryrun,
+                create_hsm_group,
             )
             .await;
+        } else if let Some(cli_remove_nodes) =
+            cli_root.subcommand_matches("delete-nodes-from-groups")
+        {
+            let nodryrun = *cli_remove_nodes.get_one::<bool>("dry-run").unwrap_or(&true);
 
-            let mut cfs_session_vec = match cfs_session_vec_rslt {
-                Ok(cfs_session_vec) => cfs_session_vec,
-                Err(e) => {
-                    eprintln!("ERROR - Problem fetching sessions.\n{:#?}", e);
-                    std::process::exit(1);
-                }
-            };
+            let delete_hsm_group = *cli_remove_nodes.get_one::<bool>("clean").unwrap_or(&false);
 
-            // Check if the session to stop belongs to a cluster the user has access
-            mesa::cfs::session::mesa::utils::filter_by_hsm(
+            let nodes = cli_remove_nodes.get_one::<String>("nodes").unwrap();
+
+            let target_hsm_name_vec: Vec<String> = cli_remove_nodes
+                .get_one::<String>("groups")
+                .expect("Error - target cluster is mandatory")
+                .split(",")
+                .map(|hsm_name| hsm_name.trim().to_string())
+                .collect();
+
+            remove_nodes_from_hsm_groups::exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &mut cfs_session_vec,
-                &target_hsm_group_vec,
-                None,
+                target_hsm_name_vec,
+                nodes,
+                nodryrun,
+                delete_hsm_group,
             )
             .await;
-
-            if cfs_session_vec.is_empty() {
-                println!("No session found!");
-                std::process::exit(0);
-            } else if cfs_session_vec.len() > 1 {
-                eprintln!("ERROR - More than one session found. Exit");
-                std::process::exit(1);
-            }
-
-            let cfs_session = cfs_session_vec.first().unwrap();
-            let cfs_session_name = cfs_session.clone().name.unwrap();
-
-            log::info!("Deleting session '{}'", cfs_session_name);
-
-            // * if session is of type dynamic (runtime session) then:
-            // Get retry_policy
-            let cfs_session_target_definition = cfs_session.get_target_def().unwrap();
-            let cfs_global_options = if cfs_session_target_definition == "dynamic" {
-                // The CFS session is of type 'target dynamic' (runtime CFS batcher)
-                log::info!("CFS session target definition is 'dynamic'.");
-                mesa::cfs::component::shasta::http_client::v3::get_options(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                )
-                .await
-                .unwrap()
-            } else if cfs_session_target_definition == "image" {
-                // The CFS session is not of type 'target dynamic' (runtime CFS batcher)
-
-                // * if session is of type image then:
-                // CFS sessions used to create an image can't be deleted for the sake of keeping the
-                // link to the CFS configuration used to create the resulted image
-                if !cfs_session.get_result_id_vec().is_empty() {
-                    println!("Session '{}' was used to build an image. Sessions of type 'image' can't be deleted. Exit", cfs_session_name);
-                    std::process::exit(0);
-                }
-
-                let cfs_configuration_name = cfs_session.get_configuration_name().unwrap();
-
-                // Delete CFS configuration related to the CFS session to delete
-                log::info!(
-                    "CFS session target definition is 'image'. Session has been deleted. Deleting configuration '{}'. Exit", cfs_configuration_name
-                );
-
-                let _ = mesa::cfs::configuration::shasta::http_client::v2::delete(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &cfs_configuration_name,
-                )
-                .await;
-
-                std::process::exit(0)
-            } else {
-                eprintln!(
-                    "CFS session target definition is '{}'. Don't know how to continue. Exit",
-                    cfs_session_target_definition
-                );
-                std::process::exit(1);
-            };
-
-            let retry_policy = cfs_global_options["default_batcher_retry_policy"]
-                .as_u64()
-                .unwrap();
-
-            // Set CFS components error_count == retry_policy so CFS batcher stops retrying running
-            let xname_vec = if let Some(target_hsm) = cfs_session.get_target_hsm() {
-                mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm,
-                )
-                .await
-            } else {
-                cfs_session.get_target_xname().unwrap()
-            };
-
-            log::info!(
-                "Set 'error_count' {} to xnames {:?}",
-                retry_policy,
-                xname_vec
-            );
-
-            // Update CFS component error_count
-            // Get original CFS components
-            let cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &xname_vec,
-            )
-            .await
-            .unwrap();
-
-            // Convert CFS components to another struct we can use for CFS component PUT API
-            let mut cfs_component_request_vec = Vec::new();
-
-            for cfs_component in cfs_component_vec {
-                let mut cfs_component_request: ComponentRequest =
-                    ComponentRequest::from(cfs_component);
-                cfs_component_request.error_count = Some(retry_policy);
-                cfs_component_request_vec.push(cfs_component_request);
-            }
-
-            let put_rslt_vec = mesa::cfs::component::shasta::http_client::v2::put_component_list(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                cfs_component_request_vec,
-            )
-            .await;
-
-            for put_rslt in put_rslt_vec {
-                if let Err(e) = put_rslt {
-                    eprintln!(
-                        "ERROR - Could not update error_count on compnents. Reason:\n{}",
-                        e
-                    );
-                }
-            }
-
-            // Delete CFS session
-            let _ = mesa::cfs::session::shasta::http_client::v3::delete(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &cfs_session_name,
-            )
-            .await;
-
-            println!("Session '{session_name}' has been deleted."); */
         }
     }
 
@@ -2402,7 +2087,7 @@ pub async fn get_target_hsm_name_group_vec(
         hsm_name_available_vec.clone()
     };
 
-    validate_hsm_groups(&target_hsm_name_vec, hsm_name_available_vec);
+    let _ = validate_hsm_groups(&target_hsm_name_vec, hsm_name_available_vec);
 
     Ok(target_hsm_name_vec.clone())
 }
