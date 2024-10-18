@@ -169,7 +169,7 @@ $ manta set runtime-configuration -H my_cluster -c my_configuration
 
 **Q: How to list all sessions in the system?**
 
-**A:** `mange get sessions`
+**A:** `manta get sessions`
 
 ---
 
