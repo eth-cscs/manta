@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.52.1] - 2024-10-18
+
+### Features
+
+- Update mesa to wait CFS sessions longer
+
 ## [1.52.0] - 2024-10-18
 
 ### Features
 
 - Add new command 'add-nodes-to-groups' to add list of nodes to a list of groups
 - Add new command 'remove-nodes-to-groups' to remove list of nodes to a list of groups
+
+### Miscellaneous Tasks
+
+- Release manta version 1.52.0
 
 ## [1.51.3] - 2024-10-14
 
