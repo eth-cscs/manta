@@ -77,6 +77,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
 ) -> Vec<String> {
+    // FIXME: stop calling `mesa::jwt_ops::get_claims_from_jwt_token` and use `mesa::jwt_ops::get_hsm_name_available` instead
     let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
         .unwrap()
         .pointer("/realm_access/roles")
@@ -91,7 +92,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
     if !realm_access_role_vec.is_empty() {
-        //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
+        //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
             mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);

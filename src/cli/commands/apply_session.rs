@@ -4,10 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{self, session::mesa::r#struct::v3::CfsSessionPostRequest},
-    common::{
-        jwt_ops::get_claims_from_jwt_token, kubernetes,
-        vault::http_client::fetch_shasta_k8s_secrets,
-    },
+    common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
     node::utils::validate_xnames,
 };
@@ -199,11 +196,7 @@ pub async fn exec(
     // * End Create CFS session
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-    /* println!("jwt_claims:\n{:#?}", jwt_claims);
-    println!("Name: {}", jwt_claims["name"]); */
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap());
 
     (cfs_configuration_name, cfs_session_name)
 }

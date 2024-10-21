@@ -1,4 +1,8 @@
-use mesa::{common::jwt_ops::get_claims_from_jwt_token, error::Error, pcs};
+use mesa::{
+    common::jwt_ops::{self},
+    error::Error,
+    pcs,
+};
 
 use crate::common;
 
@@ -63,7 +67,5 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on cluster {}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), hsm_group_name_arg_opt);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on cluster {}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), hsm_group_name_arg_opt);
 }

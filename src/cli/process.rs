@@ -1978,53 +1978,51 @@ pub async fn process_cli(
             )
             .await;
         } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
-            let nodryrun = *cli_add_nodes.get_one::<bool>("dry-run").unwrap_or(&true);
-
-            let create_hsm_group = *cli_add_nodes.get_one::<bool>("create").unwrap_or(&false);
+            let dryrun = *cli_add_nodes
+                .get_one::<bool>("dry-run")
+                .expect("'dry-run' argument must be provided");
 
             let nodes = cli_add_nodes.get_one::<String>("nodes").unwrap();
 
-            let target_hsm_name_vec: Vec<String> = cli_add_nodes
-                .get_one::<String>("groups")
-                .expect("Error - target cluster is mandatory")
-                .split(",")
-                .map(|hsm_name| hsm_name.trim().to_string())
-                .collect();
+            let target_hsm_name: &String = cli_add_nodes
+                .get_one::<String>("group")
+                .expect("Error - target cluster is mandatory");
+
+            let is_regex = *cli_add_nodes.get_one::<bool>("regex").unwrap_or(&true);
 
             add_nodes_to_hsm_groups::exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                target_hsm_name_vec,
+                target_hsm_name,
+                is_regex,
                 nodes,
-                nodryrun,
-                create_hsm_group,
+                dryrun,
             )
             .await;
         } else if let Some(cli_remove_nodes) =
-            cli_root.subcommand_matches("delete-nodes-from-groups")
+            cli_root.subcommand_matches("remove-nodes-from-groups")
         {
-            let nodryrun = *cli_remove_nodes.get_one::<bool>("dry-run").unwrap_or(&true);
-
-            let delete_hsm_group = *cli_remove_nodes.get_one::<bool>("clean").unwrap_or(&false);
+            let dryrun = *cli_remove_nodes
+                .get_one::<bool>("dry-run")
+                .expect("'dry-run' argument must be provided");
 
             let nodes = cli_remove_nodes.get_one::<String>("nodes").unwrap();
 
-            let target_hsm_name_vec: Vec<String> = cli_remove_nodes
-                .get_one::<String>("groups")
-                .expect("Error - target cluster is mandatory")
-                .split(",")
-                .map(|hsm_name| hsm_name.trim().to_string())
-                .collect();
+            let target_hsm_name: &String = cli_remove_nodes
+                .get_one::<String>("group")
+                .expect("Error - target cluster is mandatory");
+
+            let is_regex = *cli_remove_nodes.get_one::<bool>("regex").unwrap_or(&true);
 
             remove_nodes_from_hsm_groups::exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                target_hsm_name_vec,
+                target_hsm_name,
+                is_regex,
                 nodes,
-                nodryrun,
-                delete_hsm_group,
+                dryrun,
             )
             .await;
         }
