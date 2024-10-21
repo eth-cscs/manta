@@ -2,11 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.52.2] - 2024-10-21
+
+### Features
+
+- [**breaking**] Dryrun features in commands `add nodes to group` and `remove
+- [**breaking**] Remove feature to create hsm group in command `add nodes to group`
+- [**breaking**] Remove feature to clean hsm group in command `remove nodes to group`
+- Update mesa
+- Command to `add nodes to group` now accepts regex
+- Command to `remove nodes to group` now accepts regex
+- [**breaking**] Command `add nodes to group` to shows a dialog asking user for
+- [**breaking**] Command `remove nodes from group` to shows a dialog asking user for
+
+### Refactor
+
+- JWT operations
+- Clean code
+
 ## [1.52.1] - 2024-10-18
 
 ### Features
 
 - Update mesa to wait CFS sessions longer
+
+### Miscellaneous Tasks
+
+- Release manta version 1.52.1
 
 ## [1.52.0] - 2024-10-18
 
