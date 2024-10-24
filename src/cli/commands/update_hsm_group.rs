@@ -13,6 +13,7 @@ pub async fn exec(
     desired_configuration_opt: Option<&String>,
     kernel_paremeters_opt: Option<&String>,
     hsm_group_name: &String,
+    assume_yes: bool,
 ) {
     // Get nodes members of HSM group
     // Get HSM group details
@@ -45,6 +46,7 @@ pub async fn exec(
         desired_configuration_opt,
         kernel_paremeters_opt,
         nodes.iter().map(|node| node.as_str()).collect(),
+        assume_yes,
     )
     .await;
 }

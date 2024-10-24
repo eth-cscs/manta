@@ -19,6 +19,7 @@ pub async fn exec(
     new_runtime_configuration_opt: Option<&String>,
     new_kernel_parameters_opt: Option<&String>,
     xnames: Vec<&str>,
+    assume_yes: bool,
 ) {
     let mut need_restart = false;
 
@@ -225,6 +226,7 @@ pub async fn exec(
             &nodes.join(","),
             false,
             true,
+            assume_yes,
             "table",
         )
         .await

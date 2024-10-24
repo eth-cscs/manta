@@ -1,3 +1,4 @@
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops::{self},
     error::Error,
@@ -11,6 +12,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name_arg_opt: &str,
+    assume_yes: bool,
     output: &str,
 ) {
     let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -29,6 +31,22 @@ pub async fn exec(
         None,
     )
     .await; */
+
+    if !assume_yes {
+        if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!(
+                "{:?}\nThe nodes above will be powered on. Please confirm to proceed?",
+                xname_vec
+            ))
+            .interact()
+            .unwrap()
+        {
+            log::info!("Continue",);
+        } else {
+            println!("Cancelled by user. Aborting.");
+            std::process::exit(0);
+        }
+    }
 
     let operation = "on";
 

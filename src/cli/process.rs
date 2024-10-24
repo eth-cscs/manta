@@ -179,6 +179,8 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
+                    let assume_yes: bool = cli_power_on_cluster.get_flag("yes");
+
                     let output: &str = cli_power_on_cluster.get_one::<String>("output").unwrap();
 
                     power_on_cluster::exec(
@@ -186,6 +188,7 @@ pub async fn process_cli(
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -195,6 +198,8 @@ pub async fn process_cli(
                         .expect("The 'xnames' argument must have values");
 
                     let is_regex = *cli_power_on_node.get_one::<bool>("regex").unwrap_or(&true);
+
+                    let assume_yes: bool = cli_power_on_node.get_flag("yes");
 
                     let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
 
@@ -212,6 +217,7 @@ pub async fn process_cli(
                         shasta_root_cert,
                         xname_requested,
                         is_regex,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -240,12 +246,15 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
+                    let assume_yes: bool = cli_power_off_cluster.get_flag("yes");
+
                     power_off_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group,
                         *force,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -260,6 +269,8 @@ pub async fn process_cli(
 
                     let is_regex = *cli_power_off_node.get_one::<bool>("regex").unwrap_or(&true);
 
+                    let assume_yes: bool = cli_power_off_node.get_flag("yes");
+
                     let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
 
                     power_off_nodes::exec(
@@ -269,6 +280,7 @@ pub async fn process_cli(
                         xname_requested,
                         is_regex,
                         *force,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -299,12 +311,15 @@ pub async fn process_cli(
                         .first()
                         .expect("Power off cluster must operate against a cluster");
 
+                    let assume_yes: bool = cli_power_reset_cluster.get_flag("yes");
+
                     power_reset_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         target_hsm_group,
                         *force,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -323,6 +338,8 @@ pub async fn process_cli(
                         .get_one::<bool>("regex")
                         .unwrap_or(&true);
 
+                    let assume_yes: bool = cli_power_reset_node.get_flag("yes");
+
                     let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
 
                     /* let _ = validate_target_hsm_members(
@@ -340,6 +357,7 @@ pub async fn process_cli(
                         xname_requested,
                         is_regex,
                         *force,
+                        assume_yes,
                         output,
                     )
                     .await;
@@ -428,6 +446,8 @@ pub async fn process_cli(
 
                 let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
 
+                let assume_yes = cli_set_boot_image.get_flag("yes");
+
                 let output = cli_set_boot_image
                     .get_one::<String>("output")
                     .expect("ERROR - output argument in cli missing");
@@ -439,6 +459,7 @@ pub async fn process_cli(
                     boot_image,
                     target_hsm_group_vec_opt.as_ref(),
                     xname_vec_opt.as_ref(),
+                    assume_yes,
                     output,
                 )
                 .await;
@@ -533,6 +554,8 @@ pub async fn process_cli(
                     .get_one::<String>("kernel-parameters")
                     .unwrap(); // clap should validate the argument
 
+                let assume_yes: bool = cli_set_kernel_parameters.get_flag("yes");
+
                 let result = set_kernel_parameters::exec(
                     shasta_token,
                     shasta_base_url,
@@ -540,6 +563,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     target_hsm_group_vec_opt.as_ref(),
                     xname_vec_opt.as_ref(),
+                    assume_yes,
                 )
                 .await;
 
@@ -1338,7 +1362,7 @@ pub async fn process_cli(
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
                 let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
-                let auto_yes: bool = cli_apply_sat_file.get_flag("auto-yes");
+                let assume_yes: bool = cli_apply_sat_file.get_flag("yes");
 
                 /* let dry_run: bool = *cli_apply_sat_file.get_one("dry-run").unwrap();
                 // If dry_run is true, then no need to reboot because no changes to the system are
@@ -1373,7 +1397,7 @@ pub async fn process_cli(
                     cli_apply_sat_file.get_flag("sessiontemplate-only"),
                     true,
                     false,
-                    auto_yes
+                    assume_yes,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
@@ -1571,6 +1595,8 @@ pub async fn process_cli(
                         .await;
                     }
 
+                    let assume_yes: bool = cli_apply_boot_nodes.get_flag("yes");
+
                     apply_boot_node::exec(
                         shasta_token,
                         shasta_base_url,
@@ -1586,6 +1612,7 @@ pub async fn process_cli(
                             .split(',')
                             .map(|xname| xname.trim())
                             .collect(),
+                        assume_yes,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
@@ -1603,6 +1630,8 @@ pub async fn process_cli(
                     )
                     .await;
 
+                    let assume_yes = cli_apply_boot_cluster.get_flag("yes");
+
                     update_hsm_group::exec(
                         shasta_token,
                         shasta_base_url,
@@ -1612,6 +1641,7 @@ pub async fn process_cli(
                         cli_apply_boot_cluster.get_one::<String>("runtime-configuration"),
                         cli_apply_boot_cluster.get_one::<String>("kernel-parameters"),
                         target_hsm_group_vec.first().unwrap(),
+                        assume_yes,
                     )
                     .await;
                 }
@@ -1633,6 +1663,8 @@ pub async fn process_cli(
                     .await;
                 }
 
+                let assume_yes = cli_update_node.get_flag("yes");
+
                 apply_boot_node::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1648,6 +1680,7 @@ pub async fn process_cli(
                         .split(',')
                         .map(|xname| xname.trim())
                         .collect(),
+                    assume_yes,
                 )
                 .await;
             } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
@@ -1665,6 +1698,8 @@ pub async fn process_cli(
                 )
                 .await;
 
+                let assume_yes = cli_update_hsm_group.get_flag("yes");
+
                 update_hsm_group::exec(
                     shasta_token,
                     shasta_base_url,
@@ -1674,6 +1709,7 @@ pub async fn process_cli(
                     cli_update_hsm_group.get_one::<String>("desired-configuration"),
                     cli_update_hsm_group.get_one::<String>("kernel-parameters"),
                     target_hsm_group_vec.first().unwrap(),
+                    assume_yes,
                 )
                 .await;
             }

@@ -39,7 +39,7 @@ pub async fn exec(
     session_template_only: bool,
     debug_on_failure: bool,
     dry_run: bool,
-    auto_yes: bool,
+    assume_yes: bool,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -95,14 +95,14 @@ pub async fn exec(
         color::Fg(color::Reset),
         serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
     );
-    let mut  process_sat_file= false;
-    if !auto_yes {
+    let mut process_sat_file = false;
+    if !assume_yes {
         process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Please check the template above and confirm to proceed.")
             .interact()
             .unwrap();
     } else {
-        process_sat_file =  true
+        process_sat_file = true
     }
     // Run/process Pre-hook
     if prehook.is_some() {

@@ -14,6 +14,7 @@ pub async fn exec(
     kernel_params: &str,
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
+    assume_yes: bool,
 ) -> Result<(), Error> {
     println!("Set kernel parameters");
 
@@ -106,6 +107,7 @@ pub async fn exec(
             &xname_to_reboot_vec.join(","),
             false,
             true,
+            assume_yes,
             "table",
         )
         .await;

@@ -11,6 +11,7 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     xname_requested: &str,
     is_regex: bool,
+    assume_yes: bool,
     output: &str,
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
@@ -42,18 +43,20 @@ pub async fn exec(
     xname_vec.sort();
     xname_vec.dedup();
 
-    if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!(
-            "{:?}\nThe nodes above will be powered on. Please confirm to proceed?",
-            xname_vec
-        ))
-        .interact()
-        .unwrap()
-    {
-        log::info!("Continue",);
-    } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
+    if !assume_yes {
+        if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!(
+                "{:?}\nThe nodes above will be powered on. Please confirm to proceed?",
+                xname_vec
+            ))
+            .interact()
+            .unwrap()
+        {
+            log::info!("Continue",);
+        } else {
+            println!("Cancelled by user. Aborting.");
+            std::process::exit(0);
+        }
     }
 
     let operation = "on";

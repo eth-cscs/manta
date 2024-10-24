@@ -16,6 +16,7 @@ pub async fn exec(
     image_id: &str,
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
+    assume_yes: bool,
     output: &str,
 ) -> Result<(), Error> {
     let xname_to_reboot_vec: Vec<String>;
@@ -115,6 +116,7 @@ pub async fn exec(
                 &xname_to_reboot_vec.join(","),
                 false,
                 true,
+                assume_yes,
                 output,
             )
             .await;
