@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops,
     error::Error,
@@ -10,21 +13,52 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    xname_vec: &Vec<String>,
-    reason_opt: Option<String>,
+    xname_requested: &str,
+    is_regex: bool,
     force: bool,
     output: &str,
 ) {
-    // Create 'location' list with all the xnames to operate
-    let mut location_vec: Vec<Location> = Vec::new();
+    // Filter xnames to the ones members to HSM groups the user has access to
+    //
+    let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
+        common::node_ops::get_curated_hsm_group_from_hostregex(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            xname_requested,
+        )
+        .await
+    } else {
+        // Get HashMap with HSM groups and members curated for this request.
+        // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
+        // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
+        // hostlist have been removed
+        common::node_ops::get_curated_hsm_group_from_hostlist(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            xname_requested,
+        )
+        .await
+    };
 
-    for xname in xname_vec {
-        let location: Location = Location {
-            xname: xname.to_string(),
-            deputy_key: None,
-        };
+    let mut xname_vec: Vec<String> = hsm_group_summary.values().flatten().cloned().collect();
 
-        location_vec.push(location);
+    xname_vec.sort();
+    xname_vec.dedup();
+
+    if Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!(
+            "{:?}\nThe nodes above will be powered off. Please confirm to proceed?",
+            xname_vec
+        ))
+        .interact()
+        .unwrap()
+    {
+        log::info!("Continue",);
+    } else {
+        println!("Cancelled by user. Aborting.");
+        std::process::exit(0);
     }
 
     let operation = if force { "force-off" } else { "soft-off" };
@@ -34,7 +68,7 @@ pub async fn exec(
         shasta_token,
         shasta_root_cert,
         operation,
-        xname_vec,
+        &xname_vec,
     )
     .await;
 

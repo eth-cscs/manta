@@ -72,8 +72,18 @@ pub async fn get_curated_hsm_group_from_hostlist(
     // user is targeting
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
-    let xname_requested_vec = parse(xname_requested_hostlist)
-        .expect("Error - `host_list` crate could not parse hostlist");
+    let xname_requested_vec_rslt = parse(xname_requested_hostlist);
+
+    let xname_requested_vec = match xname_requested_vec_rslt {
+        Ok(xname_requested_vec) => xname_requested_vec,
+        Err(e) => {
+            println!(
+                "Could not parse list of nodes as a hostlist. Reason:\n{}Exit",
+                e
+            );
+            std::process::exit(1);
+        }
+    };
 
     log::info!("hostlist: {}", xname_requested_hostlist);
     log::info!("hostlist expanded: {:?}", xname_requested_vec);

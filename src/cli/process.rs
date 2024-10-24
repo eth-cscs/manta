@@ -190,30 +190,28 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
-                    let xname_vec: Vec<String> = cli_power_on_node
-                        .get_one::<String>("NODE_NAME")
-                        .expect("The 'xnames' argument must have values")
-                        .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
+                    let xname_requested: &str = cli_power_on_node
+                        .get_one::<String>("VALUE")
+                        .expect("The 'xnames' argument must have values");
 
-                    let reason = cli_power_on_node.get_one::<String>("reason").cloned();
+                    let is_regex = *cli_power_on_node.get_one::<bool>("regex").unwrap_or(&true);
+
                     let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
 
-                    let _ = validate_target_hsm_members(
+                    /* let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         xname_vec.clone(),
                     )
-                    .await;
+                    .await; */
 
                     power_on_nodes::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        &xname_vec,
-                        reason,
+                        xname_requested,
+                        is_regex,
                         output,
                     )
                     .await;
@@ -252,34 +250,24 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
-                    let xname_vec: Vec<String> = cli_power_off_node
-                        .get_one::<String>("NODE_NAME")
-                        .expect("The 'xnames' argument must have values")
-                        .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
+                    let xname_requested: &str = cli_power_off_node
+                        .get_one::<String>("VALUE")
+                        .expect("The 'xnames' argument must have values");
 
                     let force = cli_power_off_node
                         .get_one::<bool>("force")
                         .expect("The 'force' argument must have a value");
 
-                    let reason = cli_power_off_node.get_one::<String>("reason").cloned();
-                    let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
+                    let is_regex = *cli_power_off_node.get_one::<bool>("regex").unwrap_or(&true);
 
-                    let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
+                    let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
 
                     power_off_nodes::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        &xname_vec,
-                        reason,
+                        xname_requested,
+                        is_regex,
                         *force,
                         output,
                     )
@@ -323,34 +311,34 @@ pub async fn process_cli(
                 } else if let Some(cli_power_reset_node) =
                     cli_power_reset.subcommand_matches("nodes")
                 {
-                    let xname_vec: Vec<String> = cli_power_reset_node
-                        .get_one::<String>("NODE_NAME")
-                        .expect("The 'xnames' argument must have values")
-                        .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
+                    let xname_requested: &str = cli_power_reset_node
+                        .get_one::<String>("VALUE")
+                        .expect("The 'xnames' argument must have values");
 
                     let force = cli_power_reset_node
                         .get_one::<bool>("force")
                         .expect("The 'force' argument must have a value");
 
-                    let reason = cli_power_reset_node.get_one::<String>("reason").cloned();
+                    let is_regex = *cli_power_reset_node
+                        .get_one::<bool>("regex")
+                        .unwrap_or(&true);
+
                     let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
 
-                    let _ = validate_target_hsm_members(
+                    /* let _ = validate_target_hsm_members(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        xname_vec.clone(),
+                        xname_requested,
                     )
-                    .await;
+                    .await; */
 
                     power_reset_nodes::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        &xname_vec,
-                        reason,
+                        xname_requested,
+                        is_regex,
                         *force,
                         output,
                     )
@@ -1418,135 +1406,135 @@ pub async fn process_cli(
                     dry_run,
                 )
                 .await;
-            } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
-                if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                    log::warn!("Deprecated - Please use 'manta power on' command instead.");
+            /* } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
+            if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
+                log::warn!("Deprecated - Please use 'manta power on' command instead.");
 
-                    let xname_vec: Vec<String> = cli_apply_node_on
+                let xname_vec: Vec<String> = cli_apply_node_on
+                    .get_one::<String>("XNAMES")
+                    .unwrap()
+                    .split(',')
+                    .map(|xname| xname.trim().to_string())
+                    .collect();
+
+                let output = "table"; // 'apply node on' subcommand does not have output
+                                      // argument so we are forcing the value
+
+                validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.clone(),
+                )
+                .await;
+
+                power_on_nodes::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &xname_vec,
+                    cli_apply_node_on.get_one::<String>("reason").cloned(),
+                    output,
+                )
+                .await;
+            } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
+                log::warn!("Deprecated - Please use 'manta power off' command instead.");
+
+                /* apply_node_off::exec(
+                    settings_hsm_group_name_opt,
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_apply_node_off
                         .get_one::<String>("XNAMES")
                         .unwrap()
                         .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
+                        .map(|xname| xname.trim())
+                        .collect(),
+                    cli_apply_node_off.get_one::<String>("reason").cloned(),
+                    *cli_apply_node_off.get_one::<bool>("force").unwrap(),
+                )
+                .await; */
 
-                    let output = "table"; // 'apply node on' subcommand does not have output
-                                          // argument so we are forcing the value
+                let xname_vec: Vec<String> = cli_apply_node_off
+                    .get_one::<String>("XNAMES")
+                    .unwrap()
+                    .split(',')
+                    .map(|xname| xname.trim().to_string())
+                    .collect();
 
-                    validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
+                let output = "table"; // 'apply node off' subcommand does not have output
+                                      // argument so we are forcing the value
 
-                    power_on_nodes::exec(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &xname_vec,
-                        cli_apply_node_on.get_one::<String>("reason").cloned(),
-                        output,
-                    )
-                    .await;
-                } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                    log::warn!("Deprecated - Please use 'manta power off' command instead.");
+                let _ = validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.clone(),
+                )
+                .await;
 
-                    /* apply_node_off::exec(
-                        settings_hsm_group_name_opt,
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        cli_apply_node_off
-                            .get_one::<String>("XNAMES")
-                            .unwrap()
-                            .split(',')
-                            .map(|xname| xname.trim())
-                            .collect(),
-                        cli_apply_node_off.get_one::<String>("reason").cloned(),
-                        *cli_apply_node_off.get_one::<bool>("force").unwrap(),
-                    )
-                    .await; */
+                power_off_nodes::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &xname_vec,
+                    cli_apply_node_off.get_one::<String>("reason").cloned(),
+                    *cli_apply_node_off.get_one::<bool>("force").unwrap(),
+                    output,
+                )
+                .await;
+            } else if let Some(cli_apply_node_reset) =
+                cli_apply_node.subcommand_matches("reset")
+            {
+                log::warn!("Deprecated - Please use 'manta power reset' command instead.");
 
-                    let xname_vec: Vec<String> = cli_apply_node_off
+                /* apply_node_reset::exec(
+                    settings_hsm_group_name_opt,
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    cli_apply_node_reset
                         .get_one::<String>("XNAMES")
                         .unwrap()
                         .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
+                        .map(|xname| xname.trim())
+                        .collect(),
+                    cli_apply_node_reset.get_one::<String>("reason"),
+                    *cli_apply_node_reset
+                        .get_one::<bool>("force")
+                        .unwrap_or(&false),
+                )
+                .await; */
 
-                    let output = "table"; // 'apply node off' subcommand does not have output
-                                          // argument so we are forcing the value
+                let xname_vec: Vec<String> = cli_apply_node_reset
+                    .get_one::<String>("XNAMES")
+                    .unwrap()
+                    .split(',')
+                    .map(|xname| xname.trim().to_string())
+                    .collect();
 
-                    let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
+                let output = "table"; // 'apply node off' subcommand does not have output
+                                      // argument so we are forcing the value
+                let _ = validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.clone(),
+                )
+                .await;
 
-                    power_off_nodes::exec(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &xname_vec,
-                        cli_apply_node_off.get_one::<String>("reason").cloned(),
-                        *cli_apply_node_off.get_one::<bool>("force").unwrap(),
-                        output,
-                    )
-                    .await;
-                } else if let Some(cli_apply_node_reset) =
-                    cli_apply_node.subcommand_matches("reset")
-                {
-                    log::warn!("Deprecated - Please use 'manta power reset' command instead.");
-
-                    /* apply_node_reset::exec(
-                        settings_hsm_group_name_opt,
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        cli_apply_node_reset
-                            .get_one::<String>("XNAMES")
-                            .unwrap()
-                            .split(',')
-                            .map(|xname| xname.trim())
-                            .collect(),
-                        cli_apply_node_reset.get_one::<String>("reason"),
-                        *cli_apply_node_reset
-                            .get_one::<bool>("force")
-                            .unwrap_or(&false),
-                    )
-                    .await; */
-
-                    let xname_vec: Vec<String> = cli_apply_node_reset
-                        .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| xname.trim().to_string())
-                        .collect();
-
-                    let output = "table"; // 'apply node off' subcommand does not have output
-                                          // argument so we are forcing the value
-                    let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
-
-                    power_reset_nodes::exec(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &xname_vec,
-                        cli_apply_node_reset.get_one::<String>("reason").cloned(),
-                        *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
-                        output,
-                    )
-                    .await;
-                }
+                power_reset_nodes::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &xname_vec,
+                    cli_apply_node_reset.get_one::<String>("reason").cloned(),
+                    *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
+                    output,
+                )
+                .await;
+            } */
             } else if let Some(cli_apply_ephemeral_environment) =
                 cli_apply.subcommand_matches("ephemeral-environment")
             {

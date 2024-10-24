@@ -103,8 +103,8 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &xname_to_reboot_vec,
-            None,
+            &xname_to_reboot_vec.join(","),
+            false,
             true,
             "table",
         )

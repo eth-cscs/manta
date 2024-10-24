@@ -89,7 +89,7 @@ pub fn build_cli() -> Command {
                     .subcommand(subcommand_apply_boot_nodes())
                     .subcommand(subcommand_apply_boot_cluster())
                 )
-                .subcommand(
+                /* .subcommand(
                     Command::new("node")
                         .visible_aliases(["n", "nod"])
                         .arg_required_else_help(true)
@@ -97,7 +97,7 @@ pub fn build_cli() -> Command {
                         .subcommand(subcommand_apply_node_on())
                         .subcommand(subcommand_apply_node_off())
                         .subcommand(subcommand_apply_node_reset()),
-                )
+                ) */
                 .subcommand(subcommand_apply_session())
                 .subcommand(Command::new("ephemeral-environment")
                     .visible_aliases(["ee", "eph", "ephemeral"])
@@ -181,16 +181,16 @@ pub fn build_cli() -> Command {
         .subcommand(Command::new("add-nodes-to-groups")
             .visible_aliases(["ag"])
             .about("Add nodes to a list of groups")
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
             .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
             .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         )
        .subcommand(Command::new("remove-nodes-from-groups")
            .visible_aliases(["rg"])
            .about("Remove nodes from groups")
-           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
            .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
+           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
            .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
        )
@@ -586,7 +586,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
-pub fn subcommand_apply_node_on() -> Command {
+/* pub fn subcommand_apply_node_on() -> Command {
     Command::new("on")
         .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
         .arg_required_else_help(true)
@@ -598,9 +598,9 @@ pub fn subcommand_apply_node_on() -> Command {
             .args(["hsm-group", "XNAMES"])
             .multiple(true),
         )
-}
+} */
 
-pub fn subcommand_apply_node_off() -> Command {
+/* pub fn subcommand_apply_node_off() -> Command {
     Command::new("off")
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
@@ -613,9 +613,9 @@ pub fn subcommand_apply_node_off() -> Command {
                         .args(["hsm-group", "XNAMES"])
                         .multiple(true),
                 )
-}
+} */
 
-pub fn subcommand_apply_node_reset() -> Command {
+/* pub fn subcommand_apply_node_reset() -> Command {
     Command::new("reset")
         .visible_aliases(["r", "res", "rst", "restart", "rstrt"])
         .arg_required_else_help(true)
@@ -629,7 +629,7 @@ pub fn subcommand_apply_node_reset() -> Command {
                         .args(["hsm-group", "XNAMES"])
                         .multiple(true),
                 )
-}
+} */
 
 pub fn subcommand_update_nodes() -> Command {
     Command::new("nodes")
@@ -719,7 +719,7 @@ pub fn subcommand_power() -> Command {
                         .visible_aliases(["c", "clstr"])
                         .arg_required_else_help(true)
                         .about("Command to power on all nodes in a cluster")
-                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(-R --reason <TEXT> "reason to power on"))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
@@ -728,9 +728,9 @@ pub fn subcommand_power() -> Command {
                         .visible_aliases(["n", "node"])
                         .arg_required_else_help(true)
                         .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
-                        .arg(arg!(-r --reason <TEXT> "reason to power on"))
+                        .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
         )
         .subcommand(
@@ -743,7 +743,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power off all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
+                        .arg(arg!(-R --reason <TEXT> "reason to power off"))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
@@ -752,10 +752,11 @@ pub fn subcommand_power() -> Command {
                         .visible_aliases(["n", "node"])
                         .arg_required_else_help(true)
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
+                        .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+                        .arg(arg!(-r --"regex" "Input nodes in regex format.\neg 'x1003c1s.*'").action(ArgAction::SetTrue))
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-r --reason <TEXT> "reason to power off"))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
         )
         .subcommand(
@@ -777,10 +778,10 @@ pub fn subcommand_power() -> Command {
                         .visible_aliases(["n", "node"])
                         .arg_required_else_help(true)
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
+                        .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<NODE_NAME> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
         )
 }
