@@ -20,6 +20,7 @@ pub async fn exec(
     gitea_token: &str,
     // tag: &str,
     do_not_reboot: bool,
+    auto_yes: bool
 ) {
     apply_sat_file::command::exec(
         shasta_token,
@@ -45,6 +46,7 @@ pub async fn exec(
         false,
         false,
         false,
+        auto_yes
     )
     .await;
 }
