@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.1] - 2024-10-25
+
+### Bug Fixes
+
+- Version number
+
 ## [1.53.0] - 2024-10-25
 
 ### Bug Fixes
@@ -40,6 +46,10 @@ All notable changes to this project will be documented in this file.
 - [**breaking**] Command apply apply boot cluster has new argument to skip prompts
 - Add log level information to command config show
 - Images containing 'generic' in their names are now available to all users
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.0
 
 ## [1.52.2] - 2024-10-21
 
