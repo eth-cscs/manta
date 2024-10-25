@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.0] - 2024-10-25
+
+### Bug Fixes
+
+- Command apply session
+
+### Feature
+
+- Answer yes to questions during apply sat file. (#90)
+
+### Features
+
+- Power commands now support hostlist and regex
+- Power commands now shows a dialog asking for permission to proceed
+- [**breaking**] Command power on cluster has new argument to skip prompts
+- [**breaking**] Command power on nodes has new argument to skip prompts
+- [**breaking**] Command power off cluster has new argument to skip prompts
+- [**breaking**] Command power off nodes has new argument to skip prompts
+- [**breaking**] Command power reset cluster has new argument to skip prompts
+- [**breaking**] Command power reset nodes has new argument to skip prompts
+- [**breaking**] Command apply boot nodes has new argument to skip prompts
+- [**breaking**] Command apply set boot image has new argument to skip prompts
+- [**breaking**] Command apply apply boot cluster has new argument to skip prompts
+- Add log level information to command config show
+- Images containing 'generic' in their names are now available to all users
+- Power commands now support hostlist and regex
+- Power commands now shows a dialog asking for permission to proceed
+- [**breaking**] Command power on cluster has new argument to skip prompts
+- [**breaking**] Command power on nodes has new argument to skip prompts
+- [**breaking**] Command power off cluster has new argument to skip prompts
+- [**breaking**] Command power off nodes has new argument to skip prompts
+- [**breaking**] Command power reset cluster has new argument to skip prompts
+- [**breaking**] Command power reset nodes has new argument to skip prompts
+- [**breaking**] Command apply boot nodes has new argument to skip prompts
+- [**breaking**] Command apply set boot image has new argument to skip prompts
+- [**breaking**] Command apply apply boot cluster has new argument to skip prompts
+- Add log level information to command config show
+- Images containing 'generic' in their names are now available to all users
+
 ## [1.52.2] - 2024-10-21
 
 ### Features
@@ -14,6 +53,10 @@ All notable changes to this project will be documented in this file.
 - Command to `remove nodes to group` now accepts regex
 - [**breaking**] Command `add nodes to group` to shows a dialog asking user for
 - [**breaking**] Command `remove nodes from group` to shows a dialog asking user for
+
+### Miscellaneous Tasks
+
+- Release manta version 1.52.2
 
 ### Refactor
 
