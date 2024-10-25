@@ -173,7 +173,7 @@ fn test_is_cfs_configuration_used_to_build_image_true() {
     let target = Target {
         definition: Some("image".to_string()),
         groups: None,
-        image_map: None,
+        image_map: Some(Vec::new()),
     };
 
     let cfs_session = CfsSessionGetResponse {
@@ -246,7 +246,7 @@ fn test_is_cfs_configuration_used_to_build_image_false_2() {
     let target = Target {
         definition: Some("dynamic".to_string()),
         groups: None,
-        image_map: None,
+        image_map: Some(Vec::new()),
     };
 
     let cfs_session = CfsSessionGetResponse {
