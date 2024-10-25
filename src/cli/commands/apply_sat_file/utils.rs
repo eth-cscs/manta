@@ -1943,7 +1943,6 @@ pub async fn process_session_template_section_in_sat_file(
                     .unwrap()
                     .first()
                     .unwrap()
-                    .0
                     .clone()
                 } else if let Some(bos_session_template_image_ims_id) =
                     bos_sessiontemplate_image_ims.get("id")
@@ -2023,7 +2022,7 @@ pub async fn process_session_template_section_in_sat_file(
                         std::process::exit(1);
                     };
 
-                    image_vec.first().unwrap().0.clone()
+                    image_vec.first().unwrap().clone()
                 } else {
                     mesa::ims::image::r#struct::Image {
                         id: None,
@@ -2151,7 +2150,7 @@ pub async fn process_session_template_section_in_sat_file(
                     })
                 });
 
-            //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
+            //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
             //wide operations instead of using roles
             let node_groups_opt = Some(mesa::hsm::group::hacks::filter_system_hsm_group_names(
                 node_groups_opt.unwrap_or_default(),

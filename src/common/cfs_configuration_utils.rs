@@ -211,17 +211,15 @@ pub async fn create_from_repos(
             }
         };
 
-        let clone_url = gitea_base_url.to_owned() + "/cray/" + repo_name;
-
         // Create CFS layer
         let cfs_layer = Layer::new(
-            Some(clone_url),
-            Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
             Some(format!(
                 "{}-{}",
-                repo_name.substring(0, repo_name.len()),
-                chrono::offset::Local::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+                repo_name.strip_suffix(".git").unwrap(),
+                chrono::offset::Local::now().format("%Y-%m-%dT%H:%M:%S")
             )),
+            Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
+            None,
             String::from("site.yml"),
             None,
             None,
