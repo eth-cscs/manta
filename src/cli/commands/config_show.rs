@@ -21,6 +21,7 @@ pub async fn exec(
     let keycloak_base_url = settings.get_string("keycloak_base_url").unwrap();
     let k8s_api_url = settings.get_string("k8s_api_url").unwrap();
     let log_level = settings.get_string("log").unwrap_or("error".to_string()); */
+    let log_level = settings.get_string("log").unwrap_or("error".to_string());
     let settings_hsm_group = settings.get_string("hsm_group").unwrap_or("".to_string());
     let settings_parent_hsm_group = settings
         .get_string("parent_hsm_group")
@@ -65,6 +66,7 @@ pub async fn exec(
     println!("Keycloak base URL: {}", keycloak_base_url);
     println!("Kubernetes api URL: {}", k8s_api_url);
     println!("Log: {}", log_level); */
+    println!("Log level: {}", log_level);
     println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
     println!("Current site: {}", site_name);
     println!("HSM available: {:?}", hsm_group_available);
