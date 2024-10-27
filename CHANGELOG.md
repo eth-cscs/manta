@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.2] - 2024-10-27
+
+### Bug Fixes
+
+- Update mesa to integrate CFS sessions type dynamic creation:wa
+
+### Features
+
+- Add argument 'ansible-playbook-name' to command 'apply session'
+
 ## [1.53.1] - 2024-10-25
 
 ### Bug Fixes
 
 - Version number
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.1
 
 ## [1.53.0] - 2024-10-25
 
