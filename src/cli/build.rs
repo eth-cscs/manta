@@ -463,7 +463,7 @@ pub fn subcommand_apply_session() -> Command {
         .arg_required_else_help(true)
         .about("Runs the ansible script in local directory against HSM group or xnames.\nNote: the local repo must alrady exists in Shasta VCS")
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
-        // .arg(arg!(-i --image "If set, creates a CFS sesison of target image, otherwise it will create a CFS session target dynamic").action(ArgAction::SetTrue))
+        .arg(arg!(-p --"playbook-name" <VALUE> "Playbook YAML file name. eg (site.yml)").default_value("site.yml"))
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").required(true)
             .value_parser(value_parser!(PathBuf)))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))

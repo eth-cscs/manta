@@ -149,6 +149,7 @@ pub async fn create_from_repos(
     shasta_root_cert: &[u8],
     repos: Vec<PathBuf>,
     cfs_configuration_name: &String,
+    playbook_file_name_opt: Option<&String>,
 ) -> CfsConfigurationRequest {
     // Create CFS configuration
     let mut cfs_configuration = CfsConfigurationRequest::new();
@@ -196,7 +197,7 @@ pub async fn create_from_repos(
             .await;
 
         // Check sync status between user face and shasta VCS
-        let shasta_commitid_details: serde_json::Value = match shasta_commitid_details_resp {
+        let _ = match shasta_commitid_details_resp {
             Ok(_) => {
                 log::debug!(
                     "Local latest commit id {} for repo {} exists in shasta",
@@ -211,16 +212,21 @@ pub async fn create_from_repos(
             }
         };
 
+        let clone_url = gitea_base_url.to_owned() + "/cray/" + repo_name;
+
         // Create CFS layer
         let cfs_layer = Layer::new(
             Some(format!(
                 "{}-{}",
                 repo_name.strip_suffix(".git").unwrap(),
-                chrono::offset::Local::now().format("%Y-%m-%dT%H:%M:%S")
+                chrono::offset::Local::now().timestamp()
             )),
-            Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
+            // Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
+            Some(clone_url),
             None,
-            String::from("site.yml"),
+            playbook_file_name_opt
+                .unwrap_or(&"site.yml".to_string())
+                .to_string(),
             None,
             None,
             None,
@@ -228,6 +234,8 @@ pub async fn create_from_repos(
 
         CfsConfigurationRequest::add_layer(&mut cfs_configuration, cfs_layer);
     }
+
+    log::debug!("CFS configuration:\n{:#?}", cfs_configuration);
 
     cfs_configuration
 }

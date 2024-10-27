@@ -1117,6 +1117,10 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt: Option<&String> =
                     cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
 
+                let cfs_conf_sess_name_opt: Option<&String> = cli_apply_session.get_one("name");
+                let playbook_file_name_opt: Option<&String> =
+                    cli_apply_session.get_one("playbook-name");
+
                 let hsm_group_members_opt = cli_apply_session.get_one::<String>("ansible-limit");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -1153,7 +1157,8 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     k8s_api_url,
-                    cli_apply_session.get_one::<String>("name").cloned(),
+                    cfs_conf_sess_name_opt,
+                    playbook_file_name_opt,
                     hsm_group_name_arg_opt,
                     cli_apply_session
                         .get_many("repo-path")

@@ -26,7 +26,8 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     k8s_api_url: &str,
-    cfs_session_name: Option<String>,
+    cfs_conf_sess_name: Option<&String>,
+    playbook_yaml_file_name_opt: Option<&String>,
     hsm_group: Option<&String>,
     repos_paths: Vec<PathBuf>,
     ansible_limit: Option<String>,
@@ -71,6 +72,8 @@ pub async fn exec(
     }
     // * End Parse input params
 
+    cfs_configuration_name = cfs_conf_sess_name.unwrap();
+
     // * Process/validate hsm group value (and ansible limit)
     if let Some(hsm_group_value) = hsm_group_value_opt {
         // Get all hsm groups details related to hsm_group input
@@ -81,8 +84,6 @@ pub async fn exec(
             hsm_group_value,
         )
         .await;
-
-        cfs_configuration_name = cfs_session_name.unwrap();
 
         // Take all nodes for all hsm_groups found and put them in a Vec
         hsm_groups_node_list = hsm_group_list
@@ -113,7 +114,6 @@ pub async fn exec(
         }
     } else {
         // no hsm_group provided but ansible_limit provided --> target nodes are the ones from ansible_limit
-        cfs_configuration_name = cfs_session_name.unwrap();
         // included = ansible_limit_nodes
         xname_list = ansible_limit_nodes;
     }
@@ -130,6 +130,7 @@ pub async fn exec(
     // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         &cfs_configuration_name,
+        playbook_yaml_file_name_opt,
         repos_paths,
         gitea_token,
         gitea_base_url,
@@ -203,6 +204,7 @@ pub async fn exec(
 
 pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     cfs_configuration_name: &str,
+    playbook_yaml_file_name_opt: Option<&String>,
     repos: Vec<PathBuf>,
     gitea_token: &str,
     gitea_base_url: &str,
@@ -431,10 +433,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         std::process::exit(0);
     }
 
-    // Check conflicts
-    // git2_rs_utils::local::fetch_and_check_conflicts(&repo)?;
-    // log::debug!("No conflicts");
-
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
     let cfs_configuration = crate::common::cfs_configuration_utils::create_from_repos(
@@ -443,6 +441,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         shasta_root_cert,
         repos,
         &cfs_configuration_name.to_string(),
+        playbook_yaml_file_name_opt,
     )
     .await;
 
