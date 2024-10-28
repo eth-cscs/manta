@@ -50,7 +50,7 @@ pub async fn exec(
         if cfs_configuration_vec.len() == 1 {
             // Get CFS configuration details with data from VCS/Gitea
             let most_recent_cfs_configuration: &CfsConfigurationResponse =
-                &cfs_configuration_vec[0];
+                &cfs_configuration_vec.first().unwrap();
 
             let mut layer_details_vec: Vec<LayerDetails> = vec![];
 
@@ -233,8 +233,13 @@ pub async fn get_configuration_layer_details(
     let commit_id_opt = layer.commit.as_ref();
 
     let gitea_commit_details: serde_json::Value = if let Some(commit_id) = commit_id_opt {
-        let commit_details_rslt = gitea::http_client::get_commit_details_from_internal_url(
-            &layer.clone_url,
+        let repo_name = layer
+            .clone_url
+            .trim_start_matches("https://api-gw-service-nmn.local/vcs/")
+            .trim_end_matches(".git");
+        let commit_details_rslt = gitea::http_client::get_commit_details_from_external_url(
+            // &layer.clone_url,
+            repo_name,
             commit_id,
             gitea_token,
             shasta_root_cert,
@@ -243,8 +248,12 @@ pub async fn get_configuration_layer_details(
 
         match commit_details_rslt {
             Ok(commit_details) => commit_details,
-            Err(_) => {
-                log::error!("Could not find details for commit '{}'", commit_id);
+            Err(e) => {
+                log::error!(
+                    "Could not find details for commit '{}'.\nReason:\n{:#?}",
+                    commit_id,
+                    e
+                );
                 serde_json::json!({})
             }
         }

@@ -178,23 +178,26 @@ pub async fn create_from_repos(
 
         let repo_ref_origin_url = repo_ref_origin.url().unwrap();
 
-        let repo_name = repo_ref_origin_url.substring(
-            repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-            repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
-        );
+        let repo_name = repo_ref_origin_url
+            .substring(
+                repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
+                repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+            )
+            .trim_end_matches(".git");
 
-        let api_url = "cray/".to_owned() + repo_name;
+        let repo_name = "cray/".to_owned() + repo_name;
+
+        println!("DEBUG - repo name: {}", repo_name);
 
         // Check if repo and local commit id exists in Shasta cvs
-        let shasta_commitid_details_resp =
-            gitea::http_client::get_commit_details_from_internal_url(
-                &api_url,
-                // &format!("/cray/{}", repo_name),
-                &local_last_commit.id().to_string(),
-                gitea_token,
-                shasta_root_cert,
-            )
-            .await;
+        let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
+            "https://api-gw-service-nmn.local/vcs/",
+            &repo_name,
+            &local_last_commit.id().to_string(),
+            gitea_token,
+            shasta_root_cert,
+        )
+        .await;
 
         // Check sync status between user face and shasta VCS
         let _ = match shasta_commitid_details_resp {
@@ -212,13 +215,15 @@ pub async fn create_from_repos(
             }
         };
 
-        let clone_url = gitea_base_url.to_owned() + "/cray/" + repo_name;
+        let clone_url = gitea_base_url.to_owned() + &repo_name;
+
+        log::debug!("clone url: {}", clone_url);
 
         // Create CFS layer
         let cfs_layer = Layer::new(
             Some(format!(
                 "{}-{}",
-                repo_name.strip_suffix(".git").unwrap(),
+                repo_name,
                 chrono::offset::Local::now().timestamp()
             )),
             // Some(shasta_commitid_details["sha"].as_str().unwrap().to_string()),
