@@ -16,12 +16,12 @@ use super::commands::{
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
-    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
-    migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
-    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    remove_nodes_from_hsm_groups, set_boot_configuration, set_boot_image, set_kernel_parameters,
-    set_runtime_configuration, update_hsm_group,
+    delete_image, delete_sessions, get_cluster, get_configuration, get_hsm,
+    get_hw_configuration_node, get_images, get_kernel_parameters, get_nodes, get_session,
+    get_template, migrate_backup, migrate_nodes_between_hsm_groups, power_off_cluster,
+    power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
+    remove_hw_component_cluster, remove_nodes_from_hsm_groups, set_boot_configuration,
+    set_boot_image, set_kernel_parameters, set_runtime_configuration, update_hsm_group,
 };
 
 pub async fn process_cli(
@@ -2005,6 +2005,34 @@ pub async fn process_cli(
                 shasta_root_cert,
                 target_hsm_group_vec,
                 session_name,
+                dry_run,
+            )
+            .await;
+        } else if let Some(cli_delete_images) = cli_root.subcommand_matches("delete-images") {
+            let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                None,
+                settings_hsm_group_name_opt,
+            )
+            .await;
+
+            let image_id_vec: Vec<&str> = cli_delete_images
+                .get_one::<String>("IMAGE_LIST")
+                .expect("'IMAGE_LIST' argument must be provided")
+                .split(",")
+                .map(|image_id_str| image_id_str.trim())
+                .collect();
+
+            let dry_run: bool = cli_delete_images.get_flag("dry-run");
+
+            delete_image::command::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                hsm_name_available_vec,
+                image_id_vec.as_slice(),
                 dry_run,
             )
             .await;

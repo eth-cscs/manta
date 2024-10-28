@@ -22,7 +22,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    let image_detail_vec: Vec<(Image, String, String)> = image::utils::filter(
+    let image_detail_vec: Vec<(Image, String, String, bool)> = image::utils::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
