@@ -1,7 +1,6 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use mesa::common::jwt_ops::get_claims_from_jwt_token;
 use toml_edit::{value, Document};
 
 pub async fn exec(
@@ -36,15 +35,8 @@ pub async fn exec(
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec = get_claims_from_jwt_token(shasta_token)
-        .unwrap()
-        .pointer("/realm_access/roles")
-        .unwrap_or(&serde_json::json!([]))
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .iter()
-        .map(|role_value| role_value.as_str().unwrap().to_string())
-        .collect::<Vec<String>>();
+    let mut settings_hsm_available_vec =
+        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
 
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));

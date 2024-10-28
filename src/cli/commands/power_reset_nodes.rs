@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops::get_claims_from_jwt_token, error::Error, pcs};
+use mesa::{common::jwt_ops, error::Error, pcs};
 
 use crate::common;
 
@@ -102,7 +102,5 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xname_vec);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
 }

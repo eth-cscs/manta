@@ -1,5 +1,5 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops::get_claims_from_jwt_token, error::Error, pcs};
+use mesa::{error::Error, pcs};
 
 use crate::common;
 
@@ -83,7 +83,10 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    let user = mesa::common::jwt_ops::get_name(shasta_token)
+        .expect("ERROR - claim 'user' not found in JWT token");
+    let username = mesa::common::jwt_ops::get_preferred_username(shasta_token)
+        .expect("ERROR - claim 'preferred_uername' not found in JWT token");
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), hsm_group_name_arg_opt);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg_opt);
 }

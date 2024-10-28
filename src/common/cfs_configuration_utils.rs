@@ -232,7 +232,7 @@ pub async fn create_from_repos(
             playbook_file_name_opt
                 .unwrap_or(&"site.yml".to_string())
                 .to_string(),
-            None,
+            Some(local_last_commit.id().to_string()),
             None,
             None,
         );

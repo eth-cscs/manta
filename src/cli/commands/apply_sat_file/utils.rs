@@ -15,7 +15,6 @@ use mesa::{
         },
         session::mesa::r#struct::v3::CfsSessionPostRequest,
     },
-    common::jwt_ops::get_claims_from_jwt_token,
     error::Error,
     hsm, ims,
 };
@@ -1074,7 +1073,7 @@ async fn process_sat_file_image_product_type_ims_recipe(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        Some("mgmt root key"),
+        "mgmt root key",
     )
     .await
     .unwrap();
@@ -1142,7 +1141,7 @@ async fn process_sat_file_image_ims_type_recipe(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        Some("mgmt root key"),
+        "mgmt root key",
     )
     .await
     .unwrap();
@@ -2399,7 +2398,8 @@ pub async fn process_session_template_section_in_sat_file(
     }
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    let user = mesa::common::jwt_ops::get_name(shasta_token).unwrap();
+    let username = mesa::common::jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap());
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", user, username);
 }

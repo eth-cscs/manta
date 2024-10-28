@@ -1,5 +1,3 @@
-use mesa::common::jwt_ops::get_claims_from_jwt_token;
-
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -7,27 +5,23 @@ pub async fn exec(
     /* block: Option<bool>, */ image_id: &str,
 ) {
     // Take user name and check if there is an SSH public key with that name already in Alps
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
+    let user_public_key_name = mesa::common::jwt_ops::get_preferred_username(shasta_token)
+        .expect("ERROR - claim 'preferred_user' not found in JWT token");
 
-    let user_public_key_name = jwt_claims["preferred_username"].as_str();
-
-    log::info!(
-        "Looking for user {} public SSH key",
-        user_public_key_name.unwrap()
-    );
+    log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
         mesa::ims::image::utils::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            user_public_key_name,
+            &user_public_key_name,
         )
         .await
     {
         user_public_ssh_value["id"].clone()
     } else {
-        eprintln!("User '{}' does not have an SSH public key in Alps, Please contact platform sys admins. Exit", user_public_key_name.unwrap());
+        eprintln!("User '{}' does not have an SSH public key in Alps, Please contact platform sys admins. Exit", user_public_key_name);
         std::process::exit(1);
     };
 

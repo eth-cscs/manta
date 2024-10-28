@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops,
     error::Error,
-    pcs::{self, transitions::r#struct::Location},
+    pcs::{self},
 };
 
 use crate::common;

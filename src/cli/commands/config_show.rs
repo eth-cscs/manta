@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use config::{Config, Value};
-use mesa::common::jwt_ops::get_claims_from_jwt_token;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
@@ -79,16 +78,8 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
 ) -> Vec<String> {
-    // FIXME: stop calling `mesa::jwt_ops::get_claims_from_jwt_token` and use `mesa::jwt_ops::get_hsm_name_available` instead
-    let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
-        .unwrap()
-        .pointer("/realm_access/roles")
-        .unwrap_or(&serde_json::json!([]))
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .iter()
-        .map(|role_value| role_value.as_str().unwrap().to_string())
-        .collect::<Vec<String>>();
+    let mut realm_access_role_vec =
+        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
 
     realm_access_role_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
@@ -116,15 +107,18 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
 }
 
 pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
-    let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
-        .unwrap()
-        .pointer("/realm_access/roles")
-        .unwrap_or(&serde_json::json!([]))
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .iter()
-        .map(|role_value| role_value.as_str().unwrap().to_string())
-        .collect::<Vec<String>>();
+    let mut realm_access_role_vec =
+        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+
+    /* let mut realm_access_role_vec = get_claims_from_jwt_token(shasta_token)
+    .unwrap()
+    .pointer("/realm_access/roles")
+    .unwrap_or(&serde_json::json!([]))
+    .as_array()
+    .unwrap_or(&Vec::new())
+    .iter()
+    .map(|role_value| role_value.as_str().unwrap().to_string())
+    .collect::<Vec<String>>(); */
 
     realm_access_role_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));

@@ -1,7 +1,7 @@
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
     bss::{self, bootparameters::BootParameters},
-    common::jwt_ops::get_claims_from_jwt_token,
+    common::jwt_ops,
     error::Error,
 };
 
@@ -92,9 +92,7 @@ pub async fn exec(
     }
 
     // Audit
-    let jwt_claims = get_claims_from_jwt_token(shasta_token).unwrap();
-
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply nodes on {:?}", jwt_claims["name"].as_str().unwrap(), jwt_claims["preferred_username"].as_str().unwrap(), xnames);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Set kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {

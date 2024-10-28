@@ -247,7 +247,14 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
                     .as_ref()
                     .unwrap()
                     .as_str(),
-            )
+            ) && cfs_session
+                .configuration
+                .as_ref()
+                .unwrap()
+                .name
+                .as_ref()
+                .unwrap()
+                == cfs_configuration_name
         })
         .flat_map(|cfs_session| {
             cfs_session

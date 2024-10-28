@@ -8,11 +8,10 @@ use mesa::{common::authentication, error::Error};
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node, apply_cluster,
-    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin,
-    apply_image, apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
+    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node,
+    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
     config_set_parent_hsm, config_set_site,
-    config_show::{self, get_hsm_name_available_from_jwt, get_hsm_name_available_from_jwt_or_all},
+    config_show::{self},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
