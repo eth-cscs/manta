@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.4] - 2024-10-28
+
+### Bug Fixes
+
+- Compilation error
+
 ## [1.53.3] - 2024-10-28
 
 ### Features
 
 - Add new command 'delete images'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.3
 
 ## [1.53.2] - 2024-10-27
 
