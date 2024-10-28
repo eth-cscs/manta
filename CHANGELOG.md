@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.8] - 2024-10-28
+
+### Refactor
+
+- Fix lint warning messages
+
 ## [1.53.7] - 2024-10-28
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.7
 
 ### Refactor
 
