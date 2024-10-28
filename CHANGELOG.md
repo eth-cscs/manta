@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.3] - 2024-10-28
+
+### Features
+
+- Add new command 'delete images'
+
 ## [1.53.2] - 2024-10-27
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add argument 'ansible-playbook-name' to command 'apply session'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.2
 
 ## [1.53.1] - 2024-10-25
 
