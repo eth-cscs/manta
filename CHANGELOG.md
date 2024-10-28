@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.5] - 2024-10-28
+
+### Bug Fixes
+
+- Fetch commit id details
+
 ## [1.53.4] - 2024-10-28
 
 ### Bug Fixes
 
 - Compilation error
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.4
 
 ## [1.53.3] - 2024-10-28
 
