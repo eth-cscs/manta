@@ -199,7 +199,7 @@ pub mod command {
         let mut image_xnames_boot_map = Vec::new();
         for image_details_tuple in image_detail_tuple_vec {
             let image_id = image_details_tuple.0.name;
-            if image_details_tuple.4 && image_id_vec.contains(image_id) {
+            if image_details_tuple.3 && image_id_vec.contains(&image_id.as_str()) {
                 image_xnames_boot_map.push(image_id);
             }
         }
