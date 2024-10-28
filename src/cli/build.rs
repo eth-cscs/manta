@@ -546,7 +546,7 @@ pub fn subcommand_apply_configuration() -> Command {
         .arg(arg!(-l --"limit" <VALUE> "Comma separated list of nodes or HSM groups to apply the BOS sessiontemplate. If missing, default targets in BOS sessiontemplate will apply."))
 } */
 
-pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
+/* pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
     Command::new("cluster")
         .visible_aliases(["clus","clstr"])
         .arg_required_else_help(true)
@@ -565,7 +565,7 @@ pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
-}
+} */
 
 pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     Command::new("sat-file")

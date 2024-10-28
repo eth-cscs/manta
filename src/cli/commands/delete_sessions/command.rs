@@ -1,8 +1,5 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::cfs::{
-    component::shasta::r#struct::v2::{ComponentRequest, ComponentResponse},
-    session::mesa::r#struct::v3::CfsSessionGetResponse,
-};
+use mesa::cfs::component::shasta::r#struct::v2::{ComponentRequest, ComponentResponse};
 
 pub async fn exec(
     shasta_token: &str,
@@ -348,7 +345,7 @@ pub fn is_cfs_configuration_a_desired_configuration(
     })
 } */
 
-/// Validate CFS session type dynamic:
+/* /// Validate CFS session type dynamic:
 /// - check CFS configuration related to CFS session is a desired configuration used by a node or
 /// hsm group different than the provided one.
 /// We need this validation because, when deleting a CFS session, we need to make sure it is not
@@ -371,9 +368,9 @@ pub fn is_cfs_configuration_a_desired_configuration_of_other(
         })
         .map(|cfs_component| cfs_component.id.clone().unwrap())
         .collect()
-}
+} */
 
-/// Validate CFS session type image:
+/* /// Validate CFS session type image:
 /// - check CFS configuration related to CFS session is not used to build any other image
 pub fn is_cfs_configuration_used_to_build_image(
     cfs_session_vec: &Vec<CfsSessionGetResponse>,
@@ -406,4 +403,4 @@ pub fn is_cfs_configuration_used_to_build_image(
         })
         .flat_map(|cfs_session| cfs_session.get_result_id_vec())
         .collect()
-}
+} */

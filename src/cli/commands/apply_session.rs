@@ -405,7 +405,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         );
 
         let timestamp = local_last_commit.time().seconds();
-        let tm = chrono::NaiveDateTime::from_timestamp_opt(timestamp, 0).unwrap();
+        let tm = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
 
         log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
 
@@ -447,7 +447,6 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         gitea_base_url,
         shasta_root_cert,
         repos,
-        &cfs_configuration_name.to_string(),
         playbook_yaml_file_name_opt,
     )
     .await;

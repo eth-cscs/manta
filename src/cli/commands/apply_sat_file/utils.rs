@@ -581,7 +581,7 @@ pub fn render_jinja2_sat_file_yaml(
     sat_file_yaml
 }
 
-pub fn render_jinja2_sat_file_struct(
+/* pub fn render_jinja2_sat_file_struct(
     sat_file_content: &String,
     values_file_content_opt: Option<&String>,
     value_cli_vec_opt: Option<Vec<String>>,
@@ -616,7 +616,7 @@ pub fn render_jinja2_sat_file_struct(
     let sat_file_yaml: SatFile = serde_yaml::from_str(&sat_file_rendered).unwrap();
 
     sat_file_yaml
-}
+} */
 
 pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,

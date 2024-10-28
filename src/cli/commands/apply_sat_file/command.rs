@@ -95,15 +95,16 @@ pub async fn exec(
         color::Fg(color::Reset),
         serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
     );
-    let mut process_sat_file = false;
-    if !assume_yes {
-        process_sat_file = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+
+    let process_sat_file = if !assume_yes {
+        dialoguer::Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Please check the template above and confirm to proceed.")
             .interact()
-            .unwrap();
+            .unwrap()
     } else {
-        process_sat_file = true
-    }
+        true
+    };
+
     // Run/process Pre-hook
     if prehook.is_some() {
         println!("Running the pre-hook '{}'", &prehook.unwrap());

@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::DateTime;
 use substring::Substring;
 
 use crate::common::local_git_repo;
@@ -54,7 +54,7 @@ pub async fn exec(
 
     println!(
         "HEAD commit time: {}",
-        NaiveDateTime::from_timestamp(local_last_commit.time().seconds(), 0)
+        DateTime::from_timestamp(local_last_commit.time().seconds(), 0).unwrap()
     );
 
     // Check if all changes in local repo has been commited locally

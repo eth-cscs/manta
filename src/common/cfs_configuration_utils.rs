@@ -148,7 +148,6 @@ pub async fn create_from_repos(
     gitea_base_url: &str,
     shasta_root_cert: &[u8],
     repos: Vec<PathBuf>,
-    cfs_configuration_name: &String,
     playbook_file_name_opt: Option<&String>,
 ) -> CfsConfigurationRequest {
     // Create CFS configuration

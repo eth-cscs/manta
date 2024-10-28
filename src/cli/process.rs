@@ -8,9 +8,10 @@ use mesa::{common::authentication, error::Error};
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node,
-    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
-    config_set_parent_hsm, config_set_site,
+    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node, apply_configuration,
+    apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file,
+    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
+    config_set_site,
     config_show::{self},
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
@@ -2195,7 +2196,7 @@ pub async fn get_target_hsm_group_vec_or_all(
     }
 }
 
-/// Returns a list of HSM groups the user is expected to work with or none (empty vec) if user is
+/* /// Returns a list of HSM groups the user is expected to work with or none (empty vec) if user is
 /// admin role and has not selected a HSM group to work with.
 /// This method will exit if the user is asking for HSM group not allowed
 /// Thie method is used by 'get session' function because CFS sessions related to management nodes
@@ -2228,7 +2229,7 @@ pub async fn get_target_hsm_group_vec(
     } else {
         hsm_name_available_vec
     }
-}
+} */
 
 /// Validate user has access to a list of HSM group members provided.
 /// HSM members user is asking for are taken from cli command
