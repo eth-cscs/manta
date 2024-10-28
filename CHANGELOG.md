@@ -2,11 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.7] - 2024-10-28
+
+### Bug Fixes
+
+- Apply sessions not filtering CFS sessions
+
+### Features
+
+- Update mesa
+
+### Refactor
+
+- Clean lint warning messages
+
 ## [1.53.6] - 2024-10-28
 
 ### Bug Fixes
 
 - Fail in validating HSM group user has access to
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.6
 
 ## [1.53.5] - 2024-10-28
 
