@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.6] - 2024-10-28
+
+### Bug Fixes
+
+- Fail in validating HSM group user has access to
+
 ## [1.53.5] - 2024-10-28
 
 ### Bug Fixes
 
 - Fetch commit id details
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.5
 
 ## [1.53.4] - 2024-10-28
 
