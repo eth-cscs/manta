@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.9] - 2024-10-31
+
+### Refactor
+
+- Clean code
+
 ## [1.53.8] - 2024-10-28
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.8
 
 ### Refactor
 
