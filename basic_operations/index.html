@@ -1,0 +1,1387 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://eth-cscs.github.io/manta/basic_operations/">
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../cluster_mgmt_with_sat_file/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
+    
+    
+      
+        <title>Basic Operations - Manta Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#basic-operations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Manta Documentation" class="md-header__button md-logo" aria-label="Manta Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Manta Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Basic Operations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eth-cscs/manta" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eth-cscs/manta
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Manta Documentation" class="md-nav__button md-logo" aria-label="Manta Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Manta Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eth-cscs/manta" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eth-cscs/manta
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Basic Operations
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Basic Operations
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#list-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      List configurations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      List sessions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      List images
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-cluster-detailssummary" class="md-nav__link">
+    <span class="md-ellipsis">
+      List cluster details/summary
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-hardware-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      List hardware information
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-session-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get session logs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect-to-node-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to node console
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Power management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#power-on-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power on cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-on-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power on nodes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-off-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power off cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-off-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power off nodes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-reset-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power reset cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-reset-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power reset nodes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-runtime-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set runtime configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-boot-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set boot image
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-boot-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set boot configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-kernel-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set kernel parameters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrate-nodes-across-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migrate nodes across clusters
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster_mgmt_with_sat_file/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster mgmt with SAT file
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audit
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Security
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#list-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      List configurations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      List sessions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      List images
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-cluster-detailssummary" class="md-nav__link">
+    <span class="md-ellipsis">
+      List cluster details/summary
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-hardware-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      List hardware information
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-session-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get session logs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#connect-to-node-console" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to node console
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Power management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#power-on-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power on cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-on-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power on nodes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-off-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power off cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-off-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power off nodes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-reset-cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power reset cluster
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#power-reset-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Power reset nodes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-runtime-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set runtime configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-boot-image" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set boot image
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-boot-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set boot configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-kernel-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set kernel parameters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrate-nodes-across-clusters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migrate nodes across clusters
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="basic-operations">Basic operations</h1>
+<p>Manta commands have a nomal and a short version</p>
+<h2 id="list-configurations">List configurations</h2>
+<p>A configuration is a list of layers, each being a git repository containing ansible playbooks, these playbooks will run in order to create an image or to configure nodes during runtime.</p>
+<p>List/filter the configurations in the system</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>configurations<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>c<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Get all configurations for cluster 'zinal' which name contains <code>cta_test</code></p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>c<span class="w"> </span>-H<span class="w"> </span>zinal<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;*cta_test*&#39;</span>
++--------------------------------------------------------------+----------------------+----------------------------------------------------+
+<span class="p">|</span><span class="w"> </span>Config<span class="w"> </span>Name<span class="w">                                                  </span><span class="p">|</span><span class="w"> </span>Last<span class="w"> </span>updated<span class="w">         </span><span class="p">|</span><span class="w"> </span>Layers<span class="w">                                             </span><span class="p">|</span>
++<span class="o">==========================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240602153320<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-02T15:33:31Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------------------------------+----------------------+----------------------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240608192847<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-08T19:29:08Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------------------------------+----------------------+----------------------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240608201045<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-08T20:29:28Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------------------------------+----------------------+----------------------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240608203940<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-08T20:39:52Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
++--------------------------------------------------------------+----------------------+----------------------------------------------------+
+</code></pre></div>
+<blockquote>
+<p>Note: the argument <code>-p</code> matches a <a href="https://mywiki.wooledge.org/glob">blob pattern</a></p>
+</blockquote>
+<p>Get last 2 most recent configurations created or updated</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>c<span class="w"> </span>-H<span class="w"> </span>zinal<span class="w"> </span>-l<span class="w"> </span><span class="m">2</span>
++--------------------------------------------------------------+----------------------+----------------------------------------------------+
+<span class="p">|</span><span class="w"> </span>Config<span class="w"> </span>Name<span class="w">                                                  </span><span class="p">|</span><span class="w"> </span>Last<span class="w"> </span>updated<span class="w">         </span><span class="p">|</span><span class="w"> </span>Layers<span class="w">                                             </span><span class="p">|</span>
++<span class="o">==========================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240608201045<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-08T20:29:28Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------------------------------+----------------------+----------------------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>runtime-zinal_cta_test_hook-mc-cscs-24.3.0.r1-20240608203940<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-08T20:39:52Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>test_layer<span class="w">                               </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                                              </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>abd379d2aeb1d920da33392d610d3012a6ef06a2<span class="w"> </span><span class="p">|</span>
++--------------------------------------------------------------+----------------------+----------------------------------------------------+
+</code></pre></div>
+<p>If manta realise only one configuration is returned, then it will fetch extra information for each configuration layers, the example below will fetch the details of all configuration layers related to the most recent configuration created across all clusters I have access.</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>c<span class="w"> </span>-m
++--------------------------------------------+----------------------+----------------------------------------------------+--------------------------------------------------------+
+<span class="p">|</span><span class="w"> </span>Configuration<span class="w"> </span>Name<span class="w">                         </span><span class="p">|</span><span class="w"> </span>Last<span class="w"> </span>updated<span class="w">         </span><span class="p">|</span><span class="w"> </span>Layers<span class="w">                                             </span><span class="p">|</span><span class="w"> </span>Derivatives<span class="w">                                            </span><span class="p">|</span>
++<span class="o">=================================================================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>eiger-mc-compute-config-cscs-24.3.0.r1-0.1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-14T17:29:38Z<span class="w"> </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>csm-packages-1.5.0<span class="w">                       </span><span class="p">|</span><span class="w"> </span>CFS<span class="w"> </span>sessions:<span class="w">                                          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cray/csm/1.16.26<span class="w">                         </span><span class="p">|</span><span class="w">  </span>-<span class="w"> </span>batcher-3e4e38eb-db3c-45b3-bc00-992ffe4a7792<span class="w">        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">  </span>-<span class="w"> </span>batcher-b5329f53-8121-49ab-b7dd-7de7f17bf4bb<span class="w">        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-03-22T10:54:39Z<span class="w">                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>crayvcs<span class="w"> </span>-<span class="w"> </span>cf-gitea-import<span class="w">                </span><span class="p">|</span><span class="w"> </span>BOS<span class="w"> </span>sessiontemplates:<span class="w">                                  </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>6423c550ea38a3b6befc4867ea7319157b48c554<span class="w"> </span><span class="p">|</span><span class="w">  </span>-<span class="w"> </span>eiger-mc-compute-template-cscs-24.3.0.r1-0.1.x86_64<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>csm_packages.yml<span class="w">                         </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w"> </span>IMS<span class="w"> </span>images:<span class="w">                                            </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>shs-cassini_install-cscs-24.3.0<span class="w">          </span><span class="p">|</span><span class="w">  </span>-<span class="w"> </span>eiger-mc-compute-cscs-24.3.0.r1-0.1<span class="w">                 </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cscs-24.3.0cscs-24.5.0<span class="w">                   </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-05-03T10:24:28+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Riccardo<span class="w"> </span>Di<span class="w"> </span>Maria<span class="w">                        </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>4dead2f7ebd1080d6a65d4b374618cf727624215<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>shs_cassini_install.yml<span class="w">                  </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>cos-compute-cscs-24.3.0<span class="w">                  </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cscs-24.3.0<span class="w">                              </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-06-14T15:44:11+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Gennaro<span class="w"> </span>Oliva<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>f8247821fa3c220159f31694cc995f24e07bb8f1<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>cos-compute.yml<span class="w">                          </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>csm-diags-compute-1.5.26<span class="w">                 </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cray/csm-diags/1.5.26<span class="w">                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-03-22T17:11:47Z<span class="w">                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>crayvcs<span class="w"> </span>-<span class="w"> </span>cf-gitea-import<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>3b59bd64682b8e55c7f49c6317442b48cea6bb53<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>csm-diags-compute.yml<span class="w">                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>sma-ldms-compute-1.9.14<span class="w">                  </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cray/sma/1.9.14<span class="w">                          </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-03-22T16:24:29Z<span class="w">                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>crayvcs<span class="w"> </span>-<span class="w"> </span>cf-gitea-import<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>09b922e6a608f273dd28dfbc9eaf089b355a56b8<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>sma-ldms-compute.yml<span class="w">                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>cscs<span class="w">                                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cscs-24.3.0<span class="w">                              </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-06-14T19:26:31+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Gennaro<span class="w"> </span>Oliva<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>a58fc02eb298cd2b472c616d2ef641ee2c456181<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site.yml<span class="w">                                 </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>cpe-pe_deploy-cscs-24.3.0<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cscs-24.5.0<span class="w">                              </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-06-14T13:51:32+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Gennaro<span class="w"> </span>Oliva<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>f9105c8172af7521910e849d274c91103bfbde75<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site-cscs.yml<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>slurm-site-cscs-24.3.0<span class="w">                   </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">   </span>cscs-24.3.0<span class="w">                              </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-06-05T15:58:19+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Gennaro<span class="w"> </span>Oliva<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>e75324a1a35f20fda131fded61a486025fce6d41<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>site-cscs.yml<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w">                                                    </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Name:<span class="w">     </span>cos-compute-last-cscs-24.3.0<span class="w">             </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Branch:<span class="w">                                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Tag:<span class="w">                                               </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Date:<span class="w">     </span><span class="m">2024</span>-06-04T18:31:44+02:00<span class="w">                </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Author:<span class="w">   </span>Chris<span class="w"> </span>Gamboni<span class="w">                            </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Commit:<span class="w">   </span>6bf3f82608686da8dbf857656f1e37c4c84054d1<span class="w"> </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                      </span><span class="p">|</span><span class="w"> </span>Playbook:<span class="w"> </span>cos-compute-last.yml<span class="w">                     </span><span class="p">|</span><span class="w">                                                        </span><span class="p">|</span>
++--------------------------------------------+----------------------+----------------------------------------------------+--------------------------------------------------------+
+</code></pre></div>
+<blockquote>
+<p>Note: manta will try to resolve the <code>git tag</code> related to each <code>configuration layer</code></p>
+</blockquote>
+<h2 id="list-sessions">List sessions</h2>
+<p>A session is a job against a configuration to create an image or configure a compute node during runtime.</p>
+<p>List/filter the sessions in the system</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>sessions<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>s<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Get all configurations for cluster 'eiger'</p>
+<p><div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>sessions<span class="w"> </span>-H<span class="w"> </span>eiger
++----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+---------------+----------+
+<span class="p">|</span><span class="w"> </span>Session<span class="w"> </span>Name<span class="w">                                 </span><span class="p">|</span><span class="w"> </span>Configuration<span class="w"> </span>Name<span class="w">                         </span><span class="p">|</span><span class="w"> </span>Start<span class="w">               </span><span class="p">|</span><span class="w"> </span>Status<span class="w">   </span><span class="p">|</span><span class="w"> </span>Succeeded<span class="w"> </span><span class="p">|</span><span class="w"> </span>Target<span class="w"> </span>Def<span class="w"> </span><span class="p">|</span><span class="w"> </span>Target<span class="w">        </span><span class="p">|</span><span class="w"> </span>Image<span class="w"> </span>ID<span class="w"> </span><span class="p">|</span>
++<span class="o">================================================================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>batcher-3e4e38eb-db3c-45b3-bc00-992ffe4a7792<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-mc-compute-config-cscs-24.3.0.r1-0.1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-15T14:28:58<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">complete</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">true</span><span class="w">      </span><span class="p">|</span><span class="w"> </span>dynamic<span class="w">    </span><span class="p">|</span><span class="w"> </span>x1000c0s0b1n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s0b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s0b0n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span>----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+---------------+----------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>batcher-b5329f53-8121-49ab-b7dd-7de7f17bf4bb<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-mc-compute-config-cscs-24.3.0.r1-0.1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-15T14:29:00<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">complete</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">true</span><span class="w">      </span><span class="p">|</span><span class="w"> </span>dynamic<span class="w">    </span><span class="p">|</span><span class="w"> </span>x1000c0s3b1n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b1n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b0n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b1n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s0b1n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1002c0s7b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b0n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b1n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b1n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b0n1<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
++----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+---------------+----------+
+</code></pre></div>
+eg</p>
+<p>Get last 3 sessions created among all the clusters the user has access</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>sessions<span class="w"> </span>-l<span class="w"> </span><span class="m">3</span>
++----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+----------------+----------+
+<span class="p">|</span><span class="w"> </span>Session<span class="w"> </span>Name<span class="w">                                 </span><span class="p">|</span><span class="w"> </span>Configuration<span class="w"> </span>Name<span class="w">                         </span><span class="p">|</span><span class="w"> </span>Start<span class="w">               </span><span class="p">|</span><span class="w"> </span>Status<span class="w">   </span><span class="p">|</span><span class="w"> </span>Succeeded<span class="w"> </span><span class="p">|</span><span class="w"> </span>Target<span class="w"> </span>Def<span class="w"> </span><span class="p">|</span><span class="w"> </span>Target<span class="w">         </span><span class="p">|</span><span class="w"> </span>Image<span class="w"> </span>ID<span class="w"> </span><span class="p">|</span>
++<span class="o">=================================================================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>batcher-3f4da728-2160-45d2-9109-26313eb1ae1b<span class="w"> </span><span class="p">|</span><span class="w"> </span>adula-uan-config-24.5.0-2<span class="w">                  </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-15T14:29:00<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">complete</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">false</span><span class="w">     </span><span class="p">|</span><span class="w"> </span>dynamic<span class="w">    </span><span class="p">|</span><span class="w"> </span>x3100c0s28b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span>----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+----------------+----------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>batcher-b5329f53-8121-49ab-b7dd-7de7f17bf4bb<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-mc-compute-config-cscs-24.3.0.r1-0.1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-15T14:29:00<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">complete</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">true</span><span class="w">      </span><span class="p">|</span><span class="w"> </span>dynamic<span class="w">    </span><span class="p">|</span><span class="w"> </span>x1000c0s3b1n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b0n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b1n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b0n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b1n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s0b1n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1002c0s7b0n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b0n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b0n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b1n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s1b0n0<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s2b1n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span><span class="w">                                              </span><span class="p">|</span><span class="w">                                            </span><span class="p">|</span><span class="w">                     </span><span class="p">|</span><span class="w">          </span><span class="p">|</span><span class="w">           </span><span class="p">|</span><span class="w">            </span><span class="p">|</span><span class="w"> </span>x1000c0s3b0n1<span class="w">  </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
+<span class="p">|</span>----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+----------------+----------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>batcher-9dfea67f-6638-4acf-8429-4d242e264bdb<span class="w"> </span><span class="p">|</span><span class="w"> </span>adula-uan-config-24.5.0-2<span class="w">                  </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-15T14:46:51<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">complete</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nb">false</span><span class="w">     </span><span class="p">|</span><span class="w"> </span>dynamic<span class="w">    </span><span class="p">|</span><span class="w"> </span>x3100c0s28b0n0<span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="p">|</span>
++----------------------------------------------+--------------------------------------------+---------------------+----------+-----------+------------+----------------+----------+
+</code></pre></div>
+<h2 id="list-images">List images</h2>
+<p>Images are created through sessions against configurations. Images can be assigned to nodes to boot. Manta tracks down the configuration used to build an image through the sessions used to build it, withtout this information the image content is not traceable and the nodes using it are subject to errors or misconfiguration.</p>
+<p>List/filter the images in the system</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>images<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>i<span class="w"> </span>...
+</code></pre></div>
+<p>eg</p>
+<p>List images all images created for cluster eiger</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>i<span class="w"> </span>-H<span class="w"> </span>eiger
++--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------+
+<span class="p">|</span><span class="w"> </span>Image<span class="w"> </span>ID<span class="w">                             </span><span class="p">|</span><span class="w"> </span>Name<span class="w">                                </span><span class="p">|</span><span class="w"> </span>Creation<span class="w"> </span><span class="nb">time</span><span class="w">                    </span><span class="p">|</span><span class="w"> </span>CFS<span class="w"> </span>configuration<span class="w"> </span><span class="p">|</span><span class="w"> </span>HSM<span class="w"> </span>groups<span class="w"> </span><span class="p">|</span>
++<span class="o">================================================================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>39c7603b-805b-4aeb-9c4b-27f960400489<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-uan-3.1.0<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-03-31T08:52:39.210677+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>44d34cf9-01d1-4600-bbf3-a69b303bf464<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-cos-3.1.0<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-03-31T08:53:43.665937+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>5024e45e-d1f5-4cca-bf7b-0b0b4e7f0785<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-uan-3.1.1<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-06-13T11:03:21.448332+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>5e7c2e99-7386-4db5-b39b-6e5f107936bd<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-cos-3.1.1<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-06-13T11:03:51.481619+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>cbaf89c5-d5be-4251-b154-c81b05bd5e59<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-uan-3.1.2<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-10-19T19:09:42.689921+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>09b986aa-2ee1-44a2-8358-71d11a772f5f<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-cos-3.1.2<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-10-19T19:10:04.608446+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>83f0224d-e1db-4925-8de6-55cdf0b3bbf1<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-uan-3.1.4<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-11-22T14:51:39.867557+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>a279cfc0-88db-48db-af18-b044326d4d9e<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-cos-3.1.4<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2023</span>-11-22T14:52:41.057211+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>866dc945-f7e7-475f-9ce2-b8480bc070d6<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-uan-3.1.6<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-02-28T08:55:05.596347+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>3cd22417-0a13-4e55-afd1-645ebfd00805<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-cos-3.1.6<span class="w">                     </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-02-28T08:55:19.685122+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
+<span class="p">|</span>--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>9503d311-91a1-40bc-a484-0ea18a9167e7<span class="w"> </span><span class="p">|</span><span class="w"> </span>eiger-mc-compute-cscs-24.3.0.r1-0.1<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2024</span>-06-05T15:10:54.924288+00:00<span class="w"> </span><span class="p">|</span><span class="w"> </span>Not<span class="w"> </span>found<span class="w">         </span><span class="p">|</span><span class="w">            </span><span class="p">|</span>
++--------------------------------------+-------------------------------------+----------------------------------+-------------------+------------+
+</code></pre></div>
+<h2 id="list-cluster-detailssummary">List cluster details/summary</h2>
+<h2 id="list-hardware-information">List hardware information</h2>
+<p>List the hardware information in the system</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>hardware<span class="w"> </span>cluster<span class="w"> </span>...
+manta<span class="w"> </span>get<span class="w"> </span>hardware<span class="w"> </span>node<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<p><div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>hw<span class="w"> </span>c<span class="w"> </span>...
+manta<span class="w"> </span>g<span class="w"> </span>hw<span class="w"> </span>n<span class="w"> </span>...
+</code></pre></div>
+eg</p>
+<p>Get hardware components summary for cluster eiger</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>hw<span class="w"> </span>cluster<span class="w"> </span>eiger
+Getting<span class="w"> </span>hw<span class="w"> </span>components<span class="w"> </span><span class="k">for</span><span class="w"> </span>node<span class="w"> </span><span class="s1">&#39;x1002c0s7b0n0&#39;</span><span class="w"> </span><span class="o">[</span><span class="m">16</span>/17<span class="o">]</span>
++------------------------------------+----------+
+<span class="p">|</span><span class="w"> </span>HW<span class="w"> </span>Component<span class="w">                       </span><span class="p">|</span><span class="w"> </span>Quantity<span class="w"> </span><span class="p">|</span>
++<span class="o">===============================================</span>+
+<span class="p">|</span><span class="w"> </span>Memory<span class="w"> </span><span class="o">(</span>GiB<span class="o">)</span><span class="w">                       </span><span class="p">|</span><span class="w"> </span><span class="m">4608</span><span class="w">     </span><span class="p">|</span>
+<span class="p">|</span>------------------------------------+----------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>SS11<span class="w"> </span>200Gb<span class="w"> </span>2P<span class="w"> </span>NIC<span class="w"> </span>Mezz<span class="w"> </span>REV02<span class="w"> </span><span class="o">(</span>HSN<span class="o">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">17</span><span class="w">       </span><span class="p">|</span>
+<span class="p">|</span>------------------------------------+----------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>AMD<span class="w"> </span>EPYC<span class="w"> </span><span class="m">7742</span><span class="w"> </span><span class="m">64</span>-Core<span class="w"> </span>Processor<span class="w">    </span><span class="p">|</span><span class="w"> </span><span class="m">34</span><span class="w">       </span><span class="p">|</span>
++------------------------------------+----------+
+</code></pre></div>
+<p>eg</p>
+<p>Get hardware component details for cluster eiger</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>g<span class="w"> </span>hw<span class="w"> </span>cluster<span class="w"> </span>eiger<span class="w"> </span>--output<span class="w"> </span>details
+Getting<span class="w"> </span>hw<span class="w"> </span>components<span class="w"> </span><span class="k">for</span><span class="w"> </span>node<span class="w"> </span><span class="s1">&#39;x1002c0s7b0n0&#39;</span><span class="w"> </span><span class="o">[</span><span class="m">16</span>/17<span class="o">]</span>
++---------------+-----------+-----------+---------------------------------+------------------------------------+
+<span class="p">|</span><span class="w"> </span>Node<span class="w">          </span><span class="p">|</span><span class="w"> </span><span class="m">16384</span><span class="w"> </span>MiB<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">32768</span><span class="w"> </span>MiB<span class="w"> </span><span class="p">|</span><span class="w"> </span>AMD<span class="w"> </span>EPYC<span class="w"> </span><span class="m">7742</span><span class="w"> </span><span class="m">64</span>-Core<span class="w"> </span>Processor<span class="w"> </span><span class="p">|</span><span class="w"> </span>SS11<span class="w"> </span>200Gb<span class="w"> </span>2P<span class="w"> </span>NIC<span class="w"> </span>Mezz<span class="w"> </span>REV02<span class="w"> </span><span class="o">(</span>HSN<span class="o">)</span><span class="w"> </span><span class="p">|</span>
++<span class="o">==============================================================================================================</span>+
+<span class="p">|</span><span class="w"> </span>x1000c0s0b0n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s0b0n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s0b1n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s0b1n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s1b0n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s1b0n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s1b1n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s1b1n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s2b0n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s2b0n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s2b1n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s2b1n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s3b0n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s3b0n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s3b1n0<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1000c0s3b1n1<span class="w"> </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
+<span class="p">|</span>---------------+-----------+-----------+---------------------------------+------------------------------------<span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>x1002c0s7b0n0<span class="w"> </span><span class="p">|</span><span class="w">     </span>❌<span class="w">    </span><span class="p">|</span><span class="w">  </span>✅<span class="w"> </span><span class="o">(</span><span class="m">16</span><span class="o">)</span><span class="w">  </span><span class="p">|</span><span class="w">              </span>✅<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w">             </span><span class="p">|</span><span class="w">               </span>✅<span class="w"> </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w">               </span><span class="p">|</span>
++---------------+-----------+-----------+---------------------------------+------------------------------------+
+</code></pre></div>
+<h2 id="get-session-logs">Get session logs</h2>
+<p>It is possible to inspect the ansible output when a session is running.</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>get<span class="w"> </span>log<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>l<span class="w"> </span>...
+</code></pre></div>
+<p>eg</p>
+<p>Get the logs of a session</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>log<span class="w"> </span>--session-name<span class="w"> </span>batcher-cef892ee-39af-444a-b32c-89478a100e4d
+<span class="o">[</span><span class="m">2022</span>-09-27T12:41:49Z<span class="w"> </span>INFO<span class="w">  </span>manta::shasta_cfs_session_logs::client<span class="o">]</span><span class="w"> </span>Pod<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;cfs-b49cdc2b-d6cb-4477-b502-6be479472546-2jrlg&quot;</span>
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Waiting<span class="w"> </span><span class="k">for</span><span class="w"> </span>Inventory
+Inventory<span class="w"> </span>generation<span class="w"> </span>completed
+SSH<span class="w"> </span>keys<span class="w"> </span>migrated<span class="w"> </span>to<span class="w"> </span>/root/.ssh
+<span class="w">  </span>%<span class="w"> </span>Total<span class="w">    </span>%<span class="w"> </span>Received<span class="w"> </span>%<span class="w"> </span>Xferd<span class="w">  </span>Average<span class="w"> </span>Speed<span class="w">   </span>Time<span class="w">    </span>Time<span class="w">     </span>Time<span class="w">  </span>Current
+<span class="w">                                 </span>Dload<span class="w">  </span>Upload<span class="w">   </span>Total<span class="w">   </span>Spent<span class="w">    </span>Left<span class="w">  </span>Speed
+<span class="w">  </span><span class="m">0</span><span class="w">     </span><span class="m">0</span><span class="w">    </span><span class="m">0</span><span class="w">     </span><span class="m">0</span><span class="w">    </span><span class="m">0</span><span class="w">     </span><span class="m">0</span><span class="w">      </span><span class="m">0</span><span class="w">      </span><span class="m">0</span><span class="w"> </span>--:--:--<span class="w"> </span>--:--:--<span class="w"> </span>--:--:--<span class="w">     </span><span class="m">0</span>
+HTTP/1.1<span class="w"> </span><span class="m">200</span><span class="w"> </span>OK
+content-type:<span class="w"> </span>text/html<span class="p">;</span><span class="w"> </span><span class="nv">charset</span><span class="o">=</span>UTF-8
+cache-control:<span class="w"> </span>no-cache,<span class="w"> </span>max-age<span class="o">=</span><span class="m">0</span>
+x-content-type-options:<span class="w"> </span>nosniff
+date:<span class="w"> </span>Tue,<span class="w"> </span><span class="m">27</span><span class="w"> </span>Sep<span class="w"> </span><span class="m">2022</span><span class="w"> </span><span class="m">12</span>:18:16<span class="w"> </span>GMT
+server:<span class="w"> </span>envoy
+transfer-encoding:<span class="w"> </span>chunked
+
+Sidecar<span class="w"> </span>available
+<span class="o">[</span>WARNING<span class="o">]</span>:<span class="w"> </span>Invalid<span class="w"> </span>characters<span class="w"> </span>were<span class="w"> </span>found<span class="w"> </span><span class="k">in</span><span class="w"> </span>group<span class="w"> </span>names<span class="w"> </span>but<span class="w"> </span>not<span class="w"> </span>replaced,<span class="w"> </span>use
+-vvvv<span class="w"> </span>to<span class="w"> </span>see<span class="w"> </span>details
+
+PLAY<span class="w"> </span><span class="o">[</span>Compute<span class="o">]</span><span class="w"> </span>*****************************************************************
+
+PLAY<span class="w"> </span><span class="o">[</span>Application<span class="o">]</span><span class="w"> </span>*************************************************************
+skipping:<span class="w"> </span>no<span class="w"> </span>hosts<span class="w"> </span>matched
+
+PLAY<span class="w"> </span><span class="o">[</span>Management_Worker<span class="o">]</span><span class="w"> </span>*******************************************************
+skipping:<span class="w"> </span>no<span class="w"> </span>hosts<span class="w"> </span>matched
+
+PLAY<span class="w"> </span>RECAP<span class="w"> </span>*********************************************************************
+x1500c7s2b0n0<span class="w">              </span>:<span class="w"> </span><span class="nv">ok</span><span class="o">=</span><span class="m">1</span><span class="w">    </span><span class="nv">changed</span><span class="o">=</span><span class="m">0</span><span class="w">    </span><span class="nv">unreachable</span><span class="o">=</span><span class="m">0</span><span class="w">    </span><span class="nv">failed</span><span class="o">=</span><span class="m">0</span><span class="w">    </span><span class="nv">skipped</span><span class="o">=</span><span class="m">33</span><span class="w">   </span><span class="nv">rescued</span><span class="o">=</span><span class="m">0</span><span class="w">    </span><span class="nv">ignored</span><span class="o">=</span><span class="m">0</span>
+</code></pre></div>
+<h2 id="connect-to-node-console">Connect to node console</h2>
+<p>Sometimes, the node is unrecheable or can't be accessed, for these cases, the console may help to diagnose hardware issues.</p>
+<p>eg</p>
+<div class="highlight"><pre><span></span><code>manta console x1500c2s4b0n1
+Connected to x1500c2s4b0n1!
+Use &amp;. key combination to exit the console.
+
+&lt;ConMan&gt; Connection to console [x1500c2s4b0n1] opened.
+
+&lt;ConMan&gt; Console [x1500c2s4b0n1] joined with &lt;nobody@localhost&gt; on pts/511 at 10-30 02:14.
+
+nid003129 login:
+</code></pre></div>
+<h2 id="power-management">Power management</h2>
+<h3 id="power-on-cluster">Power on cluster</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>on<span class="w"> </span>cluster<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>on<span class="w"> </span>c<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power on cluster <code>zinal</code></p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>on<span class="w"> </span>c<span class="w"> </span>zinal
+</code></pre></div>
+<h3 id="power-on-nodes">Power on nodes</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>on<span class="w"> </span>nodes<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>on<span class="w"> </span>n<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power on a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>on<span class="w"> </span>n<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1
+</code></pre></div>
+<h3 id="power-off-cluster">Power off cluster</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>off<span class="w"> </span>cluster<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>off<span class="w"> </span>c<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power off cluster <code>zinal</code></p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>off<span class="w"> </span>c<span class="w"> </span>zinal
+</code></pre></div>
+<h3 id="power-off-nodes">Power off nodes</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>off<span class="w"> </span>nodes<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>off<span class="w"> </span>n<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power off a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>off<span class="w"> </span>n<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1
+</code></pre></div>
+<h3 id="power-reset-cluster">Power reset cluster</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>reset<span class="w"> </span>cluster<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>reset<span class="w"> </span>c<span class="w"> </span>&lt;cluster<span class="w"> </span>name&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power reset cluster <code>zinal</code></p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>reset<span class="w"> </span>c<span class="w"> </span>zinal
+</code></pre></div>
+<h3 id="power-reset-nodes">Power reset nodes</h3>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>power<span class="w"> </span>reset<span class="w"> </span>nodes<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>reset<span class="w"> </span>n<span class="w"> </span>&lt;list<span class="w"> </span>of<span class="w"> </span>nodes&gt;
+</code></pre></div>
+<p>eg:</p>
+<p>Power reset a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>p<span class="w"> </span>reset<span class="w"> </span>n<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1
+</code></pre></div>
+<h2 id="set-runtime-configuration">Set runtime configuration</h2>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>runtime-configuration<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>s<span class="w"> </span>rc<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Set/update runtime configuration for all nodes in a cluster</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>runtime-configuration<span class="w"> </span>--hsm-group<span class="w"> </span>zinal<span class="w"> </span>--configuration<span class="w"> </span>my_configuration
+</code></pre></div>
+<p>Set/update runtime configuration for a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>runtime-configuration<span class="w"> </span>--xnames<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1<span class="w"> </span>--configuration<span class="w"> </span>my_configuration
+</code></pre></div>
+<h2 id="set-boot-image">Set boot image</h2>
+<details class="warning" open="open">
+<summary><strong>Highly discourage</strong></summary>
+<p>Use this command only if <code>manta set boot-configuration</code> fails because it can't find the sessions linking the configuration with the image (meaning information in the system has been deleted)</p>
+</details>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-image<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>s<span class="w"> </span>bi<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Set/update boot image for all nodes in a cluster</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-image<span class="w"> </span>--hsm-group<span class="w"> </span>zinal<span class="w"> </span>--image-id<span class="w"> </span>e2ce82f0-e7ba-4f36-9f5c-750346599600
+</code></pre></div>
+<p>Set/update runtime configuration for a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-image<span class="w"> </span>--xnames<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1<span class="w"> </span>--image-id<span class="w"> </span>e2ce82f0-e7ba-4f36-9f5c-750346599600
+</code></pre></div>
+<h2 id="set-boot-configuration">Set boot configuration</h2>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-configuration<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>s<span class="w"> </span>bc<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Set/update boot configuration for all nodes in a cluster</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-configuration<span class="w"> </span>--hsm-group<span class="w"> </span>zinal<span class="w"> </span>--configuration<span class="w"> </span>my-configuration
+</code></pre></div>
+<p>Set/update boot configuration for a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>boot-configuration<span class="w"> </span>--xnames<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1<span class="w"> </span>--configuration<span class="w"> </span>my-configuration
+</code></pre></div>
+<h2 id="set-kernel-parameters">Set kernel parameters</h2>
+<details class="info" open="open">
+<summary><strong>Do not use <code>rootfs</code></strong></summary>
+<p>The <code>rootfs</code> kernel parameter is managed automatically when changing the boot image, do not add <code>rootfs</code> kernel param in this command</p>
+</details>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>kernel-parameters<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>s<span class="w"> </span>kp<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Set/update boot configuration for all nodes in a cluster</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>kernel-parameters<span class="w"> </span>--hsm-group<span class="w"> </span>zinal<span class="w"> </span>--kernel-parameters<span class="w"> </span><span class="s2">&quot;console=ttyS0,115200 bad_page=panic crashkernel=512M hugepagelist=2m-2g intel_pstate=disable iommu.passthrough=on numa_balancing=disable numa_interleave_omit=headless oops=panic pageblock_order=14 pcie_ports=native rd.retry=10 rd.shell split_lock_detect=off systemd.unified_cgroup_hierarchy=1 ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=</span><span class="si">${</span><span class="nv">SPIRE_JOIN_TOKEN</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>Set/update boot configuration for a list of nodes</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span><span class="nb">set</span><span class="w"> </span>kernel-parameters<span class="w"> </span>--xnames<span class="w"> </span>x1001c1s5b0n0,x1001c1s5b0n1<span class="w"> </span>--kernel-parameters<span class="w"> </span><span class="s2">&quot;console=ttyS0,115200 bad_page=panic crashkernel=512M hugepagelist=2m-2g intel_pstate=disable iommu.passthrough=on numa_balancing=disable numa_interleave_omit=headless oops=panic pageblock_order=14 pcie_ports=native rd.retry=10 rd.shell split_lock_detect=off systemd.unified_cgroup_hierarchy=1 ip=dhcp quiet ksocklnd.skip_mr_route_setup=1 cxi_core.disable_default_svc=0 cxi_core.enable_fgfc=1 cxi_core.sct_pid_mask=0xf spire_join_token=</span><span class="si">${</span><span class="nv">SPIRE_JOIN_TOKEN</span><span class="si">}</span>
+</code></pre></div>
+<h2 id="migrate-nodes-across-clusters">Migrate nodes across clusters</h2>
+<p>Move a list of nodes from one cluster to another</p>
+<p>Normal version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>migrate<span class="w"> </span>nodes<span class="w"> </span>...
+</code></pre></div>
+<p>Short version</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>m<span class="w"> </span>n<span class="w"> </span>...
+</code></pre></div>
+<p>eg:</p>
+<p>Move node 'x1001c1s7b0n0' from cluster 'zinal_cta' to cluster 'zinal_tds'</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>m<span class="w"> </span>n<span class="w"> </span>-d<span class="w"> </span>-f<span class="w"> </span>zinal_cta<span class="w"> </span>-t<span class="w"> </span>zinal_tds<span class="w"> </span>x1001c1s7b0n0<span class="sb">`</span>
+HSM<span class="w"> </span><span class="s1">&#39;zinal_tds&#39;</span><span class="w"> </span>members:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;x1001c1s7b0n0&quot;</span>,<span class="w"> </span><span class="s2">&quot;x1001c1s7b0n1&quot;</span><span class="o">]</span>
+HSM<span class="w"> </span><span class="s1">&#39;zinal_cta&#39;</span><span class="w"> </span>members:<span class="w"> </span><span class="o">[]</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>

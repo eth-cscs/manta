@@ -1,0 +1,915 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://eth-cscs.github.io/manta/cluster_mgmt_with_sat_file/">
+      
+      
+        <link rel="prev" href="../basic_operations/">
+      
+      
+        <link rel="next" href="../cluster_migration/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
+    
+    
+      
+        <title>Cluster mgmt with SAT file - Manta Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cluster-management-with-sat-file" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Manta Documentation" class="md-header__button md-logo" aria-label="Manta Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Manta Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Cluster mgmt with SAT file
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eth-cscs/manta" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eth-cscs/manta
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Manta Documentation" class="md-nav__button md-logo" aria-label="Manta Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Manta Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eth-cscs/manta" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eth-cscs/manta
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../basic_operations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Basic Operations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Cluster mgmt with SAT file
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Cluster mgmt with SAT file
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sat-files-cannot-have-configurations-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      SAT files cannot have configurations only
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SAT files cannot have configurations only">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-wont-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below won't work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-is-correct" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below is correct
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extra-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extra features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extra features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jinja2-template-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      jinja2 template engine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="jinja2 template engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-will-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below will fail
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-is-correct_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below is correct
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-tags-in-configuration-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Git tags in configuration layers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expand-sat-template-file-variables-with-cli-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expand SAT template file variables with CLI arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-__date__-wildcard" class="md-nav__link">
+    <span class="md-ellipsis">
+      the __DATE__ wildcard
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cluster_migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Cluster migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Audit
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Security
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sat-files-cannot-have-configurations-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      SAT files cannot have configurations only
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SAT files cannot have configurations only">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-wont-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below won't work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-is-correct" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below is correct
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extra-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extra features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extra features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jinja2-template-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      jinja2 template engine
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="jinja2 template engine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-will-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below will fail
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-example-below-is-correct_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      The example below is correct
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-tags-in-configuration-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Git tags in configuration layers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expand-sat-template-file-variables-with-cli-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Expand SAT template file variables with CLI arguments
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-__date__-wildcard" class="md-nav__link">
+    <span class="md-ellipsis">
+      the __DATE__ wildcard
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="cluster-management-with-sat-file">Cluster management with SAT file</h1>
+<p>The sat file is used by the <code>sat bootprep</code> command to create configurations, images and configure/deploy clusters. The entry points are 2 files, one used as a template and another with the values.</p>
+<p>Manta is compatible and extends the <code>sat bootprep</code> file features.</p>
+<h2 id="sat-files-cannot-have-configurations-only">SAT files cannot have configurations only</h2>
+<p>Currently, the management plane does not track which cluster belongs to which configuration unless there is an <code>image</code> or a <code>session template</code> linked to it. The reason is <code>images</code> and <code>session templates</code> are linked to both configurations and nodes or clusters, therefore we need to list those in order to be able which cluster is using which configuration and be able to find out if it is relevant to the user. Due to this behaviour, manta won't process SAT files with only configurations unless they are esplicitly used in a <code>image</code> or a <code>session template</code>.</p>
+<h4 id="the-example-below-wont-work">The example below won't work</h4>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_template.yml
+---
+configurations:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;my-configuration&quot;</span>
+<span class="w">  </span>layers:
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>test_layer
+<span class="w">    </span>playbook:<span class="w"> </span>site.yml
+<span class="w">    </span>git:
+<span class="w">      </span>url:<span class="w"> </span>https://api-gw-service-nmn.local/vcs/cray/test_layer.git
+<span class="w">      </span>tag:<span class="w"> </span><span class="m">1</span>.0<span class="w">  </span><span class="c1"># Using git tags</span>
+</code></pre></div>
+<p>The file neither has a <code>image</code> nor a <code>session_template</code> section, therefore there is no way for manta to track which cluster this configuration belongs to or which user has access to it.</p>
+<h4 id="the-example-below-is-correct">The example below is correct</h4>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_template.yml
+---
+schema_version:<span class="w"> </span><span class="m">1</span>.0.2
+configurations:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;runtime-{{vcluster.name}}-mc-{{default.suffix}}-{{vcluster.version}}&quot;</span>
+<span class="w">  </span>layers:
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>test_layer
+<span class="w">    </span>playbook:<span class="w"> </span>site.yml
+<span class="w">    </span>git:
+<span class="w">      </span>url:<span class="w"> </span>https://api-gw-service-nmn.local/vcs/cray/test_layer.git
+<span class="w">      </span>tag:<span class="w"> </span><span class="o">{{</span>test_layer.tag<span class="o">}}</span>
+
+session_templates:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;{{vcluster.name}}-mc-{{default.suffix}}-{{vcluster.version}}.x86_64&quot;</span>
+<span class="w">  </span>ims:
+<span class="w">    </span>id:<span class="w"> </span>dbc5300c-3c98-4384-a7a7-28e628cbff43
+<span class="w">  </span>configuration:<span class="w"> </span><span class="s2">&quot;runtime-{{vcluster.name}}-mc-{{default.suffix}}-{{vcluster.version}}&quot;</span>
+<span class="w">  </span>bos_parameters:
+<span class="w">    </span>boot_sets:
+<span class="w">      </span>compute:
+<span class="w">        </span>arch:<span class="w"> </span>X86
+<span class="w">        </span>kernel_parameters:<span class="w"> </span><span class="nv">ip</span><span class="o">=</span>dhcp<span class="w"> </span>quiet<span class="w"> </span>ksocklnd.skip_mr_route_setup<span class="o">=</span><span class="m">1</span><span class="w"> </span>cxi_core.disable_default_svc<span class="o">=</span><span class="m">0</span><span class="w"> </span>cxi_core.enable_fgfc<span class="o">=</span><span class="m">1</span><span class="w"> </span>cxi_core.sct_pid_mask<span class="o">=</span>0xf<span class="w"> </span><span class="nv">spire_join_token</span><span class="o">=</span><span class="si">${</span><span class="nv">SPIRE_JOIN_TOKEN</span><span class="si">}</span>
+<span class="w">        </span>node_groups:
+<span class="w">          </span><span class="o">{{</span><span class="w"> </span>vcluster.sessiontemplate_group_list<span class="w"> </span><span class="o">}}</span>
+<span class="w">        </span>rootfs_provider_passthrough:<span class="w"> </span><span class="s2">&quot;dvs:api-gw-service-nmn.local:300:hsn0,nmn0:0&quot;</span>
+</code></pre></div>
+<h2 id="extra-features">Extra features</h2>
+<h3 id="jinja2-template-engine">jinja2 template engine</h3>
+<p>While sat bootprep templating seems very simple, manta follows <a href="https://www.ansible.com/">ansible</a> approach and uses a jinja2 template engine.</p>
+<details class="warning" open="open">
+<summary>Using <code>-</code> in variable names is not recommended</summary>
+<p>A common mistake when dealing with jinja2 files is using <code>-</code> in variable names. This won't work since jinja will expand this as a math operator, to avoid this issue, try to use <code>_</code> instead.</p>
+<p>eg:</p>
+<p>When a jinja template engine sees this <code>{{ template-version }}</code> it will try to resolve <code>template-version</code> as a mathematical expression (substract) of 2 variables (variable <code>template</code> and variable <code>version</code>). If those variables don't exists in the sessions var, then they will become <code>undefined</code> and the jinja template engine will try to substract the 2 undefined values <code>undefined - undefine</code>, then, the operation will fail. This however would work if the session vars contains:</p>
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>my_sat_vars.yml
+template:<span class="w"> </span><span class="m">4</span>
+version:<span class="w"> </span><span class="m">3</span>
+</code></pre></div>
+<p>And as a result, the session template name would become <code>my_template_1</code> as a result of <code>4 - 3 = 1</code></p>
+</details>
+<h4 id="the-example-below-will-fail">The example below will fail</h4>
+<p>template file:</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_template.yml
+---
+schema_version:<span class="w"> </span><span class="m">1</span>.0.2
+configurations:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;my_config&quot;</span>
+<span class="w">  </span>layers:
+<span class="w">  </span>-<span class="w"> </span>name:<span class="w"> </span>test_layer
+<span class="w">    </span>playbook:<span class="w"> </span>site.yml
+<span class="w">    </span>git:
+<span class="w">      </span>url:<span class="w"> </span>https://api-gw-service-nmn.local/vcs/cray/test_layer.git
+<span class="w">      </span>tag:<span class="w"> </span>v0.1.0
+
+session_templates:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;my-template-{{ template-version }}&quot;</span><span class="w"> </span><span class="c1"># Won&#39;t work. Error when resolving `session-version` because `-` is a math operator. Don&#39;t use `-` in variable names</span>
+<span class="w">  </span>ims:
+<span class="w">    </span>id:<span class="w"> </span>dbc5300c-3c98-4384-a7a7-28e628cbff43
+<span class="w">  </span>configuration:<span class="w"> </span><span class="s2">&quot;runtime_my_config_mc&quot;</span>
+<span class="w">  </span>bos_parameters:
+<span class="w">    </span>boot_sets:
+<span class="w">      </span>compute:
+<span class="w">        </span>arch:<span class="w"> </span>X86
+<span class="w">        </span>kernel_parameters:<span class="w"> </span><span class="nv">ip</span><span class="o">=</span>dhcp<span class="w"> </span>quiet<span class="w"> </span>ksocklnd.skip_mr_route_setup<span class="o">=</span><span class="m">1</span><span class="w"> </span>cxi_core.disable_default_svc<span class="o">=</span><span class="m">0</span><span class="w"> </span>cxi_core.enable_fgfc<span class="o">=</span><span class="m">1</span><span class="w"> </span>cxi_core.sct_pid_mask<span class="o">=</span>0xf<span class="w"> </span><span class="nv">spire_join_token</span><span class="o">=</span><span class="si">${</span><span class="nv">SPIRE_JOIN_TOKEN</span><span class="si">}</span>
+<span class="w">        </span>node_groups:
+<span class="w">          </span>-<span class="w"> </span>fora
+<span class="w">        </span>rootfs_provider_passthrough:<span class="w"> </span><span class="s2">&quot;dvs:api-gw-service-nmn.local:300:hsn0,nmn0:0&quot;</span>
+</code></pre></div>
+<p>var session file</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_vars.yml
+---
+session-version:<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span><span class="c1"># Won&#39;t work. Variable names should not have `-`</span>
+</code></pre></div>
+<p>And the error will be very explicit</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>a<span class="w"> </span>sat<span class="w"> </span>-t<span class="w"> </span>my_sat_template.yml<span class="w"> </span>-f<span class="w"> </span>my_sat_vars.yml
+...
+called<span class="w"> </span><span class="sb">`</span>Result::unwrap<span class="o">()</span><span class="sb">`</span><span class="w"> </span>on<span class="w"> </span>an<span class="w"> </span><span class="sb">`</span>Err<span class="sb">`</span><span class="w"> </span>value:<span class="w"> </span>Error<span class="w"> </span><span class="o">{</span><span class="w"> </span>kind:<span class="w"> </span>InvalidOperation,<span class="w"> </span>detail:<span class="w"> </span><span class="s2">&quot;tried to use - operator on unsupported types undefined and undefined&quot;</span>,<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;&lt;string&gt;&quot;</span>,<span class="w"> </span>line:<span class="w"> </span><span class="m">13</span><span class="w"> </span><span class="o">}</span>
+
+----------------------------------<span class="w"> </span>&lt;string&gt;<span class="w"> </span>-----------------------------------
+<span class="w">  </span><span class="m">10</span><span class="w"> </span><span class="p">|</span><span class="w">       </span>tag:<span class="w"> </span><span class="o">{{</span>test_layer.tag<span class="o">}}</span>
+<span class="w">  </span><span class="m">11</span><span class="w"> </span><span class="p">|</span>
+<span class="w">  </span><span class="m">12</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>session_templates:
+<span class="w">  </span><span class="m">13</span><span class="w"> </span>&gt;<span class="w"> </span>-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;my-template-{{ template-version }}&quot;</span><span class="w"> </span><span class="c1"># Won&#39;t work. Error when resolving `session-version` because `-` is a math operator. Don&#39;t use `-` in variable names</span>
+<span class="w">     </span>i<span class="w">                         </span>^^^^^^^^^^^^^^^^<span class="w"> </span>invalid<span class="w"> </span>operation
+<span class="w">  </span><span class="m">14</span><span class="w"> </span><span class="p">|</span><span class="w">   </span>ims:
+<span class="w">  </span><span class="m">15</span><span class="w"> </span><span class="p">|</span><span class="w">     </span>id:<span class="w"> </span>dbc5300c-3c98-4384-a7a7-28e628cbff43
+<span class="w">  </span><span class="m">16</span><span class="w"> </span><span class="p">|</span><span class="w">   </span>configuration:<span class="w"> </span><span class="s2">&quot;runtime_my_config_mc&quot;</span>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+...
+</code></pre></div>
+<h4 id="the-example-below-is-correct_1">The example below is correct</h4>
+<p>template file:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">session_templates</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_template_{{</span><span class="nv"> </span><span class="s">template_version</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">  </span><span class="nt">ims</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbc5300c-3c98-4384-a7a7-28e628cbff43</span>
+<span class="w">  </span><span class="nt">configuration</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;runtime_my_config_mc&quot;</span>
+<span class="nn">...</span>
+</code></pre></div>
+<p>var session file</p>
+<div class="highlight"><pre><span></span><code><span class="nt">session_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="nn">...</span>
+</code></pre></div>
+<h3 id="git-tags-in-configuration-layers">Git tags in configuration layers</h3>
+<p>Manta can resolve git tags in configuration layers</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">configurations</span><span class="p">:</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-configuration&quot;</span>
+<span class="w">  </span><span class="nt">layers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_layer</span>
+<span class="w">    </span><span class="nt">playbook</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">site.yml</span>
+<span class="w">    </span><span class="nt">git</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://api-gw-service-nmn.local/vcs/cray/test_layer.git</span>
+<span class="w">      </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span><span class="w">  </span><span class="c1"># manta will resolve this git tag for this repo and replace this line with `commit: &lt;commit id/SHA&gt;`</span>
+<span class="nn">...</span>
+</code></pre></div>
+<p>In the example above, we are telling manta we want Alps to use the ansible in repo <code>test_layer</code> based on git tag <code>1.0</code>. As a consequence, Manta will resolve the git tag to its commit id, set this value in the sat file configuration layer and submit the configuration craetion task to Alps management plane.</p>
+<h3 id="expand-sat-template-file-variables-with-cli-arguments">Expand SAT template file variables with CLI arguments</h3>
+<p>Manta can expand the variables in the template file with a vars file or through CLI. Users can submit values in both vars file and as CLI arguments, if a variable value exists in both (vars file and as a CLI argument) then the CLI argument will take preference and overwrite the value in the vars file.</p>
+<p>eg</p>
+<p>Submit a sat file without the vars file, the sat template file only has 1 variable <code>version</code> which value is sent through CLI argument</p>
+<div class="highlight"><pre><span></span><code>manta<span class="w"> </span>a<span class="w"> </span>sat<span class="w"> </span>-t<span class="w"> </span>my_sat_file.yml<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;version=v1.2.0&quot;</span>
+</code></pre></div>
+<p>eg</p>
+<p>This second example shows an example where a user submits 2 different values for the <code>version</code> variable. CLI arguments take preference and the final value for the <code>version</code> variable is <code>v1.2.0</code>.</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_vars.yml
+version:<span class="w"> </span><span class="m">0</span>.0.5
+
+manta<span class="w"> </span>a<span class="w"> </span>sat<span class="w"> </span>-t<span class="w"> </span>my_sat_file.yml<span class="w"> </span>-f<span class="w"> </span>my_sat_vars.yaml<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;version=v1.2.0&quot;</span>
+</code></pre></div>
+<h3 id="the-__date__-wildcard">the <code>__DATE__</code> wildcard</h3>
+<p>Since configurations are immutable in manta, having to change the vars file to update the version may be painful to deal with (specially during development), if this is the case, then manta has a special wildcard <code>__DATE__</code> to simplify this process.</p>
+<p>eg</p>
+<p>Having the vars and template files below</p>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_vars.yml
+version:<span class="w"> </span>__DATE__
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>cat<span class="w"> </span>my_sat_file.yml
+---
+configurations:
+-<span class="w"> </span>name:<span class="w"> </span><span class="s2">&quot;my-configuration-{{ version }}&quot;</span>
+...
+</code></pre></div>
+<p>The vars file use the <code>__DATE__</code> wildcard to substitute the version variable with current timestame everytime <code>manta a sat</code> runs, the configuration name will resolve to something like <code>my-configuration-20240608201045</code> this forces to have a different configuration name every time <code>manta a sat</code> runs</p>
+<div class="admonition info">
+<p class="admonition-title">This is only recommended during development or test/dev clusters</p>
+<p>"In production, the user of <code>__DATE__</code> is discarded and a proper version name should be used instead"</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
