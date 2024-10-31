@@ -1,4 +1,4 @@
-# Wellcome to Manta
+# Welcome to Manta
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
