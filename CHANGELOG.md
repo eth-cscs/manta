@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.10] - 2024-10-31
+
+### Features
+
+- Improve performance in get cluster command
+
 ## [1.53.9] - 2024-10-31
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.9
 
 ### Refactor
 
