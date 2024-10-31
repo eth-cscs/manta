@@ -52,7 +52,7 @@ impl SatFile {
                     .filter_map(|sat_template_image| sat_template_image.configuration.clone())
                     .collect(),
                 None => {
-                    eprintln!("'images' section missing in SAT file");
+                    eprintln!("ERROR - 'images' section missing in SAT file");
                     std::process::exit(1);
                 }
             };
@@ -86,13 +86,30 @@ impl SatFile {
                 }
             };
 
+            println!("DEBUG - configurations:\n{:#?}", self.configurations);
+            println!(
+                "DEBUG - configuration names:\n{:#?}",
+                configuration_name_sessiontemplate_vec
+            );
+
             // Remove configurations not used by any sessiontemplate
-            self.configurations
-                .as_mut()
-                .unwrap_or(&mut Vec::new())
-                .retain(|configuration| {
-                    configuration_name_sessiontemplate_vec.contains(&configuration.name)
-                });
+            /* self.configurations
+            .as_mut()
+            .unwrap_or(&mut Vec::new())
+            .retain(|configuration| {
+                configuration_name_sessiontemplate_vec.contains(&configuration.name)
+            }); */
+
+            if let Some(&[_]) = self.configurations.as_deref() {
+                self.configurations
+                    .as_mut()
+                    .unwrap_or(&mut Vec::new())
+                    .retain(|configuration| {
+                        configuration_name_sessiontemplate_vec.contains(&configuration.name)
+                    })
+            } else {
+                self.configurations = None;
+            }
 
             let image_name_sessiontemplate_vec: Vec<String> = self
                 .session_templates
