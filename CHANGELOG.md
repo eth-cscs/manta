@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.12] - 2024-11-04
+
+### Features
+
+- Sat templates now accepts lines starting with '#' as comments
+- Sat template rendering fails if values are missing
+- Sat template rendering ebug enabled for better errors
+
 ## [1.53.11] - 2024-11-04
 
 ### Bug Fixes
@@ -11,6 +19,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.11
 
 ### Refactor
 
