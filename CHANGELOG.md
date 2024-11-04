@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.13] - 2024-11-04
+
+### Miscellaneous Tasks
+
+- Update cicd pipleine
+
 ## [1.53.12] - 2024-11-04
 
 ### Features
@@ -9,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - Sat templates now accepts lines starting with '#' as comments
 - Sat template rendering fails if values are missing
 - Sat template rendering ebug enabled for better errors
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.12
 
 ## [1.53.11] - 2024-11-04
 
