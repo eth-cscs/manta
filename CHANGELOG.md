@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.11] - 2024-11-04
+
+### Bug Fixes
+
+- Add debug messages with rendering jinja templates
+
+### Features
+
+- Update mesa
+
+### Refactor
+
+- Clean code
+- Improve jinja template rendering error message
+
 ## [1.53.10] - 2024-10-31
 
 ### Features
 
 - Improve performance in get cluster command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.10
 
 ## [1.53.9] - 2024-10-31
 
