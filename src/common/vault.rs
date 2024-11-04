@@ -57,12 +57,12 @@ pub mod http_client {
             .await?;
 
         if resp.status().is_success() {
-            let resp_text: Value = serde_json::from_str(&resp.text().await?)?;
-            Ok(resp_text["data"].clone()) // TODO: investigate why this ugly clone in here
+            let secret_value: Value = resp.json().await?;
+            Ok(secret_value["data"].clone()) // TODO: investigate why this ugly clone in here
         } else {
-            let resp_text: Value = serde_json::from_str(&resp.text().await?)?;
-            log::error!("ERROR fetching vault secrets:\n{:#?}", resp_text);
-            Err(resp_text["errors"][0].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
+            let error_value: Value = resp.json().await?;
+            log::error!("ERROR fetching vault secrets:\n{:#?}", error_value);
+            Err(error_value["errors"][0].as_str().unwrap().into()) // Black magic conversion from Err(Box::new("my error msg")) which does not
         }
     }
 

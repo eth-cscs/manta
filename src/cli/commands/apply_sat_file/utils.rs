@@ -591,7 +591,23 @@ pub fn render_jinja2_sat_file_yaml(
     }
 
     // render sat template file
-    let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
+    let sat_file_rendered_rslt = env.render_str(sat_file_content, values_file_yaml);
+
+    let sat_file_rendered = match sat_file_rendered_rslt {
+        Ok(sat_file_rendered) => sat_file_rendered,
+        Err(err) => {
+            eprintln!("ERROR - Could not render template: {:#}", err);
+            // render causes as well
+            let mut err = &err as &dyn std::error::Error;
+            while let Some(next_err) = err.source() {
+                eprintln!();
+                eprintln!("caused by: {:#}", next_err);
+                err = next_err;
+            }
+
+            std::process::exit(1);
+        }
+    };
 
     let sat_file_yaml: Value = serde_yaml::from_str(&sat_file_rendered).unwrap();
 
