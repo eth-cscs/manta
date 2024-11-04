@@ -18,7 +18,6 @@ use mesa::{
     error::Error,
     hsm, ims,
 };
-use minijinja::Environment;
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use serde_yaml::{Mapping, Value};
@@ -558,7 +557,20 @@ pub fn render_jinja2_sat_file_yaml(
     values_file_content_opt: Option<&String>,
     value_cli_vec_opt: Option<Vec<String>>,
 ) -> Value {
-    let env = minijinja::Environment::new();
+    let mut env = minijinja::Environment::new();
+    // Set/enable debug in order to force minijinja to print debug error messages which are more
+    // descriptive. Eg https://github.com/mitsuhiko/minijinja/blob/main/examples/error/src/main.rs#L4-L5
+    env.set_debug(true);
+    // Set lines starting with `#` as comments
+    env.set_syntax(
+        minijinja::syntax::SyntaxConfig::builder()
+            .line_comment_prefix("#")
+            .build()
+            .unwrap(),
+    );
+    // Set 'String' as undefined behaviour meaning, missing values won't pass the template
+    // rendering
+    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
 
     // Render session values file
     let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
@@ -592,11 +604,6 @@ pub fn render_jinja2_sat_file_yaml(
     }
 
     // render sat template file
-    // Set/enable debug in order to force minijinja to print debug error messages which are more
-    // descriptive. Eg https://github.com/mitsuhiko/minijinja/blob/main/examples/error/src/main.rs#L4-L5
-    let mut env = Environment::new();
-    env.set_debug(true);
-
     let sat_file_rendered_rslt = env.render_str(sat_file_content, values_file_yaml);
 
     let sat_file_rendered = match sat_file_rendered_rslt {
