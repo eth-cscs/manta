@@ -18,6 +18,7 @@ use mesa::{
     error::Error,
     hsm, ims,
 };
+use minijinja::Environment;
 use serde::{Deserialize, Serialize};
 use serde_json::Map;
 use serde_yaml::{Mapping, Value};
@@ -591,6 +592,11 @@ pub fn render_jinja2_sat_file_yaml(
     }
 
     // render sat template file
+    // Set/enable debug in order to force minijinja to print debug error messages which are more
+    // descriptive. Eg https://github.com/mitsuhiko/minijinja/blob/main/examples/error/src/main.rs#L4-L5
+    let mut env = Environment::new();
+    env.set_debug(true);
+
     let sat_file_rendered_rslt = env.render_str(sat_file_content, values_file_yaml);
 
     let sat_file_rendered = match sat_file_rendered_rslt {
@@ -608,6 +614,8 @@ pub fn render_jinja2_sat_file_yaml(
             std::process::exit(1);
         }
     };
+    // Disable debug
+    env.set_debug(false);
 
     let sat_file_yaml: Value = serde_yaml::from_str(&sat_file_rendered).unwrap();
 
