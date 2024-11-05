@@ -14,6 +14,9 @@ pub async fn exec(
     session_name_opt: Option<&String>,
     hsm_group_config: Option<&String>,
 ) {
+    // FIXME: refactor becase this code is duplicated in command `manta apply sat-file` and also in
+    // `manta logs`
+
     // Get CFS sessions
     let cfs_sessions_vec_opt = mesa::cfs::session::mesa::http_client::get(
         shasta_token,

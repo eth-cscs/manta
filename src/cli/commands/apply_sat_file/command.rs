@@ -33,6 +33,7 @@ pub async fn exec(
     gitea_base_url: &str,
     gitea_token: &str,
     do_not_reboot: bool,
+    watch_logs: bool,
     prehook: Option<&String>,
     posthook: Option<&String>,
     image_only: bool,
@@ -345,6 +346,10 @@ pub async fn exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
                 &mut ref_name_processed_hashmap,
                 image_yaml_vec_opt.unwrap_or(&Vec::new()).to_vec(),
                 &cray_product_catalog,
@@ -352,6 +357,7 @@ pub async fn exec(
                 ansible_passthrough_opt,
                 debug_on_failure,
                 dry_run,
+                watch_logs,
             )
             .await;
 

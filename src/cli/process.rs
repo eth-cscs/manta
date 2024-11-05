@@ -1367,6 +1367,7 @@ pub async fn process_cli(
                 let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
                 let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
+                let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
                 let assume_yes: bool = cli_apply_sat_file.get_flag("yes");
 
                 /* let dry_run: bool = *cli_apply_sat_file.get_one("dry-run").unwrap();
@@ -1396,6 +1397,7 @@ pub async fn process_cli(
                     gitea_base_url,
                     gitea_token,
                     do_not_reboot,
+                    watch_logs,
                     prehook,
                     posthook,
                     cli_apply_sat_file.get_flag("image-only"),

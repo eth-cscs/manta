@@ -149,6 +149,8 @@ pub async fn exec(
     .await
     .unwrap();
 
+    // FIXME: refactor becase this code is duplicated in command `manta apply sat-file` and also in
+    // `manta logs`
     if watch_logs {
         log::info!("Fetching logs ...");
         /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(

@@ -775,6 +775,10 @@ pub async fn import_images_section_in_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    vault_base_url: &str,
+    vault_secret_path: &str,
+    vault_role_id: &str,
+    k8s_api_url: &str,
     ref_name_processed_hashmap: &mut HashMap<String, String>,
     image_yaml_vec: Vec<serde_yaml::Value>,
     cray_product_catalog: &BTreeMap<String, String>,
@@ -782,6 +786,7 @@ pub async fn import_images_section_in_sat_file(
     ansible_passthrough_opt: Option<&String>,
     debug_on_failure: bool, // tag: &str,
     dry_run: bool,
+    watch_logs: bool,
 ) -> HashMap<String, serde_yaml::Value> {
     // Get an image to process (the image either has no dependency or it's image dependency has
     // already ben processed)
@@ -802,6 +807,10 @@ pub async fn import_images_section_in_sat_file(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
+            vault_base_url,
+            vault_secret_path,
+            vault_role_id,
+            k8s_api_url,
             image_yaml,
             cray_product_catalog,
             ansible_verbosity_opt,
@@ -809,6 +818,7 @@ pub async fn import_images_section_in_sat_file(
             ref_name_processed_hashmap,
             debug_on_failure,
             dry_run,
+            watch_logs,
         )
         .await
         .unwrap();
@@ -836,6 +846,10 @@ pub async fn create_image_from_sat_file_serde_yaml(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
+    vault_base_url: &str,
+    vault_secret_path: &str,
+    vault_role_id: &str,
+    k8s_api_url: &str,
     image_yaml: &serde_yaml::Value, // NOTE: image may be an IMS job or a CFS session
     cray_product_catalog: &BTreeMap<String, String>,
     ansible_verbosity_opt: Option<u8>,
@@ -843,6 +857,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
     ref_name_image_id_hashmap: &HashMap<String, String>,
     debug_on_failure: bool,
     dry_run: bool,
+    watch_logs: bool,
 ) -> Result<String, Error> {
     // Collect CFS session details from SAT file
     // Get CFS session name from SAT file
@@ -1069,7 +1084,12 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
+                vault_base_url,
+                vault_secret_path,
+                vault_role_id,
+                k8s_api_url,
                 &cfs_session,
+                watch_logs,
             )
             .await
             .unwrap();
