@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.14] - 2024-11-05
+
+### Features
+
+- Apply sat-file command can now show logs when creating images
+
 ## [1.53.13] - 2024-11-04
 
 ### Miscellaneous Tasks
 
 - Update cicd pipleine
+- Release manta version 1.53.13
 
 ## [1.53.12] - 2024-11-04
 
