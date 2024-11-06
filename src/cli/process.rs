@@ -371,6 +371,7 @@ pub async fn process_cli(
                 let xnames_arg_opt = cli_set_runtime_configuration.get_one::<String>("xnames");
 
                 let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                    // Validate HSM group name
                     Some(
                         get_target_hsm_group_vec_or_all(
                             shasta_token,
@@ -386,12 +387,21 @@ pub async fn process_cli(
                 };
 
                 let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
+                    // Get list of xnames and validate
+                    let xname_vec = xnames_arg
+                        .split(",")
+                        .map(|elem| elem.to_string())
+                        .collect::<Vec<String>>();
+
+                    validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.clone(),
                     )
+                    .await;
+
+                    Some(xname_vec)
                 } else {
                     None
                 };
@@ -434,12 +444,21 @@ pub async fn process_cli(
                 };
 
                 let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
+                    // Get list of xnames and validate
+                    let xname_vec = xnames_arg
+                        .split(",")
+                        .map(|elem| elem.to_string())
+                        .collect::<Vec<String>>();
+
+                    validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.clone(),
                     )
+                    .await;
+
+                    Some(xname_vec)
                 } else {
                     None
                 };
@@ -490,12 +509,21 @@ pub async fn process_cli(
                 };
 
                 let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
+                    // Get list of xnames and validate
+                    let xname_vec = xnames_arg
+                        .split(",")
+                        .map(|elem| elem.to_string())
+                        .collect::<Vec<String>>();
+
+                    validate_target_hsm_members(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.clone(),
                     )
+                    .await;
+
+                    Some(xname_vec)
                 } else {
                     None
                 };
@@ -1591,6 +1619,28 @@ pub async fn process_cli(
                     let hsm_group_name_arg_opt =
                         cli_apply_boot_nodes.get_one::<String>("CLUSTER_NAME");
 
+                    let xname_vec: Vec<&str> = cli_apply_boot_nodes
+                        .get_one::<String>("XNAMES")
+                        .unwrap()
+                        .split(',')
+                        .map(|xname| xname.trim())
+                        .collect();
+
+                    // Validate XNAME list
+                    let xname_valid = mesa::node::utils::validate_xnames(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        &xname_vec,
+                        hsm_group_name_arg_opt,
+                    )
+                    .await;
+
+                    if !xname_valid {
+                        eprintln!("List of xnames provided {:?} not valid. Please check nodes are valid xnames", xname_vec);
+                        std::process::exit(1);
+                    }
+
                     if hsm_group_name_arg_opt.is_some() {
                         get_target_hsm_group_vec_or_all(
                             shasta_token,
@@ -1613,12 +1663,7 @@ pub async fn process_cli(
                         cli_apply_boot_nodes.get_one::<String>("boot-image-configuration"),
                         cli_apply_boot_nodes.get_one::<String>("runtime-configuration"),
                         cli_apply_boot_nodes.get_one::<String>("kernel-parameters"),
-                        cli_apply_boot_nodes
-                            .get_one::<String>("XNAMES")
-                            .unwrap()
-                            .split(',')
-                            .map(|xname| xname.trim())
-                            .collect(),
+                        xname_vec,
                         assume_yes,
                     )
                     .await;

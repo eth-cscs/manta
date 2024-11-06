@@ -1,6 +1,10 @@
 use dialoguer::theme::ColorfulTheme;
 use mesa::error::Error;
 
+// Translates HSM group to a list of nodes
+// Validates list of nodes have valid xname format
+// Validates user has access to a list of nodes
+// Update runtime configuration for the list of nodes provided
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,

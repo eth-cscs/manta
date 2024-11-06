@@ -9,7 +9,7 @@ use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
 
 /// Get list of xnames user has access to based on input regex.
 /// This method will:
-/// 1) Breal down all regex in user input
+/// 1) Break down all regex in user input
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
 pub async fn get_curated_hsm_group_from_hostregex(
