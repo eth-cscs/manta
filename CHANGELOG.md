@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.15] - 2024-11-06
+
+### Bug Fixes
+
+- Argument 'limit' in apply template subcommand should not be mandatory
+
 ## [1.53.14] - 2024-11-05
 
 ### Features
 
 - Apply sat-file command can now show logs when creating images
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.14
 
 ## [1.53.13] - 2024-11-04
 
