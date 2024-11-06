@@ -99,25 +99,8 @@ pub fn build_cli() -> Command {
                         .subcommand(subcommand_apply_node_reset()),
                 ) */
                 .subcommand(subcommand_apply_session())
-                .subcommand(Command::new("ephemeral-environment")
-                    .visible_aliases(["ee", "eph", "ephemeral"])
-                    .arg_required_else_help(true)
-                    .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
-                    // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
-                    // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
-                    .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
-                )
-                .subcommand(Command::new("template")
-                    .visible_aliases(["t", "temp", "tmpl"])
-                    .arg_required_else_help(true)
-                    .about("Create a new BOS session from an existing BOS sessiontemplate")
-                    .arg(arg!(-n --name <VALUE> "Name of the Session"))
-                    .arg(arg!(-o --operation <VALUE> "An operation to perform on Components in this Session. Boot Applies the Template to the Components and boots/reboots if necessary. Reboot Applies the Template to the Components; guarantees a reboot. Shutdown Power down Components that are on").value_parser(["reboot", "boot", "shutdown"]).default_value("reboot"))
-                    .arg(arg!(-t --template <VALUE> "Name of the Session Template").required(true))
-                    .arg(arg!(-l --limit <VALUE> "A comma-separated list of nodes, groups, or roles to which the Session will be limited. Components are treated as OR operations unless preceded by '&' for AND or '!' for NOT").required(true))
-                    .arg(arg!(-i --"include-disabled" <VALUE> "Set to include nodes that have been disabled as indicated in the Hardware State Manager (HSM)").action(ArgAction::SetTrue))
-                    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-                )
+                .subcommand(subcommand_apply_ephemeral_environment())
+                .subcommand(subcommand_apply_template())
         )
         .subcommand( Command::new("migrate")
                 .visible_alias("m")
@@ -502,6 +485,29 @@ pub fn subcommand_apply_configuration() -> Command {
         // .group(ArgGroup::new("req_flags_name_repo-path").args(["name", "repo-path"]))
         // .group(ArgGroup::new("req_flag_file").arg("file"))
         .arg( arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name linked to this configuration"))
+}
+
+pub fn subcommand_apply_template() -> Command {
+    Command::new("template")
+                    .visible_aliases(["t", "temp", "tmpl"])
+                    .arg_required_else_help(true)
+                    .about("Create a new BOS session from an existing BOS sessiontemplate")
+                    .arg(arg!(-n --name <VALUE> "Name of the Session"))
+                    .arg(arg!(-o --operation <VALUE> "An operation to perform on Components in this Session. Boot Applies the Template to the Components and boots/reboots if necessary. Reboot Applies the Template to the Components; guarantees a reboot. Shutdown Power down Components that are on").value_parser(["reboot", "boot", "shutdown"]).default_value("reboot"))
+                    .arg(arg!(-t --template <VALUE> "Name of the Session Template").required(true))
+                    .arg(arg!(-l --limit <VALUE> "A comma-separated list of nodes, groups, or roles to which the Session will be limited. Components are treated as OR operations unless preceded by '&' for AND or '!' for NOT"))
+                    .arg(arg!(-i --"include-disabled" <VALUE> "Set to include nodes that have been disabled as indicated in the Hardware State Manager (HSM)").action(ArgAction::SetTrue))
+                    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+}
+
+pub fn subcommand_apply_ephemeral_environment() -> Command {
+    Command::new("ephemeral-environment")
+                    .visible_aliases(["ee", "eph", "ephemeral"])
+                    .arg_required_else_help(true)
+                    .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
+                    // .arg(arg!(-b --block "Blocks this operation and won't return prompt until the ephemeral environment has been created."))
+                    // .arg(arg!(-p --"public-ssh-key-id" <PUBLIC_SSH_ID> "Public ssh key id stored in Alps"))
+                    .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
 }
 
 /// Creates an image based on a list of Ansible scripts (CFS layers) and assigns the image to a HSM
