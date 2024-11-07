@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.17] - 2024-11-07
+
+### Bug Fixes
+
+- Update mesa to fix bug with apply sat command
+
 ## [1.53.16] - 2024-11-06
 
 ### Bug Fixes
@@ -10,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Command 'set boot-configuration' validates list of xnames
 - Command 'set boot-image' validates list of xnames
 - Command 'apply boot' validates list of xnames
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.16
 
 ## [1.53.15] - 2024-11-06
 
