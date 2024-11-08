@@ -19,7 +19,7 @@ pub async fn exec(
 ) {
     if hsm_group.is_some() {
         // Check user has provided valid XNAMES
-        if !node::utils::validate_xnames(
+        if !node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

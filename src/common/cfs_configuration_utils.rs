@@ -186,8 +186,6 @@ pub async fn create_from_repos(
 
         let repo_name = "cray/".to_owned() + repo_name;
 
-        println!("DEBUG - repo name: {}", repo_name);
-
         // Check if repo and local commit id exists in Shasta cvs
         let shasta_commitid_details_resp = gitea::http_client::get_commit_details(
             "https://api-gw-service-nmn.local/vcs/",

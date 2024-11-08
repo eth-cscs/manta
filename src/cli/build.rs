@@ -122,14 +122,6 @@ pub fn build_cli() -> Command {
                 ),
         )
         .subcommand(
-            Command::new("update")
-                .visible_alias("u")
-                .arg_required_else_help(true)
-                .about("Update nodes power status or boot params")
-                .subcommand(subcommand_update_nodes())
-                .subcommand(subcommand_update_hsm_group()),
-        )
-        .subcommand(
             subcommand_log()
         )
         .subcommand(
@@ -260,7 +252,7 @@ pub fn subcommand_delete() -> Command {
                 .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
                 .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
                 .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
-                .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted").action(ArgAction::SetTrue))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted").action(ArgAction::SetTrue))
                 .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
                 .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"))
 }
@@ -595,7 +587,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))
         .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing SAT file. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
         .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after processing SAT file successfully. Use \" or \'.\neg: --post-hook \"echo hello\"."))
-        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
     // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
@@ -656,16 +648,6 @@ pub fn subcommand_update_nodes() -> Command {
         .arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME"))
 }
 
-pub fn subcommand_update_hsm_group() -> Command {
-    Command::new("hsm-group")
-        .visible_aliases(["h", "hsm"])
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta apply boot cluster' command instead.\nUpdates boot and configuration of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
-        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
-        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"))
-        .arg(arg!(<HSM_GROUP_NAME> "HSM group name").required(true))
-}
-
 pub fn subcommand_apply_boot_nodes() -> Command {
     Command::new("nodes")
         .visible_aliases(["n", "node"])
@@ -675,10 +657,10 @@ pub fn subcommand_apply_boot_nodes() -> Command {
         .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to the nodes while booting"))
-        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
         .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!([CLUSTER_NAME] "Cluster name, this field should be used to validate the XNAMES belongs to CLUSTER_NAME"))
 }
 
 pub fn subcommand_apply_boot_cluster() -> Command {
@@ -690,6 +672,8 @@ pub fn subcommand_apply_boot_cluster() -> Command {
         .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
         .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
         .arg(arg!(<CLUSTER_NAME> "Cluster name").required(true))
 }
@@ -734,7 +718,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on all nodes in a cluster")
                         .arg(arg!(-R --reason <TEXT> "reason to power on"))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
@@ -744,7 +728,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
@@ -760,7 +744,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-R --reason <TEXT> "reason to power off"))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
@@ -772,7 +756,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
                         .arg(arg!(-r --regex "Input nodes in regex format.\neg 'x1003c1s.*'").action(ArgAction::SetTrue))
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
@@ -787,7 +771,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power reset all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
@@ -798,7 +782,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
                 ),
@@ -871,7 +855,7 @@ pub fn subcommand_set_kernel_params() -> Command {
         .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true))
         .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-        .arg(arg!(-y --yes "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
         .group(
             ArgGroup::new("cluster_or_xnames")
                 .args(["hsm-group", "xnames"])

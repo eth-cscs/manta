@@ -1,5 +1,6 @@
 pub mod add_hw_component_cluster;
 pub mod add_nodes_to_hsm_groups;
+pub mod apply_boot_cluster;
 pub mod apply_boot_node;
 pub mod apply_configuration;
 pub mod apply_ephemeral_env;
@@ -47,5 +48,4 @@ pub mod set_boot_configuration;
 pub mod set_boot_image;
 pub mod set_kernel_parameters;
 pub mod set_runtime_configuration;
-pub mod update_hsm_group;
 pub mod validate_local_repo;

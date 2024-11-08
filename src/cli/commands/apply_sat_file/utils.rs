@@ -86,12 +86,6 @@ impl SatFile {
                 }
             };
 
-            println!("DEBUG - configurations:\n{:#?}", self.configurations);
-            println!(
-                "DEBUG - configuration names:\n{:#?}",
-                configuration_name_sessiontemplate_vec
-            );
-
             // Remove configurations not used by any sessiontemplate
             /* self.configurations
             .as_mut()

@@ -111,7 +111,7 @@ pub async fn exec(
         // Update boot image
         for mut boot_parameter in current_node_boot_params {
             if boot_parameter.get_boot_image().eq(&image_id) {
-                boot_parameter.update_boot_image(&image_id);
+                let _ = boot_parameter.update_boot_image(&image_id);
 
                 println!(
                     "Updating '{:?}' boot image to '{}'",

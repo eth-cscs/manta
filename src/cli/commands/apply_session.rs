@@ -6,7 +6,7 @@ use mesa::{
     cfs::{self, session::mesa::r#struct::v3::CfsSessionPostRequest},
     common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
-    node::utils::validate_xnames,
+    node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
 };
 
 use k8s_openapi::chrono;
@@ -95,7 +95,7 @@ pub async fn exec(
             // both hsm_group provided and ansible_limit provided --> check ansible_limit belongs to hsm_group
             xname_list = hsm_groups_node_list;
             // Check user has provided valid XNAMES
-            if !validate_xnames(
+            if !validate_xnames_format_and_membership_agaisnt_single_hsm(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

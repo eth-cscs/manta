@@ -8,20 +8,18 @@ use mesa::{common::authentication, error::Error};
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_node, apply_configuration,
-    apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file,
-    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
-    config_set_site,
-    config_show::{self},
-    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
-    console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    delete_image, delete_sessions, get_cluster, get_configuration, get_hsm,
-    get_hw_configuration_node, get_images, get_kernel_parameters, get_nodes, get_session,
-    get_template, migrate_backup, migrate_nodes_between_hsm_groups, power_off_cluster,
-    power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
-    remove_hw_component_cluster, remove_nodes_from_hsm_groups, set_boot_configuration,
-    set_boot_image, set_kernel_parameters, set_runtime_configuration, update_hsm_group,
+    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node,
+    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin,
+    apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
+    config_set_parent_hsm, config_set_site, config_show, config_unset_auth, config_unset_hsm,
+    config_unset_parent_hsm, console_cfs_session_image_target_ansible, console_node,
+    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_image,
+    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
+    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
+    migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
+    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
+    remove_nodes_from_hsm_groups, set_boot_configuration, set_boot_image, set_kernel_parameters,
+    set_runtime_configuration,
 };
 
 pub async fn process_cli(
@@ -179,7 +177,7 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
-                    let assume_yes: bool = cli_power_on_cluster.get_flag("yes");
+                    let assume_yes: bool = cli_power_on_cluster.get_flag("assume-yes");
 
                     let output: &str = cli_power_on_cluster.get_one::<String>("output").unwrap();
 
@@ -199,7 +197,7 @@ pub async fn process_cli(
 
                     let is_regex = *cli_power_on_node.get_one::<bool>("regex").unwrap_or(&true);
 
-                    let assume_yes: bool = cli_power_on_node.get_flag("yes");
+                    let assume_yes: bool = cli_power_on_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
 
@@ -246,7 +244,7 @@ pub async fn process_cli(
                         .first()
                         .expect("The 'cluster name' argument must have a value");
 
-                    let assume_yes: bool = cli_power_off_cluster.get_flag("yes");
+                    let assume_yes: bool = cli_power_off_cluster.get_flag("assume-yes");
 
                     power_off_cluster::exec(
                         shasta_token,
@@ -269,7 +267,7 @@ pub async fn process_cli(
 
                     let is_regex = *cli_power_off_node.get_one::<bool>("regex").unwrap_or(&true);
 
-                    let assume_yes: bool = cli_power_off_node.get_flag("yes");
+                    let assume_yes: bool = cli_power_off_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
 
@@ -311,7 +309,7 @@ pub async fn process_cli(
                         .first()
                         .expect("Power off cluster must operate against a cluster");
 
-                    let assume_yes: bool = cli_power_reset_cluster.get_flag("yes");
+                    let assume_yes: bool = cli_power_reset_cluster.get_flag("assume-yes");
 
                     power_reset_cluster::exec(
                         shasta_token,
@@ -338,7 +336,7 @@ pub async fn process_cli(
                         .get_one::<bool>("regex")
                         .unwrap_or(&true);
 
-                    let assume_yes: bool = cli_power_reset_node.get_flag("yes");
+                    let assume_yes: bool = cli_power_reset_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
 
@@ -465,7 +463,7 @@ pub async fn process_cli(
 
                 let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
 
-                let assume_yes = cli_set_boot_image.get_flag("yes");
+                let assume_yes = cli_set_boot_image.get_flag("assume-yes");
 
                 let output = cli_set_boot_image
                     .get_one::<String>("output")
@@ -582,7 +580,7 @@ pub async fn process_cli(
                     .get_one::<String>("kernel-parameters")
                     .unwrap(); // clap should validate the argument
 
-                let assume_yes: bool = cli_set_kernel_parameters.get_flag("yes");
+                let assume_yes: bool = cli_set_kernel_parameters.get_flag("assume-yes");
 
                 let result = set_kernel_parameters::exec(
                     shasta_token,
@@ -1396,7 +1394,7 @@ pub async fn process_cli(
 
                 let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
                 let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
-                let assume_yes: bool = cli_apply_sat_file.get_flag("yes");
+                let assume_yes: bool = cli_apply_sat_file.get_flag("assume-yes");
 
                 /* let dry_run: bool = *cli_apply_sat_file.get_one("dry-run").unwrap();
                 // If dry_run is true, then no need to reboot because no changes to the system are
@@ -1616,9 +1614,6 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
-                    let hsm_group_name_arg_opt =
-                        cli_apply_boot_nodes.get_one::<String>("CLUSTER_NAME");
-
                     let xname_vec: Vec<&str> = cli_apply_boot_nodes
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -1626,144 +1621,88 @@ pub async fn process_cli(
                         .map(|xname| xname.trim())
                         .collect();
 
-                    // Validate XNAME list
-                    let xname_valid = mesa::node::utils::validate_xnames(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &xname_vec,
-                        hsm_group_name_arg_opt,
-                    )
-                    .await;
+                    let new_boot_image_id_opt: Option<&String> =
+                        cli_apply_boot_nodes.get_one("boot-image");
 
-                    if !xname_valid {
-                        eprintln!("List of xnames provided {:?} not valid. Please check nodes are valid xnames", xname_vec);
-                        std::process::exit(1);
-                    }
+                    let new_boot_image_configuration_opt: Option<&String> =
+                        cli_apply_boot_nodes.get_one("boot-image-configuration");
 
-                    if hsm_group_name_arg_opt.is_some() {
-                        get_target_hsm_group_vec_or_all(
-                            shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await;
-                    }
+                    let new_runtime_configuration_opt: Option<&String> =
+                        cli_apply_boot_nodes.get_one("runtime-configuration");
 
-                    let assume_yes: bool = cli_apply_boot_nodes.get_flag("yes");
+                    let new_kernel_parameters_opt: Option<&String> =
+                        cli_apply_boot_nodes.get_one::<String>("kernel-parameters");
+
+                    let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
+
+                    let assume_yes: bool = cli_apply_boot_nodes.get_flag("assume-yes");
 
                     apply_boot_node::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        cli_apply_boot_nodes.get_one::<String>("boot-image"),
-                        cli_apply_boot_nodes.get_one::<String>("boot-image-configuration"),
-                        cli_apply_boot_nodes.get_one::<String>("runtime-configuration"),
-                        cli_apply_boot_nodes.get_one::<String>("kernel-parameters"),
+                        new_boot_image_id_opt,
+                        new_boot_image_configuration_opt,
+                        new_runtime_configuration_opt,
+                        new_kernel_parameters_opt,
                         xname_vec,
                         assume_yes,
+                        dry_run,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
                     cli_apply_boot.subcommand_matches("cluster")
                 {
-                    let hsm_group_name_arg_opt =
-                        cli_apply_boot_cluster.get_one::<String>("CLUSTER_NAME");
+                    let hsm_group_name_arg = cli_apply_boot_cluster
+                        .get_one::<String>("CLUSTER_NAME")
+                        .expect("ERROR - cluster name must be provided");
 
+                    let new_boot_image_id_opt: Option<&String> =
+                        cli_apply_boot_cluster.get_one("boot-image");
+
+                    let new_boot_image_configuration_opt: Option<&String> =
+                        cli_apply_boot_cluster.get_one("boot-image-configuration");
+
+                    let new_runtime_configuration_opt: Option<&String> =
+                        cli_apply_boot_cluster.get_one("runtime-configuration");
+
+                    let new_kernel_parameters_opt: Option<&String> =
+                        cli_apply_boot_cluster.get_one::<String>("kernel-parameters");
+
+                    let assume_yes = cli_apply_boot_cluster.get_flag("assume-yes");
+
+                    let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
+
+                    // Validate
+                    //
+                    // Check user has provided valid HSM group name
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        hsm_group_name_arg_opt,
+                        Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
                     .await;
 
-                    let assume_yes = cli_apply_boot_cluster.get_flag("yes");
+                    let target_hsm_group_name = target_hsm_group_vec
+                        .first()
+                        .expect("ERROR - Could not find valid HSM group name");
 
-                    update_hsm_group::exec(
+                    apply_boot_cluster::exec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        cli_apply_boot_cluster.get_one::<String>("boot-image"),
-                        cli_apply_boot_cluster.get_one::<String>("boot-image-configuration"),
-                        cli_apply_boot_cluster.get_one::<String>("runtime-configuration"),
-                        cli_apply_boot_cluster.get_one::<String>("kernel-parameters"),
-                        target_hsm_group_vec.first().unwrap(),
+                        new_boot_image_id_opt,
+                        new_boot_image_configuration_opt,
+                        new_runtime_configuration_opt,
+                        new_kernel_parameters_opt,
+                        target_hsm_group_name,
                         assume_yes,
+                        dry_run,
                     )
                     .await;
                 }
-            }
-        } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
-            if let Some(cli_update_node) = cli_update.subcommand_matches("nodes") {
-                log::warn!("Deprecated - Please use 'manta apply boot nodes' command instead.");
-
-                let hsm_group_name_arg_opt = cli_update_node.get_one::<String>("HSM_GROUP_NAME");
-
-                if hsm_group_name_arg_opt.is_some() {
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        settings_hsm_group_name_opt,
-                    )
-                    .await;
-                }
-
-                let assume_yes = cli_update_node.get_flag("yes");
-
-                apply_boot_node::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    hsm_group_name_arg_opt,
-                    None,
-                    cli_update_node.get_one::<String>("boot-image"),
-                    cli_update_node.get_one::<String>("desired-configuration"),
-                    cli_update_node.get_one::<String>("kernel-parameters"),
-                    cli_update_node
-                        .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| xname.trim())
-                        .collect(),
-                    assume_yes,
-                )
-                .await;
-            } else if let Some(cli_update_hsm_group) = cli_update.subcommand_matches("hsm-group") {
-                log::warn!("Deprecated - Please use 'manta apply boot cluster' command instead.");
-
-                let hsm_group_name_arg_opt =
-                    cli_update_hsm_group.get_one::<String>("HSM_GROUP_NAME");
-
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
-
-                let assume_yes = cli_update_hsm_group.get_flag("yes");
-
-                update_hsm_group::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    None,
-                    cli_update_hsm_group.get_one::<String>("boot-image"),
-                    cli_update_hsm_group.get_one::<String>("desired-configuration"),
-                    cli_update_hsm_group.get_one::<String>("kernel-parameters"),
-                    target_hsm_group_vec.first().unwrap(),
-                    assume_yes,
-                )
-                .await;
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
             // Get all HSM groups the user has access
@@ -1991,7 +1930,7 @@ pub async fn process_cli(
 
             let cfs_configuration_name_pattern = cli_delete.get_one::<String>("pattern");
 
-            let yes = cli_delete.get_one::<bool>("yes").unwrap_or(&false);
+            let yes = cli_delete.get_one::<bool>("assume-yes").unwrap_or(&false);
 
             let hsm_group_name_opt = if settings_hsm_group_name_opt.is_some() {
                 settings_hsm_group_name_opt

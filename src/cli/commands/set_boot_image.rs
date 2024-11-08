@@ -81,7 +81,7 @@ pub async fn exec(
 
         // Update boot parameters
         for mut boot_parameter in current_node_boot_params {
-            boot_parameter.update_boot_image(&image_id);
+            let _ = boot_parameter.update_boot_image(&image_id);
             eprintln!(
                 "Updating {:?} boot image to '{}'",
                 boot_parameter.hosts.join(", "),

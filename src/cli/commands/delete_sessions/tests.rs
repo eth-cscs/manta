@@ -3,7 +3,7 @@ use mesa::cfs::{
     session::mesa::r#struct::v3::{CfsSessionGetResponse, Configuration, Session, Status, Target},
 };
 
-use crate::cli::commands::delete_sessions::command::{
+use cli::commands::delete_sessions::command::{
     is_cfs_configuration_a_desired_configuration_of_other, is_cfs_configuration_used_to_build_image,
 };
 
