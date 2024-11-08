@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.18-alpha.1] - 2024-11-08
+
+### Features
+
+- Improve command 'apply boot' understanding when nodes needs to be
+
+### Refactor
+
+- Clean code/modules
+
 ## [1.53.17] - 2024-11-07
 
 ### Bug Fixes
 
 - Update mesa to fix bug with apply sat command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.17
 
 ## [1.53.16] - 2024-11-06
 
