@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.18] - 2024-11-09
+
+### Features
+
+- Update manta with new operations to manage kernel parameters
+
+### Refactor
+
+- Clean code
+
 ## [1.53.18-alpha.1] - 2024-11-08
 
 ### Features
 
 - Improve command 'apply boot' understanding when nodes needs to be
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.18-alpha.1
 
 ### Refactor
 
