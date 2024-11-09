@@ -16,7 +16,7 @@ publish = false                                                         # cargo 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mesa = "0.41.33"
+mesa = "0.41.34"
 # mesa = { path = "../mesa" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
@@ -34,13 +34,13 @@ log = "0.4.17"
 log4rs = "1.2.0" # Docs about pattern encoder https://docs.rs/log4rs/0.10.0/log4rs/encode/pattern/index.html
 tokio = { version = "1.14", features = ["full"] }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
-tokio-stream = "0.1.11" # used by manta_console to create a read stream from container stdout (alternative?)
+# tokio-stream = "0.1.11" # used by manta_console to create a read stream from container stdout (alternative?)
 kube = { version = "0.87.2", features = ["kube-client", "kube-runtime", "derive", "rustls-tls", "ws"] }
 k8s-openapi = { version = "0.20.0", features = ["v1_26"] }
 # kube = { version = "0.85.0", features = [ "client", "runtime", "derive", "rustls-tls", "ws" ] }
 # k8s-openapi = { version = "0.19.0" }
 # json-patch = "1.4.0"
-hyper = { version = "0.14", features = [ "full" ] } # needed by kube-rs (to operate with kube api)
+# hyper = { version = "0.14", features = [ "full" ] } # needed by kube-rs (to operate with kube api)
 futures = "0.3.28"
 # futures-util = "0.3.24"
 clap = { version = "4.3.21", features = ["derive", "cargo", "wrap_help"] }
@@ -52,13 +52,13 @@ substring = "1.4.5"
 regex = "1.6.0"
 directories = "4.0.1"                                                      # XDG Base Directory Specification
 comfy-table = "6.1.1"                                                      # used to print mata's command output to stdout as tables
-tracing-subscriber = "0.3.16"
+# tracing-subscriber = "0.3.16"
 termion = "2.0.1"                                                          # used by manta_console to enable terminal raw and also to print text in color
 crossterm = "0.27.0"
 # dhat = "0.3.2"                                                             # used for memory profiling
-base64 = "0.13.1"
-exitcode = "1.1.2"
-digest = "0.10.7"
+# base64 = "0.13.1"
+# exitcode = "1.1.2"
+# digest = "0.10.7"
 md5 = { version = "0.7.0", features = [] }
 humansize = "2.0.0"
 indicatif = "0.17.7"

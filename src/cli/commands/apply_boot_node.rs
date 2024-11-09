@@ -149,7 +149,7 @@ pub async fn exec(
                 );
 
                 need_restart =
-                    need_restart || boot_parameter.add_kernel_params(&new_kernel_parameters);
+                    need_restart || boot_parameter.apply_kernel_params(&new_kernel_parameters);
                 log::info!("need restart? {}", need_restart);
                 let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
             });

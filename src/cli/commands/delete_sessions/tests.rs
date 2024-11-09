@@ -3,10 +3,6 @@ use mesa::cfs::{
     session::mesa::r#struct::v3::{CfsSessionGetResponse, Configuration, Session, Status, Target},
 };
 
-use cli::commands::delete_sessions::command::{
-    is_cfs_configuration_a_desired_configuration_of_other, is_cfs_configuration_used_to_build_image,
-};
-
 /// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration
 /// name appears as desired configuration in a list of CFS components
 #[test]
@@ -275,4 +271,80 @@ fn test_is_cfs_configuration_used_to_build_image_false_2() {
         .len()
             > 0
     );
+}
+
+/// Validate CFS session type dynamic:
+/// - check CFS configuration related to CFS session is not a desired configuration
+pub fn is_cfs_configuration_a_desired_configuration(
+    cfs_component_vec: &Vec<ComponentResponse>,
+    cfs_configuration_name: &str,
+) -> bool {
+    // - check CFS configuration related to CFS session is not a desired configuration
+    cfs_component_vec.iter().any(|cfs_component| {
+        cfs_component
+            .desired_config
+            .as_ref()
+            .unwrap()
+            .eq(&cfs_configuration_name)
+    })
+}
+
+/// Validate CFS session type dynamic:
+/// - check CFS configuration related to CFS session is a desired configuration used by a node or
+/// hsm group different than the provided one.
+/// We need this validation because, when deleting a CFS session, we need to make sure it is not
+/// used by a node that belongs to the HSM
+pub fn is_cfs_configuration_a_desired_configuration_of_other(
+    cfs_component_vec: &Vec<ComponentResponse>,
+    cfs_configuration_name: &str,
+    xname_vec: Vec<&str>,
+) -> Vec<String> {
+    // - check CFS configuration related to CFS session is not a desired configuration
+    cfs_component_vec
+        .iter()
+        .filter(|cfs_component| {
+            cfs_component
+                .desired_config
+                .as_ref()
+                .unwrap()
+                .eq(&cfs_configuration_name)
+                && !xname_vec.contains(&cfs_component.id.as_ref().unwrap().as_str())
+        })
+        .map(|cfs_component| cfs_component.id.clone().unwrap())
+        .collect()
+}
+
+/// Validate CFS session type image:
+/// - check CFS configuration related to CFS session is not used to build any other image
+pub fn is_cfs_configuration_used_to_build_image(
+    cfs_session_vec: &Vec<CfsSessionGetResponse>,
+    cfs_session_name: &str,
+    cfs_configuration_name: &str,
+) -> Vec<String> {
+    /* cfs_session_vec
+    .iter()
+    .filter(|cfs_session| {
+        cfs_session
+                    .get_configuration_name()
+                    .unwrap()
+                    .eq(&cfs_configuration_name)
+                // NOTE: No need the below condition because current CFS session to delete is suppossedly still running
+                // therefore not yet finished and as a consequence it won't have a result_id
+                // value
+                    && cfs_session.name.as_ref().unwrap().eq(&cfs_session_name)
+    })
+    .any(|cfs_session| !cfs_session.get_result_id_vec().is_empty()) */
+    cfs_session_vec
+        .iter()
+        .filter(|cfs_session| {
+            cfs_session
+                .get_configuration_name()
+                .unwrap()
+                .eq(&cfs_configuration_name)
+                && cfs_session.name.as_ref().unwrap().eq(&cfs_session_name)
+                && cfs_session.is_target_def_image()
+                && cfs_session.is_success()
+        })
+        .flat_map(|cfs_session| cfs_session.get_result_id_vec())
+        .collect()
 }

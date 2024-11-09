@@ -206,7 +206,7 @@ fn test_get_next_image_to_process_4() {
 #[test]
 fn test_render_sat_file_yaml_template_with_yaml_values_file() {
     let sat_file_content = r#"
-        name: "{{ name }}"
+        name: "{{ config.name }}"
         configurations:
         - name: "{{ config.name }}-{{ config.version }}"
           layers:
