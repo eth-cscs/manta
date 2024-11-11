@@ -16,8 +16,8 @@ publish = false                                                         # cargo 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# mesa = "0.41.34"
-mesa = { path = "../mesa" } # Only for development purposes
+mesa = "0.41.35"
+# mesa = { path = "../mesa" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
 strum_macros = "0.25"
