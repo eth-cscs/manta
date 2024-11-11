@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.20] - 2024-11-11
+
+### Refactor
+
+- Cfs_configuration.branch and cfs_configuration.tag are now based on a list of values a specific commit may be related to
+
 ## [1.53.19] - 2024-11-11
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.19
 
 ### Refactor
 
