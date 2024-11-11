@@ -100,18 +100,25 @@ pub async fn get_configuration_layer_details(
     let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
     // let branch_name_opt: Option<&str> = layer.branch.as_deref();
     // let mut most_recent_commit: bool = false;
-    let mut branch_name: String = "".to_string();
-    let mut tag_name: String = "".to_string();
+    let mut branch_name_vec: Vec<String> = Vec::new();
+    let mut tag_name_vec: Vec<String> = Vec::new();
     let commit_sha;
 
-    let repo_ref_vec: Vec<Value> = gitea::http_client::get_all_refs_from_repo_url(
+    let repo_ref_vec_rslt = gitea::http_client::get_all_refs_from_repo_url(
         gitea_base_url,
         gitea_token,
         &layer.clone_url,
         shasta_root_cert,
     )
-    .await
-    .unwrap();
+    .await;
+
+    let repo_ref_vec = match repo_ref_vec_rslt {
+        Ok(value) => value,
+        Err(error) => {
+            eprintln!("ERROR - Could not fetch repo refs. Reason:\n{:#?}", error);
+            std::process::exit(1);
+        }
+    };
 
     let mut ref_value_vec: Vec<&Value> = repo_ref_vec
         .iter()
@@ -192,16 +199,16 @@ pub async fn get_configuration_layer_details(
             // either branch or lightweight tag
             if let (Some("heads"), branch_name_aux) = (ref_1, ref_2.clone()) {
                 // branch
-                branch_name += &branch_name_aux;
+                branch_name_vec.push(branch_name_aux);
             } else if let (Some("tags"), tag_name_aux) = (ref_1, ref_2) {
                 // lightweight tag
-                tag_name += &tag_name_aux;
+                tag_name_vec.push(tag_name_aux);
             }
 
             // commit_sha = ref_value["url"].as_str().unwrap();
         } else {
             // annotated tag
-            tag_name += &ref_2;
+            tag_name_vec.push(ref_2);
 
             /* commit_sha_value = gitea::http_client::get_commit_from_tag(
                 ref_value["url"].as_str().unwrap(),
@@ -227,7 +234,7 @@ pub async fn get_configuration_layer_details(
     }
 
     if let Some(cfs_config_layer_branch) = &layer.branch {
-        branch_name = cfs_config_layer_branch.to_string();
+        branch_name_vec.push(cfs_config_layer_branch.to_string());
     }
 
     let commit_id_opt = layer.commit.as_ref();
@@ -278,8 +285,8 @@ pub async fn get_configuration_layer_details(
             .unwrap_or(&serde_json::json!("Not defined"))
             .as_str()
             .unwrap(),
-        &branch_name,
-        &tag_name,
+        &branch_name_vec.join(","),
+        &tag_name_vec.join(","),
         &layer.playbook,
         // most_recent_commit,
     )
