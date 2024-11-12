@@ -16,6 +16,7 @@ pub async fn exec(
     xname_vec_opt: Option<&Vec<String>>,
     assume_yes: bool,
 ) -> Result<(), Error> {
+    let mut need_restart = false;
     println!("Set kernel parameters");
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
@@ -37,17 +38,18 @@ pub async fn exec(
     };
 
     // Get current node boot params
-    let current_node_boot_params: Vec<BootParameters> = bss::bootparameters::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap();
+    let mut current_node_boot_params_vec: Vec<BootParameters> =
+        bss::bootparameters::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &xnames
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap();
 
     println!(
         "Set kernel params:\n{:?}\nFor nodes:\n{:?}",
@@ -55,7 +57,7 @@ pub async fn exec(
     );
 
     let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("This operation will reboot the nodes. Please confirm to proceed")
+        .with_prompt("This operation will update the kernel parameters for the nodes below. Please confirm to proceed")
         .interact()
         .unwrap();
 
@@ -65,16 +67,37 @@ pub async fn exec(
     }
 
     // Update kernel parameters
-    for mut boot_parameter in current_node_boot_params {
-        if !boot_parameter.kernel.eq(kernel_params) {
-            boot_parameter.kernel = kernel_params.to_string();
-
-            println!(
+    current_node_boot_params_vec
+        .iter_mut()
+        .for_each(|boot_parameter| {
+            log::info!(
                 "Updating '{:?}' kernel parameters to '{}'",
-                boot_parameter.hosts, kernel_params
+                boot_parameter.hosts,
+                kernel_params
             );
 
-            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+            need_restart = need_restart || boot_parameter.apply_kernel_params(&kernel_params);
+            log::info!("need restart? {}", need_restart);
+            let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
+        });
+
+    log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
+
+    for mut boot_parameter in current_node_boot_params_vec {
+        log::info!(
+            "Updating '{:?}' kernel parameters to '{}'",
+            boot_parameter.hosts,
+            kernel_params
+        );
+
+        need_restart = need_restart || boot_parameter.apply_kernel_params(&kernel_params);
+        log::info!("need restart? {}", need_restart);
+        let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
+
+        if need_restart {
+            boot_parameter.params = kernel_params.to_string();
+
+            let _ = mesa::bss::bootparameters::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
@@ -82,12 +105,11 @@ pub async fn exec(
             )
             .await;
 
-            log::debug!(
-                "Component boot parameters resp:\n{:#?}",
-                component_patch_rep
-            );
+            need_restart |= need_restart;
 
-            xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
+            if need_restart {
+                xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
+            }
         }
     }
 
