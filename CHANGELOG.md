@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.21] - 2024-11-12
+
+### Features
+
+- Set kernel parameters was changing the kernel value
+
 ## [1.53.20] - 2024-11-11
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.20
 
 ### Refactor
 
