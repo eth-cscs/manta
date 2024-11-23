@@ -9,173 +9,18 @@ pub fn build_cli() -> Command {
         .term_width(100)
         .version(env!("CARGO_PKG_VERSION"))
         .arg_required_else_help(true)
-        .subcommand(subcommand_power())
-        .subcommand(subcommand_get())
-        .subcommand(Command::new("add")
-            .arg_required_else_help(true)
-            .about("WIP - Add hw components to cluster")
-            .subcommand(Command::new("hw-component")
-                .visible_alias("hw")
-                .arg_required_else_help(true)
-                .about("WIP - Add hw components from a cluster")
-                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
-                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
-                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
-
-            )
-            /* .subcommand(Command::new("nodes")
-                .visible_aliases(["n", "node"])
-                .arg_required_else_help(true)
-                .about("WIP - Add nodes to a cluster")
-                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving to."))
-                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving nodes from the target cluster."))
-                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
-            ) */
-        )
-        .subcommand(Command::new("remove")
-            .visible_alias("r")
-            .arg_required_else_help(true)
-            .about("WIP - Remove hw components from cluster")
-            .subcommand(Command::new("hw-component")
-                .visible_alias("hw")
-                .arg_required_else_help(true)
-                .about("WIP - Remove hw components from a cluster")
-                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
-                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to (resources move from here)."))
-                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving resources from the target cluster (resources move here)."))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
-            )
-            /* .subcommand(Command::new("nodes")
-                .visible_aliases(["n", "node"])
-                .about("WIP - Remove nodes to a cluster")
-                .arg_required_else_help(true)
-                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the nodes are moving from (resources move from here)."))
-                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving nodes from the target cluster (resources move here)."))
-                .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
-
-            ) */
-        )
-        .subcommand(
-            Command::new("set")
-                .visible_alias("s")
-                .arg_required_else_help(true)
-                .about("Set specific features on cluster nodes or a list of nodes")
-                .subcommand(subcommand_set_runtime_configuration())
-                .subcommand(subcommand_set_boot_configuration())
-                .subcommand(subcommand_set_boot_image())
-                .subcommand(subcommand_set_kernel_params()))
-        .subcommand(
-            Command::new("apply")
-                .visible_alias("a")
-                .arg_required_else_help(true)
-                .about("Make changes to Shasta system")
-                .subcommand(subcommand_apply_hw_configuration())
-                .subcommand(subcommand_apply_configuration())
-                // .subcommand(subcommand_apply_template())
-                // .subcommand(subcommand_apply_image(/* hsm_group */))
-                // .subcommand(subcommand_apply_cluster(/* hsm_group */))
-                .subcommand(subcommand_apply_sat_file(/* hsm_group */))
-                .subcommand(Command::new("boot")
-                    .visible_alias("b")
-                    .arg_required_else_help(true)
-                    .about("Change boot operations")
-                    .subcommand(subcommand_apply_boot_nodes())
-                    .subcommand(subcommand_apply_boot_cluster())
-                )
-                /* .subcommand(
-                    Command::new("node")
-                        .visible_aliases(["n", "nod"])
-                        .arg_required_else_help(true)
-                        .about("DEPRECATED - Please use 'manta power' command instead.\nPower management for a list of nodes")
-                        .subcommand(subcommand_apply_node_on())
-                        .subcommand(subcommand_apply_node_off())
-                        .subcommand(subcommand_apply_node_reset()),
-                ) */
-                .subcommand(subcommand_apply_session())
-                .subcommand(subcommand_apply_ephemeral_environment())
-                .subcommand(subcommand_apply_template())
-        )
-        .subcommand( Command::new("migrate")
-                .visible_alias("m")
-                .arg_required_else_help(true)
-                .subcommand(Command::new("vCluster")
-                    .visible_aliases(["c", "clstr"])
-                    .about("WIP - Migrate vCluster")
-                    .subcommand(subcommand_migrate_backup())
-                    .subcommand(subcommand_migrate_restore())
-                )
-                .subcommand(Command::new("nodes")
-                    .visible_aliases(["n", "node"])
-                    .arg_required_else_help(true)
-                    .about("Migrate nodes across vClusters")
-                    .arg(arg!(-f --from <VALUE> "The name of the source vCluster from which the compute nodes will be moved."))
-                    .arg(arg!(-t --to <VALUE> "The name of the target vCluster to which the compute nodes will be moved.").required(true))
-                    .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'").required(true))
-                    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-                ),
-        )
-        .subcommand(
-            subcommand_log()
-        )
-        .subcommand(
-            Command::new("console")
-                .visible_aliases(["c", "con", "cons", "conso"])
-                .arg_required_else_help(true)
-                .about("Opens an interective session to a node or CFS session ansible target container")
-                .subcommand(
-                    Command::new("node")
-                        .visible_alias("n")
-                        .about("Connects to a node's console")
-                        .arg(arg!(<XNAME> "node xname").required(true)),
-                )
-                .subcommand(
-                    Command::new("target-ansible")
-                        .visible_aliases(["t", "ta", "target", "ansible"])
-                        .arg_required_else_help(true)
-                        .about("Opens an interactive session to the ansible target container of a CFS session")
-                        .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
-                ),
-        )
-        .subcommand(subcommand_delete())
-        .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_config())
-        .subcommand(Command::new("delete-session")
-            .visible_alias("ds")
-            .arg_required_else_help(true)
-            .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
-            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-            .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
-        )
-        .subcommand(Command::new("delete-images")
-            .visible_alias("di")
-            .arg_required_else_help(true)
-            .about("WIP - Deletes a list of images.")
-            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-            .arg(arg!(<IMAGE_LIST> "Comma separated list of image ids to delete/\neg: e2ce82f0-e7ba-4f36-9f5c-750346599600,59e0180a-3fdd-4936-bba7-14ba914ffd34").required(true))
-        )
-        .subcommand(Command::new("add-nodes-to-groups")
-            .visible_aliases(["ag"])
-            .about("Add nodes to a list of groups")
-            .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
-            .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
-            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-        )
-       .subcommand(Command::new("remove-nodes-from-groups")
-           .visible_aliases(["rg"])
-           .about("Remove nodes from groups")
-           .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
-           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
-           .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
-           .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-       )
+        .subcommand(subcommand_get())
+        .subcommand(subcommand_add())
+        .subcommand(subcommand_apply())
+        .subcommand(subcommand_delete())
+        .subcommand(subcommand_migrate())
+        .subcommand(subcommand_power())
+        .subcommand(subcommand_log())
+        .subcommand(subcommand_console())
+        .subcommand(subcommand_validate_local_repo())
+        .subcommand(subcommand_add_nodes_to_groups())
+        .subcommand(subcommand_remove_nodes_from_groups())
 }
 
 pub fn subcommand_config() -> Command {
@@ -246,15 +91,59 @@ pub fn subcommand_config() -> Command {
 
 pub fn subcommand_delete() -> Command {
     Command::new("delete")
+        .visible_alias("d")
+        .arg_required_else_help(true)
+        .about("Deletes data")
+        .subcommand(subcommand_delete_kernel_parameter())
+        .subcommand(subcommand_delete_session())
+        .subcommand(subcommand_delete_image())
+        .subcommand(subcommand_delete_hw_component())
+}
+
+pub fn subcommand_delete_hw_component() -> Command {
+    Command::new("hw-component")
+                .visible_alias("hw")
                 .arg_required_else_help(true)
-                .about("Deletes CFS configurations, CFS sessions, BOS sessiontemplates, BOS sessions and images related to CFS configuration/s.")
-                .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and IMS images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
-                .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
-                .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
-                .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
-                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted").action(ArgAction::SetTrue))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name").required(true))
-                .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"))
+                .about("WIP - Remove hw components from a cluster")
+                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to (resources move from here)."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving resources from the target cluster (resources move here)."))
+                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
+                .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
+}
+
+pub fn subcommand_delete_image() -> Command {
+    Command::new("images")
+            .visible_alias("di")
+            .arg_required_else_help(true)
+            .about("WIP - Deletes a list of images.")
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+            .arg(arg!(<IMAGE_LIST> "Comma separated list of image ids to delete/\neg: e2ce82f0-e7ba-4f36-9f5c-750346599600,59e0180a-3fdd-4936-bba7-14ba914ffd34").required(true))
+}
+
+pub fn subcommand_delete_session() -> Command {
+    Command::new("session")
+            .visible_alias("ds")
+            .arg_required_else_help(true)
+            .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+            .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
+}
+
+pub fn subcommand_delete_kernel_parameter() -> Command {
+    Command::new("kernel-parameters")
+        .visible_alias("kp")
+        .arg_required_else_help(true)
+        .about("Delete kernel parameters")
+        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+        .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+        .group(
+            ArgGroup::new("cluster_or_xnames")
+                .args(["hsm-group", "xnames"])
+                .required(true),
+        )
 }
 
 pub fn subcommand_get_hw_components() -> Command {
@@ -360,17 +249,6 @@ pub fn subcommand_get_node_details() -> Command {
         .arg_required_else_help(true)
         .arg(arg!(<XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
 }
-
-/* pub fn subcommand_get_node() -> Command {
-    Command::new("nodes")
-        .visible_aliases(["n", "node", "nd"])
-        .about("DEPRECATED - Please use 'manta get cluster' command instead.\nGet members of a HSM group")
-        .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
-        .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "json", "summary"]).default_value("table"))
-        .arg_required_else_help(true)
-        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-} */
 
 pub fn subcommand_get_hsm_groups_details() -> Command {
     Command::new("hsm-groups")
@@ -502,69 +380,6 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
                     .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use as a container image").required(true))
 }
 
-/// Creates an image based on a list of Ansible scripts (CFS layers) and assigns the image to a HSM
-/// group.
-/// Returns: the image id.
-/// First creates a CFS configuration (configuration name is autogenerated). Then creates a CFS session
-/// of 'target image' (session name is autogenerated).
-/* pub fn subcommand_apply_image(/* hsm_group: Option<&String> */) -> Command {
-    Command::new("image")
-        .visible_aliases(["i", "img", "imag"])
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration and a CFS image")
-        // .about("Create a CFS configuration and a CFS image")
-        .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
-        .arg(arg!(-V --"values" <VALUES_PATH> ... "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
-        // .arg(arg!(-t --tag <VALUE> "Tag added as a suffix in the CFS configuration name and CFS session name. If missing, then a default value will be used with timestamp"))
-        /* .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image")
-           .value_parser(value_parser!(PathBuf))) */
-        .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
-            .value_parser(["1", "2", "3", "4"])
-            .num_args(1)
-            // .require_equals(true)
-            .default_value("2")
-            .default_missing_value("2"))
-        .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
-        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
-} */
-
-/* pub fn subcommand_apply_template(/* hsm_group: Option<&String> */) -> Command {
-    Command::new("template")
-        .visible_aliases(["t", "temp"])
-        .arg_required_else_help(true)
-        .about("Create a BOS session based on a BOS sessiontemplate and operation")
-        .arg(arg!(-t --"template-name" <VALUE> "BOS sessiontemplate name.").required(true))
-        .arg(
-            arg!(-o --"operation" <VALUE> "Operation.")
-                .value_parser(["boot", "reboot", "shutdown"])
-                .default_value("reboot"),
-        )
-        .arg(arg!(-l --"limit" <VALUE> "Comma separated list of nodes or HSM groups to apply the BOS sessiontemplate. If missing, default targets in BOS sessiontemplate will apply."))
-} */
-
-/* pub fn subcommand_apply_cluster(/* hsm_group: Option<&String> */) -> Command {
-    Command::new("cluster")
-        .visible_aliases(["clus","clstr"])
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
-        // .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
-        .arg(arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-f --"values-file" <VALUES_FILE_PATH> "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
-        .arg(arg!(-V --"values" <VALUES_PATH> ... "WIP - If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
-        .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot."))
-        .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
-            .value_parser(["1", "2", "3", "4"])
-            .num_args(1)
-            // .require_equals(true)
-            .default_value("2")
-            .default_missing_value("2"))
-        .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
-        .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
-        .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]))
-} */
-
 pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     Command::new("sat-file")
         .visible_alias("sat")
@@ -590,51 +405,6 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
     // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
-
-/* pub fn subcommand_apply_node_on() -> Command {
-    Command::new("on")
-        .about("DEPRECATED - Please use 'manta power on' command instead.\nStart nodes")
-        .arg_required_else_help(true)
-        .arg(arg!(<XNAMES> "Comma separated list of xnames to power on.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-r --reason <TEXT> "reason to power on"))
-        .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-        .group(
-            ArgGroup::new("hsm-group_or_xnames")
-            .args(["hsm-group", "XNAMES"])
-            .multiple(true),
-        )
-} */
-
-/* pub fn subcommand_apply_node_off() -> Command {
-    Command::new("off")
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta power off' command instead.\nShutdown nodes")
-        .arg(arg!(<XNAMES> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-        .arg(arg!(-r --reason <TEXT> "reason to power off"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(
-                    ArgGroup::new("hsm-group_or_xnames")
-                        .args(["hsm-group", "XNAMES"])
-                        .multiple(true),
-                )
-} */
-
-/* pub fn subcommand_apply_node_reset() -> Command {
-    Command::new("reset")
-        .visible_aliases(["r", "res", "rst", "restart", "rstrt"])
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta power reset' command instead.\nRestart nodes")
-        .arg(arg!(<XNAMES> "Comma separated list of xnames to power reset.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-        .arg(arg!(-r --reason <TEXT> "reason to reset"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
-                .group(
-                    ArgGroup::new("hsm-group_or_xnames")
-                        .args(["hsm-group", "XNAMES"])
-                        .multiple(true),
-                )
-} */
 
 pub fn subcommand_update_nodes() -> Command {
     Command::new("nodes")
@@ -805,60 +575,118 @@ pub fn subcommand_validate_local_repo() -> Command {
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
 
-pub fn subcommand_set_runtime_configuration() -> Command {
-    Command::new("runtime-configuration")
-        .visible_alias("rc")
-        .about("Set runtime-configuration to a set of nodes or all nodes in a cluster")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
-        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
-        .group(
-            ArgGroup::new("cluster_or_session_name")
-           .args(["hsm-group", "xnames"])
-           .required(true),
+pub fn subcommand_add() -> Command {
+    Command::new("add")
+            .arg_required_else_help(true)
+            .about("Add hw components to cluster")
+            .subcommand(Command::new("hw-component")
+                .visible_alias("hw")
+                .arg_required_else_help(true)
+                .about("WIP - Add hw components from a cluster")
+                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
+                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
+                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
+                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
+                .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
+
+            )
+            .subcommand(
+                Command::new("kernel-parameters")
+                .visible_alias("kp")
+                .arg_required_else_help(true)
+                .about("Delete kernel parameters")
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+                .group(
+                    ArgGroup::new("cluster_or_xnames")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                )
+            )
+}
+
+pub fn subcommand_apply() -> Command {
+    Command::new("apply")
+        .visible_alias("a")
+        .arg_required_else_help(true)
+        .about("Make changes to Shasta system")
+        .subcommand(subcommand_apply_hw_configuration())
+        .subcommand(subcommand_apply_configuration())
+        .subcommand(subcommand_apply_sat_file(/* hsm_group */))
+        .subcommand(
+            Command::new("boot")
+                .visible_alias("b")
+                .arg_required_else_help(true)
+                .about("Change boot operations")
+                .subcommand(subcommand_apply_boot_nodes())
+                .subcommand(subcommand_apply_boot_cluster()),
+        )
+        .subcommand(subcommand_apply_session())
+        .subcommand(subcommand_apply_ephemeral_environment())
+        .subcommand(subcommand_apply_template())
+}
+
+pub fn subcommand_migrate() -> Command {
+    Command::new("migrate")
+                .visible_alias("m")
+                .arg_required_else_help(true)
+                .subcommand(Command::new("vCluster")
+                    .visible_aliases(["c", "clstr"])
+                    .about("WIP - Migrate vCluster")
+                    .subcommand(subcommand_migrate_backup())
+                    .subcommand(subcommand_migrate_restore())
+                )
+                .subcommand(Command::new("nodes")
+                    .visible_aliases(["n", "node"])
+                    .arg_required_else_help(true)
+                    .about("Migrate nodes across vClusters")
+                    .arg(arg!(-f --from <VALUE> "The name of the source vCluster from which the compute nodes will be moved."))
+                    .arg(arg!(-t --to <VALUE> "The name of the target vCluster to which the compute nodes will be moved.").required(true))
+                    .arg(arg!(<XNAMES> "Comma separated list of xnames to add to a cluster.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'").required(true))
+                    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+                )
+}
+
+pub fn subcommand_console() -> Command {
+    Command::new("console")
+        .visible_aliases(["c", "con", "cons", "conso"])
+        .arg_required_else_help(true)
+        .about("Opens an interective session to a node or CFS session ansible target container")
+        .subcommand(
+            Command::new("node")
+                .visible_alias("n")
+                .about("Connects to a node's console")
+                .arg(arg!(<XNAME> "node xname").required(true)),
+        )
+        .subcommand(
+            Command::new("target-ansible")
+                .visible_aliases(["t", "ta", "target", "ansible"])
+                .arg_required_else_help(true)
+                .about(
+                    "Opens an interactive session to the ansible target container of a CFS session",
+                )
+                .arg(arg!(<SESSION_NAME> "CFS session name").required(true)),
         )
 }
 
-pub fn subcommand_set_boot_image() -> Command {
-    Command::new("boot-image")
-        .visible_alias("bi")
-        .about("Set boot image to boot a set of nodes or all nodes in a cluster. This command preprocess node's kernel parameters.")
-        .arg(arg!(-i --"image-id" <VALUE> "Image id to set").required(true))
-        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
-        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-        .group(
-            ArgGroup::new("cluster_or_session_name")
-            .args(["hsm-group", "xnames"])
-            .required(true),
-        )
+pub fn subcommand_add_nodes_to_groups() -> Command {
+    Command::new("add-nodes-to-groups")
+            .visible_aliases(["ag"])
+            .about("Add nodes to a list of groups")
+            .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+            .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
+            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
-pub fn subcommand_set_boot_configuration() -> Command {
-    Command::new("boot-configuration")
-        .visible_alias("bc")
-        .about("Set boot configuration to boot a set of nodes or all nodes in a cluster. The algorithm will look for the most recent image id created with the provided configuration name and assign it to the nodes.")
-        .arg(arg!(-c --"configuration" <VALUE> "Configuration name to set").required(true))
-        .arg(arg!(-x --xnames <VALUE> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <VALUE> "Cluster to set runtime configuration"))
-        .group(
-            ArgGroup::new("cluster_or_xnames")
-                .args(["hsm-group", "xnames"])
-                .required(true),
-        )
-}
-
-pub fn subcommand_set_kernel_params() -> Command {
-    Command::new("kernel-parameters")
-        .visible_alias("kp")
-        .about("Set kernel boot parameters to boot a set of nodes or all nodes in a cluster. This command literally replaces boot params without preprocessing.")
-        .arg(arg!(-k --"kernel-parameters" <VALUE> "Space separated list of kernel parameters to a set of nodes or all nodes in a cluster. Do not add any parameter related to the boot image rootfs, this information needs to be configured using `manta set boot-configuration` or `manta set boot-image`").required(true))
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
-        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-        .group(
-            ArgGroup::new("cluster_or_xnames")
-                .args(["hsm-group", "xnames"])
-                .required(true),
-        )
+pub fn subcommand_remove_nodes_from_groups() -> Command {
+    Command::new("remove-nodes-from-groups")
+           .visible_aliases(["rg"])
+           .about("Remove nodes from groups")
+           .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
+           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+           .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
+           .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }

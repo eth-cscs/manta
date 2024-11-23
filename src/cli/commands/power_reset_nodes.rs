@@ -48,7 +48,7 @@ pub async fn exec(
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "{:?}\nThe nodes above will restart. Please confirm to proceed?",
-                xname_vec
+                xname_vec.join(", ")
             ))
             .interact()
             .unwrap()

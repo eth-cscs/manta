@@ -17,7 +17,7 @@ pub async fn exec(
     assume_yes: bool,
 ) -> Result<(), Error> {
     let mut need_restart = false;
-    println!("Set kernel parameters");
+    println!("Delete kernel parameters");
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
@@ -33,31 +33,31 @@ pub async fn exec(
         xname_vec.clone()
     } else {
         return Err(Error::Message(
-            "ERROR - Setting kernel parameters without a list of nodes".to_string(),
+            "ERROR - Deleting kernel parameters without a list of nodes".to_string(),
         ));
     };
 
     // Get current node boot params
-    let mut current_node_boot_params_vec: Vec<BootParameters> =
-        bss::bootparameters::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &xnames
-                .iter()
-                .map(|xname| xname.to_string())
-                .collect::<Vec<String>>(),
-        )
-        .await
-        .unwrap();
+    let current_node_boot_params_vec: Vec<BootParameters> = bss::bootparameters::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &xnames
+            .iter()
+            .map(|xname| xname.to_string())
+            .collect::<Vec<String>>(),
+    )
+    .await
+    .unwrap();
 
     println!(
-        "Set kernel params:\n{:?}\nFor nodes:\n{:?}",
-        kernel_params, xnames
+        "Add kernel params:\n{:?}\nFor nodes:\n{:?}",
+        kernel_params,
+        xnames.join(", ")
     );
 
     let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("This operation will update the kernel parameters for the nodes below. Please confirm to proceed")
+        .with_prompt("This operation will add the kernel parameters for the nodes below. Please confirm to proceed")
         .interact()
         .unwrap();
 
@@ -66,33 +66,31 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // Update kernel parameters
+    /* // Add kernel parameters
     current_node_boot_params_vec
         .iter_mut()
         .for_each(|boot_parameter| {
             log::info!(
-                "Updating '{:?}' kernel parameters to '{}'",
+                "Add '{:?}' kernel parameters to '{}'",
                 boot_parameter.hosts,
                 kernel_params
             );
 
-            need_restart = need_restart || boot_parameter.apply_kernel_params(&kernel_params);
+            need_restart = need_restart || boot_parameter.add_kernel_param(&kernel_params);
             log::info!("need restart? {}", need_restart);
-            let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
-        });
+        }); */
 
     log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
 
     for mut boot_parameter in current_node_boot_params_vec {
         log::info!(
-            "Updating '{:?}' kernel parameters to '{}'",
+            "Add '{:?}' kernel parameters to '{}'",
             boot_parameter.hosts,
             kernel_params
         );
 
-        need_restart = need_restart || boot_parameter.apply_kernel_params(&kernel_params);
+        need_restart = need_restart || boot_parameter.add_kernel_params(&kernel_params);
         log::info!("need restart? {}", need_restart);
-        let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
 
         if need_restart {
             boot_parameter.params = kernel_params.to_string();
@@ -114,7 +112,7 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Set kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {

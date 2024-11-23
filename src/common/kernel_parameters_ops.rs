@@ -22,7 +22,7 @@ pub fn print_table(
     kernel_params_key_vec.sort();
 
     // Get list of key value pairs from kernel params per node
-    let mut kernel_param_map: HashMap<Vec<String>, Vec<String>> = HashMap::new();
+    let mut kernel_param_node_map: HashMap<Vec<String>, Vec<String>> = HashMap::new();
 
     for boot_parameters in &boot_parameters_vec {
         let xname = boot_parameters.hosts.first().unwrap();
@@ -35,7 +35,7 @@ pub fn print_table(
             .collect();
 
         // Filter kernel params
-        let kernel_params_vec: Vec<String> = if !kernel_params_key_vec.is_empty() {
+        let mut kernel_params_vec: Vec<String> = if !kernel_params_key_vec.is_empty() {
             kernel_params_vec
                 .into_iter()
                 .filter(|kp| kernel_params_key_vec.iter().any(|kp_k| kp.contains(kp_k)))
@@ -44,7 +44,10 @@ pub fn print_table(
             kernel_params_vec.clone()
         };
 
-        kernel_param_map
+        // Sort kernel params
+        kernel_params_vec.sort();
+
+        kernel_param_node_map
             .entry(kernel_params_vec)
             .and_modify(|xname_vec| xname_vec.push(xname.clone()))
             .or_insert(vec![xname.clone()]);
@@ -56,7 +59,7 @@ pub fn print_table(
     table.set_header(vec!["XNAME", "Kernel Params"]);
 
     // Format kernel params in table cell
-    for (kernel_params_vec, xname_vec) in kernel_param_map {
+    for (kernel_params_vec, xname_vec) in kernel_param_node_map {
         let cell_max_width = kernel_params_vec
             .iter()
             .map(|value| value.len())

@@ -1785,7 +1785,7 @@ pub async fn validate_sat_file_session_template_section(
             .get("image")
             .and_then(|image| image.get("ims").and_then(|ims| ims.get("name")))
         {
-            // VaVjlidate image name (session_template.image.ims.name). Search in SAT file and CSM
+            // Validate image name (session_template.image.ims.name). Search in SAT file and CSM
             log::info!(
                 "Searching image name '{}' related to session template '{}' in SAT file",
                 image_name_substr_to_find.as_str().unwrap(),

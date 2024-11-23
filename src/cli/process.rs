@@ -8,18 +8,19 @@ use mesa::{common::authentication, error::Error};
 use crate::cli::commands::validate_local_repo;
 
 use super::commands::{
-    self, add_hw_component_cluster, add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node,
-    apply_configuration, apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin,
-    apply_sat_file, apply_session, apply_template, config_set_hsm, config_set_log,
-    config_set_parent_hsm, config_set_site, config_show, config_unset_auth, config_unset_hsm,
-    config_unset_parent_hsm, console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_image,
-    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
-    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
+    self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
+    apply_boot_cluster, apply_boot_node, apply_configuration, apply_ephemeral_env,
+    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
+    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
+    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    console_cfs_session_image_target_ansible, console_node,
+    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
+    delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
+    get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
+    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
-    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_hw_component_cluster,
-    remove_nodes_from_hsm_groups, set_boot_configuration, set_boot_image, set_kernel_parameters,
-    set_runtime_configuration,
+    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
+    set_boot_configuration, set_boot_image, set_runtime_configuration,
 };
 
 pub async fn process_cli(
@@ -361,243 +362,243 @@ pub async fn process_cli(
                     .await;
                 }
             }
-        } else if let Some(cli_set) = cli_root.subcommand_matches("set") {
-            if let Some(cli_set_runtime_configuration) =
-                cli_set.subcommand_matches("runtime-configuration")
-            {
-                let hsm_group_name_arg_opt = cli_set_runtime_configuration.get_one("hsm-group");
-                let xnames_arg_opt = cli_set_runtime_configuration.get_one::<String>("xnames");
+        /* } else if let Some(cli_set) = cli_root.subcommand_matches("set") {
+        if let Some(cli_set_runtime_configuration) =
+            cli_set.subcommand_matches("runtime-configuration")
+        {
+            let hsm_group_name_arg_opt = cli_set_runtime_configuration.get_one("hsm-group");
+            let xnames_arg_opt = cli_set_runtime_configuration.get_one::<String>("xnames");
 
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    // Validate HSM group name
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
-                    )
-                } else {
-                    None
-                };
-
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    // Get list of xnames and validate
-                    let xname_vec = xnames_arg
-                        .split(",")
-                        .map(|elem| elem.to_string())
-                        .collect::<Vec<String>>();
-
-                    validate_target_hsm_members(
+            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                // Validate HSM group name
+                Some(
+                    get_target_hsm_group_vec_or_all(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
-                        xname_vec.clone(),
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
                     )
-                    .await;
+                    .await,
+                )
+            } else {
+                None
+            };
 
-                    Some(xname_vec)
-                } else {
-                    None
-                };
+            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                // Get list of xnames and validate
+                let xname_vec = xnames_arg
+                    .split(",")
+                    .map(|elem| elem.to_string())
+                    .collect::<Vec<String>>();
 
-                let configuration_name = cli_set_runtime_configuration
-                    .get_one::<String>("configuration")
-                    .unwrap(); // clap should validate the argument
-
-                let result = set_runtime_configuration::exec(
+                validate_target_hsm_members(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    configuration_name,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
+                    xname_vec.clone(),
                 )
                 .await;
 
-                match result {
-                    Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
-                }
-            } else if let Some(cli_set_boot_image) = cli_set.subcommand_matches("boot-image") {
-                let hsm_group_name_arg_opt = cli_set_boot_image.get_one("hsm-group");
-                let xnames_arg_opt = cli_set_boot_image.get_one::<String>("xnames");
+                Some(xname_vec)
+            } else {
+                None
+            };
 
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
-                    )
-                } else {
-                    None
-                };
+            let configuration_name = cli_set_runtime_configuration
+                .get_one::<String>("configuration")
+                .unwrap(); // clap should validate the argument
 
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    // Get list of xnames and validate
-                    let xname_vec = xnames_arg
-                        .split(",")
-                        .map(|elem| elem.to_string())
-                        .collect::<Vec<String>>();
+            let result = set_runtime_configuration::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                configuration_name,
+                target_hsm_group_vec_opt.as_ref(),
+                xname_vec_opt.as_ref(),
+            )
+            .await;
 
-                    validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
-
-                    Some(xname_vec)
-                } else {
-                    None
-                };
-
-                let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
-
-                let assume_yes = cli_set_boot_image.get_flag("assume-yes");
-
-                let output = cli_set_boot_image
-                    .get_one::<String>("output")
-                    .expect("ERROR - output argument in cli missing");
-
-                let result = set_boot_image::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    boot_image,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
-                    assume_yes,
-                    output,
-                )
-                .await;
-
-                match result {
-                    Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
-                }
-            } else if let Some(cli_set_boot_configuration) =
-                cli_set.subcommand_matches("boot-configuration")
-            {
-                let hsm_group_name_arg_opt = cli_set_boot_configuration.get_one("hsm-group");
-                let xnames_arg_opt = cli_set_boot_configuration.get_one::<String>("xnames");
-
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
-                    )
-                } else {
-                    None
-                };
-
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    // Get list of xnames and validate
-                    let xname_vec = xnames_arg
-                        .split(",")
-                        .map(|elem| elem.to_string())
-                        .collect::<Vec<String>>();
-
-                    validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await;
-
-                    Some(xname_vec)
-                } else {
-                    None
-                };
-
-                let configuration_name = cli_set_boot_configuration
-                    .get_one::<String>("configuration")
-                    .unwrap(); // clap should validate the argument
-
-                let result = set_boot_configuration::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    configuration_name,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
-                )
-                .await;
-
-                match result {
-                    Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
-                }
-            } else if let Some(cli_set_kernel_parameters) =
-                cli_set.subcommand_matches("kernel-parameters")
-            {
-                let hsm_group_name_arg_opt = cli_set_kernel_parameters.get_one("hsm-group");
-                let xnames_arg_opt = cli_set_kernel_parameters.get_one::<String>("xnames");
-
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
-                    )
-                } else {
-                    None
-                };
-
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
-                    )
-                } else {
-                    None
-                };
-
-                let kernel_parameters = cli_set_kernel_parameters
-                    .get_one::<String>("kernel-parameters")
-                    .unwrap(); // clap should validate the argument
-
-                let assume_yes: bool = cli_set_kernel_parameters.get_flag("assume-yes");
-
-                let result = set_kernel_parameters::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    kernel_parameters,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
-                    assume_yes,
-                )
-                .await;
-
-                match result {
-                    Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
-                }
+            match result {
+                Ok(_) => {}
+                Err(error) => eprintln!("{}", error),
             }
+        } else if let Some(cli_set_boot_image) = cli_set.subcommand_matches("boot-image") {
+            let hsm_group_name_arg_opt = cli_set_boot_image.get_one("hsm-group");
+            let xnames_arg_opt = cli_set_boot_image.get_one::<String>("xnames");
+
+            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                Some(
+                    get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await,
+                )
+            } else {
+                None
+            };
+
+            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                // Get list of xnames and validate
+                let xname_vec = xnames_arg
+                    .split(",")
+                    .map(|elem| elem.to_string())
+                    .collect::<Vec<String>>();
+
+                validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.clone(),
+                )
+                .await;
+
+                Some(xname_vec)
+            } else {
+                None
+            };
+
+            let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
+
+            let assume_yes = cli_set_boot_image.get_flag("assume-yes");
+
+            let output = cli_set_boot_image
+                .get_one::<String>("output")
+                .expect("ERROR - output argument in cli missing");
+
+            let result = set_boot_image::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                boot_image,
+                target_hsm_group_vec_opt.as_ref(),
+                xname_vec_opt.as_ref(),
+                assume_yes,
+                output,
+            )
+            .await;
+
+            match result {
+                Ok(_) => {}
+                Err(error) => eprintln!("{}", error),
+            }
+        } else if let Some(cli_set_boot_configuration) =
+            cli_set.subcommand_matches("boot-configuration")
+        {
+            let hsm_group_name_arg_opt = cli_set_boot_configuration.get_one("hsm-group");
+            let xnames_arg_opt = cli_set_boot_configuration.get_one::<String>("xnames");
+
+            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                Some(
+                    get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await,
+                )
+            } else {
+                None
+            };
+
+            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                // Get list of xnames and validate
+                let xname_vec = xnames_arg
+                    .split(",")
+                    .map(|elem| elem.to_string())
+                    .collect::<Vec<String>>();
+
+                validate_target_hsm_members(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.clone(),
+                )
+                .await;
+
+                Some(xname_vec)
+            } else {
+                None
+            };
+
+            let configuration_name = cli_set_boot_configuration
+                .get_one::<String>("configuration")
+                .unwrap(); // clap should validate the argument
+
+            let result = set_boot_configuration::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                configuration_name,
+                target_hsm_group_vec_opt.as_ref(),
+                xname_vec_opt.as_ref(),
+            )
+            .await;
+
+            match result {
+                Ok(_) => {}
+                Err(error) => eprintln!("{}", error),
+            }
+        } else if let Some(cli_set_kernel_parameters) =
+            cli_set.subcommand_matches("kernel-parameters")
+        {
+            let hsm_group_name_arg_opt = cli_set_kernel_parameters.get_one("hsm-group");
+            let xnames_arg_opt = cli_set_kernel_parameters.get_one::<String>("xnames");
+
+            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                Some(
+                    get_target_hsm_group_vec_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await,
+                )
+            } else {
+                None
+            };
+
+            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                Some(
+                    xnames_arg
+                        .split(",")
+                        .map(|elem| elem.to_string())
+                        .collect::<Vec<String>>(),
+                )
+            } else {
+                None
+            };
+
+            let kernel_parameters = cli_set_kernel_parameters
+                .get_one::<String>("kernel-parameters")
+                .unwrap(); // clap should validate the argument
+
+            let assume_yes: bool = cli_set_kernel_parameters.get_flag("assume-yes");
+
+            let result = delete_kernel_parameters::exec(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                kernel_parameters,
+                target_hsm_group_vec_opt.as_ref(),
+                xname_vec_opt.as_ref(),
+                assume_yes,
+            )
+            .await;
+
+            match result {
+                Ok(_) => {}
+                Err(error) => eprintln!("{}", error),
+            }
+        } */
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
                 let target_hsm_group_name_arg_opt =
@@ -646,58 +647,59 @@ pub async fn process_cli(
                     create_hsm_group,
                 )
                 .await;
-            }
-        } else if let Some(cli_remove) = cli_root.subcommand_matches("remove") {
-            if let Some(cli_remove_hw_configuration) = cli_remove.subcommand_matches("hw-component")
+            } else if let Some(cli_add_kernel_parameters) =
+                cli_add.subcommand_matches("kernel-parameters")
             {
-                let nodryrun = *cli_remove_hw_configuration
-                    .get_one::<bool>("no-dryrun")
-                    .unwrap_or(&true);
+                let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
+                let xnames_arg_opt = cli_add_kernel_parameters.get_one::<String>("xnames");
 
-                let delete_hsm_group = *cli_remove_hw_configuration
-                    .get_one::<bool>("delete-hsm-group")
-                    .unwrap_or(&false);
+                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                    Some(
+                        get_target_hsm_group_vec_or_all(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            hsm_group_name_arg_opt,
+                            settings_hsm_group_name_opt,
+                        )
+                        .await,
+                    )
+                } else {
+                    None
+                };
 
-                let target_hsm_group_name_arg_opt =
-                    cli_remove_hw_configuration.get_one::<String>("target-cluster");
+                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                    Some(
+                        xnames_arg
+                            .split(",")
+                            .map(|elem| elem.to_string())
+                            .collect::<Vec<String>>(),
+                    )
+                } else {
+                    None
+                };
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let kernel_parameters = cli_add_kernel_parameters
+                    .get_one::<String>("VALUE")
+                    .unwrap(); // clap should validate the argument
+
+                let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
+
+                let result = add_kernel_parameters::command::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
+                    kernel_parameters,
+                    target_hsm_group_vec_opt.as_ref(),
+                    xname_vec_opt.as_ref(),
+                    assume_yes,
                 )
                 .await;
 
-                // let parent_hsm_group_name_arg_opt =
-                //     cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
-
-                let parent_hsm_group_name_arg_opt =
-                    cli_remove_hw_configuration.get_one::<String>("parent-cluster");
-
-                let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    parent_hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await;
-
-                remove_hw_component_cluster::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_vec.first().unwrap(),
-                    parent_hsm_group_vec.first().unwrap(),
-                    cli_remove_hw_configuration
-                        .get_one::<String>("pattern")
-                        .unwrap(),
-                    nodryrun,
-                    delete_hsm_group,
-                )
-                .await;
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
             if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-component") {
@@ -1624,6 +1626,13 @@ pub async fn process_cli(
                     let new_boot_image_id_opt: Option<&String> =
                         cli_apply_boot_nodes.get_one("boot-image");
 
+                    if let Some(new_boot_image_id) = new_boot_image_id_opt {
+                        if uuid::Uuid::parse_str(new_boot_image_id).is_err() {
+                            eprintln!("ERROR - image id is not an UUID");
+                            std::process::exit(1);
+                        }
+                    }
+
                     let new_boot_image_configuration_opt: Option<&String> =
                         cli_apply_boot_nodes.get_one("boot-image-configuration");
 
@@ -1892,8 +1901,168 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
-            let hsm_group_name_arg_opt = cli_delete.get_one::<String>("hsm-group"); // For now, we
-                                                                                    // want to panic if this param is missing
+            if let Some(cli_delete_hw_configuration) = cli_delete.subcommand_matches("hw-component")
+            {
+                let nodryrun = *cli_delete_hw_configuration
+                    .get_one::<bool>("no-dryrun")
+                    .unwrap_or(&true);
+
+                let delete_hsm_group = *cli_delete_hw_configuration
+                    .get_one::<bool>("delete-hsm-group")
+                    .unwrap_or(&false);
+
+                let target_hsm_group_name_arg_opt =
+                    cli_delete_hw_configuration.get_one::<String>("target-cluster");
+
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name_arg_opt,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                // let parent_hsm_group_name_arg_opt =
+                //     cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
+
+                let parent_hsm_group_name_arg_opt =
+                    cli_delete_hw_configuration.get_one::<String>("parent-cluster");
+
+                let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    parent_hsm_group_name_arg_opt,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                delete_hw_component_cluster::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_vec.first().unwrap(),
+                    parent_hsm_group_vec.first().unwrap(),
+                    cli_delete_hw_configuration
+                        .get_one::<String>("pattern")
+                        .unwrap(),
+                    nodryrun,
+                    delete_hsm_group,
+                )
+                .await;
+            } else if let Some(cli_delete_kernel_parameters) =
+                cli_delete.subcommand_matches("kernel-parameters")
+            {
+                let hsm_group_name_arg_opt = cli_delete_kernel_parameters.get_one("hsm-group");
+                let xnames_arg_opt = cli_delete_kernel_parameters.get_one::<String>("xnames");
+
+                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                    Some(
+                        get_target_hsm_group_vec_or_all(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            hsm_group_name_arg_opt,
+                            settings_hsm_group_name_opt,
+                        )
+                        .await,
+                    )
+                } else {
+                    None
+                };
+
+                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                    Some(
+                        xnames_arg
+                            .split(",")
+                            .map(|elem| elem.to_string())
+                            .collect::<Vec<String>>(),
+                    )
+                } else {
+                    None
+                };
+
+                let kernel_parameters = cli_delete_kernel_parameters
+                    .get_one::<String>("VALUE")
+                    .unwrap(); // clap should validate the argument
+
+                let assume_yes: bool = cli_delete_kernel_parameters.get_flag("assume-yes");
+
+                let result = delete_kernel_parameters::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    kernel_parameters,
+                    target_hsm_group_vec_opt.as_ref(),
+                    xname_vec_opt.as_ref(),
+                    assume_yes,
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
+            } else if let Some(cli_delete_session) = cli_root.subcommand_matches("session") {
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    None,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let session_name = cli_delete_session
+                    .get_one::<String>("SESSION_NAME")
+                    .expect("'session-name' argument must be provided");
+
+                let dry_run: &bool = cli_delete_session
+                    .get_one("dry-run")
+                    .expect("'dry-run' argument must be provided");
+
+                delete_sessions::command::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_vec,
+                    session_name,
+                    dry_run,
+                )
+                .await;
+            } else if let Some(cli_delete_images) = cli_root.subcommand_matches("images") {
+                let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    None,
+                    settings_hsm_group_name_opt,
+                )
+                .await;
+
+                let image_id_vec: Vec<&str> = cli_delete_images
+                    .get_one::<String>("IMAGE_LIST")
+                    .expect("'IMAGE_LIST' argument must be provided")
+                    .split(",")
+                    .map(|image_id_str| image_id_str.trim())
+                    .collect();
+
+                let dry_run: bool = cli_delete_images.get_flag("dry-run");
+
+                delete_image::command::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_name_available_vec,
+                    image_id_vec.as_slice(),
+                    dry_run,
+                )
+                .await;
+            }
+        } else if let Some(cli_clean_system) = cli_root.subcommand_matches("clean-system") {
+            let hsm_group_name_arg_opt = cli_clean_system.get_one::<String>("hsm-group"); // For now, we
+                                                                                          // want to panic if this param is missing
 
             let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                 shasta_token,
@@ -1904,7 +2073,7 @@ pub async fn process_cli(
             )
             .await;
 
-            let since_opt = if let Some(since) = cli_delete.get_one::<String>("since") {
+            let since_opt = if let Some(since) = cli_clean_system.get_one::<String>("since") {
                 let date_time = chrono::NaiveDateTime::parse_from_str(
                     &(since.to_string() + "T00:00:00"),
                     "%Y-%m-%dT%H:%M:%S",
@@ -1915,7 +2084,7 @@ pub async fn process_cli(
                 None
             };
 
-            let until_opt = if let Some(until) = cli_delete.get_one::<String>("until") {
+            let until_opt = if let Some(until) = cli_clean_system.get_one::<String>("until") {
                 let date_time = chrono::NaiveDateTime::parse_from_str(
                     &(until.to_string() + "T00:00:00"),
                     "%Y-%m-%dT%H:%M:%S",
@@ -1926,16 +2095,19 @@ pub async fn process_cli(
                 None
             };
 
-            let cfs_configuration_name_opt = cli_delete.get_one::<String>("configuration-name");
+            let cfs_configuration_name_opt =
+                cli_clean_system.get_one::<String>("configuration-name");
 
-            let cfs_configuration_name_pattern = cli_delete.get_one::<String>("pattern");
+            let cfs_configuration_name_pattern = cli_clean_system.get_one::<String>("pattern");
 
-            let yes = cli_delete.get_one::<bool>("assume-yes").unwrap_or(&false);
+            let yes = cli_clean_system
+                .get_one::<bool>("assume-yes")
+                .unwrap_or(&false);
 
             let hsm_group_name_opt = if settings_hsm_group_name_opt.is_some() {
                 settings_hsm_group_name_opt
             } else {
-                cli_delete.get_one::<String>("hsm-group")
+                cli_clean_system.get_one::<String>("hsm-group")
             };
 
             // INPUT VALIDATION - Check since date is prior until date
@@ -1967,61 +2139,6 @@ pub async fn process_cli(
 
             validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
                 .await;
-        } else if let Some(cli_delete_session) = cli_root.subcommand_matches("delete-session") {
-            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                None,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let session_name = cli_delete_session
-                .get_one::<String>("SESSION_NAME")
-                .expect("'session-name' argument must be provided");
-
-            let dry_run: &bool = cli_delete_session
-                .get_one("dry-run")
-                .expect("'dry-run' argument must be provided");
-
-            delete_sessions::command::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                target_hsm_group_vec,
-                session_name,
-                dry_run,
-            )
-            .await;
-        } else if let Some(cli_delete_images) = cli_root.subcommand_matches("delete-images") {
-            let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                None,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let image_id_vec: Vec<&str> = cli_delete_images
-                .get_one::<String>("IMAGE_LIST")
-                .expect("'IMAGE_LIST' argument must be provided")
-                .split(",")
-                .map(|image_id_str| image_id_str.trim())
-                .collect();
-
-            let dry_run: bool = cli_delete_images.get_flag("dry-run");
-
-            delete_image::command::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                hsm_name_available_vec,
-                image_id_vec.as_slice(),
-                dry_run,
-            )
-            .await;
         } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
             let dryrun = *cli_add_nodes
                 .get_one::<bool>("dry-run")
