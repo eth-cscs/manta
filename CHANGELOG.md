@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.0] - 2024-11-23
+
+### Bug Fixes
+
+- Boot parameter operations
+- Bug changing boot image
+
+### Refactor
+
+- Cli operations
+
 ## [1.53.21] - 2024-11-12
 
 ### Features
 
 - Set kernel parameters was changing the kernel value
+
+### Miscellaneous Tasks
+
+- Release manta version 1.53.21
 
 ## [1.53.20] - 2024-11-11
 
