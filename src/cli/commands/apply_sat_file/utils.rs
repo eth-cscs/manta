@@ -1132,14 +1132,15 @@ async fn process_sat_file_image_product_type_ims_recipe(
     .to_string(); */
 
     // Get root public ssh key
-    let root_public_ssh_key_value: serde_json::Value = ims::image::utils::get_single(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        "mgmt root key",
-    )
-    .await
-    .unwrap();
+    let root_public_ssh_key_value: serde_json::Value =
+        ims::public_keys::http_client::v3::get_single(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            "mgmt root key",
+        )
+        .await
+        .unwrap();
 
     let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
 
@@ -1200,14 +1201,15 @@ async fn process_sat_file_image_ims_type_recipe(
     log::info!("IMS recipe id found '{}'", recipe_id);
 
     // Get root public ssh key
-    let root_public_ssh_key_value: serde_json::Value = ims::image::utils::get_single(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        "mgmt root key",
-    )
-    .await
-    .unwrap();
+    let root_public_ssh_key_value: serde_json::Value =
+        ims::public_keys::http_client::v3::get_single(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            "mgmt root key",
+        )
+        .await
+        .unwrap();
 
     let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
 

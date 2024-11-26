@@ -15,7 +15,7 @@ use mesa::hsm::group::{
 use mesa::ims::image::{
     csm::patch,
     r#struct::{Image, ImsImageRecord2Update, Link},
-    utils::{get_fuzzy, register_new_image},
+    utils::get_fuzzy,
 };
 use mesa::ims::utils::s3_client::BAR_FORMAT;
 use mesa::{bos, cfs, ims};
@@ -858,21 +858,17 @@ async fn ims_register_image(
         }
     }
 
-    let json_response = match register_new_image(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &ims_record,
-    )
-    .await
-    {
-        Ok(json_response) => json_response,
-        Err(error) => panic!(
-            "Error: Unable to register a new image {} into IMS {}",
-            &ims_image_name.to_string(),
-            error
-        ),
-    };
+    let json_response =
+        match ims::image::csm::post(shasta_token, shasta_base_url, shasta_root_cert, &ims_record)
+            .await
+        {
+            Ok(json_response) => json_response,
+            Err(error) => panic!(
+                "Error: Unable to register a new image {} into IMS {}",
+                &ims_image_name.to_string(),
+                error
+            ),
+        };
     json_response["id"].to_string().replace('"', "")
 }
 

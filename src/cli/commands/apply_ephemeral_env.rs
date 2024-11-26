@@ -13,7 +13,7 @@ pub async fn exec(
     log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
-        ims::image::utils::get_single(
+        ims::public_keys::http_client::v3::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
