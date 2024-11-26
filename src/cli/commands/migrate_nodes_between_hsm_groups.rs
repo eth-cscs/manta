@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use mesa::hsm;
+
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -50,7 +52,7 @@ pub async fn exec(
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     for target_hsm_name in target_hsm_name_vec {
-        if mesa::hsm::group::http_client::get(
+        if hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -67,18 +69,6 @@ pub async fn exec(
                     target_hsm_name
                 );
                 if nodryrun {
-                    /* mesa::hsm::group::http_client::create_new_hsm_group(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &target_hsm_name,
-                        &[],
-                        "false",
-                        "",
-                        &[],
-                    )
-                    .await
-                    .expect("Unable to create new HSM group"); */
                 } else {
                     log::error!("Dry-run selected, cannot create the new group continue.");
                     std::process::exit(1);
@@ -91,7 +81,7 @@ pub async fn exec(
 
         // Migrate nodes
         for (parent_hsm_name, xname_to_move_vec) in &hsm_group_summary {
-            let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
+            let node_migration_rslt = hsm::group::utils::migrate_hsm_members(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

@@ -1,6 +1,6 @@
 use futures::StreamExt;
 
-use mesa::node::console;
+use mesa::{cfs, node::console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
@@ -17,7 +17,7 @@ pub async fn exec(
     k8s_api_url: &str,
     cfs_session_name: &str,
 ) {
-    let mut cfs_session_value_vec = mesa::cfs::session::mesa::http_client::get(
+    let mut cfs_session_value_vec = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -30,7 +30,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::cfs::session::mesa::utils::filter_by_hsm(
+    cfs::session::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

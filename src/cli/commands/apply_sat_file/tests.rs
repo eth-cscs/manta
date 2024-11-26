@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_response::v3::{
+    cfs::configuration::csm::v3::r#struct::cfs_configuration_response::{
         CfsConfigurationResponse, Layer,
     },
     error::Error,

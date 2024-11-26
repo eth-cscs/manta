@@ -1,4 +1,7 @@
-use mesa::ims::image::r#struct::Image;
+use mesa::{
+    cfs,
+    ims::{self, image::r#struct::Image},
+};
 
 use crate::common;
 
@@ -20,7 +23,7 @@ pub async fn exec(
         hsm_group_name_vec_opt
     );
 
-    let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
+    let mut cfs_session_vec = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -35,7 +38,7 @@ pub async fn exec(
 
     if let Some(hsm_group_name_vec) = hsm_group_name_vec_opt {
         if !hsm_group_name_vec.is_empty() {
-            mesa::cfs::session::mesa::utils::filter_by_hsm(
+            cfs::session::utils::filter_by_hsm(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -48,7 +51,7 @@ pub async fn exec(
     }
 
     if let Some(xname_vec) = xname_vec_opt {
-        mesa::cfs::session::mesa::utils::filter_by_xname(
+        cfs::session::utils::filter_by_xname(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -123,15 +126,14 @@ pub async fn exec(
                     .result_id
                     .as_ref();
 
-                let new_image_vec_rslt: Result<Vec<Image>, _> =
-                    mesa::ims::image::mesa::http_client::get(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        // hsm_group_name_vec,
-                        cfs_session_image_id.map(|elem| elem.as_str()),
-                    )
-                    .await;
+                let new_image_vec_rslt: Result<Vec<Image>, _> = ims::image::csm::get(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    // hsm_group_name_vec,
+                    cfs_session_image_id.map(|elem| elem.as_str()),
+                )
+                .await;
 
                 // if new_image_id_vec_rslt.is_ok() && new_image_id_vec_rslt.as_ref().unwrap().first().is_some()
                 if let Ok(Some(new_image)) = new_image_vec_rslt

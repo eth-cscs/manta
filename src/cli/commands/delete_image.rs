@@ -16,19 +16,20 @@ pub mod command {
         );
 
         let mut image_vec: Vec<Image> =
-            image::mesa::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            image::csm::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap();
 
-        let image_detail_tuple_vec: Vec<(Image, String, String, bool)> = image::utils::filter(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &mut image_vec,
-            &hsm_name_available_vec,
-            None,
-        )
-        .await;
+        let image_detail_tuple_vec: Vec<(Image, String, String, bool)> =
+            image::utils::get_image_cfs_config_name_hsm_group_name(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &mut image_vec,
+                &hsm_name_available_vec,
+                None,
+            )
+            .await;
 
         // VALIDATE
         // Check images user wants to delete are not being used to boot nodes
@@ -53,13 +54,9 @@ pub mod command {
             if dry_run {
                 eprintln!("Dry-run enabled. No changes persisted into the system");
             } else {
-                let _ = image::shasta::http_client::delete(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &image_id,
-                )
-                .await;
+                let _ =
+                    image::csm::delete(shasta_token, shasta_base_url, shasta_root_cert, &image_id)
+                        .await;
             }
         }
 

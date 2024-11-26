@@ -1,8 +1,9 @@
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
-    bss::{self, bootparameters::BootParameters},
+    bss::{self, r#struct::BootParameters},
     common::jwt_ops,
     error::Error,
+    hsm,
 };
 
 /// Updates the kernel parameters for a set of nodes
@@ -22,7 +23,7 @@ pub async fn exec(
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -38,7 +39,7 @@ pub async fn exec(
     };
 
     // Get current node boot params
-    let current_node_boot_params_vec: Vec<BootParameters> = bss::bootparameters::http_client::get(
+    let current_node_boot_params_vec: Vec<BootParameters> = bss::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -95,7 +96,7 @@ pub async fn exec(
         if need_restart {
             boot_parameter.params = kernel_params.to_string();
 
-            let _ = mesa::bss::bootparameters::http_client::patch(
+            let _ = bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,

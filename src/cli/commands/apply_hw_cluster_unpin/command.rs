@@ -1,8 +1,6 @@
 use mesa::hsm;
 use std::collections::HashMap;
 
-use mesa::hsm::group::utils::update_hsm_group_members;
-
 use crate::cli::commands::apply_hw_cluster_unpin::command::utils::{
     calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
     resolve_hw_description_to_xnames,
@@ -70,7 +68,7 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - TARGET HSM
 
-    match mesa::hsm::group::http_client::get(
+    match hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -83,7 +81,7 @@ pub async fn exec(
             if create_target_hsm_group {
                 log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::http_client::create_new_hsm_group(
+                    hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -108,7 +106,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -147,7 +145,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -244,7 +242,7 @@ pub async fn exec(
     } else {
         // The target HSM group will never be empty, the way the pattern works it'll always
         // contain at least one node, so there is no need to add code to delete it if it's empty.
-        let _ = update_hsm_group_members(
+        let _ = hsm::group::utils::update_hsm_group_members(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -268,7 +266,7 @@ pub async fn exec(
         // if there are still nodes there and, delete it after moving out the resources.
         let parent_group_will_be_empty =
             &target_hsm_group_member_vec.len() == &parent_hsm_group_member_vec.len();
-        let _ = update_hsm_group_members(
+        let _ = hsm::group::utils::update_hsm_group_members(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -342,6 +340,7 @@ pub mod utils {
     use std::{collections::HashMap, sync::Arc, time::Instant};
 
     use comfy_table::Color;
+    use mesa::hsm;
     use serde_json::Value;
     use tokio::sync::Semaphore;
 
@@ -739,7 +738,7 @@ pub mod utils {
         user_defined_hw_profile_vec: Vec<String>,
     ) -> (String, Vec<String>, Vec<u64>) {
         let node_hw_inventory_value =
-            mesa::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+            hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
                 &shasta_token,
                 &shasta_base_url,
                 &shasta_root_cert,
@@ -780,12 +779,12 @@ pub mod utils {
         node_hw_inventory_value: &Value,
         hw_component_pattern_list: Vec<String>,
     ) -> (Vec<String>, Vec<u64>) {
-        let processor_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
+        let processor_vec = hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
 
-        let accelerator_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
+        let accelerator_vec = hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
@@ -809,7 +808,7 @@ pub mod utils {
             }
         }
 
-        let memory_vec = mesa::hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
+        let memory_vec = hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();

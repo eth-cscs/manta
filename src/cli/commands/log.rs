@@ -1,4 +1,4 @@
-use mesa::{common::kubernetes, hsm};
+use mesa::{cfs, common::kubernetes, hsm};
 
 use crate::common::{self, vault::http_client::fetch_shasta_k8s_secrets};
 
@@ -18,7 +18,7 @@ pub async fn exec(
     // `manta logs`
 
     // Get CFS sessions
-    let cfs_sessions_vec_opt = mesa::cfs::session::mesa::http_client::get(
+    let cfs_sessions_vec_opt = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -42,7 +42,7 @@ pub async fn exec(
         }
     };
 
-    mesa::cfs::session::mesa::utils::filter_by_hsm(
+    cfs::session::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::hsm;
 
 use crate::common;
 
@@ -64,7 +65,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    let target_hsm_group_vec = mesa::hsm::group::http_client::get(
+    let target_hsm_group_vec = hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -80,7 +81,7 @@ pub async fn exec(
         );
     }
 
-    let node_migration_rslt = mesa::hsm::group::utils::add_hsm_members(
+    let node_migration_rslt = hsm::group::utils::add_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

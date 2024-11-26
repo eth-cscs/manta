@@ -1,10 +1,10 @@
 use humansize::DECIMAL;
+use mesa::{bos, cfs, hsm, ims};
 use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 
 use crate::cli::commands::migrate_restore;
-use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 pub async fn exec(
     shasta_token: &str,
@@ -69,7 +69,7 @@ pub async fn exec(
     let hsm_file_path = dest_path.join(hsm_file_name);
 
     let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let mut bos_templates = mesa::bos::template::mesa::http_client::get(
+    let mut bos_templates = bos::template::csm::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -78,7 +78,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::bos::template::mesa::utils::filter(
+    bos::template::utils::filter(
         &mut bos_templates,
         &Vec::new(),
         &Vec::new(),
@@ -129,7 +129,7 @@ pub async fn exec(
             .unwrap()[0]
             .clone()
             .replace('\"', "");
-        let hsm_group_json = match mesa::hsm::group::http_client::get(
+        let hsm_group_json = match hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -156,7 +156,7 @@ pub async fn exec(
             .as_ref()
             .unwrap()
             .to_owned();
-        let cfs_configurations = mesa::cfs::configuration::mesa::http_client::get(
+        let cfs_configurations = cfs::configuration::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -206,7 +206,7 @@ pub async fn exec(
                     &download_counter,
                     &files2download_count
                 );
-                match mesa::ims::image::shasta::http_client::get(
+                match ims::image::csm::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -223,21 +223,30 @@ pub async fn exec(
                             &bos.unwrap(),
                             image_id_related_to_bos_sessiontemplate
                         );
-                        let sts_value =
-                            match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
-                                Ok(sts_value) => {
-                                    log::debug!("Debug - STS token:\n{:#?}", sts_value);
-                                    sts_value
-                                }
+                        let sts_value = match ims::utils::s3_client::s3_auth(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                        )
+                        .await
+                        {
+                            Ok(sts_value) => {
+                                log::debug!("Debug - STS token:\n{:#?}", sts_value);
+                                sts_value
+                            }
 
-                                Err(error) => panic!("{}", error.to_string()),
-                            };
+                            Err(error) => panic!("{}", error.to_string()),
+                        };
                         for file in files2download {
                             let dest = String::from(destination.unwrap()) + "/" + &image_id;
                             let src = image_id.clone() + "/" + file;
-                            let object_size = s3_get_object_size(&sts_value, &src, bucket_name)
-                                .await
-                                .unwrap_or(-1);
+                            let object_size = ims::utils::s3_client::s3_get_object_size(
+                                &sts_value,
+                                &src,
+                                bucket_name,
+                            )
+                            .await
+                            .unwrap_or(-1);
                             println!(
                                 "Downloading image file {} ({}) to {}/{} [{}/{}]",
                                 &src,
@@ -247,7 +256,14 @@ pub async fn exec(
                                 &download_counter,
                                 &files2download_count
                             );
-                            match s3_download_object(&sts_value, &src, bucket_name, &dest).await {
+                            match ims::utils::s3_client::s3_download_object(
+                                &sts_value,
+                                &src,
+                                bucket_name,
+                                &dest,
+                            )
+                            .await
+                            {
                                 Ok(_result) => {
                                     download_counter += 1;
                                 }

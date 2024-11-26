@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::hsm;
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
@@ -62,7 +63,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    if mesa::hsm::group::http_client::get(
+    if hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -75,7 +76,7 @@ pub async fn exec(
     }
 
     // Remove xnames from HSM group
-    let node_migration_rslt = mesa::hsm::group::utils::remove_hsm_members(
+    let node_migration_rslt = hsm::group::utils::remove_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    cfs::{self, session::mesa::r#struct::v3::CfsSessionPostRequest},
+    cfs::{self, session::csm::v3::r#struct::CfsSessionPostRequest},
     common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
+    hsm,
     node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
 };
 
@@ -218,7 +219,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Error> {
     // Get ALL sessions
-    let cfs_sessions = mesa::cfs::session::mesa::http_client::get(
+    let cfs_sessions = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -301,7 +302,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = mesa::cfs::component::shasta::http_client::v2::get_single_component(
+        let component_status = cfs::component::csm::v2::get_single_component(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -309,7 +310,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         )
         .await?;
 
-        let hsm_component_status_rslt = mesa::hsm::component_status::http_client::get(
+        let hsm_component_status_rslt = hsm::component_status::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -454,7 +455,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     .await;
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = cfs::configuration::mesa::http_client::put(
+    let cfs_configuration_resp = cfs::configuration::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -494,13 +495,8 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         None,
     );
 
-    let cfs_session_resp = mesa::cfs::session::mesa::http_client::post(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &session,
-    )
-    .await;
+    let cfs_session_resp =
+        cfs::session::post(shasta_token, shasta_base_url, shasta_root_cert, &session).await;
 
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap().name.as_ref().unwrap(),

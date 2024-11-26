@@ -1,3 +1,5 @@
+use mesa::ims;
+
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -11,7 +13,7 @@ pub async fn exec(
     log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
-        mesa::ims::image::utils::get_single(
+        ims::image::utils::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -35,7 +37,7 @@ pub async fn exec(
         "Creating ephemeral environment baed on image ID {}",
         image_id
     );
-    let resp_json_rslt = mesa::ims::job::http_client::post_customize(
+    let resp_json_rslt = ims::job::http_client::post_customize(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

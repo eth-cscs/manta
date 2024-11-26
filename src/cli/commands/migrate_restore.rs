@@ -3,24 +3,22 @@ use dialoguer::Confirm;
 use humansize::DECIMAL;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
-use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
-use mesa::cfs::configuration::mesa::r#struct::{
-    cfs_configuration_request::v3::CfsConfigurationRequest,
-    cfs_configuration_response::v3::CfsConfigurationResponse,
+use mesa::bos::template::csm::v2::r#struct::BosSessionTemplate;
+use mesa::cfs::configuration::csm::v3::r#struct::{
+    cfs_configuration_request::CfsConfigurationRequest,
+    cfs_configuration_response::CfsConfigurationResponse,
 };
 use mesa::hsm::group::{
     http_client::{create_new_hsm_group, delete_hsm_group},
     r#struct::HsmGroup,
 };
-use mesa::ims::{
-    image::{
-        mesa::utils::update_image,
-        r#struct::{Image, ImsImageRecord2Update, Link},
-        utils::{get_fuzzy, register_new_image},
-    },
-    s3::{s3_auth, s3_multipart_upload_object, s3_upload_object, BAR_FORMAT},
+use mesa::ims::image::{
+    csm::patch,
+    r#struct::{Image, ImsImageRecord2Update, Link},
+    utils::{get_fuzzy, register_new_image},
 };
-use mesa::{bos, cfs};
+use mesa::ims::utils::s3_client::BAR_FORMAT;
+use mesa::{bos, cfs, ims};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -292,12 +290,12 @@ async fn create_bos_sessiontemplate(
     let bos_json: BosSessionTemplate = serde_json::from_reader(BufReader::new(file_content))
         .expect("BOS JSON file does not have correct format.");
 
-    let bos_sessiontemplate_name = bos_json.name;
+    let bos_sessiontemplate_name = bos_json.name.unwrap();
 
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    let vector = bos::template::mesa::http_client::get(
+    let vector = bos::template::csm::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -325,7 +323,7 @@ async fn create_bos_sessiontemplate(
             println!("Looks like you do not want to continue, bailing out.");
             std::process::exit(2)
         } else {
-            match bos::template::shasta::http_client::v2::delete(
+            match bos::template::csm::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -366,11 +364,12 @@ async fn create_bos_sessiontemplate(
     log::debug!("BOS sessiontemplate loaded:\n{:#?}", bos_sessiontemplate);
     log::debug!("BOS sessiontemplate modified:\n{:#?}", &bos_sessiontemplate);
 
-    match bos::template::shasta::http_client::v1::post(
+    match bos::template::csm::v2::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         &bos_sessiontemplate,
+        &bos_sessiontemplate_name,
     )
     .await
     {
@@ -404,7 +403,7 @@ async fn create_cfs_config(
     let cfs_config_name = cfs_configuration.name;
 
     // Get all CFS configurations, this is ugly
-    let cfs_config_vec = cfs::configuration::shasta::http_client::v3::get(
+    let cfs_config_vec = cfs::configuration::csm::v3::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -431,7 +430,7 @@ async fn create_cfs_config(
             std::process::exit(2)
         }
 
-        match cfs::configuration::shasta::http_client::v3::delete(
+        match cfs::configuration::csm::v3::http_client::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -458,7 +457,7 @@ async fn create_cfs_config(
 
     log::debug!("CFS config:\n{:#?}", &cfs_configuration);
 
-    match cfs::configuration::mesa::http_client::put(
+    match cfs::configuration::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -503,12 +502,12 @@ async fn ims_update_image_add_manifest(
         Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
 
-    let _ims_record = mesa::ims::image::r#struct::Image {
+    let _ims_record = ims::image::r#struct::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
         created: None,
         arch: None,
-        link: Some(mesa::ims::image::r#struct::Link {
+        link: Some(ims::image::r#struct::Link {
             etag: None,
             path: format!(
                 "s3://boot-images/{}/manifest.json",
@@ -542,7 +541,7 @@ async fn ims_update_image_add_manifest(
     };
 
     // println!("New IMS link {:?}", &rec);
-    match update_image(
+    match patch(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -574,16 +573,18 @@ async fn s3_upload_image_artifacts(
     let object_path = ims_image_id;
 
     // Connect and auth to S3
-    let sts_value = match s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
-        Ok(sts_value) => {
-            log::debug!("STS token:\n{:#?}", sts_value);
-            sts_value
-        }
-        Err(error) => panic!(
-            "Unable to authenticate with s3 when uploading images. Error: {}",
-            error
-        ),
-    };
+    let sts_value =
+        match ims::utils::s3_client::s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await
+        {
+            Ok(sts_value) => {
+                log::debug!("STS token:\n{:#?}", sts_value);
+                sts_value
+            }
+            Err(error) => panic!(
+                "Unable to authenticate with s3 when uploading images. Error: {}",
+                error
+            ),
+        };
 
     for file in vec_image_files {
         let filename = Path::new(file).file_name().unwrap();
@@ -608,18 +609,29 @@ async fn s3_upload_image_artifacts(
         );
         let etag: String;
         if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
-            etag =
-                match s3_multipart_upload_object(&sts_value, &full_object_path, bucket_name, file)
-                    .await
-                {
-                    Ok(result) => {
-                        log::debug!("Artifact uploaded successfully.");
-                        result
-                    }
-                    Err(error) => panic!("Unable to upload file to s3. Error {}", error),
-                };
+            etag = match ims::utils::s3_client::s3_multipart_upload_object(
+                &sts_value,
+                &full_object_path,
+                bucket_name,
+                file,
+            )
+            .await
+            {
+                Ok(result) => {
+                    log::debug!("Artifact uploaded successfully.");
+                    result
+                }
+                Err(error) => panic!("Unable to upload file to s3. Error {}", error),
+            };
         } else {
-            etag = match s3_upload_object(&sts_value, &full_object_path, bucket_name, file).await {
+            etag = match ims::utils::s3_client::s3_upload_object(
+                &sts_value,
+                &full_object_path,
+                bucket_name,
+                file,
+            )
+            .await
+            {
                 Ok(result) => {
                     println!("Ok");
                     result
@@ -694,7 +706,7 @@ async fn s3_upload_image_artifacts(
         &new_manifest_file_name, &bucket_name, &manifest_full_object_path
     );
 
-    match s3_upload_object(
+    match ims::utils::s3_client::s3_upload_object(
         &sts_value,
         &manifest_full_object_path,
         bucket_name,

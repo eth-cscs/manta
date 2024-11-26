@@ -2,7 +2,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops::{self},
     error::Error,
-    pcs,
+    hsm, pcs,
 };
 
 use crate::common;
@@ -15,22 +15,13 @@ pub async fn exec(
     assume_yes: bool,
     output: &str,
 ) {
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         hsm_group_name_arg_opt,
     )
     .await;
-
-    /* let _ = mesa::capmc::http_client::node_power_on::post_sync(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        xname_vec,
-        None,
-    )
-    .await; */
 
     if !assume_yes {
         if Confirm::with_theme(&ColorfulTheme::default())

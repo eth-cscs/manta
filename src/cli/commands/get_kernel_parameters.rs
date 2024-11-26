@@ -11,14 +11,10 @@ pub async fn exec(
     output: &str,
 ) -> Result<(), Error> {
     // Get BSS boot parameters
-    let boot_parameter_vec = bss::bootparameters::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xname_vec,
-    )
-    .await
-    .unwrap();
+    let boot_parameter_vec =
+        bss::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, &xname_vec)
+            .await
+            .unwrap();
 
     match output {
         "json" => println!(

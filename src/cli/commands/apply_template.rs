@@ -1,4 +1,4 @@
-use mesa::bos;
+use mesa::{bos, hsm, node};
 
 use crate::cli::process::validate_target_hsm_members;
 
@@ -18,7 +18,7 @@ pub async fn exec(
     //
     // Get BOS sessiontemplate
     //
-    let bos_sessiontemplate_vec_rslt = bos::template::mesa::http_client::get(
+    let bos_sessiontemplate_vec_rslt = bos::template::csm::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -60,7 +60,7 @@ pub async fn exec(
     log::info!("Validate user has access to HSM group in BOS sessiontemplate");
     let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
     let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -87,12 +87,12 @@ pub async fn exec(
         let mut xnames_to_validate_access_vec = Vec::new();
         for limit_value in &limit_vec {
             log::info!("Check if limit value '{}', is an xname", limit_value);
-            if mesa::node::utils::validate_xname_format(limit_value) {
+            if node::utils::validate_xname_format(limit_value) {
                 // limit_value is an xname
                 log::info!("limit value '{}' is an xname", limit_value);
                 xnames_to_validate_access_vec.push(limit_value.to_string());
             } else if let Some(mut hsm_members_vec) =
-                mesa::hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
+                hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -141,13 +141,10 @@ pub async fn exec(
     //
     // Create BOS session request payload
     //
-    let bos_session = bos::session::shasta::http_client::v2::BosSession {
+    let bos_session = bos::session::v2::r#struct::BosSession {
         name: bos_session_name_opt.cloned(),
         tenant: None,
-        operation: bos::session::shasta::http_client::v2::Operation::from_str(
-            bos_session_operation,
-        )
-        .ok(),
+        operation: bos::session::v2::r#struct::Operation::from_str(bos_session_operation).ok(),
         template_name: bos_sessiontemplate_name.to_string(),
         limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
         stage: Some(false),
@@ -160,13 +157,9 @@ pub async fn exec(
         println!("Dry-run enabled. No changes persisted into the system");
         println!("BOS session info:\n{:#?}", bos_session);
     } else {
-        let create_bos_session_rslt = bos::session::shasta::http_client::v2::post(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            bos_session,
-        )
-        .await;
+        let create_bos_session_rslt =
+            bos::session::v2::post(shasta_token, shasta_base_url, shasta_root_cert, bos_session)
+                .await;
 
         match create_bos_session_rslt {
              Ok(bos_session) => println!(

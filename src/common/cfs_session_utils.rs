@@ -1,6 +1,9 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::cfs::{self, session::mesa::r#struct::v3::CfsSessionGetResponse};
+use mesa::{
+    cfs::{self, session::csm::v3::r#struct::CfsSessionGetResponse},
+    ims,
+};
 
 pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
     let start_time_utc_str = cfs_session
@@ -150,7 +153,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    let cfs_sessions_list = cfs::session::mesa::http_client::get(
+    let cfs_sessions_list = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -206,7 +209,7 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        if mesa::ims::image::shasta::http_client::get_raw(
+        if ims::image::csm::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

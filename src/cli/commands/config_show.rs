@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use config::{Config, Value};
+use mesa::hsm;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
@@ -88,12 +89,12 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
-            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+            hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
         realm_access_role_filtered_vec.sort();
         realm_access_role_filtered_vec
     } else {
         let mut all_hsm_groups =
-            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap()
                 .iter()

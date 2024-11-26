@@ -13,7 +13,7 @@ pub async fn exec(
     id_opt: Option<&String>,
     limit_number: Option<&u8>,
 ) {
-    let mut image_vec: Vec<Image> = image::mesa::http_client::get(
+    let mut image_vec: Vec<Image> = image::csm::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -22,15 +22,16 @@ pub async fn exec(
     .await
     .unwrap();
 
-    let image_detail_vec: Vec<(Image, String, String, bool)> = image::utils::filter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &mut image_vec,
-        hsm_group_name_vec,
-        limit_number,
-    )
-    .await;
+    let image_detail_vec: Vec<(Image, String, String, bool)> =
+        image::utils::get_image_cfs_config_name_hsm_group_name(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &mut image_vec,
+            hsm_group_name_vec,
+            limit_number,
+        )
+        .await;
 
     log::debug!("Image list already filtered:\n{:#?}", image_detail_vec);
 

@@ -3,14 +3,14 @@ use std::path::PathBuf;
 use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::{
-    bos::template::mesa::r#struct::v2::BosSessionTemplate,
+    bos::template::csm::v2::r#struct::BosSessionTemplate,
     cfs::{
-        configuration::mesa::r#struct::{
+        configuration::csm::v3::r#struct::{
             cfs_configuration::ConfigurationDetails,
-            cfs_configuration_request::v3::{CfsConfigurationRequest, Layer},
-            cfs_configuration_response::v3::CfsConfigurationResponse,
+            cfs_configuration_request::{CfsConfigurationRequest, Layer},
+            cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v3::CfsSessionGetResponse,
+        session::csm::v3::r#struct::CfsSessionGetResponse,
     },
     common::gitea,
     ims::image::r#struct::Image,

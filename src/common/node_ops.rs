@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::bootparameters::BootParameters, node::r#struct::NodeDetails};
+use mesa::{bss::r#struct::BootParameters, hsm, node::r#struct::NodeDetails};
 use regex::Regex;
 
 use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
@@ -31,7 +31,7 @@ pub async fn get_curated_hsm_group_from_hostregex(
             .await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -96,11 +96,11 @@ pub async fn get_curated_hsm_group_from_hostlist(
     // Get all HSM groups in the system
     // FIXME: client should not fetch all info in backend. Create a method in backend to do provide
     // information already filtered to the client:
-    // mesa::hsm::groups::utils::get_hsm_group_available_vec(shasta_token, shasta_base_url,
+    // hsm::groups::utils::get_hsm_group_available_vec(shasta_token, shasta_base_url,
     // shasta_root_cert) -> Vec<HsmGroup> to get the list of HSM available to the user and return
     // a Vec of HsmGroups the user has access to
     let hsm_group_vec_all =
-        mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await
             .expect("Error - fetching HSM groups"); */
 
@@ -109,7 +109,7 @@ pub async fn get_curated_hsm_group_from_hostlist(
             .await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

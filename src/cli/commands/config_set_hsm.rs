@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use mesa::common::jwt_ops;
+use mesa::{common::jwt_ops, hsm};
 use toml_edit::{value, Document};
 
 pub async fn exec(
@@ -44,7 +44,7 @@ pub async fn exec(
 
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-        mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await
             .unwrap()
             .into_iter()
@@ -69,7 +69,7 @@ pub async fn exec(
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
         let all_hsm_available_vec =
-            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap()
                 .into_iter()

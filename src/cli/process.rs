@@ -3,7 +3,7 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::{common::authentication, error::Error};
+use mesa::{common::authentication, error::Error, hsm};
 
 use crate::cli::commands::validate_local_repo;
 
@@ -20,7 +20,6 @@ use super::commands::{
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
-    set_boot_configuration, set_boot_image, set_runtime_configuration,
 };
 
 pub async fn process_cli(
@@ -840,7 +839,7 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let hsm_member_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                let hsm_member_vec = hsm::group::utils::get_member_vec_from_hsm_name_vec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -990,7 +989,7 @@ pub async fn process_cli(
                     )
                     .await;
 
-                    mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    hsm::group::utils::get_member_vec_from_hsm_name_vec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -2299,41 +2298,6 @@ pub async fn get_target_hsm_group_vec_or_all(
     }
 }
 
-/* /// Returns a list of HSM groups the user is expected to work with or none (empty vec) if user is
-/// admin role and has not selected a HSM group to work with.
-/// This method will exit if the user is asking for HSM group not allowed
-/// Thie method is used by 'get session' function because CFS sessions related to management nodes
-/// are not linked to any HSM group
-pub async fn get_target_hsm_group_vec(
-    shasta_token: &str,
-    cli_param_hsm_group: Option<&String>,
-    config_file_or_env_hsm_group: Option<&String>,
-) -> Vec<String> {
-    let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt(shasta_token).await;
-
-    let target_hsm_group_opt = if let Some(hsm_group_name) = config_file_or_env_hsm_group {
-        Some(hsm_group_name)
-    } else {
-        cli_param_hsm_group
-    };
-
-    if let Some(target_hsm_group) = target_hsm_group_opt {
-        if !hsm_name_available_vec.contains(target_hsm_group) {
-            println!(
-                "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
-                target_hsm_group,
-                hsm_name_available_vec.join(", ")
-            );
-
-            std::process::exit(1);
-        }
-
-        vec![target_hsm_group.to_string()]
-    } else {
-        hsm_name_available_vec
-    }
-} */
-
 /// Validate user has access to a list of HSM group members provided.
 /// HSM members user is asking for are taken from cli command
 /// Exit if user does not have access to any of the members provided. By not having access to a HSM
@@ -2351,7 +2315,7 @@ pub async fn validate_target_hsm_members(
     )
     .await;
 
-    let all_xnames_user_has_access = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+    let all_xnames_user_has_access = hsm::group::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

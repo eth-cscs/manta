@@ -4,16 +4,16 @@ use image::Image;
 use mesa::{
     bos::{
         self,
-        session::shasta::http_client::v2::{BosSession, Operation},
-        template::mesa::r#struct::v2::{BootSet, BosSessionTemplate, Cfs},
+        session::v2::r#struct::{BosSession, Operation},
+        template::csm::v2::r#struct::{BootSet, BosSessionTemplate, Cfs},
     },
     cfs::{
         self,
-        configuration::mesa::r#struct::{
-            cfs_configuration_request::v3::CfsConfigurationRequest,
-            cfs_configuration_response::v3::CfsConfigurationResponse,
+        configuration::csm::v3::r#struct::{
+            cfs_configuration_request::CfsConfigurationRequest,
+            cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v3::CfsSessionPostRequest,
+        session::csm::v3::r#struct::CfsSessionPostRequest,
     },
     error::Error,
     hsm, ims,
@@ -132,6 +132,7 @@ impl SatFile {
         }
     }
 }
+
 /// struct to represent the `session_templates` section in SAT file
 pub mod sessiontemplate {
     use std::collections::HashMap;
@@ -687,12 +688,12 @@ pub async fn create_cfs_configuration_from_sat_file(
         .await;
 
     if !dry_run {
-        cfs::configuration::mesa::utils::create(
+        cfs::configuration::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            &cfs_configuration_name,
             &mut cfs_configuration,
+            &cfs_configuration_name,
         )
         .await
     } else {
@@ -886,7 +887,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
 
     //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
     //wide operations instead of using roles
-    let groups_name = mesa::hsm::group::hacks::filter_system_hsm_group_names(groups_name);
+    let groups_name = hsm::group::hacks::filter_system_hsm_group_names(groups_name);
 
     let base_image_id: String;
 
@@ -1074,7 +1075,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
         );
 
         if !dry_run {
-            let cfs_session = cfs::session::mesa::http_client::post_sync(
+            let cfs_session = cfs::session::post_sync(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1643,9 +1644,7 @@ pub fn validate_sat_file_images_section(
             //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
             //wide operations instead of using roles
             let configuration_group_names_vec =
-                mesa::hsm::group::hacks::filter_system_hsm_group_names(
-                    configuration_group_names_vec,
-                );
+                hsm::group::hacks::filter_system_hsm_group_names(configuration_group_names_vec);
 
             if configuration_group_names_vec.is_empty() {
                 return Err(Error::Message(format!("Image '{}' must have group name values assigned to it. Canceling image build process. Exit", image_name)));
@@ -1812,7 +1811,7 @@ pub async fn validate_sat_file_session_template_section(
                     session_template_yaml["name"].as_str().unwrap()
                 );
 
-                image_found = mesa::ims::image::utils::get_fuzzy(
+                image_found = ims::image::utils::get_fuzzy(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1843,7 +1842,7 @@ pub async fn validate_sat_file_session_template_section(
                 session_template_yaml["name"].as_str().unwrap()
             );
 
-            let image_found = mesa::ims::image::shasta::http_client::get(
+            let image_found = ims::image::csm::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1869,7 +1868,7 @@ pub async fn validate_sat_file_session_template_section(
                 session_template_yaml["name"].as_str().unwrap()
             );
 
-            let image_found = mesa::ims::image::utils::get_fuzzy(
+            let image_found = ims::image::utils::get_fuzzy(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1927,7 +1926,7 @@ pub async fn validate_sat_file_session_template_section(
                     session_template_yaml["name"].as_str().unwrap()
                 );
 
-                configuration_found = cfs::configuration::shasta::http_client::v2::get(
+                configuration_found = cfs::configuration::csm::v3::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2015,7 +2014,7 @@ pub async fn process_session_template_section_in_sat_file(
                         .to_string();
 
                     // Get base image details
-                    ims::image::mesa::http_client::get(
+                    ims::image::csm::get(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -2045,7 +2044,7 @@ pub async fn process_session_template_section_in_sat_file(
                     .to_string();
 
                 // Get Image by id
-                ims::image::mesa::http_client::get(
+                ims::image::csm::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2085,7 +2084,7 @@ pub async fn process_session_template_section_in_sat_file(
 
                     image_vec.first().unwrap().clone()
                 } else {
-                    mesa::ims::image::r#struct::Image {
+                    ims::image::r#struct::Image {
                         id: None,
                         created: None,
                         name: image_name.to_string(),
@@ -2118,24 +2117,13 @@ pub async fn process_session_template_section_in_sat_file(
         );
 
         if !dry_run {
-            let cfs_configuration_vec_rslt = cfs::configuration::mesa::http_client::get(
+            let cfs_configuration_vec_rslt = cfs::configuration::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 Some(&bos_session_template_configuration_name),
             )
             .await;
-
-            /* mesa::cfs::configuration::mesa::utils::filter(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &mut cfs_configuration_vec,
-                None,
-                hsm_group_available_vec,
-                None,
-            )
-            .await; */
 
             if cfs_configuration_vec_rslt.is_err() || cfs_configuration_vec_rslt.unwrap().is_empty()
             {
@@ -2213,7 +2201,7 @@ pub async fn process_session_template_section_in_sat_file(
 
             //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
             //wide operations instead of using roles
-            let node_groups_opt = Some(mesa::hsm::group::hacks::filter_system_hsm_group_names(
+            let node_groups_opt = Some(hsm::group::hacks::filter_system_hsm_group_names(
                 node_groups_opt.unwrap_or_default(),
             ));
 
@@ -2321,7 +2309,7 @@ pub async fn process_session_template_section_in_sat_file(
         };
 
         if !dry_run {
-            let create_bos_session_template_resp = bos::template::shasta::http_client::v2::put(
+            let create_bos_session_template_resp = bos::template::csm::v2::put(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2391,7 +2379,7 @@ pub async fn process_session_template_section_in_sat_file(
                 components: None,
             };
 
-            let create_bos_session_resp = bos::session::shasta::http_client::v2::post(
+            let create_bos_session_resp = bos::session::v2::post(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2415,7 +2403,7 @@ pub async fn process_session_template_section_in_sat_file(
                 ),
             }
 
-            let bos_sessiontemplate_vec = bos::template::mesa::http_client::get(
+            let bos_sessiontemplate_vec = bos::template::csm::v2::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
