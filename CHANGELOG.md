@@ -2,12 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.1] - 2024-11-30
+
+### Refactor
+
+- Clean code
+- Clean code
+- Clean code
+
 ## [1.54.0] - 2024-11-23
 
 ### Bug Fixes
 
 - Boot parameter operations
 - Bug changing boot image
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.0
 
 ### Refactor
 
@@ -62,6 +74,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Improve command 'apply boot' understanding when nodes needs to be
+- Booted
 
 ### Miscellaneous Tasks
 
@@ -312,13 +325,16 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - [**breaking**] Dryrun features in commands `add nodes to group` and `remove
+- Nodes to group` inverted
 - [**breaking**] Remove feature to create hsm group in command `add nodes to group`
 - [**breaking**] Remove feature to clean hsm group in command `remove nodes to group`
 - Update mesa
 - Command to `add nodes to group` now accepts regex
 - Command to `remove nodes to group` now accepts regex
 - [**breaking**] Command `add nodes to group` to shows a dialog asking user for
+- Configuration
 - [**breaking**] Command `remove nodes from group` to shows a dialog asking user for
+- Configuration
 
 ### Miscellaneous Tasks
 
@@ -407,6 +423,7 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - Create new function to get a curated list of hosts from a
+- Hostslist
 
 ## [1.50.17] - 2024-10-11
 
@@ -613,6 +630,7 @@ All notable changes to this project will be documented in this file.
 
 - Add 'output' argument to 'get kernel-parameters' command
 - Add 'debug' argument to 'apply sat' command
+- Exiting
 - Migrate CFS API to v3
 - Update mesa version
 
@@ -696,6 +714,8 @@ All notable changes to this project will be documented in this file.
 
 - Command "set boot-image" argument mismatch
 - Error message when 'root_ca_cert' param in config file is missing
+- And provides a more useful message to user
+- Output messages
 
 ### Features
 
@@ -796,6 +816,7 @@ All notable changes to this project will be documented in this file.
 - Improve functionality to stop a cfs session
 - Stop running session checks is session to stop is actually running, otherwise, it gracefulyl stops
 - Apply sat command now translates git branches to commit id when
+- Creating CFS configurations
 
 ### Miscellaneous Tasks
 
@@ -870,9 +891,11 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Filter sat file rendering accoring to whether user use arguments
+- --image-only or --sessiontemplate-only
 - Cli won't hide hsm-group arguments if default hsm has been setup
 - Datetime timezone conversion format modified with "seconds"
 - Datetime timezone conversion functionality extended to command
+- "get session"
 
 ### Miscellaneous Tasks
 
@@ -984,6 +1007,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - New output option `table-wide` for command `manta get cluster` to
+- Show kernel parameters
 
 ### Miscellaneous Tasks
 
@@ -1038,7 +1062,9 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Subcommand "apply boot" now has a new argument to set new kernel
+- Parameters
 - Subcommand "apply template" now sets "reboot" as default operation
+- Ignored and instead process all nodes in BOS sessiontemplate
 
 ### Miscellaneous Tasks
 
@@ -1079,8 +1105,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Apply sat command now has arguments to chose whether images or
+- Session_template should be processed exclusively
 - Migration to BOS v2
 - New command `apply template` to create a BOS v2 session based on
+- A BOS v2 sessiontemplate
 
 ### Miscellaneous Tasks
 
@@ -1132,6 +1160,7 @@ All notable changes to this project will be documented in this file.
 
 - Ansible-passthrough
 - Ignore system hsm groups in SAT file, JWT and functions to get all
+- HSM groups
 
 ### Features
 
@@ -1322,6 +1351,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - HSM list to validate in apply sat file no longer takes into
+- Consideration the HSM group in configuration file
 
 ### FIX
 
@@ -1536,6 +1566,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add semaphores when making multiples calls to CSM APIs to throttle
+- The load on the system
 - Upgrade mesa version
 
 ### Miscellaneous Tasks
@@ -1566,6 +1597,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Local repo validation against gitea
+- Form gitea
 
 ### Miscellaneous Tasks
 
@@ -1606,6 +1638,7 @@ All notable changes to this project will be documented in this file.
 
 - Add new method to change boot parameters `manta apply boot`
 - Add new argument to set the image id to a cluster or nodes for
+- Booting
 - Update mesa
 - Add tests to `apply hw cluster` functionality
 
@@ -1628,6 +1661,7 @@ All notable changes to this project will be documented in this file.
 
 - Remove 2 columns from the CFS session output table
 - Rename "DEsired Configuration" to "Running configuration" in
+- 'get cluster' command
 
 ## [1.30.0] - 2024-04-23
 
@@ -1638,6 +1672,7 @@ All notable changes to this project will be documented in this file.
 - Restore BOS session to v1
 - Improve BOS sessiontemplate by processing multiple boot_sets
 - Improve BOS sessiontemplate by passing kernel parameters from SAT
+- File
 - Process multiple BOS sessiontemplate in SAT file
 
 ### Miscellaneous Tasks
@@ -1699,6 +1734,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - CFS layer branch lookup not printing branch name properly if they
+- Had character "/"
 
 ### Miscellaneous Tasks
 
@@ -1725,6 +1761,7 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - Cean code
+- Found in JWT token
 
 ## [1.28.14] - 2024-03-17
 
@@ -1876,6 +1913,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Get configuration command shows layer information including tag
+- Names
 - Update manta version
 
 ### Miscellaneous Tasks
@@ -1886,11 +1924,16 @@ All notable changes to this project will be documented in this file.
 
 - Clean code
 
+### Testing
+
+- Test branch
+
 ## [1.28.0] - 2024-02-28
 
 ### Bug Fixes
 
 - Add dialog asking user to validate SAT file for commands apply
+- Image and apply configuration
 
 ### Miscellaneous Tasks
 
@@ -1901,6 +1944,8 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Bug in apply cluster subcommand where it was failing when reading
+- Bos sessiontemplate details
+- Now interacts with mesa functions to update HSM group members
 
 ### Features
 
@@ -1942,10 +1987,14 @@ All notable changes to this project will be documented in this file.
 
 - Get configuration, get image, get template was filtering way too
 - Ci pipeline not generating homebrew installation command till cc
+- Crate issue is fixed
 
 ### Features
 
 - Get configuration now resolves gitea information like branch and
+- Tag name and also checks if commit id used if the most recent one
+- Compared to the tip on remote for that branch
+- Much informtion
 - Update mesa library
 
 ### Miscellaneous Tasks
@@ -2009,13 +2058,13 @@ All notable changes to this project will be documented in this file.
 
 ## [1.23.0] - 2024-02-20
 
-### Co-authored-by
-
-- Manuel Sopena Ballesteros <manuel.sopena@cscs.ch>
-
 ### Features
 
 - New feature to use the SAT files as jinja2 templates (#37)
+- New feature to use the SAT files as jinja2 templates (#37)
+- New feature to use the SAT files as jinja2 templates (#37)
+- New feature to use the SAT files as jinja2 templates (#37)
+- Manuel Sopena Ballesteros <manuel.sopena@cscs.ch>
 - Update mesa version
 
 ### Miscellaneous Tasks
@@ -2141,6 +2190,8 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Delete data was not filtering BOS sessiontemplate properly
+- Cray product catalogs when building images
+- Manages git tags
 - Create bos sessiontemplate from SAT file
 
 ### Features
@@ -2160,6 +2211,7 @@ All notable changes to this project will be documented in this file.
 - Clean code
 - Clean code
 - Move code related to import data from SAT file to its own
+- Module
 - Add tests to import images in SAT file
 - Create module for SAT code
 
@@ -2168,6 +2220,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Get configuration command ignoring configurations related to CFS
+- Sessions not completed
 - Print statement
 - Show error if apply cluster failt creating a configuration
 - Bos sessiontemplate filter by list of xnames
@@ -2230,6 +2283,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixes
 
+- Migrate backup and migrate restore (#11)
+- Migrate backup and migrate restore (#11)
+- Migrate backup and migrate restore (#11)
+- Migrate backup and migrate restore (#11)
 - Migrate backup and migrate restore (#11)
 
 ### Miscellaneous Tasks
@@ -2370,8 +2427,20 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
+- Simplify the collection of the HSM group description data.
 - Merge cluster migration branch
 - Cli build code fix
+
+### Feature
+
+- Migrate/backup first commit (partial)
+- Migrate/backup ignore JetBrains stuff
+- Migrate/backup download all files of a bos session template
+- Migrate/backup fix count of artifacts in download info
+- Migrate/backup add support to produce a file with the list of xnames belonging to the HSM groups in the BOS session template.
+- Migrate/backup cleanup
+- Migrate/backup more cleanup
+- Migrate/restore load backed files into memory
 
 ### Miscellaneous Tasks
 
@@ -2408,6 +2477,7 @@ All notable changes to this project will be documented in this file.
 
 - Add and remove nodes from HSM group
 - Add functionality to add or remove nodes to/from an HSM group
+- Return the HSM group json for API
 - Add new mesa version
 
 ### Miscellaneous Tasks
@@ -2431,6 +2501,7 @@ All notable changes to this project will be documented in this file.
 - Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
 - Apply hw partially working with first stage migrating hw components from target hsm group to parent, pending the other direction (migrating from parent to target hsm group)
 - Initial code for apply hw subcommand keeping target hsm members
+- Common to user request
 
 ### Miscellaneous Tasks
 
@@ -2451,6 +2522,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Fix bug passing params to "remove hw" subcommand
+- Params
 
 ### Miscellaneous Tasks
 
@@ -2499,6 +2571,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Disable build script because it was breaking cli module load from
+- Loading
 
 ### Features
 
@@ -2512,6 +2585,10 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - : add clippy suggestions
+
+### Testing
+
+- Testing
 
 ## [1.15.0] - 2024-01-01
 
@@ -2549,6 +2626,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Get nodes now shows CFS configuration related to image id used to
+- Boot the node
 
 ### Miscellaneous Tasks
 
@@ -2603,6 +2681,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.13.2] - 2023-12-11
 
+### Bug Fixes
+
+- Fix Cargo.toml
+
 ### Miscellaneous Tasks
 
 - Release manta version 1.13.2
@@ -2627,6 +2709,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add new flag 'force' to  delete subcommand to make it script
+- Friendly
 - Delete subcommand sumamry shows more information
 
 ### Miscellaneous Tasks
@@ -2672,18 +2755,6 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Panic when trying to connect to CFS session (ansible) container
-- Simplify the collection of the HSM group description data.
-
-### Feature
-
-- Migrate/backup first commit (partial)
-- Migrate/backup ignore JetBrains stuff
-- Migrate/backup download all files of a bos session template
-- Migrate/backup fix count of artifacts in download info
-- Migrate/backup add support to produce a file with the list of xnames belonging to the HSM groups in the BOS session template.
-- Migrate/backup cleanup
-- Migrate/backup more cleanup
-- Migrate/restore load backed files into memory
 
 ### Features
 
@@ -2707,6 +2778,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Bug when cluster creation won't realised if a CFS session failed
+- And keept waiting it to finish
 - Rename CFS session and configuration table headers
 - Fix hsm available list send to methods
 
@@ -2786,6 +2858,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Add new sub command apply configuration to create CFS
+- Configuration from a SAT file
 
 ### Miscellaneous Tasks
 
@@ -2796,6 +2869,7 @@ All notable changes to this project will be documented in this file.
 ### Bug Fixes
 
 - Bugs with subcommands ignoring of failing the restrictions
+- Regarding HSM available
 
 ### Features
 
@@ -2812,6 +2886,7 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - Clean code and adapt to new mesa version
+- Names
 - Clean code
 
 ## [1.10.6] - 2023-11-10
@@ -2820,6 +2895,8 @@ All notable changes to this project will be documented in this file.
 
 - Enable logs while building a cluster
 - Git-clone CFS session logs integrated to 'watch-log' command
+- Parameter
+- Feature was dropped in CSM 1.3)
 
 ### Miscellaneous Tasks
 
@@ -2872,7 +2949,17 @@ All notable changes to this project will be documented in this file.
 
 - Release manta version 1.10.2
 
+### Refactor
+
+- Refactor code
+- Add new functionality to manage different sites
+- Use new mesa library with higher level libraries for CSM integration
+
 ## [1.10.1] - 2023-10-26
+
+### Bug Fixes
+
+- Fix bug with 'config unset hsm' subcommand not deleting the config entry
 
 ### Miscellaneous Tasks
 
@@ -2898,11 +2985,19 @@ All notable changes to this project will be documented in this file.
 
 ## [1.9.13] - 2023-10-24
 
+### Bug Fixes
+
+- Fix logging messages in update node subcommand
+
 ### Miscellaneous Tasks
 
 - Release manta version 1.9.13
 
 ## [1.9.12] - 2023-10-21
+
+### Bug Fixes
+
+- Fix bug deleting elements
 
 ### Miscellaneous Tasks
 
@@ -2910,12 +3005,24 @@ All notable changes to this project will be documented in this file.
 
 ## [1.9.11] - 2023-10-21
 
+### Bug Fixes
+
+- Fix bug and integrate bos sessiontemplate with structs
+
 ### Miscellaneous Tasks
 
 - Release manta version 1.9.11
 - Release manta version 1.9.11
 
+### Revert
+
+- Revert version
+
 ## [1.9.10] - 2023-10-12
+
+### Bug Fixes
+
+- Fix code with clippy suggestions
 
 ### Miscellaneous Tasks
 
@@ -2928,6 +3035,10 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.9.9
 
 ## [1.9.8] - 2023-10-12
+
+### Bug Fixes
+
+- Fix bugs deleting data and update mesa version
 
 ### Miscellaneous Tasks
 
@@ -2946,6 +3057,10 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.9.6
 
 ## [1.9.5] - 2023-10-05
+
+### Bug Fixes
+
+- Fix bug apply image and apply cluster failing if configuration section missing in sat file
 
 ### Miscellaneous Tasks
 
@@ -2997,6 +3112,20 @@ All notable changes to this project will be documented in this file.
 
 ## [1.4.0] - 2023-09-01
 
+### Bug Fixes
+
+- Fix bug apply image and apply cluster failing if configuration section missing in sat file
+- Fix gub: update subcommand not taking the right image for a cfs session target image created by sat bootprep overwritting existing image
+- Fix logging messages
+- Fix bug creating image where image configuration name was not being updated if using a tag
+- Fix typos in command line
+- Fix logging messages
+- Fix BSS from starting node configuration (ansible) before the node finish booting
+- Fix cli command descriptions
+- Fix bug with apply session subcommand when optional params were missing
+- Fix clippy errors
+- Fix bug apply image and apply cluster failing if configuration section missing in sat file
+
 ### Miscellaneous Tasks
 
 - Release manta version 0.7.0
@@ -3034,6 +3163,12 @@ All notable changes to this project will be documented in this file.
 - Release manta version 0.8.1
 - Release manta version 1.4.0
 
+### Refactor
+
+- Refactor code to fetch image id from cfs session or cfs configuration name, also change cli commands help
+- Refactor code to fetch image id from cfs session or cfs configuration name, also change cli commands help
+- Refactor code and add validation when trying to access interactive session to a target node of a cfs session to build an image
+
 ## [0.6.30] - 2023-08-30
 
 ### Miscellaneous Tasks
@@ -3042,8 +3177,13 @@ All notable changes to this project will be documented in this file.
 
 ## [0.6.29] - 2023-07-18
 
+### Bug Fixes
+
+- Fix bug fetching commit details
+
 ### Miscellaneous Tasks
 
+- Add new parameter to config file to specify the hashicorp vault environment to target to (shasta or prealps)
 - Release manta version 0.6.29
 
 ## [0.6.28] - 2023-07-05
@@ -3052,10 +3192,15 @@ All notable changes to this project will be documented in this file.
 
 - Release manta version 0.6.28
 
+### Refactor
+
+- Refactor code
+
 ## [0.6.27] - 2023-07-05
 
 ### Miscellaneous Tasks
 
+- Remove unnecessary dependencies
 - Release manta version 0.6.27
 
 ## [0.6.26] - 2023-06-29
@@ -3106,10 +3251,15 @@ All notable changes to this project will be documented in this file.
 
 - Release manta version 0.6.19
 
+### Testing
+
+- Test rust images in github workload
+
 ## [0.6.18] - 2023-06-27
 
 ### Miscellaneous Tasks
 
+- Ci/cd pipeline build binaries using most recent rust compiler version
 - Release manta version 0.6.18
 
 ## [0.6.17] - 2023-06-27
@@ -3126,12 +3276,19 @@ All notable changes to this project will be documented in this file.
 
 ## [0.6.15] - 2023-06-25
 
-### Co-authored-by
+### Bug Fixes
 
-- Manuel Sopena Ballesteros <msopena@cscs.ch>
+- Fix bug in cli 'apply image' and 'apply cluster'  subcommands parsing tag param
 
 ### Miscellaneous Tasks
 
+- Add tag for sat file and mesa emancipation (#1)
+- * remove shasta and manta modules and use the ones from mesa library
+- * pending to get tested
+- * update README and move mesa from local filesystem to crates.io
+- * chore: Release manta version 0.6.14
+- ---------
+- Manuel Sopena Ballesteros <msopena@cscs.ch>
 - Release manta version 0.6.15
 
 ## [0.6.13] - 2023-06-22
@@ -3140,11 +3297,19 @@ All notable changes to this project will be documented in this file.
 
 - Release manta version 0.6.13
 
+### Testing
+
+- Test merging github workflow files
+
 ## [0.6.12] - 2023-06-22
 
 ### Miscellaneous Tasks
 
 - Release manta version 0.6.12
+
+### Testing
+
+- Test merging github workflow files
 
 ## [0.6.11] - 2023-06-22
 
@@ -3221,8 +3386,149 @@ All notable changes to this project will be documented in this file.
 
 ## [0.5.1] - 2023-06-21
 
+### Bug Fixes
+
+- Fix logs printing
+- Fix bug fetching cfs session related to logs
+- Fix logging
+- Fix bug in keycloak authentication process
+- Fix bug with authentication
+- Add functionality to support config files
+- Fix bug authenticating against keycloak
+- Fix bug when trying to get the logs from a layer that does not exists
+- Update README
+- Update crates
+- Fix typo in README
+- Fix README and code organization improved by using rust modules
+- Fix README and refactor some modules
+- Fix typo in README
+- Fix bug printing sessions on screen and getting members of a hsm group
+- Fix cli programatically
+- Fix cli args names errors
+- Apply session checks if ansible-limit within hsm groups nodes
+- Apply cfs session checks if any node in ansible-limit is part of a cfs session running or pending
+- Fix clap config so get template/session/configuration can run without args
+- Fix bugs in get session
+- Fix bugs in get configuration
+- Fix bugs
+- Fix bug getting most recent configuration details
+- Fix bug listing nodes in a hsm group
+- Fix bug with manta not fetching the right gitea url to fetch commit details
+- Fix cli options
+- Address clippy issues
+- Fix bug applying cfs session
+- Fix cli help typos
+- Fix log subcommand output
+- Fix bug formatting hsm members
+- Fix bug printing list of bos templates
+- Fix README; fix app logging; fix bug when fetching commit details from gitea
+- Fix bug fetching commit details from gitea
+- Fix bug fetching gitea commit details when applaying a new session
+- Fix message when getting nodes for a hsm group which does not exists
+- Fix bug identifying image id for most recent configuration
+- Fix bug not filtering cfs sessions based on hsm group
+- Fix Dockerfile and fix bug reading cfs layers form sat file
+- Fix bug where vault authentication module was expecting config file in /home/msopena/polybox/Documents/tests/rust/manta/config instead of /home/msopena/.config/manta/config
+- Fix issues reported by clippy
+- Fix bug which reads ~/.kube/config when creating a k8s client programatically if socks5 is disabled, this is wrong since k8s clients created programatically should not use kubeconfig file
+- Fix bug: 'get nodes' crashes if no CFS session target image available in CSM
+- Fix bug related to running sbatch and mpi job after the maintenance
+- 03-23
+- Update_node method now manages hsm groups
+- Clean code
+- Fix bug with update node and update hsm which did not use bod session template hence Boss Orchestrator Agent (BOA) was not telling CFS batcher to use the right CFS configuration
+- Fix bug when get cfs sessions would show an image id different than the one
+- Use by the bos sessicfs ontemplate for the same cfs configuration
+- Rename variables for better readability
+- Fix bug fetching cfs session logs if non utf chars were sent to client. Fixed by using utf8_lossy
+- Fix code following clippy suggestions
+- Fix bug related to 'get hsm' which was panicking by missusing unwrap()
+- Fix bug getting information from HSM group
+- Fix bug with get hsm-group command
+- Fix cicd pipeline by installing rustfmt
+- Fix apply session logging
+- Fix gitlab pipeline typo
+- Fix bug: get node subcomand failing with large hsm groups. For some reason CMS was crashing, the call to /cfs/v2/components has now broken down to multiple ones
+- Fix bug: subcommand 'logs' failing to validate CFS session
+- Fix Dockerfile with updated base image
+
 ### Miscellaneous Tasks
 
+- Replacing format! macro with push_str
+- Add cargo fmt to cicd pipeline
 - Release manta version 0.5.1
+
+### Refactor
+
+- Refactor code to modules
+- Refactor code; fix ownership issues; change config to use psitds hsm group
+- Refactor var names and clean code
+- Refactor get session cli
+- Refactor code
+- Refactor code
+- Refactoring code
+- Refactor code
+- Refactor code
+- Refactor code
+- Refactor code
+- Refactor code
+- Refactor code
+- Refactor code
+- Refactor files to accomodate build.rs file
+- New feature to generate bash autocomplete file upon compilation
+- Refactor code to separate shata operations from printing results on screen
+- Refactor code to separate shasta operations from printing results on screen
+- Refactor code by moving method to fetches k8s secrets
+- Refactor cfs session container logs functionality, it now returns a stream
+- Refactor code to connect to node's console so it can be reused by other frontends (like cama)
+- Refactor operations to handle console for cojin and cama
+- Refactor code
+- Refactor code
+
+### Testing
+
+- Testing git2-rs
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Testing git2-rs... commit created programatically...
+- Test gitlab runner
+- Test gitlab runner
+- Test gitlab runner
+- Test pipeline
+- Test pipeline
+- Test pipeline
+- Test pipeline
+- Test pipeline
+- Test pipeline
+- Test pipeline
+- Test pipeline
 
 <!-- generated by git-cliff -->
