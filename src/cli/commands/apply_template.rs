@@ -18,7 +18,7 @@ pub async fn exec(
     //
     // Get BOS sessiontemplate
     //
-    let bos_sessiontemplate_vec_rslt = bos::template::csm::v2::get(
+    let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -141,10 +141,13 @@ pub async fn exec(
     //
     // Create BOS session request payload
     //
-    let bos_session = bos::session::v2::r#struct::BosSession {
+    let bos_session = bos::session::http_client::v2::r#struct::BosSession {
         name: bos_session_name_opt.cloned(),
         tenant: None,
-        operation: bos::session::v2::r#struct::Operation::from_str(bos_session_operation).ok(),
+        operation: bos::session::http_client::v2::r#struct::Operation::from_str(
+            bos_session_operation,
+        )
+        .ok(),
         template_name: bos_sessiontemplate_name.to_string(),
         limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
         stage: Some(false),
@@ -157,9 +160,13 @@ pub async fn exec(
         println!("Dry-run enabled. No changes persisted into the system");
         println!("BOS session info:\n{:#?}", bos_session);
     } else {
-        let create_bos_session_rslt =
-            bos::session::v2::post(shasta_token, shasta_base_url, shasta_root_cert, bos_session)
-                .await;
+        let create_bos_session_rslt = bos::session::http_client::v2::post(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            bos_session,
+        )
+        .await;
 
         match create_bos_session_rslt {
              Ok(bos_session) => println!(

@@ -46,7 +46,7 @@ pub async fn exec(
     }
 
     // Check new configuration exists and exit otherwise
-    let runtime_configuration_detail_list_rslt = cfs::configuration::get(
+    let runtime_configuration_detail_list_rslt = cfs::configuration::http_client::v3::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -111,7 +111,7 @@ pub async fn exec(
         } else if let Some(boot_image_id) = new_boot_image_id_opt {
             log::info!("Boot image id '{}' provided", boot_image_id);
             // Check image id exists
-            let image_id_in_csm = ims::image::csm::get(
+            let image_id_in_csm = ims::image::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -240,7 +240,7 @@ pub async fn exec(
                 desired_configuration_name
             );
 
-            cfs::component::csm::utils::update_component_list_desired_configuration(
+            cfs::component::utils::update_component_list_desired_configuration(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

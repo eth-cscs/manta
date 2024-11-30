@@ -1,6 +1,6 @@
 pub mod command {
 
-    use mesa::ims::image::{self, r#struct::Image};
+    use mesa::ims::image::{self, http_client::r#struct::Image};
 
     pub async fn exec(
         shasta_token: &str,
@@ -16,7 +16,7 @@ pub mod command {
         );
 
         let mut image_vec: Vec<Image> =
-            image::csm::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            image::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap();
 
@@ -54,9 +54,13 @@ pub mod command {
             if dry_run {
                 eprintln!("Dry-run enabled. No changes persisted into the system");
             } else {
-                let _ =
-                    image::csm::delete(shasta_token, shasta_base_url, shasta_root_cert, &image_id)
-                        .await;
+                let _ = image::http_client::delete(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &image_id,
+                )
+                .await;
             }
         }
 

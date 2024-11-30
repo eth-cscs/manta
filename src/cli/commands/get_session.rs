@@ -1,6 +1,6 @@
 use mesa::{
     cfs,
-    ims::{self, image::r#struct::Image},
+    ims::{self, image::http_client::r#struct::Image},
 };
 
 use crate::common;
@@ -126,7 +126,7 @@ pub async fn exec(
                     .result_id
                     .as_ref();
 
-                let new_image_vec_rslt: Result<Vec<Image>, _> = ims::image::csm::get(
+                let new_image_vec_rslt: Result<Vec<Image>, _> = ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

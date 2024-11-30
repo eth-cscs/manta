@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::r#struct::BootParameters;
-use mesa::cfs::configuration::csm::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse;
+use mesa::cfs::configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, bss, cfs, ims};
 use serde_json::Value;
 
@@ -42,7 +42,7 @@ pub async fn delete_data_related_cfs_configuration(
     // Check CFS configurations to delete not used as a desired configuration
     //
     // Get all CFS components in CSM
-    let cfs_components: Vec<Value> = cfs::component::csm::v3::get_multiple_components(
+    let cfs_components: Vec<Value> = cfs::component::http_client::v3::get_multiple_components(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -63,9 +63,14 @@ pub async fn delete_data_related_cfs_configuration(
 
     // Get all CFS configurations in CSM
     let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-        cfs::configuration::get(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await
-            .unwrap();
+        cfs::configuration::http_client::v3::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+        )
+        .await
+        .unwrap();
 
     // Filter CFS configurations related to HSM group, configuration name or configuration name
     // pattern
@@ -109,7 +114,7 @@ pub async fn delete_data_related_cfs_configuration(
     //
     // Get all BOS session templates
     let mut bos_sessiontemplate_value_vec =
-        bos::template::csm::v2::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+        bos::template::http_client::v2::get(shasta_token, shasta_base_url, shasta_root_cert, None)
             .await
             .unwrap();
 
@@ -263,7 +268,7 @@ pub async fn delete_data_related_cfs_configuration(
     // previously and the CFS session and BOS sessiontemplate not being cleared)
     let mut image_id_filtered_vec: Vec<&str> = Vec::new();
     for image_id in image_id_vec {
-        if !ims::image::csm::get(
+        if !ims::image::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -614,9 +619,13 @@ pub async fn delete(
     // DELETE IMAGES
     for image_id in image_id_vec {
         log::info!("Deleting IMS image '{}'", image_id);
-        let image_deleted_value_rslt =
-            ims::image::csm::delete(shasta_token, shasta_base_url, shasta_root_cert, image_id)
-                .await;
+        let image_deleted_value_rslt = ims::image::http_client::delete(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            image_id,
+        )
+        .await;
 
         // process api response
         match image_deleted_value_rslt {
@@ -634,7 +643,7 @@ pub async fn delete(
 
     // DELETE BOS SESSIONS
     let bos_session_vec =
-        bos::session::v2::get(shasta_token, shasta_base_url, shasta_root_cert, None)
+        bos::session::http_client::v2::get(shasta_token, shasta_base_url, shasta_root_cert, None)
             .await
             .unwrap();
 
@@ -644,7 +653,7 @@ pub async fn delete(
         log::info!("Deleting BOS sesion '{}'", bos_session_id);
 
         if bos_sessiontemplate_name_vec.contains(&bos_session.template_name.as_str()) {
-            bos::session::v2::delete(
+            bos::session::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -670,7 +679,7 @@ pub async fn delete(
         log::info!("Deleting IMS image '{}'", cfs_session_name);
         let mut counter = 0;
         loop {
-            let deletion_rslt = cfs::session::csm::v3::http_client::delete(
+            let deletion_rslt = cfs::session::http_client::v3::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -705,7 +714,7 @@ pub async fn delete(
         );
         let mut counter = 0;
         loop {
-            let deletion_rslt = bos::template::csm::v2::delete(
+            let deletion_rslt = bos::template::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -737,7 +746,7 @@ pub async fn delete(
         log::info!("Deleting CFS configuration '{}'", cfs_configuration);
         let mut counter = 0;
         loop {
-            let deletion_rslt = cfs::configuration::csm::v3::http_client::delete(
+            let deletion_rslt = cfs::configuration::http_client::v3::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

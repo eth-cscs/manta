@@ -4,16 +4,16 @@ use image::Image;
 use mesa::{
     bos::{
         self,
-        session::v2::r#struct::{BosSession, Operation},
-        template::csm::v2::r#struct::{BootSet, BosSessionTemplate, Cfs},
+        session::http_client::v2::r#struct::{BosSession, Operation},
+        template::http_client::v2::r#struct::{BootSet, BosSessionTemplate, Cfs},
     },
     cfs::{
         self,
-        configuration::csm::v3::r#struct::{
+        configuration::http_client::v3::r#struct::{
             cfs_configuration_request::CfsConfigurationRequest,
             cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::csm::v3::r#struct::CfsSessionPostRequest,
+        session::http_client::v3::r#struct::CfsSessionPostRequest,
     },
     error::Error,
     hsm, ims,
@@ -688,7 +688,7 @@ pub async fn create_cfs_configuration_from_sat_file(
         .await;
 
     if !dry_run {
-        cfs::configuration::put(
+        cfs::configuration::http_client::v3::put(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -1372,7 +1372,7 @@ pub fn validate_sat_file_images_section(
     configuration_yaml_vec: &Vec<Value>,
     hsm_group_available_vec: &[String],
     cray_product_catalog: &BTreeMap<String, String>,
-    image_vec: Vec<ims::image::r#struct::Image>,
+    image_vec: Vec<ims::image::http_client::r#struct::Image>,
     configuration_vec: Vec<CfsConfigurationResponse>,
     ims_recipe_vec: Vec<ims::recipe::r#struct::RecipeGetResponse>,
 ) -> Result<(), Error> {
@@ -1398,10 +1398,12 @@ pub fn validate_sat_file_images_section(
             );
 
             let is_image_base_id_in_csm =
-                image_vec.iter().any(|image: &ims::image::r#struct::Image| {
-                    let image_id = image.id.as_ref().unwrap();
-                    image_id.eq(image_ims_id_to_find)
-                });
+                image_vec
+                    .iter()
+                    .any(|image: &ims::image::http_client::r#struct::Image| {
+                        let image_id = image.id.as_ref().unwrap();
+                        image_id.eq(image_ims_id_to_find)
+                    });
 
             if !is_image_base_id_in_csm {
                 return Err(Error::Message(format!(
@@ -1844,7 +1846,7 @@ pub async fn validate_sat_file_session_template_section(
                 session_template_yaml["name"].as_str().unwrap()
             );
 
-            let image_found = ims::image::csm::get(
+            let image_found = ims::image::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1928,7 +1930,7 @@ pub async fn validate_sat_file_session_template_section(
                     session_template_yaml["name"].as_str().unwrap()
                 );
 
-                configuration_found = cfs::configuration::csm::v3::http_client::get(
+                configuration_found = cfs::configuration::http_client::v3::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1978,7 +1980,9 @@ pub async fn process_session_template_section_in_sat_file(
         let _bos_sessiontemplate: BosSessionTemplate =
             serde_yaml::from_value(bos_sessiontemplate_yaml.clone()).unwrap();
 
-        let image_details: ims::image::r#struct::Image = if let Some(bos_sessiontemplate_image) =
+        let image_details: ims::image::http_client::r#struct::Image = if let Some(
+            bos_sessiontemplate_image,
+        ) =
             bos_sessiontemplate_yaml.get("image")
         {
             if let Some(bos_sessiontemplate_image_ims) = bos_sessiontemplate_image.get("ims") {
@@ -2016,7 +2020,7 @@ pub async fn process_session_template_section_in_sat_file(
                         .to_string();
 
                     // Get base image details
-                    ims::image::csm::get(
+                    ims::image::http_client::get(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -2046,7 +2050,7 @@ pub async fn process_session_template_section_in_sat_file(
                     .to_string();
 
                 // Get Image by id
-                ims::image::csm::get(
+                ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2086,7 +2090,7 @@ pub async fn process_session_template_section_in_sat_file(
 
                     image_vec.first().unwrap().clone()
                 } else {
-                    ims::image::r#struct::Image {
+                    ims::image::http_client::r#struct::Image {
                         id: None,
                         created: None,
                         name: image_name.to_string(),
@@ -2119,7 +2123,7 @@ pub async fn process_session_template_section_in_sat_file(
         );
 
         if !dry_run {
-            let cfs_configuration_vec_rslt = cfs::configuration::get(
+            let cfs_configuration_vec_rslt = cfs::configuration::http_client::v3::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2311,7 +2315,7 @@ pub async fn process_session_template_section_in_sat_file(
         };
 
         if !dry_run {
-            let create_bos_session_template_resp = bos::template::csm::v2::put(
+            let create_bos_session_template_resp = bos::template::http_client::v2::put(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2381,7 +2385,7 @@ pub async fn process_session_template_section_in_sat_file(
                 components: None,
             };
 
-            let create_bos_session_resp = bos::session::v2::post(
+            let create_bos_session_resp = bos::session::http_client::v2::post(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2405,7 +2409,7 @@ pub async fn process_session_template_section_in_sat_file(
                 ),
             }
 
-            let bos_sessiontemplate_vec = bos::template::csm::v2::get(
+            let bos_sessiontemplate_vec = bos::template::http_client::v2::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

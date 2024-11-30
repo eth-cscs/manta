@@ -4,7 +4,7 @@ use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::{
         self,
-        configuration::csm::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+        configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse,
     },
     common::kubernetes,
     error::Error,
@@ -167,15 +167,20 @@ pub async fn exec(
     // Get data from CSM
     //
     // Get configurations from CSM
-    let configuration_vec =
-        cfs::configuration::get(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await
-            .unwrap();
+    let configuration_vec = cfs::configuration::http_client::v3::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+    )
+    .await
+    .unwrap();
 
     // Get images from CSM
-    let image_vec = ims::image::csm::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await
-        .unwrap();
+    let image_vec =
+        ims::image::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await
+            .unwrap();
 
     // Get IMS recipes from CSM
     let ims_recipe_vec =

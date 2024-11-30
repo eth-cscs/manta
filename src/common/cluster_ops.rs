@@ -1,8 +1,8 @@
 use mesa::{
     cfs::{
         self,
-        configuration::csm::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse,
-        session::csm::v3::r#struct::CfsSessionGetResponse,
+        configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse,
+        session::http_client::v3::r#struct::CfsSessionGetResponse,
     },
     hsm,
 };
@@ -69,7 +69,7 @@ pub async fn get_details(
         for cfs_session_value in cfs_sessions_value_vec {
             // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
             // members
-            let cfs_configuration_vec = cfs::configuration::get(
+            let cfs_configuration_vec = cfs::configuration::http_client::v3::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

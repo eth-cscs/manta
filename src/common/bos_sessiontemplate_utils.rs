@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::bos::template::csm::v2::r#struct::BosSessionTemplate;
+use mesa::bos::template::http_client::v2::r#struct::BosSessionTemplate;
 use mesa::{bos, ims, node};
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
@@ -64,7 +64,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
 ) -> Option<String> {
     // Get all BOS sessiontemplates
     let bos_sessiontemplate_value_list =
-        bos::template::csm::v2::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        bos::template::http_client::v2::get_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await
             .unwrap();
 
@@ -125,7 +125,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if ims::image::csm::get(
+                if ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

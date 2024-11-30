@@ -3,8 +3,8 @@ use dialoguer::Confirm;
 use humansize::DECIMAL;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
-use mesa::bos::template::csm::v2::r#struct::BosSessionTemplate;
-use mesa::cfs::configuration::csm::v3::r#struct::{
+use mesa::bos::template::http_client::v2::r#struct::BosSessionTemplate;
+use mesa::cfs::configuration::http_client::v3::r#struct::{
     cfs_configuration_request::CfsConfigurationRequest,
     cfs_configuration_response::CfsConfigurationResponse,
 };
@@ -13,11 +13,13 @@ use mesa::hsm::group::{
     r#struct::HsmGroup,
 };
 use mesa::ims::image::{
-    csm::patch,
-    r#struct::{Image, ImsImageRecord2Update, Link},
+    http_client::{
+        patch,
+        r#struct::{Image, ImsImageRecord2Update, Link},
+    },
     utils::get_fuzzy,
 };
-use mesa::ims::utils::s3_client::BAR_FORMAT;
+use mesa::ims::s3_client::BAR_FORMAT;
 use mesa::{bos, cfs, ims};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -295,7 +297,7 @@ async fn create_bos_sessiontemplate(
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    let vector = bos::template::csm::v2::get(
+    let vector = bos::template::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -323,7 +325,7 @@ async fn create_bos_sessiontemplate(
             println!("Looks like you do not want to continue, bailing out.");
             std::process::exit(2)
         } else {
-            match bos::template::csm::v2::delete(
+            match bos::template::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -364,7 +366,7 @@ async fn create_bos_sessiontemplate(
     log::debug!("BOS sessiontemplate loaded:\n{:#?}", bos_sessiontemplate);
     log::debug!("BOS sessiontemplate modified:\n{:#?}", &bos_sessiontemplate);
 
-    match bos::template::csm::v2::put(
+    match bos::template::http_client::v2::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -403,7 +405,7 @@ async fn create_cfs_config(
     let cfs_config_name = cfs_configuration.name;
 
     // Get all CFS configurations, this is ugly
-    let cfs_config_vec = cfs::configuration::csm::v3::http_client::get(
+    let cfs_config_vec = cfs::configuration::http_client::v3::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -430,7 +432,7 @@ async fn create_cfs_config(
             std::process::exit(2)
         }
 
-        match cfs::configuration::csm::v3::http_client::delete(
+        match cfs::configuration::http_client::v3::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -457,7 +459,7 @@ async fn create_cfs_config(
 
     log::debug!("CFS config:\n{:#?}", &cfs_configuration);
 
-    match cfs::configuration::put(
+    match cfs::configuration::http_client::v3::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -502,12 +504,12 @@ async fn ims_update_image_add_manifest(
         Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
 
-    let _ims_record = ims::image::r#struct::Image {
+    let _ims_record = ims::image::http_client::r#struct::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
         created: None,
         arch: None,
-        link: Some(ims::image::r#struct::Link {
+        link: Some(ims::image::http_client::r#struct::Link {
             etag: None,
             path: format!(
                 "s3://boot-images/{}/manifest.json",
@@ -574,8 +576,7 @@ async fn s3_upload_image_artifacts(
 
     // Connect and auth to S3
     let sts_value =
-        match ims::utils::s3_client::s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await
-        {
+        match ims::s3_client::s3_auth(shasta_token, shasta_base_url, shasta_root_cert).await {
             Ok(sts_value) => {
                 log::debug!("STS token:\n{:#?}", sts_value);
                 sts_value
@@ -609,7 +610,7 @@ async fn s3_upload_image_artifacts(
         );
         let etag: String;
         if fs::metadata(file).unwrap().len() > 1024 * 1024 * 5 {
-            etag = match ims::utils::s3_client::s3_multipart_upload_object(
+            etag = match ims::s3_client::s3_multipart_upload_object(
                 &sts_value,
                 &full_object_path,
                 bucket_name,
@@ -624,7 +625,7 @@ async fn s3_upload_image_artifacts(
                 Err(error) => panic!("Unable to upload file to s3. Error {}", error),
             };
         } else {
-            etag = match ims::utils::s3_client::s3_upload_object(
+            etag = match ims::s3_client::s3_upload_object(
                 &sts_value,
                 &full_object_path,
                 bucket_name,
@@ -706,7 +707,7 @@ async fn s3_upload_image_artifacts(
         &new_manifest_file_name, &bucket_name, &manifest_full_object_path
     );
 
-    match ims::utils::s3_client::s3_upload_object(
+    match ims::s3_client::s3_upload_object(
         &sts_value,
         &manifest_full_object_path,
         bucket_name,
@@ -858,17 +859,21 @@ async fn ims_register_image(
         }
     }
 
-    let json_response =
-        match ims::image::csm::post(shasta_token, shasta_base_url, shasta_root_cert, &ims_record)
-            .await
-        {
-            Ok(json_response) => json_response,
-            Err(error) => panic!(
-                "Error: Unable to register a new image {} into IMS {}",
-                &ims_image_name.to_string(),
-                error
-            ),
-        };
+    let json_response = match ims::image::http_client::post(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &ims_record,
+    )
+    .await
+    {
+        Ok(json_response) => json_response,
+        Err(error) => panic!(
+            "Error: Unable to register a new image {} into IMS {}",
+            &ims_image_name.to_string(),
+            error
+        ),
+    };
     json_response["id"].to_string().replace('"', "")
 }
 

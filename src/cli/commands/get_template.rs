@@ -15,7 +15,7 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    let bos_sessiontemplate_vec_rslt = bos::template::csm::v2::get(
+    let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

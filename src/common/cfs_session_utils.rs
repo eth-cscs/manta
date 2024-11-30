@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::{
-    cfs::{self, session::csm::v3::r#struct::CfsSessionGetResponse},
+    cfs::{self, session::http_client::v3::r#struct::CfsSessionGetResponse},
     ims,
 };
 
@@ -209,7 +209,7 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        if ims::image::csm::get(
+        if ims::image::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

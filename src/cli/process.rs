@@ -2210,6 +2210,7 @@ pub fn validate_hsm_groups(
 
     Ok(())
 }
+
 /// Returns a list of HSM groups the user is expected to work with.
 /// This method will exit if the user is asking for HSM group not allowed
 /// If the user did not requested any HSM group, then it will return all HSM

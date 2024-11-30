@@ -69,7 +69,7 @@ pub async fn exec(
     let hsm_file_path = dest_path.join(hsm_file_name);
 
     let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let mut bos_templates = bos::template::csm::v2::get(
+    let mut bos_templates = bos::template::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -156,7 +156,7 @@ pub async fn exec(
             .as_ref()
             .unwrap()
             .to_owned();
-        let cfs_configurations = cfs::configuration::get(
+        let cfs_configurations = cfs::configuration::http_client::v3::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -206,7 +206,7 @@ pub async fn exec(
                     &download_counter,
                     &files2download_count
                 );
-                match ims::image::csm::get(
+                match ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -223,7 +223,7 @@ pub async fn exec(
                             &bos.unwrap(),
                             image_id_related_to_bos_sessiontemplate
                         );
-                        let sts_value = match ims::utils::s3_client::s3_auth(
+                        let sts_value = match ims::s3_client::s3_auth(
                             shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -240,13 +240,10 @@ pub async fn exec(
                         for file in files2download {
                             let dest = String::from(destination.unwrap()) + "/" + &image_id;
                             let src = image_id.clone() + "/" + file;
-                            let object_size = ims::utils::s3_client::s3_get_object_size(
-                                &sts_value,
-                                &src,
-                                bucket_name,
-                            )
-                            .await
-                            .unwrap_or(-1);
+                            let object_size =
+                                ims::s3_client::s3_get_object_size(&sts_value, &src, bucket_name)
+                                    .await
+                                    .unwrap_or(-1);
                             println!(
                                 "Downloading image file {} ({}) to {}/{} [{}/{}]",
                                 &src,
@@ -256,7 +253,7 @@ pub async fn exec(
                                 &download_counter,
                                 &files2download_count
                             );
-                            match ims::utils::s3_client::s3_download_object(
+                            match ims::s3_client::s3_download_object(
                                 &sts_value,
                                 &src,
                                 bucket_name,

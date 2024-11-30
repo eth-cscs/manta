@@ -3,17 +3,17 @@ use std::path::PathBuf;
 use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::{
-    bos::template::csm::v2::r#struct::BosSessionTemplate,
+    bos::template::http_client::v2::r#struct::BosSessionTemplate,
     cfs::{
-        configuration::csm::v3::r#struct::{
+        configuration::http_client::v3::r#struct::{
             cfs_configuration::ConfigurationDetails,
             cfs_configuration_request::{CfsConfigurationRequest, Layer},
             cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::csm::v3::r#struct::CfsSessionGetResponse,
+        session::http_client::v3::r#struct::CfsSessionGetResponse,
     },
     common::gitea,
-    ims::image::r#struct::Image,
+    ims::image::http_client::r#struct::Image,
 };
 use substring::Substring;
 

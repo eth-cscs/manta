@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    cfs::{self, session::csm::v3::r#struct::CfsSessionPostRequest},
+    cfs::{self, session::http_client::v3::r#struct::CfsSessionPostRequest},
     common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
     hsm,
@@ -302,7 +302,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     for xname in xnames {
         log::info!("Checking status of component {}", xname);
 
-        let component_status = cfs::component::csm::v2::get_single_component(
+        let component_status = cfs::component::http_client::v2::get_single_component(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -455,7 +455,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     .await;
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = cfs::configuration::put(
+    let cfs_configuration_resp = cfs::configuration::http_client::v3::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

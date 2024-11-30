@@ -2,7 +2,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     cfs::{
         self,
-        component::csm::r#struct::v2::{ComponentRequest, ComponentResponse},
+        component::http_client::v2::r#struct::{ComponentRequest, ComponentResponse},
     },
     hsm, ims,
 };
@@ -106,7 +106,7 @@ pub async fn exec(
             }
 
             for image_name in image_created_by_cfs_configuration {
-                let _ = ims::image::csm::delete(
+                let _ = ims::image::http_client::delete(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -144,10 +144,13 @@ pub async fn exec(
     if cfs_session_target_definition == "dynamic" {
         // The CFS session is of type 'target dynamic' (runtime CFS batcher)
         log::info!("CFS session target definition is 'dynamic'.");
-        let cfs_global_options =
-            cfs::component::csm::v3::get_options(shasta_token, shasta_base_url, shasta_root_cert)
-                .await
-                .unwrap();
+        let cfs_global_options = cfs::component::http_client::v3::get_options(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap();
 
         let retry_policy = cfs_global_options["default_batcher_retry_policy"]
             .as_u64()
@@ -191,7 +194,7 @@ pub async fn exec(
             retry_policy
         );
         if !dry_run {
-            let put_rslt_vec = cfs::component::csm::v2::put_component_list(
+            let put_rslt_vec = cfs::component::http_client::v2::put_component_list(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -216,7 +219,7 @@ pub async fn exec(
         let image_vec = cfs_session.get_result_id_vec();
         for image_id in image_vec {
             if !dry_run {
-                let _ = ims::image::csm::delete(
+                let _ = ims::image::http_client::delete(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -241,7 +244,7 @@ pub async fn exec(
     // Delete CFS session
     log::info!("Delete CFS session '{}'", cfs_session_name);
     if !dry_run {
-        let _ = cfs::session::csm::v3::http_client::delete(
+        let _ = cfs::session::http_client::v3::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

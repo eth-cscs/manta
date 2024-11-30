@@ -46,7 +46,7 @@ pub async fn exec(
 
     // TODO: try to not modify the CFS component directly but create a new BOS sessiontemplate,
     // this requires using BOS sessions v2
-    cfs::component::csm::utils::update_component_list_desired_configuration(
+    cfs::component::utils::update_component_list_desired_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

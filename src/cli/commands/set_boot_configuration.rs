@@ -39,7 +39,7 @@ pub async fn exec(
 
     // Check new configuration exists and exit otherwise
     // Get configuration detail from CSM
-    let configuration_detail_list_rslt = cfs::configuration::get(
+    let configuration_detail_list_rslt = cfs::configuration::http_client::v3::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

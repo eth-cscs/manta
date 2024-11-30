@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
 use mesa::{
-    cfs::configuration::csm::v3::r#struct::cfs_configuration_response::{
+    cfs::configuration::http_client::v3::r#struct::cfs_configuration_response::{
         CfsConfigurationResponse, Layer,
     },
     error::Error,
-    ims::{image::r#struct::Image, recipe::r#struct::RecipeGetResponse},
+    ims::{image::http_client::r#struct::Image, recipe::r#struct::RecipeGetResponse},
 };
 
 use crate::cli::commands::apply_sat_file::utils::{
