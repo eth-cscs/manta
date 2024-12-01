@@ -55,6 +55,30 @@ pub fn get_default_manta_config_file_path() -> PathBuf {
     config_file_path
 }
 
+pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
+    let mut buf = Vec::new();
+    let root_cert_file_rslt = File::open(file_path);
+
+    let file_rslt = if root_cert_file_rslt.is_err() {
+        let mut config_path = get_default_config_path();
+        config_path.push(file_path);
+        File::open(config_path)
+    } else {
+        root_cert_file_rslt
+    };
+
+    match file_rslt {
+        Ok(mut file) => {
+            let _ = file.read_to_end(&mut buf);
+
+            Ok(buf)
+        }
+        Err(_) => Err(Error::Message(
+            "CA public root file cound not be found.".to_string(),
+        )),
+    }
+}
+
 pub fn get_default_manta_audit_file_path() -> PathBuf {
     // XDG Base Directory Specification
     let project_dirs = ProjectDirs::from(
@@ -107,6 +131,10 @@ pub async fn get_configuration() -> Config {
     // file
     if !config_file_path.exists() {
         // Configuration file does not exists --> create a new configuration file
+        eprintln!(
+            "Configuration file '{}' not found. Creating a new one.",
+            config_file_path.to_string_lossy()
+        );
         create_new_config_file(Some(&config_file_path)).await;
     };
 
@@ -300,28 +328,4 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         "Configuration file '{}' created",
         config_file_path.to_string_lossy()
     )
-}
-
-pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
-    let mut buf = Vec::new();
-    let root_cert_file_rslt = File::open(file_path);
-
-    let file_rslt = if root_cert_file_rslt.is_err() {
-        let mut config_path = get_default_config_path();
-        config_path.push(file_path);
-        File::open(config_path)
-    } else {
-        root_cert_file_rslt
-    };
-
-    match file_rslt {
-        Ok(mut file) => {
-            let _ = file.read_to_end(&mut buf);
-
-            Ok(buf)
-        }
-        Err(_) => Err(Error::Message(
-            "CA public root file cound not be found.".to_string(),
-        )),
-    }
 }

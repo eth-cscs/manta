@@ -100,6 +100,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .get("root_ca_cert_file")
         .expect("'root_ca_cert_file' value missing in configuration file")
         .to_string();
+
     log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
 
     let shasta_root_cert_rslt = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
