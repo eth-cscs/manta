@@ -1,7 +1,13 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops, error::Error, pcs};
+use mesa::{
+    common::jwt_ops,
+    error::Error,
+    iaas_ops::{Csm, IaaSOps},
+    // pcs,
+    // power_ops::{Csm, IaaSOps},
+};
 
 use crate::common;
 
@@ -59,7 +65,15 @@ pub async fn exec(
         }
     }
 
-    let operation = "on";
+    let iaas_ops = Csm::new(
+        shasta_base_url.to_string(),
+        shasta_token.to_string(),
+        shasta_root_cert.to_vec(),
+    );
+
+    let power_mgmt_summary_rslt = iaas_ops.power_on_sync(&xname_vec).await;
+
+    /* let operation = "on";
 
     let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
@@ -68,7 +82,7 @@ pub async fn exec(
         operation,
         &xname_vec,
     )
-    .await;
+    .await; */
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,

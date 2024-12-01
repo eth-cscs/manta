@@ -1,5 +1,11 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops, error::Error, hsm, pcs};
+use mesa::{
+    common::jwt_ops,
+    error::Error,
+    hsm,
+    iaas_ops::{Csm, IaaSOps},
+    pcs,
+};
 
 use crate::common;
 
@@ -36,7 +42,15 @@ pub async fn exec(
         }
     }
 
-    // Restart node
+    let iaas_ops = Csm::new(
+        shasta_base_url.to_string(),
+        shasta_token.to_string(),
+        shasta_root_cert.to_vec(),
+    );
+
+    let power_mgmt_summary_rslt = iaas_ops.power_reset_sync(&xname_vec, force).await;
+
+    /* // Restart node
     let operation = if force {
         "hard-restart"
     } else {
@@ -50,7 +64,7 @@ pub async fn exec(
         operation,
         &xname_vec,
     )
-    .await;
+    .await; */
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,

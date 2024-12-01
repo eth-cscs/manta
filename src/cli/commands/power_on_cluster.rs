@@ -2,7 +2,9 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops::{self},
     error::Error,
-    hsm, pcs,
+    hsm,
+    iaas_ops::{Csm, IaaSOps},
+    pcs,
 };
 
 use crate::common;
@@ -39,7 +41,15 @@ pub async fn exec(
         }
     }
 
-    let operation = "on";
+    let iaas_ops = Csm::new(
+        shasta_base_url.to_string(),
+        shasta_token.to_string(),
+        shasta_root_cert.to_vec(),
+    );
+
+    let power_mgmt_summary_rslt = iaas_ops.power_on_sync(&xname_vec).await;
+
+    /* let operation = "on";
 
     let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
@@ -48,7 +58,7 @@ pub async fn exec(
         operation,
         &xname_vec,
     )
-    .await;
+    .await; */
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
