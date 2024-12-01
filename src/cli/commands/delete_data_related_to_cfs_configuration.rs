@@ -7,9 +7,9 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::r#struct::BootParameters;
+use mesa::cfs::component::http_client::v3::r#struct::Component;
 use mesa::cfs::configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, bss, cfs, ims};
-use serde_json::Value;
 
 use crate::{
     cli::commands::delete_data_related_to_cfs_configuration,
@@ -42,7 +42,7 @@ pub async fn delete_data_related_cfs_configuration(
     // Check CFS configurations to delete not used as a desired configuration
     //
     // Get all CFS components in CSM
-    let cfs_components: Vec<Value> = cfs::component::http_client::v3::get_multiple_components(
+    let cfs_components: Vec<Component> = cfs::component::http_client::v3::get_multiple_components(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -386,12 +386,13 @@ pub async fn delete_data_related_cfs_configuration(
         let mut nodes_using_cfs_configuration_as_dessired_configuration_vec = cfs_components
             .iter()
             .filter(|cfs_component| {
-                cfs_component["desired_config"]
-                    .as_str()
+                cfs_component
+                    .desired_config
+                    .as_ref()
                     .unwrap()
                     .eq(cfs_configuration_name)
             })
-            .map(|cfs_component| cfs_component["id"].as_str().unwrap())
+            .map(|cfs_component| cfs_component.id.as_ref().unwrap().as_str())
             .collect::<Vec<&str>>();
 
         if !nodes_using_cfs_configuration_as_dessired_configuration_vec.is_empty() {

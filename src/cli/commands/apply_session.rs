@@ -332,9 +332,9 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         );
         log::info!(
             "Is component enabled for batched CFS: {}",
-            component_status["enabled"]
+            component_status.enabled.unwrap()
         );
-        log::info!("Error count: {}", component_status["errorCount"]);
+        log::info!("Error count: {}", component_status.error_count.unwrap());
 
         if hsm_component_status_state.eq("On") || hsm_component_status_state.eq("Standby") {
             log::info!("There is an CFS session scheduled to run on this node. Pleas try again later. Aborting");

@@ -1,9 +1,6 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    cfs::{
-        self,
-        component::http_client::v2::r#struct::{ComponentRequest, ComponentResponse},
-    },
+    cfs::{self, component::http_client::v3::r#struct::Component},
     hsm, ims,
 };
 
@@ -164,7 +161,7 @@ pub async fn exec(
         );
 
         // Update CFS component error_count
-        let cfs_component_vec: Vec<ComponentResponse> = cfs_component_vec_opt
+        let cfs_component_vec: Vec<Component> = cfs_component_vec_opt
             .expect("No CFS components")
             .iter()
             .filter(|cfs_component| {
@@ -179,14 +176,7 @@ pub async fn exec(
             .collect();
 
         // Convert CFS components to another struct we can use for CFS component PUT API
-        let mut cfs_component_request_vec = Vec::new();
-
-        // Update CFS component error_count to max value
-        for cfs_component in cfs_component_vec {
-            let mut cfs_component_request: ComponentRequest = ComponentRequest::from(cfs_component);
-            cfs_component_request.error_count = Some(retry_policy);
-            cfs_component_request_vec.push(cfs_component_request);
-        }
+        let mut cfs_component_request_vec = cfs_component_vec;
 
         log::info!(
             "Update error count on nodes {:?} to {}",
@@ -194,7 +184,7 @@ pub async fn exec(
             retry_policy
         );
         if !dry_run {
-            let put_rslt_vec = cfs::component::http_client::v2::put_component_list(
+            let put_rslt_vec = cfs::component::http_client::v3::put_component_list(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
