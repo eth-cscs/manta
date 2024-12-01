@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.3] - 2024-12-01
+
+### Features
+
+- Integrate power management operations with IaaS traits
+- Update mesa version
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.2] - 2024-12-01
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.2
 
 ### Refactor
 
