@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.4] - 2024-12-02
+
+### Features
+
+- Integrate command apply kernel parameters with IaaSOps trait
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.3] - 2024-12-01
 
 ### Features
 
 - Integrate power management operations with IaaS traits
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.3
 
 ### Refactor
 
