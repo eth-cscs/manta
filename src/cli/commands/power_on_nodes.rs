@@ -1,13 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    common::jwt_ops,
-    error::Error,
-    iaas_ops::{Csm, IaaSOps},
-    // pcs,
-    // power_ops::{Csm, IaaSOps},
-};
+use mesa::{common::jwt_ops, error::Error, iaas_ops::IaaSOps};
 
 use crate::common;
 
@@ -65,33 +59,26 @@ pub async fn exec(
         }
     }
 
-    let iaas_ops = Csm::new(
+    let iaas_ops_rslt = mesa::iaas_ops::new_iaas(
+        "csm", // FIXME: do not hardcode this value and move it to config file
         shasta_base_url.to_string(),
         shasta_token.to_string(),
         shasta_root_cert.to_vec(),
     );
 
+    let iaas_ops = match iaas_ops_rslt {
+        Ok(iaas_ops) => iaas_ops,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+
     let power_mgmt_summary_rslt = iaas_ops.power_on_sync(&xname_vec).await;
-
-    /* let operation = "on";
-
-    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
-        shasta_base_url,
-        shasta_token,
-        shasta_root_cert,
-        operation,
-        &xname_vec,
-    )
-    .await; */
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
         Err(e) => {
-            /* eprintln!(
-                "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
-                xname_vec, error_msg
-            );
-            std::process::exit(1); */
             let error_msg = match e {
                 Error::CsmError(value) => serde_json::to_string_pretty(&value).unwrap(),
                 Error::SerdeError(value) => value.to_string(),
