@@ -1,7 +1,9 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{error::Error, hsm, iaas_ops::IaaSOps};
+use mesa::hsm;
 
 use crate::common;
+
+use infra_io::contracts::Power;
 
 pub async fn exec(
     shasta_token: &str,
@@ -36,14 +38,15 @@ pub async fn exec(
         }
     }
 
-    let iaas_ops_rslt = mesa::iaas_ops::new_iaas(
+    let backend_config_rslt = mesa::config::Config::new(
+        &shasta_base_url.to_string(),
+        Some(&shasta_token.to_string()),
+        &shasta_root_cert.to_vec(),
         "csm", // FIXME: do not hardcode this value and move it to config file
-        shasta_base_url.to_string(),
-        shasta_token.to_string(),
-        shasta_root_cert.to_vec(),
-    );
+    )
+    .await;
 
-    let iaas_ops = match iaas_ops_rslt {
+    let backend_config = match backend_config_rslt {
         Ok(iaas_ops) => iaas_ops,
         Err(e) => {
             eprintln!("{}", e);
@@ -51,27 +54,17 @@ pub async fn exec(
         }
     };
 
-    let power_mgmt_summary_rslt = iaas_ops.power_off_sync(&xname_vec, force).await;
+    let power_mgmt_summary_rslt = backend_config.power_off_sync(&xname_vec, force).await;
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
         Err(e) => {
-            /* eprintln!(
-                "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
-                xname_vec, error_msg
-            );
-            std::process::exit(1); */
-            let error_msg = match e {
-                Error::CsmError(value) => serde_json::to_string_pretty(&value).unwrap(),
-                Error::SerdeError(value) => value.to_string(),
-                Error::IoError(value) => value.to_string(),
-                Error::NetError(value) => value.to_string(),
-                Error::Message(value) => value.to_string(),
-            };
             eprintln!(
                 "ERROR - Could not power off node/s '{:?}'. Reason:\n{}",
-                xname_vec, error_msg
+                xname_vec,
+                e.to_string()
             );
+
             std::process::exit(1);
         }
     };

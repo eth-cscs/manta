@@ -1075,7 +1075,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
         );
 
         if !dry_run {
-            let cfs_session = cfs::session::post_sync(
+            let cfs_session_rslt = cfs::session::post_sync(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1086,8 +1086,15 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 &cfs_session,
                 watch_logs,
             )
-            .await
-            .unwrap();
+            .await;
+
+            let cfs_session = match cfs_session_rslt {
+                Ok(cfs_session) => cfs_session,
+                Err(e) => {
+                    eprintln!("ERROR - Could not create Image. Reason:\n{}", e);
+                    std::process::exit(1);
+                }
+            };
 
             if !cfs_session.is_success() {
                 eprintln!(

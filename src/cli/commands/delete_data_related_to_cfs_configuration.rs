@@ -20,7 +20,6 @@ pub async fn delete_data_related_cfs_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_opt: Option<&String>,
     hsm_name_available_vec: Vec<String>,
     configuration_name_opt: Option<&String>,
     configuration_name_pattern: Option<&String>,
@@ -28,13 +27,21 @@ pub async fn delete_data_related_cfs_configuration(
     until_opt: Option<NaiveDateTime>,
     yes: &bool,
 ) {
-    if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
+    /* if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
         eprintln!(
             "No access to HSM group {}. Exit",
             hsm_group_name_opt.unwrap()
         );
         std::process::exit(1);
-    }
+    } */
+
+    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_available_vec.clone(),
+    )
+    .await;
 
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //
@@ -42,15 +49,33 @@ pub async fn delete_data_related_cfs_configuration(
     // Check CFS configurations to delete not used as a desired configuration
     //
     // Get all CFS components in CSM
-    let cfs_components: Vec<Component> = cfs::component::http_client::v3::get_multiple_components(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-    )
-    .await
-    .unwrap();
+    let cfs_component_vec_rslt = if let Some(configuration_name) = configuration_name_opt {
+        cfs::component::http_client::v3::get_query(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(configuration_name),
+            None,
+            None,
+        )
+        .await
+    } else {
+        cfs::component::http_client::v3::get_parallel(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &xname_vec.as_slice(),
+        )
+        .await
+    };
+
+    let cfs_components: Vec<Component> = match cfs_component_vec_rslt {
+        Ok(cfs_component_vec) => cfs_component_vec,
+        Err(e) => {
+            eprintln!("ERROR - could not delete data. Reason:\n{:#?}", e);
+            std::process::exit(1);
+        }
+    };
 
     // Check images related to CFS configurations to delete are not used to boot nodes. For
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
@@ -67,20 +92,21 @@ pub async fn delete_data_related_cfs_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            None,
+            configuration_name_opt.map(|value| value.as_str()),
         )
         .await
         .unwrap();
 
     // Filter CFS configurations related to HSM group, configuration name or configuration name
     // pattern
-    cfs::configuration::utils::filter(
+    cfs::configuration::utils::filter_2(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
+        cfs_components.clone(),
         &mut cfs_configuration_vec,
         configuration_name_pattern.map(|elem| elem.as_str()),
-        &vec![hsm_group_name_opt.unwrap().to_string()],
+        &hsm_name_available_vec,
         None,
     )
     .await;
@@ -493,7 +519,7 @@ pub async fn delete_data_related_cfs_configuration(
                 until_opt.unwrap()
             );
         }
-        print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
+        print!(" in HSM '{:?}'. Exit", hsm_name_available_vec);
         io::stdout().flush().unwrap();
 
         std::process::exit(0);

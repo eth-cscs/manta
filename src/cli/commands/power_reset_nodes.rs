@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops, error::Error, iaas_ops::IaaSOps};
+use mesa::common::jwt_ops;
+
+use infra_io::contracts::Power;
 
 use crate::common;
 
@@ -60,37 +62,33 @@ pub async fn exec(
         }
     }
 
-    let iaas_ops_rslt = mesa::iaas_ops::new_iaas(
+    let backup_config_rslt = mesa::config::Config::new(
+        &shasta_base_url.to_string(),
+        Some(&shasta_token.to_string()),
+        &shasta_root_cert.to_vec(),
         "csm", // FIXME: do not hardcode this value and move it to config file
-        shasta_base_url.to_string(),
-        shasta_token.to_string(),
-        shasta_root_cert.to_vec(),
-    );
+    )
+    .await;
 
-    let iaas_ops = match iaas_ops_rslt {
-        Ok(iaas_ops) => iaas_ops,
+    let backup_config = match backup_config_rslt {
+        Ok(backup_config) => backup_config,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
         }
     };
 
-    let power_mgmt_summary_rslt = iaas_ops.power_reset_sync(&xname_vec, force).await;
+    let power_mgmt_summary_rslt = backup_config.power_reset_sync(&xname_vec, force).await;
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
         Err(e) => {
-            let error_msg = match e {
-                Error::CsmError(value) => serde_json::to_string_pretty(&value).unwrap(),
-                Error::SerdeError(value) => value.to_string(),
-                Error::IoError(value) => value.to_string(),
-                Error::NetError(value) => value.to_string(),
-                Error::Message(value) => value.to_string(),
-            };
             eprintln!(
                 "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
-                xname_vec, error_msg
+                xname_vec,
+                e.to_string()
             );
+
             std::process::exit(1);
         }
     };

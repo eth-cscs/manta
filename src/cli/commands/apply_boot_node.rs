@@ -5,10 +5,7 @@ use crate::{
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, r#struct::BootParameters},
-    cfs,
-    csm::Csm,
-    iaas_ops::IaaSOps,
-    ims,
+    cfs, ims,
     node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
 };
 
@@ -67,23 +64,23 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    // FIXME: move the iaas_ops creation to 'main' to not repeat this code
-    let iaas_ops_rslt = mesa::iaas_ops::new_iaas(
+    /* let backup_config_rslt = mesa::config::Config::new(
+        &shasta_base_url.to_string(),
+        Some(&shasta_token.to_string()),
+        &shasta_root_cert.to_vec(),
         "csm", // FIXME: do not hardcode this value and move it to config file
-        shasta_base_url.to_string(),
-        shasta_token.to_string(),
-        shasta_root_cert.to_vec(),
-    );
+    )
+    .await;
 
-    let iaas_ops = match iaas_ops_rslt {
-        Ok(iaas_ops) => iaas_ops,
+    let backup_config = match backup_config_rslt {
+        Ok(backup_config) => backup_config,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
         }
     };
 
-    let mut current_node_boot_param_vec: Vec<BootParameters> = iaas_ops
+    let mut current_node_boot_param_vec: Vec<BootParameters> = backup_config
         .get_bootparameters(
             &xname_vec
                 .iter()
@@ -91,9 +88,9 @@ pub async fn exec(
                 .collect::<Vec<String>>(),
         )
         .await
-        .unwrap();
+        .unwrap(); */
 
-    /* // Get current node boot params
+    // Get current node boot params
     let mut current_node_boot_param_vec: Vec<BootParameters> = bss::http_client::get(
         shasta_token,
         shasta_base_url,
@@ -104,7 +101,7 @@ pub async fn exec(
             .collect::<Vec<String>>(),
     )
     .await
-    .unwrap(); */
+    .unwrap();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
@@ -248,15 +245,13 @@ pub async fn exec(
 
         // Update boot params
         for boot_parameter in current_node_boot_param_vec {
-            /* let component_patch_rep = bss::http_client::patch(
+            let component_patch_rep = bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
                 &boot_parameter,
             )
-            .await; */
-
-            let component_patch_rep = iaas_ops.update_bootparameters(&boot_parameter).await;
+            .await;
 
             log::debug!(
                 "Component boot parameters resp:\n{:#?}",

@@ -188,14 +188,14 @@ pub async fn exec(
             Err(error_msg) => log::error!("{}", error_msg),
         }
 
-        let mut logs_stream =
+        let _ =
             kubernetes::get_cfs_session_container_ansible_logs_stream(client, &cfs_session_name)
                 .await
                 .unwrap();
 
-        while let Some(line) = logs_stream.try_next().await.unwrap() {
+        /* while let Some(line) = logs_stream.try_next().await.unwrap() {
             println!("{}", line);
-        }
+        } */
     }
     // * End Create CFS session
 
