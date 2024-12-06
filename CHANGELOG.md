@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.5] - 2024-12-06
+
+### Features
+
+- Integrate power and boot operations with CSM backend
+
 ## [1.54.1-beta.4] - 2024-12-02
 
 ### Features
 
 - Integrate command apply kernel parameters with IaaSOps trait
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.4
 
 ### Refactor
 
