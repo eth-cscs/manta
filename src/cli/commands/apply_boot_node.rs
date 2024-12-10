@@ -1,5 +1,6 @@
 use crate::{
-    cli::commands::power_reset_nodes, common::ims_ops::get_image_id_from_cfs_configuration_name,
+    backend::StaticBackendDispatcher, cli::commands::power_reset_nodes,
+    common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -12,6 +13,7 @@ use mesa::{
 use super::config_show::get_hsm_name_available_from_jwt_or_all;
 
 pub async fn exec(
+    backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -22,6 +24,7 @@ pub async fn exec(
     xname_vec: Vec<&str>,
     assume_yes: bool,
     dry_run: bool,
+    site_name: &str,
 ) {
     let mut need_restart = false;
 
@@ -291,6 +294,7 @@ pub async fn exec(
                 .collect();
 
             power_reset_nodes::exec(
+                backend,
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

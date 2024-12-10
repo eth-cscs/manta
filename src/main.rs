@@ -1,5 +1,9 @@
+mod backend;
 mod cli;
 mod common;
+
+use backend::StaticBackendDispatcher;
+use infra::contracts::BackendTrait;
 
 use crate::common::log_ops;
 
@@ -20,18 +24,26 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let settings = common::config_ops::get_configuration().await;
 
-    let site_name = settings.get_string("site").unwrap();
-    let site_detail_hashmap = settings.get_table("sites").unwrap();
+    let site_name = settings
+        .get_string("site")
+        .expect("ERROR - 'site' value missing in configuration file");
+    let site_detail_hashmap = settings
+        .get_table("sites")
+        .expect("ERROR - 'site' list missing in configuration file");
     let site_detail_value = site_detail_hashmap
         .get(&site_name)
         .unwrap()
         .clone()
         .into_table()
-        .unwrap();
+        .expect(format!("ERROR - site '{}' missing in configuration file", site_name).as_str());
 
+    let backend = site_detail_value
+        .get("backend")
+        .expect("ERROR - 'backend' value missing in configuration file")
+        .to_string();
     let shasta_base_url = site_detail_value
         .get("shasta_base_url")
-        .expect("shasta_base_url value missing in configuration file")
+        .expect("ERROR - 'shasta_base_url' value missing in configuration file")
         .to_string();
     let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
         // old configuration file. TODO: remove this when needed in the future and all users are
@@ -53,17 +65,17 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let keycloak_base_url = shasta_barebone_url.to_owned() + "/keycloak";
     let k8s_api_url = site_detail_value
         .get("k8s_api_url")
-        .expect("k8s_api_url value missing in configuration file")
+        .expect("ERROR - 'k8s_api_url' value missing in configuration file")
         .to_string();
     log::debug!("config - k8s_api_url:  {k8s_api_url}");
     let vault_base_url = site_detail_value
         .get("vault_base_url")
-        .expect("vault_base_url value missing in configuration file")
+        .expect("ERROR - 'vault_base_url' value missing in configuration file")
         .to_string();
     log::debug!("config - vault_base_url:  {vault_base_url}");
     let vault_role_id = site_detail_value
         .get("vault_role_id")
-        .expect("vault_role_id value missing in configuration file")
+        .expect("ERROR - 'vault_role_id' value missing in configuration file")
         .to_string();
     log::debug!("config - vault_role_id:  {vault_role_id}");
     let vault_secret_path = site_detail_value
@@ -98,7 +110,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let root_ca_cert_file = site_detail_value
         .get("root_ca_cert_file")
-        .expect("'root_ca_cert_file' value missing in configuration file")
+        .expect("ERROR - 'root_ca_cert_file' value missing in configuration file")
         .to_string();
 
     log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
@@ -115,6 +127,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     };
 
+    let backend_config =
+        StaticBackendDispatcher::new(&backend, &shasta_base_url, &shasta_root_cert);
+
     let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,
         &vault_secret_path,
@@ -125,6 +140,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let cli_result = crate::cli::process::process_cli(
         matches,
+        backend_config,
         &keycloak_base_url,
         &shasta_api_url,
         &shasta_root_cert,

@@ -1,11 +1,10 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
+use mesa::{error::Error, hsm, pcs};
 
-use crate::common;
-
-use infra_io::contracts::Power;
+use crate::{backend::StaticBackendDispatcher, common};
 
 pub async fn exec(
+    backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -38,23 +37,17 @@ pub async fn exec(
         }
     }
 
-    let backend_config_rslt = mesa::config::Config::new(
-        &shasta_base_url.to_string(),
-        Some(&shasta_token.to_string()),
-        &shasta_root_cert.to_vec(),
-        "csm", // FIXME: do not hardcode this value and move it to config file
+    let operation = if force { "force-off" } else { "soft-off" };
+
+    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
+        shasta_base_url,
+        shasta_token,
+        shasta_root_cert,
+        operation,
+        &xname_vec,
     )
-    .await;
-
-    let backend_config = match backend_config_rslt {
-        Ok(iaas_ops) => iaas_ops,
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-
-    let power_mgmt_summary_rslt = backend_config.power_off_sync(&xname_vec, force).await;
+    .await
+    .map_err(|e| Error::Message(e.to_string()));
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,

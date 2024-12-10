@@ -6,11 +6,15 @@ use mesa::{
     hsm,
 };
 
+use crate::backend::StaticBackendDispatcher;
+
 /// Set boot image to a set of nodes. This function updates the desired_configuration for the node
 /// boot params.
 /// If the new image is different than existing one, then the nodes will reboot. This is mandatory
 /// to keep CSM data as a true source of truth
 pub async fn exec(
+    backend: StaticBackendDispatcher,
+    site_name: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -106,6 +110,7 @@ pub async fn exec(
             println!("Nothing to change. Exit");
         } else {
             crate::cli::commands::power_reset_nodes::exec(
+                backend,
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

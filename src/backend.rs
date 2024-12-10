@@ -1,0 +1,104 @@
+/// This is the static backend dispatcher
+/// To add a new backend:
+/// # Add new backend to the StaticBackendDispatcher enum
+/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
+/// # Add new backend to existing methods in BackendTrait implementation
+///
+/// To add new functionalities:
+/// # Implement new functionalities to BackendTrait implementation
+/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
+use infra::{contracts::BackendTrait, error::Error, types::BootParameters};
+
+pub enum StaticBackendDispatcher {
+    CSM(Csm),
+    OCHAMI(Ochami),
+}
+
+use StaticBackendDispatcher::*;
+
+use mesa::backend::Csm;
+use serde_json::Value;
+use silla::backend::Ochami;
+
+impl StaticBackendDispatcher {
+    pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
+        let csm = Csm::new(base_url, root_cert);
+        let ochami = Ochami::new(base_url, root_cert);
+
+        match backend_type {
+            "csm" => Self::CSM(csm).into(),
+            "ochami" => Self::OCHAMI(ochami).into(),
+            _ => {
+                eprintln!("ERROR - Backend '{}' not supported", backend_type);
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
+impl BackendTrait for StaticBackendDispatcher {
+    fn test_backend_trait(&self) -> String {
+        println!("in manta backend");
+        "in manta backend".to_string()
+    }
+
+    async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
+        match self {
+            CSM(b) => b.get_api_token(site_name).await,
+            OCHAMI(b) => b.get_api_token(site_name).await,
+        }
+    }
+
+    async fn power_on_sync(&self, auth_token: &str, nodes: &[String]) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_on_sync(auth_token, nodes).await,
+            OCHAMI(b) => b.power_on_sync(auth_token, nodes).await,
+        }
+    }
+
+    async fn power_off_sync(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+        force: bool,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_off_sync(auth_token, nodes, force).await,
+            OCHAMI(b) => b.power_off_sync(auth_token, nodes, force).await,
+        }
+    }
+
+    async fn power_reset_sync(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+        force: bool,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_reset_sync(auth_token, nodes, force).await,
+            OCHAMI(b) => b.power_reset_sync(auth_token, nodes, force).await,
+        }
+    }
+
+    async fn get_bootparameters(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+    ) -> Result<Vec<BootParameters>, Error> {
+        match self {
+            CSM(b) => b.get_bootparameters(auth_token, nodes).await,
+            OCHAMI(b) => b.get_bootparameters(auth_token, nodes).await,
+        }
+    }
+
+    async fn update_bootparameters(
+        &self,
+        auth_token: &str,
+        boot_parameters: &BootParameters,
+    ) -> Result<BootParameters, Error> {
+        match self {
+            CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+            OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+        }
+    }
+}

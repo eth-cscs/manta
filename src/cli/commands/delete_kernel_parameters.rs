@@ -6,9 +6,12 @@ use mesa::{
     hsm,
 };
 
+use crate::backend::StaticBackendDispatcher;
+
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
+    backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -120,6 +123,7 @@ pub async fn exec(
         println!("Nothing to change. Exit");
     } else {
         crate::cli::commands::power_reset_nodes::exec(
+            backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

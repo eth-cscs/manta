@@ -1,3 +1,4 @@
+use infra::contracts::BackendTrait;
 use std::{io::IsTerminal, path::PathBuf};
 
 use clap::ArgMatches;
@@ -5,7 +6,7 @@ use config::Config;
 use k8s_openapi::chrono;
 use mesa::{common::authentication, error::Error, hsm};
 
-use crate::cli::commands::validate_local_repo;
+use crate::{backend::StaticBackendDispatcher, cli::commands::validate_local_repo};
 
 use super::commands::{
     self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
@@ -24,6 +25,7 @@ use super::commands::{
 
 pub async fn process_cli(
     cli_root: ArgMatches,
+    backend: StaticBackendDispatcher,
     keycloak_base_url: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -48,6 +50,7 @@ pub async fn process_cli(
             std::process::exit(1);
         }
     };
+
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
             let shasta_token = &authentication::get_api_token(
@@ -133,33 +136,17 @@ pub async fn process_cli(
             }
         }
     } else {
-        let shasta_token = &authentication::get_api_token(
-            shasta_base_url,
-            shasta_root_cert,
-            keycloak_base_url,
-            &site_name,
-        )
-        .await?;
-
-        /* let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-        )
-        .await; */
-
-        // println!("hsm_group: {:?}", hsm_group);
-        // println!("hsm group available: {:?}", hsm_available_vec);
-
-        // Validate hsm_vailable and hsm_group
-        /* if hsm_group.is_none() && !hsm_available_vec.is_empty() {
-            eprintln!("HSM group not defined. Please use 'manta config hsm <HSM group name>' to set the HSM group to use in your requests. Exit");
-            std::process::exit(1);
-        } */
-
         if let Some(cli_power) = cli_root.subcommand_matches("power") {
             if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
                 if let Some(cli_power_on_cluster) = cli_power_on.subcommand_matches("cluster") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let hsm_group_name_arg = cli_power_on_cluster
                         .get_one::<String>("CLUSTER_NAME")
                         .expect("The 'cluster name' argument must have a value");
@@ -182,6 +169,7 @@ pub async fn process_cli(
                     let output: &str = cli_power_on_cluster.get_one::<String>("output").unwrap();
 
                     power_on_cluster::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -191,6 +179,14 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let xname_requested: &str = cli_power_on_node
                         .get_one::<String>("VALUE")
                         .expect("The 'xnames' argument must have values");
@@ -210,6 +206,7 @@ pub async fn process_cli(
                     .await; */
 
                     power_on_nodes::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -222,6 +219,14 @@ pub async fn process_cli(
                 }
             } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
                 if let Some(cli_power_off_cluster) = cli_power_off.subcommand_matches("cluster") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let hsm_group_name_arg = cli_power_off_cluster
                         .get_one::<String>("CLUSTER_NAME")
                         .expect("The 'cluster name' argument must have a value");
@@ -247,6 +252,7 @@ pub async fn process_cli(
                     let assume_yes: bool = cli_power_off_cluster.get_flag("assume-yes");
 
                     power_off_cluster::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -257,6 +263,14 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let xname_requested: &str = cli_power_off_node
                         .get_one::<String>("VALUE")
                         .expect("The 'xnames' argument must have values");
@@ -272,6 +286,7 @@ pub async fn process_cli(
                     let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
 
                     power_off_nodes::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -286,6 +301,14 @@ pub async fn process_cli(
             } else if let Some(cli_power_reset) = cli_power.subcommand_matches("reset") {
                 if let Some(cli_power_reset_cluster) = cli_power_reset.subcommand_matches("cluster")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let hsm_group_name_arg = cli_power_reset_cluster
                         .get_one::<String>("CLUSTER_NAME")
                         .expect("The 'cluster name' argument must have a value");
@@ -312,6 +335,7 @@ pub async fn process_cli(
                     let assume_yes: bool = cli_power_reset_cluster.get_flag("assume-yes");
 
                     power_reset_cluster::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -324,6 +348,14 @@ pub async fn process_cli(
                 } else if let Some(cli_power_reset_node) =
                     cli_power_reset.subcommand_matches("nodes")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let xname_requested: &str = cli_power_reset_node
                         .get_one::<String>("VALUE")
                         .expect("The 'xnames' argument must have values");
@@ -349,6 +381,7 @@ pub async fn process_cli(
                     .await; */
 
                     power_reset_nodes::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -361,245 +394,16 @@ pub async fn process_cli(
                     .await;
                 }
             }
-        /* } else if let Some(cli_set) = cli_root.subcommand_matches("set") {
-        if let Some(cli_set_runtime_configuration) =
-            cli_set.subcommand_matches("runtime-configuration")
-        {
-            let hsm_group_name_arg_opt = cli_set_runtime_configuration.get_one("hsm-group");
-            let xnames_arg_opt = cli_set_runtime_configuration.get_one::<String>("xnames");
-
-            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                // Validate HSM group name
-                Some(
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        settings_hsm_group_name_opt,
-                    )
-                    .await,
-                )
-            } else {
-                None
-            };
-
-            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                // Get list of xnames and validate
-                let xname_vec = xnames_arg
-                    .split(",")
-                    .map(|elem| elem.to_string())
-                    .collect::<Vec<String>>();
-
-                validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                Some(xname_vec)
-            } else {
-                None
-            };
-
-            let configuration_name = cli_set_runtime_configuration
-                .get_one::<String>("configuration")
-                .unwrap(); // clap should validate the argument
-
-            let result = set_runtime_configuration::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                configuration_name,
-                target_hsm_group_vec_opt.as_ref(),
-                xname_vec_opt.as_ref(),
-            )
-            .await;
-
-            match result {
-                Ok(_) => {}
-                Err(error) => eprintln!("{}", error),
-            }
-        } else if let Some(cli_set_boot_image) = cli_set.subcommand_matches("boot-image") {
-            let hsm_group_name_arg_opt = cli_set_boot_image.get_one("hsm-group");
-            let xnames_arg_opt = cli_set_boot_image.get_one::<String>("xnames");
-
-            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                Some(
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        settings_hsm_group_name_opt,
-                    )
-                    .await,
-                )
-            } else {
-                None
-            };
-
-            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                // Get list of xnames and validate
-                let xname_vec = xnames_arg
-                    .split(",")
-                    .map(|elem| elem.to_string())
-                    .collect::<Vec<String>>();
-
-                validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                Some(xname_vec)
-            } else {
-                None
-            };
-
-            let boot_image = cli_set_boot_image.get_one::<String>("image-id").unwrap(); // clap should validate the argument
-
-            let assume_yes = cli_set_boot_image.get_flag("assume-yes");
-
-            let output = cli_set_boot_image
-                .get_one::<String>("output")
-                .expect("ERROR - output argument in cli missing");
-
-            let result = set_boot_image::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                boot_image,
-                target_hsm_group_vec_opt.as_ref(),
-                xname_vec_opt.as_ref(),
-                assume_yes,
-                output,
-            )
-            .await;
-
-            match result {
-                Ok(_) => {}
-                Err(error) => eprintln!("{}", error),
-            }
-        } else if let Some(cli_set_boot_configuration) =
-            cli_set.subcommand_matches("boot-configuration")
-        {
-            let hsm_group_name_arg_opt = cli_set_boot_configuration.get_one("hsm-group");
-            let xnames_arg_opt = cli_set_boot_configuration.get_one::<String>("xnames");
-
-            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                Some(
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        settings_hsm_group_name_opt,
-                    )
-                    .await,
-                )
-            } else {
-                None
-            };
-
-            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                // Get list of xnames and validate
-                let xname_vec = xnames_arg
-                    .split(",")
-                    .map(|elem| elem.to_string())
-                    .collect::<Vec<String>>();
-
-                validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                Some(xname_vec)
-            } else {
-                None
-            };
-
-            let configuration_name = cli_set_boot_configuration
-                .get_one::<String>("configuration")
-                .unwrap(); // clap should validate the argument
-
-            let result = set_boot_configuration::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                configuration_name,
-                target_hsm_group_vec_opt.as_ref(),
-                xname_vec_opt.as_ref(),
-            )
-            .await;
-
-            match result {
-                Ok(_) => {}
-                Err(error) => eprintln!("{}", error),
-            }
-        } else if let Some(cli_set_kernel_parameters) =
-            cli_set.subcommand_matches("kernel-parameters")
-        {
-            let hsm_group_name_arg_opt = cli_set_kernel_parameters.get_one("hsm-group");
-            let xnames_arg_opt = cli_set_kernel_parameters.get_one::<String>("xnames");
-
-            let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                Some(
-                    get_target_hsm_group_vec_or_all(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_arg_opt,
-                        settings_hsm_group_name_opt,
-                    )
-                    .await,
-                )
-            } else {
-                None
-            };
-
-            let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                Some(
-                    xnames_arg
-                        .split(",")
-                        .map(|elem| elem.to_string())
-                        .collect::<Vec<String>>(),
-                )
-            } else {
-                None
-            };
-
-            let kernel_parameters = cli_set_kernel_parameters
-                .get_one::<String>("kernel-parameters")
-                .unwrap(); // clap should validate the argument
-
-            let assume_yes: bool = cli_set_kernel_parameters.get_flag("assume-yes");
-
-            let result = delete_kernel_parameters::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                kernel_parameters,
-                target_hsm_group_vec_opt.as_ref(),
-                xname_vec_opt.as_ref(),
-                assume_yes,
-            )
-            .await;
-
-            match result {
-                Ok(_) => {}
-                Err(error) => eprintln!("{}", error),
-            }
-        } */
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
             if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let target_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("target-cluster");
 
@@ -649,6 +453,14 @@ pub async fn process_cli(
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
                 let xnames_arg_opt = cli_add_kernel_parameters.get_one::<String>("xnames");
 
@@ -685,6 +497,7 @@ pub async fn process_cli(
                 let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
 
                 let result = add_kernel_parameters::command::exec(
+                    backend,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -705,6 +518,14 @@ pub async fn process_cli(
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let hsm_group_name_arg_opt =
                         cli_get_hw_configuration_cluster.get_one::<String>("CLUSTER_NAME");
 
@@ -728,6 +549,14 @@ pub async fn process_cli(
                 } else if let Some(cli_get_hw_configuration_node) =
                     cli_get_hw_configuration.subcommand_matches("node")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let xnames = cli_get_hw_configuration_node
                         .get_one::<String>("XNAMES")
                         .expect("HSM group name is needed at this point");
@@ -755,6 +584,14 @@ pub async fn process_cli(
                 }
             } else if let Some(cli_get_configuration) = cli_get.subcommand_matches("configurations")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_rslt = cli_get_configuration.try_get_one("hsm-group");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -787,6 +624,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
                 let target_hsm_group_vec: Vec<String> = get_target_hsm_group_vec_or_all(
@@ -824,6 +669,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_template) = cli_get.subcommand_matches("templates") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
 
                 let output: &String = cli_get_template
@@ -867,6 +720,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -894,6 +755,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 // Get list of nodes from cli argument
                 let node_vec: Vec<String> = cli_get_nodes
                     .get_one::<String>("XNAMES")
@@ -927,6 +796,13 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
                 log::warn!("Deprecated - Do not use this command.");
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
 
                 let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
 
@@ -947,6 +823,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -970,6 +854,8 @@ pub async fn process_cli(
             } else if let Some(cli_get_kernel_parameters) =
                 cli_get.subcommand_matches("kernel-parameters")
             {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
                 let hsm_group_name_arg_opt =
                     cli_get_kernel_parameters.get_one::<String>("hsm-group");
 
@@ -981,7 +867,7 @@ pub async fn process_cli(
 
                 let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
                     let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
-                        shasta_token,
+                        &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         hsm_group_name_arg_opt,
@@ -990,7 +876,7 @@ pub async fn process_cli(
                     .await;
 
                     hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                        shasta_token,
+                        &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         hsm_group_name_vec,
@@ -1018,6 +904,14 @@ pub async fn process_cli(
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hw-configuration") {
                 if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let target_hsm_group_name_arg_opt =
                         cli_apply_hw_cluster.get_one::<String>("target-cluster");
 
@@ -1089,6 +983,13 @@ pub async fn process_cli(
                 cli_apply.subcommand_matches("configuration")
             {
                 log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
 
                 get_target_hsm_group_vec_or_all(
                     shasta_token,
@@ -1141,6 +1042,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt: Option<&String> =
                     cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
 
@@ -1204,137 +1113,15 @@ pub async fn process_cli(
                         .unwrap_or(&false),
                 )
                 .await;
-            /* } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
-            log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
-
-            get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                None,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let hsm_group_available_vec = get_hsm_name_available_from_jwt_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-            )
-            .await;
-
-            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-            let cli_value_vec_opt: Option<Vec<String>> =
-                cli_apply_image.get_many("values").map(|value_vec| {
-                    value_vec
-                        .map(|value: &String| value.replace("__DATE__", &timestamp))
-                        .collect()
-                });
-
-            let cli_values_file_content_opt: Option<String> = cli_apply_image
-                .get_one("values-file")
-                .and_then(|values_file_path: &PathBuf| {
-                    std::fs::read_to_string(values_file_path).ok().map(
-                        |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
-                    )
-                });
-
-            let sat_file_content: String = std::fs::read_to_string(
-                cli_apply_image
-                    .get_one::<PathBuf>("sat-template-file")
-                    .expect("ERROR: SAT file not found. Exit"),
-            )
-            .expect("ERROR: reading SAT file template. Exit");
-
-            apply_image::exec(
-                vault_base_url,
-                vault_secret_path,
-                vault_role_id,
-                sat_file_content,
-                cli_values_file_content_opt,
-                cli_value_vec_opt,
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                // base_image_id,
-                cli_apply_image
-                    .get_one::<String>("ansible-verbosity")
-                    .cloned()
-                    .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
-                cli_apply_image.get_one::<String>("ansible-passthrough"),
-                cli_apply_image.get_one::<bool>("watch-logs"),
-                // &tag,
-                &hsm_group_available_vec,
-                k8s_api_url,
-                gitea_base_url,
-                gitea_token,
-                cli_apply_image.get_one::<String>("output"),
-            )
-            .await; */
-            /* } else if let Some(cli_apply_cluster) = cli_apply.subcommand_matches("cluster") {
-            log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
-
-            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                None,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-            let cli_value_vec_opt: Option<Vec<String>> =
-                cli_apply_cluster.get_many("values").map(|value_vec| {
-                    value_vec
-                        .map(|value: &String| value.replace("__DATE__", &timestamp))
-                        .collect()
-                });
-
-            let cli_values_file_content_opt: Option<String> = cli_apply_cluster
-                .get_one("values-file")
-                .and_then(|values_file_path: &PathBuf| {
-                    std::fs::read_to_string(values_file_path).ok().map(
-                        |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
-                    )
-                });
-
-            let sat_file_content: String = std::fs::read_to_string(
-                cli_apply_cluster
-                    .get_one::<PathBuf>("sat-template-file")
-                    .expect("ERROR: SAT file not found. Exit"),
-            )
-            .expect("ERROR: reading SAT file template. Exit");
-
-            apply_cluster::exec(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                vault_base_url,
-                vault_secret_path,
-                vault_role_id,
-                k8s_api_url,
-                sat_file_content,
-                cli_values_file_content_opt,
-                cli_value_vec_opt,
-                settings_hsm_group_name_opt,
-                &target_hsm_group_vec,
-                cli_apply_cluster
-                    .get_one::<String>("ansible-verbosity")
-                    .cloned()
-                    .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap()),
-                cli_apply_cluster.get_one::<String>("ansible-passthrough"),
-                gitea_base_url,
-                gitea_token,
-                // &tag,
-                *cli_apply_cluster
-                    .get_one::<bool>("do-not-reboot")
-                    .unwrap_or(&false),
-            )
-            .await; */
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 /* let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -1435,6 +1222,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let bos_session_name_opt: Option<&String> = cli_apply_template.get_one("name");
                 let bos_sessiontemplate_name: &String = cli_apply_template
                     .get_one("template")
@@ -1464,138 +1259,17 @@ pub async fn process_cli(
                     dry_run,
                 )
                 .await;
-            /* } else if let Some(cli_apply_node) = cli_apply.subcommand_matches("node") {
-            if let Some(cli_apply_node_on) = cli_apply_node.subcommand_matches("on") {
-                log::warn!("Deprecated - Please use 'manta power on' command instead.");
-
-                let xname_vec: Vec<String> = cli_apply_node_on
-                    .get_one::<String>("XNAMES")
-                    .unwrap()
-                    .split(',')
-                    .map(|xname| xname.trim().to_string())
-                    .collect();
-
-                let output = "table"; // 'apply node on' subcommand does not have output
-                                      // argument so we are forcing the value
-
-                validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                power_on_nodes::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &xname_vec,
-                    cli_apply_node_on.get_one::<String>("reason").cloned(),
-                    output,
-                )
-                .await;
-            } else if let Some(cli_apply_node_off) = cli_apply_node.subcommand_matches("off") {
-                log::warn!("Deprecated - Please use 'manta power off' command instead.");
-
-                /* apply_node_off::exec(
-                    settings_hsm_group_name_opt,
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    cli_apply_node_off
-                        .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| xname.trim())
-                        .collect(),
-                    cli_apply_node_off.get_one::<String>("reason").cloned(),
-                    *cli_apply_node_off.get_one::<bool>("force").unwrap(),
-                )
-                .await; */
-
-                let xname_vec: Vec<String> = cli_apply_node_off
-                    .get_one::<String>("XNAMES")
-                    .unwrap()
-                    .split(',')
-                    .map(|xname| xname.trim().to_string())
-                    .collect();
-
-                let output = "table"; // 'apply node off' subcommand does not have output
-                                      // argument so we are forcing the value
-
-                let _ = validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                power_off_nodes::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &xname_vec,
-                    cli_apply_node_off.get_one::<String>("reason").cloned(),
-                    *cli_apply_node_off.get_one::<bool>("force").unwrap(),
-                    output,
-                )
-                .await;
-            } else if let Some(cli_apply_node_reset) =
-                cli_apply_node.subcommand_matches("reset")
-            {
-                log::warn!("Deprecated - Please use 'manta power reset' command instead.");
-
-                /* apply_node_reset::exec(
-                    settings_hsm_group_name_opt,
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    cli_apply_node_reset
-                        .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| xname.trim())
-                        .collect(),
-                    cli_apply_node_reset.get_one::<String>("reason"),
-                    *cli_apply_node_reset
-                        .get_one::<bool>("force")
-                        .unwrap_or(&false),
-                )
-                .await; */
-
-                let xname_vec: Vec<String> = cli_apply_node_reset
-                    .get_one::<String>("XNAMES")
-                    .unwrap()
-                    .split(',')
-                    .map(|xname| xname.trim().to_string())
-                    .collect();
-
-                let output = "table"; // 'apply node off' subcommand does not have output
-                                      // argument so we are forcing the value
-                let _ = validate_target_hsm_members(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    xname_vec.clone(),
-                )
-                .await;
-
-                power_reset_nodes::exec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &xname_vec,
-                    cli_apply_node_reset.get_one::<String>("reason").cloned(),
-                    *cli_apply_node_reset.get_one::<bool>("force").unwrap(),
-                    output,
-                )
-                .await;
-            } */
             } else if let Some(cli_apply_ephemeral_environment) =
                 cli_apply.subcommand_matches("ephemeral-environment")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 if !std::io::stdout().is_terminal() {
                     eprintln!("This command needs to run in interactive mode. Exit");
                     std::process::exit(1);
@@ -1615,6 +1289,14 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let xname_vec: Vec<&str> = cli_apply_boot_nodes
                         .get_one::<String>("XNAMES")
                         .unwrap()
@@ -1646,6 +1328,7 @@ pub async fn process_cli(
                     let assume_yes: bool = cli_apply_boot_nodes.get_flag("assume-yes");
 
                     apply_boot_node::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1656,11 +1339,20 @@ pub async fn process_cli(
                         xname_vec,
                         assume_yes,
                         dry_run,
+                        &site_name,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
                     cli_apply_boot.subcommand_matches("cluster")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let hsm_group_name_arg = cli_apply_boot_cluster
                         .get_one::<String>("CLUSTER_NAME")
                         .expect("ERROR - cluster name must be provided");
@@ -1698,6 +1390,7 @@ pub async fn process_cli(
                         .expect("ERROR - Could not find valid HSM group name");
 
                     apply_boot_cluster::exec(
+                        backend,
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1708,11 +1401,20 @@ pub async fn process_cli(
                         target_hsm_group_name,
                         assume_yes,
                         dry_run,
+                        &site_name,
                     )
                     .await;
                 }
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
+            let shasta_token = &authentication::get_api_token(
+                shasta_base_url,
+                shasta_root_cert,
+                keycloak_base_url,
+                &site_name,
+            )
+            .await?;
+
             // Get all HSM groups the user has access
             /* let target_hsm_group_vec = get_hsm_name_available_from_jwt_or_all(
                 shasta_token,
@@ -1752,6 +1454,13 @@ pub async fn process_cli(
                     eprintln!("This command needs to run in interactive mode. Exit");
                     std::process::exit(1);
                 }
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
 
                 console_node::exec(
                     settings_hsm_group_name_opt,
@@ -1773,6 +1482,13 @@ pub async fn process_cli(
                     eprintln!("This command needs to run in interactive mode. Exit");
                     std::process::exit(1);
                 }
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
@@ -1800,6 +1516,14 @@ pub async fn process_cli(
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
             if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
 
                 let from_opt: Option<&String> = cli_migrate_nodes.get_one("from");
@@ -1860,6 +1584,14 @@ pub async fn process_cli(
             } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
                 if let Some(cli_migrate_vcluster_backup) = cli_migrate.subcommand_matches("backup")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let bos = cli_migrate_vcluster_backup.get_one::<String>("bos");
                     let destination = cli_migrate_vcluster_backup.get_one::<String>("destination");
                     let prehook = cli_migrate_vcluster_backup.get_one::<String>("pre-hook");
@@ -1877,6 +1609,14 @@ pub async fn process_cli(
                 } else if let Some(cli_migrate_vcluster_restore) =
                     cli_migrate.subcommand_matches("restore")
                 {
+                    let shasta_token = &authentication::get_api_token(
+                        shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url,
+                        &site_name,
+                    )
+                    .await?;
+
                     let bos_file = cli_migrate_vcluster_restore.get_one::<String>("bos-file");
                     let cfs_file = cli_migrate_vcluster_restore.get_one::<String>("cfs-file");
                     let hsm_file = cli_migrate_vcluster_restore.get_one::<String>("hsm-file");
@@ -1902,6 +1642,14 @@ pub async fn process_cli(
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
             if let Some(cli_delete_hw_configuration) = cli_delete.subcommand_matches("hw-component")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let nodryrun = *cli_delete_hw_configuration
                     .get_one::<bool>("no-dryrun")
                     .unwrap_or(&true);
@@ -1953,6 +1701,14 @@ pub async fn process_cli(
             } else if let Some(cli_delete_kernel_parameters) =
                 cli_delete.subcommand_matches("kernel-parameters")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_group_name_arg_opt = cli_delete_kernel_parameters.get_one("hsm-group");
                 let xnames_arg_opt = cli_delete_kernel_parameters.get_one::<String>("xnames");
 
@@ -1989,6 +1745,7 @@ pub async fn process_cli(
                 let assume_yes: bool = cli_delete_kernel_parameters.get_flag("assume-yes");
 
                 let result = delete_kernel_parameters::exec(
+                    backend,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2004,6 +1761,14 @@ pub async fn process_cli(
                     Err(error) => eprintln!("{}", error),
                 }
             } else if let Some(cli_delete_session) = cli_delete.subcommand_matches("session") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -2033,6 +1798,14 @@ pub async fn process_cli(
             } else if let Some(cli_delete_configurations) =
                 cli_delete.subcommand_matches("configurations")
             {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let target_hsm_group_vec =
                     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
                         vec![settings_hsm_group_name.clone()]
@@ -2103,6 +1876,14 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_delete_images) = cli_delete.subcommand_matches("images") {
+                let shasta_token = &authentication::get_api_token(
+                    shasta_base_url,
+                    shasta_root_cert,
+                    keycloak_base_url,
+                    &site_name,
+                )
+                .await?;
+
                 let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -2134,6 +1915,14 @@ pub async fn process_cli(
         } else if let Some(cli_validate_local_repo) =
             cli_root.subcommand_matches("validate-local-repo")
         {
+            let shasta_token = &authentication::get_api_token(
+                shasta_base_url,
+                shasta_root_cert,
+                keycloak_base_url,
+                &site_name,
+            )
+            .await?;
+
             let repo_path = cli_validate_local_repo
                 .get_one::<String>("repo-path")
                 .unwrap();
@@ -2141,6 +1930,14 @@ pub async fn process_cli(
             validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
                 .await;
         } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
+            let shasta_token = &authentication::get_api_token(
+                shasta_base_url,
+                shasta_root_cert,
+                keycloak_base_url,
+                &site_name,
+            )
+            .await?;
+
             let dryrun = *cli_add_nodes
                 .get_one::<bool>("dry-run")
                 .expect("'dry-run' argument must be provided");
@@ -2166,6 +1963,14 @@ pub async fn process_cli(
         } else if let Some(cli_remove_nodes) =
             cli_root.subcommand_matches("remove-nodes-from-groups")
         {
+            let shasta_token = &authentication::get_api_token(
+                shasta_base_url,
+                shasta_root_cert,
+                keycloak_base_url,
+                &site_name,
+            )
+            .await?;
+
             let dryrun = *cli_remove_nodes
                 .get_one::<bool>("dry-run")
                 .expect("'dry-run' argument must be provided");

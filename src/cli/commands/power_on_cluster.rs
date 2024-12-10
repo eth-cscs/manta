@@ -2,14 +2,13 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     common::jwt_ops::{self},
     error::Error,
-    hsm,
+    hsm, pcs,
 };
 
-use crate::common;
-
-use infra_io::contracts::Power;
+use crate::{backend::StaticBackendDispatcher, common};
 
 pub async fn exec(
+    backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -41,23 +40,17 @@ pub async fn exec(
         }
     }
 
-    let backup_config_rslt = mesa::config::Config::new(
-        &shasta_base_url.to_string(),
-        Some(&shasta_token.to_string()),
-        &shasta_root_cert.to_vec(),
-        "csm", // FIXME: do not hardcode this value and move it to config file
+    let operation = "on";
+
+    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
+        shasta_base_url,
+        shasta_token,
+        shasta_root_cert,
+        operation,
+        &xname_vec,
     )
-    .await;
-
-    let backup_config = match backup_config_rslt {
-        Ok(backup_config) => backup_config,
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-
-    let power_mgmt_summary_rslt = backup_config.power_on_sync(&xname_vec).await;
+    .await
+    .map_err(|e| Error::Message(e.to_string()));
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,
