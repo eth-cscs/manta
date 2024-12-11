@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
-use mesa::bss::r#struct::BootParameters;
+use infra::types::BootParameters;
 
 pub fn print_table(
     boot_parameters_vec: Vec<BootParameters>,

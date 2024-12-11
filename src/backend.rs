@@ -7,7 +7,11 @@
 /// To add new functionalities:
 /// # Implement new functionalities to BackendTrait implementation
 /// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
-use infra::{contracts::BackendTrait, error::Error, types::BootParameters};
+use infra::{
+    contracts::BackendTrait,
+    error::Error,
+    types::{BootParameters, HsmGroup},
+};
 
 pub enum StaticBackendDispatcher {
     CSM(Csm),
@@ -40,6 +44,38 @@ impl BackendTrait for StaticBackendDispatcher {
     fn test_backend_trait(&self) -> String {
         println!("in manta backend");
         "in manta backend".to_string()
+    }
+
+    fn get_hsm_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => b.get_hsm_name_available(jwt_token),
+            OCHAMI(b) => b.get_hsm_name_available(jwt_token),
+        }
+    }
+
+    // FIXME: rename function to 'get_hsm_group_members'
+    async fn get_member_vec_from_hsm_name_vec(
+        &self,
+        auth_token: &str,
+        hsm_group_name_vec: Vec<String>,
+    ) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_member_vec_from_hsm_name_vec(auth_token, hsm_group_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_member_vec_from_hsm_name_vec(auth_token, hsm_group_name_vec)
+                    .await
+            }
+        }
+    }
+
+    async fn get_all_hsm(&self, auth_token: &str) -> Result<Vec<HsmGroup>, Error> {
+        match self {
+            CSM(b) => b.get_all_hsm(auth_token).await,
+            OCHAMI(b) => b.get_all_hsm(auth_token).await,
+        }
     }
 
     async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {

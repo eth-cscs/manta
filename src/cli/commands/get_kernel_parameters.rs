@@ -1,8 +1,10 @@
+use infra::contracts::BackendTrait;
 use mesa::{bss, error::Error};
 
-use crate::common;
+use crate::{backend::StaticBackendDispatcher, common};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -11,10 +13,15 @@ pub async fn exec(
     output: &str,
 ) -> Result<(), Error> {
     // Get BSS boot parameters
-    let boot_parameter_vec =
-        bss::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, &xname_vec)
-            .await
-            .unwrap();
+    /* let boot_parameter_vec =
+    bss::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, &xname_vec)
+        .await
+        .unwrap(); */
+
+    let boot_parameter_vec = backend
+        .get_bootparameters(shasta_token, &xname_vec)
+        .await
+        .unwrap();
 
     match output {
         "json" => println!(

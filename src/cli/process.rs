@@ -866,22 +866,36 @@ pub async fn process_cli(
                 let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
 
                 let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
-                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
+                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all_2(
+                        &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
                         hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
                     .await;
 
-                    hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
                         hsm_group_name_vec,
                     )
-                    .await
+                    .await */
+
+                    let hsm_members_rslt = backend
+                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .await;
+
+                    match hsm_members_rslt {
+                        Ok(hsm_members) => hsm_members,
+                        Err(e) => {
+                            eprintln!(
+                                "ERROR - could not fetch HSM groups members. Reason:\n{}",
+                                e.to_string()
+                            );
+                            std::process::exit(1);
+                        }
+                    }
                 } else {
                     cli_get_kernel_parameters
                         .get_one::<String>("xnames")
@@ -892,7 +906,8 @@ pub async fn process_cli(
                 };
 
                 let _ = get_kernel_parameters::exec(
-                    shasta_token,
+                    &backend,
+                    &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     xnames,
@@ -2063,6 +2078,43 @@ pub async fn get_target_hsm_name_group_vec(
 /// This method will exit if the user is asking for HSM group not allowed
 /// If the user did not requested any HSM group, then it will return all HSM
 /// groups he has access to
+// FIXME: migrate all calls to 'get_target_hsm_group_vec_or_all' to 'get_target_hsm_group_vec_or_all_2'
+pub async fn get_target_hsm_group_vec_or_all_2(
+    backend: &StaticBackendDispatcher,
+    shasta_token: &str,
+    hsm_group_cli_arg_opt: Option<&String>,
+    hsm_group_env_or_config_file_opt: Option<&String>,
+) -> Vec<String> {
+    let hsm_name_available_vec =
+        config_show::get_hsm_name_available_from_jwt_or_all_2(&backend, shasta_token).await;
+
+    let target_hsm_group_opt = if hsm_group_cli_arg_opt.is_some() {
+        hsm_group_cli_arg_opt
+    } else {
+        hsm_group_env_or_config_file_opt
+    };
+
+    if let Some(target_hsm_group) = target_hsm_group_opt {
+        if !hsm_name_available_vec.contains(target_hsm_group) {
+            println!(
+                "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
+                target_hsm_group,
+                hsm_name_available_vec.join(", ")
+            );
+
+            std::process::exit(1);
+        }
+
+        vec![target_hsm_group.to_string()]
+    } else {
+        hsm_name_available_vec
+    }
+}
+
+/// Returns a list of HSM groups the user is expected to work with.
+/// This method will exit if the user is asking for HSM group not allowed
+/// If the user did not requested any HSM group, then it will return all HSM
+/// groups he has access to
 pub async fn get_target_hsm_group_vec_or_all(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -2082,12 +2134,6 @@ pub async fn get_target_hsm_group_vec_or_all(
     } else {
         hsm_group_env_or_config_file_opt
     };
-
-    /* let target_hsm_group_opt = if let Some(hsm_group_name) = hsm_group_env_or_config_file_opt {
-        Some(hsm_group_name)
-    } else {
-        hsm_group_cli_arg_opt
-    }; */
 
     if let Some(target_hsm_group) = target_hsm_group_opt {
         if !hsm_name_available_vec.contains(target_hsm_group) {
