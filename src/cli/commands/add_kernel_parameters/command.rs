@@ -1,4 +1,5 @@
 use dialoguer::theme::ColorfulTheme;
+use infra::contracts::BackendTrait;
 use mesa::{
     bss::{self, r#struct::BootParameters},
     common::jwt_ops,
@@ -21,18 +22,22 @@ pub async fn exec(
     assume_yes: bool,
 ) -> Result<(), Error> {
     let mut need_restart = false;
-    println!("Delete kernel parameters");
+    log::info!("Add kernel parameters");
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            hsm_group_name_vec.clone(),
-        )
-        .await
+        let xname_vec_rslt = backend
+            .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
+            .await;
+
+        if xname_vec_rslt.is_err() {
+            return Err(Error::Message(
+                "ERROR - Error finding list of nodes".to_string(),
+            ));
+        }
+
+        xname_vec_rslt.unwrap()
     } else if let Some(xname_vec) = xname_vec_opt {
         xname_vec.clone()
     } else {
@@ -60,7 +65,8 @@ pub async fn exec(
         xnames.join(", ")
     );
 
-    let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+    let proceed = dialoguer::Confirm::with_theme(
+        &ColorfulTheme::default())
         .with_prompt("This operation will add the kernel parameters for the nodes below. Please confirm to proceed")
         .interact()
         .unwrap();
@@ -97,8 +103,6 @@ pub async fn exec(
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            boot_parameter.params = kernel_params.to_string();
-
             let _ = bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
