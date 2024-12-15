@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 /// This is the static backend dispatcher
 /// To add a new backend:
 /// # Add new backend to the StaticBackendDispatcher enum
@@ -46,13 +48,23 @@ impl BackendTrait for StaticBackendDispatcher {
         "in manta backend".to_string()
     }
 
-    fn get_hsm_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
+    // AUTHENTICATION
+    async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
         match self {
-            CSM(b) => b.get_hsm_name_available(jwt_token),
-            OCHAMI(b) => b.get_hsm_name_available(jwt_token),
+            CSM(b) => b.get_api_token(site_name).await,
+            OCHAMI(b) => b.get_api_token(site_name).await,
         }
     }
 
+    // HSM/GROUP
+    async fn get_hsm_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => b.get_hsm_name_available(jwt_token).await,
+            OCHAMI(b) => b.get_hsm_name_available(jwt_token).await,
+        }
+    }
+
+    // HSM/GROUP
     // FIXME: rename function to 'get_hsm_group_members'
     async fn get_member_vec_from_hsm_name_vec(
         &self,
@@ -71,6 +83,25 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // HSM/GROUP
+    async fn get_hsm_map_and_filter_by_hsm_name_vec(
+        &self,
+        auth_token: &str,
+        hsm_name_vec: Vec<&str>,
+    ) -> Result<HashMap<String, Vec<String>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+        }
+    }
+
+    // HSM/GROUP
     async fn get_all_hsm(&self, auth_token: &str) -> Result<Vec<HsmGroup>, Error> {
         match self {
             CSM(b) => b.get_all_hsm(auth_token).await,
@@ -78,13 +109,7 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
-        match self {
-            CSM(b) => b.get_api_token(site_name).await,
-            OCHAMI(b) => b.get_api_token(site_name).await,
-        }
-    }
-
+    // PCS
     async fn power_on_sync(&self, auth_token: &str, nodes: &[String]) -> Result<Value, Error> {
         match self {
             CSM(b) => b.power_on_sync(auth_token, nodes).await,
@@ -92,6 +117,7 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // PCS
     async fn power_off_sync(
         &self,
         auth_token: &str,
@@ -104,6 +130,7 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // PCS
     async fn power_reset_sync(
         &self,
         auth_token: &str,
@@ -116,6 +143,7 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // BSS/BOOTPARAMETERS
     async fn get_bootparameters(
         &self,
         auth_token: &str,
@@ -127,11 +155,12 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // BSS/BOOTPARAMETERS
     async fn update_bootparameters(
         &self,
         auth_token: &str,
         boot_parameters: &BootParameters,
-    ) -> Result<BootParameters, Error> {
+    ) -> Result<(), Error> {
         match self {
             CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
             OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,

@@ -30,9 +30,9 @@ pub async fn process_cli(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
-    vault_secret_path: &str,
+    vault_secrets_path: &str,
     vault_role_id: &str,
-    gitea_token: &str,
+    // gitea_token: &str,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
     // hsm_group_available_vec: &[String],
@@ -390,7 +390,7 @@ pub async fn process_cli(
                     .await; */
 
                     power_reset_nodes::exec(
-                        backend,
+                        &backend,
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -470,35 +470,49 @@ pub async fn process_cli(
                     &site_name,
                 )
                 .await?; */
+
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
-                let xnames_arg_opt = cli_add_kernel_parameters.get_one::<String>("xnames");
 
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
+                let xname_vec: Vec<String> = if hsm_group_name_arg_opt.is_some() {
+                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all_2(
+                        &backend,
+                        &shasta_token,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
                     )
-                } else {
-                    None
-                };
+                    .await?;
 
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
+                    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                        &shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_name_vec,
                     )
+                    .await */
+
+                    let hsm_members_rslt = backend
+                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .await;
+
+                    match hsm_members_rslt {
+                        Ok(hsm_members) => hsm_members,
+                        Err(e) => {
+                            eprintln!(
+                                "ERROR - could not fetch HSM groups members. Reason:\n{}",
+                                e.to_string()
+                            );
+                            std::process::exit(1);
+                        }
+                    }
                 } else {
-                    None
+                    cli_add_kernel_parameters
+                        .get_one::<String>("xnames")
+                        .expect("Neither HSM group nor xnames defined")
+                        .split(",")
+                        .map(|value| value.to_string())
+                        .collect()
                 };
 
                 let kernel_parameters = cli_add_kernel_parameters
@@ -513,8 +527,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     kernel_parameters,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
+                    xname_vec,
                     assume_yes,
                 )
                 .await;
@@ -606,6 +619,15 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
+                // FIXME: gitea auth token should be calculated before colling this function
+                let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    vault_base_url,
+                    vault_secrets_path,
+                    vault_role_id,
+                )
+                .await
+                .unwrap();
+
                 let hsm_group_name_arg_rslt = cli_get_configuration.try_get_one("hsm-group");
 
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -626,7 +648,7 @@ pub async fn process_cli(
 
                 get_configuration::exec(
                     gitea_base_url,
-                    gitea_token,
+                    &gitea_token,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -892,7 +914,7 @@ pub async fn process_cli(
                         hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
-                    .await;
+                    .await?;
 
                     /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
                         &shasta_token,
@@ -1028,6 +1050,15 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
+                // FIXME: gitea auth token should be calculated before colling this function
+                let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    vault_base_url,
+                    vault_secrets_path,
+                    vault_role_id,
+                )
+                .await
+                .unwrap();
+
                 get_target_hsm_group_vec_or_all(
                     &shasta_token,
                     shasta_base_url,
@@ -1069,11 +1100,11 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url,
-                    vault_secret_path,
+                    vault_secrets_path,
                     vault_role_id,
                     k8s_api_url,
                     gitea_base_url,
-                    gitea_token,
+                    &gitea_token,
                     // &tag,
                     cli_apply_configuration.get_one::<String>("output"),
                 )
@@ -1087,6 +1118,15 @@ pub async fn process_cli(
                 )
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
+
+                // FIXME: gitea auth token should be calculated before colling this function
+                let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    vault_base_url,
+                    vault_secrets_path,
+                    vault_role_id,
+                )
+                .await
+                .unwrap();
 
                 let hsm_group_name_arg_opt: Option<&String> =
                     cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
@@ -1122,10 +1162,10 @@ pub async fn process_cli(
                 }
 
                 apply_session::exec(
-                    gitea_token,
+                    &gitea_token,
                     gitea_base_url,
                     vault_base_url,
-                    vault_secret_path,
+                    vault_secrets_path,
                     vault_role_id,
                     &shasta_token,
                     shasta_base_url,
@@ -1160,6 +1200,15 @@ pub async fn process_cli(
                 )
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
+
+                // FIXME: gitea auth token should be calculated before colling this function
+                let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    vault_base_url,
+                    vault_secrets_path,
+                    vault_role_id,
+                )
+                .await
+                .unwrap();
 
                 /* let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
@@ -1237,7 +1286,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url,
-                    vault_secret_path,
+                    vault_secrets_path,
                     vault_role_id,
                     k8s_api_url,
                     sat_file_content,
@@ -1248,7 +1297,7 @@ pub async fn process_cli(
                     ansible_verbosity,
                     ansible_passthrough.as_ref(),
                     gitea_base_url,
-                    gitea_token,
+                    &gitea_token,
                     do_not_reboot,
                     watch_logs,
                     prehook,
@@ -1484,7 +1533,7 @@ pub async fn process_cli(
                 shasta_base_url,
                 shasta_root_cert,
                 vault_base_url,
-                vault_secret_path,
+                vault_secrets_path,
                 vault_role_id,
                 k8s_api_url,
                 &target_hsm_group_vec,
@@ -1514,7 +1563,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url,
-                    vault_secret_path,
+                    vault_secrets_path,
                     vault_role_id,
                     k8s_api_url,
                     cli_console_node.get_one::<String>("XNAME").unwrap(),
@@ -1551,7 +1600,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url,
-                    vault_secret_path,
+                    vault_secrets_path,
                     vault_role_id,
                     k8s_api_url,
                     cli_console_target_ansible
@@ -1977,11 +2026,20 @@ pub async fn process_cli(
             .await?; */
             let shasta_token = backend.get_api_token(&site_name).await?;
 
+            // FIXME: gitea auth token should be calculated before colling this function
+            let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                vault_base_url,
+                vault_secrets_path,
+                vault_role_id,
+            )
+            .await
+            .unwrap();
+
             let repo_path = cli_validate_local_repo
                 .get_one::<String>("repo-path")
                 .unwrap();
 
-            validate_local_repo::exec(shasta_root_cert, gitea_base_url, gitea_token, repo_path)
+            validate_local_repo::exec(shasta_root_cert, gitea_base_url, &gitea_token, repo_path)
                 .await;
         } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
             /* let shasta_token = &authentication::get_api_token(
@@ -2119,15 +2177,19 @@ pub async fn get_target_hsm_name_group_vec(
 /// This method will exit if the user is asking for HSM group not allowed
 /// If the user did not requested any HSM group, then it will return all HSM
 /// groups he has access to
-// FIXME: migrate all calls to 'get_target_hsm_group_vec_or_all' to 'get_target_hsm_group_vec_or_all_2'
+// FIXME: migrate all calls to 'get_target_hsm_group_vec_or_all' to 'get_target_hsm_group_vec_or_all_2' or to StaticBackendDispatcher.'get_hsm_name_available'
 pub async fn get_target_hsm_group_vec_or_all_2(
     backend: &StaticBackendDispatcher,
-    shasta_token: &str,
+    auth_token: &str,
     hsm_group_cli_arg_opt: Option<&String>,
     hsm_group_env_or_config_file_opt: Option<&String>,
-) -> Vec<String> {
-    let hsm_name_available_vec =
-        config_show::get_hsm_name_available_from_jwt_or_all_2(&backend, shasta_token).await;
+) -> Result<Vec<String>, infra::error::Error> {
+    /* let hsm_name_available_vec_rslt =
+    config_show::get_hsm_name_available_from_jwt_or_all_2(&backend, shasta_token).await; */
+
+    let hsm_name_available_vec_rslt = backend.get_hsm_name_available(auth_token).await;
+
+    let hsm_name_available_vec = hsm_name_available_vec_rslt?;
 
     let target_hsm_group_opt = if hsm_group_cli_arg_opt.is_some() {
         hsm_group_cli_arg_opt
@@ -2146,9 +2208,9 @@ pub async fn get_target_hsm_group_vec_or_all_2(
             std::process::exit(1);
         }
 
-        vec![target_hsm_group.to_string()]
+        Ok(vec![target_hsm_group.to_string()])
     } else {
-        hsm_name_available_vec
+        Ok(hsm_name_available_vec)
     }
 }
 

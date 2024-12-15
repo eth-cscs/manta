@@ -110,7 +110,7 @@ pub async fn exec(
             println!("Nothing to change. Exit");
         } else {
             crate::cli::commands::power_reset_nodes::exec(
-                backend,
+                &backend,
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

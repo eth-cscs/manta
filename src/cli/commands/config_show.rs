@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use config::{Config, Value};
-use infra::contracts::BackendTrait;
+use infra::{contracts::BackendTrait, error::Error};
 use mesa::hsm;
 
 use crate::backend::StaticBackendDispatcher;
@@ -77,39 +77,21 @@ pub async fn exec(
     println!("Parent HSM: {}", settings_parent_hsm_group);
 }
 
+/* #[deprecated(
+    since = "v1.54-beta.5",
+    note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead"
+)]
 pub async fn get_hsm_name_available_from_jwt_or_all_2(
     backend: &StaticBackendDispatcher,
     auth_token: &str,
-) -> Vec<String> {
-    let mut realm_access_role_vec = backend
-        .get_hsm_name_available(auth_token)
-        .unwrap_or(Vec::new());
+) -> Result<Vec<String>, Error> {
+    backend.get_hsm_name_available(auth_token).await
+} */
 
-    realm_access_role_vec
-        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
-
-    if !realm_access_role_vec.is_empty() {
-        //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
-        //wide operations instead of using roles
-        let mut realm_access_role_filtered_vec =
-            hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
-        realm_access_role_filtered_vec.sort();
-        realm_access_role_filtered_vec
-    } else {
-        let mut all_hsm_groups = backend
-            .get_all_hsm(auth_token)
-            .await
-            .unwrap()
-            .iter()
-            .map(|hsm_value| hsm_value.label.clone())
-            .collect::<Vec<String>>();
-
-        all_hsm_groups.sort();
-
-        all_hsm_groups
-    }
-}
-
+#[deprecated(
+    since = "v1.54-beta.5",
+    note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead"
+)]
 pub async fn get_hsm_name_available_from_jwt_or_all(
     shasta_token: &str,
     shasta_base_url: &str,

@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use infra::contracts::BackendTrait;
 use mesa::{common::jwt_ops, error::Error, pcs};
 
 use crate::{backend::StaticBackendDispatcher, common};
 
 pub async fn exec(
-    backend: StaticBackendDispatcher,
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -31,7 +32,8 @@ pub async fn exec(
         // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
         // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
         // hostlist have been removed
-        common::node_ops::get_curated_hsm_group_from_hostlist(
+        common::node_ops::get_curated_hsm_group_from_hostlist_backend(
+            backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -61,11 +63,12 @@ pub async fn exec(
         }
     }
 
-    let operation = if force {
+    /* let operation = if force {
         "hard-restart"
     } else {
         "soft-restart"
     };
+    println!("DEBUG - 1");
 
     let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
@@ -75,7 +78,10 @@ pub async fn exec(
         &xname_vec,
     )
     .await
-    .map_err(|e| Error::Message(e.to_string()));
+    .map_err(|e| Error::Message(e.to_string())); */
+    let power_mgmt_summary_rslt = backend
+        .power_reset_sync(shasta_token, &xname_vec, force)
+        .await;
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,

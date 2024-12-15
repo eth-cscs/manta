@@ -25,7 +25,7 @@ pub fn print_table(
     let mut kernel_param_node_map: HashMap<Vec<String>, Vec<String>> = HashMap::new();
 
     for boot_parameters in &boot_parameters_vec {
-        let xname = boot_parameters.hosts.first().unwrap();
+        let mut host_vec = boot_parameters.hosts.clone();
         let kernel_params = boot_parameters.params.clone();
 
         // Get list of key value pairs from kernel params per node
@@ -49,8 +49,8 @@ pub fn print_table(
 
         kernel_param_node_map
             .entry(kernel_params_vec)
-            .and_modify(|xname_vec| xname_vec.push(xname.clone()))
-            .or_insert(vec![xname.clone()]);
+            .and_modify(|xname_vec| xname_vec.append(&mut host_vec))
+            .or_insert(host_vec);
     }
 
     // Create table and format data

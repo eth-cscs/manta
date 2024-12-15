@@ -1,4 +1,4 @@
-use infra::contracts::BackendTrait;
+use infra::{contracts::BackendTrait, types::BootParameters};
 use mesa::{bss, error::Error};
 
 use crate::{backend::StaticBackendDispatcher, common};
@@ -18,7 +18,7 @@ pub async fn exec(
         .await
         .unwrap(); */
 
-    let boot_parameter_vec = backend
+    let boot_parameter_vec: Vec<BootParameters> = backend
         .get_bootparameters(shasta_token, &xname_vec)
         .await
         .unwrap();

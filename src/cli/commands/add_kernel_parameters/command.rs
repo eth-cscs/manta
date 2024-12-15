@@ -1,11 +1,6 @@
 use dialoguer::theme::ColorfulTheme;
 use infra::contracts::BackendTrait;
-use mesa::{
-    bss::{self, r#struct::BootParameters},
-    common::jwt_ops,
-    error::Error,
-    hsm,
-};
+use mesa::{common::jwt_ops, error::Error};
 
 use crate::backend::StaticBackendDispatcher;
 
@@ -17,8 +12,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     kernel_params: &str,
-    hsm_group_name_opt: Option<&Vec<String>>,
-    xname_vec_opt: Option<&Vec<String>>,
+    xname_vec: Vec<String>,
     assume_yes: bool,
 ) -> Result<(), Error> {
     let mut need_restart = false;
@@ -26,10 +20,12 @@ pub async fn exec(
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
-    let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
+    /* let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
         let xname_vec_rslt = backend
             .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
             .await;
+
+        println!("DEBUG - hsm members:\n{:#?}", xname_vec_rslt);
 
         if xname_vec_rslt.is_err() {
             return Err(Error::Message(
@@ -44,10 +40,10 @@ pub async fn exec(
         return Err(Error::Message(
             "ERROR - Deleting kernel parameters without a list of nodes".to_string(),
         ));
-    };
+    }; */
 
     // Get current node boot params
-    let current_node_boot_params_vec: Vec<BootParameters> = bss::http_client::get(
+    /* let current_node_boot_params_vec: Vec<BootParameters> = bss::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -57,12 +53,22 @@ pub async fn exec(
             .collect::<Vec<String>>(),
     )
     .await
-    .unwrap();
+    .unwrap(); */
+    let current_node_boot_params_vec: Vec<infra::types::BootParameters> = backend
+        .get_bootparameters(
+            shasta_token,
+            &xname_vec
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap();
 
     println!(
         "Add kernel params:\n{:?}\nFor nodes:\n{:?}",
         kernel_params,
-        xnames.join(", ")
+        xname_vec.join(", ")
     );
 
     let proceed = dialoguer::Confirm::with_theme(
@@ -103,13 +109,21 @@ pub async fn exec(
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            let _ = bss::http_client::patch(
+            /* let _ = bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
                 &boot_parameter,
             )
-            .await;
+            .await; */
+            let boot_parametes_rslt = backend
+                .update_bootparameters(shasta_token, &boot_parameter)
+                .await;
+
+            if let Err(e) = boot_parametes_rslt {
+                eprintln!("{:#?}", e);
+                std::process::exit(1);
+            }
 
             need_restart |= need_restart;
 
@@ -120,14 +134,14 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
         println!("Nothing to change. Exit");
     } else {
         crate::cli::commands::power_reset_nodes::exec(
-            backend,
+            &backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

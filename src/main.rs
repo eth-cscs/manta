@@ -130,13 +130,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let backend_config =
         StaticBackendDispatcher::new(&backend, &shasta_base_url, &shasta_root_cert);
 
-    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    /* let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,
         &vault_secret_path,
         &vault_role_id,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     let cli_result = crate::cli::process::process_cli(
         matches,
@@ -147,7 +147,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &vault_base_url,
         &vault_secret_path,
         &vault_role_id,
-        &gitea_token,
+        // &gitea_token,
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
         // settings_hsm_available_vec,
