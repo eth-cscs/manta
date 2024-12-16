@@ -1,5 +1,5 @@
 use crate::{
-    backend::StaticBackendDispatcher, cli::commands::power_reset_nodes,
+    backend_dispatcher::StaticBackendDispatcher, cli::commands::power_reset_nodes,
     common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
 

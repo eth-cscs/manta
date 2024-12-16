@@ -7,7 +7,7 @@ use mesa::{bss::r#struct::BootParameters, hsm, node::r#struct::NodeDetails};
 use regex::Regex;
 
 use crate::{
-    backend::StaticBackendDispatcher,
+    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::config_show::get_hsm_name_available_from_jwt_or_all,
 };
 

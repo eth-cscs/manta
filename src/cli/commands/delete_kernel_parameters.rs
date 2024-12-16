@@ -6,7 +6,7 @@ use mesa::{
     hsm,
 };
 
-use crate::backend::StaticBackendDispatcher;
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed

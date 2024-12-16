@@ -4,7 +4,7 @@ use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 
-use crate::{backend::StaticBackendDispatcher, common};
+use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

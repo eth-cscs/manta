@@ -2,7 +2,7 @@ use backend_dispatcher::{contracts::BackendTrait, types};
 use dialoguer::theme::ColorfulTheme;
 use mesa::{common::jwt_ops, error::Error};
 
-use crate::backend::StaticBackendDispatcher;
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed

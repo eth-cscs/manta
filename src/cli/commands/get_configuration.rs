@@ -11,7 +11,8 @@ use mesa::{
 use serde_json::Value;
 
 use crate::{
-    backend::StaticBackendDispatcher, common::cfs_configuration_utils::print_table_struct,
+    backend_dispatcher::StaticBackendDispatcher,
+    common::cfs_configuration_utils::print_table_struct,
 };
 
 pub async fn exec(

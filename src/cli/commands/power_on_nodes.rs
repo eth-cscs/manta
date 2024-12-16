@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{common::jwt_ops, error::Error, pcs};
 
-use crate::{backend::StaticBackendDispatcher, common};
+use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
     backend: StaticBackendDispatcher,

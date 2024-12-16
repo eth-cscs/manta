@@ -6,7 +6,7 @@ use config::Config;
 use k8s_openapi::chrono;
 use mesa::{common::authentication, error::Error, hsm};
 
-use crate::{backend::StaticBackendDispatcher, cli::commands::validate_local_repo};
+use crate::{backend_dispatcher::StaticBackendDispatcher, cli::commands::validate_local_repo};
 
 use super::commands::{
     self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,

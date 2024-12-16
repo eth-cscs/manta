@@ -1,8 +1,8 @@
-mod backend;
+mod backend_dispatcher;
 mod cli;
 mod common;
 
-use backend::StaticBackendDispatcher;
+use backend_dispatcher::StaticBackendDispatcher;
 
 use crate::common::log_ops;
 

@@ -6,7 +6,7 @@ use mesa::{
     hsm,
 };
 
-use crate::backend::StaticBackendDispatcher;
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Set boot image to a set of nodes. This function updates the desired_configuration for the node
 /// boot params.

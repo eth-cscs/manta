@@ -22,8 +22,8 @@ pub enum StaticBackendDispatcher {
 
 use StaticBackendDispatcher::*;
 
-use mesa::backend::Csm;
-use ochami_rs::backend::Ochami;
+use mesa::backend_connector::Csm;
+use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
 impl StaticBackendDispatcher {

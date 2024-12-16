@@ -1,6 +1,6 @@
 use mesa::hsm;
 
-use crate::{backend::StaticBackendDispatcher, cli::commands::apply_boot_node};
+use crate::{backend_dispatcher::StaticBackendDispatcher, cli::commands::apply_boot_node};
 
 /// Updates boot params and desired configuration for all nodes that belongs to a HSM group
 /// If boot params defined, then nodes in HSM group will be rebooted
