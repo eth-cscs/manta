@@ -9,7 +9,7 @@ use std::collections::HashMap;
 /// To add new functionalities:
 /// # Implement new functionalities to BackendTrait implementation
 /// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
-use infra::{
+use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
     types::{BootParameters, HsmGroup},
@@ -23,8 +23,8 @@ pub enum StaticBackendDispatcher {
 use StaticBackendDispatcher::*;
 
 use mesa::backend::Csm;
+use ochami_rs::backend::Ochami;
 use serde_json::Value;
-use silla::backend::Ochami;
 
 impl StaticBackendDispatcher {
     pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {

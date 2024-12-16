@@ -1,5 +1,5 @@
+use backend_dispatcher::{contracts::BackendTrait, types};
 use dialoguer::theme::ColorfulTheme;
-use infra::contracts::BackendTrait;
 use mesa::{common::jwt_ops, error::Error};
 
 use crate::backend::StaticBackendDispatcher;
@@ -54,7 +54,7 @@ pub async fn exec(
     )
     .await
     .unwrap(); */
-    let current_node_boot_params_vec: Vec<infra::types::BootParameters> = backend
+    let current_node_boot_params_vec: Vec<types::BootParameters> = backend
         .get_bootparameters(
             shasta_token,
             &xname_vec

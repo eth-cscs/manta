@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use config::{Config, Value};
-use infra::{contracts::BackendTrait, error::Error};
 use mesa::hsm;
-
-use crate::backend::StaticBackendDispatcher;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(

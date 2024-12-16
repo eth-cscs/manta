@@ -3,7 +3,6 @@ mod cli;
 mod common;
 
 use backend::StaticBackendDispatcher;
-use infra::contracts::BackendTrait;
 
 use crate::common::log_ops;
 
@@ -37,7 +36,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .into_table()
         .expect(format!("ERROR - site '{}' missing in configuration file", site_name).as_str());
 
-    let backend = site_detail_value
+    let backend_tech = site_detail_value
         .get("backend")
         .expect("ERROR - 'backend' value missing in configuration file")
         .to_string();
@@ -127,8 +126,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     };
 
-    let backend_config =
-        StaticBackendDispatcher::new(&backend, &shasta_base_url, &shasta_root_cert);
+    let backend = StaticBackendDispatcher::new(&backend_tech, &shasta_base_url, &shasta_root_cert);
 
     /* let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
         &vault_base_url,
@@ -140,7 +138,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let cli_result = crate::cli::process::process_cli(
         matches,
-        backend_config,
+        backend,
         &keycloak_base_url,
         &shasta_api_url,
         &shasta_root_cert,

@@ -1,5 +1,5 @@
-use infra::{contracts::BackendTrait, types::BootParameters};
-use mesa::{bss, error::Error};
+use backend_dispatcher::{contracts::BackendTrait, types::BootParameters};
+use mesa::error::Error;
 
 use crate::{backend::StaticBackendDispatcher, common};
 

@@ -1,4 +1,4 @@
-use infra::contracts::BackendTrait;
+use backend_dispatcher::contracts::BackendTrait;
 use std::{io::IsTerminal, path::PathBuf};
 
 use clap::ArgMatches;
@@ -2183,7 +2183,7 @@ pub async fn get_target_hsm_group_vec_or_all_2(
     auth_token: &str,
     hsm_group_cli_arg_opt: Option<&String>,
     hsm_group_env_or_config_file_opt: Option<&String>,
-) -> Result<Vec<String>, infra::error::Error> {
+) -> Result<Vec<String>, backend_dispatcher::error::Error> {
     /* let hsm_name_available_vec_rslt =
     config_show::get_hsm_name_available_from_jwt_or_all_2(&backend, shasta_token).await; */
 
