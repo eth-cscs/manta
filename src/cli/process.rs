@@ -463,14 +463,6 @@ pub async fn process_cli(
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
-
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
@@ -483,14 +475,6 @@ pub async fn process_cli(
                         settings_hsm_group_name_opt,
                     )
                     .await?;
-
-                    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                        &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_vec,
-                    )
-                    .await */
 
                     let hsm_members_rslt = backend
                         .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
@@ -1799,42 +1783,40 @@ pub async fn process_cli(
             } else if let Some(cli_delete_kernel_parameters) =
                 cli_delete.subcommand_matches("kernel-parameters")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_delete_kernel_parameters.get_one("hsm-group");
-                let xnames_arg_opt = cli_delete_kernel_parameters.get_one::<String>("xnames");
 
-                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
-                    Some(
-                        get_target_hsm_group_vec_or_all(
-                            &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            hsm_group_name_arg_opt,
-                            settings_hsm_group_name_opt,
-                        )
-                        .await,
+                let xname_vec: Vec<String> = if hsm_group_name_arg_opt.is_some() {
+                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all_2(
+                        &backend,
+                        &shasta_token,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
                     )
-                } else {
-                    None
-                };
+                    .await?;
 
-                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
-                    Some(
-                        xnames_arg
-                            .split(",")
-                            .map(|elem| elem.to_string())
-                            .collect::<Vec<String>>(),
-                    )
+                    let hsm_members_rslt = backend
+                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .await;
+
+                    match hsm_members_rslt {
+                        Ok(hsm_members) => hsm_members,
+                        Err(e) => {
+                            eprintln!(
+                                "ERROR - could not fetch HSM groups members. Reason:\n{}",
+                                e.to_string()
+                            );
+                            std::process::exit(1);
+                        }
+                    }
                 } else {
-                    None
+                    cli_delete_kernel_parameters
+                        .get_one::<String>("xnames")
+                        .expect("Neither HSM group nor xnames defined")
+                        .split(",")
+                        .map(|value| value.to_string())
+                        .collect()
                 };
 
                 let kernel_parameters = cli_delete_kernel_parameters
@@ -1849,8 +1831,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     kernel_parameters,
-                    target_hsm_group_vec_opt.as_ref(),
-                    xname_vec_opt.as_ref(),
+                    xname_vec,
                     assume_yes,
                 )
                 .await;

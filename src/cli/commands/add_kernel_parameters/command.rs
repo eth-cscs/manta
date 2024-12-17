@@ -54,6 +54,7 @@ pub async fn exec(
     )
     .await
     .unwrap(); */
+
     let current_node_boot_params_vec: Vec<types::BootParameters> = backend
         .get_bootparameters(
             shasta_token,
@@ -116,6 +117,7 @@ pub async fn exec(
                 &boot_parameter,
             )
             .await; */
+
             let boot_parametes_rslt = backend
                 .update_bootparameters(shasta_token, &boot_parameter)
                 .await;
@@ -125,16 +127,16 @@ pub async fn exec(
                 std::process::exit(1);
             }
 
-            need_restart |= need_restart;
-
             if need_restart {
-                xname_to_reboot_vec.push(boot_parameter.hosts.first().unwrap().to_string());
+                xname_to_reboot_vec = [xname_to_reboot_vec, boot_parameter.hosts].concat();
+                xname_to_reboot_vec.sort();
+                xname_to_reboot_vec.dedup();
             }
         }
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
