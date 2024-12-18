@@ -1,10 +1,6 @@
+use backend_dispatcher::{contracts::BackendTrait, error::Error, types::BootParameters};
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    bss::{self, r#struct::BootParameters},
-    common::jwt_ops,
-    error::Error,
-    hsm,
-};
+use mesa::common::jwt_ops;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -27,13 +23,21 @@ pub async fn exec(
     let xname_to_reboot_vec: Vec<String>;
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        backend
+            .get_member_vec_from_hsm_name_vec(
+                shasta_token,
+                /* shasta_base_url,
+                shasta_root_cert, */
+                hsm_group_name_vec.clone(),
+            )
+            .await?
+        /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             hsm_group_name_vec.clone(),
         )
-        .await
+        .await */
     } else if let Some(xname_vec) = xname_vec_opt {
         xname_vec.clone()
     } else {
@@ -43,17 +47,18 @@ pub async fn exec(
     };
 
     // Get current node boot params
-    let mut current_node_boot_params: Vec<BootParameters> = bss::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap();
+    let mut current_node_boot_params: Vec<BootParameters> = backend
+        .get_bootparameters(
+            shasta_token,
+            /* shasta_base_url,
+            shasta_root_cert, */
+            &xnames
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap();
 
     log::debug!("Current boot parameters:\n{:#?}", current_node_boot_params);
 
@@ -93,13 +98,17 @@ pub async fn exec(
                 image_id
             );
 
-            let _ = mesa::bss::http_client::patch(
+            /* let _ = mesa::bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
                 &boot_parameter,
             )
-            .await;
+            .await; */
+
+            let _ = backend
+                .update_bootparameters(shasta_token, &boot_parameter)
+                .await;
         }
 
         // Audit
