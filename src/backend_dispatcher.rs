@@ -102,10 +102,39 @@ impl BackendTrait for StaticBackendDispatcher {
     }
 
     // HSM/GROUP
-    async fn get_all_hsm(&self, auth_token: &str) -> Result<Vec<HsmGroup>, Error> {
+    async fn get_all_hsm_group(&self, auth_token: &str) -> Result<Vec<HsmGroup>, Error> {
         match self {
-            CSM(b) => b.get_all_hsm(auth_token).await,
-            OCHAMI(b) => b.get_all_hsm(auth_token).await,
+            CSM(b) => b.get_all_hsm_group(auth_token).await,
+            OCHAMI(b) => b.get_all_hsm_group(auth_token).await,
+        }
+    }
+
+    async fn get_hsm_group(&self, auth_token: &str, hsm_name: &str) -> Result<HsmGroup, Error> {
+        match self {
+            CSM(b) => b.get_hsm_group(auth_token, hsm_name).await,
+            OCHAMI(b) => b.get_hsm_group(auth_token, hsm_name).await,
+        }
+    }
+
+    async fn add_hsm_group(
+        &self,
+        auth_token: &str,
+        hsm_group: HsmGroup,
+    ) -> Result<HsmGroup, Error> {
+        match self {
+            CSM(b) => b.add_hsm_group(auth_token, hsm_group).await,
+            OCHAMI(b) => b.add_hsm_group(auth_token, hsm_group).await,
+        }
+    }
+
+    async fn delete_hsm_group(
+        &self,
+        auth_token: &str,
+        hsm_group_label: &str,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.delete_hsm_group(auth_token, hsm_group_label).await,
+            OCHAMI(b) => b.delete_hsm_group(auth_token, hsm_group_label).await,
         }
     }
 

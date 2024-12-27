@@ -5,3 +5,4 @@ Cargo.lock
 *.code-workspace
 *.log
 .idea/
+.DS_Store
