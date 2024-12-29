@@ -21,7 +21,7 @@ publish = false                                                         # cargo 
 [dependencies]
 backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
 # mesa = "0.42.1-beta.12"
-mesa = { path = "../mesa" } # Only for development purposes
+mesa = { path = "../mesa" , version = "*" } # Only for development purposes
 ochami-rs = { path = "../ochami-rs" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
@@ -32,12 +32,12 @@ reqwest = { version = "0.11", default-features = false, features = ["blocking", 
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9.17"
-config = "0.13.2"
+config = { version = "0.13.2", features = ["toml"], default-features = false }
 toml = "0.8.16"
 toml_edit = "0.20.2" # used to edit manta configuration file
 log = "0.4.17"
 log4rs = { version = "1.2.0", default-features = false }
-tokio = { version = "1.14", features = ["full"] }
+tokio = { version = "1.14" }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
 # tokio-stream = "0.1.11" # used by manta_console to create a read stream from container stdout (alternative?)
 kube = { version = "0.87.2", default-features = false }
