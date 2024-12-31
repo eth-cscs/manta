@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Update github image from ubuntu 20.04 to ubuntu 24.04 and rust toolchain from 1.78.0 to 1.81.0
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.13
+
 ## [1.54.1-beta.12] - 2024-12-31
 
 ### Bug Fixes
