@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.15] - 2024-12-31
+
+### Bug Fixes
+
+- Update rust toolchain from 1.78.0 to 1.81.0
+
+## [1.54.1-beta.14] - 2024-12-31
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.14
+
 ## [1.54.1-beta.13] - 2024-12-31
 
 ### Bug Fixes
