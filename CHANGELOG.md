@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.7] - 2024-12-31
+
+### Bug Fixes
+
+- Mesa library
+
 ## [1.54.1-beta.6] - 2024-12-31
 
 ### Bug Fixes
@@ -28,6 +34,10 @@ All notable changes to this project will be documented in this file.
 - Use backend-dispatcher and ochami-rs as crates
 - Use backend-dispatcher and ochami-rs as crates
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.6
 
 ## [1.54.1-beta.5] - 2024-12-06
 
