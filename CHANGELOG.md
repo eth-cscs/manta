@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.8] - 2024-12-31
+
+### Bug Fixes
+
+- Update cargo dist
+
 ## [1.54.1-beta.7] - 2024-12-31
 
 ### Bug Fixes
 
 - Mesa library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.7
 
 ## [1.54.1-beta.6] - 2024-12-31
 
