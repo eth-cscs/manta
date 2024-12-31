@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.9] - 2024-12-31
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.9
+
 ## [1.54.1-beta.8] - 2024-12-31
 
 ### Bug Fixes
