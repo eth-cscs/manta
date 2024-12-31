@@ -2,11 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.6] - 2024-12-31
+
+### Bug Fixes
+
+- Bug in add kernel parameter removing existing kernel params
+- Fix power reset method with backends
+- Boot parameters update
+- House keeping
+- Improve error management
+- Clean code
+- Add and delete kernel params not calculating list of nodes to reboot correctly
+- Update Dockerfile
+- SAT file schema for images section
+
+### Features
+
+- Add static enum dispatch to integrate with business layer
+- Migrate function to get auth token to 'infra'
+- Clean code
+- Integrate functionatlity to integrate boot image with backend dispatcher
+- Add new functions from backend trait
+- Remove unused features in crates
+- Update cargo dependency features
+- Use backend-dispatcher and ochami-rs as crates
+- Use backend-dispatcher and ochami-rs as crates
+- Update mesa version
+
 ## [1.54.1-beta.5] - 2024-12-06
 
 ### Features
 
 - Integrate power and boot operations with CSM backend
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.5
 
 ## [1.54.1-beta.4] - 2024-12-02
 
