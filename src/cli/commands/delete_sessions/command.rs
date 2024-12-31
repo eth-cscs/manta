@@ -176,13 +176,14 @@ pub async fn exec(
             .collect();
 
         // Convert CFS components to another struct we can use for CFS component PUT API
-        let mut cfs_component_request_vec = cfs_component_vec;
+        let cfs_component_request_vec = cfs_component_vec;
 
         log::info!(
             "Update error count on nodes {:?} to {}",
             xname_vec,
             retry_policy
         );
+
         if !dry_run {
             let put_rslt_vec = cfs::component::http_client::v3::put_component_list(
                 shasta_token,

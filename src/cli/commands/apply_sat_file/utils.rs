@@ -279,9 +279,16 @@ pub mod image {
 
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
-    pub enum Ims {
-        Name { name: String, r#type: String },
-        Id { id: String, r#type: String },
+    pub enum ImageIms {
+        NameIsRecipe { name: String, is_recipe: bool },
+        IdIsRecipe { id: String, is_recipe: bool },
+    }
+
+    #[derive(Deserialize, Serialize, Debug)]
+    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+    pub enum ImageBaseIms {
+        NameType { name: String, r#type: String },
+        IdType { id: String, r#type: String },
         BackwardCompatible { is_recipe: Option<bool>, id: String },
     }
 
@@ -305,7 +312,7 @@ pub mod image {
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Base {
-        Ims { ims: Ims },
+        Ims { ims: ImageBaseIms },
         Product { product: Product },
         ImageRef { image_ref: String },
     }
@@ -315,7 +322,7 @@ pub mod image {
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum BaseOrIms {
         Base { base: Base },
-        Ims { ims: Ims },
+        Ims { ims: ImageIms },
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -616,6 +623,7 @@ pub fn render_jinja2_sat_file_yaml(
             std::process::exit(1);
         }
     };
+
     // Disable debug
     env.set_debug(false);
 

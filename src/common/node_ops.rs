@@ -184,11 +184,9 @@ pub async fn get_curated_hsm_group_from_hostlist(
             .await
             .expect("Error - fetching HSM groups"); */
 
-    println!("DEBUG - 0");
     let hsm_name_available_vec =
         get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await;
-    println!("DEBUG - 1");
 
     // Get HSM group user has access to
     let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(

@@ -68,7 +68,6 @@ pub async fn exec(
     } else {
         "soft-restart"
     };
-    println!("DEBUG - 1");
 
     let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,

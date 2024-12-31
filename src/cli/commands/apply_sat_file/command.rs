@@ -135,10 +135,10 @@ pub async fn exec(
     // Get CFS configurations from SAT YAML file
     let configuration_yaml_vec_opt = sat_template_file_yaml["configurations"].as_sequence();
 
-    // Get inages from SAT YAML file
+    // Get images from SAT YAML file
     let image_yaml_vec_opt = sat_template_file_yaml["images"].as_sequence();
 
-    // Get inages from SAT YAML file
+    // Get images from SAT YAML file
     let bos_session_template_yaml_vec_opt =
         sat_template_file_yaml["session_templates"].as_sequence();
 

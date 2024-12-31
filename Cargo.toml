@@ -21,7 +21,7 @@ publish = false                                                         # cargo 
 [dependencies]
 backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
 # mesa = "0.42.1-beta.12"
-mesa = { path = "../mesa" , version = "*" } # Only for development purposes
+mesa = { path = "../mesa" } # Only for development purposes
 ochami-rs = { path = "../ochami-rs" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
