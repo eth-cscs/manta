@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Update cargo dist
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.8
+
 ## [1.54.1-beta.7] - 2024-12-31
 
 ### Bug Fixes
