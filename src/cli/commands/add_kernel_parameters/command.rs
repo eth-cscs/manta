@@ -20,41 +20,6 @@ pub async fn exec(
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
-    /* let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        let xname_vec_rslt = backend
-            .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
-            .await;
-
-        println!("DEBUG - hsm members:\n{:#?}", xname_vec_rslt);
-
-        if xname_vec_rslt.is_err() {
-            return Err(Error::Message(
-                "ERROR - Error finding list of nodes".to_string(),
-            ));
-        }
-
-        xname_vec_rslt.unwrap()
-    } else if let Some(xname_vec) = xname_vec_opt {
-        xname_vec.clone()
-    } else {
-        return Err(Error::Message(
-            "ERROR - Deleting kernel parameters without a list of nodes".to_string(),
-        ));
-    }; */
-
-    // Get current node boot params
-    /* let current_node_boot_params_vec: Vec<BootParameters> = bss::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap(); */
-
     let current_node_boot_params_vec: Vec<types::BootParameters> = backend
         .get_bootparameters(
             shasta_token,
@@ -83,20 +48,6 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    /* // Add kernel parameters
-    current_node_boot_params_vec
-        .iter_mut()
-        .for_each(|boot_parameter| {
-            log::info!(
-                "Add '{:?}' kernel parameters to '{}'",
-                boot_parameter.hosts,
-                kernel_params
-            );
-
-            need_restart = need_restart || boot_parameter.add_kernel_param(&kernel_params);
-            log::info!("need restart? {}", need_restart);
-        }); */
-
     log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
 
     for mut boot_parameter in current_node_boot_params_vec {
@@ -110,14 +61,6 @@ pub async fn exec(
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            /* let _ = bss::http_client::patch(
-                shasta_base_url,
-                shasta_token,
-                shasta_root_cert,
-                &boot_parameter,
-            )
-            .await; */
-
             let boot_parametes_rslt = backend
                 .update_bootparameters(shasta_token, &boot_parameter)
                 .await;

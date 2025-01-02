@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
 use std::{io::IsTerminal, path::PathBuf};
 
 use clap::ArgMatches;
@@ -9,13 +9,13 @@ use mesa::{common::authentication, error::Error, hsm};
 use crate::{backend_dispatcher::StaticBackendDispatcher, cli::commands::validate_local_repo};
 
 use super::commands::{
-    self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
+    self, add_group, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
     apply_boot_cluster, apply_boot_node, apply_configuration, apply_ephemeral_env,
     apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
     config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
+    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
     get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
@@ -404,7 +404,46 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
-            if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
+            if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let label = cli_add_group
+                    .get_one::<String>("label")
+                    .expect("ERROR - 'label' argument is mandatory");
+
+                let xname_vec_opt: Option<Vec<&str>> = cli_add_group
+                    .get_one::<String>("xnames")
+                    .map(|xname_string| xname_string.split(",").map(|value| value).collect());
+
+                /* // Validate user has access to the list of xnames requested
+                if let Some(xname_vec) = &xname_vec_opt {
+                    validate_target_hsm_members(
+                        &shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                    )
+                    .await;
+                }
+
+                // Create Group instance for http payload
+                let group = HsmGroup::new(label, xname_vec_opt);
+
+                // Call backend to create group
+                let result = backend.add_hsm_group(&shasta_token, group).await; */
+
+                add_group::exec(
+                    backend,
+                    &shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    label,
+                    xname_vec_opt,
+                )
+                .await;
+            } else if let Some(cli_add_hw_configuration) =
+                cli_add.subcommand_matches("hw-component")
+            {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
                     shasta_root_cert,
@@ -504,6 +543,15 @@ pub async fn process_cli(
                     .unwrap(); // clap should validate the argument
 
                 let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
+
+                // Validate user has access to the list of xnames requested
+                validate_target_hsm_members(
+                    &shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                )
+                .await;
 
                 let result = add_kernel_parameters::command::exec(
                     backend,
@@ -1689,13 +1737,6 @@ pub async fn process_cli(
                 } else if let Some(cli_migrate_vcluster_restore) =
                     cli_migrate.subcommand_matches("restore")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let bos_file = cli_migrate_vcluster_restore.get_one::<String>("bos-file");
@@ -1721,15 +1762,25 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
-            if let Some(cli_delete_hw_configuration) = cli_delete.subcommand_matches("hw-component")
-            {
-                /* let shasta_token = &authentication::get_api_token(
+            if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let label = cli_delete_group
+                    .get_one::<String>("label")
+                    .expect("ERROR - 'label' argument is mandatory")
+                    .clone();
+
+                delete_group::exec(
+                    backend,
+                    &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
+                    &label,
                 )
-                .await?; */
+                .await;
+            } else if let Some(cli_delete_hw_configuration) =
+                cli_delete.subcommand_matches("hw-component")
+            {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let nodryrun = *cli_delete_hw_configuration
@@ -1818,6 +1869,15 @@ pub async fn process_cli(
                         .map(|value| value.to_string())
                         .collect()
                 };
+
+                // Validate user has access to the list of xnames requested
+                validate_target_hsm_members(
+                    &shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                )
+                .await;
 
                 let kernel_parameters = cli_delete_kernel_parameters
                     .get_one::<String>("VALUE")
@@ -2155,8 +2215,9 @@ pub async fn get_target_hsm_name_group_vec(
 }
 
 /// Returns a list of HSM groups the user is expected to work with.
-/// This method will exit if the user is asking for HSM group not allowed
-/// If the user did not requested any HSM group, then it will return all HSM
+/// This function validates the list of HSM groups and returns an error if user tries to access a
+/// HSM group he does not have access to
+/// If the user did not request any HSM group, then it will return all HSM
 /// groups he has access to
 // FIXME: migrate all calls to 'get_target_hsm_group_vec_or_all' to 'get_target_hsm_group_vec_or_all_2' or to StaticBackendDispatcher.'get_hsm_name_available'
 pub async fn get_target_hsm_group_vec_or_all_2(
