@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.17] - 2025-01-02
+
+### Features
+
+- Get group details
+
 ## [1.54.1-beta.16] - 2025-01-02
 
 ### Features
 
 - Add commands to add and delete a group
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.16
 
 ## [1.54.1-beta.15] - 2024-12-31
 
