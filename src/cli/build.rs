@@ -170,13 +170,30 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
         )
 }
 
+pub fn subcommand_get_group() -> Command {
+    Command::new("group")
+        .visible_aliases(["g"])
+        .arg_required_else_help(true)
+        .about("Get group details")
+        .arg(arg!(<VALUE> "Group name").required(true))
+        .arg(
+            arg!(-o --output <VALUE> "Output format")
+                .value_parser(["json", "table"])
+                .default_value("table"),
+        )
+}
+
 pub fn subcommand_get_hw_components() -> Command {
     let command_get_hs_configuration_cluster = Command::new("cluster")
-                .visible_aliases(["c", "clstr"])
-                .arg_required_else_help(true)
-                .about("Get hw components for a cluster")
-                .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
-                .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json", "summary", "details"]).default_value("summary"));
+        .visible_aliases(["c", "clstr"])
+        .arg_required_else_help(true)
+        .about("Get hw components for a cluster")
+        .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
+        .arg(
+            arg!(-o --output <FORMAT> "Output format")
+                .value_parser(["json", "summary", "details"])
+                .default_value("summary"),
+        );
 
     let command_get_hs_configuration_node = Command::new("node")
                 .visible_alias("n")
@@ -310,11 +327,11 @@ pub fn subcommand_get() -> Command {
         .visible_alias("g")
         .arg_required_else_help(true)
         .about("Get information from CSM system")
+        .subcommand(subcommand_get_group())
         .subcommand(subcommand_get_hw_components())
         .subcommand(subcommand_get_cfs_session())
         .subcommand(subcommand_get_cfs_configuration())
         .subcommand(subcommand_get_bos_template())
-        // .subcommand(subcommand_get_node())
         .subcommand(subcommand_get_cluster_details())
         .subcommand(subcommand_get_node_details())
         .subcommand(subcommand_get_hsm_groups_details())

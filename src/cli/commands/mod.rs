@@ -29,6 +29,7 @@ pub mod delete_kernel_parameters;
 pub mod delete_sessions;
 pub mod get_cluster;
 pub mod get_configuration;
+pub mod get_group;
 pub mod get_hsm;
 pub mod get_hw_configuration_cluster;
 pub mod get_hw_configuration_node;

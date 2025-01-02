@@ -570,7 +570,35 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
-            if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hw-component") {
+            if let Some(cli_get_group) = cli_get.subcommand_matches("group") {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let group_name_arg_opt = cli_get_group.get_one::<String>("VALUE");
+
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all_2(
+                    &backend,
+                    &shasta_token,
+                    group_name_arg_opt,
+                    settings_hsm_group_name_opt,
+                )
+                .await?;
+
+                let output = cli_get_group
+                    .get_one::<String>("output")
+                    .expect("ERROR - 'output' argument is mandatory");
+
+                commands::get_group::exec(
+                    &backend,
+                    &shasta_token,
+                    /* shasta_base_url,
+                    shasta_root_cert, */
+                    target_hsm_group_vec.first().unwrap(),
+                    output,
+                )
+                .await;
+            } else if let Some(cli_get_hw_configuration) =
+                cli_get.subcommand_matches("hw-component")
+            {
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {
@@ -801,14 +829,13 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_target_hsm_group_vec_or_all_2(
+                    &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
-                .await;
+                .await?;
 
                 get_cluster::exec(
                     &shasta_token,
