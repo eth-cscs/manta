@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.18] - 2025-01-03
+
+### Refactor
+
+- Improve function to validate groups the user has access to
+- Clean code
+
 ## [1.54.1-beta.17] - 2025-01-02
 
 ### Features
 
 - Get group details
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.17
 
 ## [1.54.1-beta.16] - 2025-01-02
 
