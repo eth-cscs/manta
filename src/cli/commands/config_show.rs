@@ -11,39 +11,11 @@ pub async fn exec(
     settings: &Config,
 ) {
     // Read configuration file
-    // let settings = config_ops::get_configuration();
-
-    /* let shasta_base_url = settings.get_string("shasta_base_url").unwrap();
-    let vault_base_url = settings.get_string("vault_base_url").unwrap();
-    let vault_role_id = settings.get_string("vault_role_id").unwrap();
-    let vault_secret_path = settings.get_string("vault_secret_path").unwrap();
-    let gitea_base_url = settings.get_string("gitea_base_url").unwrap();
-    let keycloak_base_url = settings.get_string("keycloak_base_url").unwrap();
-    let k8s_api_url = settings.get_string("k8s_api_url").unwrap();
-    let log_level = settings.get_string("log").unwrap_or("error".to_string()); */
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
     let settings_hsm_group = settings.get_string("hsm_group").unwrap_or("".to_string());
     let settings_parent_hsm_group = settings
         .get_string("parent_hsm_group")
         .unwrap_or("".to_string());
-    // let settings_hsm_group_available_value_rslt = settings.get_array("hsm_available");
-
-    /* let mut realm_access_role_vec = jwt_ops::get_claims_from_jwt_token(&shasta_token)
-        .unwrap()
-        .pointer("/realm_access/roles")
-        .unwrap()
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .iter()
-        .map(|role_value| role_value.as_str().unwrap().to_string())
-        .collect::<Vec<String>>();
-
-    realm_access_role_vec
-        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
-
-    // println!("JWT token resour_access:\n{:?}", realm_access_role_vec);
-
-    let settings_hsm_available_vec = realm_access_role_vec; */
 
     let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
 
@@ -53,19 +25,9 @@ pub async fn exec(
 
     let site_name = settings.get_string("site").unwrap();
 
-    // let site = site_table.get(&site_name);
-
     // println!("\n\nsite:\n{:#?}", site);
 
     // Print configuration file content to stdout
-    /* println!("Shasta base URL: {}", shasta_base_url);
-    println!("Vault base URL: {}", vault_base_url);
-    println!("Vault role: {}", vault_role_id);
-    println!("Vault secret path: {}", vault_secret_path);
-    println!("Gitea base URL: {}", gitea_base_url);
-    println!("Keycloak base URL: {}", keycloak_base_url);
-    println!("Kubernetes api URL: {}", k8s_api_url);
-    println!("Log: {}", log_level); */
     println!("Log level: {}", log_level);
     println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
     println!("Current site: {}", site_name);
@@ -73,17 +35,6 @@ pub async fn exec(
     println!("Current HSM: {}", settings_hsm_group);
     println!("Parent HSM: {}", settings_parent_hsm_group);
 }
-
-/* #[deprecated(
-    since = "v1.54-beta.5",
-    note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead"
-)]
-pub async fn get_hsm_name_available_from_jwt_or_all_2(
-    backend: &StaticBackendDispatcher,
-    auth_token: &str,
-) -> Result<Vec<String>, Error> {
-    backend.get_hsm_name_available(auth_token).await
-} */
 
 #[deprecated(
     since = "v1.54-beta.5",
@@ -122,6 +73,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     }
 }
 
+#[deprecated(note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead")]
 pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
     let mut realm_access_role_vec =
         mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());

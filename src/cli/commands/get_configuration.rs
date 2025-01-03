@@ -10,10 +10,7 @@ use mesa::{
 };
 use serde_json::Value;
 
-use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
-    common::cfs_configuration_utils::print_table_struct,
-};
+use crate::common::cfs_configuration_utils::print_table_struct;
 
 pub async fn exec(
     gitea_base_url: &str,
