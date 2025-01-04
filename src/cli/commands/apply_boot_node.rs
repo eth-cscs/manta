@@ -31,10 +31,6 @@ pub async fn exec(
     // Check user has provided valid XNAMES
     let target_hsm_group_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
 
-    /* let target_hsm_group_vec =
-    get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await; */
-
     if !validate_xnames_format_and_membership_agaisnt_multiple_hsm(
         shasta_token,
         shasta_base_url,
@@ -66,32 +62,6 @@ pub async fn exec(
         );
         std::process::exit(1);
     }
-
-    /* let backup_config_rslt = mesa::config::Config::new(
-        &shasta_base_url.to_string(),
-        Some(&shasta_token.to_string()),
-        &shasta_root_cert.to_vec(),
-        "csm", // FIXME: do not hardcode this value and move it to config file
-    )
-    .await;
-
-    let backup_config = match backup_config_rslt {
-        Ok(backup_config) => backup_config,
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    };
-
-    let mut current_node_boot_param_vec: Vec<BootParameters> = backup_config
-        .get_bootparameters(
-            &xname_vec
-                .iter()
-                .map(|xname| xname.to_string())
-                .collect::<Vec<String>>(),
-        )
-        .await
-        .unwrap(); */
 
     // Get current node boot params
     let mut current_node_boot_param_vec: Vec<BootParameters> = bss::http_client::get(
@@ -227,7 +197,7 @@ pub async fn exec(
         if need_restart {
             if Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt(format!(
-                    "This operation will reboot the nodes below:\n{:?}\nDo you want to continue?",
+                    "This operation will modify the nodes below:\n{:?}\nDo you want to continue?",
                     xname_vec
                 ))
                 .interact()

@@ -25,13 +25,15 @@ pub async fn exec(
 
     hsm_groups_node_list.sort();
 
-    let node_details_list = mesa::node::utils::get_node_details(
+    let mut node_details_list = mesa::node::utils::get_node_details(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         hsm_groups_node_list,
     )
     .await;
+
+    node_details_list.sort_by_key(|node_details| node_details.xname.clone());
 
     if status {
         let status_output = if node_details_list.iter().any(|node_details| {
