@@ -2,7 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.19] - 2025-01-04
+
+### Features
+
+- Migrate hsm authorization/valiation function calls from mesa to backend dispatcher
+- Migrate function call to get the list of members of a hsm group from mesa to backend dispatcher
+- Move authorization code to a dedicated module
+
 ## [1.54.1-beta.18] - 2025-01-03
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.18
 
 ### Refactor
 
