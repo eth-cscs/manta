@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.21] - 2025-01-04
+
+### Bug Fixes
+
+- Power reset cluster cli command missing output argument
+
 ## [1.54.1-beta.20] - 2025-01-04
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update mesa version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.20
 
 ## [1.54.1-beta.19] - 2025-01-04
 
