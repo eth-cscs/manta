@@ -23,7 +23,9 @@ use serde_json::Map;
 use serde_yaml::{Mapping, Value};
 use uuid::Uuid;
 
-use crate::cli::process::validate_target_hsm_members;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
+};
 
 use self::sessiontemplate::SessionTemplate;
 
@@ -1974,6 +1976,7 @@ pub async fn validate_sat_file_session_template_section(
 }
 
 pub async fn process_session_template_section_in_sat_file(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -2253,9 +2256,10 @@ pub async fn process_session_template_section_in_sat_file(
             // Validate user has access to the list of nodes in BOS sessiontemplate
             if let Some(node_list) = &node_list_opt {
                 validate_target_hsm_members(
+                    &backend,
                     shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
+                    /* shasta_base_url,
+                    shasta_root_cert, */
                     node_list.iter().map(|node| node.to_string()).collect(),
                 )
                 .await;

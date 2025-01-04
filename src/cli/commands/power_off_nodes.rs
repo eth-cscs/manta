@@ -6,7 +6,7 @@ use mesa::{common::jwt_ops, error::Error, pcs};
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
-    backend: StaticBackendDispatcher,
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -20,6 +20,7 @@ pub async fn exec(
     //
     let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
         common::node_ops::get_curated_hsm_group_from_hostregex(
+            &backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -32,6 +33,7 @@ pub async fn exec(
         // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
         // hostlist have been removed
         common::node_ops::get_curated_hsm_group_from_hostlist(
+            backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

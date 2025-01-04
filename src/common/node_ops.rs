@@ -6,10 +6,7 @@ use hostlist_parser::parse;
 use mesa::{bss::r#struct::BootParameters, hsm, node::r#struct::NodeDetails};
 use regex::Regex;
 
-use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
-    cli::commands::config_show::get_hsm_name_available_from_jwt_or_all,
-};
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Get list of xnames user has access to based on input regex.
 /// This method will:
@@ -17,6 +14,7 @@ use crate::{
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
 pub async fn get_curated_hsm_group_from_hostregex(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -30,9 +28,10 @@ pub async fn get_curated_hsm_group_from_hostregex(
         .map(|regex_str| Regex::new(regex_str.trim()).expect("ERROR - regex not valid"))
         .collect();
 
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let hsm_name_available_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    /* let hsm_name_available_vec =
+    get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await; */
 
     // Get HSM group user has access to
     let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
@@ -71,8 +70,6 @@ pub async fn get_curated_hsm_group_from_hostregex(
 pub async fn get_curated_hsm_group_from_hostlist_backend(
     backend: &StaticBackendDispatcher,
     auth_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     xname_requested_hostlist: &str,
 ) -> HashMap<String, Vec<String>> {
     // Create a summary of HSM groups and the list of members filtered by the list of nodes the
@@ -143,6 +140,7 @@ pub async fn get_curated_hsm_group_from_hostlist_backend(
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
 pub async fn get_curated_hsm_group_from_hostlist(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -184,9 +182,10 @@ pub async fn get_curated_hsm_group_from_hostlist(
             .await
             .expect("Error - fetching HSM groups"); */
 
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let hsm_name_available_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    /* let hsm_name_available_vec =
+    get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await; */
 
     // Get HSM group user has access to
     let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(

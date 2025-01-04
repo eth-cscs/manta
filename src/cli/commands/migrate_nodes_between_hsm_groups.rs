@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use mesa::hsm;
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -20,6 +23,7 @@ pub async fn exec(
     // hostlist have been removed
     let mut hsm_group_summary: HashMap<String, Vec<String>> =
         crate::common::node_ops::get_curated_hsm_group_from_hostlist(
+            backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

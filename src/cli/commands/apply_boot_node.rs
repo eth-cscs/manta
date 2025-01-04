@@ -3,6 +3,7 @@ use crate::{
     common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
 
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, r#struct::BootParameters},
@@ -10,10 +11,8 @@ use mesa::{
     node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
 };
 
-use super::config_show::get_hsm_name_available_from_jwt_or_all;
-
 pub async fn exec(
-    backend: StaticBackendDispatcher,
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -24,16 +23,17 @@ pub async fn exec(
     xname_vec: Vec<&str>,
     assume_yes: bool,
     dry_run: bool,
-    site_name: &str,
 ) {
     let mut need_restart = false;
 
     // Validate
     //
     // Check user has provided valid XNAMES
-    let target_hsm_group_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let target_hsm_group_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+
+    /* let target_hsm_group_vec =
+    get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await; */
 
     if !validate_xnames_format_and_membership_agaisnt_multiple_hsm(
         shasta_token,

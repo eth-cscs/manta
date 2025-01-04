@@ -6,8 +6,6 @@ use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     xname_vec: Vec<String>,
     filter: Option<&String>,
     output: &str,

@@ -1,25 +1,35 @@
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{error::Error, hsm, pcs};
+use mesa::{error::Error, pcs};
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
-    backend: StaticBackendDispatcher,
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_arg_opt: &str,
+    hsm_group_name_arg: &str,
     force: bool,
     assume_yes: bool,
     output: &str,
 ) {
-    let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = backend
+        .get_member_vec_from_hsm_name_vec(
+            shasta_token,
+            /* shasta_base_url,
+            shasta_root_cert, */
+            vec![hsm_group_name_arg.to_string()],
+        )
+        .await
+        .unwrap();
+    /* let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         hsm_group_name_arg_opt,
     )
-    .await;
+    .await; */
 
     if !assume_yes {
         if Confirm::with_theme(&ColorfulTheme::default())
@@ -70,5 +80,5 @@ pub async fn exec(
     let username = mesa::common::jwt_ops::get_preferred_username(shasta_token)
         .expect("ERROR - claim 'preferred_uername' not found in JWT token");
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg_opt);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg);
 }

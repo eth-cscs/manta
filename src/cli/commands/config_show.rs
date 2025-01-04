@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
+use backend_dispatcher::contracts::BackendTrait;
 use config::{Config, Value};
-use mesa::hsm;
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    _shasta_base_url: &str,
-    _shasta_root_cert: &[u8],
+    /* _shasta_base_url: &str,
+    _shasta_root_cert: &[u8], */
     settings: &Config,
 ) {
     // Read configuration file
@@ -17,7 +20,9 @@ pub async fn exec(
         .get_string("parent_hsm_group")
         .unwrap_or("".to_string());
 
-    let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
+    // let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
+    let hsm_group_available: Vec<String> =
+        backend.get_hsm_name_available(shasta_token).await.unwrap();
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 
@@ -36,7 +41,7 @@ pub async fn exec(
     println!("Parent HSM: {}", settings_parent_hsm_group);
 }
 
-#[deprecated(
+/* #[deprecated(
     since = "v1.54-beta.5",
     note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead"
 )]
@@ -71,9 +76,9 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
 
         all_hsm_groups
     }
-}
+} */
 
-#[deprecated(note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead")]
+/* #[deprecated(note = "use method 'StaticBackendDispatcher.get_hsm_name_available' instead")]
 pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
     let mut realm_access_role_vec =
         mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
@@ -93,4 +98,4 @@ pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> 
 
     realm_access_role_vec.sort();
     realm_access_role_vec
-}
+} */

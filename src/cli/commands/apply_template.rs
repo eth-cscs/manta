@@ -1,8 +1,11 @@
 use mesa::{bos, hsm, node};
 
-use crate::cli::process::validate_target_hsm_members;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
+};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -72,9 +75,10 @@ pub async fn exec(
     };
 
     let _ = validate_target_hsm_members(
+        &backend,
         shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
+        /* shasta_base_url,
+        shasta_root_cert, */
         target_xname_vec.clone(),
     )
     .await;
@@ -119,9 +123,10 @@ pub async fn exec(
         log::info!("Validate list of xnames translated from 'limit argument'");
 
         let _ = validate_target_hsm_members(
+            &backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
+            /* shasta_base_url,
+            shasta_root_cert, */
             xnames_to_validate_access_vec,
         )
         .await;

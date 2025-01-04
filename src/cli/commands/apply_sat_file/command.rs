@@ -13,9 +13,13 @@ use mesa::{
 use serde_yaml::Value;
 use termion::color;
 
-use crate::cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils},
+};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -368,6 +372,7 @@ pub async fn exec(
     //
     if image_only == false {
         utils::process_session_template_section_in_sat_file(
+            &backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

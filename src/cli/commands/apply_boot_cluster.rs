@@ -16,7 +16,6 @@ pub async fn exec(
     hsm_group_name: &String,
     assume_yes: bool,
     dry_run: bool,
-    site_name: &str,
 ) {
     let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
@@ -27,7 +26,7 @@ pub async fn exec(
     .await;
 
     apply_boot_node::exec(
-        backend,
+        &backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -38,7 +37,6 @@ pub async fn exec(
         xname_vec.iter().map(|xname| xname.as_str()).collect(),
         assume_yes,
         dry_run,
-        site_name,
     )
     .await;
 }

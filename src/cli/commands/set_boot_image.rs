@@ -10,7 +10,6 @@ use crate::backend_dispatcher::StaticBackendDispatcher;
 /// to keep CSM data as a true source of truth
 pub async fn exec(
     backend: StaticBackendDispatcher,
-    site_name: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],

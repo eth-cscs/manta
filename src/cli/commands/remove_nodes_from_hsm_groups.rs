@@ -3,8 +3,11 @@ use std::collections::HashMap;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::hsm;
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -17,6 +20,7 @@ pub async fn exec(
     //
     let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
         crate::common::node_ops::get_curated_hsm_group_from_hostregex(
+            &backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -29,6 +33,7 @@ pub async fn exec(
         // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
         // hostlist have been removed
         crate::common::node_ops::get_curated_hsm_group_from_hostlist(
+            backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
