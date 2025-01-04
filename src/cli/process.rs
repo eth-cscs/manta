@@ -254,6 +254,7 @@ pub async fn process_cli(
                     let force = cli_power_off_cluster
                         .get_one::<bool>("force")
                         .expect("The 'force' argument must have a value");
+
                     let output: &str = cli_power_off_cluster.get_one::<String>("output").unwrap();
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -700,7 +701,7 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                // FIXME: gitea auth token should be calculated before colling this function
+                // FIXME: gitea auth token should be calculated before calling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                     vault_base_url,
                     vault_secrets_path,

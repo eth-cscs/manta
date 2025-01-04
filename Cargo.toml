@@ -45,7 +45,7 @@ tokio-util = "0.7.4" # used by manta_console to create a read stream from contai
 kube = { version = "0.87.2", default-features = false }
 k8s-openapi = "0.20.0"
 futures = { version = "0.3.28", default-features = false }
-clap = "4.3.21"
+clap = { version = "4.3.21", features = ["wrap_help"] }
 clap_complete = "4.3.2"
 git2 = { version = "0.18.1", default-features = false }
 dialoguer = { version = "0.11.0", default-features = false }

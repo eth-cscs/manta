@@ -218,7 +218,7 @@ pub async fn exec(
         log::info!("Boot image not defined. No need to reboot."); */
     }
 
-    log::info!(
+    log::debug!(
         "boot params to update vec:\n{:#?}",
         current_node_boot_param_vec
     );
