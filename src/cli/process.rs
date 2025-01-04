@@ -86,6 +86,7 @@ pub async fn process_cli(
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 config_set_hsm::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -106,6 +107,7 @@ pub async fn process_cli(
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 config_set_parent_hsm::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -143,7 +145,7 @@ pub async fn process_cli(
                 )
                 .await?;
 
-                config_unset_parent_hsm::exec(shasta_token).await;
+                config_unset_parent_hsm::exec(&backend, shasta_token).await;
             }
             if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth") {
                 config_unset_auth::exec().await;

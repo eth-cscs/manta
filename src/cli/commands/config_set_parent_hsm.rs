@@ -1,10 +1,14 @@
 use std::{fs, io::Write, path::PathBuf};
 
+use backend_dispatcher::contracts::BackendTrait;
 use directories::ProjectDirs;
 use mesa::hsm;
 use toml_edit::{value, Document};
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -36,8 +40,12 @@ pub async fn exec(
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec =
-        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+    let mut settings_hsm_available_vec = backend
+        .get_hsm_name_available(shasta_token)
+        .await
+        .unwrap_or(Vec::new());
+    /* let mut settings_hsm_available_vec =
+    mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new()); */
 
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));

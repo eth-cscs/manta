@@ -1,10 +1,12 @@
 use std::{fs, io::Write, path::PathBuf};
 
+use backend_dispatcher::contracts::BackendTrait;
 use directories::ProjectDirs;
-use mesa::common::jwt_ops;
 use toml_edit::Document;
 
-pub async fn exec(shasta_token: &str) {
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
+pub async fn exec(backend: &StaticBackendDispatcher, shasta_token: &str) {
     // Read configuration file
 
     // XDG Base Directory Specification
@@ -30,8 +32,12 @@ pub async fn exec(shasta_token: &str) {
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec =
-        jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+    let mut settings_hsm_available_vec = backend
+        .get_hsm_name_available(shasta_token)
+        .await
+        .unwrap_or(Vec::new());
+    /* let mut settings_hsm_available_vec =
+    jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new()); */
 
     /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
     .unwrap()
