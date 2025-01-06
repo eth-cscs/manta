@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.22] - 2025-01-06
+
+### Features
+
+- Migrate hsm functions to backend dispatcher
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.21] - 2025-01-04
 
 ### Bug Fixes
 
 - Power reset cluster cli command missing output argument
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.21
 
 ## [1.54.1-beta.20] - 2025-01-04
 
