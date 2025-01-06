@@ -29,6 +29,7 @@ pub async fn exec(
         backend
             .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
             .await
+            .unwrap()
         /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,

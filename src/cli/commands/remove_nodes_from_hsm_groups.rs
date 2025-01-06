@@ -85,17 +85,12 @@ pub async fn exec(
     }
 
     // Remove xnames from HSM group
-    let node_migration_rslt = backend
-        .delete_member_from_group(
-            shasta_token,
-            &target_hsm_name,
-            xname_to_move_vec
-                .iter()
-                .map(|xname| xname.as_str())
-                .collect(),
-        )
-        .await
-        .unwrap();
+    for xname in xname_to_move_vec {
+        let _ = backend
+            .delete_member_from_group(shasta_token, &target_hsm_name, xname)
+            .await
+            .unwrap();
+    }
     /* let node_migration_rslt = hsm::group::utils::remove_hsm_members(
         shasta_token,
         shasta_base_url,
@@ -107,7 +102,7 @@ pub async fn exec(
             .collect(),
         dryrun,
     )
-    .await; */
+    .await;
 
     match node_migration_rslt {
         Ok(mut target_hsm_group_member_vec) => {
@@ -118,5 +113,5 @@ pub async fn exec(
             );
         }
         Err(e) => eprintln!("{}", e),
-    }
+    } */
 }
