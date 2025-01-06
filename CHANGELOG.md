@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.23] - 2025-01-06
+
+### Bug Fixes
+
+- Fix type conversion and xname deletion
+
 ## [1.54.1-beta.22] - 2025-01-06
 
 ### Features
 
 - Migrate hsm functions to backend dispatcher
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.22
 
 ### Refactor
 
