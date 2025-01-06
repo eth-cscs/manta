@@ -4,7 +4,6 @@ use std::{io::IsTerminal, path::PathBuf};
 use clap::ArgMatches;
 use config::Config;
 use k8s_openapi::chrono;
-use mesa::{common::authentication, hsm};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
@@ -137,15 +136,23 @@ pub async fn process_cli(
             if let Some(_cli_config_unset_parent_hsm) =
                 cli_config_unset.subcommand_matches("parent-hsm")
             {
-                let shasta_token = &authentication::get_api_token(
+                let shasta_token = backend
+                    .get_api_token(
+                        /* shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url, */
+                        &site_name,
+                    )
+                    .await?;
+                /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
                     &site_name,
                 )
-                .await?;
+                .await?; */
 
-                config_unset_parent_hsm::exec(&backend, shasta_token).await;
+                config_unset_parent_hsm::exec(&backend, &shasta_token).await;
             }
             if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth") {
                 config_unset_auth::exec().await;
@@ -506,6 +513,7 @@ pub async fn process_cli(
                     .unwrap_or(&false);
 
                 add_hw_component_cluster::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -573,7 +581,7 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let result = add_kernel_parameters::command::exec(
+                let result = add_kernel_parameters::exec(
                     backend,
                     &shasta_token,
                     shasta_base_url,
@@ -645,6 +653,7 @@ pub async fn process_cli(
                     .await?;
 
                     commands::get_hw_configuration_cluster::exec(
+                        backend,
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -815,13 +824,21 @@ pub async fn process_cli(
                 )
                 .await?;
 
-                let hsm_member_vec = hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                let hsm_member_vec = backend
+                    .get_member_vec_from_hsm_name_vec(
+                        &shasta_token,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
+                        target_hsm_group_vec.clone(),
+                    )
+                    .await?;
+                /* let hsm_member_vec = hsm::group::utils::get_member_vec_from_hsm_name_vec(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     target_hsm_group_vec.clone(),
                 )
-                .await;
+                .await; */
 
                 let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
                     Some(limit)
@@ -863,6 +880,7 @@ pub async fn process_cli(
                 .await?;
 
                 get_cluster::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1099,6 +1117,7 @@ pub async fn process_cli(
 
                     if *is_unpin {
                         apply_hw_cluster_unpin::command::exec(
+                            &backend,
                             &shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -1112,6 +1131,7 @@ pub async fn process_cli(
                         .await;
                     } else {
                         apply_hw_cluster_pin::command::exec(
+                            &backend,
                             &shasta_token,
                             shasta_base_url,
                             shasta_root_cert,
@@ -1576,7 +1596,7 @@ pub async fn process_cli(
                         .expect("ERROR - Could not find valid HSM group name");
 
                     apply_boot_cluster::exec(
-                        backend,
+                        &backend,
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1706,13 +1726,21 @@ pub async fn process_cli(
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
             if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
-                let shasta_token = &authentication::get_api_token(
+                let shasta_token = backend
+                    .get_api_token(
+                        /* shasta_base_url,
+                        shasta_root_cert,
+                        keycloak_base_url, */
+                        &site_name,
+                    )
+                    .await?;
+                /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
                     shasta_root_cert,
                     keycloak_base_url,
                     &site_name,
                 )
-                .await?;
+                .await?; */
 
                 let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
 
@@ -1726,7 +1754,7 @@ pub async fn process_cli(
                 // Get target hsm group from either cli arguments or config and validate
                 let from_rslt = get_target_hsm_group_vec_or_all(
                     &backend,
-                    shasta_token,
+                    &shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
                     from_opt,
@@ -1753,7 +1781,7 @@ pub async fn process_cli(
                 // Validate 'to' hsm groups
                 let to_rslt = get_target_hsm_group_vec_or_all(
                     &backend,
-                    shasta_token,
+                    &shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
                     Some(to),
@@ -1780,7 +1808,7 @@ pub async fn process_cli(
                 // Migrate nodes
                 migrate_nodes_between_hsm_groups::exec(
                     &backend,
-                    shasta_token,
+                    &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     to,
@@ -1807,6 +1835,7 @@ pub async fn process_cli(
                     let prehook = cli_migrate_vcluster_backup.get_one::<String>("pre-hook");
                     let posthook = cli_migrate_vcluster_backup.get_one::<String>("post-hook");
                     migrate_backup::exec(
+                        &backend,
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1852,14 +1881,7 @@ pub async fn process_cli(
                     .expect("ERROR - 'label' argument is mandatory")
                     .clone();
 
-                delete_group::exec(
-                    backend,
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &label,
-                )
-                .await;
+                delete_group::exec(&backend, &shasta_token, &label).await;
             } else if let Some(cli_delete_hw_configuration) =
                 cli_delete.subcommand_matches("hw-component")
             {
@@ -1903,6 +1925,7 @@ pub async fn process_cli(
                 .await?;
 
                 delete_hw_component_cluster::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2014,6 +2037,7 @@ pub async fn process_cli(
                     .expect("'dry-run' argument must be provided");
 
                 delete_sessions::command::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2093,6 +2117,7 @@ pub async fn process_cli(
                 }
 
                 delete_data_related_cfs_configuration(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

@@ -1,16 +1,21 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
-    calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
-    get_hsm_node_hw_component_counter,
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    cli::commands::apply_hw_cluster_pin::command::utils::{
+        calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
+        get_hsm_node_hw_component_counter,
+    },
 };
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -20,14 +25,18 @@ pub async fn exec(
     nodryrun: bool,
     delete_hsm_group: bool,
 ) {
-    match hsm::group::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&target_hsm_group_name.to_string()),
-    )
-    .await
+    match backend
+        .get_hsm_group(shasta_token, target_hsm_group_name)
+        .await
     {
+        /* match hsm::group::http_client::get(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(&target_hsm_group_name.to_string()),
+        )
+        .await
+        { */
         Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
         Err(_) => {
             log::error!(
@@ -85,14 +94,17 @@ pub async fn exec(
     // PREPREQUISITES - GET DATA - TARGET HSM
 
     // Get target HSM group members
-    let target_hsm_group_member_vec: Vec<String> =
-        hsm::group::utils::get_member_vec_from_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            target_hsm_group_name,
-        )
-        .await;
+    let target_hsm_group_member_vec: Vec<String> = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
+        .await
+        .unwrap();
+    /* hsm::group::utils::get_member_vec_from_hsm_group_name(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        target_hsm_group_name,
+    )
+    .await; */
 
     // Get HSM hw component counters for target HSM
     let mut target_hsm_node_hw_component_count_vec = get_hsm_hw_node_component_counter(
@@ -111,14 +123,18 @@ pub async fn exec(
         );
         if nodryrun && delete_hsm_group {
             log::info!("The option to delete empty groups has been selected, removing it.");
-            match hsm::group::http_client::delete_hsm_group(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &target_hsm_group_name.to_string(),
-            )
-            .await
+            match backend
+                .delete_hsm_group(shasta_token, &target_hsm_group_name.to_string())
+                .await
             {
+                /* match hsm::group::http_client::delete_hsm_group(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &target_hsm_group_name.to_string(),
+                )
+                .await
+                { */
                 Ok(_) => {
                     log::info!("HSM group removed successfully, we are done with this action.");
                     return;
@@ -151,14 +167,17 @@ pub async fn exec(
     // PREPREQUISITES - GET DATA - PARENT HSM
 
     // Get target HSM group members
-    let parent_hsm_group_member_vec: Vec<String> =
-        hsm::group::utils::get_member_vec_from_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            parent_hsm_group_name,
-        )
-        .await;
+    let parent_hsm_group_member_vec: Vec<String> = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
+        .await
+        .unwrap();
+    /* hsm::group::utils::get_member_vec_from_hsm_group_name(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        parent_hsm_group_name,
+    )
+    .await; */
 
     // Get HSM hw component counters for parent HSM
     let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
@@ -310,32 +329,32 @@ pub async fn exec(
         for xname in nodes_moved_from_target_hsm {
             // TODO: This is creating a new client per xname, look whether this can be improved reusing the client.
 
-            let _ = hsm::group::http_client::delete_member(
+            let _ = backend
+                .delete_member_from_group(shasta_token, target_hsm_group_name, xname.as_str())
+                .await;
+            /* let _ = hsm::group::http_client::delete_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 target_hsm_group_name,
                 xname.as_str(),
             )
-            .await;
+            .await; */
 
-            let _ = hsm::group::http_client::post_member(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                parent_hsm_group_name,
-                xname.as_str(),
-            )
-            .await;
+            let _ = backend
+                .add_members_to_group(shasta_token, parent_hsm_group_name, vec![xname.as_str()])
+                .await;
         }
         if target_group_will_be_empty {
             if delete_hsm_group {
                 log::info!("HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",target_hsm_group_name);
-                match hsm::group::http_client::delete_hsm_group(shasta_token,
+                match backend.delete_hsm_group(shasta_token,
+                                            &target_hsm_group_name.to_string()).await {
+                /* match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
                                                                       shasta_root_cert,
                                                                       &target_hsm_group_name.to_string())
-                    .await {
+                    .await { */
                     Ok(_) => log::info!("HSM group removed successfully."),
                     Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
                 };

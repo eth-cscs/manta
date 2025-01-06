@@ -57,6 +57,8 @@ pub async fn exec(
         std::process::exit(0);
     }
 
+    // FIXME: read this "validate_config_hsm_group_and_hsm_group_accessed" function and fix this
+    // because we don't want calls directly to backend methods inside the client
     // Check HSM group in configurarion file can access CFS session
     hsm::group::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,

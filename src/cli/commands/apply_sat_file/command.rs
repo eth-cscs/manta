@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::{
@@ -8,7 +9,7 @@ use mesa::{
     },
     common::kubernetes,
     error::Error,
-    hsm, ims,
+    ims,
 };
 use serde_yaml::Value;
 use termion::color;
@@ -249,6 +250,7 @@ pub async fn exec(
                 // When applying a SAT file, I'm assuming the user doesn't want to create new HSM groups or delete empty parent hsm groups
                 // But this could be changed.
                 apply_hw_cluster_pin::command::exec(
+                    &backend,
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -264,14 +266,20 @@ pub async fn exec(
                 .get("nodespattern")
                 .and_then(|pattern_value| pattern_value.as_str())
             {
-                let hsm_group_members_vec: Vec<String> =
-                    hsm::group::utils::get_member_vec_from_hsm_group_name(
+                let hsm_group_members_vec: Vec<String> = backend
+                    .get_member_vec_from_hsm_name_vec(
                         shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        target_hsm_group_name,
+                        vec![target_hsm_group_name.to_string()],
                     )
-                    .await;
+                    .await
+                    .unwrap();
+                /* hsm::group::utils::get_member_vec_from_hsm_group_name(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                )
+                .await; */
                 let new_target_hsm_group_members_vec: Vec<String> = nodes
                     .split(',')
                     .filter(|node| !hsm_group_members_vec.contains(&node.to_string()))
@@ -284,7 +292,15 @@ pub async fn exec(
                     target_hsm_group_name,
                 );
 
-                let _ = hsm::group::utils::update_hsm_group_members(
+                let _ = backend
+                    .update_group_members(
+                        shasta_token,
+                        target_hsm_group_name,
+                        &hsm_group_members_vec,
+                        &new_target_hsm_group_members_vec,
+                    )
+                    .await;
+                /* let _ = hsm::group::utils::update_hsm_group_members(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -292,7 +308,7 @@ pub async fn exec(
                     &hsm_group_members_vec,
                     &new_target_hsm_group_members_vec,
                 )
-                .await;
+                .await; */
             }
         }
     }

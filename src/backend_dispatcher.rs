@@ -83,6 +83,104 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn post_members(
+        &self,
+        auth_token: &str,
+        group_label: &str,
+        xnames: &[&str],
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => b.post_members(auth_token, group_label, xnames).await,
+            OCHAMI(b) => b.post_members(auth_token, group_label, xnames).await,
+        }
+    }
+
+    async fn add_members_to_group(
+        &self,
+        auth_token: &str,
+        group_label: &str,
+        xnames: Vec<&str>,
+    ) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => {
+                b.add_members_to_group(auth_token, group_label, xnames)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.add_members_to_group(auth_token, group_label, xnames)
+                    .await
+            }
+        }
+    }
+
+    async fn delete_member_from_group(
+        &self,
+        auth_token: &str,
+        group_label: &str,
+        xname: &str,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.delete_member_from_group(auth_token, group_label, xname)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.delete_member_from_group(auth_token, group_label, xname)
+                    .await
+            }
+        }
+    }
+
+    // HSM/GROUP
+    async fn migrate_group_members(
+        &self,
+        auth_token: &str,
+        target_hsm_group_name: &str,
+        parent_hsm_group_name: &str,
+        new_target_hsm_members: Vec<&str>,
+    ) -> Result<(Vec<String>, Vec<String>), Error> {
+        match self {
+            CSM(b) => {
+                b.migrate_group_members(
+                    auth_token,
+                    target_hsm_group_name,
+                    parent_hsm_group_name,
+                    new_target_hsm_members,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.migrate_group_members(
+                    auth_token,
+                    target_hsm_group_name,
+                    parent_hsm_group_name,
+                    new_target_hsm_members,
+                )
+                .await
+            }
+        }
+    }
+
+    // HSM/GROUP
+    async fn update_group_members(
+        &self,
+        auth_token: &str,
+        group_name: &str,
+        members_to_remove: &Vec<String>,
+        members_to_add: &Vec<String>,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.update_group_members(auth_token, group_name, members_to_remove, members_to_add)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.update_group_members(auth_token, group_name, members_to_remove, members_to_add)
+                    .await
+            }
+        }
+    }
+
     // HSM/GROUP
     async fn get_hsm_map_and_filter_by_hsm_name_vec(
         &self,

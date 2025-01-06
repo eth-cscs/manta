@@ -1,4 +1,5 @@
-use mesa::{bos, hsm, node};
+use backend_dispatcher::contracts::BackendTrait;
+use mesa::{bos, node};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
@@ -63,13 +64,17 @@ pub async fn exec(
     log::info!("Validate user has access to HSM group in BOS sessiontemplate");
     let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
     let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        backend
+            .get_member_vec_from_hsm_name_vec(shasta_token, target_hsm_vec)
+            .await
+            .unwrap()
+        /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             target_hsm_vec,
         )
-        .await
+        .await */
     } else {
         bos_sessiontemplate.get_target_xname()
     };
@@ -95,14 +100,17 @@ pub async fn exec(
                 // limit_value is an xname
                 log::info!("limit value '{}' is an xname", limit_value);
                 xnames_to_validate_access_vec.push(limit_value.to_string());
-            } else if let Some(mut hsm_members_vec) =
-                hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    limit_value,
-                )
+            } else if let Some(mut hsm_members_vec) = backend
+                .get_member_vec_from_hsm_name_vec(shasta_token, vec![limit_value.to_string()])
                 .await
+                .ok()
+            /* hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                limit_value,
+            )
+            .await */
             {
                 // limit_value is an HSM group
                 log::info!(

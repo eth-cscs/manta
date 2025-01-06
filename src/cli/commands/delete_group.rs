@@ -1,15 +1,9 @@
 use crate::backend_dispatcher::StaticBackendDispatcher;
 use backend_dispatcher::contracts::BackendTrait;
 
-pub async fn exec(
-    backend: StaticBackendDispatcher,
-    auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
-    label: &str,
-) {
+pub async fn exec(backend: &StaticBackendDispatcher, auth_token: &str, label: &str) {
     // Validate if group can be deleted
-    validation(auth_token, base_url, root_cert, label).await;
+    validation(backend, auth_token, label).await;
 
     // Delete group
     let result = backend.delete_hsm_group(auth_token, label).await;
@@ -28,21 +22,29 @@ pub async fn exec(
 // Checks if a group can be deleted.
 // A group can be deleted if none of its members becomes orphan.
 // A group member is orphan if it does not have a group assigned to it
-async fn validation(auth_token: &str, base_url: &str, root_cert: &[u8], label: &str) {
+async fn validation(backend: &StaticBackendDispatcher, auth_token: &str, label: &str) {
     // Find the list of xnames belonging only to the label to delete and if any, then stop
     // processing the request because those nodes can't get orphan
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = backend
+        .get_member_vec_from_hsm_name_vec(auth_token, vec![label.to_string()])
+        .await
+        .unwrap();
+    /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
         auth_token, base_url, root_cert, label,
     )
-    .await;
+    .await; */
 
     let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
 
-    let mut xname_map = mesa::hsm::group::utils::get_xname_map_and_filter_by_xname_vec(
+    let mut xname_map = backend
+        .get_hsm_map_and_filter_by_hsm_name_vec(auth_token, xname_vec)
+        .await
+        .unwrap();
+    /* let mut xname_map = mesa::hsm::group::utils::get_xname_map_and_filter_by_xname_vec(
         auth_token, base_url, root_cert, xname_vec,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     // println!("DEBUG - xname map:\n{:#?}", xname_map);
 

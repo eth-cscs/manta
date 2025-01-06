@@ -1,12 +1,15 @@
+use backend_dispatcher::contracts::BackendTrait;
 use humansize::DECIMAL;
-use mesa::{bos, cfs, hsm, ims};
+use mesa::{bos, cfs, ims};
 use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
 use crate::cli::commands::migrate_restore;
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -129,13 +132,19 @@ pub async fn exec(
             .unwrap()[0]
             .clone()
             .replace('\"', "");
-        let hsm_group_json = match hsm::group::http_client::get(
+
+        let hsm_group_json = match backend.get_hsm_group(
+            shasta_token,
+            &hsm_group_name,
+        )
+        .await
+        /* let hsm_group_json = match hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             Some(&hsm_group_name),
         )
-        .await
+        .await */
         {
             Ok(_t) => _t,
             Err(e) => panic!(

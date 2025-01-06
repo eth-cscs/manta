@@ -1,11 +1,15 @@
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::theme::ColorfulTheme;
-use mesa::{cfs, error::Error, hsm};
+use mesa::{cfs, error::Error};
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 // Translates HSM group to a list of nodes
 // Validates list of nodes have valid xname format
 // Validates user has access to a list of nodes
 // Update runtime configuration for the list of nodes provided
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -14,13 +18,16 @@ pub async fn exec(
     xname_vec_opt: Option<&Vec<String>>,
 ) -> Result<(), Error> {
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        backend
+            .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
+            .await
+        /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             hsm_group_name_vec.clone(),
         )
-        .await
+        .await */
     } else if let Some(xname_vec) = xname_vec_opt {
         xname_vec.clone()
     } else {

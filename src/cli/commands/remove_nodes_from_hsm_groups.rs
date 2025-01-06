@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -68,20 +68,35 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    if hsm::group::http_client::get(
+    if backend
+        .get_hsm_group(shasta_token, target_hsm_name)
+        .await
+        .is_ok()
+    /* if hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         Some(&target_hsm_name),
     )
     .await
-    .is_ok()
+    .is_ok() */
     {
         log::debug!("The HSM group {} exists, good.", target_hsm_name);
     }
 
     // Remove xnames from HSM group
-    let node_migration_rslt = hsm::group::utils::remove_hsm_members(
+    let node_migration_rslt = backend
+        .delete_member_from_group(
+            shasta_token,
+            &target_hsm_name,
+            xname_to_move_vec
+                .iter()
+                .map(|xname| xname.as_str())
+                .collect(),
+        )
+        .await
+        .unwrap();
+    /* let node_migration_rslt = hsm::group::utils::remove_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -92,7 +107,7 @@ pub async fn exec(
             .collect(),
         dryrun,
     )
-    .await;
+    .await; */
 
     match node_migration_rslt {
         Ok(mut target_hsm_group_member_vec) => {

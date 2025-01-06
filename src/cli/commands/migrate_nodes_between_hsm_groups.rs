@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mesa::hsm;
+use backend_dispatcher::contracts::BackendTrait;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -56,14 +56,18 @@ pub async fn exec(
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     for target_hsm_name in target_hsm_name_vec {
-        if hsm::group::http_client::get(
+        if backend
+            .get_hsm_group(shasta_token, &target_hsm_name)
+            .await
+            .is_ok()
+        /* if hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             Some(&target_hsm_name),
         )
         .await
-        .is_ok()
+        .is_ok() */
         {
             log::debug!("The HSM group {} exists, good.", target_hsm_name);
         } else {
@@ -85,7 +89,18 @@ pub async fn exec(
 
         // Migrate nodes
         for (parent_hsm_name, xname_to_move_vec) in &hsm_group_summary {
-            let node_migration_rslt = hsm::group::utils::migrate_hsm_members(
+            let node_migration_rslt = backend
+                .migrate_group_members(
+                    shasta_token,
+                    &target_hsm_name,
+                    &parent_hsm_name,
+                    xname_to_move_vec
+                        .iter()
+                        .map(|xname| xname.as_str())
+                        .collect(),
+                )
+                .await;
+            /* let node_migration_rslt = hsm::group::utils::migrate_hsm_members(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -97,7 +112,7 @@ pub async fn exec(
                     .collect(),
                 nodryrun,
             )
-            .await;
+            .await; */
 
             match node_migration_rslt {
                 Ok((mut target_hsm_group_member_vec, mut parent_hsm_group_member_vec)) => {

@@ -1,14 +1,18 @@
 use std::collections::HashMap;
 
+use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
 
-use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
-    calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
-    get_hsm_node_hw_component_counter,
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    cli::commands::apply_hw_cluster_pin::command::utils::{
+        calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
+        get_hsm_node_hw_component_counter,
+    },
 };
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -20,20 +24,34 @@ pub async fn exec(
 ) {
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 
-    match hsm::group::http_client::get(
+    match backend.get_hsm_group(
+        shasta_token,
+        target_hsm_group_name,
+    )
+    .await
+    /* match hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         Some(&target_hsm_group_name.to_string()),
     )
-    .await
+    .await */
     {
         Ok(_) => log::debug!("The HSM group {} exists, good.", target_hsm_group_name),
         Err(_) => {
             if create_hsm_group {
                 log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    hsm::group::http_client::create_new_hsm_group(
+                    let group = HsmGroup {
+                        label: target_hsm_group_name.to_string(),
+                        description: None,
+                        tags: None,
+                        members: None,
+                        exclusive_group: Some("false".to_string()),
+                    };
+                    backend.add_hsm_group(shasta_token, group).await
+                    .expect("Unable to create new HSM group");
+                    /* hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -44,7 +62,7 @@ pub async fn exec(
                         &[],
                     )
                     .await
-                    .expect("Unable to create new HSM group");
+                    .expect("Unable to create new HSM group"); */
                 } else {
                     log::error!("Dryrun selected, cannot create the new group and continue.");
                     std::process::exit(1);
@@ -102,14 +120,17 @@ pub async fn exec(
     // PREPREQUISITES - GET DATA - PARENT HSM
 
     // Get parent HSM group members
-    let parent_hsm_group_member_vec: Vec<String> =
-        hsm::group::utils::get_member_vec_from_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            parent_hsm_group_name,
-        )
-        .await;
+    let parent_hsm_group_member_vec: Vec<String> = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
+        .await
+        .unwrap();
+    /* hsm::group::utils::get_member_vec_from_hsm_group_name(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        parent_hsm_group_name,
+    )
+    .await; */
 
     // Get HSM hw component counters for target HSM
     let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
@@ -187,14 +208,17 @@ pub async fn exec(
         .collect::<Vec<String>>();
 
     // Get target HSM group members
-    let mut target_hsm_node_vec: Vec<String> =
-        hsm::group::utils::get_member_vec_from_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            target_hsm_group_name,
-        )
-        .await;
+    let mut target_hsm_node_vec: Vec<String> = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
+        .await
+        .unwrap();
+    /* hsm::group::utils::get_member_vec_from_hsm_group_name(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        target_hsm_group_name,
+    )
+    .await; */
 
     target_hsm_node_vec.extend(nodes_moved_from_parent_hsm.clone());
 
@@ -278,23 +302,31 @@ pub async fn exec(
         log::info!("Dryrun enabled, not modifying the HSM groups on the system.")
     } else {
         for xname in nodes_moved_from_parent_hsm {
-            let _ = hsm::group::http_client::delete_member(
+            let _ = backend
+                .delete_member_from_group(shasta_token, parent_hsm_group_name, &xname)
+                .await
+                .unwrap();
+            /* let _ = hsm::group::http_client::delete_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 parent_hsm_group_name,
                 &xname,
             )
-            .await;
+            .await; */
 
-            let _ = hsm::group::http_client::post_member(
+            let _ = backend
+                .add_members_to_group(shasta_token, target_hsm_group_name, vec![&xname])
+                .await
+                .unwrap();
+            /* let _ = hsm::group::http_client::post_member(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 target_hsm_group_name,
                 &xname,
             )
-            .await;
+            .await; */
         }
     }
     let target_hsm_group_value = serde_json::json!({

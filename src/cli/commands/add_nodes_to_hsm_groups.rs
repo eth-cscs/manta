@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
@@ -68,7 +68,15 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    let target_hsm_group_vec = hsm::group::http_client::get(
+    let target_hsm_group = backend.get_hsm_group(shasta_token, &target_hsm_name).await;
+
+    if target_hsm_group.is_err() {
+        eprintln!(
+            "Target HSM group {} does not exist, Nothing to do. Exit",
+            target_hsm_name
+        );
+    }
+    /* let target_hsm_group_vec = hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -77,14 +85,24 @@ pub async fn exec(
     .await
     .expect("ERROR - Could not get target HSM group");
 
-    if target_hsm_group_vec.is_empty() {
+    if target_hsm_group.is_empty() {
         eprintln!(
             "Target HSM group {} does not exist, Nothing to do. Exit",
             target_hsm_name
         );
-    }
+    } */
 
-    let node_migration_rslt = hsm::group::utils::add_hsm_members(
+    let node_migration_rslt = backend
+        .add_members_to_group(
+            shasta_token,
+            &target_hsm_name,
+            xname_to_move_vec
+                .iter()
+                .map(|xname| xname.as_str())
+                .collect(),
+        )
+        .await;
+    /* let node_migration_rslt = hsm::group::utils::add_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -95,7 +113,7 @@ pub async fn exec(
             .collect(),
         dryrun,
     )
-    .await;
+    .await; */
 
     match node_migration_rslt {
         Ok(mut target_hsm_group_member_vec) => {

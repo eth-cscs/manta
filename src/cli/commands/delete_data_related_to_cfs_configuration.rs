@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use std::io::{self, Write};
 
+use backend_dispatcher::contracts::BackendTrait;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -11,12 +12,14 @@ use mesa::cfs::component::http_client::v3::r#struct::Component;
 use mesa::cfs::configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, bss, cfs, ims};
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
 use crate::{
     cli::commands::delete_data_related_to_cfs_configuration,
     common::node_ops::get_node_vec_booting_image,
 };
 
 pub async fn delete_data_related_cfs_configuration(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -35,13 +38,17 @@ pub async fn delete_data_related_cfs_configuration(
         std::process::exit(1);
     } */
 
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+    let xname_vec = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, hsm_name_available_vec.clone())
+        .await
+        .unwrap();
+    /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         hsm_name_available_vec.clone(),
     )
-    .await;
+    .await; */
 
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //

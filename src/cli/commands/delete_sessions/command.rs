@@ -1,10 +1,14 @@
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     cfs::{self, component::http_client::v3::r#struct::Component},
-    hsm, ims,
+    ims,
 };
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -51,13 +55,17 @@ pub async fn exec(
     // - xnames belonging to HSM group related to CFS session
     // - xnames in CFS session
     let xname_vec = if let Some(target_hsm) = cfs_session.get_target_hsm() {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        backend
+            .get_member_vec_from_hsm_name_vec(shasta_token, target_hsm)
+            .await
+            .unwrap()
+        /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             target_hsm,
         )
-        .await
+        .await */
     } else if let Some(target_xname) = cfs_session.get_target_xname() {
         target_xname
     } else {

@@ -1,17 +1,21 @@
+use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, r#struct::BootParameters},
     capmc, cfs,
     common::jwt_ops,
     error::Error,
-    hsm,
 };
 
-use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::ims_ops::get_image_id_from_cfs_configuration_name,
+};
 
 /// Updates the boot image for a set of nodes
 /// reboots the nodes which boot image have changed
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -22,13 +26,16 @@ pub async fn exec(
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        backend
+            .get_member_vec_from_hsm_name_vec(shasta_token, hsm_group_name_vec.clone())
+            .await
+        /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             hsm_group_name_vec.clone(),
         )
-        .await
+        .await */
     } else if let Some(xname_vec) = xname_vec_opt {
         xname_vec.clone()
     } else {

@@ -1,9 +1,10 @@
-use mesa::hsm;
+use backend_dispatcher::contracts::BackendTrait;
 
-use crate::common::node_ops;
+use crate::{backend_dispatcher::StaticBackendDispatcher, common::node_ops};
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -14,14 +15,17 @@ pub async fn exec(
     status: bool,
 ) {
     // Take all nodes for all hsm_groups found and put them in a Vec
-    let mut hsm_groups_node_list: Vec<String> =
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            hsm_name_vec.to_vec(),
-        )
-        .await;
+    let mut hsm_groups_node_list: Vec<String> = backend
+        .get_member_vec_from_hsm_name_vec(shasta_token, hsm_name_vec.to_vec())
+        .await
+        .unwrap();
+    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_vec.to_vec(),
+    )
+    .await; */
 
     hsm_groups_node_list.sort();
 

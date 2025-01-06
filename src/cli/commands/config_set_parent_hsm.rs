@@ -2,7 +2,6 @@ use std::{fs, io::Write, path::PathBuf};
 
 use backend_dispatcher::contracts::BackendTrait;
 use directories::ProjectDirs;
-use mesa::hsm;
 use toml_edit::{value, Document};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -52,12 +51,19 @@ pub async fn exec(
 
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-        hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        backend
+            .get_all_hsm_group(shasta_token)
             .await
             .unwrap()
             .into_iter()
             .map(|hsm_group_value| hsm_group_value.label)
             .collect::<Vec<String>>()
+        /* hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|hsm_group_value| hsm_group_value.label)
+        .collect::<Vec<String>>() */
     } else {
         settings_hsm_available_vec
     };
@@ -76,13 +82,19 @@ pub async fn exec(
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
-        let all_hsm_available_vec =
-            hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-                .await
-                .unwrap()
-                .into_iter()
-                .map(|hsm_group_value| hsm_group_value.label)
-                .collect::<Vec<String>>();
+        let all_hsm_available_vec = backend
+            .get_all_hsm_group(shasta_token)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|hsm_group_value| hsm_group_value.label)
+            .collect::<Vec<String>>();
+        /* hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|hsm_group_value| hsm_group_value.label)
+        .collect::<Vec<String>>(); */
 
         validate_hsm_group_and_hsm_available_config_params(
             new_hsm_opt.unwrap(),

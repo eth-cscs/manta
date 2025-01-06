@@ -5,11 +5,15 @@ use std::{
     time::Instant,
 };
 
+use backend_dispatcher::contracts::BackendTrait;
 use comfy_table::{Color, Table};
 use mesa::hsm::{self, hw_inventory::hw_component::r#struct::NodeSummary};
 use tokio::sync::Semaphore;
 
+use crate::backend_dispatcher::StaticBackendDispatcher;
+
 pub async fn exec(
+    backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -17,7 +21,11 @@ pub async fn exec(
     output_opt: Option<&String>,
 ) {
     // Target HSM group
-    let hsm_group = hsm::group::http_client::get(
+    let hsm_group = backend
+        .get_hsm_group(shasta_token, hsm_group_name)
+        .await
+        .unwrap();
+    /* let hsm_group = hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -27,10 +35,11 @@ pub async fn exec(
     .unwrap()
     .first()
     .unwrap()
-    .clone();
+    .clone(); */
 
     // Get target HSM group members
-    let hsm_group_target_members = hsm::group::utils::get_member_vec_from_hsm_group(&hsm_group);
+    let hsm_group_target_members = hsm_group.members.unwrap().ids.unwrap_or_default();
+    // let hsm_group_target_members = hsm::group::utils::get_member_vec_from_hsm_group(&hsm_group);
 
     log::debug!(
         "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
@@ -77,6 +86,14 @@ pub async fn exec(
             )
             .await
             .unwrap()
+            /* hsm::hw_inventory::hw_component::http_client::get(
+                &shasta_token_string,
+                &shasta_base_url_string,
+                &shasta_root_cert_vec,
+                &hsm_member_string,
+            )
+            .await
+            .unwrap() */
         });
     }
 
