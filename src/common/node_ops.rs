@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use backend_dispatcher::contracts::BackendTrait;
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::r#struct::BootParameters, hsm, node::r#struct::NodeDetails};
+use mesa::{bss::types::BootParameters, hsm, node::types::NodeDetails};
 use regex::Regex;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;

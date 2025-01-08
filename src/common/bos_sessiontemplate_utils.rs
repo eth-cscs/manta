@@ -1,5 +1,5 @@
 use comfy_table::Table;
-use mesa::bos::template::http_client::v2::r#struct::BosSessionTemplate;
+use mesa::bos::template::http_client::v2::types::BosSessionTemplate;
 use mesa::{bos, ims, node};
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {

@@ -4,16 +4,16 @@ use image::Image;
 use mesa::{
     bos::{
         self,
-        session::http_client::v2::r#struct::{BosSession, Operation},
-        template::http_client::v2::r#struct::{BootSet, BosSessionTemplate, Cfs},
+        session::http_client::v2::types::{BosSession, Operation},
+        template::http_client::v2::types::{BootSet, BosSessionTemplate, Cfs},
     },
     cfs::{
         self,
-        configuration::http_client::v3::r#struct::{
+        configuration::http_client::v3::types::{
             cfs_configuration_request::CfsConfigurationRequest,
             cfs_configuration_response::CfsConfigurationResponse,
         },
-        session::http_client::v3::r#struct::CfsSessionPostRequest,
+        session::http_client::v3::types::CfsSessionPostRequest,
     },
     error::Error,
     hsm, ims,
@@ -1161,7 +1161,7 @@ async fn process_sat_file_image_product_type_ims_recipe(
 
     let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
 
-    let ims_job = ims::job::r#struct::JobPostRequest {
+    let ims_job = ims::job::types::JobPostRequest {
         job_type: "create".to_string(),
         image_root_archive_name: image_name.to_string(),
         kernel_file_name: Some("vmlinuz".to_string()),
@@ -1193,7 +1193,7 @@ async fn process_sat_file_image_ims_type_recipe(
     let recipe_name = sat_file_image_base_ims_value_yaml["name"].as_str().unwrap();
 
     // Get all IMS recipes
-    let recipe_detail_vec: Vec<ims::recipe::r#struct::RecipeGetResponse> =
+    let recipe_detail_vec: Vec<ims::recipe::types::RecipeGetResponse> =
         ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
             .await
             .unwrap();
@@ -1230,7 +1230,7 @@ async fn process_sat_file_image_ims_type_recipe(
 
     let root_public_ssh_key = root_public_ssh_key_value["id"].as_str().unwrap();
 
-    let ims_job = ims::job::r#struct::JobPostRequest {
+    let ims_job = ims::job::types::JobPostRequest {
         job_type: "create".to_string(),
         image_root_archive_name: image_name.to_string(),
         kernel_file_name: Some("vmlinuz".to_string()),
@@ -1389,9 +1389,9 @@ pub fn validate_sat_file_images_section(
     configuration_yaml_vec: &Vec<Value>,
     hsm_group_available_vec: &[String],
     cray_product_catalog: &BTreeMap<String, String>,
-    image_vec: Vec<ims::image::http_client::r#struct::Image>,
+    image_vec: Vec<ims::image::http_client::types::Image>,
     configuration_vec: Vec<CfsConfigurationResponse>,
-    ims_recipe_vec: Vec<ims::recipe::r#struct::RecipeGetResponse>,
+    ims_recipe_vec: Vec<ims::recipe::types::RecipeGetResponse>,
 ) -> Result<(), Error> {
     // Validate 'images' section in SAT file
 
@@ -1417,7 +1417,7 @@ pub fn validate_sat_file_images_section(
             let is_image_base_id_in_csm =
                 image_vec
                     .iter()
-                    .any(|image: &ims::image::http_client::r#struct::Image| {
+                    .any(|image: &ims::image::http_client::types::Image| {
                         let image_id = image.id.as_ref().unwrap();
                         image_id.eq(image_ims_id_to_find)
                     });
@@ -1998,7 +1998,7 @@ pub async fn process_session_template_section_in_sat_file(
         let _bos_sessiontemplate: BosSessionTemplate =
             serde_yaml::from_value(bos_sessiontemplate_yaml.clone()).unwrap();
 
-        let image_details: ims::image::http_client::r#struct::Image = if let Some(
+        let image_details: ims::image::http_client::types::Image = if let Some(
             bos_sessiontemplate_image,
         ) =
             bos_sessiontemplate_yaml.get("image")
@@ -2108,7 +2108,7 @@ pub async fn process_session_template_section_in_sat_file(
 
                     image_vec.first().unwrap().clone()
                 } else {
-                    ims::image::http_client::r#struct::Image {
+                    ims::image::http_client::types::Image {
                         id: None,
                         created: None,
                         name: image_name.to_string(),

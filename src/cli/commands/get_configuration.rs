@@ -1,7 +1,7 @@
 use mesa::{
     cfs::{
         self,
-        configuration::http_client::v3::r#struct::{
+        configuration::http_client::v3::types::{
             cfs_configuration::{ConfigurationDetails, LayerDetails},
             cfs_configuration_response::{CfsConfigurationResponse, Layer},
         },

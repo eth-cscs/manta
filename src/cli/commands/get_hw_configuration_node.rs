@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::hsm::{self, hw_inventory::hw_component::r#struct::NodeSummary};
+use mesa::hsm::{self, hw_inventory::hw_component::types::NodeSummary};
 use std::string::ToString;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.

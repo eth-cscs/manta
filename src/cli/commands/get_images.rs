@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::ims::image::{self, http_client::r#struct::Image};
+use mesa::ims::image::{self, http_client::types::Image};
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason

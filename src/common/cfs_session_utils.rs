@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
 use mesa::{
-    cfs::{self, session::http_client::v3::r#struct::CfsSessionGetResponse},
+    cfs::{self, session::http_client::v3::types::CfsSessionGetResponse},
     ims,
 };
 

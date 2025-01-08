@@ -3,19 +3,19 @@ use dialoguer::Confirm;
 use humansize::DECIMAL;
 use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
-use mesa::bos::template::http_client::v2::r#struct::BosSessionTemplate;
-use mesa::cfs::configuration::http_client::v3::r#struct::{
+use mesa::bos::template::http_client::v2::types::BosSessionTemplate;
+use mesa::cfs::configuration::http_client::v3::types::{
     cfs_configuration_request::CfsConfigurationRequest,
     cfs_configuration_response::CfsConfigurationResponse,
 };
 use mesa::hsm::group::{
-    http_client::{create_new_hsm_group, delete_hsm_group},
+    http_client::{create_new_group, delete_group},
     types::Group,
 };
 use mesa::ims::image::{
     http_client::{
         patch,
-        r#struct::{Image, ImsImageRecord2Update, Link},
+        types::{Image, ImsImageRecord2Update, Link},
     },
     utils::get_fuzzy,
 };
@@ -504,12 +504,12 @@ async fn ims_update_image_add_manifest(
         Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
 
-    let _ims_record = ims::image::http_client::r#struct::Image {
+    let _ims_record = ims::image::http_client::types::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
         created: None,
         arch: None,
-        link: Some(ims::image::http_client::r#struct::Link {
+        link: Some(ims::image::http_client::types::Link {
             etag: None,
             path: format!(
                 "s3://boot-images/{}/manifest.json",
@@ -948,7 +948,7 @@ pub async fn create_hsm_group(
     let hsm2: Group = hsm.clone();
 
     // Create the HSM group
-    match create_new_hsm_group(
+    match create_new_group(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -960,7 +960,7 @@ pub async fn create_hsm_group(
     )
     .await
     {
-        Ok(_json) => {
+        Ok(_) => {
             println!(
                 "The HSM group {} has been created successfully.",
                 &hsm.label
@@ -977,17 +977,12 @@ pub async fn create_hsm_group(
 
                 if confirmation {
                     println!("Looks like you want to continue");
-                    match delete_hsm_group(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        &hsm.label,
-                    )
-                    .await
+                    match delete_group(shasta_token, shasta_base_url, shasta_root_cert, &hsm.label)
+                        .await
                     {
                         Ok(_) => {
                             // try creating the group again
-                            match create_new_hsm_group(
+                            match create_new_group(
                                 shasta_token,
                                 shasta_base_url,
                                 shasta_root_cert,

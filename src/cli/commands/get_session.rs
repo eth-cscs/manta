@@ -1,6 +1,6 @@
 use mesa::{
     cfs,
-    ims::{self, image::http_client::r#struct::Image},
+    ims::{self, image::http_client::types::Image},
 };
 
 use crate::common;

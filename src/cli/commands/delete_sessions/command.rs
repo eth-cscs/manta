@@ -1,7 +1,7 @@
 use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    cfs::{self, component::http_client::v3::r#struct::Component},
+    cfs::{self, component::http_client::v3::types::Component},
     ims,
 };
 

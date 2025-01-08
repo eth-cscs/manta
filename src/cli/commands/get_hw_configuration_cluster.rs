@@ -7,7 +7,7 @@ use std::{
 
 use backend_dispatcher::contracts::BackendTrait;
 use comfy_table::{Color, Table};
-use mesa::hsm::{self, hw_inventory::hw_component::r#struct::NodeSummary};
+use mesa::hsm::{self, hw_inventory::hw_component::types::NodeSummary};
 use tokio::sync::Semaphore;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;

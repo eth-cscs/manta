@@ -7,9 +7,9 @@ use backend_dispatcher::contracts::BackendTrait;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::bss::r#struct::BootParameters;
-use mesa::cfs::component::http_client::v3::r#struct::Component;
-use mesa::cfs::configuration::http_client::v3::r#struct::cfs_configuration_response::CfsConfigurationResponse;
+use mesa::bss::types::BootParameters;
+use mesa::cfs::component::http_client::v3::types::Component;
+use mesa::cfs::configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, bss, cfs, ims};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;

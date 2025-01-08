@@ -154,13 +154,11 @@ pub async fn exec(
     //
     // Create BOS session request payload
     //
-    let bos_session = bos::session::http_client::v2::r#struct::BosSession {
+    let bos_session = bos::session::http_client::v2::types::BosSession {
         name: bos_session_name_opt.cloned(),
         tenant: None,
-        operation: bos::session::http_client::v2::r#struct::Operation::from_str(
-            bos_session_operation,
-        )
-        .ok(),
+        operation: bos::session::http_client::v2::types::Operation::from_str(bos_session_operation)
+            .ok(),
         template_name: bos_sessiontemplate_name.to_string(),
         limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
         stage: Some(false),

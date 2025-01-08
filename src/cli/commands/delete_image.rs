@@ -1,6 +1,6 @@
 pub mod command {
 
-    use mesa::ims::image::{self, http_client::r#struct::Image};
+    use mesa::ims::image::{self, http_client::types::Image};
 
     pub async fn exec(
         shasta_token: &str,

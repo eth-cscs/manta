@@ -6,7 +6,7 @@ use crate::{
 use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    bss::{self, r#struct::BootParameters},
+    bss::{self, types::BootParameters},
     cfs, ims,
     node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
 };
