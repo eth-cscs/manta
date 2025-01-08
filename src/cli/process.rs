@@ -13,15 +13,14 @@ use crate::{
 
 use super::commands::{
     self, add_group, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
-    apply_boot_cluster, apply_boot_node, apply_configuration, apply_ephemeral_env,
-    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
-    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
-    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
-    console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
-    delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
-    get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
-    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
+    apply_boot_cluster, apply_boot_node, apply_ephemeral_env, apply_hw_cluster_pin,
+    apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template, config_set_hsm,
+    config_set_log, config_set_parent_hsm, config_set_site, config_show, config_unset_auth,
+    config_unset_hsm, config_unset_parent_hsm, console_cfs_session_image_target_ansible,
+    console_node, delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
+    delete_group, delete_hw_component_cluster, delete_image, delete_kernel_parameters,
+    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
+    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
 };
@@ -29,7 +28,6 @@ use super::commands::{
 pub async fn process_cli(
     cli_root: ArgMatches,
     backend: StaticBackendDispatcher,
-    keycloak_base_url: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
@@ -87,8 +85,6 @@ pub async fn process_cli(
                 config_set_hsm::exec(
                     &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
                     // hsm_available_vec,
                 )
@@ -108,8 +104,6 @@ pub async fn process_cli(
                 config_set_parent_hsm::exec(
                     &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     cli_config_set_parent_hsm.get_one::<String>("HSM_GROUP_NAME"),
                     // hsm_available_vec,
                 )
@@ -543,7 +537,7 @@ pub async fn process_cli(
                     .await?;
 
                     let hsm_members_rslt = backend
-                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .get_member_vec_from_group_name_vec(&shasta_token, hsm_group_name_vec)
                         .await;
 
                     match hsm_members_rslt {
@@ -825,7 +819,7 @@ pub async fn process_cli(
                 .await?;
 
                 let hsm_member_vec = backend
-                    .get_member_vec_from_hsm_name_vec(
+                    .get_member_vec_from_group_name_vec(
                         &shasta_token,
                         /* shasta_base_url,
                         shasta_root_cert, */
@@ -961,6 +955,7 @@ pub async fn process_cli(
                 .await?;
 
                 get_hsm::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1030,7 +1025,7 @@ pub async fn process_cli(
                     .await */
 
                     let hsm_members_rslt = backend
-                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .get_member_vec_from_group_name_vec(&shasta_token, hsm_group_name_vec)
                         .await;
 
                     match hsm_members_rslt {
@@ -1145,79 +1140,6 @@ pub async fn process_cli(
                         .await;
                     }
                 }
-            } else if let Some(cli_apply_configuration) =
-                cli_apply.subcommand_matches("configuration")
-            {
-                log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
-                let shasta_token = backend.get_api_token(&site_name).await?;
-
-                // FIXME: gitea auth token should be calculated before colling this function
-                let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-                    vault_base_url,
-                    vault_secrets_path,
-                    vault_role_id,
-                )
-                .await
-                .unwrap();
-
-                get_target_hsm_group_vec_or_all(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    None,
-                    settings_hsm_group_name_opt,
-                )
-                .await?;
-
-                let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-                let cli_value_vec_opt: Option<Vec<String>> =
-                    cli_apply_configuration.get_many("values").map(|value_vec| {
-                        value_vec
-                            .map(|value: &String| value.replace("__DATE__", &timestamp))
-                            .collect()
-                    });
-
-                let cli_values_file_content_opt: Option<String> = cli_apply_configuration
-                    .get_one("values-file")
-                    .and_then(|values_file_path: &PathBuf| {
-                        std::fs::read_to_string(values_file_path).ok().map(
-                            |cli_value_file: String| cli_value_file.replace("__DATE__", &timestamp),
-                        )
-                    });
-
-                let sat_file_content: String = std::fs::read_to_string(
-                    cli_apply_configuration
-                        .get_one::<PathBuf>("sat-template-file")
-                        .expect("ERROR: SAT file not found. Exit"),
-                )
-                .expect("ERROR: reading SAT file template. Exit");
-
-                let _ = apply_configuration::exec(
-                    sat_file_content,
-                    cli_values_file_content_opt,
-                    cli_value_vec_opt,
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    vault_base_url,
-                    vault_secrets_path,
-                    vault_role_id,
-                    k8s_api_url,
-                    gitea_base_url,
-                    &gitea_token,
-                    // &tag,
-                    cli_apply_configuration.get_one::<String>("output"),
-                )
-                .await;
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
@@ -1273,6 +1195,7 @@ pub async fn process_cli(
                 }
 
                 apply_session::exec(
+                    &backend,
                     &gitea_token,
                     gitea_base_url,
                     vault_base_url,
@@ -1336,7 +1259,7 @@ pub async fn process_cli(
                 // HSM GROUPS AVAILABLE ACCORDING TO KEYCLOAK ROLES BUT HSM GROUPS IN SAT FILE VS
                 // KEYCLOAK ROLES. BECAUASE OF THIS, THERE IS NO VALUE IN CALLING
                 // 'get_target_hsm_group_vec_or_all' FUNCTION
-                let target_hsm_group_vec = backend.get_hsm_name_available(&shasta_token).await?;
+                let target_hsm_group_vec = backend.get_group_name_available(&shasta_token).await?;
                 /* let target_hsm_group_vec = config_show::get_hsm_name_available_from_jwt_or_all(
                     &shasta_token,
                     shasta_base_url,
@@ -1955,7 +1878,7 @@ pub async fn process_cli(
                     .await?;
 
                     let hsm_members_rslt = backend
-                        .get_member_vec_from_hsm_name_vec(&shasta_token, hsm_group_name_vec)
+                        .get_member_vec_from_group_name_vec(&shasta_token, hsm_group_name_vec)
                         .await;
 
                     match hsm_members_rslt {

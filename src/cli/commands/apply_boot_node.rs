@@ -29,7 +29,10 @@ pub async fn exec(
     // Validate
     //
     // Check user has provided valid XNAMES
-    let target_hsm_group_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    let target_hsm_group_vec = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
 
     if !validate_xnames_format_and_membership_agaisnt_multiple_hsm(
         shasta_token,

@@ -33,7 +33,7 @@ pub async fn exec(backend: &StaticBackendDispatcher, shasta_token: &str) {
         .expect("ERROR: could not parse configuration file to TOML");
 
     let mut settings_hsm_available_vec = backend
-        .get_hsm_name_available(shasta_token)
+        .get_group_name_available(shasta_token)
         .await
         .unwrap_or(Vec::new());
     /* let mut settings_hsm_available_vec =

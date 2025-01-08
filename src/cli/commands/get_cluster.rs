@@ -16,7 +16,7 @@ pub async fn exec(
 ) {
     // Take all nodes for all hsm_groups found and put them in a Vec
     let mut hsm_groups_node_list: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, hsm_name_vec.to_vec())
+        .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec.to_vec())
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_name_vec(

@@ -69,7 +69,7 @@ pub async fn exec(
     }
 
     if backend
-        .get_hsm_group(shasta_token, target_hsm_name)
+        .get_group(shasta_token, target_hsm_name)
         .await
         .is_ok()
     /* if hsm::group::http_client::get(
@@ -82,6 +82,14 @@ pub async fn exec(
     .is_ok() */
     {
         log::debug!("The HSM group {} exists, good.", target_hsm_name);
+    }
+
+    if dryrun {
+        println!(
+            "dryrun - Delete nodes {:?} in {}",
+            xname_to_move_vec, target_hsm_name
+        );
+        std::process::exit(0);
     }
 
     // Remove xnames from HSM group

@@ -65,7 +65,7 @@ pub async fn exec(
     let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
     let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
         backend
-            .get_member_vec_from_hsm_name_vec(shasta_token, target_hsm_vec)
+            .get_member_vec_from_group_name_vec(shasta_token, target_hsm_vec)
             .await
             .unwrap()
         /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
@@ -101,7 +101,7 @@ pub async fn exec(
                 log::info!("limit value '{}' is an xname", limit_value);
                 xnames_to_validate_access_vec.push(limit_value.to_string());
             } else if let Some(mut hsm_members_vec) = backend
-                .get_member_vec_from_hsm_name_vec(shasta_token, vec![limit_value.to_string()])
+                .get_member_vec_from_group_name_vec(shasta_token, vec![limit_value.to_string()])
                 .await
                 .ok()
             /* hsm::group::utils::get_member_vec_from_hsm_group_name_opt(

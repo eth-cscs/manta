@@ -6,7 +6,7 @@ pub async fn exec(backend: &StaticBackendDispatcher, auth_token: &str, label: &s
     validation(backend, auth_token, label).await;
 
     // Delete group
-    let result = backend.delete_hsm_group(auth_token, label).await;
+    let result = backend.delete_group(auth_token, label).await;
 
     match result {
         Ok(_) => {
@@ -26,7 +26,7 @@ async fn validation(backend: &StaticBackendDispatcher, auth_token: &str, label: 
     // Find the list of xnames belonging only to the label to delete and if any, then stop
     // processing the request because those nodes can't get orphan
     let xname_vec = backend
-        .get_member_vec_from_hsm_name_vec(auth_token, vec![label.to_string()])
+        .get_member_vec_from_group_name_vec(auth_token, vec![label.to_string()])
         .await
         .unwrap();
     /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -37,7 +37,7 @@ async fn validation(backend: &StaticBackendDispatcher, auth_token: &str, label: 
     let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
 
     let mut xname_map = backend
-        .get_hsm_map_and_filter_by_hsm_name_vec(auth_token, xname_vec)
+        .get_group_map_and_filter_by_group_vec(auth_token, xname_vec)
         .await
         .unwrap();
     /* let mut xname_map = mesa::hsm::group::utils::get_xname_map_and_filter_by_xname_vec(

@@ -21,8 +21,10 @@ pub async fn exec(
         .unwrap_or("".to_string());
 
     // let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
-    let hsm_group_available: Vec<String> =
-        backend.get_hsm_name_available(shasta_token).await.unwrap();
+    let hsm_group_available: Vec<String> = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 

@@ -57,7 +57,7 @@ pub async fn exec(
 
     for target_hsm_name in target_hsm_name_vec {
         if backend
-            .get_hsm_group(shasta_token, &target_hsm_name)
+            .get_group(shasta_token, &target_hsm_name)
             .await
             .is_ok()
         /* if hsm::group::http_client::get(

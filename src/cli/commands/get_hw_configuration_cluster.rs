@@ -22,7 +22,7 @@ pub async fn exec(
 ) {
     // Target HSM group
     let hsm_group = backend
-        .get_hsm_group(shasta_token, hsm_group_name)
+        .get_group(shasta_token, hsm_group_name)
         .await
         .unwrap();
     /* let hsm_group = hsm::group::http_client::get(

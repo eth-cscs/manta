@@ -14,7 +14,7 @@ pub async fn get_target_hsm_group_vec_or_all(
     hsm_group_env_or_config_file_opt: Option<&String>,
 ) -> Result<Vec<String>, backend_dispatcher::error::Error> {
     // Get list of groups the user has access to
-    let hsm_name_available_vec = backend.get_hsm_name_available(auth_token).await?;
+    let hsm_name_available_vec = backend.get_group_name_available(auth_token).await?;
 
     // Get the group name the user is trying to work with, this value can be in 2 different places:
     //  - command argument
@@ -100,7 +100,10 @@ pub async fn validate_target_hsm_members(
     shasta_root_cert: &[u8], */
     hsm_group_members_opt: Vec<String>,
 ) -> Vec<String> {
-    let hsm_groups_user_has_access = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    let hsm_groups_user_has_access = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
     /* let hsm_groups_user_has_access = config_show::get_hsm_name_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
@@ -109,7 +112,7 @@ pub async fn validate_target_hsm_members(
     .await; */
 
     let all_xnames_user_has_access = backend
-        .get_member_vec_from_hsm_name_vec(
+        .get_member_vec_from_group_name_vec(
             shasta_token,
             /* shasta_base_url,
             shasta_root_cert, */

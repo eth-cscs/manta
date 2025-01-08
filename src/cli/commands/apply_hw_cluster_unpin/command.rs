@@ -1,4 +1,4 @@
-use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
+use backend_dispatcher::{contracts::BackendTrait, types::Group};
 use std::collections::HashMap;
 
 use crate::{
@@ -72,10 +72,7 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - TARGET HSM
 
-    match backend
-        .get_hsm_group(shasta_token, target_hsm_group_name)
-        .await
-    {
+    match backend.get_group(shasta_token, target_hsm_group_name).await {
         /* match hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
@@ -89,7 +86,7 @@ pub async fn exec(
             if create_target_hsm_group {
                 log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    let group = HsmGroup {
+                    let group = Group {
                         label: target_hsm_group_name.to_string(),
                         description: None,
                         tags: None,
@@ -98,7 +95,7 @@ pub async fn exec(
                     };
 
                     backend
-                        .add_hsm_group(shasta_token, group)
+                        .add_group(shasta_token, group)
                         .await
                         .expect("Unable to create new target HSM group");
                     /* hsm::group::http_client::create_new_hsm_group(
@@ -126,7 +123,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -168,7 +165,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -320,7 +317,7 @@ pub async fn exec(
         if parent_group_will_be_empty {
             if delete_empty_parent_hsm_group {
                 log::info!("Parent HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
-                match backend.delete_hsm_group(shasta_token,
+                match backend.delete_group(shasta_token,
                              &parent_hsm_group_name.to_string())
                     .await {
                 /* match hsm::group::http_client::delete_hsm_group(shasta_token,

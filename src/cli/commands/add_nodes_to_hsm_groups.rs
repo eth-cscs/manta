@@ -68,7 +68,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    let target_hsm_group = backend.get_hsm_group(shasta_token, &target_hsm_name).await;
+    let target_hsm_group = backend.get_group(shasta_token, &target_hsm_name).await;
 
     if target_hsm_group.is_err() {
         eprintln!(
@@ -92,15 +92,21 @@ pub async fn exec(
         );
     } */
 
+    let xnames_to_move: Vec<&str> = xname_to_move_vec
+        .iter()
+        .map(|xname| xname.as_str())
+        .collect();
+
+    if dryrun {
+        println!(
+            "dryrun - Add nodes {:?} to {}",
+            xnames_to_move, target_hsm_name
+        );
+        std::process::exit(0);
+    }
+
     let node_migration_rslt = backend
-        .add_members_to_group(
-            shasta_token,
-            &target_hsm_name,
-            xname_to_move_vec
-                .iter()
-                .map(|xname| xname.as_str())
-                .collect(),
-        )
+        .add_members_to_group(shasta_token, &target_hsm_name, xnames_to_move)
         .await;
     /* let node_migration_rslt = hsm::group::utils::add_hsm_members(
         shasta_token,

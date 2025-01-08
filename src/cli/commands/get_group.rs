@@ -1,4 +1,4 @@
-use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
+use backend_dispatcher::{contracts::BackendTrait, types::Group};
 use comfy_table::Table;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -25,7 +25,7 @@ pub async fn exec(
 
     let group: HsmGroup = group_backend.into(); */
 
-    let group = backend.get_hsm_group(auth_token, group_name).await.unwrap();
+    let group = backend.get_group(auth_token, group_name).await.unwrap();
 
     match output {
         "table" => print_table(group),
@@ -40,7 +40,7 @@ pub async fn exec(
     }
 }
 
-pub fn print_table(group: HsmGroup) {
+pub fn print_table(group: Group) {
     let mut group_members = group.get_members();
     group_members.sort();
 

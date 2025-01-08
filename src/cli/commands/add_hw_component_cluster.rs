@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
+use backend_dispatcher::{contracts::BackendTrait, types::Group};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{
@@ -24,7 +24,7 @@ pub async fn exec(
 ) {
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 
-    match backend.get_hsm_group(
+    match backend.get_group(
         shasta_token,
         target_hsm_group_name,
     )
@@ -42,14 +42,14 @@ pub async fn exec(
             if create_hsm_group {
                 log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    let group = HsmGroup {
+                    let group = Group {
                         label: target_hsm_group_name.to_string(),
                         description: None,
                         tags: None,
                         members: None,
                         exclusive_group: Some("false".to_string()),
                     };
-                    backend.add_hsm_group(shasta_token, group).await
+                    backend.add_group(shasta_token, group).await
                     .expect("Unable to create new HSM group");
                     /* hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
@@ -121,7 +121,7 @@ pub async fn exec(
 
     // Get parent HSM group members
     let parent_hsm_group_member_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -209,7 +209,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let mut target_hsm_node_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(

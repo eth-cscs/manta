@@ -133,7 +133,7 @@ pub async fn exec(
             .clone()
             .replace('\"', "");
 
-        let hsm_group_json = match backend.get_hsm_group(
+        let hsm_group_json = match backend.get_group(
             shasta_token,
             &hsm_group_name,
         )

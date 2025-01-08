@@ -10,7 +10,7 @@ use mesa::cfs::configuration::http_client::v3::r#struct::{
 };
 use mesa::hsm::group::{
     http_client::{create_new_hsm_group, delete_hsm_group},
-    r#struct::HsmGroup,
+    types::Group,
 };
 use mesa::ims::image::{
     http_client::{
@@ -919,13 +919,13 @@ pub async fn create_hsm_group(
 
     // Parse HSM group file
     // The file looks like this: [{"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}]
-    let mut hsm_vec: Vec<HsmGroup> = serde_json::from_str(hsm_data.as_str()).unwrap();
+    let mut hsm_vec: Vec<Group> = serde_json::from_str(hsm_data.as_str()).unwrap();
     log::debug!("HSM vector {:#?}", &hsm_vec);
 
     // for hsm in hsm_vec.iter() {
     //     let mut hsm: HsmGroup = hsm.clone();
     // }
-    let mut hsm: HsmGroup = hsm_vec.remove(0);
+    let mut hsm: Group = hsm_vec.remove(0);
     log::debug!("HSM group to create {:#?}", &hsm_data.as_str());
 
     // let exclusive:bool = false; // Make sure this is false, so we can test this without impacting other HSM groups
@@ -945,7 +945,7 @@ pub async fn create_hsm_group(
         hsm.exclusive_group = Some(false.to_string());
     }
     // This couldn't be uglier, I know
-    let hsm2: HsmGroup = hsm.clone();
+    let hsm2: Group = hsm.clone();
 
     // Create the HSM group
     match create_new_hsm_group(

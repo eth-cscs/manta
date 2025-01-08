@@ -13,11 +13,12 @@ use mesa::{
 use k8s_openapi::chrono;
 use substring::Substring;
 
-use crate::common::local_git_repo;
+use crate::{backend_dispatcher::StaticBackendDispatcher, common::local_git_repo};
 
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     gitea_token: &str,
     gitea_base_url: &str,
     vault_base_url: &str,
@@ -79,6 +80,7 @@ pub async fn exec(
     if let Some(hsm_group_value) = hsm_group_value_opt {
         // Get all hsm groups details related to hsm_group input
         hsm_group_list = crate::common::cluster_ops::get_details(
+            &backend,
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

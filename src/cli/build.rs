@@ -447,18 +447,6 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
-pub fn subcommand_update_nodes() -> Command {
-    Command::new("nodes")
-        .visible_aliases(["n", "node", "nd"])
-        .arg_required_else_help(true)
-        .about("DEPRECATED - Please use 'manta apply boot nodes' command instead.\nUpdates boot and configuration of a group of nodes. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
-        .arg(arg!(-b --"boot-image" <CFS_CONFIG> "CFS configuration name related to the image to boot the nodes"))
-        .arg(arg!(-d --"desired-configuration" <CFS_CONFIG> "CFS configuration name to configure the nodes after booting"))
-        .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-        .arg(arg!([HSM_GROUP_NAME] "hsm group name, this field should be used to validate the XNAMES belongs to HSM_GROUP_NAME"))
-}
-
 pub fn subcommand_apply_boot_nodes() -> Command {
     Command::new("nodes")
         .visible_aliases(["n", "node"])

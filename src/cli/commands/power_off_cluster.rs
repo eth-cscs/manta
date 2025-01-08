@@ -15,7 +15,7 @@ pub async fn exec(
     output: &str,
 ) {
     let xname_vec = backend
-        .get_member_vec_from_hsm_name_vec(
+        .get_member_vec_from_group_name_vec(
             shasta_token,
             /* shasta_base_url,
             shasta_root_cert, */

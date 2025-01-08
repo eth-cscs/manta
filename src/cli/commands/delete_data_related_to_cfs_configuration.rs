@@ -39,7 +39,7 @@ pub async fn delete_data_related_cfs_configuration(
     } */
 
     let xname_vec = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, hsm_name_available_vec.clone())
+        .get_member_vec_from_group_name_vec(shasta_token, hsm_name_available_vec.clone())
         .await
         .unwrap();
     /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(

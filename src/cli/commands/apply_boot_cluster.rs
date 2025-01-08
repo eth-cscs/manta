@@ -18,7 +18,7 @@ pub async fn exec(
     dry_run: bool,
 ) {
     let xname_vec = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![hsm_group_name.to_string()])
         .await
         .unwrap();
     /* let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(

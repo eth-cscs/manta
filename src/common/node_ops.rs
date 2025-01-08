@@ -28,7 +28,10 @@ pub async fn get_curated_hsm_group_from_hostregex(
         .map(|regex_str| Regex::new(regex_str.trim()).expect("ERROR - regex not valid"))
         .collect();
 
-    let hsm_name_available_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    let hsm_name_available_vec = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
     /* let hsm_name_available_vec =
     get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
         .await; */
@@ -108,11 +111,11 @@ pub async fn get_curated_hsm_group_from_hostlist_backend(
             .await
             .expect("Error - fetching HSM groups"); */
 
-    let hsm_name_available_vec = backend.get_hsm_name_available(auth_token).await.unwrap();
+    let hsm_name_available_vec = backend.get_group_name_available(auth_token).await.unwrap();
 
     // Get HSM group user has access to
     let hsm_group_available_map = backend
-        .get_hsm_map_and_filter_by_hsm_name_vec(
+        .get_group_map_and_filter_by_group_vec(
             auth_token,
             hsm_name_available_vec
                 .iter()
@@ -182,7 +185,10 @@ pub async fn get_curated_hsm_group_from_hostlist(
             .await
             .expect("Error - fetching HSM groups"); */
 
-    let hsm_name_available_vec = backend.get_hsm_name_available(shasta_token).await.unwrap();
+    let hsm_name_available_vec = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
     /* let hsm_name_available_vec =
     get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
         .await; */

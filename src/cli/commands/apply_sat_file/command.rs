@@ -267,7 +267,7 @@ pub async fn exec(
                 .and_then(|pattern_value| pattern_value.as_str())
             {
                 let hsm_group_members_vec: Vec<String> = backend
-                    .get_member_vec_from_hsm_name_vec(
+                    .get_member_vec_from_group_name_vec(
                         shasta_token,
                         vec![target_hsm_group_name.to_string()],
                     )

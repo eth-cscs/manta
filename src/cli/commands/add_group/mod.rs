@@ -1,7 +1,7 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
 };
-use backend_dispatcher::{contracts::BackendTrait, types::HsmGroup};
+use backend_dispatcher::{contracts::BackendTrait, types::Group};
 
 pub async fn exec(
     backend: StaticBackendDispatcher,
@@ -24,10 +24,10 @@ pub async fn exec(
     }
 
     // Create Group instance for http payload
-    let group = HsmGroup::new(label, xname_vec_opt);
+    let group = Group::new(label, xname_vec_opt);
 
     // Call backend to create group
-    let result = backend.add_hsm_group(&auth_token, group).await;
+    let result = backend.add_group(&auth_token, group).await;
 
     match result {
         Ok(_) => {}

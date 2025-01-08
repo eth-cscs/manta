@@ -9,8 +9,6 @@ use crate::backend_dispatcher::StaticBackendDispatcher;
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     new_hsm_opt: Option<&String>,
     // all_hsm_available_vec: &[String],
 ) {
@@ -40,7 +38,7 @@ pub async fn exec(
         .expect("ERROR: could not parse configuration file to TOML");
 
     let mut settings_hsm_available_vec = backend
-        .get_hsm_name_available(shasta_token)
+        .get_group_name_available(shasta_token)
         .await
         .unwrap_or(Vec::new());
     /* let mut settings_hsm_available_vec =
@@ -52,7 +50,7 @@ pub async fn exec(
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
         backend
-            .get_all_hsm_group(shasta_token)
+            .get_all_groups(shasta_token)
             .await
             .unwrap()
             .into_iter()
@@ -83,7 +81,7 @@ pub async fn exec(
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
         let all_hsm_available_vec = backend
-            .get_all_hsm_group(shasta_token)
+            .get_all_groups(shasta_token)
             .await
             .unwrap()
             .into_iter()

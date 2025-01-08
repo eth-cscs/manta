@@ -25,10 +25,7 @@ pub async fn exec(
     nodryrun: bool,
     delete_hsm_group: bool,
 ) {
-    match backend
-        .get_hsm_group(shasta_token, target_hsm_group_name)
-        .await
-    {
+    match backend.get_group(shasta_token, target_hsm_group_name).await {
         /* match hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
@@ -95,7 +92,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![target_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -124,7 +121,7 @@ pub async fn exec(
         if nodryrun && delete_hsm_group {
             log::info!("The option to delete empty groups has been selected, removing it.");
             match backend
-                .delete_hsm_group(shasta_token, &target_hsm_group_name.to_string())
+                .delete_group(shasta_token, &target_hsm_group_name.to_string())
                 .await
             {
                 /* match hsm::group::http_client::delete_hsm_group(
@@ -168,7 +165,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> = backend
-        .get_member_vec_from_hsm_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
+        .get_member_vec_from_group_name_vec(shasta_token, vec![parent_hsm_group_name.to_string()])
         .await
         .unwrap();
     /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -348,7 +345,7 @@ pub async fn exec(
         if target_group_will_be_empty {
             if delete_hsm_group {
                 log::info!("HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",target_hsm_group_name);
-                match backend.delete_hsm_group(shasta_token,
+                match backend.delete_group(shasta_token,
                                             &target_hsm_group_name.to_string()).await {
                 /* match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,

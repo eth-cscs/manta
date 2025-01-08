@@ -61,7 +61,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .expect("keycloak_base_url value missing in configuration file")
     .to_string(); */
     log::debug!("config - gitea_base_url:  {gitea_base_url}");
-    let keycloak_base_url = shasta_barebone_url.to_owned() + "/keycloak";
     let k8s_api_url = site_detail_value
         .get("k8s_api_url")
         .expect("ERROR - 'k8s_api_url' value missing in configuration file")
@@ -139,7 +138,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let cli_result = crate::cli::process::process_cli(
         matches,
         backend,
-        &keycloak_base_url,
         &shasta_api_url,
         &shasta_root_cert,
         &vault_base_url,

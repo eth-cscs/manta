@@ -1,12 +1,17 @@
-use crate::common::{cluster_ops, node_ops};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{cluster_ops, node_ops},
+};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_group_name: &str,
 ) {
     let hsm_groups = cluster_ops::get_details(
+        &backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
