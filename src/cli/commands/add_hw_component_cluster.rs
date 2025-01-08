@@ -14,8 +14,6 @@ use crate::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
     pattern: &str,
@@ -134,9 +132,8 @@ pub async fn exec(
 
     // Get HSM hw component counters for target HSM
     let mut parent_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
+        backend,
         shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
         &user_defined_delta_hw_component_vec,
         &parent_hsm_group_member_vec,
         mem_lcm,
@@ -226,9 +223,8 @@ pub async fn exec(
 
     // Get HSM hw component counters for target HSM
     let target_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
+        backend,
         shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
         &user_defined_delta_hw_component_vec,
         &target_hsm_node_vec,
         mem_lcm,
@@ -254,9 +250,8 @@ pub async fn exec(
 
     // get hsm hw component counters for target hsm
     let mut target_hsm_node_hw_component_count_vec = get_hsm_node_hw_component_counter(
+        backend,
         shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
         &user_defined_delta_hw_component_vec,
         &target_hsm_node_vec,
         mem_lcm,

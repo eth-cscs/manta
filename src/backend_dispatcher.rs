@@ -15,6 +15,7 @@ use backend_dispatcher::{
     types::{BootParameters, Group},
 };
 
+#[derive(Clone)]
 pub enum StaticBackendDispatcher {
     CSM(Csm),
     OCHAMI(Ochami),
@@ -283,6 +284,13 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
             OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+        }
+    }
+
+    async fn get_member_hw_inventory(&self, auth_token: &str, xname: &str) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.get_member_hw_inventory(auth_token, xname).await,
+            OCHAMI(b) => b.get_member_hw_inventory(auth_token, xname).await,
         }
     }
 }

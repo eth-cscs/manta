@@ -509,8 +509,6 @@ pub async fn process_cli(
                 add_hw_component_cluster::exec(
                     &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     target_hsm_group_vec.first().unwrap(),
                     parent_hsm_group_vec.first().unwrap(),
                     cli_add_hw_configuration
@@ -684,9 +682,8 @@ pub async fn process_cli(
                     .await;
 
                     get_hw_configuration_node::exec(
+                        &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
                         xnames,
                         cli_get_hw_configuration_node.get_one::<String>("type"),
                         cli_get_hw_configuration_node.get_one::<String>("output"),
@@ -1114,8 +1111,6 @@ pub async fn process_cli(
                         apply_hw_cluster_unpin::command::exec(
                             &backend,
                             &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
                             target_hsm_group_vec.first().unwrap(),
                             parent_hsm_group_vec.first().unwrap(),
                             cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
@@ -1128,8 +1123,6 @@ pub async fn process_cli(
                         apply_hw_cluster_pin::command::exec(
                             &backend,
                             &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
                             target_hsm_group_vec.first().unwrap(),
                             parent_hsm_group_vec.first().unwrap(),
                             cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
@@ -1850,8 +1843,6 @@ pub async fn process_cli(
                 delete_hw_component_cluster::exec(
                     &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     target_hsm_group_vec.first().unwrap(),
                     parent_hsm_group_vec.first().unwrap(),
                     cli_delete_hw_configuration

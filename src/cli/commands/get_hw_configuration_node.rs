@@ -1,24 +1,30 @@
+use backend_dispatcher::contracts::BackendTrait;
 use comfy_table::{Cell, Table};
-use mesa::hsm::{self, hw_inventory::hw_component::types::NodeSummary};
+use mesa::hsm::hw_inventory::hw_component::types::NodeSummary;
 use std::string::ToString;
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     xname: &str,
     type_artifact_opt: Option<&String>,
     output_opt: Option<&String>,
 ) {
-    let mut node_hw_inventory = &hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+    let mut node_hw_inventory = &backend
+        .get_member_hw_inventory(shasta_token, xname)
+        .await
+        .unwrap();
+    /* let mut node_hw_inventory = &hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         xname,
     )
     .await
-    .unwrap();
+    .unwrap(); */
 
     // node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap();
 

@@ -10,8 +10,6 @@ use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
     pattern: &str,
@@ -137,9 +135,8 @@ pub async fn exec(
     // Get HSM hw component counters for target HSM
     let mut target_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)> =
         get_hsm_node_hw_component_counter(
+        backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             &user_defined_target_hsm_hw_component_vec,
             &target_hsm_group_member_vec,
             mem_lcm,
@@ -180,9 +177,8 @@ pub async fn exec(
     // Get HSM hw component counters for parent HSM
     let mut parent_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)> =
         get_hsm_node_hw_component_counter(
+            backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             &user_defined_target_hsm_hw_component_vec,
             &parent_hsm_group_member_vec,
             mem_lcm,
@@ -380,10 +376,13 @@ pub async fn exec(
 pub mod utils {
     use std::{collections::HashMap, sync::Arc, time::Instant};
 
+    use backend_dispatcher::contracts::BackendTrait;
     use comfy_table::Color;
     use mesa::hsm;
     use serde_json::Value;
     use tokio::sync::Semaphore;
+
+    use crate::backend_dispatcher::StaticBackendDispatcher;
 
     // Returns a tuple (target_hsm, parent_hsm) with 2 list of nodes and its hardware components.
     // The left tuple element are the nodes moved from the
@@ -945,22 +944,30 @@ pub mod utils {
     /// Returns a triple like (<xname>, <list of hw components>, <list of memory capacity>)
     /// Note: list of hw components can be either the hw componentn pattern provided by user or the
     /// description from the HSM API
+    /// NOTE: backend it not borrowed because we need to clone it in order to use it across threads
     pub async fn get_node_hw_component_count(
+        backend: StaticBackendDispatcher,
         shasta_token: String,
-        shasta_base_url: String,
-        shasta_root_cert: Vec<u8>,
         hsm_member: &str,
         user_defined_hw_profile_vec: Vec<String>,
     ) -> (String, Vec<String>, Vec<u64>) {
         let node_hw_inventory_value =
-            hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+            backend.get_member_hw_inventory(
+                &shasta_token,
+                /* &shasta_base_url,
+                &shasta_root_cert, */
+                hsm_member,
+            )
+            .await
+            .unwrap();
+            /* hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
                 &shasta_token,
                 &shasta_base_url,
                 &shasta_root_cert,
                 hsm_member,
             )
             .await
-            .unwrap();
+            .unwrap(); */
 
         let node_hw_profile = get_node_hw_properties_from_value(
             &node_hw_inventory_value,
@@ -1118,9 +1125,8 @@ pub mod utils {
     }
 
     pub async fn get_hsm_node_hw_component_counter(
+        backend: &StaticBackendDispatcher,
         shasta_token: &str,
-        shasta_base_url: &str,
-        shasta_root_cert: &[u8],
         user_defined_hw_component_vec: &[String],
         hsm_group_member_vec: &[String],
         mem_lcm: u64,
@@ -1141,9 +1147,8 @@ pub mod utils {
         // Get HW inventory details for parent HSM group
         for hsm_member in hsm_group_member_vec.to_owned() {
             let shasta_token_string = shasta_token.to_string(); // TODO: make it static
-            let shasta_base_url_string = shasta_base_url.to_string(); // TODO: make it static
-            let shasta_root_cert_vec = shasta_root_cert.to_vec();
             let user_defined_hw_component_vec = user_defined_hw_component_vec.to_owned();
+            let backend_clone = backend.clone();
 
             let permit = Arc::clone(&sem).acquire_owned().await;
 
@@ -1152,9 +1157,8 @@ pub mod utils {
                 let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
 
                 get_node_hw_component_count(
+                    backend_clone,
                     shasta_token_string,
-                    shasta_base_url_string,
-                    shasta_root_cert_vec,
                     &hsm_member,
                     user_defined_hw_component_vec,
                 )

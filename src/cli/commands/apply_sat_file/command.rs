@@ -252,8 +252,6 @@ pub async fn exec(
                 apply_hw_cluster_pin::command::exec(
                     &backend,
                     shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     target_hsm_group_name,
                     parent_hsm_group_name,
                     pattern,
