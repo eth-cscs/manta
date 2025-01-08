@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.24] - 2025-01-08
+
+### Features
+
+- Migrate function to get hardware components of a node to backend dispatcher
+
+### Refactor
+
+- Clean code
+- Rename modules struct to types
+
 ## [1.54.1-beta.23] - 2025-01-06
 
 ### Bug Fixes
 
 - Fix type conversion and xname deletion
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.23
 
 ## [1.54.1-beta.22] - 2025-01-06
 
