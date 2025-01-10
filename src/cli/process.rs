@@ -1,4 +1,7 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::{
+    contracts::BackendTrait,
+    types::{ComponentArrayPostArray, ComponentCreate},
+};
 use std::{io::IsTerminal, path::PathBuf};
 
 use clap::ArgMatches;
@@ -422,7 +425,35 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
-            if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
+            if let Some(cli_add_node) = cli_add.subcommand_matches("node") {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id = cli_add_node
+                    .get_one::<String>("id")
+                    .expect("ERROR - 'id' argument is mandatory");
+
+                let component: ComponentCreate = ComponentCreate {
+                    id: id.to_string(),
+                    state: "Unknown".to_string(),
+                    flag: None,
+                    enabled: None,
+                    software_status: None,
+                    role: None,
+                    sub_role: None,
+                    nid: None,
+                    subtype: None,
+                    net_type: None,
+                    arch: None,
+                    class: None,
+                };
+
+                let components = ComponentArrayPostArray {
+                    components: vec![component],
+                    force: Some(true),
+                };
+
+                backend.post_nodes(shasta_token.as_str(), components).await;
+            } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let label = cli_add_group
