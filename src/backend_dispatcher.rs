@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    types::{BootParameters, Group},
+    types::{BootParameters, ComponentArray, ComponentArrayPostArray, Group},
 };
 
 #[derive(Clone)]
@@ -291,6 +291,17 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_member_hw_inventory(auth_token, xname).await,
             OCHAMI(b) => b.get_member_hw_inventory(auth_token, xname).await,
+        }
+    }
+
+    async fn post_nodes(
+        &self,
+        auth_token: &str,
+        component: ComponentArrayPostArray,
+    ) -> Result<ComponentArray, Error> {
+        match self {
+            CSM(b) => b.post_nodes(auth_token, component).await,
+            OCHAMI(b) => b.post_nodes(auth_token, component).await,
         }
     }
 }
