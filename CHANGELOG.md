@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.25] - 2025-01-10
+
+### Features
+
+- Add support for HSM components
+
 ## [1.54.1-beta.24] - 2025-01-08
 
 ### Features
 
 - Migrate function to get hardware components of a node to backend dispatcher
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.24
 
 ### Refactor
 
