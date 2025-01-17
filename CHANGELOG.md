@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.27] - 2025-01-17
+
+### Features
+
+- Add command to create/add new nodes (including hardware)
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.26] - 2025-01-10
 
 ### Bug Fixes
 
 - Add backend function add_nodes
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.26
 
 ## [1.54.1-beta.25] - 2025-01-10
 
