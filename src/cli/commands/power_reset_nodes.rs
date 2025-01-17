@@ -9,8 +9,6 @@ use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     xname_requested: &str,
     is_regex: bool,
     force: bool,
@@ -23,8 +21,6 @@ pub async fn exec(
         common::node_ops::get_curated_hsm_group_from_hostregex(
             &backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             xname_requested,
         )
         .await

@@ -1,8 +1,12 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    types::{ComponentArrayPostArray, ComponentCreate},
+    types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
-use std::{io::IsTerminal, path::PathBuf};
+use std::{
+    fs::File,
+    io::{BufReader, IsTerminal},
+    path::PathBuf,
+};
 
 use clap::ArgMatches;
 use config::Config;
@@ -44,7 +48,7 @@ pub async fn process_cli(
     // base_image_id: &str,
     k8s_api_url: &str,
     settings: &Config,
-) -> core::result::Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let site_name: String = match settings.get("site") {
         Ok(site_name) => site_name,
         Err(_) => {
@@ -413,8 +417,6 @@ pub async fn process_cli(
                     power_reset_nodes::exec(
                         &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
                         xname_requested,
                         is_regex,
                         *force,
@@ -432,18 +434,45 @@ pub async fn process_cli(
                     .get_one::<String>("id")
                     .expect("ERROR - 'id' argument is mandatory");
 
+                let group = cli_add_node
+                    .get_one::<String>("group")
+                    .expect("ERROR - 'group' argument is mandatory");
+
+                let hardware_file = cli_add_node
+                    .get_one::<PathBuf>("hardware")
+                    .expect("ERROR - 'hardware' argument is mandatory");
+
+                let file = File::open(hardware_file)?;
+                let reader = BufReader::new(file);
+
+                let hw_inventory: HWInventoryByLocationList =
+                    serde_json::from_reader(reader).unwrap();
+
+                println!(
+                    "DEBUG - hw inventory:\n{}",
+                    serde_json::to_string_pretty(&hw_inventory).unwrap()
+                );
+
+                let arch_opt = cli_add_node.get_one::<String>("arch").cloned();
+
+                let enabled = cli_add_node
+                    .get_one::<bool>("disabled")
+                    .cloned()
+                    .unwrap_or(true);
+
+                // Create node api payload
                 let component: ComponentCreate = ComponentCreate {
                     id: id.to_string(),
                     state: "Unknown".to_string(),
                     flag: None,
-                    enabled: None,
+                    enabled: Some(enabled),
                     software_status: None,
                     role: None,
                     sub_role: None,
                     nid: None,
                     subtype: None,
                     net_type: None,
-                    arch: None,
+                    arch: arch_opt,
                     class: None,
                 };
 
@@ -452,7 +481,64 @@ pub async fn process_cli(
                     force: Some(true),
                 };
 
-                backend.post_nodes(shasta_token.as_str(), components).await;
+                // Add node to backend
+                let add_node_rslt = backend.post_nodes(shasta_token.as_str(), components).await;
+
+                if let Err(e) = add_node_rslt {
+                    eprintln!("ERROR - Could not create node '{}'. Reason:\n{:#?}", id, e);
+                    std::process::exit(1);
+                };
+
+                log::info!("Node saved '{}'. Try to add hardware", id);
+
+                // Add hardware inventory
+                let add_hardware_rslt = backend
+                    .post_inventory_hardware(&shasta_token, hw_inventory)
+                    .await;
+
+                if let Err(e) = add_hardware_rslt {
+                    eprintln!("ERROR - Could not save node's hardware. Reason:\n{:#?}", e);
+                    std::process::exit(1);
+                };
+
+                log::info!(
+                    "Node's hardware saved '{}'. Try to join node '{}' to group '{}'",
+                    id,
+                    id,
+                    group
+                );
+
+                // Add node to group
+                let new_group_members_rslt = backend
+                    .add_members_to_group(&shasta_token, group, vec![id.clone().as_str()])
+                    .await;
+
+                if new_group_members_rslt.is_err() {
+                    eprintln!(
+                        "ERROR - Could not add node to group. Reason:\n{:#?}",
+                        new_group_members_rslt
+                    );
+                    eprintln!("Try to delete node '{}'", id);
+                    // Could not add xname to group. Reset operation by removing the node
+                    eprintln!("ERROR - operation to add node '{id}' to group '{group}' failed, delete node '{id}' to reset state");
+                    let delete_node_rslt = backend
+                        .delete_node(shasta_token.as_str(), id.clone().as_str())
+                        .await;
+
+                    if delete_node_rslt.is_ok() {
+                        eprintln!("Node '{}' deleted", id);
+                    }
+
+                    std::process::exit(1);
+                }
+
+                println!(
+                    "Node '{}' created and added to group '{}'.\nGroup '{}' members:\n{:#?}",
+                    id,
+                    group,
+                    group,
+                    new_group_members_rslt.unwrap()
+                );
             } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
@@ -607,8 +693,6 @@ pub async fn process_cli(
                 let result = add_kernel_parameters::exec(
                     backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
@@ -1756,8 +1840,6 @@ pub async fn process_cli(
                 migrate_nodes_between_hsm_groups::exec(
                     &backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     to,
                     from,
                     xnames_string,
@@ -1941,8 +2023,6 @@ pub async fn process_cli(
                 let result = delete_kernel_parameters::exec(
                     backend,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
@@ -2165,8 +2245,6 @@ pub async fn process_cli(
             add_nodes_to_hsm_groups::exec(
                 &backend,
                 &shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 target_hsm_name,
                 is_regex,
                 nodes,
@@ -2200,8 +2278,6 @@ pub async fn process_cli(
             remove_nodes_from_hsm_groups::exec(
                 &backend,
                 &shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 target_hsm_name,
                 is_regex,
                 nodes,

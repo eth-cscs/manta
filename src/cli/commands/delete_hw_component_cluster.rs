@@ -470,11 +470,16 @@ pub async fn get_node_hw_component_count(
     user_defined_hw_profile_vec: Vec<String>,
 ) -> (String, Vec<String>, Vec<u64>) {
     let node_hw_inventory_value = backend
-        .get_member_hw_inventory(
+        .get_inventory_hardware_query(
             &shasta_token,
             /* &shasta_base_url,
             &shasta_root_cert, */
             hsm_member,
+            None,
+            None,
+            None,
+            None,
+            None,
         )
         .await
         .unwrap();

@@ -8,8 +8,6 @@ use mesa::{common::jwt_ops, error::Error};
 pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     kernel_params: &str,
     xname_vec: Vec<String>,
     assume_yes: bool,
@@ -87,8 +85,6 @@ pub async fn exec(
         crate::cli::commands::power_reset_nodes::exec(
             &backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             &xname_to_reboot_vec.join(","),
             false,
             true,

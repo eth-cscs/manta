@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    types::{BootParameters, ComponentArray, ComponentArrayPostArray, Group},
+    types::{BootParameters, ComponentArrayPostArray, Group, HWInventoryByLocationList},
 };
 
 #[derive(Clone)]
@@ -84,15 +84,15 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn post_members(
+    async fn post_member(
         &self,
         auth_token: &str,
         group_label: &str,
-        xnames: &[&str],
-    ) -> Result<(), Error> {
+        xname: &str,
+    ) -> Result<Value, Error> {
         match self {
-            CSM(b) => b.post_members(auth_token, group_label, xnames).await,
-            OCHAMI(b) => b.post_members(auth_token, group_label, xnames).await,
+            CSM(b) => b.post_member(auth_token, group_label, xname).await,
+            OCHAMI(b) => b.post_member(auth_token, group_label, xname).await,
         }
     }
 
@@ -229,6 +229,45 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
+    // HSM/INVENTORY/HARDWARE
+    async fn get_inventory_hardware_query(
+        &self,
+        auth_token: &str,
+        xname: &str,
+        r#type: Option<&str>,
+        children: Option<bool>,
+        parents: Option<bool>,
+        partition: Option<&str>,
+        format: Option<&str>,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => {
+                b.get_inventory_hardware_query(
+                    auth_token, xname, r#type, children, parents, partition, format,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_inventory_hardware_query(
+                    auth_token, xname, r#type, children, parents, partition, format,
+                )
+                .await
+            }
+        }
+    }
+
+    // HSM/INVENTORY/HARDWARE
+    async fn post_inventory_hardware(
+        &self,
+        auth_token: &str,
+        hardware: HWInventoryByLocationList,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.post_inventory_hardware(auth_token, hardware).await,
+            OCHAMI(b) => b.post_inventory_hardware(auth_token, hardware).await,
+        }
+    }
+
     // PCS
     async fn power_on_sync(&self, auth_token: &str, nodes: &[String]) -> Result<Value, Error> {
         match self {
@@ -287,21 +326,21 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn get_member_hw_inventory(&self, auth_token: &str, xname: &str) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.get_member_hw_inventory(auth_token, xname).await,
-            OCHAMI(b) => b.get_member_hw_inventory(auth_token, xname).await,
-        }
-    }
-
     async fn post_nodes(
         &self,
         auth_token: &str,
         component: ComponentArrayPostArray,
-    ) -> Result<ComponentArray, Error> {
+    ) -> Result<(), Error> {
         match self {
             CSM(b) => b.post_nodes(auth_token, component).await,
             OCHAMI(b) => b.post_nodes(auth_token, component).await,
+        }
+    }
+
+    async fn delete_node(&self, auth_token: &str, id: &str) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.delete_node(auth_token, id).await,
+            OCHAMI(b) => b.delete_node(auth_token, id).await,
         }
     }
 }

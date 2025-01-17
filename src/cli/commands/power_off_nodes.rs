@@ -22,8 +22,6 @@ pub async fn exec(
         common::node_ops::get_curated_hsm_group_from_hostregex(
             &backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             xname_requested,
         )
         .await
@@ -35,8 +33,6 @@ pub async fn exec(
         common::node_ops::get_curated_hsm_group_from_hostlist(
             backend,
             shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
             xname_requested,
         )
         .await

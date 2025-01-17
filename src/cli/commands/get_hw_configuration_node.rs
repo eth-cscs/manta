@@ -14,7 +14,7 @@ pub async fn exec(
     output_opt: Option<&String>,
 ) {
     let mut node_hw_inventory = &backend
-        .get_member_hw_inventory(shasta_token, xname)
+        .get_inventory_hardware_query(shasta_token, xname, None, None, None, None, None)
         .await
         .unwrap();
     /* let mut node_hw_inventory = &hsm::hw_inventory::hw_component::http_client::get_hw_inventory(

@@ -269,8 +269,6 @@ pub async fn exec(
             power_reset_nodes::exec(
                 &backend,
                 shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &nodes.join(","),
                 false,
                 true,

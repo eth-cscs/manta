@@ -608,13 +608,17 @@ pub fn subcommand_validate_local_repo() -> Command {
 pub fn subcommand_add() -> Command {
     Command::new("add")
             .arg_required_else_help(true)
-            .about("Add hw components to cluster")
+            .about("Add/Create new elements to system. Nodes will be added to the user's 'parent' group")
             .subcommand(
                 Command::new("node")
                 .visible_alias("n")
-                .about("Add/Create new group")
+                .about("Add/Create new node")
                 .arg_required_else_help(true)
-                .arg(arg!(-i --id <VALUE> "xname").required(true))
+                .arg(arg!(-i --id <VALUE> "Xname").required(true))
+                .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
+                .arg(arg!(-H --hardware <FILE> "hardware").required(true).value_parser(value_parser!(PathBuf)))
+                .arg(arg!(-a --arch <VALUE> "Architecture").value_parser(["X86", "ARM", "Other"]))
+                .arg(arg!(-d --disabled "Disable node upon creation").action(ArgAction::SetFalse))
             )
             .subcommand(
                 Command::new("group")
