@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.28] - 2025-01-18
+
+### Features
+
+- Update github pipeline
+
 ## [1.54.1-beta.27] - 2025-01-17
 
 ### Features
 
 - Add command to create/add new nodes (including hardware)
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.27
 
 ### Refactor
 
