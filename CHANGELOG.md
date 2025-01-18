@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Update github pipeline
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.28
+
 ## [1.54.1-beta.27] - 2025-01-17
 
 ### Features
