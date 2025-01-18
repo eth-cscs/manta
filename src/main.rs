@@ -50,16 +50,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .strip_suffix("/apis")
         .unwrap_or(&shasta_base_url);
     let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
-    /* let gitea_base_url = site_detail_value
-    .get("gitea_base_url")
-    .expect("gitea_base_url value missing in configuration file")
-    .to_string(); */
     log::debug!("config - shasta_api_url:  {shasta_api_url}");
     let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
-    /* let keycloak_base_url = site_detail_value
-    .get("keycloak_base_url")
-    .expect("keycloak_base_url value missing in configuration file")
-    .to_string(); */
     log::debug!("config - gitea_base_url:  {gitea_base_url}");
     let k8s_api_url = site_detail_value
         .get("k8s_api_url")
@@ -127,14 +119,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let backend = StaticBackendDispatcher::new(&backend_tech, &shasta_base_url, &shasta_root_cert);
 
-    /* let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-        &vault_base_url,
-        &vault_secret_path,
-        &vault_role_id,
-    )
-    .await
-    .unwrap(); */
-
     let cli_result = crate::cli::process::process_cli(
         matches,
         backend,
@@ -143,12 +127,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &vault_base_url,
         &vault_secret_path,
         &vault_role_id,
-        // &gitea_token,
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
-        // settings_hsm_available_vec,
-        // &site_available_vec,
-        // &base_image_id,
         &k8s_api_url,
         &settings,
     )
