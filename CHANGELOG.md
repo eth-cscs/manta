@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.31] - 2025-01-18
+
+### Refactor
+
+- Upgrade cicd pipeline
+
 ## [1.54.1-beta.30] - 2025-01-18
 
 ### Features
 
 - Update github pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.30
 
 ## [1.54.1-beta.29] - 2025-01-18
 
