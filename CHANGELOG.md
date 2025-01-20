@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.32] - 2025-01-20
+
+### Bug Fixes
+
+- Add hardware inventory mandatory fields
+
 ## [1.54.1-beta.31] - 2025-01-18
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.31
 
 ### Refactor
 
