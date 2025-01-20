@@ -445,8 +445,15 @@ pub async fn process_cli(
                 let file = File::open(hardware_file)?;
                 let reader = BufReader::new(file);
 
-                let hw_inventory: HWInventoryByLocationList =
+                let hw_inventory_value: serde_json::Value =
                     serde_json::from_reader(reader).unwrap();
+
+                println!("DEBUG - hw inventory:\n{:#?}", hw_inventory_value);
+
+                // let hw_inventory: HWInventoryList = serde_json::from_reader(reader).unwrap();
+                let hw_inventory: HWInventoryByLocationList =
+                    serde_json::from_value(hw_inventory_value)
+                        .expect("ERROR - Could not parse hardware inventory file");
 
                 println!(
                     "DEBUG - hw inventory:\n{}",
