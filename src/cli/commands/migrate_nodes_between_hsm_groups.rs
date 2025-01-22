@@ -17,7 +17,7 @@ pub async fn exec(
     // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
     // hostlist have been removed
     let mut hsm_group_summary: HashMap<String, Vec<String>> =
-        crate::common::node_ops::get_curated_hsm_group_from_hostlist(
+        crate::common::node_ops::get_curated_hsm_group_from_xname_hostlist(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

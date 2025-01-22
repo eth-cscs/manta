@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::bootparameters::BootParameters, node::r#struct::NodeDetails};
+use mesa::{bss::bootparameters::BootParameters, error::Error, node::r#struct::NodeDetails};
 use regex::Regex;
 
 use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
@@ -12,16 +12,16 @@ use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
 /// 1) Break down all regex in user input
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
-pub async fn get_curated_hsm_group_from_hostregex(
+pub async fn get_curated_hsm_group_from_nid_regex(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    xname_requested_regex: &str,
+    nid_requested_regex: &str,
 ) -> HashMap<String, Vec<String>> {
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
     // Get list of regex
-    let regex_vec: Vec<Regex> = xname_requested_regex
+    let regex_vec: Vec<Regex> = nid_requested_regex
         .split(",")
         .map(|regex_str| Regex::new(regex_str.trim()).expect("ERROR - regex not valid"))
         .collect();
@@ -60,9 +60,197 @@ pub async fn get_curated_hsm_group_from_hostregex(
     hsm_group_summary
 }
 
+/// Check if input is a NID
+pub fn validate_nid(nid: &str) -> bool {
+    nid.to_lowercase().starts_with("nid")
+        && nid.len() == 9
+        && nid
+            .strip_prefix("nid")
+            .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
+}
+
+/// Get list of xnames from NIDs
+/// The list of NIDs can be:
+///     - comma separated list of NIDs (eg: nid000001,nid000002,nid000003)
+///     - regex (eg: nid00000.*)
+///     - hostlist (eg: nid0000[01-15])
+pub async fn nid_to_xname(
+    shasta_base_url: &str,
+    shasta_token: &str,
+    shasta_root_cert: &[u8],
+    user_input_nid: &str,
+    is_regex: bool,
+) -> Result<Vec<String>, Error> {
+    if is_regex {
+        log::debug!("Regex found, getting xnames from NIDs");
+        // Get list of regex
+        let regex_vec: Vec<Regex> = user_input_nid
+            .split(",")
+            .map(|regex_str| {
+                Regex::new(regex_str.trim())
+                    .expect(format!("Regex '{}' not valid", regex_str).as_str())
+            })
+            .collect();
+
+        // Get all HSM components (list of xnames + nids)
+        let hsm_component_vec = mesa::hsm::component::http_client::get_all_nodes(
+            shasta_base_url,
+            shasta_token,
+            shasta_root_cert,
+            Some("true"),
+        )
+        .await?
+        .components
+        .unwrap_or_default();
+
+        let mut xname_vec: Vec<String> = vec![];
+
+        // Get list of xnames the user is asking for
+        for hsm_component in hsm_component_vec {
+            let nid_long = format!("nid{:06}", &hsm_component.nid.expect("No NID found"));
+            for regex in &regex_vec {
+                if regex.is_match(&nid_long) {
+                    log::debug!(
+                        "Nid '{}' IS included in regex '{}'",
+                        nid_long,
+                        regex.as_str()
+                    );
+                    xname_vec.push(hsm_component.id.clone().expect("No XName found"));
+                }
+            }
+        }
+
+        return Ok(xname_vec);
+    } else {
+        log::debug!("No regex found, getting xnames from list of NIDs or NIDs hostlist");
+        let nid_hostlist_expanded_vec_rslt = parse(user_input_nid);
+
+        let nid_hostlist_expanded_vec = match nid_hostlist_expanded_vec_rslt {
+            Ok(xname_requested_vec) => xname_requested_vec,
+            Err(e) => {
+                println!(
+                    "Could not parse list of nodes as a hostlist. Reason:\n{}Exit",
+                    e
+                );
+                std::process::exit(1);
+            }
+        };
+
+        log::debug!("hostlist: {}", user_input_nid);
+        log::debug!("hostlist expanded: {:?}", nid_hostlist_expanded_vec);
+
+        let nid_short = nid_hostlist_expanded_vec
+            .iter()
+            .map(|nid_long| {
+                nid_long
+                    .strip_prefix("nid")
+                    .expect(format!("Nid '{}' not valid, 'nid' prefix missing", nid_long).as_str())
+                    .trim_start_matches("0")
+            })
+            .collect::<Vec<&str>>()
+            .join(",");
+
+        log::debug!("short NID list: {}", nid_short);
+
+        let hsm_components = mesa::hsm::component::http_client::get(
+            shasta_base_url,
+            shasta_token,
+            shasta_root_cert,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(&nid_short),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("true"),
+        )
+        .await;
+
+        // Get list of xnames from HSM components
+        let xname_vec: Vec<String> = hsm_components?
+            .components
+            .unwrap_or_default()
+            .iter()
+            .map(|component| component.id.clone().unwrap())
+            .collect();
+
+        log::debug!("xname list:\n{:#?}", xname_vec);
+
+        return Ok(xname_vec);
+    };
+}
+
+/// Get list of xnames user has access to based on input regex.
+/// This method will:
+/// 1) Break down all regex in user input
+/// 2) Fetch all HSM groups user has access to
+/// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
+pub async fn get_curated_hsm_group_from_xname_regex(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    xname_requested_regex: &str,
+) -> HashMap<String, Vec<String>> {
+    let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
+
+    // Get list of regex
+    let regex_vec: Vec<Regex> = xname_requested_regex
+        .split(",")
+        .map(|regex_str| {
+            Regex::new(regex_str.trim()).expect(format!("Regex '{}' not valid", regex_str).as_str())
+        })
+        .collect();
+
+    let hsm_name_available_vec =
+        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_available_vec
+            .iter()
+            .map(|hsm_name| hsm_name.as_str())
+            .collect(),
+    )
+    .await
+    .expect("ERROR - could not get HSM group summary");
+
+    // Filter hsm group members
+    for (hsm_name, xnames) in hsm_group_available_map {
+        for xname in xnames {
+            for regex in &regex_vec {
+                if regex.is_match(&xname) {
+                    hsm_group_summary
+                        .entry(hsm_name.clone())
+                        .and_modify(|member_vec| member_vec.push(xname.clone()))
+                        .or_insert(vec![xname.clone()]);
+                }
+            }
+        }
+    }
+
+    hsm_group_summary
+}
+
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
-pub async fn get_curated_hsm_group_from_hostlist(
+pub async fn get_curated_hsm_group_from_xname_hostlist(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
