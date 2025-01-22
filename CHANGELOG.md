@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.2] - 2025-01-22
+
+### Bug Fixes
+
+- Power management operations exit if list of nodes after expanding user input is empty
+
+### Features
+
+- Upgrade github pipeline
+
 ## [1.54.1] - 2025-01-22
 
 ### Features
 
 - Power commands now accepts nid nodes
 - Power commands now accepts nid nodes
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1
 
 ## [1.54.0] - 2024-11-23
 
