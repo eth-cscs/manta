@@ -52,6 +52,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
 ) -> Vec<String> {
+    log::debug!("Get HSM names available from JWT or all");
     let mut realm_access_role_vec =
         mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
 
@@ -62,8 +63,15 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
-            hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+
         realm_access_role_filtered_vec.sort();
+
+        log::debug!(
+            "HSM groups available from JWT: {:?}",
+            realm_access_role_filtered_vec
+        );
+
         realm_access_role_filtered_vec
     } else {
         let mut all_hsm_groups =
@@ -75,6 +83,11 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
                 .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
+
+        log::debug!(
+            "User has access to all HSM group available: {:?}",
+            all_hsm_groups
+        );
 
         all_hsm_groups
     }

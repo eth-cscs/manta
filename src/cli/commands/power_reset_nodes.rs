@@ -61,6 +61,11 @@ pub async fn exec(
         hsm_group_summary.values().flatten().cloned().collect()
     };
 
+    if xname_vec.is_empty() {
+        eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");
+        std::process::exit(0);
+    }
+
     xname_vec.sort();
     xname_vec.dedup();
 
