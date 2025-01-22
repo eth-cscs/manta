@@ -17,8 +17,7 @@ pub async fn exec(
     // Filter xnames to the ones members to HSM groups the user has access to
     //
     let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
-        crate::common::node_ops::get_curated_hsm_group_from_hostregex(
-            &backend,
+        crate::common::node_ops::get_curated_hsm_group_from_xname_regex(
             shasta_token,
             xname_requested,
         )
@@ -28,8 +27,7 @@ pub async fn exec(
         // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
         // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
         // hostlist have been removed
-        crate::common::node_ops::get_curated_hsm_group_from_hostlist(
-            backend,
+        crate::common::node_ops::get_curated_hsm_group_from_xname_hostlist(
             shasta_token,
             xname_requested,
         )
