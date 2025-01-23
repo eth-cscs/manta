@@ -3,20 +3,19 @@ use std::collections::HashMap;
 use backend_dispatcher::contracts::BackendTrait;
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::types::BootParameters, node::types::NodeDetails};
+use mesa::{bss::types::BootParameters, error::Error, node::types::NodeDetails};
 use regex::Regex;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
-/// Get list of xnames user has access to based on input regex.
+/* /// Get list of xnames user has access to based on input regex.
 /// This method will:
 /// 1) Break down all regex in user input
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
 pub async fn get_curated_hsm_group_from_nid_regex(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     nid_requested_regex: &str,
 ) -> HashMap<String, Vec<String>> {
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
@@ -73,16 +72,16 @@ pub async fn get_curated_hsm_group_from_nid_regex(
     }
 
     hsm_group_summary
-}
+} */
 
-/// Check if input is a NID
+/* /// Check if input is a NID
 pub fn validate_nid(nid: &str) -> bool {
     nid.to_lowercase().starts_with("nid")
         && nid.len() == 9
         && nid
             .strip_prefix("nid")
             .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
-}
+} */
 
 /// Get list of xnames from NIDs
 /// The list of NIDs can be:
@@ -214,9 +213,10 @@ pub async fn nid_to_xname(
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
 pub async fn get_curated_hsm_group_from_xname_regex(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
+    /* shasta_base_url: &str,
+    shasta_root_cert: &[u8], */
     xname_requested_regex: &str,
 ) -> HashMap<String, Vec<String>> {
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
@@ -229,22 +229,23 @@ pub async fn get_curated_hsm_group_from_xname_regex(
         })
         .collect();
 
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let hsm_name_available_vec = backend
+        .get_group_name_available(shasta_token)
+        .await
+        .unwrap();
+    // get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert).await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
-    )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    let hsm_group_available_map = backend
+        .get_hsm_map_and_filter_by_hsm_name_vec(
+            shasta_token,
+            hsm_name_available_vec
+                .iter()
+                .map(|hsm_name| hsm_name.as_str())
+                .collect(),
+        )
+        .await
+        .expect("ERROR - could not get HSM group summary");
 
     // Filter hsm group members
     for (hsm_name, xnames) in hsm_group_available_map {
@@ -266,9 +267,8 @@ pub async fn get_curated_hsm_group_from_xname_regex(
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
 pub async fn get_curated_hsm_group_from_xname_hostlist(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
+    backend: &StaticBackendDispatcher,
+    auth_token: &str,
     xname_requested_hostlist: &str,
 ) -> HashMap<String, Vec<String>> {
     // Create a summary of HSM groups and the list of members filtered by the list of nodes the
@@ -336,7 +336,7 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
     hsm_group_summary
 }
 
-/// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
+/* /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
 pub async fn get_curated_hsm_group_from_hostlist(
     backend: &StaticBackendDispatcher,
@@ -412,7 +412,7 @@ pub async fn get_curated_hsm_group_from_hostlist(
     }
 
     hsm_group_summary
-}
+} */
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();

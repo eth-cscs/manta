@@ -275,7 +275,7 @@ fn test_is_cfs_configuration_used_to_build_image_false_2() {
     );
 }
 
-/// Validate CFS session type dynamic:
+/* /// Validate CFS session type dynamic:
 /// - check CFS configuration related to CFS session is not a desired configuration
 pub fn is_cfs_configuration_a_desired_configuration(
     cfs_component_vec: &Vec<ComponentResponse>,
@@ -289,7 +289,7 @@ pub fn is_cfs_configuration_a_desired_configuration(
             .unwrap()
             .eq(&cfs_configuration_name)
     })
-}
+} */
 
 /// Validate CFS session type dynamic:
 /// - check CFS configuration related to CFS session is a desired configuration used by a node or

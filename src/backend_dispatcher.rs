@@ -343,4 +343,33 @@ impl BackendTrait for StaticBackendDispatcher {
             OCHAMI(b) => b.delete_node(auth_token, id).await,
         }
     }
+
+    async fn get_hsm_map_and_filter_by_hsm_name_vec(
+        &self,
+        auth_token: &str,
+        hsm_name_vec: Vec<&str>,
+    ) -> Result<HashMap<String, Vec<String>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+        }
+    }
+
+    async fn nid_to_xname(
+        &self,
+        auth_token: &str,
+        user_input_nid: &str,
+        is_regex: bool,
+    ) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+            OCHAMI(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+        }
+    }
 }

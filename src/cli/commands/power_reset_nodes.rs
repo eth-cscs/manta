@@ -9,8 +9,6 @@ use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hosts_string: &str,
     is_regex: bool,
     force: bool,
@@ -19,13 +17,17 @@ pub async fn exec(
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
-    let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await;
+    /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+    .await; */
 
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
     let mut xname_vec = if crate::cli::commands::power_on_nodes::is_user_input_nids(hosts_string) {
         log::debug!("User input seems to be NID");
-        common::node_ops::nid_to_xname(
+        backend
+            .nid_to_xname(shasta_token, hosts_string, is_regex)
+            .await
+            .expect("Could not convert NID to XNAME")
+        /* common::node_ops::nid_to_xname(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -33,14 +35,15 @@ pub async fn exec(
             is_regex,
         )
         .await
-        .expect("Could not convert NID to XNAME")
+        .expect("Could not convert NID to XNAME") */
     } else {
         log::debug!("User input seems to be XNAME");
         let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
             common::node_ops::get_curated_hsm_group_from_xname_regex(
+                backend,
                 shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
+                /* shasta_base_url,
+                shasta_root_cert, */
                 &hosts_string,
             )
             .await
@@ -50,9 +53,8 @@ pub async fn exec(
             // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
             // hostlist have been removed
             common::node_ops::get_curated_hsm_group_from_xname_hostlist(
+                backend,
                 shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &hosts_string,
             )
             .await
