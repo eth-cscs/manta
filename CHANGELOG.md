@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.3] - 2025-01-23
+
+### Features
+
+- Restrict admin users to the ones with kc role pa_admin
+
 ## [1.54.2] - 2025-01-22
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Upgrade github pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.2
 
 ## [1.54.1] - 2025-01-22
 
