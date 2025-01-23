@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.33] - 2025-01-23
+
+### Bug Fixes
+
+- Power management operations exit if list of nodes after expanding user input is empty
+
+### Features
+
+- Power commands now accepts nid nodes
+- Upgrade github pipeline
+
 ## [1.54.1-beta.32] - 2025-01-20
 
 ### Bug Fixes
 
 - Add hardware inventory mandatory fields
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.32
 
 ## [1.54.1-beta.31] - 2025-01-18
 
@@ -232,18 +247,6 @@ All notable changes to this project will be documented in this file.
 
 ## [1.54.1-beta.10] - 2024-12-31
 
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.10
-
-## [1.54.1-beta.9] - 2024-12-31
-
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.9
-
-## [1.54.1-beta.8] - 2024-12-31
-
 ### Bug Fixes
 
 - Update cargo dist
@@ -251,6 +254,8 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta version 1.54.1-beta.8
+- Release manta version 1.54.1-beta.9
+- Release manta version 1.54.1-beta.10
 
 ## [1.54.1-beta.7] - 2024-12-31
 
@@ -1389,16 +1394,6 @@ All notable changes to this project will be documented in this file.
 
 ## [1.45.3] - 2024-07-28
 
-### Features
-
-- Update mesa version
-
-### Miscellaneous Tasks
-
-- Release manta version 1.45.3
-
-## [1.45.2] - 2024-07-28
-
 ### Bug Fixes
 
 - Bug in subcommand "apply template" where "limit" argument was not
@@ -1409,10 +1404,12 @@ All notable changes to this project will be documented in this file.
 - Parameters
 - Subcommand "apply template" now sets "reboot" as default operation
 - Ignored and instead process all nodes in BOS sessiontemplate
+- Update mesa version
 
 ### Miscellaneous Tasks
 
 - Release manta version 1.45.2
+- Release manta version 1.45.3
 
 ### Refactor
 
