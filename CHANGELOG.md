@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.34] - 2025-01-23
+
+### Features
+
+- Migrate code related to translate nid to xnames to bakcends
+
 ## [1.54.1-beta.33] - 2025-01-23
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Power commands now accepts nid nodes
 - Upgrade github pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.33
 
 ## [1.54.1-beta.32] - 2025-01-20
 
