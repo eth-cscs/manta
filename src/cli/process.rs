@@ -20,7 +20,6 @@ use super::commands::{
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
-    set_boot_configuration, set_boot_image, set_runtime_configuration,
 };
 
 pub async fn process_cli(
