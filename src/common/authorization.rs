@@ -2,16 +2,15 @@ use backend_dispatcher::contracts::BackendTrait;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
-/// Returns a list of HSM groups the user is expected to work with.
-/// This function validates the list of HSM groups and returns an error if user tries to access a
-/// HSM group he does not have access to
-/// If the user did not request any HSM group, then it will return all HSM
-/// groups he has access to
-pub async fn get_target_hsm_group_vec_or_all(
+/// Returns a curated list of 'groups' the user has access to.
+/// This function validates the list of groups and returns an error if user tries to access a
+/// group he does not have access to
+/// If the user did not request any HSM group, then it will return all groups available
+pub async fn get_groups_available(
     backend: &StaticBackendDispatcher,
     auth_token: &str,
-    hsm_group_cli_arg_opt: Option<&String>,
-    hsm_group_env_or_config_file_opt: Option<&String>,
+    group_cli_arg_opt: Option<&String>,
+    group_env_or_config_file_opt: Option<&String>,
 ) -> Result<Vec<String>, backend_dispatcher::error::Error> {
     // Get list of groups the user has access to
     let hsm_name_available_vec = backend.get_group_name_available(auth_token).await?;
@@ -19,10 +18,10 @@ pub async fn get_target_hsm_group_vec_or_all(
     // Get the group name the user is trying to work with, this value can be in 2 different places:
     //  - command argument
     //  - configuration (environment variable or config file)
-    let target_hsm_group_opt = if hsm_group_cli_arg_opt.is_some() {
-        hsm_group_cli_arg_opt
+    let target_hsm_group_opt = if group_cli_arg_opt.is_some() {
+        group_cli_arg_opt
     } else {
-        hsm_group_env_or_config_file_opt
+        group_env_or_config_file_opt
     };
 
     // Validate the user has access to the HSM group is requested

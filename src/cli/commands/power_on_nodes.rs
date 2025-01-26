@@ -23,15 +23,9 @@ pub async fn exec(
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
     let mut xname_vec = if is_user_input_nids(hosts_string) {
         log::debug!("User input seems to be NID");
-        common::node_ops::nid_to_xname(
-            shasta_base_url,
-            shasta_token,
-            shasta_root_cert,
-            hosts_string,
-            is_regex,
-        )
-        .await
-        .expect("Could not convert NID to XNAME")
+        common::node_ops::nid_to_xname(backend, shasta_token, hosts_string, is_regex)
+            .await
+            .expect("Could not convert NID to XNAME")
     } else {
         log::debug!("User input seems to be XNAME");
         let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {

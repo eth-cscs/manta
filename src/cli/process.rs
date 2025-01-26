@@ -15,7 +15,7 @@ use k8s_openapi::chrono;
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     cli::commands::validate_local_repo,
-    common::authorization::{get_target_hsm_group_vec_or_all, validate_target_hsm_members},
+    common::authorization::{get_groups_available, validate_target_hsm_members},
 };
 
 use super::commands::{
@@ -176,7 +176,7 @@ pub async fn process_cli(
                         .get_one::<String>("CLUSTER_NAME")
                         .expect("The 'cluster name' argument must have a value");
 
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -265,7 +265,7 @@ pub async fn process_cli(
 
                     let output: &str = cli_power_off_cluster.get_one::<String>("output").unwrap();
 
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -351,7 +351,7 @@ pub async fn process_cli(
 
                     let output: &str = cli_power_reset_cluster.get_one::<String>("output").unwrap();
 
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -598,7 +598,7 @@ pub async fn process_cli(
                 let target_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("target-cluster");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -611,7 +611,7 @@ pub async fn process_cli(
                 let parent_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("parent-cluster");
 
-                let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let parent_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -650,7 +650,7 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
 
                 let xname_vec: Vec<String> = if hsm_group_name_arg_opt.is_some() {
-                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
+                    let hsm_group_name_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         hsm_group_name_arg_opt,
@@ -717,7 +717,7 @@ pub async fn process_cli(
 
                 let group_name_arg_opt = cli_get_group.get_one::<String>("VALUE");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     group_name_arg_opt,
@@ -756,7 +756,7 @@ pub async fn process_cli(
                     let hsm_group_name_arg_opt =
                         cli_get_hw_configuration_cluster.get_one::<String>("CLUSTER_NAME");
 
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -834,7 +834,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_rslt = cli_get_configuration.try_get_one("hsm-group");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -876,7 +876,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
-                let target_hsm_group_vec: Vec<String> = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec: Vec<String> = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -927,7 +927,7 @@ pub async fn process_cli(
                     .get_one("output")
                     .expect("ERROR - output must be a valid value");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -984,7 +984,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     hsm_group_name_arg_opt,
@@ -1063,7 +1063,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1093,7 +1093,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1127,7 +1127,7 @@ pub async fn process_cli(
                 let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
 
                 let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
-                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
+                    let hsm_group_name_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         hsm_group_name_arg_opt,
@@ -1190,7 +1190,7 @@ pub async fn process_cli(
                     let target_hsm_group_name_arg_opt =
                         cli_apply_hw_cluster.get_one::<String>("target-cluster");
 
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -1203,7 +1203,7 @@ pub async fn process_cli(
                     let parent_hsm_group_name_arg_opt =
                         cli_apply_hw_cluster.get_one::<String>("parent-cluster");
 
-                    let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let parent_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -1283,7 +1283,7 @@ pub async fn process_cli(
 
                 let hsm_group_members_opt = cli_apply_session.get_one::<String>("ansible-limit");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1619,7 +1619,7 @@ pub async fn process_cli(
                     // Validate
                     //
                     // Check user has provided valid HSM group name
-                    let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                    let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         /* shasta_base_url,
@@ -1669,7 +1669,7 @@ pub async fn process_cli(
 
             let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("cluster").unwrap_or(None);
 
-            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+            let target_hsm_group_vec = get_groups_available(
                 &backend,
                 &shasta_token,
                 /* shasta_base_url,
@@ -1737,7 +1737,7 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1790,7 +1790,7 @@ pub async fn process_cli(
                 let xnames_string: &String = cli_migrate_nodes.get_one("XNAMES").unwrap();
 
                 // Get target hsm group from either cli arguments or config and validate
-                let from_rslt = get_target_hsm_group_vec_or_all(
+                let from_rslt = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1817,7 +1817,7 @@ pub async fn process_cli(
                 .await; */
 
                 // Validate 'to' hsm groups
-                let to_rslt = get_target_hsm_group_vec_or_all(
+                let to_rslt = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1934,7 +1934,7 @@ pub async fn process_cli(
                 let target_hsm_group_name_arg_opt =
                     cli_delete_hw_configuration.get_one::<String>("target-cluster");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1950,7 +1950,7 @@ pub async fn process_cli(
                 let parent_hsm_group_name_arg_opt =
                     cli_delete_hw_configuration.get_one::<String>("parent-cluster");
 
-                let parent_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let parent_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -1980,7 +1980,7 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt = cli_delete_kernel_parameters.get_one("hsm-group");
 
                 let xname_vec: Vec<String> = if hsm_group_name_arg_opt.is_some() {
-                    let hsm_group_name_vec = get_target_hsm_group_vec_or_all(
+                    let hsm_group_name_vec = get_groups_available(
                         &backend,
                         &shasta_token,
                         hsm_group_name_arg_opt,
@@ -2050,7 +2050,7 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
@@ -2094,7 +2094,7 @@ pub async fn process_cli(
                     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
                         vec![settings_hsm_group_name.clone()]
                     } else {
-                        get_target_hsm_group_vec_or_all(
+                        get_groups_available(
                             &backend,
                             &shasta_token,
                             /* shasta_base_url,
@@ -2171,7 +2171,7 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
+                let hsm_name_available_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,

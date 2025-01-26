@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::{
+    contracts::BackendTrait, error::Error, interfaces::hsm::Component as ComponentTrait,
+};
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::types::BootParameters, error::Error, node::types::NodeDetails};
+use mesa::{bss::types::BootParameters, node::types::NodeDetails};
 use regex::Regex;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -89,9 +91,8 @@ pub fn validate_nid(nid: &str) -> bool {
 ///     - regex (eg: nid00000.*)
 ///     - hostlist (eg: nid0000[01-15])
 pub async fn nid_to_xname(
-    shasta_base_url: &str,
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_root_cert: &[u8],
     user_input_nid: &str,
     is_regex: bool,
 ) -> Result<Vec<String>, Error> {
@@ -107,7 +108,12 @@ pub async fn nid_to_xname(
             .collect();
 
         // Get all HSM components (list of xnames + nids)
-        let hsm_component_vec = mesa::hsm::component::http_client::get_all_nodes(
+        let hsm_component_vec = backend
+            .get_all_nodes(shasta_token, Some("true"))
+            .await?
+            .components
+            .unwrap_or_default();
+        /* let hsm_component_vec = mesa::hsm::component::http_client::get_all_nodes(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -115,7 +121,7 @@ pub async fn nid_to_xname(
         )
         .await?
         .components
-        .unwrap_or_default();
+        .unwrap_or_default(); */
 
         let mut xname_vec: Vec<String> = vec![];
 
@@ -166,32 +172,31 @@ pub async fn nid_to_xname(
 
         log::debug!("short NID list: {}", nid_short);
 
-        let hsm_components = mesa::hsm::component::http_client::get(
-            shasta_base_url,
-            shasta_token,
-            shasta_root_cert,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            Some(&nid_short),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            Some("true"),
-        )
-        .await;
+        let hsm_components = backend
+            .get(
+                shasta_token,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(&nid_short),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("true"),
+            )
+            .await;
 
         // Get list of xnames from HSM components
         let xname_vec: Vec<String> = hsm_components?
