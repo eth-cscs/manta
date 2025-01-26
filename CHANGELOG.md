@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.37] - 2025-01-26
+
+### Bug Fixes
+
+- List hardware inventory of a node
+
 ## [1.54.1-beta.36] - 2025-01-26
 
 ### Bug Fixes
 
 - Command 'config show' won't panic if backend API is unrecheable
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.36
 
 ## [1.54.1-beta.35] - 2025-01-26
 
