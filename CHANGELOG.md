@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.35] - 2025-01-26
+
+### Features
+
+- Testing segregating traits into modules by type of product
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.34] - 2025-01-23
 
 ### Features
 
 - Migrate code related to translate nid to xnames to bakcends
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.34
 
 ## [1.54.1-beta.33] - 2025-01-23
 
