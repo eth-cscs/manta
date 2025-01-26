@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use backend_dispatcher::{
-    contracts::BackendTrait, error::Error, interfaces::hsm::Component as ComponentTrait,
+    contracts::BackendTrait, error::Error, interfaces::hsm::HardwareMetadata,
 };
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;

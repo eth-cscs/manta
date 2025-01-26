@@ -12,9 +12,10 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    interfaces::hsm::Component as ComponentTrait,
+    interfaces::hsm::HardwareMetadata,
     types::{
-        BootParameters, ComponentArray, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+        BootParameters, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+        HardwareMetadataArray,
     },
 };
 
@@ -46,12 +47,12 @@ impl StaticBackendDispatcher {
     }
 }
 
-impl ComponentTrait for StaticBackendDispatcher {
+impl HardwareMetadata for StaticBackendDispatcher {
     async fn get_all_nodes(
         &self,
         auth_token: &str,
         nid_only: Option<&str>,
-    ) -> Result<ComponentArray, Error> {
+    ) -> Result<HardwareMetadataArray, Error> {
         match self {
             CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
             OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
@@ -81,7 +82,7 @@ impl ComponentTrait for StaticBackendDispatcher {
         flag_only: Option<&str>,
         role_only: Option<&str>,
         nid_only: Option<&str>,
-    ) -> Result<ComponentArray, Error> {
+    ) -> Result<HardwareMetadataArray, Error> {
         match self {
             CSM(b) => {
                 b.get(
