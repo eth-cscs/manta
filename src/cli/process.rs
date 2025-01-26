@@ -68,11 +68,11 @@ pub async fn process_cli(
                 &site_name,
             )
             .await?; */
-            let shasta_token = backend.get_api_token(&site_name).await?;
+            let shasta_token_rslt = backend.get_api_token(&site_name).await;
 
             config_show::exec(
                 &backend,
-                &shasta_token,
+                shasta_token_rslt.ok(),
                 /* shasta_base_url,
                 shasta_root_cert, */
                 settings,
