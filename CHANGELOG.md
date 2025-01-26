@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.36] - 2025-01-26
+
+### Bug Fixes
+
+- Command 'config show' won't panic if backend API is unrecheable
+
 ## [1.54.1-beta.35] - 2025-01-26
 
 ### Features
 
 - Testing segregating traits into modules by type of product
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.35
 
 ### Refactor
 
