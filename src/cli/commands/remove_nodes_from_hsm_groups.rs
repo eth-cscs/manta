@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
@@ -11,33 +9,24 @@ pub async fn exec(
     shasta_token: &str,
     target_hsm_name: &String,
     is_regex: bool,
-    xname_requested: &str,
+    hosts_string: &str,
     dryrun: bool,
 ) {
-    // Filter xnames to the ones members to HSM groups the user has access to
-    //
-    let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
-        crate::common::node_ops::get_curated_hsm_group_from_xname_regex(
-            backend,
-            shasta_token,
-            xname_requested,
-        )
-        .await
-    } else {
-        // Get HashMap with HSM groups and members curated for this request.
-        // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
-        // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
-        // hostlist have been removed
-        crate::common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-            backend,
-            shasta_token,
-            xname_requested,
-        )
-        .await
-    };
-
-    // Get list of xnames available
-    let mut xname_to_move_vec: Vec<&String> = hsm_group_summary.values().flatten().collect();
+    // Convert user input to xname
+    let mut xname_to_move_vec = common::node_ops::resolve_node_list_user_input_to_xname(
+        backend,
+        shasta_token,
+        hosts_string,
+        is_regex,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
 
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();
@@ -66,14 +55,6 @@ pub async fn exec(
         .get_group(shasta_token, target_hsm_name)
         .await
         .is_ok()
-    /* if hsm::group::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&target_hsm_name),
-    )
-    .await
-    .is_ok() */
     {
         log::debug!("The HSM group {} exists, good.", target_hsm_name);
     }
@@ -89,31 +70,8 @@ pub async fn exec(
     // Remove xnames from HSM group
     for xname in xname_to_move_vec {
         let _ = backend
-            .delete_member_from_group(shasta_token, &target_hsm_name, xname)
+            .delete_member_from_group(shasta_token, &target_hsm_name, &xname)
             .await
             .unwrap();
     }
-    /* let node_migration_rslt = hsm::group::utils::remove_hsm_members(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &target_hsm_name,
-        xname_to_move_vec
-            .iter()
-            .map(|xname| xname.as_str())
-            .collect(),
-        dryrun,
-    )
-    .await;
-
-    match node_migration_rslt {
-        Ok(mut target_hsm_group_member_vec) => {
-            target_hsm_group_member_vec.sort();
-            println!(
-                "HSM '{}' members: {:?}",
-                target_hsm_name, target_hsm_group_member_vec
-            );
-        }
-        Err(e) => eprintln!("{}", e),
-    } */
 }

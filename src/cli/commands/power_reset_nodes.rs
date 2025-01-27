@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use backend_dispatcher::contracts::BackendTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
@@ -20,8 +18,24 @@ pub async fn exec(
     /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
     .await; */
 
-    // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
-    let mut xname_vec = if crate::cli::commands::power_on_nodes::is_user_input_nids(hosts_string) {
+    // Convert user input to xname
+    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
+        backend,
+        shasta_token,
+        hosts_string,
+        is_regex,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
+
+    /* // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
+    let mut xname_vec = if is_user_input_nids(hosts_string) {
         log::debug!("User input seems to be NID");
         backend
             .nid_to_xname(shasta_token, hosts_string, is_regex)
@@ -61,7 +75,7 @@ pub async fn exec(
         };
 
         hsm_group_summary.values().flatten().cloned().collect()
-    };
+    }; */
 
     if xname_vec.is_empty() {
         eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");

@@ -529,7 +529,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
                 ),
         )
         .subcommand(
@@ -557,7 +557,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
                 ),
         )
         .subcommand(
@@ -584,7 +584,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of xnames to power off.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0'")),
+                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
                 ),
         )
 }
@@ -725,7 +725,7 @@ pub fn subcommand_add_nodes_to_groups() -> Command {
             .visible_aliases(["ag"])
             .about("Add nodes to a list of groups")
             .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
             .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
@@ -735,7 +735,7 @@ pub fn subcommand_remove_nodes_from_groups() -> Command {
            .visible_aliases(["rg"])
            .about("Remove nodes from groups")
            .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
-           .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
            .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }

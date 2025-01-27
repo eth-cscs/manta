@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{common::jwt_ops, error::Error, pcs};
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{self},
+};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -15,79 +16,21 @@ pub async fn exec(
     assume_yes: bool,
     output: &str,
 ) {
-    // Filter xnames to the ones members to HSM groups the user has access to
-    //
-    /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-    .await; */
-
-    // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
-    let mut xname_vec = if is_user_input_nids(hosts_string) {
-        log::debug!("User input seems to be NID");
-        common::node_ops::nid_to_xname(backend, shasta_token, hosts_string, is_regex)
-            .await
-            .expect("Could not convert NID to XNAME")
-    } else {
-        log::debug!("User input seems to be XNAME");
-        let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
-            common::node_ops::get_curated_hsm_group_from_xname_regex(
-                backend,
-                shasta_token,
-                /* shasta_base_url,
-                shasta_root_cert, */
-                &hosts_string,
-            )
-            .await
-        } else {
-            // Get HashMap with HSM groups and members curated for this request.
-            // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
-            // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
-            // hostlist have been removed
-            common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                backend,
-                shasta_token,
-                &hosts_string,
-            )
-            .await
-        };
-
-        hsm_group_summary.values().flatten().cloned().collect()
-    };
-
-    /* let mut xname_vec = if is_nid {
-        common::node_ops::nid_to_xname(
-            shasta_base_url,
-            shasta_token,
-            shasta_root_cert,
-            xname_requested,
-            is_regex,
-        )
-        .await
-        .expect("Could not convert NID to XNAME")
-    } else {
-        let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
-            common::node_ops::get_curated_hsm_group_from_xname_regex(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &xname_requested,
-            )
-            .await
-        } else {
-            // Get HashMap with HSM groups and members curated for this request.
-            // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
-            // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
-            // hostlist have been removed
-            common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &xname_requested,
-            )
-            .await
-        };
-
-        hsm_group_summary.values().flatten().cloned().collect()
-    }; */
+    // Convert user input to xname
+    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
+        backend,
+        shasta_token,
+        hosts_string,
+        is_regex,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
 
     if xname_vec.is_empty() {
         eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");
@@ -142,9 +85,4 @@ pub async fn exec(
 
     // Audit
     log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
-}
-
-/// Check if user input is 'nid'
-pub fn is_user_input_nids(user_input: &str) -> bool {
-    user_input.to_lowercase().contains("nid")
 }
