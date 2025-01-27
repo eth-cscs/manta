@@ -175,7 +175,7 @@ pub async fn exec(
             .unwrap();
 
         // Get CFS session logs
-        let logs_stream_rslt = kubernetes::get_cfs_session_container_git_clone_logs_stream(
+        let logs_stream_rslt = kubernetes::print_cfs_session_container_git_clone_logs_stream(
             client.clone(),
             &cfs_session_name,
         )
@@ -191,7 +191,7 @@ pub async fn exec(
         }
 
         let _ =
-            kubernetes::get_cfs_session_container_ansible_logs_stream(client, &cfs_session_name)
+            kubernetes::print_cfs_session_container_ansible_logs_stream(client, &cfs_session_name)
                 .await
                 .unwrap();
 
