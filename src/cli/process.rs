@@ -1709,6 +1709,7 @@ pub async fn process_cli(
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 console_node::exec(
+                    &backend,
                     settings_hsm_group_name_opt,
                     // cli_console,
                     &shasta_token,

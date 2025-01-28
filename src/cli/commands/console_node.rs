@@ -4,9 +4,13 @@ use mesa::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::terminal_ops;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{self, terminal_ops},
+};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     hsm_group: Option<&String>,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -17,6 +21,31 @@ pub async fn exec(
     k8s_api_url: &str,
     xname: &str,
 ) {
+    // Convert user input to xname
+    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
+        backend,
+        shasta_token,
+        xname,
+        false,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
+
+    if xname_vec.len() != 1 {
+        eprintln!("The node to operate is not valid. Nothing to do. Exit");
+        std::process::exit(0);
+    }
+
+    xname_vec.dedup();
+
+    let xname = xname_vec.first().unwrap();
+
     if hsm_group.is_some() {
         // Check user has provided valid XNAMES
         if !node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm(
