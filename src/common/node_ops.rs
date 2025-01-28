@@ -143,7 +143,7 @@ pub async fn resolve_node_list_user_input_to_xname(
             get_xname_from_user_nid_expression(user_input, is_regex, &all_short_nid_vec)?;
 
         // Get list of xnames from short nids requested by user
-        let mut requested_xname_vec: Vec<String> = node_hw_metadata
+        let requested_xname_vec: Vec<String> = node_hw_metadata
             .iter()
             .filter(|component| requested_short_nid_vec.contains(&component.nid.clone().unwrap()))
             .map(|component| component.id.clone().unwrap())
@@ -152,9 +152,6 @@ pub async fn resolve_node_list_user_input_to_xname(
         log::debug!("xname list:\n{:#?}", requested_xname_vec);
 
         // let xname_vec_rslt = nid_to_xname(backend, shasta_token, user_input, is_regex).await;
-
-        // Filter xnames to the ones the user has access to
-        requested_xname_vec.retain(|xname| xname_available_vec.contains(xname));
 
         requested_xname_vec
     } else {
@@ -176,6 +173,7 @@ pub async fn resolve_node_list_user_input_to_xname(
         xname_vec
     };
 
+    // Filter xnames to the ones the user has access to
     xname_requested_by_user_vec.retain(|xname| xname_available_vec.contains(&xname));
 
     Ok(xname_requested_by_user_vec)
