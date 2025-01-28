@@ -19,16 +19,16 @@ pub async fn exec(
     vault_secret_path: &str,
     vault_role_id: &str,
     k8s_api_url: &str,
-    xname: &str,
+    host: &str,
 ) {
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
-    let mut xname_vec = if is_user_input_nids(xname) {
+    let mut xname_vec = if is_user_input_nids(host) {
         log::debug!("User input seems to be NID");
         common::node_ops::nid_to_xname(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
-            xname,
+            host,
             false,
         )
         .await
@@ -44,7 +44,7 @@ pub async fn exec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                &xname,
+                &host,
             )
             .await;
 
@@ -54,10 +54,10 @@ pub async fn exec(
     xname_vec.dedup();
 
     if xname_vec.is_empty() {
-        eprintln!("ERROR - node '{}' not found", xname);
+        eprintln!("ERROR - node '{}' not found", host);
     }
 
-    println!("input {} output {:?}", xname, xname_vec);
+    log::debug!("input {} translates to xname {:?}", host, xname_vec);
 
     let xname = xname_vec.first().unwrap();
 
