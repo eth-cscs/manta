@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.5] - 2025-01-28
+
+### Bug Fixes
+
+- Update github workflow
+
 ## [1.54.4] - 2025-01-28
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Clean code
 - Node console now accepts nid
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.4
 
 ## [1.54.3] - 2025-01-23
 
