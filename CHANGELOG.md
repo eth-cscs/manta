@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.40] - 2025-01-28
+
+### Bug Fixes
+
+- Update github workflow
+
 ## [1.54.1-beta.39] - 2025-01-28
 
 ### Features
 
 - Update cargo dist workspace
 - Console node command now accepts nid
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.39
 
 ### Refactor
 
