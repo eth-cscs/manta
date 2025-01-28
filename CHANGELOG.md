@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.39] - 2025-01-28
+
+### Features
+
+- Update cargo dist workspace
+- Console node command now accepts nid
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.38] - 2025-01-27
 
 ### Features
 
 - Improve user node input management (nid/xname as comma separated list, hostlist or regex) and migrate this functionality to add and remove nodes to group commands
 - Improve user node input management (nid/xname as comma separated list, hostlist or regex) and migrate this functionality to add and remove nodes to group commands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.38
 
 ### Refactor
 
