@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use futures::StreamExt;
 
 use mesa::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::terminal_ops;
+use crate::common::{self, terminal_ops};
+
+use super::power_on_nodes::is_user_input_nids;
 
 pub async fn exec(
     hsm_group: Option<&String>,
@@ -17,6 +21,46 @@ pub async fn exec(
     k8s_api_url: &str,
     xname: &str,
 ) {
+    // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
+    let mut xname_vec = if is_user_input_nids(xname) {
+        log::debug!("User input seems to be NID");
+        common::node_ops::nid_to_xname(
+            shasta_base_url,
+            shasta_token,
+            shasta_root_cert,
+            xname,
+            false,
+        )
+        .await
+        .expect("Could not convert NID to XNAME")
+    } else {
+        log::debug!("User input seems to be XNAME");
+        let hsm_group_summary: HashMap<String, Vec<String>> = 
+            // Get HashMap with HSM groups and members curated for this request.
+            // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
+            // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
+            // hostlist have been removed
+            common::node_ops::get_curated_hsm_group_from_xname_hostlist(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &xname,
+            )
+            .await;
+
+        hsm_group_summary.values().flatten().cloned().collect()
+    };
+
+    xname_vec.dedup();
+
+    if xname_vec.is_empty() {
+        eprintln!("ERROR - node '{}' not found", xname);
+    }
+
+    println!("input {} output {:?}", xname, xname_vec);
+
+    let xname = xname_vec.first().unwrap();
+
     if hsm_group.is_some() {
         // Check user has provided valid XNAMES
         if !node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm(
