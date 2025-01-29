@@ -2,11 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.41] - 2025-01-29
+
+### Refactor
+
+- Group trait methods
+- Group trait methods
+- Organize traits
+- Organize traits
+
 ## [1.54.1-beta.40] - 2025-01-28
 
 ### Bug Fixes
 
 - Update github workflow
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.40
 
 ## [1.54.1-beta.39] - 2025-01-28
 
