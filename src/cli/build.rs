@@ -286,9 +286,10 @@ pub fn subcommand_get_node_details() -> Command {
         .about("Get node details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
+        .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)
-        .arg(arg!(<XNAMES> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+        .arg(arg!(<VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
 }
 
 pub fn subcommand_get_hsm_groups_details() -> Command {
@@ -315,7 +316,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
         .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
-        .arg(arg!(-x --xnames <VALUE> "Comma separated list of xnames to retreive the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+        .arg(arg!(-x --xnames <VALUE> "Comma separated list of xnames to retrieve the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
         .arg(arg!(-H --"hsm-group" <VALUE> "List kernel parameters for all nodes in a HSM group name"))
         .arg(arg!(-f --filter <VALUE> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"))
         .arg(arg!(-o --output <VALUE> "Output format.").value_parser(["table", "json"]).default_value("table"))
@@ -529,7 +530,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
+                        .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'")),
                 ),
         )
         .subcommand(
@@ -557,7 +558,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
+                        .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'")),
                 ),
         )
         .subcommand(
@@ -584,7 +585,7 @@ pub fn subcommand_power() -> Command {
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(<VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'")),
+                        .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'")),
                 ),
         )
 }
@@ -725,8 +726,8 @@ pub fn subcommand_add_nodes_to_groups() -> Command {
             .visible_aliases(["ag"])
             .about("Add nodes to a list of groups")
             .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
-            .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
+            .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
@@ -735,7 +736,7 @@ pub fn subcommand_remove_nodes_from_groups() -> Command {
            .visible_aliases(["rg"])
            .about("Remove nodes from groups")
            .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
-           .arg(arg!(-r --"regex" "Input nodes in regex format.").action(ArgAction::SetTrue))
+            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
+           .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
