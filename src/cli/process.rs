@@ -895,13 +895,18 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
                 // Get list of nodes from cli argument
-                let node_vec: Vec<String> = cli_get_nodes
+                let xname_requested: &str = cli_get_nodes
                     .get_one::<String>("XNAMES")
-                    .expect("ERROR - need list of xnames")
-                    .clone()
-                    .split(",")
-                    .map(|xname_str| xname_str.trim().to_string())
-                    .collect();
+                    .expect("The 'xnames' argument must have values");
+
+                let is_regex = *cli_get_nodes.get_one::<bool>("regex").unwrap_or(&true);
+                /* let node_vec: Vec<String> = cli_get_nodes
+                .get_one::<String>("XNAMES")
+                .expect("ERROR - need list of xnames")
+                .clone()
+                .split(",")
+                .map(|xname_str| xname_str.trim().to_string())
+                .collect();
 
                 // Validate user has access to list of xnames
                 validate_target_hsm_members(
@@ -910,19 +915,20 @@ pub async fn process_cli(
                     shasta_root_cert,
                     node_vec.clone(),
                 )
-                .await;
+                .await; */
 
                 get_nodes::exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    node_vec.clone(),
+                    xname_requested,
                     *cli_get_nodes
                         .get_one::<bool>("nids-only-one-line")
                         .unwrap_or(&false),
                     false,
                     cli_get_nodes.get_one::<String>("output"),
                     *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false),
+                    is_regex,
                 )
                 .await;
             } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
