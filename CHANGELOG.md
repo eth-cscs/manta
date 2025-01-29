@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Migrate traits
 - Apply cargo fix
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.43
+
 ## [1.54.1-beta.42] - 2025-01-29
 
 ### Bug Fixes
