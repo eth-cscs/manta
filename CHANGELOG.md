@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.7] - 2025-01-29
+
+### Features
+
+- Command 'get nodes' now accepts nids
+
 ## [1.54.6] - 2025-01-28
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.6
 
 ### Refactor
 
