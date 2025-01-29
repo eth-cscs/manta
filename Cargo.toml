@@ -19,12 +19,12 @@ publish = false                                                         # cargo 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-# backend-dispatcher = "0.1.14"
-mesa = { path = "../mesa" } # Only for development purposes
-# mesa = "0.42.3-beta.21"
-ochami-rs = { path = "../ochami-rs" } # Only for development purposes
-# ochami-rs = "0.1.12"
+# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
+backend-dispatcher = "0.1.15"
+# mesa = { path = "../mesa" } # Only for development purposes
+mesa = "0.42.3-beta.23"
+# ochami-rs = { path = "../ochami-rs" } # Only for development purposes
+ochami-rs = "0.1.13"
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
 strum_macros = "0.25"
