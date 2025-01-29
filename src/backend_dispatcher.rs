@@ -79,6 +79,23 @@ impl GroupTrait for StaticBackendDispatcher {
             }
         }
     }
+
+    async fn get_group_map_and_filter_by_group_vec(
+        &self,
+        auth_token: &str,
+        hsm_name_vec: Vec<&str>,
+    ) -> Result<HashMap<String, Vec<String>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+        }
+    }
 }
 
 impl HardwareMetadataTrait for StaticBackendDispatcher {
@@ -289,24 +306,6 @@ impl BackendTrait for StaticBackendDispatcher {
             }
             OCHAMI(b) => {
                 b.update_group_members(auth_token, group_name, members_to_remove, members_to_add)
-                    .await
-            }
-        }
-    }
-
-    // HSM/GROUP
-    async fn get_group_map_and_filter_by_group_vec(
-        &self,
-        auth_token: &str,
-        hsm_name_vec: Vec<&str>,
-    ) -> Result<HashMap<String, Vec<String>>, Error> {
-        match self {
-            CSM(b) => {
-                b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
-                    .await
-            }
-            OCHAMI(b) => {
-                b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
                     .await
             }
         }
