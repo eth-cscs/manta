@@ -55,6 +55,13 @@ impl GroupTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn get_group_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => b.get_group_name_available(jwt_token).await,
+            OCHAMI(b) => b.get_group_name_available(jwt_token).await,
+        }
+    }
+
     async fn add_group(&self, auth_token: &str, hsm_group: Group) -> Result<Group, Error> {
         match self {
             CSM(b) => b.add_group(auth_token, hsm_group).await,
@@ -94,122 +101,6 @@ impl GroupTrait for StaticBackendDispatcher {
                 b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
                     .await
             }
-        }
-    }
-}
-
-impl HardwareMetadataTrait for StaticBackendDispatcher {
-    async fn get_all_nodes(
-        &self,
-        auth_token: &str,
-        nid_only: Option<&str>,
-    ) -> Result<HardwareMetadataArray, Error> {
-        match self {
-            CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
-            OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
-        }
-    }
-
-    async fn get(
-        &self,
-        auth_token: &str,
-        id: Option<&str>,
-        r#type: Option<&str>,
-        state: Option<&str>,
-        flag: Option<&str>,
-        role: Option<&str>,
-        subrole: Option<&str>,
-        enabled: Option<&str>,
-        software_status: Option<&str>,
-        subtype: Option<&str>,
-        arch: Option<&str>,
-        class: Option<&str>,
-        nid: Option<&str>,
-        nid_start: Option<&str>,
-        nid_end: Option<&str>,
-        partition: Option<&str>,
-        group: Option<&str>,
-        state_only: Option<&str>,
-        flag_only: Option<&str>,
-        role_only: Option<&str>,
-        nid_only: Option<&str>,
-    ) -> Result<HardwareMetadataArray, Error> {
-        match self {
-            CSM(b) => {
-                b.get(
-                    auth_token,
-                    id,
-                    r#type,
-                    state,
-                    flag,
-                    role,
-                    subrole,
-                    enabled,
-                    software_status,
-                    subtype,
-                    arch,
-                    class,
-                    nid,
-                    nid_start,
-                    nid_end,
-                    partition,
-                    group,
-                    state_only,
-                    flag_only,
-                    role_only,
-                    nid_only,
-                )
-                .await
-            }
-            OCHAMI(b) => {
-                b.get(
-                    auth_token,
-                    id,
-                    r#type,
-                    state,
-                    flag,
-                    role,
-                    subrole,
-                    enabled,
-                    software_status,
-                    subtype,
-                    arch,
-                    class,
-                    nid,
-                    nid_start,
-                    nid_end,
-                    partition,
-                    group,
-                    state_only,
-                    flag_only,
-                    role_only,
-                    nid_only,
-                )
-                .await
-            }
-        }
-    }
-}
-
-impl BackendTrait for StaticBackendDispatcher {
-    fn test_backend_trait(&self) -> String {
-        println!("in manta backend");
-        "in manta backend".to_string()
-    }
-
-    // AUTHENTICATION
-    async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
-        match self {
-            CSM(b) => b.get_api_token(site_name).await,
-            OCHAMI(b) => b.get_api_token(site_name).await,
-        }
-    }
-
-    // HSM/GROUP
-    async fn get_group_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
-        match self {
-            CSM(b) => b.get_group_name_available(jwt_token).await,
-            OCHAMI(b) => b.get_group_name_available(jwt_token).await,
         }
     }
 
@@ -330,6 +221,114 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.delete_group(auth_token, hsm_group_label).await,
             OCHAMI(b) => b.delete_group(auth_token, hsm_group_label).await,
+        }
+    }
+}
+
+impl HardwareMetadataTrait for StaticBackendDispatcher {
+    async fn get_all_nodes(
+        &self,
+        auth_token: &str,
+        nid_only: Option<&str>,
+    ) -> Result<HardwareMetadataArray, Error> {
+        match self {
+            CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
+            OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
+        }
+    }
+
+    async fn get(
+        &self,
+        auth_token: &str,
+        id: Option<&str>,
+        r#type: Option<&str>,
+        state: Option<&str>,
+        flag: Option<&str>,
+        role: Option<&str>,
+        subrole: Option<&str>,
+        enabled: Option<&str>,
+        software_status: Option<&str>,
+        subtype: Option<&str>,
+        arch: Option<&str>,
+        class: Option<&str>,
+        nid: Option<&str>,
+        nid_start: Option<&str>,
+        nid_end: Option<&str>,
+        partition: Option<&str>,
+        group: Option<&str>,
+        state_only: Option<&str>,
+        flag_only: Option<&str>,
+        role_only: Option<&str>,
+        nid_only: Option<&str>,
+    ) -> Result<HardwareMetadataArray, Error> {
+        match self {
+            CSM(b) => {
+                b.get(
+                    auth_token,
+                    id,
+                    r#type,
+                    state,
+                    flag,
+                    role,
+                    subrole,
+                    enabled,
+                    software_status,
+                    subtype,
+                    arch,
+                    class,
+                    nid,
+                    nid_start,
+                    nid_end,
+                    partition,
+                    group,
+                    state_only,
+                    flag_only,
+                    role_only,
+                    nid_only,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get(
+                    auth_token,
+                    id,
+                    r#type,
+                    state,
+                    flag,
+                    role,
+                    subrole,
+                    enabled,
+                    software_status,
+                    subtype,
+                    arch,
+                    class,
+                    nid,
+                    nid_start,
+                    nid_end,
+                    partition,
+                    group,
+                    state_only,
+                    flag_only,
+                    role_only,
+                    nid_only,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl BackendTrait for StaticBackendDispatcher {
+    fn test_backend_trait(&self) -> String {
+        println!("in manta backend");
+        "in manta backend".to_string()
+    }
+
+    // AUTHENTICATION
+    async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
+        match self {
+            CSM(b) => b.get_api_token(site_name).await,
+            OCHAMI(b) => b.get_api_token(site_name).await,
         }
     }
 

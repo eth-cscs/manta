@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::group::GroupTrait;
 use mesa::cfs::{
     self,
     configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse,

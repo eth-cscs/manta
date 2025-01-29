@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use backend_dispatcher::{
-    contracts::BackendTrait,
     error::Error,
     interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
 };
