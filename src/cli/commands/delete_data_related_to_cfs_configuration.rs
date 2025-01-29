@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 
 use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::group::GroupTrait;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};

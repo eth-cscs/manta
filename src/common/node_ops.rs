@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    interfaces::hsm::{GroupTrait, HardwareMetadataTrait},
+    interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
 };
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;

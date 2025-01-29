@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    interfaces::hsm::{GroupTrait, HardwareMetadataTrait},
+    interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
     types::{
         BootParameters, ComponentArrayPostArray, Group, HWInventoryByLocationList,
         HardwareMetadataArray,
@@ -52,6 +52,31 @@ impl GroupTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_group_available(auth_token).await,
             OCHAMI(b) => b.get_group_available(auth_token).await,
+        }
+    }
+
+    async fn add_group(&self, auth_token: &str, hsm_group: Group) -> Result<Group, Error> {
+        match self {
+            CSM(b) => b.add_group(auth_token, hsm_group).await,
+            OCHAMI(b) => b.add_group(auth_token, hsm_group).await,
+        }
+    }
+
+    // FIXME: rename function to 'get_hsm_group_members'
+    async fn get_member_vec_from_group_name_vec(
+        &self,
+        auth_token: &str,
+        hsm_group_name_vec: Vec<String>,
+    ) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
+                    .await
+            }
         }
     }
 }
@@ -168,25 +193,6 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_group_name_available(jwt_token).await,
             OCHAMI(b) => b.get_group_name_available(jwt_token).await,
-        }
-    }
-
-    // HSM/GROUP
-    // FIXME: rename function to 'get_hsm_group_members'
-    async fn get_member_vec_from_group_name_vec(
-        &self,
-        auth_token: &str,
-        hsm_group_name_vec: Vec<String>,
-    ) -> Result<Vec<String>, Error> {
-        match self {
-            CSM(b) => {
-                b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
-                    .await
-            }
-            OCHAMI(b) => {
-                b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
-                    .await
-            }
         }
     }
 
@@ -318,13 +324,6 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_group(auth_token, hsm_name).await,
             OCHAMI(b) => b.get_group(auth_token, hsm_name).await,
-        }
-    }
-
-    async fn add_group(&self, auth_token: &str, hsm_group: Group) -> Result<Group, Error> {
-        match self {
-            CSM(b) => b.add_group(auth_token, hsm_group).await,
-            OCHAMI(b) => b.add_group(auth_token, hsm_group).await,
         }
     }
 
