@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.43] - 2025-01-29
+
+### Bug Fixes
+
+- Migrate traits
+- Apply cargo fix
+
 ## [1.54.1-beta.42] - 2025-01-29
 
 ### Bug Fixes
@@ -11,6 +18,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Command 'get nodes' now accepts nids and xnames as a list or hostlist or regex
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.42
 
 ## [1.54.1-beta.41] - 2025-01-29
 
