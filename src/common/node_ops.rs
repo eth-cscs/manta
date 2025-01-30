@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use backend_dispatcher::{
+    contracts::BackendTrait,
     error::Error,
     interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
 };
@@ -113,6 +114,7 @@ pub async fn resolve_node_list_user_input_to_xname(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     user_input: &str,
+    is_include_siblings: bool,
     is_regex: bool,
 ) -> Result<Vec<String>, Error> {
     // Get list of xnames available to the user
@@ -172,10 +174,32 @@ pub async fn resolve_node_list_user_input_to_xname(
         xname_vec
     };
 
-    // Filter xnames to the ones the user has access to
-    xname_requested_by_user_vec.retain(|xname| xname_available_vec.contains(&xname));
+    let xname_vec: Vec<String> = if is_include_siblings {
+        let xname_blade_requested_by_user_vec: Vec<String> = xname_requested_by_user_vec
+            .iter()
+            .map(|xname| xname[0..10].to_string())
+            .collect();
 
-    Ok(xname_requested_by_user_vec)
+        log::debug!("Xname blades:\n{:?}", xname_blade_requested_by_user_vec);
+
+        // Filter xnames to the ones the user has access to
+        xname_available_vec
+            .into_iter()
+            .filter(|xname| {
+                xname_blade_requested_by_user_vec
+                    .iter()
+                    .any(|xname_blade| xname.starts_with(xname_blade))
+            })
+            .collect()
+    } else {
+        // Filter xnames to the ones the user has access to
+        xname_requested_by_user_vec
+            .into_iter()
+            .filter(|xname| xname_available_vec.contains(&xname))
+            .collect()
+    };
+
+    Ok(xname_vec)
 }
 
 /// Get list of xnames from a list of user expressions related to NIDs

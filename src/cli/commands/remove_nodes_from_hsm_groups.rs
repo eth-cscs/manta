@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
@@ -17,6 +17,7 @@ pub async fn exec(
         backend,
         shasta_token,
         hosts_string,
+        false,
         is_regex,
     )
     .await

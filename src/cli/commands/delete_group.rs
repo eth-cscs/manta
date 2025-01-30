@@ -1,5 +1,5 @@
 use crate::backend_dispatcher::StaticBackendDispatcher;
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
 
 pub async fn exec(backend: &StaticBackendDispatcher, auth_token: &str, label: &str) {
     // Validate if group can be deleted

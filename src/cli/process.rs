@@ -1025,11 +1025,17 @@ pub async fn process_cli(
                     .get_one::<String>("VALUE")
                     .expect("The 'xnames' argument must have values");
 
+                let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
+
                 let is_regex = *cli_get_nodes.get_one::<bool>("regex").unwrap_or(&true);
 
                 let nids_only = cli_get_nodes
                     .get_one::<bool>("nids-only-one-line")
                     .unwrap_or(&false);
+
+                let output = cli_get_nodes.get_one::<String>("output");
+
+                let status = *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false);
 
                 /* // Get list of nodes from cli argument
                 let node_vec: Vec<String> = cli_get_nodes
@@ -1055,15 +1061,12 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    // node_vec.clone(),
                     xname_requested,
-                    /* *cli_get_nodes
-                    .get_one::<bool>("nids-only-one-line")
-                    .unwrap_or(&false), */
-                    false,
+                    is_include_siblings,
                     *nids_only,
-                    cli_get_nodes.get_one::<String>("output"),
-                    *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false),
+                    false,
+                    output,
+                    status,
                     is_regex,
                 )
                 .await;

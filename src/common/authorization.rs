@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 

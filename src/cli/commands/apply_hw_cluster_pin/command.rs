@@ -1,5 +1,5 @@
 use crate::backend_dispatcher::StaticBackendDispatcher;
-use backend_dispatcher::{interfaces::group::GroupTrait, types::Group};
+use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait, types::Group};
 use std::collections::HashMap;
 
 use crate::cli::commands::apply_hw_cluster_pin::command::utils::{

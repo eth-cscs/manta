@@ -286,6 +286,7 @@ pub fn subcommand_get_node_details() -> Command {
         .about("Get node details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
         .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
+        .arg(arg!(-S --"include-siblings" "Output includes extra nodes related to the ones requested by used. 2 nodes are siblings if they share the same power supply.").action(ArgAction::SetTrue))
         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
         .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
         .arg_required_else_help(true)

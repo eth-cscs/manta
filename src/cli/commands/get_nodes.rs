@@ -11,7 +11,8 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     // mut node_list: Vec<String>,
     hosts_string: &str,
-    silent: bool,
+    is_include_siblings: bool,
+    silent_nid: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
     status: bool,
@@ -22,6 +23,7 @@ pub async fn exec(
         backend,
         shasta_token,
         hosts_string,
+        is_include_siblings,
         is_regex,
     )
     .await
@@ -82,7 +84,7 @@ pub async fn exec(
         };
 
         println!("{}", status_output);
-    } else if silent {
+    } else if silent_nid {
         let node_nid_list = node_details_list
             .iter()
             .map(|node_details| node_details.nid.clone())

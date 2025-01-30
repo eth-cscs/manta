@@ -1,4 +1,4 @@
-use backend_dispatcher::{interfaces::group::GroupTrait, types::Group};
+use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait, types::Group};
 use comfy_table::Table;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;

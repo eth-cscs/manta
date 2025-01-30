@@ -24,6 +24,7 @@ pub async fn exec(
         backend,
         shasta_token,
         hosts_string,
+        false,
         is_regex,
     )
     .await
