@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.9] - 2025-01-30
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.9
+
 ## [1.54.8] - 2025-01-30
 
 ### Features
