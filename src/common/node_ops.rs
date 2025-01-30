@@ -132,7 +132,7 @@ pub async fn resolve_node_list_user_input_to_xname(
         .unwrap_or_default();
 
     // Expand user input to list of xnames
-    let mut xname_requested_by_user_vec = if is_user_input_nids(user_input) {
+    let xname_requested_by_user_vec = if is_user_input_nids(user_input) {
         log::debug!("User input seems to be NID");
         let all_short_nid_vec: Vec<usize> = node_hw_metadata
             .iter()

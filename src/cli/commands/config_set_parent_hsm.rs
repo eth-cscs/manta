@@ -1,6 +1,6 @@
 use std::{fs, io::Write, path::PathBuf};
 
-use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
+use backend_dispatcher::contracts::BackendTrait;
 use directories::ProjectDirs;
 use toml_edit::{value, Document};
 

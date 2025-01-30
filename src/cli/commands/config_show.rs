@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
+use backend_dispatcher::contracts::BackendTrait;
 use config::{Config, Value};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
