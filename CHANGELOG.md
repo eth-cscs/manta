@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.45] - 2025-01-30
+
+### Bug Fixes
+
+- Revert back dangling changes from trait migration
+
+### Features
+
+- New argument in command 'get nodes' to get the list of siblings
+
+### Refactor
+
+- Cargo fix
+
+## [1.54.1-beta.44] - 2025-01-29
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.44
+
 ## [1.54.1-beta.43] - 2025-01-29
 
 ### Bug Fixes
