@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use crate::common::{self, node_ops};
 
-use super::power_on_nodes::is_user_input_nids;
+use super::{
+    config_show::get_hsm_name_available_from_jwt_or_all, power_on_nodes::is_user_input_nids,
+};
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
@@ -10,16 +12,34 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hosts_string: &str,
-    silent: bool,
+    is_siblings: bool,
+    silent_nids: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
     status: bool,
     is_regex: bool,
 ) {
+    let hsm_name_available_vec =
+        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_available_vec
+            .iter()
+            .map(|hsm_name| hsm_name.as_str())
+            .collect(),
+    )
+    .await
+    .expect("ERROR - could not get HSM group summary");
+
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
-    let mut node_list = if is_user_input_nids(hosts_string) {
+    let mut node_list: Vec<String> = if is_user_input_nids(hosts_string) {
         log::debug!("User input seems to be NID");
-        common::node_ops::nid_to_xname(
+        let xname_requested_vec = common::node_ops::nid_to_xname(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -27,15 +47,34 @@ pub async fn exec(
             is_regex,
         )
         .await
-        .expect("Could not convert NID to XNAME")
+        .expect("Could not convert NID to XNAME");
+
+        let xname_shelf_vec: Vec<String> = if is_siblings {
+            xname_requested_vec
+                .iter()
+                .map(|xname| xname[0..10].to_string())
+                .collect()
+        } else {
+            xname_requested_vec
+        };
+
+        // Filter hsm group members
+        let xname_available_iter = hsm_group_available_map.values().flatten().cloned();
+
+        xname_available_iter
+            .filter(|xname| {
+                xname_shelf_vec
+                    .iter()
+                    .any(|xname_shelf| xname.starts_with(xname_shelf))
+            })
+            .collect()
     } else {
         log::debug!("User input seems to be XNAME");
         let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
             common::node_ops::get_curated_hsm_group_from_xname_regex(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &hosts_string,
+                hsm_group_available_map,
+                is_siblings,
             )
             .await
         } else {
@@ -44,15 +83,14 @@ pub async fn exec(
             // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
             // hostlist have been removed
             common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &hosts_string,
+                hsm_group_available_map,
+                is_siblings,
             )
             .await
         };
 
-        hsm_group_summary.values().flatten().cloned().collect()
+        hsm_group_summary.values().cloned().flatten().collect()
     };
 
     if node_list.is_empty() {
@@ -104,7 +142,7 @@ pub async fn exec(
         };
 
         println!("{}", status_output);
-    } else if silent {
+    } else if silent_nids {
         let node_nid_list = node_details_list
             .iter()
             .map(|node_details| node_details.nid.clone())

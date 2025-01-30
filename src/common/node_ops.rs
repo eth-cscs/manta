@@ -199,48 +199,86 @@ pub async fn nid_to_xname(
 /// 2) Fetch all HSM groups user has access to
 /// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
 pub async fn get_curated_hsm_group_from_xname_regex(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    xname_requested_regex: &str,
+    user_input_regex: &str,
+    hsm_group_available_map: HashMap<String, Vec<String>>,
+    is_siblings: bool,
 ) -> HashMap<String, Vec<String>> {
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
     // Get list of regex
-    let regex_vec: Vec<Regex> = xname_requested_regex
+    let regex_vec: Vec<Regex> = user_input_regex
         .split(",")
         .map(|regex_str| {
             Regex::new(regex_str.trim()).expect(format!("Regex '{}' not valid", regex_str).as_str())
         })
         .collect();
 
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    // Get list of xnames available
+    let mut xname_available_vec: Vec<String> = hsm_group_available_map
+        .values()
+        .cloned()
+        .flatten()
+        .collect();
 
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
-    )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    xname_available_vec.sort();
+    xname_available_vec.dedup();
 
-    // Filter hsm group members
+    log::debug!("Xnames available:\n{:?}", xname_available_vec);
+
+    // Get list of xnames available filtered by regex
+    let mut xname_available_filtered_regex = vec![];
+
+    for xname_available_from_regex in &xname_available_vec {
+        for regex in &regex_vec {
+            if regex.is_match(&xname_available_from_regex) {
+                xname_available_filtered_regex.push(xname_available_from_regex.clone());
+            }
+        }
+    }
+
+    log::debug!("regex: {}", user_input_regex);
+    log::debug!(
+        "xnames available from regex: {:?}",
+        xname_available_filtered_regex
+    );
+
+    let xname_available_filtered = if is_siblings {
+        // If user is asking for siblings then, extend the list of xnames to the ones in same shelf
+        let xname_blade_available_filtered_regex: Vec<String> = xname_available_filtered_regex
+            .into_iter()
+            .map(|xname| xname[0..10].to_string())
+            .collect();
+
+        let xname_available_vec = xname_available_vec
+            .into_iter()
+            .filter(|xname_available| {
+                xname_blade_available_filtered_regex
+                    .iter()
+                    .any(|xname_blade| {
+                        let compatible = xname_available.starts_with(xname_blade);
+                        compatible
+                    })
+            })
+            .collect::<Vec<String>>();
+
+        log::debug!(
+            "xnames available from regex (including siblings): {:?}",
+            xname_available_vec
+        );
+
+        xname_available_vec
+    } else {
+        xname_available_filtered_regex
+    };
+
+    // Build group/member map
     for (hsm_name, xnames) in hsm_group_available_map {
         for xname in xnames {
-            for regex in &regex_vec {
-                if regex.is_match(&xname) {
-                    hsm_group_summary
-                        .entry(hsm_name.clone())
-                        .and_modify(|member_vec| member_vec.push(xname.clone()))
-                        .or_insert(vec![xname.clone()]);
-                }
+            if xname_available_filtered.contains(&xname) {
+                hsm_group_summary
+                    .entry(hsm_name.clone())
+                    .and_modify(|member_vec| member_vec.push(xname.clone()))
+                    .or_insert(vec![xname.clone()]);
             }
         }
     }
@@ -251,16 +289,23 @@ pub async fn get_curated_hsm_group_from_xname_regex(
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
 pub async fn get_curated_hsm_group_from_xname_hostlist(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     xname_requested_hostlist: &str,
+    hsm_group_available_map: HashMap<String, Vec<String>>,
+    is_siblings: bool,
 ) -> HashMap<String, Vec<String>> {
     // Create a summary of HSM groups and the list of members filtered by the list of nodes the
     // user is targeting
     let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
+    // Expand hostlist
     let xname_requested_vec_rslt = parse(xname_requested_hostlist);
+
+    // Get list of xnames available
+    let xname_available_vec: Vec<String> = hsm_group_available_map
+        .values()
+        .cloned()
+        .flatten()
+        .collect();
 
     let xname_requested_vec = match xname_requested_vec_rslt {
         Ok(xname_requested_vec) => xname_requested_vec,
@@ -275,6 +320,25 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
 
     log::info!("hostlist: {}", xname_requested_hostlist);
     log::info!("hostlist expanded: {:?}", xname_requested_vec);
+
+    // If user is also asking for siblings, then convert xname to blades
+    let xname_requested_vec: Vec<String> = if is_siblings {
+        let xname_blade_requested_vec: Vec<String> = xname_requested_vec
+            .iter()
+            .map(|xname| xname[0..10].to_string())
+            .collect();
+
+        xname_available_vec
+            .into_iter()
+            .filter(|xname_available| {
+                xname_blade_requested_vec
+                    .iter()
+                    .any(|xname_blade| xname_available.starts_with(xname_blade))
+            })
+            .collect::<Vec<String>>()
+    } else {
+        xname_requested_vec.clone()
+    };
 
     /* // Get final list of xnames to operate on
     // Get list of HSM groups available
@@ -291,23 +355,6 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
         mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await
             .expect("Error - fetching HSM groups"); */
-
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
-    )
-    .await
-    .expect("ERROR - could not get HSM group summary");
 
     // Filter hsm group members
     for (hsm_name, hsm_members) in hsm_group_available_map {

@@ -6,7 +6,7 @@ use mesa::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::{self, terminal_ops};
+use crate::{cli::commands::config_show::get_hsm_name_available_from_jwt_or_all, common::{self, terminal_ops}};
 
 use super::power_on_nodes::is_user_input_nids;
 
@@ -21,6 +21,28 @@ pub async fn exec(
     k8s_api_url: &str,
     host: &str,
 ) {
+    let hsm_name_available_vec =
+        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_available_vec
+            .iter()
+            .map(|hsm_name| hsm_name.as_str())
+            .collect(),
+    )
+    .await
+    .expect("ERROR - could not get HSM group summary");
+
+    // Filter xnames to the ones members to HSM groups the user has access to
+    //
+    let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await;
+
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
     let mut xname_vec = if is_user_input_nids(host) {
         log::debug!("User input seems to be NID");
@@ -41,10 +63,9 @@ pub async fn exec(
             // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
             // hostlist have been removed
             common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &host,
+            hsm_group_available_map,
+            false,
             )
             .await;
 

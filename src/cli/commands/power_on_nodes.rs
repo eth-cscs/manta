@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{common::jwt_ops, error::Error, pcs};
 
-use crate::common;
+use crate::{cli::commands::config_show::get_hsm_name_available_from_jwt_or_all, common};
 
 pub async fn exec(
     shasta_token: &str,
@@ -14,6 +14,23 @@ pub async fn exec(
     assume_yes: bool,
     output: &str,
 ) {
+    let hsm_name_available_vec =
+        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+            .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        hsm_name_available_vec
+            .iter()
+            .map(|hsm_name| hsm_name.as_str())
+            .collect(),
+    )
+    .await
+    .expect("ERROR - could not get HSM group summary");
+
     // Filter xnames to the ones members to HSM groups the user has access to
     //
     let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
@@ -35,10 +52,9 @@ pub async fn exec(
         log::debug!("User input seems to be XNAME");
         let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
             common::node_ops::get_curated_hsm_group_from_xname_regex(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &hosts_string,
+                hsm_group_available_map,
+                false,
             )
             .await
         } else {
@@ -47,10 +63,9 @@ pub async fn exec(
             // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
             // hostlist have been removed
             common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
                 &hosts_string,
+                hsm_group_available_map,
+                false,
             )
             .await
         };
