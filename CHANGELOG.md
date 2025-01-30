@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Add feature to include 'siblings' in 'get nodes' command
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.8
+
 ## [1.54.7] - 2025-01-29
 
 ### Features
