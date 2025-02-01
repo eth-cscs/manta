@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{
-    contracts::BackendTrait, interfaces::hsm::group::GroupTrait, types::Group,
-};
+use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{

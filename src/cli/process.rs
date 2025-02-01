@@ -1,6 +1,8 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
+    interfaces::hsm::{
+        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+    },
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
 use std::{

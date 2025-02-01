@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use comfy_table::{Cell, Table};
 use mesa::hsm::hw_inventory::hw_component::types::NodeSummary;
 use std::string::ToString;
