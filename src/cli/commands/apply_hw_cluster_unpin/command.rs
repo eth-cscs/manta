@@ -1,4 +1,6 @@
-use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait, types::Group};
+use backend_dispatcher::{
+    contracts::BackendTrait, interfaces::hsm::group::GroupTrait, types::Group,
+};
 use std::collections::HashMap;
 
 use crate::{

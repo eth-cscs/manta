@@ -12,7 +12,11 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
-    interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
+    interfaces::{
+        bss::BootParametersTrait,
+        hsm::{component::ComponentTrait, group::GroupTrait},
+        pcs::PCSTrait,
+    },
     types::{
         BootParameters, ComponentArrayPostArray, Group, HWInventoryByLocationList,
         HardwareMetadataArray,
@@ -52,6 +56,13 @@ impl GroupTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_group_available(auth_token).await,
             OCHAMI(b) => b.get_group_available(auth_token).await,
+        }
+    }
+
+    async fn get_group_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
+        match self {
+            CSM(b) => b.get_group_name_available(jwt_token).await,
+            OCHAMI(b) => b.get_group_name_available(jwt_token).await,
         }
     }
 
@@ -96,9 +107,47 @@ impl GroupTrait for StaticBackendDispatcher {
             }
         }
     }
+
+    async fn get_all_groups(&self, auth_token: &str) -> Result<Vec<Group>, Error> {
+        match self {
+            CSM(b) => b.get_all_groups(auth_token).await,
+            OCHAMI(b) => b.get_all_groups(auth_token).await,
+        }
+    }
+
+    async fn get_group(&self, auth_token: &str, hsm_name: &str) -> Result<Group, Error> {
+        match self {
+            CSM(b) => b.get_group(auth_token, hsm_name).await,
+            OCHAMI(b) => b.get_group(auth_token, hsm_name).await,
+        }
+    }
+
+    async fn delete_group(&self, auth_token: &str, hsm_group_label: &str) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.delete_group(auth_token, hsm_group_label).await,
+            OCHAMI(b) => b.delete_group(auth_token, hsm_group_label).await,
+        }
+    }
+
+    async fn get_hsm_map_and_filter_by_hsm_name_vec(
+        &self,
+        auth_token: &str,
+        hsm_name_vec: Vec<&str>,
+    ) -> Result<HashMap<String, Vec<String>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
+                    .await
+            }
+        }
+    }
 }
 
-impl HardwareMetadataTrait for StaticBackendDispatcher {
+impl ComponentTrait for StaticBackendDispatcher {
     async fn get_all_nodes(
         &self,
         auth_token: &str,
@@ -189,6 +238,81 @@ impl HardwareMetadataTrait for StaticBackendDispatcher {
             }
         }
     }
+
+    async fn post_nodes(
+        &self,
+        auth_token: &str,
+        component: ComponentArrayPostArray,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => b.post_nodes(auth_token, component).await,
+            OCHAMI(b) => b.post_nodes(auth_token, component).await,
+        }
+    }
+
+    async fn delete_node(&self, auth_token: &str, id: &str) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.delete_node(auth_token, id).await,
+            OCHAMI(b) => b.delete_node(auth_token, id).await,
+        }
+    }
+}
+
+impl PCSTrait for StaticBackendDispatcher {
+    async fn power_on_sync(&self, auth_token: &str, nodes: &[String]) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_on_sync(auth_token, nodes).await,
+            OCHAMI(b) => b.power_on_sync(auth_token, nodes).await,
+        }
+    }
+
+    async fn power_off_sync(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+        force: bool,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_off_sync(auth_token, nodes, force).await,
+            OCHAMI(b) => b.power_off_sync(auth_token, nodes, force).await,
+        }
+    }
+
+    async fn power_reset_sync(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+        force: bool,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.power_reset_sync(auth_token, nodes, force).await,
+            OCHAMI(b) => b.power_reset_sync(auth_token, nodes, force).await,
+        }
+    }
+}
+
+impl BootParametersTrait for StaticBackendDispatcher {
+    async fn get_bootparameters(
+        &self,
+        auth_token: &str,
+        nodes: &[String],
+    ) -> Result<Vec<BootParameters>, Error> {
+        match self {
+            CSM(b) => b.get_bootparameters(auth_token, nodes).await,
+            OCHAMI(b) => b.get_bootparameters(auth_token, nodes).await,
+        }
+    }
+
+    async fn update_bootparameters(
+        &self,
+        auth_token: &str,
+        boot_parameters: &BootParameters,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+            OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+        }
+    }
 }
 
 impl BackendTrait for StaticBackendDispatcher {
@@ -205,13 +329,6 @@ impl BackendTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn get_group_name_available(&self, jwt_token: &str) -> Result<Vec<String>, Error> {
-        match self {
-            CSM(b) => b.get_group_name_available(jwt_token).await,
-            OCHAMI(b) => b.get_group_name_available(jwt_token).await,
-        }
-    }
-
     async fn post_member(
         &self,
         auth_token: &str,
@@ -221,28 +338,6 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.post_member(auth_token, group_label, xname).await,
             OCHAMI(b) => b.post_member(auth_token, group_label, xname).await,
-        }
-    }
-
-    // HSM/GROUP
-    async fn get_all_groups(&self, auth_token: &str) -> Result<Vec<Group>, Error> {
-        match self {
-            CSM(b) => b.get_all_groups(auth_token).await,
-            OCHAMI(b) => b.get_all_groups(auth_token).await,
-        }
-    }
-
-    async fn get_group(&self, auth_token: &str, hsm_name: &str) -> Result<Group, Error> {
-        match self {
-            CSM(b) => b.get_group(auth_token, hsm_name).await,
-            OCHAMI(b) => b.get_group(auth_token, hsm_name).await,
-        }
-    }
-
-    async fn delete_group(&self, auth_token: &str, hsm_group_label: &str) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.delete_group(auth_token, hsm_group_label).await,
-            OCHAMI(b) => b.delete_group(auth_token, hsm_group_label).await,
         }
     }
 
@@ -368,99 +463,6 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.post_inventory_hardware(auth_token, hardware).await,
             OCHAMI(b) => b.post_inventory_hardware(auth_token, hardware).await,
-        }
-    }
-
-    // PCS
-    async fn power_on_sync(&self, auth_token: &str, nodes: &[String]) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.power_on_sync(auth_token, nodes).await,
-            OCHAMI(b) => b.power_on_sync(auth_token, nodes).await,
-        }
-    }
-
-    // PCS
-    async fn power_off_sync(
-        &self,
-        auth_token: &str,
-        nodes: &[String],
-        force: bool,
-    ) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.power_off_sync(auth_token, nodes, force).await,
-            OCHAMI(b) => b.power_off_sync(auth_token, nodes, force).await,
-        }
-    }
-
-    // PCS
-    async fn power_reset_sync(
-        &self,
-        auth_token: &str,
-        nodes: &[String],
-        force: bool,
-    ) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.power_reset_sync(auth_token, nodes, force).await,
-            OCHAMI(b) => b.power_reset_sync(auth_token, nodes, force).await,
-        }
-    }
-
-    // BSS/BOOTPARAMETERS
-    async fn get_bootparameters(
-        &self,
-        auth_token: &str,
-        nodes: &[String],
-    ) -> Result<Vec<BootParameters>, Error> {
-        match self {
-            CSM(b) => b.get_bootparameters(auth_token, nodes).await,
-            OCHAMI(b) => b.get_bootparameters(auth_token, nodes).await,
-        }
-    }
-
-    // BSS/BOOTPARAMETERS
-    async fn update_bootparameters(
-        &self,
-        auth_token: &str,
-        boot_parameters: &BootParameters,
-    ) -> Result<(), Error> {
-        match self {
-            CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
-            OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
-        }
-    }
-
-    async fn post_nodes(
-        &self,
-        auth_token: &str,
-        component: ComponentArrayPostArray,
-    ) -> Result<(), Error> {
-        match self {
-            CSM(b) => b.post_nodes(auth_token, component).await,
-            OCHAMI(b) => b.post_nodes(auth_token, component).await,
-        }
-    }
-
-    async fn delete_node(&self, auth_token: &str, id: &str) -> Result<Value, Error> {
-        match self {
-            CSM(b) => b.delete_node(auth_token, id).await,
-            OCHAMI(b) => b.delete_node(auth_token, id).await,
-        }
-    }
-
-    async fn get_hsm_map_and_filter_by_hsm_name_vec(
-        &self,
-        auth_token: &str,
-        hsm_name_vec: Vec<&str>,
-    ) -> Result<HashMap<String, Vec<String>>, Error> {
-        match self {
-            CSM(b) => {
-                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
-                    .await
-            }
-            OCHAMI(b) => {
-                b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
-                    .await
-            }
         }
     }
 

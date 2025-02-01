@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::{contracts::BackendTrait, interfaces::hsm::group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use backend_dispatcher::{contracts::BackendTrait, interfaces::group::GroupTrait};
+use backend_dispatcher::{contracts::BackendTrait, interfaces::hsm::group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::hsm;
 use serde_json::Value;

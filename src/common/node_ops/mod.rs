@@ -1,9 +1,11 @@
+#[cfg(test)]
+pub mod tests;
+
 use std::collections::HashMap;
 
 use backend_dispatcher::{
-    contracts::BackendTrait,
     error::Error,
-    interfaces::{group::GroupTrait, hardware_metadata::HardwareMetadataTrait},
+    interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
 };
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
@@ -87,7 +89,7 @@ pub fn validate_nid_format(nid: &str) -> bool {
             .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
 } */
 
-// Get short nid
+// Validate and get short nid
 pub fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
     // Validate nid has the right length
     if long_nid.len() != 9 {
@@ -202,7 +204,7 @@ pub async fn resolve_node_list_user_input_to_xname(
     Ok(xname_vec)
 }
 
-/// Get list of xnames from a list of user expressions related to NIDs
+/// Get list of nids from a list of user expressions related to NIDs
 /// A user expressions related to NID can be:
 ///     - comma separated list of NIDs (eg: nid000001,nid000002,nid000003)
 ///     - regex (eg: nid00000.*)
@@ -257,7 +259,7 @@ pub fn get_xname_from_user_nid_expression(
         short_nid_vec
     };
 
-    log::debug!("short Nd list requested by the user: {:?}", short_nid_vec);
+    log::debug!("short Nid list requested by the user: {:?}", short_nid_vec);
 
     return Ok(short_nid_vec);
 }

@@ -1,13 +1,14 @@
+use backend_dispatcher::interfaces::pcs::PCSTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{common::jwt_ops, error::Error, pcs};
+use mesa::common::jwt_ops;
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
+    /* shasta_base_url: &str,
+    shasta_root_cert: &[u8], */
     hosts_string: &str,
     is_regex: bool,
     force: bool,
@@ -124,7 +125,7 @@ pub async fn exec(
         }
     }; */
 
-    let operation = if force { "force-off" } else { "soft-off" };
+    /* let operation = if force { "force-off" } else { "soft-off" };
 
     let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
         shasta_base_url,
@@ -134,7 +135,10 @@ pub async fn exec(
         &xname_vec,
     )
     .await
-    .map_err(|e| Error::Message(e.to_string()));
+    .map_err(|e| Error::Message(e.to_string())); */
+    let power_mgmt_summary_rslt = backend
+        .power_off_sync(shasta_token, &xname_vec, force)
+        .await;
 
     let power_mgmt_summary = match power_mgmt_summary_rslt {
         Ok(value) => value,

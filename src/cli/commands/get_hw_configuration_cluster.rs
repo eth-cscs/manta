@@ -5,7 +5,7 @@ use std::{
     time::Instant,
 };
 
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use comfy_table::{Color, Table};
 use mesa::hsm::{self, hw_inventory::hw_component::types::NodeSummary};
 use tokio::sync::Semaphore;

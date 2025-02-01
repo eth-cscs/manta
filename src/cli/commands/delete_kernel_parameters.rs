@@ -1,4 +1,4 @@
-use backend_dispatcher::{contracts::BackendTrait, types};
+use backend_dispatcher::{interfaces::bss::BootParametersTrait, types};
 use dialoguer::theme::ColorfulTheme;
 use mesa::{common::jwt_ops, error::Error};
 

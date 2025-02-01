@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use humansize::DECIMAL;
 use mesa::{bos, cfs, ims};
 use std::fs::File;

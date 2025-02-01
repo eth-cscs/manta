@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use mesa::{bos, node};
 
 use crate::{

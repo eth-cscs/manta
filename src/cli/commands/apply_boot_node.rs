@@ -3,7 +3,7 @@ use crate::{
     common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
 
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     bss::{self, types::BootParameters},

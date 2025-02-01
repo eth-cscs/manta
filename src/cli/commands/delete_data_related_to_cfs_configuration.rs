@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use std::io::{self, Write};
 
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -13,10 +13,7 @@ use mesa::cfs::configuration::http_client::v3::types::cfs_configuration_response
 use mesa::{bos, bss, cfs, ims};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
-use crate::{
-    cli::commands::delete_data_related_to_cfs_configuration,
-    common::node_ops::get_node_vec_booting_image,
-};
+use crate::cli::commands::delete_data_related_to_cfs_configuration;
 
 pub async fn delete_data_related_cfs_configuration(
     backend: &StaticBackendDispatcher,
@@ -441,7 +438,8 @@ pub async fn delete_data_related_cfs_configuration(
         image_id_vec.dedup();
 
         for image_id in &image_id_vec {
-            let node_vec = get_node_vec_booting_image(image_id, &boot_param_vec);
+            let node_vec =
+                crate::common::node_ops::get_node_vec_booting_image(image_id, &boot_param_vec);
 
             if !node_vec.is_empty() {
                 image_id_used_to_boot_nodes_vec.push(image_id);

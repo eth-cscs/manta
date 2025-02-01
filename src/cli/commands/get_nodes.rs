@@ -1,7 +1,4 @@
-use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
-    common::{self, node_ops},
-};
+use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
@@ -112,11 +109,11 @@ pub async fn exec(
             serde_json::to_string_pretty(&node_details_list).unwrap()
         );
     } else if output_opt.is_some() && output_opt.unwrap().eq("summary") {
-        node_ops::print_summary(node_details_list);
+        common::node_ops::print_summary(node_details_list);
     } else if output_opt.is_some() && output_opt.unwrap().eq("table-wide") {
-        node_ops::print_table_wide(node_details_list);
+        common::node_ops::print_table_wide(node_details_list);
     } else if output_opt.is_some() && output_opt.unwrap().eq("table") {
-        node_ops::print_table(node_details_list);
+        common::node_ops::print_table(node_details_list);
     } else {
         eprintln!("ERROR - output value not recognized or missing. Exit");
         std::process::exit(1);

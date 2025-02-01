@@ -1,4 +1,4 @@
-use backend_dispatcher::contracts::BackendTrait;
+use backend_dispatcher::interfaces::pcs::PCSTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 

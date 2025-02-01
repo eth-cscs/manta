@@ -1,7 +1,7 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
 };
-use backend_dispatcher::{interfaces::group::GroupTrait, types::Group};
+use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 
 pub async fn exec(
     backend: StaticBackendDispatcher,

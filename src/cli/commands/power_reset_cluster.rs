@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::group::GroupTrait;
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{common::jwt_ops, error::Error, pcs};
 

@@ -1,6 +1,6 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    interfaces::group::GroupTrait,
+    interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
 use std::{
@@ -236,8 +236,8 @@ pub async fn process_cli(
                     power_on_nodes::exec(
                         &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
                         xname_requested,
                         is_regex,
                         assume_yes,
@@ -320,8 +320,8 @@ pub async fn process_cli(
                     power_off_nodes::exec(
                         &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
                         xname_requested,
                         is_regex,
                         *force,

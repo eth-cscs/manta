@@ -1,4 +1,4 @@
-use backend_dispatcher::{contracts::BackendTrait, types::BootParameters};
+use backend_dispatcher::{interfaces::bss::BootParametersTrait, types::BootParameters};
 use mesa::error::Error;
 
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};

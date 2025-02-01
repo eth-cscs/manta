@@ -184,7 +184,7 @@ pub fn subcommand_get_group() -> Command {
 }
 
 pub fn subcommand_get_hw_components() -> Command {
-    let command_get_hs_configuration_cluster = Command::new("cluster")
+    let command_get_hw_configuration_cluster = Command::new("cluster")
         .visible_aliases(["c", "clstr"])
         .arg_required_else_help(true)
         .about("Get hw components for a cluster")
@@ -195,7 +195,7 @@ pub fn subcommand_get_hw_components() -> Command {
                 .default_value("summary"),
         );
 
-    let command_get_hs_configuration_node = Command::new("node")
+    let command_get_hw_configuration_node = Command::new("node")
                 .visible_alias("n")
                 .arg_required_else_help(true)
                 .about("Get hw components for some nodes")
@@ -207,8 +207,8 @@ pub fn subcommand_get_hw_components() -> Command {
         .visible_alias("hw")
         .arg_required_else_help(true)
         .about("Get hardware components1 for a cluster or a node")
-        .subcommand(command_get_hs_configuration_cluster)
-        .subcommand(command_get_hs_configuration_node)
+        .subcommand(command_get_hw_configuration_cluster)
+        .subcommand(command_get_hw_configuration_node)
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {
