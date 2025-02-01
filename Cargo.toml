@@ -22,9 +22,9 @@ publish = false                                                         # cargo 
 # backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
 backend-dispatcher = "0.1.16"
 # mesa = { path = "../mesa" } # Only for development purposes
-mesa = "0.42.3-beta.24"
+mesa = "0.42.3-beta.26"
 # ochami-rs = { path = "../ochami-rs" } # Only for development purposes
-ochami-rs = "0.1.14"
+ochami-rs = "0.1.15"
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
 strum_macros = "0.25"
