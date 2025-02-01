@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.46] - 2025-02-01
+
+### Refactor
+
+- Interfaces
+
 ## [1.54.1-beta.45] - 2025-01-30
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - New argument in command 'get nodes' to get the list of siblings
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.45
 
 ### Refactor
 
