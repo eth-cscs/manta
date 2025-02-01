@@ -2,7 +2,7 @@ use crate::backend_dispatcher::StaticBackendDispatcher;
 use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use std::collections::HashMap;
 
-use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
+use crate::cli::commands::apply_hw_cluster_pin::utils::{
     calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
     resolve_hw_description_to_xnames,
 };

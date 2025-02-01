@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    cli::commands::apply_hw_cluster_unpin::command::utils::{
+    cli::commands::apply_hw_cluster_unpin::utils::{
         calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
         resolve_hw_description_to_xnames,
     },

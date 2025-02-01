@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
+use crate::cli::commands::apply_hw_cluster_pin::utils::{
     calculate_hsm_hw_component_summary, resolve_hw_description_to_xnames,
 };
 
