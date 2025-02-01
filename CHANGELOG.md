@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.48] - 2025-02-01
+
+### Refactor
+
+- Hsm hardware inventory
+
 ## [1.54.1-beta.47] - 2025-02-01
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.47
 
 ### Refactor
 
