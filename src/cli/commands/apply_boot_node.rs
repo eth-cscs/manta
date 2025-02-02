@@ -3,13 +3,12 @@ use crate::{
     common::ims_ops::get_image_id_from_cfs_configuration_name,
 };
 
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    bss::{self, types::BootParameters},
-    cfs, ims,
-    node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
+use backend_dispatcher::{
+    interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
+    types::BootParameters,
 };
+use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::{cfs, ims, node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -67,7 +66,7 @@ pub async fn exec(
     }
 
     // Get current node boot params
-    let mut current_node_boot_param_vec: Vec<BootParameters> = bss::http_client::get(
+    /* let mut current_node_boot_param_vec: Vec<BootParameters> = bss::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -77,7 +76,17 @@ pub async fn exec(
             .collect::<Vec<String>>(),
     )
     .await
-    .unwrap();
+    .unwrap(); */
+    let mut current_node_boot_param_vec: Vec<BootParameters> = backend
+        .get_bootparameters(
+            shasta_token,
+            &xname_vec
+                .iter()
+                .map(|xname| xname.to_string())
+                .collect::<Vec<String>>(),
+        )
+        .await
+        .unwrap();
 
     // Get new boot image
     let new_boot_image_id_opt: Option<String> =
@@ -221,13 +230,21 @@ pub async fn exec(
 
         // Update boot params
         for boot_parameter in current_node_boot_param_vec {
-            let component_patch_rep = bss::http_client::patch(
+            /* let component_patch_rep = bss::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
                 &boot_parameter,
             )
-            .await;
+            .await; */
+            let component_patch_rep = backend
+                .update_bootparameters(
+                    // shasta_base_url,
+                    shasta_token,
+                    // shasta_root_cert,
+                    &boot_parameter,
+                )
+                .await;
 
             log::debug!(
                 "Component boot parameters resp:\n{:#?}",

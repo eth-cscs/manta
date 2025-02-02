@@ -12,6 +12,7 @@ use mesa::hsm::group::{
     http_client::{create_new_group, delete_group},
     types::Group,
 };
+use mesa::ims::image::utils::get_by_name;
 use mesa::ims::image::{
     http_client::{
         patch,
@@ -193,6 +194,7 @@ pub async fn exec(
             }
         };
     }
+
     println!("Calculating image artifact checksum...");
     calculate_image_checksums(&mut ims_image_manifest, &vec_backup_image_files);
 
@@ -200,13 +202,22 @@ pub async fn exec(
 
     // Do we have another image with this name?
     println!("\n\nRegistering image with IMS...");
-    let ims_image_id: String = ims_register_image(
+    let ims_image_id_rslt = ims_register_image(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         &ims_image_name,
     )
     .await;
+
+    let ims_image_id: String = match ims_image_id_rslt {
+        Ok(value) => value,
+        Err(e) => {
+            eprintln!("{e}");
+            std::process::exit(2);
+        }
+    };
+
     println!("Ok, IMS image ID: {}", &ims_image_id);
 
     println!("\nUploading image artifacts to s3...");
@@ -827,7 +838,7 @@ async fn ims_register_image(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     ims_image_name: &String,
-) -> String {
+) -> anyhow::Result<String> {
     let ims_record = Image {
         name: ims_image_name.clone().to_string(),
         id: None,
@@ -835,15 +846,16 @@ async fn ims_register_image(
         link: None,
         arch: None,
     };
-    let list_images_with_same_name = match get_fuzzy(shasta_token,
-                                                     shasta_base_url,
-                                                     shasta_root_cert,
-                                                     &["".to_string()], // hsm_group_name
-                                                     Some(ims_image_name.clone().as_str()),
-                                                     None).await {
-        Ok(vector) => vector,
-        Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
-    };
+
+    let list_images_with_same_name = get_by_name(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &["".to_string()], // hsm_group_name
+        Some(ims_image_name.clone().as_str()),
+        None,
+    )
+    .await?;
 
     if !list_images_with_same_name.is_empty() {
         println!("There is already at least one record for image name {} in IMS do you want to create a new one (the previous one will not be deleted).", &ims_image_name);
@@ -859,22 +871,11 @@ async fn ims_register_image(
         }
     }
 
-    let json_response = match ims::image::http_client::post(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &ims_record,
-    )
-    .await
-    {
-        Ok(json_response) => json_response,
-        Err(error) => panic!(
-            "Error: Unable to register a new image {} into IMS {}",
-            &ims_image_name.to_string(),
-            error
-        ),
-    };
-    json_response["id"].to_string().replace('"', "")
+    let json_response =
+        ims::image::http_client::post(shasta_token, shasta_base_url, shasta_root_cert, &ims_record)
+            .await?;
+
+    Ok(json_response["id"].to_string().replace('"', ""))
 }
 
 /// Gets the image name off an IMS yaml file
