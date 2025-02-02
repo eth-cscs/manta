@@ -695,7 +695,7 @@ pub async fn create_cfs_configuration_from_sat_file(
             sat_file_configuration_yaml,
             cray_product_catalog,
         )
-        .await;
+        .await?;
 
     if !dry_run {
         cfs::configuration::http_client::v3::put(
