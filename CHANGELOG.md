@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.51] - 2025-02-02
+
+### Refactor
+
+- Update mesa version with better error management
+
 ## [1.54.1-beta.50] - 2025-02-02
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.50
 
 ### Refactor
 
