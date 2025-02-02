@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.49] - 2025-02-02
+
+### Features
+
+- Add new Error type to catch 'console errors'
+
 ## [1.54.1-beta.48] - 2025-02-01
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.48
 
 ### Refactor
 
