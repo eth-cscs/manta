@@ -121,7 +121,7 @@ pub async fn connect_to_console(
         vault_role_id,
         k8s_api_url,
     )
-    .await;
+    .await?;
 
     println!(
         "Connected to {}{}{}!",

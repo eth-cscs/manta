@@ -60,7 +60,7 @@ pub async fn exec(
     // FIXME: read this "validate_config_hsm_group_and_hsm_group_accessed" function and fix this
     // because we don't want calls directly to backend methods inside the client
     // Check HSM group in configurarion file can access CFS session
-    hsm::group::utils::validate_config_hsm_group_and_hsm_group_accessed(
+    let validation_rslt = hsm::group::utils::validate_config_hsm_group_and_hsm_group_accessed(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -69,6 +69,11 @@ pub async fn exec(
         &cfs_sessions_vec,
     )
     .await;
+
+    if let Err(e) = validation_rslt {
+        eprintln!("ERROR - Validation failed. Reason:\n{e}\nExit");
+        std::process::exit(1);
+    };
 
     let shasta_k8s_secrets =
         fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;

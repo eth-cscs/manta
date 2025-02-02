@@ -163,7 +163,7 @@ pub async fn exec(
         .unwrap();
 
     // Get HPE product catalog from k8s
-    let cray_product_catalog = kubernetes::get_configmap(kube_client, "cray-product-catalog")
+    let cray_product_catalog = kubernetes::try_get_configmap(kube_client, "cray-product-catalog")
         .await
         .unwrap();
 

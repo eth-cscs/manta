@@ -19,23 +19,24 @@ pub async fn exec(
         .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec.to_vec())
         .await
         .unwrap();
-    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_vec.to_vec(),
-    )
-    .await; */
 
     hsm_groups_node_list.sort();
 
-    let mut node_details_list = mesa::node::utils::get_node_details(
+    let node_details_list_rslt = mesa::node::utils::get_node_details(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         hsm_groups_node_list,
     )
     .await;
+
+    let mut node_details_list = match node_details_list_rslt {
+        Ok(value) => value,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
 
     node_details_list.sort_by_key(|node_details| node_details.xname.clone());
 

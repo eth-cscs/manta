@@ -167,8 +167,16 @@ pub async fn exec(
         .await
         .unwrap(); */
 
-        let shasta_k8s_secrets =
+        let shasta_k8s_secrets_rslt =
             fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+
+        let shasta_k8s_secrets = match shasta_k8s_secrets_rslt {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        };
 
         let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
             .await

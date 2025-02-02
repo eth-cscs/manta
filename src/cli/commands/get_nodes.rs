@@ -40,13 +40,21 @@ pub async fn exec(
     node_list.sort();
     node_list.dedup();
 
-    let node_details_list = mesa::node::utils::get_node_details(
+    let node_details_list_rslt = mesa::node::utils::get_node_details(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
         node_list.to_vec(),
     )
     .await;
+
+    let node_details_list = match node_details_list_rslt {
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+        Ok(node_details_list) => node_details_list,
+    };
 
     if status {
         let status_output = if node_details_list.iter().any(|node_details| {
