@@ -24,7 +24,7 @@ backend-dispatcher = "0.1.18"
 # mesa = { path = "../mesa" } # Only for development purposes
 mesa = "=0.42.3-beta.33"
 # ochami-rs = { path = "../ochami-rs" } # Only for development purposes
-ochami-rs = "0.1.17"
+ochami-rs = "0.1.18"
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
 strum_macros = "0.25"
