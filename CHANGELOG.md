@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.56] - 2025-02-03
+
+### Features
+
+- Add autocomplete command
+
 ## [1.54.1-beta.55] - 2025-02-03
 
 ### Bug Fixes
 
 - Bug fetching cfs sessions
 - Bug fetching k8s secrets
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.55
 
 ### Refactor
 
