@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.55] - 2025-02-03
+
+### Bug Fixes
+
+- Bug fetching cfs sessions
+- Bug fetching k8s secrets
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.54] - 2025-02-03
 
 ### Features
 
 - Migrate code to backend
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.54
 
 ## [1.54.1-beta.53] - 2025-02-02
 
