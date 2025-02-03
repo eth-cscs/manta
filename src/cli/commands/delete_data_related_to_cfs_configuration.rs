@@ -39,13 +39,6 @@ pub async fn delete_data_related_cfs_configuration(
         .get_member_vec_from_group_name_vec(shasta_token, hsm_name_available_vec.clone())
         .await
         .unwrap();
-    /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_available_vec.clone(),
-    )
-    .await; */
 
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //

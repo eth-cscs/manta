@@ -29,10 +29,6 @@ async fn validation(backend: &StaticBackendDispatcher, auth_token: &str, label: 
         .get_member_vec_from_group_name_vec(auth_token, vec![label.to_string()])
         .await
         .unwrap();
-    /* let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
-        auth_token, base_url, root_cert, label,
-    )
-    .await; */
 
     let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
 
@@ -40,13 +36,6 @@ async fn validation(backend: &StaticBackendDispatcher, auth_token: &str, label: 
         .get_group_map_and_filter_by_group_vec(auth_token, xname_vec)
         .await
         .unwrap();
-    /* let mut xname_map = mesa::hsm::group::utils::get_xname_map_and_filter_by_xname_vec(
-        auth_token, base_url, root_cert, xname_vec,
-    )
-    .await
-    .unwrap(); */
-
-    // println!("DEBUG - xname map:\n{:#?}", xname_map);
 
     xname_map.retain(|_xname, group_name_vec| {
         group_name_vec.len() == 1 && group_name_vec.first().unwrap() == label

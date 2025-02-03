@@ -106,14 +106,6 @@ pub async fn exec(
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            /* let _ = mesa::bss::http_client::patch(
-                shasta_base_url,
-                shasta_token,
-                shasta_root_cert,
-                &boot_parameter,
-            )
-            .await; */
-
             let boot_parametes_rslt = backend
                 .update_bootparameters(shasta_token, &boot_parameter)
                 .await;

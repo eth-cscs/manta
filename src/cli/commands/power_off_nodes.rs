@@ -17,9 +17,6 @@ pub async fn exec(
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
-    /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-    .await; */
-
     // Convert user input to xname
     let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
         backend,
