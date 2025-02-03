@@ -18,9 +18,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // #[cfg(feature = "dhat-heap")]
     // let _profiler = dhat::Profiler::new_heap();
 
-    // Process input params
-    let matches = crate::cli::build::build_cli().get_matches();
-
     let settings = common::config_ops::get_configuration().await;
 
     let site_name = settings
@@ -119,8 +116,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let backend = StaticBackendDispatcher::new(&backend_tech, &shasta_base_url, &shasta_root_cert);
 
+    // Process input params
+    let cli = crate::cli::build::build_cli();
+
     let cli_result = crate::cli::process::process_cli(
-        matches,
+        cli,
         backend,
         &shasta_api_url,
         &shasta_root_cert,

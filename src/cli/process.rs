@@ -5,13 +5,15 @@ use backend_dispatcher::{
     },
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
+use clap_complete::{generate, generate_to};
 use std::{
+    env,
     fs::File,
-    io::{BufReader, IsTerminal},
+    io::{self, BufReader, IsTerminal},
     path::PathBuf,
 };
 
-use clap::ArgMatches;
+use clap::Command;
 use config::Config;
 use k8s_openapi::chrono;
 
@@ -36,7 +38,7 @@ use super::commands::{
 };
 
 pub async fn process_cli(
-    cli_root: ArgMatches,
+    mut cli: Command,
     backend: StaticBackendDispatcher,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -61,6 +63,8 @@ pub async fn process_cli(
             std::process::exit(1);
         }
     };
+
+    let cli_root = cli.clone().get_matches();
 
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
@@ -160,6 +164,57 @@ pub async fn process_cli(
             }
             if let Some(_cli_config_unset_auth) = cli_config_unset.subcommand_matches("auth") {
                 config_unset_auth::exec().await;
+            }
+        } else if let Some(cli_config_generate_autocomplete) =
+            cli_config.subcommand_matches("generate-autocomplete")
+        {
+            let shell_opt: Option<String> =
+                cli_config_generate_autocomplete.get_one("shell").cloned();
+
+            let path_opt: Option<PathBuf> =
+                cli_config_generate_autocomplete.get_one("path").cloned();
+
+            let shell = if let Some(shell) = shell_opt {
+                shell.to_ascii_uppercase()
+            } else {
+                let shell_ostring =
+                    PathBuf::from(env::var_os("SHELL").expect("$SHELL env missing"))
+                        .file_name()
+                        .unwrap()
+                        .to_ascii_uppercase();
+
+                shell_ostring
+                    .into_string()
+                    .expect("Could not convert shell name to string")
+            };
+
+            let shell_gen = match shell.as_str() {
+                "BASH" => clap_complete::Shell::Bash,
+                "ZSH" => clap_complete::Shell::Zsh,
+                "FISH" => clap_complete::Shell::Fish,
+                _ => {
+                    eprintln!("ERROR - Shell '{shell}' not supported",);
+                    std::process::exit(1);
+                }
+            };
+
+            if let Some(path) = path_opt {
+                // Destination path defined
+                log::info!(
+                    "Generating shell autocomplete for '{}' to '{}'",
+                    shell,
+                    path.display()
+                );
+                generate_to(shell_gen, &mut cli, env!("CARGO_PKG_NAME"), path)?;
+            } else {
+                // Destination path not defined - print to stdout
+                log::info!("Generating shell autocomplete for '{}'", shell);
+                generate(
+                    shell_gen,
+                    &mut cli,
+                    env!("CARGO_PKG_NAME"),
+                    &mut io::stdout(),
+                );
             }
         }
     } else {
