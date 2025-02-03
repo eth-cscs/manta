@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.54] - 2025-02-03
+
+### Features
+
+- Migrate code to backend
+
 ## [1.54.1-beta.53] - 2025-02-02
 
 ### Features
 
 - Improve error management
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.53
 
 ## [1.54.1-beta.52] - 2025-02-02
 
