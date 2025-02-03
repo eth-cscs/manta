@@ -123,17 +123,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     let cli = crate::cli::build::build_cli();
 
     let cli_result = crate::cli::process::process_cli(
-        // <<<<<<< HEAD
-        // matches,
         cli,
         &keycloak_base_url,
-        /* ||||||| parent of be7dace (feat: add autocomplete command)
-                matches,
-                backend, */
-        /* =======
-                cli,
-                backend,
-        >>>>>>> be7dace (feat: add autocomplete command) */
         &shasta_api_url,
         &shasta_root_cert,
         &vault_base_url,

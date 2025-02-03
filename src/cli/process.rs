@@ -1,34 +1,9 @@
-/* // <<<<<<< HEAD
-use std::{io::IsTerminal, path::PathBuf};
-// ||||||| parent of be7dace (feat: add autocomplete command)
-use backend_dispatcher::{
-    contracts::BackendTrait,
-    interfaces::hsm::{
-        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
-    },
-    types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
-};
-use std::{
-    fs::File,
-    io::{BufReader, IsTerminal},
-    path::PathBuf,
-};
-======= */
-use backend_dispatcher::{
-    contracts::BackendTrait,
-    interfaces::hsm::{
-        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
-    },
-    types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
-};
 use clap_complete::{generate, generate_to};
 use std::{
     env,
-    fs::File,
-    io::{self, BufReader, IsTerminal},
+    io::{self, IsTerminal},
     path::PathBuf,
 };
-// >>>>>>> be7dace (feat: add autocomplete command)
 
 use clap::Command;
 use config::Config;
@@ -53,16 +28,8 @@ use super::commands::{
 };
 
 pub async fn process_cli(
-    /* <<<<<<< HEAD
-        cli_root: ArgMatches,
-        keycloak_base_url: &str,
-    ||||||| parent of be7dace (feat: add autocomplete command)
-        cli_root: ArgMatches,
-        backend: StaticBackendDispatcher,
-    ======= */
     mut cli: Command,
-    backend: StaticBackendDispatcher,
-    // >>>>>>> be7dace (feat: add autocomplete command)
+    keycloak_base_url: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
@@ -86,14 +53,9 @@ pub async fn process_cli(
             std::process::exit(1);
         }
     };
-    /* <<<<<<< HEAD
-    ||||||| parent of be7dace (feat: add autocomplete command)
-
-    ======= */
 
     let cli_root = cli.clone().get_matches();
 
-    // >>>>>>> be7dace (feat: add autocomplete command)
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
             let shasta_token = &authentication::get_api_token(
