@@ -655,13 +655,8 @@ pub async fn delete(
         // process api response
         match image_deleted_value_rslt {
             Ok(_) => println!("IMS image deleted: {}", image_id),
-            Err(error) => {
-                if error.status().unwrap().eq(&404) {
-                    eprintln!(
-                        "Artifact related to image id '{}' not found. Continue",
-                        image_id
-                    );
-                }
+            Err(e) => {
+                eprintln!("{e}. Continue");
             }
         }
     }

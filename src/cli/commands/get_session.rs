@@ -126,12 +126,16 @@ pub async fn exec(
                     .result_id
                     .as_ref();
 
+                let image_id = cfs_session_image_id.map(|elem| elem.as_str());
+
+                dbg!(image_id);
+
                 let new_image_vec_rslt: Result<Vec<Image>, _> = ims::image::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     // hsm_group_name_vec,
-                    cfs_session_image_id.map(|elem| elem.as_str()),
+                    image_id,
                 )
                 .await;
 
