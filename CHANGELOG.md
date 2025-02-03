@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.11] - 2025-02-03
+
+### Features
+
+- Add autocomplete command
+
+### Refactor
+
+- Clean code
+
+## [1.54.10] - 2025-01-30
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.10
+
 ## [1.54.9] - 2025-01-30
 
 ### Miscellaneous Tasks
