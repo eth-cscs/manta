@@ -87,6 +87,19 @@ pub fn subcommand_config() -> Command {
                 .subcommand(subcommand_config_unset_parent_hsm)
                 .subcommand(subcommand_config_unset_auth),
         )
+        .subcommand(
+            Command::new("generate-autocomplete")
+                .about("Generate shell auto completion script")
+                .alias("gen-autocomplete")
+                .arg(
+                    arg!(-s --shell <SHELL> "Shell type. Will try to guess from $SHELL if missing")
+                        .value_parser(["bash", "zsh", "fish"]),
+                )
+                .arg(
+                    arg!(-p --path <PATH> "Path to put the autocomplete script or prints to stdout if missing.\nNOTE: Do not specify filename, only path to directory")
+                    .value_parser(value_parser!(PathBuf)),
+                ),
+        )
 }
 
 pub fn subcommand_delete() -> Command {
