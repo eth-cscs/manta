@@ -1917,6 +1917,7 @@ pub async fn process_cli(
                     let prehook = cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
                     let posthook = cli_migrate_vcluster_restore.get_one::<String>("post-hook");
                     commands::migrate_restore::exec(
+                        &backend,
                         &shasta_token,
                         shasta_base_url,
                         shasta_root_cert,

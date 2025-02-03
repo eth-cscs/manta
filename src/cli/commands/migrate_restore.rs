@@ -1,3 +1,5 @@
+use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::types::Group;
 use chrono::Local;
 use dialoguer::Confirm;
 use humansize::DECIMAL;
@@ -7,10 +9,6 @@ use mesa::bos::template::http_client::v2::types::BosSessionTemplate;
 use mesa::cfs::configuration::http_client::v3::types::{
     cfs_configuration_request::CfsConfigurationRequest,
     cfs_configuration_response::CfsConfigurationResponse,
-};
-use mesa::hsm::group::{
-    http_client::{create_new_group, delete_group},
-    types::Group,
 };
 use mesa::ims::image::utils::get_by_name;
 use mesa::ims::image::{
@@ -29,6 +27,8 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 // As per https://cray-hpe.github.io/docs-csm/en-13/operations/image_management/import_external_image_to_ims/
 /* #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -63,6 +63,7 @@ fn default_version() -> String {
 }
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -245,13 +246,7 @@ pub async fn exec(
     println!("Ok");
 
     println!("\nCreating HSM group...");
-    create_hsm_group(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &backup_hsm_file,
-    )
-    .await;
+    create_hsm_group_from_file(backend, shasta_token, &backup_hsm_file).await;
     println!("Ok");
 
     println!("\nUploading CFS configuration...");
@@ -903,126 +898,84 @@ pub fn get_image_name_from_ims_file(ims_file: &String) -> String {
 }
 
 // Anything in this function is critical, so the asserts will kill further processing
-pub async fn create_hsm_group(
+pub async fn create_hsm_group_from_file(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hsm_file: &String,
 ) {
+    // Parse HSM group file
+    // The file looks like this: [{"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}]
     // load into memory
     let hsm_data =
         fs::read_to_string(PathBuf::from(hsm_file)).expect("Unable to read HSM JSON file");
 
-    let _hsm_json: serde_json::Value =
+    let group_vec: Vec<Group> =
         serde_json::from_str(&hsm_data).expect("HSM JSON file does not have correct format.");
 
-    // Create new HSM group if not existing
+    for group in group_vec {
+        // Create the HSM group
+        /* match create_new_group(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &hsm.label,
+            &hsm.members.unwrap().ids.unwrap(),
+            &hsm.exclusive_group.unwrap(),
+            &hsm.description.unwrap(),
+            &hsm.tags.unwrap(),
+        )
+        .await */
+        match backend.add_group(shasta_token, group.clone()).await {
+            Ok(group) => {
+                println!(
+                    "The HSM group {} has been created successfully.",
+                    &group.label
+                );
+            }
+            Err(error) => {
+                if error.to_string().to_lowercase().contains("409") {
+                    println!("The HSM group {} already exists, it is possible to recreate it, but is a dangerous operation", &group.label);
+                    log::error!("Error message {}", error);
+                    let confirmation = Confirm::new()
+                        .with_prompt("Do you want to recreate it?")
+                        .interact()
+                        .unwrap();
 
-    // Parse HSM group file
-    // The file looks like this: [{"gele":["x1001c7s1b1n1","x1001c7s1b0n0","x1001c7s1b1n0","x1001c7s1b0n1"]}]
-    let mut hsm_vec: Vec<Group> = serde_json::from_str(hsm_data.as_str()).unwrap();
-    log::debug!("HSM vector {:#?}", &hsm_vec);
-
-    // for hsm in hsm_vec.iter() {
-    //     let mut hsm: HsmGroup = hsm.clone();
-    // }
-    let mut hsm: Group = hsm_vec.remove(0);
-    log::debug!("HSM group to create {:#?}", &hsm_data.as_str());
-
-    // let exclusive:bool = false; // Make sure this is false, so we can test this without impacting other HSM groups
-    // // the following xnames are part of HSM group "gele"
-    // let xnames:Vec<String> = vec!["x1001c7s1b0n0".to_string(),
-    //                               "x1001c7s1b0n1".to_string(),
-    //                               "x1001c7s1b1n0".to_string(),
-    //                               "x1001c7s1b1n1".to_string()];
-    // let description = "Test group created by function mesa test_1_hsm";
-    // let tags:Vec<String> = vec!["dummyTag1".to_string(), "dummyTag2".to_string()];
-    // // let tags= vec![]; // sending an empty vector works
-    // let hsm_group_name_opt = "manta_created_hsm".to_string();
-    if hsm.tags.is_none() {
-        hsm.tags = vec![].into();
-    }
-    if hsm.exclusive_group.is_none() {
-        hsm.exclusive_group = Some(false.to_string());
-    }
-    // This couldn't be uglier, I know
-    let hsm2: Group = hsm.clone();
-
-    // Create the HSM group
-    match create_new_group(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &hsm.label,
-        &hsm.members.unwrap().ids.unwrap(),
-        &hsm.exclusive_group.unwrap(),
-        &hsm.description.unwrap(),
-        &hsm.tags.unwrap(),
-    )
-    .await
-    {
-        Ok(_) => {
-            println!(
-                "The HSM group {} has been created successfully.",
-                &hsm.label
-            );
-        }
-        Err(error) => {
-            if error.to_string().to_lowercase().contains("409") {
-                println!("The HSM group {} already exists, it is possible to recreate it, but is a dangerous operation", &hsm.label);
-                log::error!("Error message {}", error);
-                let confirmation = Confirm::new()
-                    .with_prompt("Do you want to recreate it?")
-                    .interact()
-                    .unwrap();
-
-                if confirmation {
-                    println!("Looks like you want to continue");
-                    match delete_group(shasta_token, shasta_base_url, shasta_root_cert, &hsm.label)
-                        .await
-                    {
-                        Ok(_) => {
-                            // try creating the group again
-                            match create_new_group(
-                                shasta_token,
-                                shasta_base_url,
-                                shasta_root_cert,
-                                &hsm2.label,
-                                &hsm2.members.unwrap().ids.unwrap(),
-                                &hsm2.exclusive_group.unwrap(),
-                                &hsm2.description.unwrap(),
-                                &hsm2.tags.unwrap(),
-                            )
-                            .await
-                            {
-                                Ok(_json) => {
-                                    println!(
-                                        "The HSM group {} has been created successfully.",
-                                        &hsm2.label
-                                    );
-                                }
-                                Err(e2) => {
-                                    log::error!("Error message {}", e2);
-                                    panic!("Second error creating a new HSM group. Bailing out. Error returned: '{}'", e2)
+                    if confirmation {
+                        println!("Looks like you want to continue");
+                        match backend.delete_group(shasta_token, &group.label).await {
+                            Ok(_) => {
+                                // try creating the group again
+                                match backend.add_group(shasta_token, group.clone()).await {
+                                    Ok(_json) => {
+                                        println!(
+                                            "The HSM group {} has been created successfully.",
+                                            &group.label
+                                        );
+                                    }
+                                    Err(e) => {
+                                        log::error!("Error message {}", e);
+                                        panic!("Second error creating a new HSM group. Bailing out. Error returned: '{}'", e)
+                                    }
                                 }
                             }
+                            Err(e) => {
+                                log::error!("Error message {}", e);
+                                panic!(
+                                    "Error deleting the HSM group {}. Error returned: '{}'",
+                                    &group.label, e
+                                )
+                            }
                         }
-                        Err(e1) => {
-                            log::error!("Error message {}", e1);
-                            panic!(
-                                "Error deleting the HSM group {}. Error returned: '{}'",
-                                &hsm.label, e1
-                            )
-                        }
+                    } else {
+                        println!("Not deleting the group, cannot continue the operation.");
+                        std::process::exit(2);
                     }
-                } else {
-                    println!("Not deleting the group, cannot continue the operation.");
+                } else if error.to_string().to_lowercase().contains("400") {
+                    eprintln!("Unable to create the group, the API returned code 400. This usually means the HSM file is malformed, or has incorrect xnames for this site in it.");
                     std::process::exit(2);
                 }
-            } else if error.to_string().to_lowercase().contains("400") {
-                eprintln!("Unable to create the group, the API returned code 400. This usually means the HSM file is malformed, or has incorrect xnames for this site in it.");
-                std::process::exit(2);
             }
-        }
-    };
+        };
+    }
 }

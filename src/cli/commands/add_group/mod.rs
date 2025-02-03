@@ -24,7 +24,7 @@ pub async fn exec(
     }
 
     // Create Group instance for http payload
-    let group = Group::new(label, xname_vec_opt);
+    let group = Group::new(label, xname_vec_opt, None, None);
 
     // Call backend to create group
     let result = backend.add_group(&auth_token, group).await;
