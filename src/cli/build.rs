@@ -557,6 +557,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power reset all nodes in a cluster")
                         .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                        .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(-r --reason <TEXT> "reason to power reset"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
