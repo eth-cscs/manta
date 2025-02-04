@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.13] - 2025-02-04
+
+### Features
+
+- Get logs from host (xname or nid)
+
 ## [1.54.12] - 2025-02-04
 
 ### Bug Fixes
 
 - Bug in cli
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.12
 
 ## [1.54.11] - 2025-02-03
 
