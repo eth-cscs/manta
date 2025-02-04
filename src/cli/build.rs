@@ -580,7 +580,8 @@ pub fn subcommand_log() -> Command {
         .visible_alias("l")
         .about("get cfs session logs")
         .arg(arg!([SESSION_NAME] "show logs related to session name"))
-        .arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
+        .arg(arg!(-c --cluster <CLUSTERNAME> "Show logs most recent CFS session logs created for cluster."))
+        .arg(arg!(-n --node <NODENAME> "Show logs most recent CFS session logs created for a node."))
         .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]))
 }
 

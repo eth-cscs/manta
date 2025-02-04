@@ -40,8 +40,8 @@ pub async fn exec(
 
     // Filter xnames to the ones members to HSM groups the user has access to
     //
-    let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await;
+    /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await; */
 
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
     let mut xname_vec = if is_user_input_nids(host) {

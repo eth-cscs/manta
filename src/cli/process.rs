@@ -1807,6 +1807,10 @@ pub async fn process_cli(
             )
             .await;
 
+            let session_name = cli_log.get_one::<String>("SESSION_NAME");
+
+            let host_name = cli_log.get_one::<String>("node");
+
             commands::log::exec(
                 // cli_log,
                 shasta_token,
@@ -1817,8 +1821,9 @@ pub async fn process_cli(
                 vault_role_id,
                 k8s_api_url,
                 &target_hsm_group_vec,
-                cli_log.get_one::<String>("SESSION_NAME"),
+                session_name,
                 settings_hsm_group_name_opt,
+                host_name,
             )
             .await;
         } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
