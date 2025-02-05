@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.15] - 2025-02-05
+
+### Bug Fixes
+
+- Cli typo
+
 ## [1.54.14] - 2025-02-05
 
 ### Features
 
 - Remove aliases in cli commands
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.14
 
 ## [1.54.13] - 2025-02-04
 
