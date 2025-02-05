@@ -70,6 +70,8 @@ uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 [build-dependencies]
 clap = "*"
 clap_complete = "*"
+mesa = "*"
+strum = "*"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.
