@@ -1,4 +1,3 @@
-use clap::ValueEnum;
 use clap_complete::{generate_to, Shell};
 use cli::build_cli;
 use std::io::Error;

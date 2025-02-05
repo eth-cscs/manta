@@ -1,6 +1,8 @@
 mod cli;
 mod common;
 
+use common::{audit, kafka::Kafka};
+
 use crate::common::log_ops;
 
 // DHAT (profiling)
@@ -67,6 +69,30 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .get("vault_secret_path")
         .unwrap()
         .to_string();
+
+    let audit_detail = settings.get_table("audit").unwrap();
+    let audit_kafka_detail_hashmap = audit_detail
+        .get("kafka")
+        .expect("kafka value missing in configuration file")
+        .clone()
+        .into_table()
+        .expect("kafka value must be a table");
+    let kafka_audit = Kafka {
+        brokers: audit_kafka_detail_hashmap
+            .get("brokers")
+            .cloned()
+            .expect("'brokers' value missing in configuration file")
+            .into_array()
+            .expect("brokers value must be an array")
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>(),
+        topic: audit_kafka_detail_hashmap
+            .clone()
+            .get("topic")
+            .expect("topic value missing in configuration file")
+            .to_string(),
+    };
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
     log::debug!("config - log_level:  {log_level}");
@@ -138,6 +164,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         // &base_image_id,
         &k8s_api_url,
         &settings,
+        &kafka_audit,
     )
     .await;
 

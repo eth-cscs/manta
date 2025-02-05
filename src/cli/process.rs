@@ -10,7 +10,7 @@ use config::Config;
 use k8s_openapi::chrono;
 use mesa::{common::authentication, error::Error};
 
-use crate::cli::commands::validate_local_repo;
+use crate::{cli::commands::validate_local_repo, common::kafka::Kafka};
 
 use super::commands::{
     self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
@@ -43,6 +43,7 @@ pub async fn process_cli(
     // base_image_id: &str,
     k8s_api_url: &str,
     settings: &Config,
+    kafka_audit: &Kafka,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     let site_name: String = match settings.get("site") {
         Ok(site_name) => site_name,
@@ -276,6 +277,7 @@ pub async fn process_cli(
                         is_regex,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
