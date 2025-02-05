@@ -88,7 +88,7 @@ pub fn subcommand_config() -> Command {
                 .subcommand(subcommand_config_unset_auth),
         )
         .subcommand(
-            Command::new("gen-autocomplete")
+            Command::new("generate-autocomplete")
                 // .alias("gen-autocomplete")
                 .about("Generate shell auto completion script")
                 .arg(
