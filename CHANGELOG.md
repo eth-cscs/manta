@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.16] - 2025-02-05
+
+### Features
+
+- Shell autocomplete scripts generated on compilation time
+
 ## [1.54.15] - 2025-02-05
 
 ### Bug Fixes
 
 - Cli typo
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.15
 
 ## [1.54.14] - 2025-02-05
 
