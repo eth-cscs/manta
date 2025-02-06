@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
+use mesa::common::jwt_ops;
+
+use crate::{
+    cli::commands::config_show::get_hsm_name_available_from_jwt_or_all,
+    common::{audit::Audit, kafka::Kafka},
+};
 
 pub async fn exec(
     shasta_token: &str,
@@ -11,6 +16,7 @@ pub async fn exec(
     xname_requested_hostlist: &str,
     nodryrun: bool,
     create_hsm_group: bool,
+    kafka_audit: &Kafka,
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
@@ -69,7 +75,7 @@ pub async fn exec(
     }
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
-    for target_hsm_name in target_hsm_name_vec {
+    for target_hsm_name in &target_hsm_name_vec {
         if mesa::hsm::group::http_client::get(
             shasta_token,
             shasta_base_url,
@@ -141,5 +147,19 @@ pub async fn exec(
                 Err(e) => eprintln!("{}", e),
             }
         }
+    }
+
+    // Audit
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Migrate nodes {:?} from '{:?}' to '{:?}'",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        xname_to_move_vec,
+        parent_hsm_name_vec,
+        target_hsm_name_vec,
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
     }
 }

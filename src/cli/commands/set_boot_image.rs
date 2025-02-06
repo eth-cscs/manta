@@ -5,6 +5,8 @@ use mesa::{
     error::Error,
 };
 
+use crate::common::kafka::Kafka;
+
 /// Set boot image to a set of nodes. This function updates the desired_configuration for the node
 /// boot params.
 /// If the new image is different than existing one, then the nodes will reboot. This is mandatory
@@ -18,6 +20,7 @@ pub async fn exec(
     xname_vec_opt: Option<&Vec<String>>,
     assume_yes: bool,
     output: &str,
+    kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let xname_to_reboot_vec: Vec<String>;
 
@@ -113,6 +116,7 @@ pub async fn exec(
                 true,
                 assume_yes,
                 output,
+                kafka_audit,
             )
             .await;
         }

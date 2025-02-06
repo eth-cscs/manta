@@ -7,7 +7,10 @@ use mesa::{
     pcs::{self},
 };
 
-use crate::{cli::commands::config_show::get_hsm_name_available_from_jwt_or_all, common};
+use crate::{
+    cli::commands::config_show::get_hsm_name_available_from_jwt_or_all,
+    common::{self, audit::Audit, kafka::Kafka},
+};
 
 pub async fn exec(
     shasta_token: &str,
@@ -18,6 +21,7 @@ pub async fn exec(
     force: bool,
     assume_yes: bool,
     output: &str,
+    kafka_audit: &Kafka,
 ) {
     let hsm_name_available_vec =
         get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
@@ -139,5 +143,15 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Power off nodes {:?}",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        xname_vec
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
+    }
+    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
 }

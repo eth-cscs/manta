@@ -1,5 +1,10 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::cfs::component::shasta::r#struct::v2::{ComponentRequest, ComponentResponse};
+use mesa::{
+    cfs::component::shasta::r#struct::v2::{ComponentRequest, ComponentResponse},
+    common::jwt_ops,
+};
+
+use crate::common::{audit::Audit, kafka::Kafka};
 
 pub async fn exec(
     shasta_token: &str,
@@ -8,6 +13,7 @@ pub async fn exec(
     target_hsm_group_vec: Vec<String>,
     cfs_session_name: &str,
     dry_run: &bool,
+    kafka_audit: &Kafka,
 ) {
     let (
         _cfs_configuration_vec_opt,
@@ -327,4 +333,16 @@ pub async fn exec(
     }
 
     println!("Session '{cfs_session_name}' has been deleted.");
+
+    // Audit
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Delete session {}",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        cfs_session_name,
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
+    }
 }

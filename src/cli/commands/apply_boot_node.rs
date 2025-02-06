@@ -1,5 +1,6 @@
 use crate::{
-    cli::commands::power_reset_nodes, common::ims_ops::get_image_id_from_cfs_configuration_name,
+    cli::commands::power_reset_nodes,
+    common::{ims_ops::get_image_id_from_cfs_configuration_name, kafka::Kafka},
 };
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
@@ -22,6 +23,7 @@ pub async fn exec(
     xname_vec: Vec<&str>,
     assume_yes: bool,
     dry_run: bool,
+    kafka_audit: &Kafka,
 ) {
     let mut need_restart = false;
 
@@ -274,6 +276,7 @@ pub async fn exec(
                 true,
                 assume_yes,
                 "table",
+                kafka_audit,
             )
             .await
         }

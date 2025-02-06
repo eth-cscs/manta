@@ -5,6 +5,8 @@ use mesa::{
     error::Error,
 };
 
+use crate::common::{audit::Audit, kafka::Kafka};
+
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
@@ -15,6 +17,7 @@ pub async fn exec(
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
     assume_yes: bool,
+    kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     println!("Delete kernel parameters");
@@ -112,7 +115,18 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Add kernel parameters {} from '{:?}'",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        kernel_params,
+        xnames,
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
+    }
+    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
@@ -127,6 +141,7 @@ pub async fn exec(
             true,
             assume_yes,
             "table",
+            kafka_audit,
         )
         .await;
     }

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use mesa::common::jwt_ops;
+
+use crate::common::{audit::Audit, kafka::Kafka};
 
 use super::config_show::get_hsm_name_available_from_jwt_or_all;
 
@@ -13,6 +16,7 @@ pub async fn exec(
     is_regex: bool,
     xname_requested: &str,
     dryrun: bool,
+    kafka_audit: &Kafka,
 ) {
     let hsm_name_available_vec =
         get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
@@ -114,5 +118,18 @@ pub async fn exec(
             );
         }
         Err(e) => eprintln!("{}", e),
+    }
+
+    // Audit
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Remove nodes {:?} from group '{}'",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        xname_to_move_vec,
+        target_hsm_name
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
     }
 }

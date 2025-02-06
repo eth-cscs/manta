@@ -1,7 +1,7 @@
 mod cli;
 mod common;
 
-use common::{audit, kafka::Kafka};
+use common::kafka::Kafka;
 
 use crate::common::log_ops;
 

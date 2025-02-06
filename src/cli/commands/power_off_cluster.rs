@@ -1,7 +1,7 @@
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{error::Error, pcs};
+use mesa::{common::jwt_ops, error::Error, pcs};
 
-use crate::common;
+use crate::common::{self, audit::Audit, kafka::Kafka};
 
 pub async fn exec(
     shasta_token: &str,
@@ -11,6 +11,7 @@ pub async fn exec(
     force: bool,
     assume_yes: bool,
     output: &str,
+    kafka_audit: &Kafka,
 ) {
     let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
@@ -83,10 +84,20 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let user = mesa::common::jwt_ops::get_name(shasta_token)
+    let msg_data = format!(
+        "User: {} ({}) ; Operation: Power off cluster {}",
+        jwt_ops::get_name(shasta_token).unwrap(),
+        jwt_ops::get_preferred_username(shasta_token).unwrap(),
+        hsm_group_name_arg_opt
+    );
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+        log::warn!("Failed producing messages: {}", e);
+    }
+    /* let user = mesa::common::jwt_ops::get_name(shasta_token)
         .expect("ERROR - claim 'user' not found in JWT token");
     let username = mesa::common::jwt_ops::get_preferred_username(shasta_token)
         .expect("ERROR - claim 'preferred_uername' not found in JWT token");
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg_opt);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg_opt); */
 }

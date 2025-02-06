@@ -248,6 +248,7 @@ pub async fn process_cli(
                         target_hsm_group,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
@@ -315,6 +316,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
@@ -341,6 +343,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -380,6 +383,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
@@ -418,6 +422,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -753,6 +758,7 @@ pub async fn process_cli(
                     target_hsm_group_vec_opt.as_ref(),
                     xname_vec_opt.as_ref(),
                     assume_yes,
+                    kafka_audit,
                 )
                 .await;
 
@@ -1733,6 +1739,7 @@ pub async fn process_cli(
                         xname_vec,
                         assume_yes,
                         dry_run,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
@@ -1785,6 +1792,7 @@ pub async fn process_cli(
                         target_hsm_group_name,
                         assume_yes,
                         dry_run,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -1937,6 +1945,7 @@ pub async fn process_cli(
                     xnames_string,
                     !dry_run,
                     false,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
@@ -2078,6 +2087,7 @@ pub async fn process_cli(
                     target_hsm_group_vec_opt.as_ref(),
                     xname_vec_opt.as_ref(),
                     assume_yes,
+                    kafka_audit,
                 )
                 .await;
 
@@ -2110,6 +2120,7 @@ pub async fn process_cli(
                     target_hsm_group_vec,
                     session_name,
                     dry_run,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_delete_images) = cli_root.subcommand_matches("images") {
@@ -2241,6 +2252,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
+                kafka_audit,
             )
             .await;
         } else if let Some(cli_remove_nodes) =
@@ -2266,6 +2278,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
+                kafka_audit,
             )
             .await;
         }
