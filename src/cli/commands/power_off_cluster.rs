@@ -91,7 +91,7 @@ pub async fn exec(
         hsm_group_name_arg_opt
     );
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);
     }
     /* let user = mesa::common::jwt_ops::get_name(shasta_token)

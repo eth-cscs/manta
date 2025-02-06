@@ -342,7 +342,7 @@ pub async fn exec(
         cfs_session_name,
     );
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);
     }
 }

@@ -123,7 +123,7 @@ pub async fn exec(
         xnames,
     );
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);
     }
     // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters from {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);

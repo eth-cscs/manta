@@ -93,7 +93,7 @@ pub async fn exec(
         hsm_group_name_arg_opt
     );
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()) {
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);
     }
     // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on cluster {}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), hsm_group_name_arg_opt);
