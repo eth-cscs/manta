@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.17] - 2025-02-06
+
+### Features
+
+- Add kafka auditing to 'power on nodes' command
+- Update kafka library
+
+### Feag
+
+- Add audit functionality to the following operations:
+
 ## [1.54.16] - 2025-02-05
 
 ### Features
 
 - Shell autocomplete scripts generated on compilation time
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.16
 
 ## [1.54.15] - 2025-02-05
 
