@@ -1744,20 +1744,14 @@ pub async fn process_cli(
             )
             .await; */
 
-            let hsm_group_name_arg_opt = cli_log.try_get_one::<String>("cluster").unwrap_or(None);
+            let user_input = cli_log
+                .get_one::<String>("VALUE")
+                .expect("ERROR - value is mandatory");
 
-            let target_hsm_group_vec = get_groups_available(
-                &backend,
-                &shasta_token,
-                /* shasta_base_url,
-                shasta_root_cert, */
-                hsm_group_name_arg_opt,
-                settings_hsm_group_name_opt,
-            )
-            .await?;
+            let group_available_vec = backend.get_group_available(&shasta_token).await?;
 
             commands::log::exec(
-                // cli_log,
+                &backend,
                 &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -1765,9 +1759,9 @@ pub async fn process_cli(
                 vault_secrets_path,
                 vault_role_id,
                 k8s_api_url,
-                &target_hsm_group_vec,
-                cli_log.get_one::<String>("SESSION_NAME"),
-                settings_hsm_group_name_opt,
+                &group_available_vec,
+                user_input,
+                // settings_hsm_group_name_opt,
             )
             .await;
         } else if let Some(cli_console) = cli_root.subcommand_matches("console") {

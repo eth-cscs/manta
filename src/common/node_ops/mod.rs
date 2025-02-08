@@ -152,7 +152,7 @@ pub async fn resolve_node_list_user_input_to_xname(
             .map(|component| component.id.clone().unwrap())
             .collect();
 
-        log::debug!("xname list:\n{:#?}", requested_xname_vec);
+        log::debug!("XNAME list:\n{:#?}", requested_xname_vec);
 
         // let xname_vec_rslt = nid_to_xname(backend, shasta_token, user_input, is_regex).await;
 
@@ -165,13 +165,9 @@ pub async fn resolve_node_list_user_input_to_xname(
             .collect::<Option<Vec<String>>>()
             .unwrap_or_default();
 
-        let xname_vec: Vec<String> = if is_regex {
-            get_xname_list_from_regex_expression(user_input, &all_xname_vec)?
-            // get_curated_hsm_group_from_xname_regex(backend, shasta_token, user_input).await
-        } else {
-            get_xname_list_from_hostlist_expression(user_input, &all_xname_vec)?
-            // get_curated_hsm_group_from_xname_hostlist(backend, shasta_token, user_input).await
-        };
+        let xname_vec: Vec<String> =
+            get_xname_list_from_regex_expression(user_input, &all_xname_vec)?;
+        // get_curated_hsm_group_from_xname_regex(backend, shasta_token, user_input).await
 
         xname_vec
     };
@@ -182,7 +178,7 @@ pub async fn resolve_node_list_user_input_to_xname(
             .map(|xname| xname[0..10].to_string())
             .collect();
 
-        log::debug!("Xname blades:\n{:?}", xname_blade_requested_by_user_vec);
+        log::debug!("XNAME blades:\n{:?}", xname_blade_requested_by_user_vec);
 
         // Filter xnames to the ones the user has access to
         xname_available_vec

@@ -608,9 +608,7 @@ pub fn subcommand_log() -> Command {
     Command::new("log")
         .visible_alias("l")
         .about("get cfs session logs")
-        .arg(arg!([SESSION_NAME] "show logs related to session name"))
-        .arg(arg!(-c --cluster <cluster_name> "Show logs most recent CFS session created for cluster."))
-        .group(ArgGroup::new("cluster_or_session_name").args(["cluster", "SESSION_NAME"]))
+        .arg(arg!([VALUE] "show logs related to session name"))
 }
 
 pub fn subcommand_validate_local_repo() -> Command {
