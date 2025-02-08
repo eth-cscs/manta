@@ -371,6 +371,27 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
     hsm_group_summary
 }
 
+pub fn create_group_summary(
+    hsm_group_available_map: &HashMap<String, Vec<String>>,
+    xname_requested_vec: &Vec<String>,
+) -> HashMap<String, Vec<String>> {
+    let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
+
+    // Filter hsm group members
+    for (hsm_name, hsm_members) in hsm_group_available_map {
+        let xname_filtered: Vec<String> = hsm_members
+            .iter()
+            .filter(|&xname| xname_requested_vec.contains(&xname))
+            .cloned()
+            .collect();
+        if !xname_filtered.is_empty() {
+            hsm_group_summary.insert(hsm_name.to_string(), xname_filtered);
+        }
+    }
+
+    hsm_group_summary
+}
+
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();
 

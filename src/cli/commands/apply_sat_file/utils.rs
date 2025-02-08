@@ -15,6 +15,7 @@ use mesa::{
         },
         session::mesa::r#struct::v3::CfsSessionPostRequest,
     },
+    common::jwt_ops,
     error::Error,
     hsm, ims,
 };
@@ -23,7 +24,10 @@ use serde_json::Map;
 use serde_yaml::{Mapping, Value};
 use uuid::Uuid;
 
-use crate::cli::process::validate_target_hsm_members;
+use crate::{
+    cli::process::validate_target_hsm_members,
+    common::{audit::Audit, kafka::Kafka},
+};
 
 use self::sessiontemplate::SessionTemplate;
 
@@ -1965,6 +1969,7 @@ pub async fn process_session_template_section_in_sat_file(
     sat_file_yaml: Value,
     do_not_reboot: bool,
     dry_run: bool,
+    kafka_audit: &Kafka,
 ) {
     let empty_vec = Vec::new();
     let bos_session_template_list_yaml = sat_file_yaml["session_templates"]
@@ -2460,8 +2465,16 @@ pub async fn process_session_template_section_in_sat_file(
     }
 
     // Audit
-    let user = mesa::common::jwt_ops::get_name(shasta_token).unwrap();
-    let username = mesa::common::jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", user, username);
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "message": "Apply SAT file"});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
+    }
 }

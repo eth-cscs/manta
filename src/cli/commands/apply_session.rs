@@ -12,7 +12,7 @@ use mesa::{
 use k8s_openapi::chrono;
 use substring::Substring;
 
-use crate::common::local_git_repo;
+use crate::common::{audit::Audit, kafka::Kafka, local_git_repo};
 
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
@@ -34,6 +34,7 @@ pub async fn exec(
     ansible_verbosity: Option<String>,
     ansible_passthrough: Option<String>,
     watch_logs: bool,
+    kafka_audit: &Kafka,
 ) -> (String, String) {
     /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
@@ -199,7 +200,18 @@ pub async fn exec(
     // * End Create CFS session
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap());
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "message": "Apply session"});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
+    }
 
     (cfs_configuration_name, cfs_session_name)
 }

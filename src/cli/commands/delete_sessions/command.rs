@@ -335,12 +335,14 @@ pub async fn exec(
     println!("Session '{cfs_session_name}' has been deleted.");
 
     // Audit
-    let msg_data = format!(
-        "User: {} ({}) ; Operation: Delete session {}",
-        jwt_ops::get_name(shasta_token).unwrap(),
-        jwt_ops::get_preferred_username(shasta_token).unwrap(),
-        cfs_session_name,
-    );
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "message": format!("delete session '{}'", cfs_session_name)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);

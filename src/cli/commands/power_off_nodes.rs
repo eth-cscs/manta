@@ -143,12 +143,14 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let msg_data = format!(
-        "User: {} ({}) ; Operation: Power off nodes {:?}",
-        jwt_ops::get_name(shasta_token).unwrap(),
-        jwt_ops::get_preferred_username(shasta_token).unwrap(),
-        xname_vec
-    );
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": "power off"});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);

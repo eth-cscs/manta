@@ -6,7 +6,9 @@ use mesa::{
     error::Error,
 };
 
-use crate::common::ims_ops::get_image_id_from_cfs_configuration_name;
+use crate::common::{
+    audit::Audit, ims_ops::get_image_id_from_cfs_configuration_name, kafka::Kafka,
+};
 
 /// Updates the boot image for a set of nodes
 /// reboots the nodes which boot image have changed
@@ -17,6 +19,7 @@ pub async fn exec(
     configuration_name: &str,
     hsm_group_name_opt: Option<&Vec<String>>,
     xname_vec_opt: Option<&Vec<String>>,
+    kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
@@ -139,7 +142,18 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Set boot configuration to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "group": hsm_group_name_opt, "host": {"hostname": xname_vec_opt}, "message": "Set boot configuration" });
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
+    }
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {

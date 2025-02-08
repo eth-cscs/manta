@@ -5,7 +5,7 @@ use mesa::{
     error::Error,
 };
 
-use crate::common::kafka::Kafka;
+use crate::common::{audit::Audit, kafka::Kafka};
 
 /// Set boot image to a set of nodes. This function updates the desired_configuration for the node
 /// boot params.
@@ -101,7 +101,18 @@ pub async fn exec(
         }
 
         // Audit
-        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Set boot image to {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xnames);
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+        let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt}, "group": hsm_group_name_opt, "message": format!("Set boot image '{}'", image_id) });
+
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
 
         // Reboot if needed
         if xname_to_reboot_vec.is_empty() {

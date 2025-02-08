@@ -1285,6 +1285,7 @@ pub async fn process_cli(
                     *cli_apply_session
                         .get_one::<bool>("watch-logs")
                         .unwrap_or(&false),
+                    kafka_audit,
                 )
                 .await;
             /* } else if let Some(cli_apply_image) = cli_apply.subcommand_matches("image") {
@@ -1515,6 +1516,7 @@ pub async fn process_cli(
                     true,
                     false,
                     assume_yes,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {

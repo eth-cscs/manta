@@ -13,7 +13,10 @@ use mesa::{
 use serde_yaml::Value;
 use termion::color;
 
-use crate::cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils};
+use crate::{
+    cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils},
+    common::kafka::Kafka,
+};
 
 pub async fn exec(
     shasta_token: &str,
@@ -41,6 +44,7 @@ pub async fn exec(
     debug_on_failure: bool,
     dry_run: bool,
     assume_yes: bool,
+    kafka_audit: &Kafka,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -381,6 +385,7 @@ pub async fn exec(
             // &tag,
             do_not_reboot,
             dry_run,
+            kafka_audit,
         )
         .await;
     }

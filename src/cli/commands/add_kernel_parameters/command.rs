@@ -115,13 +115,14 @@ pub async fn exec(
     }
 
     // Audit
-    let msg_data = format!(
-        "User: {} ({}) ; Operation: Add kernel parameters {} from '{:?}'",
-        jwt_ops::get_name(shasta_token).unwrap(),
-        jwt_ops::get_preferred_username(shasta_token).unwrap(),
-        kernel_params,
-        xnames,
-    );
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xnames}, "message": format!("Add kernel parameters: {}", kernel_params)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);

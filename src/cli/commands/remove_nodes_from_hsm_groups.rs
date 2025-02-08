@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 
-use crate::common::{audit::Audit, kafka::Kafka};
+use crate::common::{audit::Audit, kafka::Kafka, node_ops::create_group_summary};
 
 use super::config_show::get_hsm_name_available_from_jwt_or_all;
 
@@ -58,10 +58,13 @@ pub async fn exec(
     };
 
     // Get list of xnames available
-    let mut xname_to_move_vec: Vec<&String> = hsm_group_summary.values().flatten().collect();
+    let mut xname_to_move_vec: Vec<String> =
+        hsm_group_summary.values().flatten().cloned().collect();
 
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();
+
+    let group_summary = create_group_summary(&hsm_group_summary, &xname_to_move_vec);
 
     // Check if there are any xname to migrate/move and exit otherwise
     if xname_to_move_vec.is_empty() {
@@ -121,13 +124,14 @@ pub async fn exec(
     }
 
     // Audit
-    let msg_data = format!(
-        "User: {} ({}) ; Operation: Remove nodes {:?} from group '{}'",
-        jwt_ops::get_name(shasta_token).unwrap(),
-        jwt_ops::get_preferred_username(shasta_token).unwrap(),
-        xname_to_move_vec,
-        target_hsm_name
-    );
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "message": format!("Remove nodes from group '{}'", target_hsm_name)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
         log::warn!("Failed producing messages: {}", e);
