@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.57] - 2025-02-08
+
+### Features
+
+- Command 'manta log' not accepts nid, xname, group name or session name
+
 ## [1.54.1-beta.56] - 2025-02-03
 
 ### Features
 
 - Add autocomplete command
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.56
 
 ## [1.54.1-beta.55] - 2025-02-03
 
