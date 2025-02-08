@@ -2,12 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.18] - 2025-02-08
+
+### Features
+
+- Update audit messages:
+- Power off nodes/cluster
+- Power on nodes/cluster
+- Power reset nodes/cluster
+- Add kernl parameters
+- Add nodes to group
+- Apply sat file
+- Apply session
+- Delete kernel parameters
+- Delete session
+- Migrate nodes between groups
+- Remove nodes from group
+- Set boot configuration
+- Set boot image
+
 ## [1.54.17] - 2025-02-06
 
 ### Features
 
 - Add kafka auditing to 'power on nodes' command
 - Update kafka library
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.17
 
 ### Feag
 
