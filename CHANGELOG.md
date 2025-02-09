@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.59] - 2025-02-09
+
+### Bug Fixes
+
+- Dependencies
+
 ## [1.54.1-beta.58] - 2025-02-09
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Command manta log now using new function common::node_ops::resolve_node_list_user_input_to_xname_2
 - Update dependencies
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.58
 
 ### Refactor
 
