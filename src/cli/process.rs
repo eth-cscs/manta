@@ -166,7 +166,7 @@ pub async fn process_cli(
                 config_unset_auth::exec().await;
             }
         } else if let Some(cli_config_generate_autocomplete) =
-            cli_config.subcommand_matches("generate-autocomplete")
+            cli_config.subcommand_matches("gen-autocomplete")
         {
             let shell_opt: Option<String> =
                 cli_config_generate_autocomplete.get_one("shell").cloned();
