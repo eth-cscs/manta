@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.62] - 2025-02-09
+
+### Bug Fixes
+
+- Disable x86_64-unknown-linux-musl in github workload untill we fix the kafka dependency to musl-gcc
+
 ## [1.54.1-beta.61] - 2025-02-09
 
 ### Features
 
 - Add kafka audit
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.61
 
 ## [1.54.1-beta.60] - 2025-02-09
 
