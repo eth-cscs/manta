@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.60] - 2025-02-09
+
+### Bug Fixes
+
+- Cargo build pipeline
+
+### Features
+
+- Remove cli command aliases
+- Add support to generate shell autocomplete during compilation
+
 ## [1.54.1-beta.59] - 2025-02-09
 
 ### Bug Fixes
 
 - Dependencies
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.59
 
 ## [1.54.1-beta.58] - 2025-02-09
 
