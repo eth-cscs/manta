@@ -148,8 +148,9 @@ pub async fn resolve_node_list_user_input_to_xname_2(
 
             get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec).await?
         } else {
-            eprintln!("Node format not valid");
-            std::process::exit(1);
+            return Err(Error::Message(format!(
+                "Could not parse user input as a list of nodes from a hostlist expression.",
+            )));
         };
 
         xname_vec
@@ -167,16 +168,16 @@ pub async fn resolve_node_list_user_input_to_xname_2(
             // Filter, validate and translate list of regex xnames to xnames
             get_xname_from_xname_regex(&regex, &node_metadata_available_vec).await?
         } else {
-            xname_vec
+            return Err(Error::Message(format!(
+                "Could not parse user input as a list of nodes from a regex expression.",
+            )));
         };
 
         xname_vec
     } else {
-        eprintln!(
-            "Could not parse list of nodes as a hostlist or regex. Reason:\n{}",
-            user_input
-        );
-        std::process::exit(1);
+        return Err(Error::Message(format!(
+            "Could not parse user input as a list of nodes from a hostlist or regex expression.",
+        )));
     };
 
     // Include siblings if requested

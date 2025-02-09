@@ -608,7 +608,7 @@ pub fn subcommand_log() -> Command {
     Command::new("log")
         .visible_alias("l")
         .about("get cfs session logs")
-        .arg(arg!([VALUE] "show logs related to session name"))
+        .arg(arg!([VALUE] "Show logs related to a session name, group name, xname or nid. eg: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2a3"))
 }
 
 pub fn subcommand_validate_local_repo() -> Command {

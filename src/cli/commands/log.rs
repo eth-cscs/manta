@@ -62,6 +62,8 @@ pub async fn exec(
     )
     .await;
 
+    // NOTE: fancy pattern matching. Maybe not a good use case for this. Ask in the future if this
+    // is redeable or not
     let cfs_sessions_vec = match xname_vec_rslt.as_deref() {
         Ok([xname]) => {
             // Get most recent CFS session for node or group the node belongs to
