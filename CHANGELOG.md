@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.19] - 2025-02-09
+
+### Bug Fixes
+
+- Disable x86_64-unknown-linux-musl in github workload untill we fix the kafka dependency to musl-gcc
+
 ## [1.54.18] - 2025-02-08
 
 ### Features
@@ -20,6 +26,10 @@ All notable changes to this project will be documented in this file.
 - Remove nodes from group
 - Set boot configuration
 - Set boot image
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.18
 
 ## [1.54.17] - 2025-02-06
 
