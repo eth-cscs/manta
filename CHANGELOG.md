@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.58] - 2025-02-09
+
+### Bug Fixes
+
+- Manta log command not working with group or session names
+
+### Features
+
+- Command manta log now using new function common::node_ops::resolve_node_list_user_input_to_xname_2
+- Update dependencies
+
+### Refactor
+
+- Improve error messages
+
 ## [1.54.1-beta.57] - 2025-02-08
 
 ### Features
 
 - Command 'manta log' not accepts nid, xname, group name or session name
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.57
 
 ## [1.54.1-beta.56] - 2025-02-03
 
