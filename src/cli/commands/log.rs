@@ -1,4 +1,4 @@
-use backend_dispatcher::types::Group;
+use backend_dispatcher::{interfaces::hsm::component::ComponentTrait, types::Group};
 use mesa::{cfs, common::kubernetes};
 
 use crate::{
@@ -38,13 +38,27 @@ pub async fn exec(
         std::process::exit(1);
     });
 
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
     // Convert user input to xname
-    let xname_vec_rslt = common::node_ops::resolve_node_list_user_input_to_xname(
+    /* let xname_vec_rslt = common::node_ops::resolve_node_list_user_input_to_xname(
         backend,
         shasta_token,
         user_input,
         false,
         false,
+    )
+    .await; */
+    let xname_vec_rslt = common::node_ops::resolve_node_list_user_input_to_xname_2(
+        user_input,
+        false,
+        node_metadata_available_vec,
     )
     .await;
 

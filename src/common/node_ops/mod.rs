@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use backend_dispatcher::{
     error::Error,
     interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
+    types::Component,
 };
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
@@ -13,81 +14,6 @@ use mesa::{bss::types::BootParameters, node::types::NodeDetails};
 use regex::Regex;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
-
-/* /// Get list of xnames user has access to based on input regex.
-/// This method will:
-/// 1) Break down all regex in user input
-/// 2) Fetch all HSM groups user has access to
-/// 3) For each HSM group, get the list of xnames and filter the ones that matches the regex
-pub async fn get_curated_hsm_group_from_nid_regex(
-    backend: &StaticBackendDispatcher,
-    shasta_token: &str,
-    nid_requested_regex: &str,
-) -> HashMap<String, Vec<String>> {
-    let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
-
-    // Get list of regex
-    let regex_vec: Vec<Regex> = nid_requested_regex
-        .split(",")
-        .map(|regex_str| Regex::new(regex_str.trim()).expect("ERROR - regex not valid"))
-        .collect();
-
-    let hsm_name_available_vec = backend
-        .get_group_name_available(shasta_token)
-        .await
-        .unwrap();
-    /* let hsm_name_available_vec =
-    get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await; */
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = backend
-        .get_group_map_and_filter_by_group_vec(
-            shasta_token,
-            hsm_name_available_vec
-                .iter()
-                .map(|hsm_name| hsm_name.as_str())
-                .collect(),
-        )
-        .await
-        .expect("ERROR - could not get HSM group summary");
-    /* let hsm_group_available_map = hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
-    )
-    .await
-    .expect("ERROR - could not get HSM group summary"); */
-
-    // Filter hsm group members
-    for (hsm_name, xnames) in hsm_group_available_map {
-        for xname in xnames {
-            for regex in &regex_vec {
-                if regex.is_match(&xname) {
-                    hsm_group_summary
-                        .entry(hsm_name.clone())
-                        .and_modify(|member_vec| member_vec.push(xname.clone()))
-                        .or_insert(vec![xname.clone()]);
-                }
-            }
-        }
-    }
-
-    hsm_group_summary
-} */
-
-/* /// Check if input is a NID
-pub fn validate_nid_format(nid: &str) -> bool {
-    nid.to_lowercase().starts_with("nid")
-        && nid.len() == 9
-        && nid
-            .strip_prefix("nid")
-            .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
-} */
 
 // Validate and get short nid
 pub fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
@@ -112,6 +38,180 @@ pub fn is_user_input_nids(user_input: &str) -> bool {
                                               // regex like ˆnid
 }
 
+pub async fn get_xname_from_nid_hostlist(
+    node_vec: &Vec<String>,
+    node_metadata_available_vec: &Vec<Component>,
+) -> Result<Vec<String>, Error> {
+    // Convert long nids to short nids
+    // Get xnames from short nids
+    let short_nid_vec: Vec<usize> = node_vec
+        .clone()
+        .iter()
+        .map(|nid_long| get_short_nid(nid_long))
+        .collect::<Result<Vec<_>, Error>>()?;
+
+    log::debug!("short Nid list expanded: {:?}", short_nid_vec);
+
+    let xname_vec: Vec<String> = node_metadata_available_vec
+        .into_iter()
+        .filter(|node_metadata_available| {
+            short_nid_vec.contains(&node_metadata_available.nid.unwrap())
+        })
+        .map(|node_metadata_available| node_metadata_available.id.as_ref().unwrap())
+        .cloned()
+        .collect();
+
+    Ok(xname_vec)
+}
+
+pub async fn get_xname_from_xname_hostlist(
+    node_vec: &Vec<String>,
+    node_metadata_available_vec: &Vec<Component>,
+) -> Result<Vec<String>, Error> {
+    // If hostlist of XNAMEs, return hostlist expanded xnames
+    // Validate XNAMEs
+    log::debug!("XNAME format are valid");
+
+    let xname_vec: Vec<String> = node_metadata_available_vec
+        .into_iter()
+        .filter(|node_metadata_available| {
+            node_vec.contains(&node_metadata_available.id.as_ref().unwrap())
+        })
+        .map(|node_metadata_available| node_metadata_available.id.as_ref().unwrap())
+        .cloned()
+        .collect();
+
+    Ok(xname_vec)
+}
+
+pub async fn get_xname_from_nid_regex(
+    regex: &Regex,
+    node_metadata_available_vec: &Vec<Component>,
+) -> Result<Vec<String>, Error> {
+    let xname_vec: Vec<String> = node_metadata_available_vec
+        .clone()
+        .into_iter()
+        .filter(|node_metadata_available: &Component| {
+            regex.is_match(&format!("nid{:06}", node_metadata_available.nid.unwrap()))
+        })
+        .map(|node_metadata_available| node_metadata_available.id.unwrap())
+        .collect();
+
+    Ok(xname_vec)
+}
+
+pub async fn get_xname_from_xname_regex(
+    regex: &Regex,
+    node_metadata_available_vec: &Vec<Component>,
+) -> Result<Vec<String>, Error> {
+    let xname_vec = node_metadata_available_vec
+        .clone()
+        .into_iter()
+        .filter(|node_metadata_available: &Component| {
+            regex.is_match(&node_metadata_available.id.as_ref().unwrap())
+        })
+        .map(|node_metadata_available| node_metadata_available.id.unwrap())
+        .collect();
+
+    Ok(xname_vec)
+}
+
+pub async fn resolve_node_list_user_input_to_xname_2(
+    user_input: &str,
+    is_include_siblings: bool,
+    node_metadata_available_vec: Vec<Component>,
+) -> Result<Vec<String>, Error> {
+    // Check if hostlist
+    // Expand user input to list of nids
+    let hostlist_expanded_vec_rslt = parse(user_input).map_err(|e| Error::Message(e.to_string()));
+
+    // Check if regex
+    let regexexp_rslt = Regex::new(user_input).map_err(|e| Error::Message(e.to_string()));
+
+    let xname_vec = if let Ok(node_vec) = hostlist_expanded_vec_rslt {
+        // If hostlist, expand hostlist
+        let xname_vec: Vec<String> = if mesa::node::utils::validate_nid_format_vec(node_vec.clone())
+        {
+            // If hostlist of NIDs, convert to xname
+            // Validate NIDs
+            log::debug!("NID format is valid");
+            log::debug!("hostlist Nids: {}", user_input);
+            log::debug!("hostlist Nids expanded: {:?}", node_vec);
+
+            get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec).await?
+        } else if mesa::node::utils::validate_xname_format_vec(node_vec.clone()) {
+            // If hostlist of XNAMEs, return hostlist expanded xnames
+            // Validate XNAMEs
+            log::debug!("NID format is valid");
+            log::debug!("hostlist Nids: {}", user_input);
+            log::debug!("hostlist Nids expanded: {:?}", node_vec);
+
+            get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec).await?
+        } else {
+            eprintln!("Node format not valid");
+            std::process::exit(1);
+        };
+
+        xname_vec
+    } else if let Ok(regex) = regexexp_rslt {
+        log::debug!("Regex format is valid");
+        // If regex, return regex
+        // Filter, validate and translate list of regex nids to xnames
+        let xname_vec = get_xname_from_nid_regex(&regex, &node_metadata_available_vec).await?;
+
+        log::debug!("Regex format: {}", regex);
+        log::debug!("NID list from regex: {:#?}", xname_vec);
+
+        let xname_vec: Vec<String> = if xname_vec.is_empty() {
+            log::debug!("No NIDs found from regex");
+            // Filter, validate and translate list of regex xnames to xnames
+            get_xname_from_xname_regex(&regex, &node_metadata_available_vec).await?
+        } else {
+            xname_vec
+        };
+
+        xname_vec
+    } else {
+        eprintln!(
+            "Could not parse list of nodes as a hostlist or regex. Reason:\n{}",
+            user_input
+        );
+        std::process::exit(1);
+    };
+
+    // Include siblings if requested
+    let xname_vec: Vec<String> = if is_include_siblings {
+        log::debug!("Include siblings");
+        let xname_blade_vec: Vec<String> = xname_vec
+            .iter()
+            .map(|xname| xname[0..10].to_string())
+            .collect();
+
+        log::debug!("XNAME blades:\n{:?}", xname_blade_vec);
+
+        // Filter xnames to the ones the user has access to
+        let xname_vec = node_metadata_available_vec
+            .into_iter()
+            .filter(|node_metadata_available| {
+                xname_blade_vec.iter().any(|xname_blade| {
+                    node_metadata_available
+                        .id
+                        .as_ref()
+                        .unwrap()
+                        .starts_with(xname_blade)
+                })
+            })
+            .map(|node_metadata_available| node_metadata_available.id.unwrap())
+            .collect();
+
+        xname_vec
+    } else {
+        xname_vec
+    };
+
+    Ok(xname_vec)
+}
+
 pub async fn resolve_node_list_user_input_to_xname(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
@@ -127,7 +227,7 @@ pub async fn resolve_node_list_user_input_to_xname(
         .flat_map(|group| group.get_members())
         .collect();
 
-    let node_hw_metadata = backend
+    let node_metadata = backend
         .get_all_nodes(shasta_token, Some("true"))
         .await?
         .components
@@ -136,7 +236,7 @@ pub async fn resolve_node_list_user_input_to_xname(
     // Expand user input to list of xnames
     let xname_requested_by_user_vec = if is_user_input_nids(user_input) {
         log::debug!("User input seems to be NID");
-        let all_short_nid_vec: Vec<usize> = node_hw_metadata
+        let all_short_nid_vec: Vec<usize> = node_metadata
             .iter()
             .map(|node| node.nid)
             .collect::<Option<Vec<usize>>>()
@@ -146,7 +246,7 @@ pub async fn resolve_node_list_user_input_to_xname(
             get_xname_from_user_nid_expression(user_input, is_regex, &all_short_nid_vec)?;
 
         // Get list of xnames from short nids requested by user
-        let requested_xname_vec: Vec<String> = node_hw_metadata
+        let requested_xname_vec: Vec<String> = node_metadata
             .iter()
             .filter(|component| requested_short_nid_vec.contains(&component.nid.clone().unwrap()))
             .map(|component| component.id.clone().unwrap())
@@ -159,14 +259,14 @@ pub async fn resolve_node_list_user_input_to_xname(
         requested_xname_vec
     } else {
         log::debug!("User input seems to be XNAME");
-        let all_xname_vec: Vec<String> = node_hw_metadata
+        let all_xname_vec: Vec<String> = node_metadata
             .iter()
             .map(|node| node.id.clone())
             .collect::<Option<Vec<String>>>()
             .unwrap_or_default();
 
         let xname_vec: Vec<String> =
-            get_xname_list_from_regex_expression(user_input, &all_xname_vec)?;
+            get_xname_list_from_xname_expression(user_input, &all_xname_vec)?;
         // get_curated_hsm_group_from_xname_regex(backend, shasta_token, user_input).await
 
         xname_vec
@@ -360,7 +460,7 @@ pub async fn nid_to_xname(
 /// Get list of xnames user has access to based on input regex.
 /// This function expands and filters the list of xnames available to the user based on the regex
 /// provided
-pub fn get_xname_list_from_regex_expression(
+pub fn get_xname_list_from_xname_expression(
     regex_exp: &str,
     xname_available_vec: &[String],
 ) -> Result<Vec<String>, Error> {
@@ -436,7 +536,7 @@ pub async fn get_curated_hsm_group_from_xname_regex(
     hsm_group_summary
 } */
 
-/// Get list of xnames user has access to based on input regex.
+/* /// Get list of xnames user has access to based on input regex.
 /// This function expands and filters the list of xnames available to the user based on the regex
 /// provided
 pub fn get_xname_list_from_hostlist_expression(
@@ -453,7 +553,7 @@ pub fn get_xname_list_from_hostlist_expression(
     xname_requested_vec.retain(|xname| xname_vec.contains(xname));
 
     Ok(xname_requested_vec)
-}
+} */
 
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist

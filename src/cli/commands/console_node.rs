@@ -39,7 +39,7 @@ pub async fn exec(
     });
 
     if xname_vec.len() != 1 {
-        eprintln!("The node to operate is not valid. Nothing to do. Exit");
+        eprintln!("ERROR - The node to operate is not valid. Nothing to do. Exit");
         std::process::exit(0);
     }
 

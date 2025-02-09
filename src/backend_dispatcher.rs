@@ -20,7 +20,7 @@ use backend_dispatcher::{
         pcs::PCSTrait,
     },
     types::{
-        BootParameters, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+        BootParameters, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
         HardwareMetadataArray,
     },
 };
@@ -295,6 +295,13 @@ impl ComponentTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
             OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
+        }
+    }
+
+    async fn get_node_metadata_available(&self, auth_token: &str) -> Result<Vec<Component>, Error> {
+        match self {
+            CSM(b) => b.get_node_metadata_available(auth_token).await,
+            OCHAMI(b) => b.get_node_metadata_available(auth_token).await,
         }
     }
 

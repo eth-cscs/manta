@@ -1,4 +1,10 @@
-use backend_dispatcher::interfaces::pcs::PCSTrait;
+use backend_dispatcher::{
+    interfaces::{
+        hsm::{component::ComponentTrait, group::GroupTrait},
+        pcs::PCSTrait,
+    },
+    types::Component,
+};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 
@@ -10,15 +16,50 @@ use crate::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    /* shasta_base_url: &str,
-    shasta_root_cert: &[u8], */
     hosts_string: &str,
-    is_regex: bool,
     assume_yes: bool,
     output: &str,
 ) {
     // Convert user input to xname
-    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
+    let xname_available_vec: Vec<String> = backend
+        .get_group_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!(
+                "ERROR - Could not get group list. Reason:\n{}",
+                e.to_string()
+            );
+            std::process::exit(1);
+        })
+        .iter()
+        .flat_map(|group| group.get_members())
+        .collect();
+
+    let node_metadata_vec: Vec<Component> = backend
+        .get_all_nodes(shasta_token, Some("true"))
+        .await
+        .unwrap()
+        .components
+        .unwrap_or_default()
+        .iter()
+        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
+        .cloned()
+        .collect();
+
+    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
+        hosts_string,
+        false,
+        node_metadata_vec,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
+    /* let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
         backend,
         shasta_token,
         hosts_string,
@@ -32,7 +73,7 @@ pub async fn exec(
             e
         );
         std::process::exit(1);
-    });
+    }); */
 
     if xname_vec.is_empty() {
         eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");

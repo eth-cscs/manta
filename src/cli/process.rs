@@ -276,8 +276,6 @@ pub async fn process_cli(
                         .get_one::<String>("VALUE")
                         .expect("The 'xnames' argument must have values");
 
-                    let is_regex = *cli_power_on_node.get_one::<bool>("regex").unwrap_or(&true);
-
                     let assume_yes: bool = cli_power_on_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
@@ -293,10 +291,7 @@ pub async fn process_cli(
                     power_on_nodes::exec(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         xname_requested,
-                        is_regex,
                         assume_yes,
                         output,
                     )
