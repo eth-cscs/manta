@@ -20,7 +20,10 @@ use k8s_openapi::chrono;
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     cli::commands::validate_local_repo,
-    common::authorization::{get_groups_available, validate_target_hsm_members},
+    common::{
+        authorization::{get_groups_available, validate_target_hsm_members},
+        kafka::Kafka,
+    },
 };
 
 use super::commands::{
@@ -53,6 +56,7 @@ pub async fn process_cli(
     // base_image_id: &str,
     k8s_api_url: &str,
     settings: &Config,
+    kafka_audit: &Kafka,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let site_name: String = match settings.get("site") {
         Ok(site_name) => site_name,
@@ -260,6 +264,7 @@ pub async fn process_cli(
                         target_hsm_group,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
@@ -294,6 +299,7 @@ pub async fn process_cli(
                         xname_requested,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -343,6 +349,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
@@ -379,6 +386,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -429,6 +437,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
@@ -475,6 +484,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -756,6 +766,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
+                    kafka_audit,
                 )
                 .await;
 
@@ -1410,6 +1421,7 @@ pub async fn process_cli(
                     *cli_apply_session
                         .get_one::<bool>("watch-logs")
                         .unwrap_or(&false),
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
@@ -1654,6 +1666,7 @@ pub async fn process_cli(
                         xname_vec,
                         assume_yes,
                         dry_run,
+                        kafka_audit,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
@@ -1717,6 +1730,7 @@ pub async fn process_cli(
                         target_hsm_group_name,
                         assume_yes,
                         dry_run,
+                        kafka_audit,
                     )
                     .await;
                 }
@@ -1914,11 +1928,12 @@ pub async fn process_cli(
                 migrate_nodes_between_hsm_groups::exec(
                     &backend,
                     &shasta_token,
-                    to,
-                    from,
+                    &to,
+                    &from,
                     xnames_string,
                     !dry_run,
                     false,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
@@ -2101,6 +2116,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
+                    kafka_audit,
                 )
                 .await;
 
@@ -2144,6 +2160,7 @@ pub async fn process_cli(
                     target_hsm_group_vec,
                     session_name,
                     dry_run,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_delete_configurations) =
@@ -2324,6 +2341,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
+                kafka_audit,
             )
             .await;
         } else if let Some(cli_remove_nodes) =
@@ -2357,6 +2375,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
+                kafka_audit,
             )
             .await;
         }

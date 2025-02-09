@@ -1,4 +1,7 @@
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{audit::Audit, kafka::Kafka},
+};
 use backend_dispatcher::{interfaces::bss::BootParametersTrait, types};
 use dialoguer::theme::ColorfulTheme;
 use mesa::{common::jwt_ops, error::Error};
@@ -11,6 +14,7 @@ pub async fn exec(
     kernel_params: &str,
     xname_vec: Vec<String>,
     assume_yes: bool,
+    kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     log::info!("Add kernel parameters");
@@ -76,7 +80,19 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": format!("Add kernel parameters: {}", kernel_params)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
+    }
+    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
@@ -90,6 +106,7 @@ pub async fn exec(
             true,
             assume_yes,
             "table",
+            kafka_audit,
         )
         .await;
     }

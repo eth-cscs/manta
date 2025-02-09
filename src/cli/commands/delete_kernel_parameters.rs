@@ -2,7 +2,7 @@ use backend_dispatcher::{interfaces::bss::BootParametersTrait, types};
 use dialoguer::theme::ColorfulTheme;
 use mesa::{common::jwt_ops, error::Error};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::{backend_dispatcher::StaticBackendDispatcher, common::kafka::Kafka};
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
@@ -12,6 +12,7 @@ pub async fn exec(
     kernel_params: &str,
     xname_vec: Vec<String>,
     assume_yes: bool,
+    kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     println!("Delete kernel parameters");
@@ -138,6 +139,7 @@ pub async fn exec(
             true,
             assume_yes,
             "table",
+            kafka_audit,
         )
         .await;
     }

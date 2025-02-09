@@ -73,6 +73,7 @@ execute = "0.2.13"
 is_executable = "1.0.1"
 minijinja = { version = "2.4.0", features = ["custom_syntax"] }
 uuid = { version = "1.10.0", features = ["fast-rng", "v4"] }
+rdkafka = { version = "0.37", features = ["cmake-build"] }
 
 [build-dependencies]
 clap = "*"

@@ -2,7 +2,10 @@ use backend_dispatcher::interfaces::pcs::PCSTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{self, audit::Audit, kafka::Kafka},
+};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -12,6 +15,7 @@ pub async fn exec(
     force: bool,
     assume_yes: bool,
     output: &str,
+    kafka_audit: &Kafka,
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
@@ -134,5 +138,17 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": "power reset"});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
+    }
+    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
 }

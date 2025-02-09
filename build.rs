@@ -23,12 +23,12 @@ fn main() -> Result<(), Error> {
     let path = generate_to(Shell::Fish, &mut cmd, env!("CARGO_PKG_NAME"), outdir)?;
 
     println!("cargo:error=completion file is not reliable for tenants");
-    println!("cargo:info=completion file is generated: {:?}", path);
+    println!("cargo:warning=completion file is generated: {:?}", path);
 
     let path = generate_to(Shell::Elvish, &mut cmd, env!("CARGO_PKG_NAME"), outdir)?;
 
     println!("cargo:error=completion file is not reliable for tenants");
-    println!("cargo:info=completion file is generated: {:?}", path);
+    println!("cargo:warning=completion file is generated: {:?}", path);
 
     Ok(())
 }

@@ -24,3 +24,8 @@ vault_secret_path = "prealps"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 root_ca_cert_file = "prealps_root_cert.pem"
 
+[audit]
+
+[audit.kafka]
+brokers = ["kafka.o11y.cscs.ch"]
+topic = "test-topic"
