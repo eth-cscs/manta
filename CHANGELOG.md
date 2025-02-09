@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.61] - 2025-02-09
+
+### Features
+
+- Add kafka audit
+
 ## [1.54.1-beta.60] - 2025-02-09
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Remove cli command aliases
 - Add support to generate shell autocomplete during compilation
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.60
 
 ## [1.54.1-beta.59] - 2025-02-09
 
