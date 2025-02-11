@@ -1,4 +1,4 @@
-log = "error"
+log = "info"
 
 site = "alps"
 parent_hsm_group = "nodes_free"
@@ -7,6 +7,7 @@ audit_file = "/tmp/manta_audit.log"
 [sites]
 
 [sites.alps]
+backend = "csm"
 socks5_proxy = "socks5h://127.0.0.1:1080"
 shasta_base_url = "https://api.cmn.alps.cscs.ch"
 k8s_api_url = "https://10.252.1.12:6442"
@@ -15,7 +16,23 @@ vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 root_ca_cert_file = "alps_root_cert.pem"
 
+[sites.alps.k8s]
+api_url = "https://10.252.1.12:6442"
+
+# [sites.alps.k8s.authentication]
+# [sites.alps.k8s.authentication.Vault]
+# base_url = "https://hashicorp-vault.cscs.ch:8200"
+# secret_path = "shasta"
+# role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+
+[sites.alps.k8s.authentication]
+[sites.alps.k8s.authentication.Native]
+certificate_authority_data = "--REDACTED--"
+client_certificate_data = "--REDACTED--"
+client_key_data = "--REDACTED--"
+
 [sites.prealps]
+backend = "csm"
 socks5_proxy = "socks5h://127.0.0.1:1081"
 shasta_base_url = "https://api.cmn.prealps.cscs.ch"
 k8s_api_url = "https://10.252.1.2:6442"
@@ -24,8 +41,18 @@ vault_secret_path = "prealps"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 root_ca_cert_file = "prealps_root_cert.pem"
 
-[audit]
+[sites.prealps.k8s]
+api_url = "https://10.252.1.12:6442"
+certificate_authority_data = "test cert auth data..."
 
-[audit.kafka]
-brokers = ["kafka.o11y.cscs.ch"]
+[sites.prealps.k8s.authentication]
+[sites.prealps.k8s.authentication.Vault]
+base_url = "https://hashicorp-vault.cscs.ch:8200"
+secret_path = "prealps"
+role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
+
+[auditor]
+
+[auditor.kafka]
+brokers = ["kafka.o11y.cscs.ch:9095"]
 topic = "test-topic"

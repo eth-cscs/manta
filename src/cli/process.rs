@@ -22,6 +22,7 @@ use crate::{
     cli::commands::validate_local_repo,
     common::{
         authorization::{get_groups_available, validate_target_hsm_members},
+        config_ops::MantaConfiguration,
         kafka::Kafka,
     },
 };
@@ -46,17 +47,14 @@ pub async fn process_cli(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
-    vault_secrets_path: &str,
+    vault_secret_path: &str,
     vault_role_id: &str,
-    // gitea_token: &str,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
-    // hsm_group_available_vec: &[String],
-    // site_available_vec: &[String],
-    // base_image_id: &str,
     k8s_api_url: &str,
-    settings: &Config,
     kafka_audit: &Kafka,
+    settings: &Config,
+    configuration: &MantaConfiguration,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let site_name: String = match settings.get("site") {
         Ok(site_name) => site_name,
@@ -890,7 +888,7 @@ pub async fn process_cli(
                 // FIXME: gitea auth token should be calculated before calling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                     vault_base_url,
-                    vault_secrets_path,
+                    vault_secret_path,
                     vault_role_id,
                 )
                 .await
@@ -1351,7 +1349,7 @@ pub async fn process_cli(
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                     vault_base_url,
-                    vault_secrets_path,
+                    vault_secret_path,
                     vault_role_id,
                 )
                 .await
@@ -1392,13 +1390,15 @@ pub async fn process_cli(
                     .await;
                 }
 
+                let site = configuration
+                    .sites
+                    .get(&configuration.site.clone())
+                    .unwrap();
+
                 apply_session::exec(
                     &backend,
                     &gitea_token,
                     gitea_base_url,
-                    vault_base_url,
-                    vault_secrets_path,
-                    vault_role_id,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -1422,6 +1422,7 @@ pub async fn process_cli(
                         .get_one::<bool>("watch-logs")
                         .unwrap_or(&false),
                     kafka_audit,
+                    &site.k8s,
                 )
                 .await;
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
@@ -1437,7 +1438,7 @@ pub async fn process_cli(
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                     vault_base_url,
-                    vault_secrets_path,
+                    vault_secret_path,
                     vault_role_id,
                 )
                 .await
@@ -1515,13 +1516,18 @@ pub async fn process_cli(
                     cli_apply_sat_file.get_flag("do-not-reboot")
                 }; */
 
+                let site = configuration
+                    .sites
+                    .get(&configuration.site.clone())
+                    .unwrap();
+
                 apply_sat_file::command::exec(
                     &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url,
-                    vault_secrets_path,
+                    vault_secret_path,
                     vault_role_id,
                     k8s_api_url,
                     sat_file_content,
@@ -1542,6 +1548,7 @@ pub async fn process_cli(
                     true,
                     false,
                     assume_yes,
+                    &site.k8s, // settings_hsm_group_name_opt,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
@@ -1759,18 +1766,20 @@ pub async fn process_cli(
 
             let group_available_vec = backend.get_group_available(&shasta_token).await?;
 
+            let site = configuration
+                .sites
+                .get(&configuration.site.clone())
+                .unwrap();
+
             commands::log::exec(
                 &backend,
                 &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                vault_base_url,
-                vault_secrets_path,
-                vault_role_id,
                 k8s_api_url,
                 &group_available_vec,
                 user_input,
-                // settings_hsm_group_name_opt,
+                &site.k8s, // settings_hsm_group_name_opt,
             )
             .await;
         } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
@@ -1788,6 +1797,11 @@ pub async fn process_cli(
                 .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
+                let site = configuration
+                    .sites
+                    .get(&configuration.site.clone())
+                    .unwrap();
+
                 console_node::exec(
                     &backend,
                     settings_hsm_group_name_opt,
@@ -1795,11 +1809,9 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    vault_base_url,
-                    vault_secrets_path,
-                    vault_role_id,
-                    k8s_api_url,
+                    // k8s_api_url,
                     cli_console_node.get_one::<String>("XNAME").unwrap(),
+                    &site.k8s,
                 )
                 .await;
             } else if let Some(cli_console_target_ansible) =
@@ -1828,18 +1840,24 @@ pub async fn process_cli(
                 )
                 .await?;
 
+                let site = configuration
+                    .sites
+                    .get(&configuration.site.clone())
+                    .unwrap();
+
                 console_cfs_session_image_target_ansible::exec(
                     &target_hsm_group_vec,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    vault_base_url,
-                    vault_secrets_path,
-                    vault_role_id,
+                    /* vault_base_url,
+                    vault_secret_path,
+                    vault_role_id, */
                     k8s_api_url,
                     cli_console_target_ansible
                         .get_one::<String>("SESSION_NAME")
                         .unwrap(),
+                    &site.k8s,
                 )
                 .await;
             }
@@ -2300,7 +2318,7 @@ pub async fn process_cli(
             // FIXME: gitea auth token should be calculated before colling this function
             let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                 vault_base_url,
-                vault_secrets_path,
+                vault_secret_path,
                 vault_role_id,
             )
             .await

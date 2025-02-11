@@ -21,7 +21,7 @@ use backend_dispatcher::{
     },
     types::{
         BootParameters, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
-        HardwareMetadataArray,
+        NodeMetadataArray,
     },
 };
 
@@ -291,7 +291,7 @@ impl ComponentTrait for StaticBackendDispatcher {
         &self,
         auth_token: &str,
         nid_only: Option<&str>,
-    ) -> Result<HardwareMetadataArray, Error> {
+    ) -> Result<NodeMetadataArray, Error> {
         match self {
             CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
             OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
@@ -328,7 +328,7 @@ impl ComponentTrait for StaticBackendDispatcher {
         flag_only: Option<&str>,
         role_only: Option<&str>,
         nid_only: Option<&str>,
-    ) -> Result<HardwareMetadataArray, Error> {
+    ) -> Result<NodeMetadataArray, Error> {
         match self {
             CSM(b) => {
                 b.get(

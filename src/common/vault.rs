@@ -90,7 +90,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn fetch_shasta_k8s_secrets(
+    pub async fn fetch_shasta_k8s_secrets_from_vault(
         vault_base_url: &str,
         vault_secret_path: &str,
         vault_role_id: &str,

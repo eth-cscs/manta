@@ -5,12 +5,13 @@ use rdkafka::{
     producer::{FutureProducer, FutureRecord},
     ClientConfig,
 };
+use serde::{Deserialize, Serialize};
 
 use super::audit::Audit;
 
 use anyhow::Result;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Kafka {
     pub brokers: Vec<String>,
     pub topic: String,

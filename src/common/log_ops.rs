@@ -15,14 +15,8 @@ pub fn configure(log_level: String, audit_file_path: &str) {
         audit_file_path = "./manta-requests.log";
     } */
 
-    let stdout_plain = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{h({l}):5.5} | {m}{n}")))
-        .build();
-
     let stdout = ConsoleAppender::builder()
-        .encoder(Box::new(PatternEncoder::new(
-            "{d(%Y-%m-%d %H:%M:%S)} | {h({l}):5.5} | {f}:{L} — {m}{n}",
-        )))
+        .encoder(Box::new(PatternEncoder::new("{h({l}):5.5} | {m}{n}")))
         .build();
 
     let requests_rslt = FileAppender::builder()
@@ -32,7 +26,7 @@ pub fn configure(log_level: String, audit_file_path: &str) {
         .build(audit_file_path);
 
     let mut config_builder = Config::builder()
-        .appender(Appender::builder().build("stdout", Box::new(stdout_plain)))
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
         .logger(
             Logger::builder()
                 .appender("stdout")

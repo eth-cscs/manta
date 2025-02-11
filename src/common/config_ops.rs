@@ -9,26 +9,71 @@ use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use mesa::error::Error;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
-pub struct Site {
-    socks5_proxy: Option<String>,
-    shasta_base_url: String,
-    k8s_api_url: String,
-    vault_base_url: String,
-    vault_secret_path: String,
-    vault_role_id: String,
-    root_ca_cert_file: String,
+use crate::common::kafka::Kafka;
+
+use super::audit::Auditor;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum K8sAuth {
+    Native {
+        certificate_authority_data: String,
+        client_certificate_data: String,
+        client_key_data: String,
+    },
+    Vault {
+        base_url: String,
+        secret_path: String,
+        role_id: String,
+    },
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
+pub struct K8sDetails {
+    pub api_url: String,
+    pub authentication: K8sAuth,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Site {
+    pub backend: String,
+    pub socks5_proxy: Option<String>,
+    pub shasta_base_url: String,
+    pub k8s: K8sDetails,
+    pub k8s_api_url: String,
+    pub vault_base_url: String,
+    pub vault_secret_path: String,
+    pub vault_role_id: String,
+    pub root_ca_cert_file: String,
+}
+
+/* #[derive(Serialize, Deserialize, Debug)]
+pub struct Kafka {
+    pub brokers: Vec<String>,
+    pub topic: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SysLog {
+    pub server: String,
+    pub port: u16,
+} */
+
+/* #[derive(Serialize, Deserialize, Debug)]
+pub struct Audit {
+    pub kafka: Option<Kafka>,
+    pub syslog: Option<SysLog>,
+} */
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MantaConfiguration {
-    log: String,
-    site: String,
-    parent_hsm_group: String,
-    audit_file: String,
-    sites: HashMap<String, Site>,
+    pub log: String,
+    pub site: String,
+    pub parent_hsm_group: String,
+    pub audit_file: String,
+    pub sites: HashMap<String, Site>,
+    pub auditor: Auditor,
 }
 
 pub fn get_default_config_path() -> PathBuf {
@@ -261,6 +306,38 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .interact_text()
         .unwrap();
 
+    let backend_options = vec!["csm", "ochami"];
+
+    let backend_selection = Select::new()
+        .with_prompt("Please select 'backend' technology from the list below")
+        .items(&backend_options)
+        .default(0)
+        .interact()
+        .unwrap();
+
+    let backend = backend_options[backend_selection].to_string();
+
+    let audit_kafka_brokers: String = Input::new()
+        .with_prompt("Please type kafka broker to send audit logs")
+        .default("kafka.o11y.cscs.ch:9095".to_string())
+        .show_default(true)
+        .interact_text()
+        .unwrap();
+
+    let audit_kafka_topic: String = Input::new()
+        .with_prompt("Please type kafka topic to send audit logs")
+        .default("test-topic".to_string())
+        .show_default(true)
+        .interact_text()
+        .unwrap();
+
+    let kafka = Some(Kafka {
+        brokers: vec![audit_kafka_brokers],
+        topic: audit_kafka_topic,
+    });
+
+    let auditor = Auditor { kafka };
+
     println!("Testing connectivity to CSM backend, please wait ...");
 
     let test_backend_api =
@@ -283,6 +360,17 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         )
     };
 
+    let k8s_auth = K8sAuth::Native {
+        certificate_authority_data: "".to_string(),
+        client_certificate_data: "".to_string(),
+        client_key_data: "".to_string(),
+    };
+
+    let k8s_details = K8sDetails {
+        api_url: k8s_api_url.clone(),
+        authentication: k8s_auth,
+    };
+
     let site_details = Site {
         socks5_proxy,
         shasta_base_url,
@@ -291,6 +379,8 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         vault_secret_path,
         vault_role_id,
         root_ca_cert_file,
+        k8s: k8s_details,
+        backend,
     };
 
     let mut site_hashmap = HashMap::new();
@@ -302,6 +392,7 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         parent_hsm_group,
         audit_file,
         sites: site_hashmap,
+        auditor,
     };
 
     let config_file_content = toml::to_string(&config_toml).unwrap();

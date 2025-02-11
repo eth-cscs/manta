@@ -4,7 +4,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
     cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
-    common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
+    common::{jwt_ops, kubernetes},
     error::Error,
     hsm,
     node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
@@ -15,7 +15,10 @@ use substring::Substring;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, kafka::Kafka, local_git_repo},
+    common::{
+        self, audit::Audit, config_ops::K8sDetails, kafka::Kafka, local_git_repo,
+        vault::http_client::fetch_shasta_k8s_secrets_from_vault,
+    },
 };
 
 /// Creates a CFS session target dynamic
@@ -24,9 +27,6 @@ pub async fn exec(
     backend: &StaticBackendDispatcher,
     gitea_token: &str,
     gitea_base_url: &str,
-    vault_base_url: &str,
-    vault_secret_path: &str,
-    vault_role_id: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -40,6 +40,7 @@ pub async fn exec(
     ansible_passthrough: Option<String>,
     watch_logs: bool,
     kafka_audit: &Kafka,
+    k8s: &K8sDetails,
 ) -> (String, String) {
     /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
@@ -171,7 +172,7 @@ pub async fn exec(
         .await
         .unwrap(); */
 
-        let shasta_k8s_secrets_rslt =
+        /* let shasta_k8s_secrets_rslt =
             fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
 
         let shasta_k8s_secrets = match shasta_k8s_secrets_rslt {
@@ -180,6 +181,21 @@ pub async fn exec(
                 eprintln!("{e}");
                 std::process::exit(1);
             }
+        }; */
+
+        let shasta_k8s_secrets = match &k8s.authentication {
+            common::config_ops::K8sAuth::Native {
+                certificate_authority_data,
+                client_certificate_data,
+                client_key_data,
+            } => {
+                serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+            }
+            common::config_ops::K8sAuth::Vault {
+                base_url,
+                secret_path,
+                role_id,
+            } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
         };
 
         let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)

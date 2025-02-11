@@ -17,6 +17,9 @@ use termion::color;
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils},
+    common::{
+        self, config_ops::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
+    },
 };
 
 pub async fn exec(
@@ -46,6 +49,7 @@ pub async fn exec(
     debug_on_failure: bool,
     dry_run: bool,
     assume_yes: bool,
+    k8s: &K8sDetails,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -150,12 +154,28 @@ pub async fn exec(
     // Get Cray/HPE product catalog
     //
     // Get k8s secrets
-    let shasta_k8s_secrets = crate::common::vault::http_client::fetch_shasta_k8s_secrets(
+    /* let shasta_k8s_secrets =
+    crate::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
         vault_base_url,
         vault_secret_path,
         vault_role_id,
     )
-    .await;
+    .await; */
+
+    let shasta_k8s_secrets = match &k8s.authentication {
+        common::config_ops::K8sAuth::Native {
+            certificate_authority_data,
+            client_certificate_data,
+            client_key_data,
+        } => {
+            serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+        }
+        common::config_ops::K8sAuth::Vault {
+            base_url,
+            secret_path,
+            role_id,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+    };
 
     // Get k8s credentials needed to check HPE/Cray product catalog in k8s
     let kube_client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)

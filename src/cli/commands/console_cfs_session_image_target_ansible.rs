@@ -4,18 +4,22 @@ use mesa::{cfs, node::console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::terminal_ops;
+use crate::common::{
+    self, config_ops::K8sDetails, terminal_ops,
+    vault::http_client::fetch_shasta_k8s_secrets_from_vault,
+};
 
 pub async fn exec(
     hsm_group_name_vec: &Vec<String>,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    vault_base_url: &str,
+    /* vault_base_url: &str,
     vault_secret_path: &str,
-    vault_role_id: &str,
+    vault_role_id: &str, */
     k8s_api_url: &str,
     cfs_session_name: &str,
+    k8s: &K8sDetails,
 ) {
     let mut cfs_session_value_vec = cfs::session::get(
         shasta_token,
@@ -96,10 +100,11 @@ pub async fn exec(
 
     connect_to_console(
         &cfs_session_name.to_string(),
-        vault_base_url,
+        /* vault_base_url,
         vault_secret_path,
-        vault_role_id,
+        vault_role_id, */
         k8s_api_url,
+        k8s,
     )
     .await
     .unwrap();
@@ -107,19 +112,36 @@ pub async fn exec(
 
 pub async fn connect_to_console(
     cfs_session_name: &String,
-    vault_base_url: &str,
+    /* vault_base_url: &str,
     vault_secret_path: &str,
-    vault_role_id: &str,
+    vault_role_id: &str, */
     k8s_api_url: &str,
+    k8s: &K8sDetails,
 ) -> Result<(), anyhow::Error> {
     log::info!("CFS session name: {}", cfs_session_name);
 
+    let shasta_k8s_secrets = match &k8s.authentication {
+        common::config_ops::K8sAuth::Native {
+            certificate_authority_data,
+            client_certificate_data,
+            client_key_data,
+        } => {
+            serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+        }
+        common::config_ops::K8sAuth::Vault {
+            base_url,
+            secret_path,
+            role_id,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+    };
+
     let mut attached = console::get_container_attachment_to_cfs_session_image_target(
         cfs_session_name,
-        vault_base_url,
+        /* vault_base_url,
         vault_secret_path,
-        vault_role_id,
+        vault_role_id, */
         k8s_api_url,
+        shasta_k8s_secrets,
     )
     .await?;
 

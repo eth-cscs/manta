@@ -23,9 +23,9 @@ publish = false                                                         # cargo 
 
 # PROD
 
-backend-dispatcher = "0.1.21"
-mesa = "0.42.3-beta.41"
-ochami-rs = "0.1.22"
+backend-dispatcher = "0.1.22"
+mesa = "0.42.3-beta.43"
+ochami-rs = "0.1.23"
 
 # DEV
 
@@ -78,6 +78,7 @@ rdkafka = { version = "0.37", features = ["cmake-build"] }
 [build-dependencies]
 clap = "*"
 clap_complete = "*"
+# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
 backend-dispatcher = "*"
 strum = "*"
 strum_macros = "*"
