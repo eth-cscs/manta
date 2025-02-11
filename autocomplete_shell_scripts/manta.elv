@@ -42,7 +42,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show config values'
             cand set 'Change config values'
             cand unset 'Reset config values'
-            cand generate-autocomplete 'Generate shell auto completion script'
+            cand gen-autocomplete 'Generate shell auto completion script'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;show'= {
@@ -125,7 +125,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;unset;help;help'= {
         }
-        &'manta;config;generate-autocomplete'= {
+        &'manta;config;gen-autocomplete'= {
             cand -s 'Shell type. Will try to guess from $SHELL if missing'
             cand --shell 'Shell type. Will try to guess from $SHELL if missing'
             cand -p 'Path to put the autocomplete script or prints to stdout if missing. NOTE: Do not specify filename, only path to directory'
@@ -137,7 +137,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show config values'
             cand set 'Change config values'
             cand unset 'Reset config values'
-            cand generate-autocomplete 'Generate shell auto completion script'
+            cand gen-autocomplete 'Generate shell auto completion script'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;help;show'= {
@@ -167,7 +167,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;help;unset;auth'= {
         }
-        &'manta;config;help;generate-autocomplete'= {
+        &'manta;config;help;gen-autocomplete'= {
         }
         &'manta;config;help;help'= {
         }
@@ -1004,7 +1004,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show config values'
             cand set 'Change config values'
             cand unset 'Reset config values'
-            cand generate-autocomplete 'Generate shell auto completion script'
+            cand gen-autocomplete 'Generate shell auto completion script'
         }
         &'manta;help;config;show'= {
         }
@@ -1033,7 +1033,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;config;unset;auth'= {
         }
-        &'manta;help;config;generate-autocomplete'= {
+        &'manta;help;config;gen-autocomplete'= {
         }
         &'manta;help;get'= {
             cand hw-component 'Get hardware components1 for a cluster or a node'

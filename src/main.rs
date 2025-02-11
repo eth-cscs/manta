@@ -70,7 +70,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .unwrap()
         .to_string();
 
-    let audit_detail = settings.get_table("audit").unwrap();
+    let audit_detail = settings.get_table("auditor").unwrap();
     let audit_kafka_detail_hashmap = audit_detail
         .get("kafka")
         .expect("kafka value missing in configuration file")

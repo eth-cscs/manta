@@ -156,8 +156,8 @@ _manta() {
             manta__apply__hw__configuration__help,help)
                 cmd="manta__apply__hw__configuration__help__help"
                 ;;
-            manta__config,generate-autocomplete)
-                cmd="manta__config__generate__autocomplete"
+            manta__config,gen-autocomplete)
+                cmd="manta__config__gen__autocomplete"
                 ;;
             manta__config,help)
                 cmd="manta__config__help"
@@ -171,8 +171,8 @@ _manta() {
             manta__config,unset)
                 cmd="manta__config__unset"
                 ;;
-            manta__config__help,generate-autocomplete)
-                cmd="manta__config__help__generate__autocomplete"
+            manta__config__help,gen-autocomplete)
+                cmd="manta__config__help__gen__autocomplete"
                 ;;
             manta__config__help,help)
                 cmd="manta__config__help__help"
@@ -468,8 +468,8 @@ _manta() {
             manta__help__apply__hw__configuration,cluster)
                 cmd="manta__help__apply__hw__configuration__cluster"
                 ;;
-            manta__help__config,generate-autocomplete)
-                cmd="manta__help__config__generate__autocomplete"
+            manta__help__config,gen-autocomplete)
+                cmd="manta__help__config__gen__autocomplete"
                 ;;
             manta__help__config,set)
                 cmd="manta__help__config__set"
@@ -1668,7 +1668,7 @@ _manta() {
             return 0
             ;;
         manta__config)
-            opts="-h --help show set unset generate-autocomplete help"
+            opts="-h --help show set unset gen-autocomplete help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1681,7 +1681,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__config__generate__autocomplete)
+        manta__config__gen__autocomplete)
             opts="-s -p -h --shell --path --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -1697,11 +1697,17 @@ _manta() {
                     return 0
                     ;;
                 --path)
-                    COMPREPLY=($(compgen -f "${cur}"))
+                    COMPREPLY=()
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o plusdirs
+                    fi
                     return 0
                     ;;
                 -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
+                    COMPREPLY=()
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o plusdirs
+                    fi
                     return 0
                     ;;
                 *)
@@ -1712,7 +1718,7 @@ _manta() {
             return 0
             ;;
         manta__config__help)
-            opts="show set unset generate-autocomplete help"
+            opts="show set unset gen-autocomplete help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1725,7 +1731,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__config__help__generate__autocomplete)
+        manta__config__help__gen__autocomplete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -3342,7 +3348,7 @@ _manta() {
             return 0
             ;;
         manta__help__config)
-            opts="show set unset generate-autocomplete"
+            opts="show set unset gen-autocomplete"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3355,7 +3361,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__help__config__generate__autocomplete)
+        manta__help__config__gen__autocomplete)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )

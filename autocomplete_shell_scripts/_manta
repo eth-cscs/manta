@@ -198,12 +198,12 @@ esac
     ;;
 esac
 ;;
-(generate-autocomplete)
+(gen-autocomplete)
 _arguments "${_arguments_options[@]}" : \
 '-s+[Shell type. Will try to guess from \$SHELL if missing]:SHELL:(bash zsh fish)' \
 '--shell=[Shell type. Will try to guess from \$SHELL if missing]:SHELL:(bash zsh fish)' \
-'-p+[Path to put the autocomplete script or prints to stdout if missing. NOTE\: Do not specify filename, only path to directory]:PATH:_files' \
-'--path=[Path to put the autocomplete script or prints to stdout if missing. NOTE\: Do not specify filename, only path to directory]:PATH:_files' \
+'-p+[Path to put the autocomplete script or prints to stdout if missing. NOTE\: Do not specify filename, only path to directory]:PATH:_files -/' \
+'--path=[Path to put the autocomplete script or prints to stdout if missing. NOTE\: Do not specify filename, only path to directory]:PATH:_files -/' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -284,7 +284,7 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
-(generate-autocomplete)
+(gen-autocomplete)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1802,7 +1802,7 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
-(generate-autocomplete)
+(gen-autocomplete)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2463,15 +2463,15 @@ _manta__config_commands() {
 'show:Show config values' \
 'set:Change config values' \
 'unset:Reset config values' \
-'generate-autocomplete:Generate shell auto completion script' \
+'gen-autocomplete:Generate shell auto completion script' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config commands' commands "$@"
 }
-(( $+functions[_manta__config__generate-autocomplete_commands] )) ||
-_manta__config__generate-autocomplete_commands() {
+(( $+functions[_manta__config__gen-autocomplete_commands] )) ||
+_manta__config__gen-autocomplete_commands() {
     local commands; commands=()
-    _describe -t commands 'manta config generate-autocomplete commands' commands "$@"
+    _describe -t commands 'manta config gen-autocomplete commands' commands "$@"
 }
 (( $+functions[_manta__config__help_commands] )) ||
 _manta__config__help_commands() {
@@ -2479,15 +2479,15 @@ _manta__config__help_commands() {
 'show:Show config values' \
 'set:Change config values' \
 'unset:Reset config values' \
-'generate-autocomplete:Generate shell auto completion script' \
+'gen-autocomplete:Generate shell auto completion script' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config help commands' commands "$@"
 }
-(( $+functions[_manta__config__help__generate-autocomplete_commands] )) ||
-_manta__config__help__generate-autocomplete_commands() {
+(( $+functions[_manta__config__help__gen-autocomplete_commands] )) ||
+_manta__config__help__gen-autocomplete_commands() {
     local commands; commands=()
-    _describe -t commands 'manta config help generate-autocomplete commands' commands "$@"
+    _describe -t commands 'manta config help gen-autocomplete commands' commands "$@"
 }
 (( $+functions[_manta__config__help__help_commands] )) ||
 _manta__config__help__help_commands() {
@@ -3084,14 +3084,14 @@ _manta__help__config_commands() {
 'show:Show config values' \
 'set:Change config values' \
 'unset:Reset config values' \
-'generate-autocomplete:Generate shell auto completion script' \
+'gen-autocomplete:Generate shell auto completion script' \
     )
     _describe -t commands 'manta help config commands' commands "$@"
 }
-(( $+functions[_manta__help__config__generate-autocomplete_commands] )) ||
-_manta__help__config__generate-autocomplete_commands() {
+(( $+functions[_manta__help__config__gen-autocomplete_commands] )) ||
+_manta__help__config__gen-autocomplete_commands() {
     local commands; commands=()
-    _describe -t commands 'manta help config generate-autocomplete commands' commands "$@"
+    _describe -t commands 'manta help config gen-autocomplete commands' commands "$@"
 }
 (( $+functions[_manta__help__config__set_commands] )) ||
 _manta__help__config__set_commands() {

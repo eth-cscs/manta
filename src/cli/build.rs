@@ -88,7 +88,7 @@ pub fn subcommand_config() -> Command {
                 .subcommand(subcommand_config_unset_auth),
         )
         .subcommand(
-            Command::new("generate-autocomplete")
+            Command::new("gen-autocomplete")
                 // .alias("gen-autocomplete")
                 .about("Generate shell auto completion script")
                 .arg(
@@ -97,7 +97,7 @@ pub fn subcommand_config() -> Command {
                 )
                 .arg(
                     arg!(-p --path <PATH> "Path to put the autocomplete script or prints to stdout if missing.\nNOTE: Do not specify filename, only path to directory")
-                    .value_parser(value_parser!(PathBuf).value_hint(ValueHint::DirPath)),
+                    .value_parser(value_parser!(PathBuf)).value_hint(ValueHint::DirPath),
                 ),
         )
 }
