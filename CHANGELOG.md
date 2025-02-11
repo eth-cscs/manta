@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.20] - 2025-02-11
+
+### Features
+
+- Add shell autocomplete hints
+
 ## [1.54.19] - 2025-02-09
 
 ### Bug Fixes
 
 - Disable x86_64-unknown-linux-musl in github workload untill we fix the kafka dependency to musl-gcc
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.19
 
 ## [1.54.18] - 2025-02-08
 
