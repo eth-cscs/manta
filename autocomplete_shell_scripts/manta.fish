@@ -60,7 +60,7 @@ complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from gen-autocomplete" -s s -l shell -d 'Shell type. Will try to guess from $SHELL if missing' -r -f -a "bash\t''
 zsh\t''
 fish\t''"
-complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from gen-autocomplete" -s p -l path -d 'Path to put the autocomplete script or prints to stdout if missing. NOTE: Do not specify filename, only path to directory' -r -F
+complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from gen-autocomplete" -s p -l path -d 'Path to put the autocomplete script or prints to stdout if missing. NOTE: Do not specify filename, only path to directory' -r -f -a "(__fish_complete_directories)"
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from gen-autocomplete" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "show" -d 'Show config values'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "set" -d 'Change config values'
@@ -223,7 +223,7 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from boot" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from session" -s n -l name -d 'Session name' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from session" -s p -l playbook-name -d 'Playbook YAML file name. eg (site.yml)' -r
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from session" -s r -l repo-path -d 'Repo path. The path with a git repo and an ansible-playbook to configure the CFS image' -r -F
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from session" -s r -l repo-path -d 'Repo path. The path with a git repo and an ansible-playbook to configure the CFS image' -r -f -a "(__fish_complete_directories)"
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from session" -s v -l ansible-verbosity -d 'Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command. 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.' -r -f -a "0\t''
 1\t''
 2\t''
