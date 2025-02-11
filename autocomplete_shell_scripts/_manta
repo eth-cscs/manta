@@ -873,8 +873,8 @@ _arguments "${_arguments_options[@]}" : \
 '--name=[Session name]:VALUE:_default' \
 '-p+[Playbook YAML file name. eg (site.yml)]:VALUE:_default' \
 '--playbook-name=[Playbook YAML file name. eg (site.yml)]:VALUE:_default' \
-'*-r+[Repo path. The path with a git repo and an ansible-playbook to configure the CFS image]:REPO_PATH:_files' \
-'*--repo-path=[Repo path. The path with a git repo and an ansible-playbook to configure the CFS image]:REPO_PATH:_files' \
+'*-r+[Repo path. The path with a git repo and an ansible-playbook to configure the CFS image]:REPO_PATH:_files -/' \
+'*--repo-path=[Repo path. The path with a git repo and an ansible-playbook to configure the CFS image]:REPO_PATH:_files -/' \
 '-v+[Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command. 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.]:VALUE:(0 1 2 3 4)' \
 '--ansible-verbosity=[Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command. 1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.]:VALUE:(0 1 2 3 4)' \
 '-P+[Additional parameters that are added to all Ansible calls for the session. This field is currently limited to the following Ansible parameters\: "--extra-vars", "--forks", "--skip-tags", "--start-at-task", and "--tags". WARNING\: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.]:VALUE:_default' \
@@ -1149,16 +1149,16 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (restore)
 _arguments "${_arguments_options[@]}" : \
-'-b+[BOS session template of the cluster backed previously with migrate backup]:BOS_session_template_file:_default' \
-'--bos-file=[BOS session template of the cluster backed previously with migrate backup]:BOS_session_template_file:_default' \
-'-c+[CFS session template of the cluster backed previously with migrate backup]:CFS_configuration_file:_default' \
-'--cfs-file=[CFS session template of the cluster backed previously with migrate backup]:CFS_configuration_file:_default' \
-'-j+[HSM group description file of the cluster backed previously with migrate backup]:HSM_group_description_file:_default' \
-'--hsm-file=[HSM group description file of the cluster backed previously with migrate backup]:HSM_group_description_file:_default' \
-'-m+[IMS file backed previously with migrate backup]:IMS_file:_default' \
-'--ims-file=[IMS file backed previously with migrate backup]:IMS_file:_default' \
-'-i+[Path where the image files are stored.]:IMAGE_path:_default' \
-'--image-dir=[Path where the image files are stored.]:IMAGE_path:_default' \
+'-b+[BOS session template of the cluster backed previously with migrate backup]:BOS_session_template_file:_files' \
+'--bos-file=[BOS session template of the cluster backed previously with migrate backup]:BOS_session_template_file:_files' \
+'-c+[CFS session template of the cluster backed previously with migrate backup]:CFS_configuration_file:_files' \
+'--cfs-file=[CFS session template of the cluster backed previously with migrate backup]:CFS_configuration_file:_files' \
+'-j+[HSM group description file of the cluster backed previously with migrate backup]:HSM_group_description_file:_files' \
+'--hsm-file=[HSM group description file of the cluster backed previously with migrate backup]:HSM_group_description_file:_files' \
+'-m+[IMS file backed previously with migrate backup]:IMS_file:_files' \
+'--ims-file=[IMS file backed previously with migrate backup]:IMS_file:_files' \
+'-i+[Path where the image files are stored.]:IMAGE_path:_files -/' \
+'--image-dir=[Path where the image files are stored.]:IMAGE_path:_files -/' \
 '-p+[Command to run before doing the backup. If need to pass a command with params. Use " or '\''. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
 '--pre-hook=[Command to run before doing the backup. If need to pass a command with params. Use " or '\''. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
 '-a+[Command to run immediately after the backup is completed successfully. Use " or '\''. eg\: --pre-hook "echo hello".]:SCRIPT:_default' \

@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command};
+use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
 use mesa::hsm::hw_inventory::hw_component::r#struct::ArtifactType;
 use strum::IntoEnumIterator;
 
@@ -97,7 +97,7 @@ pub fn subcommand_config() -> Command {
                 )
                 .arg(
                     arg!(-p --path <PATH> "Path to put the autocomplete script or prints to stdout if missing.\nNOTE: Do not specify filename, only path to directory")
-                    .value_parser(value_parser!(PathBuf)),
+                    .value_parser(value_parser!(PathBuf).value_hint(ValueHint::DirPath)),
                 ),
         )
 }
@@ -340,7 +340,7 @@ pub fn subcommand_apply_session() -> Command {
         .arg(arg!(-n --name <VALUE> "Session name").required(true))
         .arg(arg!(-p --"playbook-name" <VALUE> "Playbook YAML file name. eg (site.yml)").default_value("site.yml"))
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").required(true)
-            .value_parser(value_parser!(PathBuf)))
+            .value_parser(value_parser!(PathBuf)).value_hint(ValueHint::DirPath))
         .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
             .value_parser(["0", "1", "2", "3", "4"])
@@ -401,8 +401,8 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
         .arg_required_else_help(true)
         .about("Process a SAT file and creates the configurations, images, boot parameters and runtime configurations. If runtime configuration and boot parameters are defined, then, reboots the nodes to configure.\nThe ansible container for the session building the image will remain running after an Ansible failure.  The container will remain running for a number of seconds specified by the 'debug_wait_time options'")
         // .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
-        .arg(arg!(-t --"sat-template-file" <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true))
-        .arg(arg!(-f --"values-file" <VALUE> "If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)))
+        .arg(arg!(-t --"sat-template-file" <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true).value_hint(ValueHint::FilePath))
+        .arg(arg!(-f --"values-file" <VALUE> "If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)).value_hint(ValueHint::FilePath))
         .arg(arg!(-V --"values" <VALUE> ... "If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
         .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot. This means, you will have to run 'manta apply template' command with the sessoin_template created'").action(ArgAction::SetTrue))
         .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
@@ -479,11 +479,11 @@ pub fn subcommand_migrate_restore() -> Command {
         // .visible_aliases(["mr"])
         .arg_required_else_help(true)
         .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
-        .arg(arg!(-b --"bos-file" <BOS_session_template_file> "BOS session template of the cluster backed previously with migrate backup"))
-        .arg(arg!(-c --"cfs-file" <CFS_configuration_file> "CFS session template of the cluster backed previously with migrate backup"))
-        .arg(arg!(-j --"hsm-file" <HSM_group_description_file> "HSM group description file of the cluster backed previously with migrate backup"))
-        .arg(arg!(-m --"ims-file" <IMS_file> "IMS file backed previously with migrate backup"))
-        .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored."))
+        .arg(arg!(-b --"bos-file" <BOS_session_template_file> "BOS session template of the cluster backed previously with migrate backup").value_hint(ValueHint::FilePath))
+        .arg(arg!(-c --"cfs-file" <CFS_configuration_file> "CFS session template of the cluster backed previously with migrate backup").value_hint(ValueHint::FilePath))
+        .arg(arg!(-j --"hsm-file" <HSM_group_description_file> "HSM group description file of the cluster backed previously with migrate backup").value_hint(ValueHint::FilePath))
+        .arg(arg!(-m --"ims-file" <IMS_file> "IMS file backed previously with migrate backup").value_hint(ValueHint::FilePath))
+        .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored.").value_hint(ValueHint::DirPath))
         .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before doing the backup. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
         .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after the backup is completed successfully. Use \" or \'.\neg: --pre-hook \"echo hello\"."))
 }
