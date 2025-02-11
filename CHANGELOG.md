@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.21] - 2025-02-11
+
+### Features
+
+- Add cli hints for shell autocomplete
+- Update strum version
+
+### Refactor
+
+- Rename command to generate autocomplete script
+
 ## [1.54.20] - 2025-02-11
 
 ### Features
 
 - Add shell autocomplete hints
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.20
 
 ## [1.54.19] - 2025-02-09
 
