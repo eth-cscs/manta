@@ -665,7 +665,43 @@ pub async fn process_cli(
             }
         } */
         } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
-            if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hw-component") {
+            if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
+                let label = cli_add_group
+                    .get_one::<String>("label")
+                    .expect("ERROR - 'label' argument is mandatory");
+
+                let xname_vec_opt: Option<Vec<&str>> = cli_add_group
+                    .get_one::<String>("xnames")
+                    .map(|xname_string| xname_string.split(",").map(|value| value).collect());
+
+                /* // Validate user has access to the list of xnames requested
+                if let Some(xname_vec) = &xname_vec_opt {
+                    validate_target_hsm_members(
+                        &shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                    )
+                    .await;
+                }
+
+                // Create Group instance for http payload
+                let group = HsmGroup::new(label, xname_vec_opt);
+
+                // Call backend to create group
+                let result = backend.add_hsm_group(&shasta_token, group).await; */
+
+                commands::add_group::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    label,
+                    xname_vec_opt,
+                )
+                .await;
+            } else if let Some(cli_add_hw_configuration) =
+                cli_add.subcommand_matches("hw-component")
+            {
                 let target_hsm_group_name_arg_opt =
                     cli_add_hw_configuration.get_one::<String>("target-cluster");
 

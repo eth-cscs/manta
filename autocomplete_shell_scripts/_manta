@@ -600,7 +600,17 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-add-command-$line[1]:"
         case $line[1] in
-            (hw-component)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+'-l+[group name]:VALUE:_default' \
+'--label=[group name]:VALUE:_default' \
+'-x+[comma separated list of nodes to set in new group. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:VALUE:_default' \
+'--xnames=[comma separated list of nodes to set in new group. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:VALUE:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(hw-component)
 _arguments "${_arguments_options[@]}" : \
 '-P+[Pattern]:PATTERN:_default' \
 '--pattern=[Pattern]:PATTERN:_default' \
@@ -641,7 +651,11 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-add-help-command-$line[1]:"
         case $line[1] in
-            (hw-component)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hw-component)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1017,7 +1031,17 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-delete-command-$line[1]:"
         case $line[1] in
-            (kernel-parameters)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+'-l+[Group name to delete]:VALUE:_default' \
+'--label=[Group name to delete]:VALUE:_default' \
+'-y[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
+'--assume-yes[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(kernel-parameters)
 _arguments "${_arguments_options[@]}" : \
 '-x+[Comma separated list of nodes to set runtime configuration. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:XNAMES:_default' \
 '--xnames=[Comma separated list of nodes to set runtime configuration. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:XNAMES:_default' \
@@ -1077,7 +1101,11 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-delete-help-command-$line[1]:"
         case $line[1] in
-            (kernel-parameters)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1894,7 +1922,11 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-help-add-command-$line[1]:"
         case $line[1] in
-            (hw-component)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hw-component)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -1998,7 +2030,11 @@ _arguments "${_arguments_options[@]}" : \
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-help-delete-command-$line[1]:"
         case $line[1] in
-            (kernel-parameters)
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2225,20 +2261,32 @@ _manta_commands() {
 (( $+functions[_manta__add_commands] )) ||
 _manta__add_commands() {
     local commands; commands=(
+'group:add/create new group' \
 'hw-component:WIP - Add hw components from a cluster' \
 'kernel-parameters:Delete kernel parameters' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta add commands' commands "$@"
 }
+(( $+functions[_manta__add__group_commands] )) ||
+_manta__add__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add group commands' commands "$@"
+}
 (( $+functions[_manta__add__help_commands] )) ||
 _manta__add__help_commands() {
     local commands; commands=(
+'group:add/create new group' \
 'hw-component:WIP - Add hw components from a cluster' \
 'kernel-parameters:Delete kernel parameters' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta add help commands' commands "$@"
+}
+(( $+functions[_manta__add__help__group_commands] )) ||
+_manta__add__help__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help group commands' commands "$@"
 }
 (( $+functions[_manta__add__help__help_commands] )) ||
 _manta__add__help__help_commands() {
@@ -2726,6 +2774,7 @@ _manta__console__target-ansible_commands() {
 (( $+functions[_manta__delete_commands] )) ||
 _manta__delete_commands() {
     local commands; commands=(
+'group:Delete group. This command will fail if the group is not empty, please move group members to another group using command '\''migrate nodes'\'' before deletion' \
 'kernel-parameters:Delete kernel parameters' \
 'session:Deletes a session. For '\''image'\'' sessions, it also removes the associated image. For '\''dynamic'\'' sessions, it sets the '\''error count'\'' to its maximum value.' \
 'images:WIP - Deletes a list of images.' \
@@ -2734,9 +2783,15 @@ _manta__delete_commands() {
     )
     _describe -t commands 'manta delete commands' commands "$@"
 }
+(( $+functions[_manta__delete__group_commands] )) ||
+_manta__delete__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete group commands' commands "$@"
+}
 (( $+functions[_manta__delete__help_commands] )) ||
 _manta__delete__help_commands() {
     local commands; commands=(
+'group:Delete group. This command will fail if the group is not empty, please move group members to another group using command '\''migrate nodes'\'' before deletion' \
 'kernel-parameters:Delete kernel parameters' \
 'session:Deletes a session. For '\''image'\'' sessions, it also removes the associated image. For '\''dynamic'\'' sessions, it sets the '\''error count'\'' to its maximum value.' \
 'images:WIP - Deletes a list of images.' \
@@ -2744,6 +2799,11 @@ _manta__delete__help_commands() {
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta delete help commands' commands "$@"
+}
+(( $+functions[_manta__delete__help__group_commands] )) ||
+_manta__delete__help__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help group commands' commands "$@"
 }
 (( $+functions[_manta__delete__help__help_commands] )) ||
 _manta__delete__help__help_commands() {
@@ -2990,10 +3050,16 @@ _manta__help_commands() {
 (( $+functions[_manta__help__add_commands] )) ||
 _manta__help__add_commands() {
     local commands; commands=(
+'group:add/create new group' \
 'hw-component:WIP - Add hw components from a cluster' \
 'kernel-parameters:Delete kernel parameters' \
     )
     _describe -t commands 'manta help add commands' commands "$@"
+}
+(( $+functions[_manta__help__add__group_commands] )) ||
+_manta__help__add__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add group commands' commands "$@"
 }
 (( $+functions[_manta__help__add__hw-component_commands] )) ||
 _manta__help__add__hw-component_commands() {
@@ -3173,12 +3239,18 @@ _manta__help__console__target-ansible_commands() {
 (( $+functions[_manta__help__delete_commands] )) ||
 _manta__help__delete_commands() {
     local commands; commands=(
+'group:Delete group. This command will fail if the group is not empty, please move group members to another group using command '\''migrate nodes'\'' before deletion' \
 'kernel-parameters:Delete kernel parameters' \
 'session:Deletes a session. For '\''image'\'' sessions, it also removes the associated image. For '\''dynamic'\'' sessions, it sets the '\''error count'\'' to its maximum value.' \
 'images:WIP - Deletes a list of images.' \
 'hw-component:WIP - Remove hw components from a cluster' \
     )
     _describe -t commands 'manta help delete commands' commands "$@"
+}
+(( $+functions[_manta__help__delete__group_commands] )) ||
+_manta__help__delete__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete group commands' commands "$@"
 }
 (( $+functions[_manta__help__delete__hw-component_commands] )) ||
 _manta__help__delete__hw-component_commands() {

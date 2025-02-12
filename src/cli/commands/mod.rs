@@ -1,3 +1,4 @@
+pub mod add_group;
 pub mod add_hw_component_cluster;
 pub mod add_kernel_parameters;
 pub mod add_nodes_to_hsm_groups;
@@ -21,6 +22,7 @@ pub mod config_unset_parent_hsm;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
 pub mod delete_data_related_to_cfs_configuration;
+pub mod delete_group;
 pub mod delete_hw_component_cluster;
 pub mod delete_image;
 pub mod delete_kernel_parameters;

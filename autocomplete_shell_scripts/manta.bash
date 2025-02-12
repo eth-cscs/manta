@@ -51,6 +51,9 @@ _manta() {
             manta,validate-local-repo)
                 cmd="manta__validate__local__repo"
                 ;;
+            manta__add,group)
+                cmd="manta__add__group"
+                ;;
             manta__add,help)
                 cmd="manta__add__help"
                 ;;
@@ -59,6 +62,9 @@ _manta() {
                 ;;
             manta__add,kernel-parameters)
                 cmd="manta__add__kernel__parameters"
+                ;;
+            manta__add__help,group)
+                cmd="manta__add__help__group"
                 ;;
             manta__add__help,help)
                 cmd="manta__add__help__help"
@@ -279,6 +285,9 @@ _manta() {
             manta__console__help,target-ansible)
                 cmd="manta__console__help__target__ansible"
                 ;;
+            manta__delete,group)
+                cmd="manta__delete__group"
+                ;;
             manta__delete,help)
                 cmd="manta__delete__help"
                 ;;
@@ -293,6 +302,9 @@ _manta() {
                 ;;
             manta__delete,session)
                 cmd="manta__delete__session"
+                ;;
+            manta__delete__help,group)
+                cmd="manta__delete__help__group"
                 ;;
             manta__delete__help,help)
                 cmd="manta__delete__help__help"
@@ -432,6 +444,9 @@ _manta() {
             manta__help,validate-local-repo)
                 cmd="manta__help__validate__local__repo"
                 ;;
+            manta__help__add,group)
+                cmd="manta__help__add__group"
+                ;;
             manta__help__add,hw-component)
                 cmd="manta__help__add__hw__component"
                 ;;
@@ -506,6 +521,9 @@ _manta() {
                 ;;
             manta__help__console,target-ansible)
                 cmd="manta__help__console__target__ansible"
+                ;;
+            manta__help__delete,group)
+                cmd="manta__help__delete__group"
                 ;;
             manta__help__delete,hw-component)
                 cmd="manta__help__delete__hw__component"
@@ -750,7 +768,7 @@ _manta() {
             return 0
             ;;
         manta__add)
-            opts="-h --help hw-component kernel-parameters help"
+            opts="-h --help group hw-component kernel-parameters help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -793,9 +811,53 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__add__help)
-            opts="hw-component kernel-parameters help"
+        manta__add__group)
+            opts="-l -x -h --label --xnames --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --label)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -l)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --xnames)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -x)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__add__help)
+            opts="group hw-component kernel-parameters help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__add__help__group)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2292,7 +2354,7 @@ _manta() {
             return 0
             ;;
         manta__delete)
-            opts="-h --help kernel-parameters session images hw-component help"
+            opts="-h --help group kernel-parameters session images hw-component help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2305,9 +2367,45 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__delete__help)
-            opts="kernel-parameters session images hw-component help"
+        manta__delete__group)
+            opts="-l -y -h --label --assume-yes --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --label)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -l)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__delete__help)
+            opts="group kernel-parameters session images hw-component help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__delete__help__group)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -3138,7 +3236,7 @@ _manta() {
             return 0
             ;;
         manta__help__add)
-            opts="hw-component kernel-parameters"
+            opts="group hw-component kernel-parameters"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3154,6 +3252,20 @@ _manta() {
         manta__help__add__nodes__to__groups)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__help__add__group)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -3558,8 +3670,22 @@ _manta() {
             return 0
             ;;
         manta__help__delete)
-            opts="kernel-parameters session images hw-component"
+            opts="group kernel-parameters session images hw-component"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__help__delete__group)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi

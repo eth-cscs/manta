@@ -146,10 +146,14 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "images" -d 'Get image information'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "kernel-parameters" -d 'Get kernel-parameters information'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from hw-component kernel-parameters help" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from hw-component kernel-parameters help" -f -a "hw-component" -d 'WIP - Add hw components from a cluster'
-complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from hw-component kernel-parameters help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
-complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from hw-component kernel-parameters help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -s h -l help -d 'Print help'
+complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "group" -d 'add/create new group'
+complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "hw-component" -d 'WIP - Add hw components from a cluster'
+complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
+complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s l -l label -d 'group name' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s x -l xnames -d 'comma separated list of nodes to set in new group. eg \'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0\'' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hw-component" -s P -l pattern -d 'Pattern' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hw-component" -s t -l target-cluster -d 'Target cluster name. This is the name of the cluster the pattern is applying to.' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hw-component" -s p -l parent-cluster -d 'Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster.' -r
@@ -160,6 +164,7 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from kernel-parameters" -s H -l hsm-group -d 'Cluster to set runtime configuration' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from kernel-parameters" -s y -l assume-yes -d 'Automatic yes to prompts; assume \'yes\' as answer to all prompts and run non-interactively.'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from kernel-parameters" -s h -l help -d 'Print help'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "group" -d 'add/create new group'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "hw-component" -d 'WIP - Add hw components from a cluster'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
@@ -233,12 +238,16 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from help" -f -a "ephemeral-environment" -d 'Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from help" -f -a "template" -d 'Create a new BOS session from an existing BOS sessiontemplate'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -f -a "session" -d 'Deletes a session. For \'image\' sessions, it also removes the associated image. For \'dynamic\' sessions, it sets the \'error count\' to its maximum value.'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -f -a "images" -d 'WIP - Deletes a list of images.'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -f -a "hw-component" -d 'WIP - Remove hw components from a cluster'
-complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from kernel-parameters session images hw-component help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -s h -l help -d 'Print help'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "group" -d 'Delete group. This command will fail if the group is not empty, please move group members to another group using command \'migrate nodes\' before deletion'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "session" -d 'Deletes a session. For \'image\' sessions, it also removes the associated image. For \'dynamic\' sessions, it sets the \'error count\' to its maximum value.'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "images" -d 'WIP - Deletes a list of images.'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "hw-component" -d 'WIP - Remove hw components from a cluster'
+complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s l -l label -d 'Group name to delete' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s y -l assume-yes -d 'Automatic yes to prompts; assume \'yes\' as answer to all prompts and run non-interactively.'
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s x -l xnames -d 'Comma separated list of nodes to set runtime configuration. eg \'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0\'' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s H -l hsm-group -d 'Cluster to set runtime configuration' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s y -l assume-yes -d 'Automatic yes to prompts; assume \'yes\' as answer to all prompts and run non-interactively.'
@@ -253,6 +262,7 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from hw-component" -s x -l no-dryrun -d 'No dry-run, actually change the status of the system. The default for this command is a dry-run.'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from hw-component" -s d -l delete-hsm-group -d 'Delete the HSM group if empty after this action.'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from hw-component" -s h -l help -d 'Print help'
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "group" -d 'Delete group. This command will fail if the group is not empty, please move group members to another group using command \'migrate nodes\' before deletion'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "session" -d 'Deletes a session. For \'image\' sessions, it also removes the associated image. For \'dynamic\' sessions, it sets the \'error count\' to its maximum value.'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "images" -d 'WIP - Deletes a list of images.'
@@ -344,6 +354,7 @@ complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcom
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "hsm-groups" -d 'DEPRECATED - Please do not use this command. Get HSM groups details'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "images" -d 'Get image information'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "kernel-parameters" -d 'Get kernel-parameters information'
+complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from add" -f -a "group" -d 'add/create new group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from add" -f -a "hw-component" -d 'WIP - Add hw components from a cluster'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from add" -f -a "kernel-parameters" -d 'Delete kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from apply" -f -a "hw-configuration" -d 'WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration'
@@ -353,6 +364,7 @@ complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcom
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from apply" -f -a "session" -d 'Runs the ansible script in local directory against HSM group or xnames. Note: the local repo must alrady exists in Shasta VCS'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from apply" -f -a "ephemeral-environment" -d 'Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from apply" -f -a "template" -d 'Create a new BOS session from an existing BOS sessiontemplate'
+complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from delete" -f -a "group" -d 'Delete group. This command will fail if the group is not empty, please move group members to another group using command \'migrate nodes\' before deletion'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from delete" -f -a "kernel-parameters" -d 'Delete kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from delete" -f -a "session" -d 'Deletes a session. For \'image\' sessions, it also removes the associated image. For \'dynamic\' sessions, it sets the \'error count\' to its maximum value.'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from delete" -f -a "images" -d 'WIP - Deletes a list of images.'

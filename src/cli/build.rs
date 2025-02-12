@@ -107,10 +107,20 @@ pub fn subcommand_delete() -> Command {
         // .visible_alias("d")
         .arg_required_else_help(true)
         .about("Deletes data")
+        .subcommand(subcommand_delete_group())
         .subcommand(subcommand_delete_kernel_parameter())
         .subcommand(subcommand_delete_session())
         .subcommand(subcommand_delete_image())
         .subcommand(subcommand_delete_hw_component())
+}
+
+pub fn subcommand_delete_group() -> Command {
+    Command::new("group")
+                // .visible_alias("g")
+                .arg_required_else_help(true)
+                .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
+                .arg(arg!(-l --"label" <VALUE> "Group name to delete"))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
@@ -596,6 +606,14 @@ pub fn subcommand_add() -> Command {
     Command::new("add")
             .arg_required_else_help(true)
             .about("Add hw components to cluster")
+            .subcommand(
+                Command::new("group")
+                // .visible_alias("g")
+                .about("add/create new group")
+                .arg_required_else_help(true)
+                .arg(arg!(-l --label <VALUE> "group name").required(true))
+                .arg(arg!(-x --xnames <VALUE> "comma separated list of nodes to set in new group.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+            )
             .subcommand(Command::new("hw-component")
                 // .visible_alias("hw")
                 .arg_required_else_help(true)

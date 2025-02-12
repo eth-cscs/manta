@@ -362,9 +362,18 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;add'= {
             cand -h 'Print help'
             cand --help 'Print help'
+            cand group 'add/create new group'
             cand hw-component 'WIP - Add hw components from a cluster'
             cand kernel-parameters 'Delete kernel parameters'
             cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;add;group'= {
+            cand -l 'group name'
+            cand --label 'group name'
+            cand -x 'comma separated list of nodes to set in new group. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'''
+            cand --xnames 'comma separated list of nodes to set in new group. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'''
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'manta;add;hw-component'= {
             cand -P 'Pattern'
@@ -391,9 +400,12 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
         }
         &'manta;add;help'= {
+            cand group 'add/create new group'
             cand hw-component 'WIP - Add hw components from a cluster'
             cand kernel-parameters 'Delete kernel parameters'
             cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;add;help;group'= {
         }
         &'manta;add;help;hw-component'= {
         }
@@ -616,11 +628,20 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;delete'= {
             cand -h 'Print help'
             cand --help 'Print help'
+            cand group 'Delete group. This command will fail if the group is not empty, please move group members to another group using command ''migrate nodes'' before deletion'
             cand kernel-parameters 'Delete kernel parameters'
             cand session 'Deletes a session. For ''image'' sessions, it also removes the associated image. For ''dynamic'' sessions, it sets the ''error count'' to its maximum value.'
             cand images 'WIP - Deletes a list of images.'
             cand hw-component 'WIP - Remove hw components from a cluster'
             cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;delete;group'= {
+            cand -l 'Group name to delete'
+            cand --label 'Group name to delete'
+            cand -y 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
+            cand --assume-yes 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'manta;delete;kernel-parameters'= {
             cand -x 'Comma separated list of nodes to set runtime configuration. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'''
@@ -659,11 +680,14 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
         }
         &'manta;delete;help'= {
+            cand group 'Delete group. This command will fail if the group is not empty, please move group members to another group using command ''migrate nodes'' before deletion'
             cand kernel-parameters 'Delete kernel parameters'
             cand session 'Deletes a session. For ''image'' sessions, it also removes the associated image. For ''dynamic'' sessions, it sets the ''error count'' to its maximum value.'
             cand images 'WIP - Deletes a list of images.'
             cand hw-component 'WIP - Remove hw components from a cluster'
             cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;delete;help;group'= {
         }
         &'manta;delete;help;kernel-parameters'= {
         }
@@ -1071,8 +1095,11 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;get;kernel-parameters'= {
         }
         &'manta;help;add'= {
+            cand group 'add/create new group'
             cand hw-component 'WIP - Add hw components from a cluster'
             cand kernel-parameters 'Delete kernel parameters'
+        }
+        &'manta;help;add;group'= {
         }
         &'manta;help;add;hw-component'= {
         }
@@ -1111,10 +1138,13 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;apply;template'= {
         }
         &'manta;help;delete'= {
+            cand group 'Delete group. This command will fail if the group is not empty, please move group members to another group using command ''migrate nodes'' before deletion'
             cand kernel-parameters 'Delete kernel parameters'
             cand session 'Deletes a session. For ''image'' sessions, it also removes the associated image. For ''dynamic'' sessions, it sets the ''error count'' to its maximum value.'
             cand images 'WIP - Deletes a list of images.'
             cand hw-component 'WIP - Remove hw components from a cluster'
+        }
+        &'manta;help;delete;group'= {
         }
         &'manta;help;delete;kernel-parameters'= {
         }
