@@ -152,7 +152,10 @@ complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_sub
 complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "kernel-parameters" -d 'Delete kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand add; and not __fish_seen_subcommand_from group hw-component kernel-parameters help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s l -l label -d 'group name' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s x -l xnames -d 'comma separated list of nodes to set in new group. eg \'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0\'' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s n -l nodes -d 'List of xnames or nids. eg \'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0\' or \'nid001313,nid001314\'  Host list also accepted eg \'x1003c1s7b0n[0-1],x1003c1s7b1n0\' or \'nid00131[0-9]\'' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s r -l regex -d 'Input nodes in regex format.'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s y -l assume-yes -d 'Automatic yes to prompts; assume \'yes\' as answer to all prompts and run non-interactively.'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s D -l dryrun -d 'No changes applied to the system.'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hw-component" -s P -l pattern -d 'Pattern' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hw-component" -s t -l target-cluster -d 'Target cluster name. This is the name of the cluster the pattern is applying to.' -r
@@ -245,8 +248,8 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_
 complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "images" -d 'WIP - Deletes a list of images.'
 complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "hw-component" -d 'WIP - Remove hw components from a cluster'
 complete -c manta -n "__fish_manta_using_subcommand delete; and not __fish_seen_subcommand_from group kernel-parameters session images hw-component help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s l -l label -d 'Group name to delete' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s y -l assume-yes -d 'Automatic yes to prompts; assume \'yes\' as answer to all prompts and run non-interactively.'
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s D -l dryrun -d 'No changes applied to the system.'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from group" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s x -l xnames -d 'Comma separated list of nodes to set runtime configuration. eg \'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0\'' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s H -l hsm-group -d 'Cluster to set runtime configuration' -r

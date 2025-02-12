@@ -370,8 +370,14 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;add;group'= {
             cand -l 'group name'
             cand --label 'group name'
-            cand -x 'comma separated list of nodes to set in new group. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'''
-            cand --xnames 'comma separated list of nodes to set in new group. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'''
+            cand -n 'List of xnames or nids. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'' or ''nid001313,nid001314''  Host list also accepted eg ''x1003c1s7b0n[0-1],x1003c1s7b1n0'' or ''nid00131[0-9]'''
+            cand --nodes 'List of xnames or nids. eg ''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'' or ''nid001313,nid001314''  Host list also accepted eg ''x1003c1s7b0n[0-1],x1003c1s7b1n0'' or ''nid00131[0-9]'''
+            cand -r 'Input nodes in regex format.'
+            cand --regex 'Input nodes in regex format.'
+            cand -y 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
+            cand --assume-yes 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
+            cand -D 'No changes applied to the system.'
+            cand --dryrun 'No changes applied to the system.'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -636,10 +642,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;delete;group'= {
-            cand -l 'Group name to delete'
-            cand --label 'Group name to delete'
             cand -y 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
             cand --assume-yes 'Automatic yes to prompts; assume ''yes'' as answer to all prompts and run non-interactively.'
+            cand -D 'No changes applied to the system.'
+            cand --dryrun 'No changes applied to the system.'
             cand -h 'Print help'
             cand --help 'Print help'
         }

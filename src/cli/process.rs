@@ -19,7 +19,7 @@ use super::commands::{
     config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
+    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
     get_cluster, get_configuration, get_hsm, get_hw_configuration_node, get_images,
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
@@ -670,9 +670,13 @@ pub async fn process_cli(
                     .get_one::<String>("label")
                     .expect("ERROR - 'label' argument is mandatory");
 
-                let xname_vec_opt: Option<Vec<&str>> = cli_add_group
-                    .get_one::<String>("xnames")
-                    .map(|xname_string| xname_string.split(",").map(|value| value).collect());
+                let hosts_string = cli_add_group.get_one::<String>("nodes");
+
+                let is_regex = cli_add_group.get_flag("regex");
+
+                let assume_yes: bool = cli_add_group.get_flag("assume-yes");
+
+                let dryrun = cli_add_group.get_flag("dryrun");
 
                 /* // Validate user has access to the list of xnames requested
                 if let Some(xname_vec) = &xname_vec_opt {
@@ -696,7 +700,10 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     label,
-                    xname_vec_opt,
+                    hosts_string,
+                    assume_yes,
+                    is_regex,
+                    dryrun,
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) =
@@ -2029,7 +2036,27 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
-            if let Some(cli_delete_hw_configuration) = cli_delete.subcommand_matches("hw-component")
+            if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
+                let label = cli_delete_group
+                    .get_one::<String>("VALUE")
+                    .expect("ERROR - 'label' argument is mandatory")
+                    .clone();
+
+                let assume_yes: bool = cli_delete_group.get_flag("assume-yes");
+
+                let dryrun = cli_delete_group.get_flag("dryrun");
+
+                delete_group::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    &label,
+                    assume_yes,
+                    dryrun,
+                )
+                .await;
+            } else if let Some(cli_delete_hw_configuration) =
+                cli_delete.subcommand_matches("hw-component")
             {
                 let nodryrun = *cli_delete_hw_configuration
                     .get_one::<bool>("no-dryrun")

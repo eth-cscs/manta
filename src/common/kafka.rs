@@ -67,7 +67,7 @@ impl Audit for Kafka {
             .create()
             .expect("Producer creation error");
 
-        let delivery_status = producer
+        let _delivery_status = producer
             .send::<Vec<u8>, _, _>(
                 FutureRecord::to(topic_name).payload(data),
                 /* FutureRecord::to(topic_name)

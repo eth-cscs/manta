@@ -604,8 +604,14 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-l+[group name]:VALUE:_default' \
 '--label=[group name]:VALUE:_default' \
-'-x+[comma separated list of nodes to set in new group. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:VALUE:_default' \
-'--xnames=[comma separated list of nodes to set in new group. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'']:VALUE:_default' \
+'-n+[List of xnames or nids. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'' or '\''nid001313,nid001314'\''  Host list also accepted eg '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'' or '\''nid00131\[0-9\]'\'']:VALUE:_default' \
+'--nodes=[List of xnames or nids. eg '\''x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'\'' or '\''nid001313,nid001314'\''  Host list also accepted eg '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'' or '\''nid00131\[0-9\]'\'']:VALUE:_default' \
+'-r[Input nodes in regex format.]' \
+'--regex[Input nodes in regex format.]' \
+'-y[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
+'--assume-yes[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
+'-D[No changes applied to the system.]' \
+'--dryrun[No changes applied to the system.]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1033,12 +1039,13 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (group)
 _arguments "${_arguments_options[@]}" : \
-'-l+[Group name to delete]:VALUE:_default' \
-'--label=[Group name to delete]:VALUE:_default' \
 '-y[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
 '--assume-yes[Automatic yes to prompts; assume '\''yes'\'' as answer to all prompts and run non-interactively.]' \
+'-D[No changes applied to the system.]' \
+'--dryrun[No changes applied to the system.]' \
 '-h[Print help]' \
 '--help[Print help]' \
+':VALUE -- Group name to delete:_default' \
 && ret=0
 ;;
 (kernel-parameters)

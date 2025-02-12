@@ -812,7 +812,7 @@ _manta() {
             return 0
             ;;
         manta__add__group)
-            opts="-l -x -h --label --xnames --help"
+            opts="-l -n -r -y -D -h --label --nodes --regex --assume-yes --dryrun --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -826,11 +826,11 @@ _manta() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                --xnames)
+                --nodes)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                -x)
+                -n)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -2368,20 +2368,12 @@ _manta() {
             return 0
             ;;
         manta__delete__group)
-            opts="-l -y -h --label --assume-yes --help"
+            opts="-y -D -h --assume-yes --dryrun --help <VALUE>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                --label)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -l)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
                 *)
                     COMPREPLY=()
                     ;;

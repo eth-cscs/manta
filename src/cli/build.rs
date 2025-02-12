@@ -119,8 +119,9 @@ pub fn subcommand_delete_group() -> Command {
                 // .visible_alias("g")
                 .arg_required_else_help(true)
                 .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
-                .arg(arg!(-l --"label" <VALUE> "Group name to delete"))
                 .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+                .arg(arg!(<VALUE> "Group name to delete"))
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
@@ -612,7 +613,10 @@ pub fn subcommand_add() -> Command {
                 .about("add/create new group")
                 .arg_required_else_help(true)
                 .arg(arg!(-l --label <VALUE> "group name").required(true))
-                .arg(arg!(-x --xnames <VALUE> "comma separated list of nodes to set in new group.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+                .arg(arg!(-n --nodes <VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
+                .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
             )
             .subcommand(Command::new("hw-component")
                 // .visible_alias("hw")

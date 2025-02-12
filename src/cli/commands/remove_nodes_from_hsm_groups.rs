@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::common::jwt_ops;
 
-use crate::common::{audit::Audit, kafka::Kafka, node_ops::create_group_summary};
+use crate::common::{audit::Audit, kafka::Kafka};
 
 use super::config_show::get_hsm_name_available_from_jwt_or_all;
 
@@ -64,7 +64,7 @@ pub async fn exec(
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();
 
-    let group_summary = create_group_summary(&hsm_group_summary, &xname_to_move_vec);
+    // let group_summary = create_group_summary(&hsm_group_summary, &xname_to_move_vec);
 
     // Check if there are any xname to migrate/move and exit otherwise
     if xname_to_move_vec.is_empty() {
