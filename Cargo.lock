@@ -2280,7 +2280,7 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "1.54.22"
+version = "1.54.23"
 dependencies = [
  "anyhow",
  "chrono",
