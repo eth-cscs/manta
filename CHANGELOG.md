@@ -2,12 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.22] - 2025-02-12
+
+### Features
+
+- New functionality to add and delete groups
+- Add new command to add new group
+- Add new command to delete a group
+
 ## [1.54.21] - 2025-02-11
 
 ### Features
 
 - Add cli hints for shell autocomplete
 - Update strum version
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.21
 
 ### Refactor
 

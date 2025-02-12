@@ -2280,7 +2280,7 @@ dependencies = [
 
 [[package]]
 name = "manta"
-version = "1.54.21"
+version = "1.54.22"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2311,7 +2311,9 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "strum 0.24.1",
  "strum 0.25.0",
+ "strum_macros 0.24.3",
  "strum_macros 0.25.3",
  "substring",
  "termion",
