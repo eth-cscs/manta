@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.24] - 2025-02-13
+
+### Features
+
+- Commands add/delete group now audits their operations to kafka
+
 ## [1.54.23] - 2025-02-12
 
 ### Bug Fixes
 
 - Disable build script
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.23
 
 ## [1.54.22] - 2025-02-12
 
