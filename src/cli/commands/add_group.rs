@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
 use dialoguer::theme::ColorfulTheme;
-use mesa::hsm::group::r#struct::HsmGroup;
+use mesa::{common::jwt_ops, hsm::group::r#struct::HsmGroup};
 
-use crate::{cli::process::validate_target_hsm_members, common};
+use crate::{
+    cli::process::validate_target_hsm_members,
+    common::{self, audit::Audit, kafka::Kafka},
+};
 
 use super::{
     config_show::get_hsm_name_available_from_jwt_or_all, power_on_nodes::is_user_input_nids,
@@ -18,6 +21,7 @@ pub async fn exec(
     assume_yes: bool,
     is_regex: bool,
     dryrun: bool,
+    kafka_audit: &Kafka,
 ) {
     let xname_vec_opt = if let Some(hosts_string) = hosts_string_opt {
         let hsm_name_available_vec =
@@ -103,7 +107,7 @@ pub async fn exec(
     }
 
     // Create Group instance for http payload
-    let group = HsmGroup::new(label, xname_vec_opt, None, None);
+    let group = HsmGroup::new(label, xname_vec_opt.clone(), None, None);
 
     if !assume_yes {
         let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
@@ -145,5 +149,19 @@ pub async fn exec(
             eprintln!("{}", error);
             std::process::exit(1);
         }
+    }
+
+    // Audit
+    let username = jwt_ops::get_name(shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "message": format!("Create Group '{}'", label)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
     }
 }

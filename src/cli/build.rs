@@ -118,7 +118,7 @@ pub fn subcommand_delete_group() -> Command {
     Command::new("group")
                 // .visible_alias("g")
                 .arg_required_else_help(true)
-                .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
+                .about("Delete group. This command will fail if any node becomes orphan (no groups assigned to it), please move group members to another group using command 'migrate nodes' before deletion")
                 .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                 .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
                 .arg(arg!(<VALUE> "Group name to delete"))

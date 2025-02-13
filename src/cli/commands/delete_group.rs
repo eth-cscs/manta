@@ -1,4 +1,7 @@
 use dialoguer::theme::ColorfulTheme;
+use mesa::common::jwt_ops;
+
+use crate::common::{audit::Audit, kafka::Kafka};
 
 pub async fn exec(
     auth_token: &str,
@@ -7,6 +10,7 @@ pub async fn exec(
     label: &str,
     assume_yes: bool,
     dryrun: bool,
+    kafka_audit: &Kafka,
 ) {
     // Validate if group can be deleted
     validation(auth_token, base_url, root_cert, label).await;
@@ -44,6 +48,20 @@ pub async fn exec(
             eprintln!("{}", error);
             std::process::exit(1);
         }
+    }
+
+    // Audit
+    let username = jwt_ops::get_name(auth_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(auth_token).unwrap();
+
+    let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": Vec::<String>::new()}, "message": format!("Delete Group '{}'", label)});
+
+    let msg_data =
+        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+        log::warn!("Failed producing messages: {}", e);
     }
 }
 

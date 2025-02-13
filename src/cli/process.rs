@@ -704,6 +704,7 @@ pub async fn process_cli(
                     assume_yes,
                     is_regex,
                     dryrun,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) =
@@ -2053,6 +2054,7 @@ pub async fn process_cli(
                     &label,
                     assume_yes,
                     dryrun,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_delete_hw_configuration) =
