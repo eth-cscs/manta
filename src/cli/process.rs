@@ -960,6 +960,7 @@ pub async fn process_cli(
                     .map(|xname_str| xname_str.split(',').map(|xname| xname.trim()).collect());
 
                 get_session::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

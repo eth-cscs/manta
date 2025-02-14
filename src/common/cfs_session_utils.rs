@@ -5,7 +5,9 @@ use mesa::{
     ims,
 };
 
-pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<String> {
+pub fn cfs_session_struct_to_vec(
+    cfs_session: backend_dispatcher::types::cfs::CfsSessionGetResponse,
+) -> Vec<String> {
     let start_time_utc_str = cfs_session
         .get_start_time()
         .and_then(|date_time| Some(date_time.to_string() + "Z"))
@@ -117,13 +119,17 @@ pub fn cfs_session_struct_to_vec(cfs_session: CfsSessionGetResponse) -> Vec<Stri
     result
 }
 
-pub fn print_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) {
+pub fn print_table_struct(
+    get_cfs_session_value_list: &Vec<backend_dispatcher::types::cfs::CfsSessionGetResponse>,
+) {
     let table = get_table_struct(get_cfs_session_value_list);
 
     println!("{table}");
 }
 
-pub fn get_table_struct(get_cfs_session_value_list: &Vec<CfsSessionGetResponse>) -> Table {
+pub fn get_table_struct(
+    get_cfs_session_value_list: &Vec<backend_dispatcher::types::cfs::CfsSessionGetResponse>,
+) -> Table {
     let mut table = Table::new();
 
     table.set_header(vec![

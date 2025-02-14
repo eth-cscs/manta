@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, pin::Pin};
 
 /// This is the static backend dispatcher
 /// To add a new backend:
@@ -14,17 +14,19 @@ use backend_dispatcher::{
     error::Error,
     interfaces::{
         bss::BootParametersTrait,
+        cfs::CfsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
         },
         pcs::PCSTrait,
     },
     types::{
-        BootParameters, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
-        NodeMetadataArray,
+        cfs::CfsSessionGetResponse, BootParameters, Component, ComponentArrayPostArray, Group,
+        HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
     },
 };
 
+use futures::AsyncBufRead;
 use StaticBackendDispatcher::*;
 
 use mesa::backend_connector::Csm;
@@ -484,6 +486,200 @@ impl BackendTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
             OCHAMI(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+        }
+    }
+}
+
+impl CfsTrait for StaticBackendDispatcher {
+    type T = Pin<Box<dyn AsyncBufRead>>;
+
+    async fn get_sessions(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        session_name_opt: Option<&String>,
+        limit_opt: Option<u8>,
+        after_id_opt: Option<String>,
+        min_age_opt: Option<String>,
+        max_age_opt: Option<String>,
+        status_opt: Option<String>,
+        name_contains_opt: Option<String>,
+        is_succeded_opt: Option<bool>,
+        tags_opt: Option<String>,
+    ) -> Result<Vec<CfsSessionGetResponse>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_sessions(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    session_name_opt,
+                    limit_opt,
+                    after_id_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    name_contains_opt,
+                    is_succeded_opt,
+                    tags_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_sessions(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    session_name_opt,
+                    limit_opt,
+                    after_id_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    name_contains_opt,
+                    is_succeded_opt,
+                    tags_opt,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_and_filter_sessions(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        hsm_group_name_vec_opt: Option<Vec<String>>,
+        xname_vec_opt: Option<Vec<&str>>,
+        min_age_opt: Option<&String>,
+        max_age_opt: Option<&String>,
+        status_opt: Option<&String>,
+        cfs_session_name_opt: Option<&String>,
+        limit_number_opt: Option<&u8>,
+    ) -> Result<Vec<CfsSessionGetResponse>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_and_filter_sessions(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_vec_opt,
+                    xname_vec_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    cfs_session_name_opt,
+                    limit_number_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_and_filter_sessions(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_vec_opt,
+                    xname_vec_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    cfs_session_name_opt,
+                    limit_number_opt,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_sessions_by_xname(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        xname_vec: &[&str],
+        limit_opt: Option<u8>,
+        after_id_opt: Option<String>,
+        min_age_opt: Option<String>,
+        max_age_opt: Option<String>,
+        status_opt: Option<String>,
+        name_contains_opt: Option<String>,
+        is_succeded_opt: Option<bool>,
+        tags_opt: Option<String>,
+    ) -> Result<Vec<CfsSessionGetResponse>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_sessions_by_xname(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    xname_vec,
+                    limit_opt,
+                    after_id_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    name_contains_opt,
+                    is_succeded_opt,
+                    tags_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_sessions_by_xname(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    xname_vec,
+                    limit_opt,
+                    after_id_opt,
+                    min_age_opt,
+                    max_age_opt,
+                    status_opt,
+                    name_contains_opt,
+                    is_succeded_opt,
+                    tags_opt,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_session_logs_stream(
+        &self,
+        cfs_session_name: &str,
+        k8s_api_url: &str,
+        k8s: &K8sDetails,
+    ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_session_logs_stream(cfs_session_name, k8s_api_url, k8s)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_session_logs_stream(cfs_session_name, k8s_api_url, k8s)
+                    .await
+            }
+        }
+    }
+
+    async fn get_session_logs_stream_by_xname(
+        &self,
+        auth_token: &str,
+        xname: &str,
+        k8s_api_url: &str,
+        k8s: &K8sDetails,
+    ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_session_logs_stream_by_xname(auth_token, xname, k8s_api_url, k8s)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_session_logs_stream_by_xname(auth_token, xname, k8s_api_url, k8s)
+                    .await
+            }
         }
     }
 }

@@ -18,14 +18,22 @@ publish = false                                                         # cargo 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[build-dependencies]
+clap = "*"
+clap_complete = "*"
+# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
+backend-dispatcher = "*"
+strum = "*"
+strum_macros = "*"
+
 [dependencies]
 # --- START MANTA DEPENDENCIES ---
 
 # PROD
 
-backend-dispatcher = "0.1.22"
-mesa = "0.42.3-beta.43"
-ochami-rs = "0.1.23"
+backend-dispatcher = "0.1.23"
+mesa = "0.42.3-beta.44"
+ochami-rs = "0.1.24"
 
 # DEV
 
@@ -74,14 +82,6 @@ is_executable = "1.0.1"
 minijinja = { version = "2.4.0", features = ["custom_syntax"] }
 uuid = { version = "1.10.0", features = ["fast-rng", "v4"] }
 rdkafka = { version = "0.37", features = ["cmake-build"] }
-
-[build-dependencies]
-clap = "*"
-clap_complete = "*"
-# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-backend-dispatcher = "*"
-strum = "*"
-strum_macros = "*"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

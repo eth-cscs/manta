@@ -1,11 +1,9 @@
-use mesa::{
-    cfs,
-    ims::{self, image::http_client::types::Image},
-};
+use backend_dispatcher::interfaces::cfs::CfsTrait;
 
-use crate::common;
+use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -23,7 +21,7 @@ pub async fn exec(
         hsm_group_name_vec_opt
     );
 
-    let mut cfs_session_vec = cfs::session::get(
+    /* let mut cfs_session_vec = cfs::session::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -163,7 +161,25 @@ pub async fn exec(
                     .result_id = new_image_id_opt;
             }
         }
-    }
+    } */
+    let cfs_session_vec = backend
+        .get_and_filter_sessions(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_group_name_vec_opt,
+            xname_vec_opt,
+            min_age_opt,
+            max_age_opt,
+            status_opt,
+            cfs_session_name_opt,
+            limit_number_opt,
+        )
+        .await
+        .unwrap_or_else(|e| {
+            log::error!("Failed to get CFS sessions. Reason:\n{e}");
+            std::process::exit(1);
+        });
 
     if output_opt.is_some() && output_opt.unwrap().eq("json") {
         println!(

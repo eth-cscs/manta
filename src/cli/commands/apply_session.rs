@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use futures::TryStreamExt;
 use mesa::{
     cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
     common::{jwt_ops, kubernetes},
@@ -202,8 +201,11 @@ pub async fn exec(
             .await
             .unwrap();
 
-        // Get CFS session logs
-        let logs_stream_rslt = kubernetes::print_cfs_session_container_git_clone_logs_stream(
+        kubernetes::print_cfs_session_logs(client, &cfs_session_name)
+            .await
+            .unwrap();
+        /* // Get CFS session logs
+        let logs_stream_rslt = kubernetes::get_cfs_session_init_container_git_clone_logs_stream(
             client.clone(),
             &cfs_session_name,
         )
@@ -225,7 +227,7 @@ pub async fn exec(
 
         /* while let Some(line) = logs_stream.try_next().await.unwrap() {
             println!("{}", line);
-        } */
+        } */ */
     }
     // * End Create CFS session
 
