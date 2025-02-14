@@ -2,11 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.64] - 2025-02-14
+
+### Features
+
+- CSM k8s credentials can be added to config file
+- Config autogenerator add kafka details
+- Add shell autocomplete hints in cli
+- Implement interfaces to get session and get session log stream
+
+### Refactor
+
+- Config file parsed to a struct
+- Change struct name HardwareMetadataArray to NodeMetadataArray
+
 ## [1.54.1-beta.63] - 2025-02-09
 
 ### Features
 
 - Clean log messages
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.63
 
 ## [1.54.1-beta.62] - 2025-02-09
 
