@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.65] - 2025-02-15
+
+### Features
+
+- Migrate features in add group command from main to 1.5 branches
+
+### Miscellaneous Tasks
+
+- Remove build script
+- Get rid of build script
+
 ## [1.54.1-beta.64] - 2025-02-14
 
 ### Features
@@ -10,6 +21,10 @@ All notable changes to this project will be documented in this file.
 - Config autogenerator add kafka details
 - Add shell autocomplete hints in cli
 - Implement interfaces to get session and get session log stream
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.64
 
 ### Refactor
 
