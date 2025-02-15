@@ -84,7 +84,7 @@ pub async fn exec(
         shasta_token,
         /* shasta_base_url,
         shasta_root_cert, */
-        target_xname_vec.clone(),
+        &target_xname_vec,
     )
     .await;
 
@@ -135,7 +135,7 @@ pub async fn exec(
             shasta_token,
             /* shasta_base_url,
             shasta_root_cert, */
-            xnames_to_validate_access_vec,
+            &xnames_to_validate_access_vec,
         )
         .await;
 

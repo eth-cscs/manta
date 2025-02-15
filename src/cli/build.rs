@@ -618,30 +618,36 @@ pub fn subcommand_validate_local_repo() -> Command {
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
 
-pub fn subcommand_add() -> Command {
-    Command::new("add")
-            .arg_required_else_help(true)
-            .about("Add/Create new elements to system. Nodes will be added to the user's 'parent' group")
-            .subcommand(
-                Command::new("node")
-                // .visible_alias("n")
-                .about("Add/Create new node")
-                .arg_required_else_help(true)
-                .arg(arg!(-i --id <VALUE> "Xname").required(true))
-                .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
-                .arg(arg!(-H --hardware <FILE> "hardware").required(true).value_parser(value_parser!(PathBuf)))
-                .arg(arg!(-a --arch <VALUE> "Architecture").value_parser(["X86", "ARM", "Other"]))
-                .arg(arg!(-d --disabled "Disable node upon creation").action(ArgAction::SetFalse))
-            )
-            .subcommand(
-                Command::new("group")
+pub fn subcommand_add_group() -> Command {
+    Command::new("group")
                 // .visible_alias("g")
                 .about("Add/Create new group")
                 .arg_required_else_help(true)
                 .arg(arg!(-l --label <VALUE> "Group name").required(true))
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set in new group.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-            )
-            .subcommand(Command::new("hw-component")
+                .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
+                .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+}
+
+pub fn subcommand_add_node() -> Command {
+    Command::new("node")
+        // .visible_alias("n")
+        .about("Add/Create new node")
+        .arg_required_else_help(true)
+        .arg(arg!(-i --id <VALUE> "Xname").required(true))
+        .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
+        .arg(
+            arg!(-H --hardware <FILE> "hardware")
+                .required(true)
+                .value_parser(value_parser!(PathBuf)),
+        )
+        .arg(arg!(-a --arch <VALUE> "Architecture").value_parser(["X86", "ARM", "Other"]))
+        .arg(arg!(-d --disabled "Disable node upon creation").action(ArgAction::SetFalse))
+}
+
+pub fn subcommand_add_hwcomponent() -> Command {
+    Command::new("hw-component")
                 // .visible_alias("hw")
                 .arg_required_else_help(true)
                 .about("WIP - Add hw components from a cluster")
@@ -650,10 +656,10 @@ pub fn subcommand_add() -> Command {
                 .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
                 .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
                 .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
+}
 
-            )
-            .subcommand(
-                Command::new("kernel-parameters")
+pub fn subcommand_add_kernelparameters() -> Command {
+    Command::new("kernel-parameters")
                 // .visible_alias("kp")
                 .arg_required_else_help(true)
                 .about("Add/Create kernel parameters")
@@ -666,7 +672,18 @@ pub fn subcommand_add() -> Command {
                         .args(["hsm-group", "xnames"])
                         .required(true),
                 )
-            )
+}
+
+pub fn subcommand_add() -> Command {
+    Command::new("add")
+        .arg_required_else_help(true)
+        .about(
+            "Add/Create new elements to system. Nodes will be added to the user's 'parent' group",
+        )
+        .subcommand(subcommand_add_node())
+        .subcommand(subcommand_add_group())
+        .subcommand(subcommand_add_hwcomponent())
+        .subcommand(subcommand_add_kernelparameters())
 }
 
 pub fn subcommand_apply() -> Command {

@@ -21,8 +21,8 @@ publish = false                                                         # cargo 
 [build-dependencies]
 clap = "*"
 clap_complete = "*"
-# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-backend-dispatcher = "*"
+backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
+# backend-dispatcher = "*"
 strum = "*"
 strum_macros = "*"
 

@@ -2260,7 +2260,7 @@ pub async fn process_session_template_section_in_sat_file(
                     shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
-                    node_list.iter().map(|node| node.to_string()).collect(),
+                    &node_list,
                 )
                 .await;
             }

@@ -614,9 +614,13 @@ pub async fn process_cli(
                     .get_one::<String>("label")
                     .expect("ERROR - 'label' argument is mandatory");
 
-                let xname_vec_opt: Option<Vec<&str>> = cli_add_group
-                    .get_one::<String>("xnames")
-                    .map(|xname_string| xname_string.split(",").map(|value| value).collect());
+                let node_expression: Option<&String> = cli_add_group.get_one::<String>("nodes");
+
+                let is_regex = cli_add_group.get_flag("regex");
+
+                let assume_yes: bool = cli_add_group.get_flag("assume-yes");
+
+                let dryrun = cli_add_group.get_flag("dryrun");
 
                 /* // Validate user has access to the list of xnames requested
                 if let Some(xname_vec) = &xname_vec_opt {
@@ -638,10 +642,12 @@ pub async fn process_cli(
                 add_group::exec(
                     backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     label,
-                    xname_vec_opt,
+                    node_expression,
+                    is_regex,
+                    assume_yes,
+                    dryrun,
+                    kafka_audit,
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) =
@@ -754,7 +760,7 @@ pub async fn process_cli(
                     &shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
-                    xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                    &xname_vec,
                 )
                 .await;
 
@@ -861,7 +867,7 @@ pub async fn process_cli(
                         &shasta_token,
                         /* shasta_base_url,
                         shasta_root_cert, */
-                        xname_vec,
+                        &xname_vec,
                     )
                     .await;
 
@@ -1383,7 +1389,7 @@ pub async fn process_cli(
                         &shasta_token,
                         /* shasta_base_url,
                         shasta_root_cert, */
-                        ansible_limit
+                        &ansible_limit
                             .split(',')
                             .map(|xname| xname.trim().to_string())
                             .collect::<Vec<String>>(),
@@ -2119,7 +2125,7 @@ pub async fn process_cli(
                     &shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
-                    xname_vec.iter().map(|xname| xname.to_string()).collect(),
+                    &xname_vec,
                 )
                 .await;
 

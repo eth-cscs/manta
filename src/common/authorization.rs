@@ -97,7 +97,7 @@ pub async fn validate_target_hsm_members(
     shasta_token: &str,
     /* shasta_base_url: &str,
     shasta_root_cert: &[u8], */
-    hsm_group_members_opt: Vec<String>,
+    hsm_group_members_opt: &Vec<String>,
 ) -> Vec<String> {
     let hsm_groups_user_has_access = backend
         .get_group_name_available(shasta_token)
@@ -132,7 +132,7 @@ pub async fn validate_target_hsm_members(
         .iter()
         .all(|hsm_member| all_xnames_user_has_access.contains(hsm_member))
     {
-        hsm_group_members_opt
+        hsm_group_members_opt.to_vec()
     } else {
         println!("Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit", hsm_group_members_opt.join(", "), hsm_groups_user_has_access.join(", "));
         std::process::exit(1);
