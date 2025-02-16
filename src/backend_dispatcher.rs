@@ -21,7 +21,12 @@ use backend_dispatcher::{
         pcs::PCSTrait,
     },
     types::{
-        cfs::CfsSessionGetResponse, BootParameters, Component, ComponentArrayPostArray, Group,
+        cfs::{
+            cfs_configuration_request::CfsConfigurationRequest, CfsConfigurationResponse,
+            CfsSessionGetResponse, Layer, LayerDetails,
+        },
+        ims::Image,
+        BootParameters, BosSessionTemplate, Component, ComponentArrayPostArray, Group,
         HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
     },
 };
@@ -642,6 +647,221 @@ impl CfsTrait for StaticBackendDispatcher {
                     tags_opt,
                 )
                 .await
+            }
+        }
+    }
+
+    async fn create_configuration_from_repos(
+        &self,
+        gitea_token: &str,
+        gitea_base_url: &str,
+        shasta_root_cert: &[u8],
+        repo_name_vec: Vec<String>,
+        local_git_commit_vec: Vec<String>,
+        playbook_file_name_opt: Option<&String>,
+    ) -> Result<CfsConfigurationRequest, Error> {
+        match self {
+            CSM(b) => {
+                b.create_configuration_from_repos(
+                    gitea_token,
+                    gitea_base_url,
+                    shasta_root_cert,
+                    repo_name_vec,
+                    local_git_commit_vec,
+                    playbook_file_name_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.create_configuration_from_repos(
+                    gitea_token,
+                    gitea_base_url,
+                    shasta_root_cert,
+                    repo_name_vec,
+                    local_git_commit_vec,
+                    playbook_file_name_opt,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_configuration(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        cfs_configuration_name_opt: Option<&String>,
+    ) -> Result<Vec<CfsConfigurationResponse>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_configuration(auth_token, base_url, root_cert, cfs_configuration_name_opt)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_configuration(auth_token, base_url, root_cert, cfs_configuration_name_opt)
+                    .await
+            }
+        }
+    }
+
+    async fn get_and_filter_configuration(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        configuration_name: Option<&str>,
+        configuration_name_pattern: Option<&str>,
+        hsm_group_name_vec: &[String],
+        limit_number_opt: Option<&u8>,
+    ) -> Result<Vec<CfsConfigurationResponse>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_and_filter_configuration(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    configuration_name,
+                    configuration_name_pattern,
+                    hsm_group_name_vec,
+                    limit_number_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_and_filter_configuration(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    configuration_name,
+                    configuration_name_pattern,
+                    hsm_group_name_vec,
+                    limit_number_opt,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_configuration_layer_details(
+        &self,
+        shasta_root_cert: &[u8],
+        gitea_base_url: &str,
+        gitea_token: &str,
+        layer: Layer,
+    ) -> Result<LayerDetails, Error> {
+        match self {
+            CSM(b) => {
+                b.get_configuration_layer_details(
+                    shasta_root_cert,
+                    gitea_base_url,
+                    gitea_token,
+                    layer,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_configuration_layer_details(
+                    shasta_root_cert,
+                    gitea_base_url,
+                    gitea_token,
+                    layer,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn update_runtime_configuration(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        xnames: Vec<String>,
+        desired_configuration: &str,
+        enabled: bool,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.update_runtime_configuration(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    xnames,
+                    desired_configuration,
+                    enabled,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.update_runtime_configuration(
+                    auth_token,
+                    base_url,
+                    root_cert,
+                    xnames,
+                    desired_configuration,
+                    enabled,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn put_configuration(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        configuration: &CfsConfigurationRequest,
+        configuration_name: &str,
+    ) -> Result<CfsConfigurationResponse, Error> {
+        match self {
+            CSM(b) => {
+                b.put_configuration(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    configuration,
+                    configuration_name,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.put_configuration(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    configuration,
+                    configuration_name,
+                )
+                .await
+            }
+        }
+    }
+
+    // Get all CFS sessions, IMS images and BOS sessiontemplates related to a CFS configuration
+    async fn get_derivatives(
+        &self,
+        auth_token: &str,
+        base_url: &str,
+        root_cert: &[u8],
+        configuration_name: &str,
+    ) -> Result<
+        (
+            Option<Vec<CfsSessionGetResponse>>,
+            Option<Vec<BosSessionTemplate>>,
+            Option<Vec<Image>>,
+        ),
+        Error,
+    > {
+        match self {
+            CSM(b) => {
+                b.get_derivatives(auth_token, base_url, root_cert, configuration_name)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_derivatives(auth_token, base_url, root_cert, configuration_name)
+                    .await
             }
         }
     }

@@ -5,11 +5,11 @@ use crate::{
 };
 
 use backend_dispatcher::{
-    interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
+    interfaces::{bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait},
     types::BootParameters,
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{cfs, ims, node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm};
+use mesa::{ims, node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -49,13 +49,14 @@ pub async fn exec(
     }
 
     // Check new configuration exists and exit otherwise
-    let runtime_configuration_detail_list_rslt = cfs::configuration::http_client::v3::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        new_runtime_configuration_opt.map(|elem| elem.as_str()),
-    )
-    .await;
+    let runtime_configuration_detail_list_rslt = backend
+        .get_configuration(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            new_runtime_configuration_opt,
+        )
+        .await;
 
     if runtime_configuration_detail_list_rslt.is_err()
         || runtime_configuration_detail_list_rslt.unwrap().is_empty()
@@ -261,7 +262,7 @@ pub async fn exec(
                 desired_configuration_name
             );
 
-            cfs::component::utils::update_component_list_desired_configuration(
+            /* cfs::component::utils::update_component_list_desired_configuration(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -272,7 +273,21 @@ pub async fn exec(
                 desired_configuration_name,
                 true,
             )
-            .await;
+            .await; */
+            let _ = backend
+                .update_runtime_configuration(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    xname_vec.iter().map(|xname| xname.to_string()).collect(), // TODO: modify function signature
+                    desired_configuration_name,
+                    true,
+                )
+                .await
+                .inspect_err(|e| {
+                    eprintln!("Error updating runtime configuration: {}", e);
+                    std::process::exit(1);
+                });
         } else {
             log::info!("Runtime configuration does not change.");
         }

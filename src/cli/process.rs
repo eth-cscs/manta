@@ -920,6 +920,7 @@ pub async fn process_cli(
                     };
 
                 get_configuration::exec(
+                    &backend,
                     gitea_base_url,
                     &gitea_token,
                     &shasta_token,

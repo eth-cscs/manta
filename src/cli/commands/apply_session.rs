@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use backend_dispatcher::interfaces::cfs::CfsTrait;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
     cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
@@ -136,6 +137,7 @@ pub async fn exec(
 
     // * Check nodes are ready to run, create CFS configuration and CFS session
     let cfs_session_name = check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
+        &backend,
         &cfs_configuration_name,
         playbook_yaml_file_name_opt,
         repos_paths,
@@ -250,6 +252,7 @@ pub async fn exec(
 }
 
 pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
+    backend: &StaticBackendDispatcher,
     cfs_configuration_name: &str,
     playbook_yaml_file_name_opt: Option<&String>,
     repos: Vec<PathBuf>,
@@ -489,17 +492,77 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
 
     log::info!("Creating CFS configuration {}", cfs_configuration_name);
 
-    let cfs_configuration = crate::common::cfs_configuration_utils::create_from_repos(
+    let mut repo_name_vec = Vec::new();
+    let mut repo_last_commit_id_vec = Vec::new();
+
+    // Get layer names from local repos
+    for repo_path in &repos {
+        // Get repo from path
+        let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
+            Ok(repo) => repo,
+            Err(_) => {
+                eprintln!(
+                    "Could not find a git repo in {}",
+                    repo_path.to_string_lossy()
+                );
+                std::process::exit(1);
+            }
+        };
+
+        // Get last (most recent) commit
+        let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
+
+        repo_last_commit_id_vec.push(local_last_commit.id().to_string());
+
+        // Get repo name
+        let repo_ref_origin = repo.find_remote("origin").unwrap();
+
+        log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+
+        let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+
+        let repo_name = repo_ref_origin_url
+            .substring(
+                repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
+                repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+            )
+            .trim_end_matches(".git");
+
+        let repo_name = "cray/".to_owned() + repo_name;
+
+        repo_name_vec.push(repo_name);
+    }
+
+    /* let cfs_configuration = crate::common::cfs_configuration_utils::create_from_repos(
         gitea_token,
         gitea_base_url,
         shasta_root_cert,
         repos,
         playbook_yaml_file_name_opt,
     )
-    .await;
+    .await; */
+    let cfs_configuration = backend
+        .create_configuration_from_repos(
+            gitea_token,
+            gitea_base_url,
+            shasta_root_cert,
+            repo_name_vec,
+            repo_last_commit_id_vec,
+            playbook_yaml_file_name_opt,
+        )
+        .await
+        .map_err(|e| Error::Message(e.to_string()))?;
 
     // Update/PUT CFS configuration
-    let cfs_configuration_resp = cfs::configuration::http_client::v3::put(
+    /* let cfs_configuration_resp = cfs::configuration::http_client::v3::put(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &cfs_configuration,
+        cfs_configuration_name,
+    )
+    .await; */
+    /* let cfs_configuration_resp = cfs::configuration::http_client::v3::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -507,14 +570,26 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         cfs_configuration_name,
     )
     .await;
-
     let cfs_configuration_name = match cfs_configuration_resp {
         Ok(_) => &cfs_configuration_resp.as_ref().unwrap().name,
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1);
         }
-    };
+    }; */
+
+    let cfs_configuration_resp = backend
+        .put_configuration(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &cfs_configuration,
+            cfs_configuration_name,
+        )
+        .await
+        .map_err(|e| Error::Message(e.to_string()))?;
+
+    let cfs_configuration_name = cfs_configuration_resp.name;
 
     // Create dynamic CFS session
     let cfs_session_name = format!(
