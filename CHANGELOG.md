@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.67] - 2025-02-17
+
+### Refactor
+
+- Improve error management
+- Move bulk operations apply sat and apply hw inventory pin from manta to mesa
+- Disable code migrated to backend dispatcher
+
 ## [1.54.1-beta.66] - 2025-02-16
 
 ### Features
 
 - Migrate commands apply session and get configuration to backend dispatcher
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.66
 
 ## [1.54.1-beta.65] - 2025-02-15
 
