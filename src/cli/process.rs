@@ -1499,7 +1499,7 @@ pub async fn process_cli(
                 )
                 .expect("ERROR: reading SAT file template. Exit");
 
-                let ansible_passthrough_env = settings.get::<String>("ansible_passthrough").ok();
+                let ansible_passthrough_env = settings.get::<String>("ansible-passthrough").ok();
                 let ansible_passthrough_cli_arg = cli_apply_sat_file
                     .get_one::<String>("ansible-passthrough")
                     .cloned();

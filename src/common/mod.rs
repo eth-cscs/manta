@@ -7,6 +7,7 @@ pub mod cluster_ops;
 pub mod config_ops;
 pub mod hooks;
 pub mod ims_ops;
+pub mod jwt_ops;
 pub mod kafka;
 pub mod kernel_parameters_ops;
 pub mod local_git_repo;

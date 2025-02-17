@@ -1,31 +1,7 @@
-use std::collections::{BTreeMap, HashMap};
-
 use image::Image;
-use mesa::{
-    bos::{
-        self,
-        session::http_client::v2::types::{BosSession, Operation},
-        template::http_client::v2::types::{BootSet, BosSessionTemplate, Cfs},
-    },
-    cfs::{
-        self,
-        configuration::http_client::v3::types::{
-            cfs_configuration_request::CfsConfigurationRequest,
-            cfs_configuration_response::CfsConfigurationResponse,
-        },
-        session::http_client::v3::types::CfsSessionPostRequest,
-    },
-    error::Error,
-    hsm, ims,
-};
+use mesa::error::Error;
 use serde::{Deserialize, Serialize};
-use serde_json::Map;
 use serde_yaml::{Mapping, Value};
-use uuid::Uuid;
-
-use crate::{
-    backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
-};
 
 use self::sessiontemplate::SessionTemplate;
 
@@ -198,7 +174,7 @@ pub mod sessiontemplate {
     }
 }
 
-/// Convert from `sessiontemplate` in SAT file to manta BosSessionTemplate
+/* /// Convert from `sessiontemplate` in SAT file to manta BosSessionTemplate
 /// example from https://doc.rust-lang.org/rust-by-example/conversion/try_from_try_into.html
 impl TryFrom<SessionTemplate> for BosSessionTemplate {
     type Error = ();
@@ -264,7 +240,7 @@ impl TryFrom<SessionTemplate> for BosSessionTemplate {
 
         Ok(b_st)
     }
-}
+} */
 
 /// struct to represent the `images` section in SAT file
 pub mod image {
@@ -671,7 +647,7 @@ pub fn render_jinja2_sat_file_yaml(
     sat_file_yaml
 } */
 
-pub async fn create_cfs_configuration_from_sat_file(
+/* pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -718,9 +694,9 @@ pub async fn create_cfs_configuration_from_sat_file(
 
         Ok(cfs_configuration)
     }
-}
+} */
 
-/// Analyze a list of images in SAT file and returns the image to process next.
+/* /// Analyze a list of images in SAT file and returns the image to process next.
 /// Input values:
 ///  - image_yaml_vec: the list of images in the SAT file, each element is a serde_yaml::Value
 ///  - ref_name_processed_vec: he list of images (ref_name) already processed
@@ -759,9 +735,9 @@ pub fn get_next_image_in_sat_file_to_process(
                     }))
         })
         .cloned()
-}
+} */
 
-/// Get the "ref_name" from an image, because we need to be aware of which images in SAT file have
+/* /// Get the "ref_name" from an image, because we need to be aware of which images in SAT file have
 /// been processed in order to find the next image to process. We assume not all images in the yaml
 /// will have an "image_ref" value, therefore we will use "ref_name" or "name" field if the former
 /// is missing
@@ -774,9 +750,9 @@ pub fn get_image_name_or_ref_name_to_process(image_yaml: &serde_yaml::Value) -> 
         // calculating the next image to process (get_next_image_to_process)
         image_yaml["name"].as_str().unwrap().to_string()
     }
-}
+} */
 
-pub async fn import_images_section_in_sat_file(
+/* pub async fn import_images_section_in_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -845,9 +821,9 @@ pub async fn import_images_section_in_sat_file(
     }
 
     image_processed_hashmap
-}
+} */
 
-pub async fn create_image_from_sat_file_serde_yaml(
+/* pub async fn create_image_from_sat_file_serde_yaml(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -1128,9 +1104,9 @@ pub async fn create_image_from_sat_file_serde_yaml(
             Ok(image_id)
         }
     }
-}
+} */
 
-async fn process_sat_file_image_product_type_ims_recipe(
+/* async fn process_sat_file_image_product_type_ims_recipe(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -1180,9 +1156,9 @@ async fn process_sat_file_image_product_type_ims_recipe(
             .unwrap();
 
     Ok(ims_job["resultant_image_id"].as_str().unwrap().to_string())
-}
+} */
 
-async fn process_sat_file_image_ims_type_recipe(
+/* async fn process_sat_file_image_ims_type_recipe(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -1251,9 +1227,9 @@ async fn process_sat_file_image_ims_type_recipe(
     log::info!("IMS job response:\n{:#?}", ims_job);
 
     Ok(ims_job["resultant_image_id"].as_str().unwrap().to_string())
-}
+} */
 
-fn process_sat_file_image_old_version(
+/* fn process_sat_file_image_old_version(
     sat_file_image_ims_value_yaml: &serde_yaml::Value,
 ) -> Result<String, Error> {
     if sat_file_image_ims_value_yaml
@@ -1269,9 +1245,9 @@ fn process_sat_file_image_old_version(
     } else {
         Err(Error::Message("Functionality not built. Exit".to_string()))
     }
-}
+} */
 
-fn process_sat_file_image_ref_name(
+/* fn process_sat_file_image_ref_name(
     sat_file_image_base_image_ref_value_yaml: &serde_yaml::Value,
     ref_name_image_id_hashmap: &HashMap<String, String>,
 ) -> Result<String, Error> {
@@ -1285,9 +1261,9 @@ fn process_sat_file_image_ref_name(
         .get(&image_ref)
         .unwrap()
         .to_string())
-}
+} */
 
-pub fn filter_product_catalog_images(
+/* pub fn filter_product_catalog_images(
     filter: &Value,
     image_map: Map<String, serde_json::Value>,
     image_name: &str,
@@ -1382,9 +1358,9 @@ pub fn filter_product_catalog_images(
             image_name
         )))
     }
-}
+} */
 
-pub fn validate_sat_file_images_section(
+/* pub fn validate_sat_file_images_section(
     image_yaml_vec: &Vec<Value>,
     configuration_yaml_vec: &Vec<Value>,
     hsm_group_available_vec: &[String],
@@ -1690,9 +1666,9 @@ pub fn validate_sat_file_images_section(
     }
 
     Ok(())
-}
+} */
 
-pub fn validate_sat_file_configurations_section(
+/* pub fn validate_sat_file_configurations_section(
     configuration_yaml_vec_opt: Option<&Vec<Value>>,
     image_yaml_vec_opt: Option<&Vec<Value>>,
     sessiontemplate_yaml_vec_opt: Option<&Vec<Value>>,
@@ -1709,9 +1685,9 @@ pub fn validate_sat_file_configurations_section(
             std::process::exit(1);
         }
     }
-}
+} */
 
-pub async fn validate_sat_file_session_template_section(
+/* pub async fn validate_sat_file_session_template_section(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -1973,9 +1949,9 @@ pub async fn validate_sat_file_session_template_section(
             std::process::exit(1);
         }
     }
-}
+} */
 
-pub async fn process_session_template_section_in_sat_file(
+/* pub async fn process_session_template_section_in_sat_file(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -2477,4 +2453,4 @@ pub async fn process_session_template_section_in_sat_file(
     let username = mesa::common::jwt_ops::get_preferred_username(shasta_token).unwrap();
 
     log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply cluster", user, username);
-}
+} */

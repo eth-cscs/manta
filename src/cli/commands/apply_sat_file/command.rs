@@ -1,22 +1,10 @@
-use std::collections::HashMap;
-
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use dialoguer::theme::ColorfulTheme;
-use mesa::{
-    cfs::{
-        self,
-        configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse,
-    },
-    common::kubernetes,
-    error::Error,
-    ims,
-};
 use serde_yaml::Value;
 use termion::color;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    cli::commands::{apply_hw_cluster_pin, apply_sat_file::utils},
+    cli::commands::apply_sat_file::utils,
     common::{
         self, config_ops::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },

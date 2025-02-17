@@ -1,10 +1,9 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, kafka::Kafka},
+    common::{audit::Audit, jwt_ops, kafka::Kafka},
 };
-use backend_dispatcher::{interfaces::bss::BootParametersTrait, types};
+use backend_dispatcher::{error::Error, interfaces::bss::BootParametersTrait, types};
 use dialoguer::theme::ColorfulTheme;
-use mesa::{common::jwt_ops, error::Error};
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
