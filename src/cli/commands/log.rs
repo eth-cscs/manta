@@ -158,6 +158,12 @@ pub async fn exec(
         std::process::exit(0);
     }
 
+    log::info!(
+        "Get logs for CFS session:\n{}",
+        common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
+    );
+
+    // Get K8s secrets
     let shasta_k8s_secrets = match &k8s.authentication {
         common::config_ops::K8sAuth::Native {
             certificate_authority_data,
@@ -172,11 +178,6 @@ pub async fn exec(
             role_id,
         } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
     };
-
-    log::info!(
-        "Get logs for CFS session:\n{}",
-        common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
-    );
 
     let client =
         mesa::common::kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)

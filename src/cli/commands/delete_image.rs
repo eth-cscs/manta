@@ -29,7 +29,11 @@ pub mod command {
                 &hsm_name_available_vec,
                 None,
             )
-            .await;
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!("ERROR - {}", e);
+                std::process::exit(1);
+            });
 
         // VALIDATE
         // Check images user wants to delete are not being used to boot nodes

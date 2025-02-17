@@ -106,7 +106,11 @@ pub async fn delete_data_related_cfs_configuration(
         &hsm_name_available_vec,
         None,
     )
-    .await;
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("ERROR - {}", e);
+        std::process::exit(1);
+    });
 
     // Filter CFS configurations based on user input (date range or configuration name)
     if let (Some(since), Some(until)) = (since_opt, until_opt) {
@@ -148,8 +152,7 @@ pub async fn delete_data_related_cfs_configuration(
         &Vec::new(),
         // cfs_configuration_name_opt.map(|elem| elem.as_str()),
         None,
-    )
-    .await;
+    );
 
     // Filter BOS sessiontemplate containing /configuration/name field
     bos_sessiontemplate_value_vec.retain(|bos_sessiontemplate| {
@@ -187,7 +190,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all CFS sessions
-    let mut cfs_session_vec = cfs::session::get(
+    let mut cfs_session_vec = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -209,7 +212,11 @@ pub async fn delete_data_related_cfs_configuration(
         &hsm_name_available_vec,
         None,
     )
-    .await;
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("ERROR - {}", e);
+        std::process::exit(1);
+    });
 
     // Filter CFS sessions containing /configuration/name field
     cfs_session_vec.retain(|cfs_session_value| {

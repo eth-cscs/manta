@@ -87,8 +87,8 @@ pub async fn exec(
         &Vec::new(),
         // None,
         None,
-    )
-    .await;
+    );
+
     let mut download_counter = 1;
 
     if bos_templates.is_empty() {

@@ -85,7 +85,7 @@ pub async fn exec(
                 &hsm_member_string,
             )
             .await
-            .unwrap()
+            // .unwrap()
             /* hsm::hw_inventory::hw_component::http_client::get(
                 &shasta_token_string,
                 &shasta_base_url_string,
@@ -100,11 +100,15 @@ pub async fn exec(
     println!();
 
     while let Some(message) = tasks.join_next().await {
-        if let Ok(node_hw_inventory) = message {
+        match message.unwrap() {
+            Ok(node_hw_inventory) => hsm_summary.push(node_hw_inventory),
+            Err(e) => log::error!("Failed fetching node hw information: {}", e),
+        }
+        /* if let Ok(node_hw_inventory) = message {
             hsm_summary.push(node_hw_inventory);
         } else {
             log::error!("Failed fetching node hw information");
-        }
+        } */
     }
 
     let duration = start_total.elapsed();

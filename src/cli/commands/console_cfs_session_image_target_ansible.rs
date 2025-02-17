@@ -21,7 +21,7 @@ pub async fn exec(
     cfs_session_name: &str,
     k8s: &K8sDetails,
 ) {
-    let mut cfs_session_value_vec = cfs::session::get(
+    let mut cfs_session_value_vec = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -42,7 +42,11 @@ pub async fn exec(
         hsm_group_name_vec,
         None,
     )
-    .await;
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("ERROR - {}", e);
+        std::process::exit(1);
+    });
 
     if cfs_session_value_vec.is_empty() {
         eprintln!("No CFS session found. Exit",);

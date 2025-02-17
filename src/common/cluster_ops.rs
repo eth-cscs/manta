@@ -41,7 +41,7 @@ pub async fn get_details(
     hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(","); */
 
     // Get all CFS sessions
-    let mut cfs_sessions_value_vec = cfs::session::get(
+    let mut cfs_sessions_value_vec = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -62,7 +62,11 @@ pub async fn get_details(
         &[hsm_group_name.to_string()],
         None,
     )
-    .await;
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("ERROR - {}", e);
+        std::process::exit(1);
+    });
 
     // let most_recent_cfs_session;
     let cfs_configuration;

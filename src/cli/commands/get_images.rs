@@ -31,7 +31,11 @@ pub async fn exec(
             hsm_group_name_vec,
             limit_number,
         )
-        .await;
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - {}", e);
+            std::process::exit(1);
+        });
 
     log::debug!("Image list already filtered:\n{:#?}", image_detail_vec);
 

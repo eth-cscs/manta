@@ -143,7 +143,11 @@ pub async fn exec(
         &target_hsm_group_vec,
         None,
     )
-    .await;
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("ERROR - {}", e);
+        std::process::exit(1);
+    });
 
     log::info!("Deleting session '{}'", cfs_session_name);
 

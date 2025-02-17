@@ -39,8 +39,7 @@ pub async fn exec(
         hsm_group_name_vec,
         hsm_member_vec,
         limit_number_opt,
-    )
-    .await;
+    );
 
     if bos_sessiontemplate_vec.is_empty() {
         println!("No BOS template found!");

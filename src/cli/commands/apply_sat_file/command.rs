@@ -134,7 +134,53 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    // GET DATA
+    // Get K8s secrets
+    let shasta_k8s_secrets = match &k8s.authentication {
+        common::config_ops::K8sAuth::Native {
+            certificate_authority_data,
+            client_certificate_data,
+            client_key_data,
+        } => {
+            serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+        }
+        common::config_ops::K8sAuth::Vault {
+            base_url,
+            secret_path,
+            role_id,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+    };
+
+    mesa::commands::apply_sat_file::command::exec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        vault_base_url,
+        vault_secret_path,
+        vault_role_id,
+        k8s_api_url,
+        shasta_k8s_secrets,
+        sat_file_content,
+        sat_template_file_yaml,
+        hsm_group_param_opt,
+        hsm_group_available_vec,
+        ansible_verbosity_opt,
+        ansible_passthrough_opt,
+        gitea_base_url,
+        gitea_token,
+        do_not_reboot,
+        watch_logs,
+        image_only,
+        session_template_only,
+        debug_on_failure,
+        dry_run,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    });
+
+    /* // GET DATA
     //
     // Get data from SAT YAML file
     //
@@ -419,7 +465,7 @@ pub async fn exec(
             dry_run,
         )
         .await;
-    }
+    } */
 
     // Run/process Post-hook
     if posthook.is_some() {
