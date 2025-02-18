@@ -1,13 +1,39 @@
 use crate::backend_dispatcher::StaticBackendDispatcher;
-use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
-use std::collections::HashMap;
-
-use crate::cli::commands::apply_hw_cluster_pin::utils::{
-    calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
-    resolve_hw_description_to_xnames,
-};
+use backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPin;
 
 pub async fn exec(
+    backend: StaticBackendDispatcher,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    target_hsm_group_name: &str,
+    parent_hsm_group_name: &str,
+    pattern: &str,
+    nodryrun: bool,
+    create_target_hsm_group: bool,
+    delete_empty_parent_hsm_group: bool,
+) {
+    let apply_hw_cluster_pin_rslt = backend
+        .apply_hw_cluster_pin(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            target_hsm_group_name,
+            parent_hsm_group_name,
+            pattern,
+            nodryrun,
+            create_target_hsm_group,
+            delete_empty_parent_hsm_group,
+        )
+        .await;
+
+    apply_hw_cluster_pin_rslt.unwrap_or_else(|e| {
+        eprintln!("ERROR - Could not apply hardware cluster pin. Reason:\n{e}\nExit");
+        std::process::exit(1);
+    });
+}
+
+/* pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     target_hsm_group_name: &str,
@@ -85,12 +111,12 @@ pub async fn exec(
             if create_target_hsm_group {
                 log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    let group = Group{ 
-                        label: target_hsm_group_name.to_string(), 
-                        description: None, 
-                        tags: None, 
-                        members: None, 
-                        exclusive_group: Some("false".to_string()) 
+                    let group = Group{
+                        label: target_hsm_group_name.to_string(),
+                        description: None,
+                        tags: None,
+                        members: None,
+                        exclusive_group: Some("false".to_string())
                     };
 
                     let _ = backend.add_group(shasta_token, group)
@@ -371,5 +397,4 @@ pub async fn exec(
         "{}",
         serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
     );
-}
-
+} */

@@ -1332,8 +1332,10 @@ pub async fn process_cli(
                         .await;
                     } else {
                         apply_hw_cluster_pin::command::exec(
-                            &backend,
+                            backend,
                             &shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
                             target_hsm_group_vec.first().unwrap(),
                             parent_hsm_group_vec.first().unwrap(),
                             cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),

@@ -13,12 +13,14 @@ use backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
     interfaces::{
+        apply_hw_cluster_pin::ApplyHwClusterPin,
         bss::BootParametersTrait,
         cfs::CfsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
         },
         pcs::PCSTrait,
+        sat::SatTrait,
     },
     types::{
         cfs::{
@@ -899,6 +901,137 @@ impl CfsTrait for StaticBackendDispatcher {
             OCHAMI(b) => {
                 b.get_session_logs_stream_by_xname(auth_token, xname, k8s_api_url, k8s)
                     .await
+            }
+        }
+    }
+}
+
+impl SatTrait for StaticBackendDispatcher {
+    async fn apply_sat_file(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        vault_base_url: &str,
+        vault_secret_path: &str,
+        vault_role_id: &str,
+        k8s_api_url: &str,
+        shasta_k8s_secrets: serde_json::Value,
+        sat_file_content: String,
+        sat_template_file_yaml: serde_yaml::Value,
+        hsm_group_param_opt: Option<&String>,
+        hsm_group_available_vec: &Vec<String>,
+        ansible_verbosity_opt: Option<u8>,
+        ansible_passthrough_opt: Option<&String>,
+        gitea_base_url: &str,
+        gitea_token: &str,
+        do_not_reboot: bool,
+        watch_logs: bool,
+        image_only: bool,
+        session_template_only: bool,
+        debug_on_failure: bool,
+        dry_run: bool,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.apply_sat_file(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    vault_base_url,
+                    vault_secret_path,
+                    vault_role_id,
+                    k8s_api_url,
+                    shasta_k8s_secrets,
+                    sat_file_content,
+                    sat_template_file_yaml,
+                    hsm_group_param_opt,
+                    hsm_group_available_vec,
+                    ansible_verbosity_opt,
+                    ansible_passthrough_opt,
+                    gitea_base_url,
+                    gitea_token,
+                    do_not_reboot,
+                    watch_logs,
+                    image_only,
+                    session_template_only,
+                    debug_on_failure,
+                    dry_run,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.apply_sat_file(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    vault_base_url,
+                    vault_secret_path,
+                    vault_role_id,
+                    k8s_api_url,
+                    shasta_k8s_secrets,
+                    sat_file_content,
+                    sat_template_file_yaml,
+                    hsm_group_param_opt,
+                    hsm_group_available_vec,
+                    ansible_verbosity_opt,
+                    ansible_passthrough_opt,
+                    gitea_base_url,
+                    gitea_token,
+                    do_not_reboot,
+                    watch_logs,
+                    image_only,
+                    session_template_only,
+                    debug_on_failure,
+                    dry_run,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl ApplyHwClusterPin for StaticBackendDispatcher {
+    async fn apply_hw_cluster_pin(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        target_hsm_group_name: &str,
+        parent_hsm_group_name: &str,
+        pattern: &str,
+        nodryrun: bool,
+        create_target_hsm_group: bool,
+        delete_empty_parent_hsm_group: bool,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.apply_hw_cluster_pin(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                    parent_hsm_group_name,
+                    pattern,
+                    nodryrun,
+                    create_target_hsm_group,
+                    delete_empty_parent_hsm_group,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.apply_hw_cluster_pin(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    target_hsm_group_name,
+                    parent_hsm_group_name,
+                    pattern,
+                    nodryrun,
+                    create_target_hsm_group,
+                    delete_empty_parent_hsm_group,
+                )
+                .await
             }
         }
     }
