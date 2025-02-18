@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.68] - 2025-02-18
+
+### Features
+
+- Add new backend command 'apply_hw_cluster_pin'
+
 ## [1.54.1-beta.67] - 2025-02-17
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.67
 
 ### Refactor
 
