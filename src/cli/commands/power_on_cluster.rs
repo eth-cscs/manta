@@ -1,14 +1,10 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    common::jwt_ops::{self},
-    error::Error,
-    pcs,
-};
+use mesa::pcs;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{self, audit::Audit, kafka::Kafka},
+    common::{self, audit::Audit, jwt_ops, kafka::Kafka},
 };
 
 pub async fn exec(

@@ -1,9 +1,11 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use mesa::cfs::{
-    self,
+use backend_dispatcher::{
+    interfaces::{cfs::CfsTrait, hsm::group::GroupTrait},
+    types::cfs::{CfsConfigurationResponse, CfsSessionGetResponse},
+};
+/* use mesa::cfs::{
     configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse,
     session::http_client::v3::types::CfsSessionGetResponse,
-};
+}; */
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -40,7 +42,7 @@ pub async fn get_details(
     /* let hsm_group_members: String =
     hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(","); */
 
-    // Get all CFS sessions
+    /* // Get all CFS sessions
     let mut cfs_sessions_value_vec = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
@@ -66,7 +68,24 @@ pub async fn get_details(
     .unwrap_or_else(|e| {
         eprintln!("ERROR - {}", e);
         std::process::exit(1);
-    });
+    }); */
+
+    let cfs_sessions_value_vec = backend
+        .get_and_filter_sessions(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            Some(vec![hsm_group_name.to_string()]),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
 
     // let most_recent_cfs_session;
     let cfs_configuration;
@@ -74,7 +93,7 @@ pub async fn get_details(
     for cfs_session_value in cfs_sessions_value_vec {
         // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
         // members
-        let cfs_configuration_vec = cfs::configuration::http_client::v3::get(
+        /* let cfs_configuration_vec = cfs::configuration::http_client::v3::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -89,7 +108,23 @@ pub async fn get_details(
             ),
         )
         .await
-        .unwrap();
+        .unwrap(); */
+        let configuration_name_opt = cfs_session_value
+            .configuration
+            .as_ref()
+            .unwrap()
+            .name
+            .as_ref();
+
+        let cfs_configuration_vec = backend
+            .get_configuration(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                configuration_name_opt,
+            )
+            .await
+            .unwrap();
 
         cfs_configuration = cfs_configuration_vec.first().unwrap();
 

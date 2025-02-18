@@ -1,9 +1,12 @@
+use backend_dispatcher::{
+    interfaces::{cfs::CfsTrait, ims::ImsTrait},
+    types::cfs::CfsSessionGetResponse,
+};
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::{
-    cfs::{self, session::http_client::v3::types::CfsSessionGetResponse},
-    ims,
-};
+// use mesa::cfs::{self, session::http_client::v3::types::CfsSessionGetResponse};
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 pub fn cfs_session_struct_to_vec(
     cfs_session: backend_dispatcher::types::cfs::CfsSessionGetResponse,
@@ -153,13 +156,14 @@ pub fn get_table_struct(
 }
 
 pub async fn get_image_id_related_to_cfs_configuration(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    let cfs_sessions_list = cfs::session::get_and_sort(
+    /* let cfs_sessions_list = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -170,9 +174,26 @@ pub async fn get_image_id_related_to_cfs_configuration(
         Some(true),
     )
     .await
-    .unwrap();
+    .unwrap(); */
+    let cfs_sessions_list = backend
+        .get_and_filter_sessions(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(true),
+        )
+        .await
+        .unwrap();
 
     get_image_id_from_cfs_session_list(
+        backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -183,6 +204,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
 }
 
 pub async fn get_image_id_from_cfs_session_list(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -215,7 +237,7 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        if ims::image::http_client::get(
+        /* if ims::image::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -224,6 +246,24 @@ pub async fn get_image_id_from_cfs_session_list(
         .await
         .is_ok()
         {
+            log::info!(
+                "Found the image ID '{}' related to CFS sesison '{}'",
+                image_id,
+                cfs_session_name,
+            );
+
+            return Some(image_id.to_string()); // from https://users.rust-lang.org/t/convert-option-str-to-option-string/20533/2
+        }; */
+        let image_vec_rslt = backend
+            .get_images(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                Some(&image_id),
+            )
+            .await;
+
+        if image_vec_rslt.is_ok() {
             log::info!(
                 "Found the image ID '{}' related to CFS sesison '{}'",
                 image_id,

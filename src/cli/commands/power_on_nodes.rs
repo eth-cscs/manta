@@ -6,11 +6,10 @@ use backend_dispatcher::{
     types::Component,
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::common::jwt_ops;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{self, audit::Audit, kafka::Kafka},
+    common::{self, audit::Audit, jwt_ops, kafka::Kafka},
 };
 
 pub async fn exec(

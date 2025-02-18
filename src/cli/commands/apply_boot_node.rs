@@ -99,6 +99,7 @@ pub async fn exec(
                 new_boot_image_configuration
             );
             let new_boot_image_id_opt = get_image_id_from_cfs_configuration_name(
+                backend,
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

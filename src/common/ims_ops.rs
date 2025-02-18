@@ -1,6 +1,10 @@
-use crate::common::{bos_sessiontemplate_utils, cfs_session_utils};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{bos_sessiontemplate_utils, cfs_session_utils},
+};
 
 pub async fn get_image_id_from_cfs_configuration_name(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -15,6 +19,7 @@ pub async fn get_image_id_from_cfs_configuration_name(
     // configuration
 
     let image_id_opt = cfs_session_utils::get_image_id_related_to_cfs_configuration(
+        backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

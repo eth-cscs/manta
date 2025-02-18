@@ -1,11 +1,15 @@
 use std::path::PathBuf;
 
-use backend_dispatcher::interfaces::cfs::CfsTrait;
+use backend_dispatcher::{
+    error::Error,
+    interfaces::{apply_session::ApplySessionTrait, cfs::CfsTrait},
+    types::cfs::CfsSessionPostRequest,
+};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::{
-    cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
-    common::{jwt_ops, kubernetes},
-    error::Error,
+    // cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
+    cfs,
+    common::kubernetes,
     hsm,
     node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
 };
@@ -16,7 +20,7 @@ use substring::Substring;
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        self, audit::Audit, config_ops::K8sDetails, kafka::Kafka, local_git_repo,
+        audit::Audit, config_ops::K8sDetails, jwt_ops, kafka::Kafka, local_git_repo,
         vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },
 };
@@ -24,7 +28,7 @@ use crate::{
 /// Creates a CFS session target dynamic
 /// Returns a tuple like (<cfs configuration name>, <cfs session name>)
 pub async fn exec(
-    backend: &StaticBackendDispatcher,
+    backend: StaticBackendDispatcher,
     gitea_token: &str,
     gitea_base_url: &str,
     shasta_token: &str,
@@ -41,8 +45,8 @@ pub async fn exec(
     watch_logs: bool,
     kafka_audit: &Kafka,
     k8s: &K8sDetails,
-) -> (String, String) {
-    /* let included: HashSet<String>;
+) -> Result<(String, String), Error> {
+    /* /* let included: HashSet<String>;
     let excluded: HashSet<String>; */
     let mut xname_list: Vec<&str>;
     // Check andible limit matches the nodes in hsm_group
@@ -231,7 +235,102 @@ pub async fn exec(
             println!("{}", line);
         } */ */
     }
-    // * End Create CFS session
+    // * End Create CFS session */
+
+    let (cfs_configuration_name, cfs_session_name) = backend
+        .apply_session(
+            gitea_token,
+            gitea_base_url,
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            k8s_api_url,
+            cfs_conf_sess_name,
+            playbook_yaml_file_name_opt,
+            hsm_group,
+            repos_paths,
+            ansible_limit,
+            ansible_verbosity,
+            ansible_passthrough,
+            watch_logs,
+            /* kafka_audit,
+            k8s, */
+        )
+        .await?;
+
+    // FIXME: refactor becase this code is duplicated in command `manta apply sat-file` and also in
+    // `manta logs`
+    if watch_logs {
+        log::info!("Fetching logs ...");
+        /* let mut logs_stream = cli::commands::log::get_cfs_session_container_ansible_logs_stream(
+            vault_base_url,
+            vault_secret_path,
+            vault_role_id,
+            &cfs_session.name,
+            None,
+            k8s_api_url,
+        )
+        .await
+        .unwrap(); */
+
+        /* let shasta_k8s_secrets_rslt =
+            fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await;
+
+        let shasta_k8s_secrets = match shasta_k8s_secrets_rslt {
+            Ok(value) => value,
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }; */
+
+        let shasta_k8s_secrets = match &k8s.authentication {
+            crate::common::config_ops::K8sAuth::Native {
+                certificate_authority_data,
+                client_certificate_data,
+                client_key_data,
+            } => {
+                serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+            }
+            crate::common::config_ops::K8sAuth::Vault {
+                base_url,
+                secret_path,
+                role_id,
+            } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+        };
+
+        let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
+            .await
+            .unwrap();
+
+        kubernetes::print_cfs_session_logs(client, &cfs_session_name)
+            .await
+            .unwrap();
+        /* // Get CFS session logs
+        let logs_stream_rslt = kubernetes::get_cfs_session_init_container_git_clone_logs_stream(
+            client.clone(),
+            &cfs_session_name,
+        )
+        .await;
+
+        match logs_stream_rslt {
+            Ok(mut logs_stream) => {
+                while let Some(line) = logs_stream.try_next().await.unwrap() {
+                    println!("{}", line);
+                }
+            }
+            Err(error_msg) => log::error!("{}", error_msg),
+        }
+
+        let _ =
+            kubernetes::print_cfs_session_container_ansible_logs_stream(client, &cfs_session_name)
+                .await
+                .unwrap();
+
+        /* while let Some(line) = logs_stream.try_next().await.unwrap() {
+            println!("{}", line);
+        } */ */
+    }
 
     // Audit
     let username = jwt_ops::get_name(shasta_token).unwrap();
@@ -248,10 +347,10 @@ pub async fn exec(
     }
     // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Apply session", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap());
 
-    (cfs_configuration_name, cfs_session_name)
+    Ok((cfs_configuration_name, cfs_session_name))
 }
 
-pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
+/* pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     backend: &StaticBackendDispatcher,
     cfs_configuration_name: &str,
     playbook_yaml_file_name_opt: Option<&String>,
@@ -266,7 +365,7 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     ansible_passthrough: Option<String>,
 ) -> Result<String, Error> {
     // Get ALL sessions
-    let cfs_sessions = cfs::session::get_and_sort(
+    /* let cfs_sessions = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -276,7 +375,23 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         None,
         None,
     )
-    .await?;
+    .await?; */
+    let cfs_sessions = backend
+        .get_sessions(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
 
     // FIXME: things to fix:
     //  - extend the list of nodes checked being modified byt also including those in CFS sessions
@@ -614,8 +729,11 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
         None,
     );
 
-    let cfs_session_resp =
-        cfs::session::post(shasta_token, shasta_base_url, shasta_root_cert, &session).await;
+    /* let cfs_session_resp =
+    cfs::session::post(shasta_token, shasta_base_url, shasta_root_cert, &session).await; */
+    let cfs_session_resp = backend
+        .post_session(shasta_token, shasta_base_url, shasta_root_cert, &session)
+        .await;
 
     let cfs_session_name = match cfs_session_resp {
         Ok(_) => cfs_session_resp.as_ref().unwrap().name.as_ref().unwrap(),
@@ -626,4 +744,4 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     };
 
     Ok(String::from(cfs_session_name))
-}
+} */

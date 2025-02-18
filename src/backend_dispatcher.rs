@@ -1,4 +1,4 @@
-use std::{collections::HashMap, pin::Pin};
+use std::{collections::HashMap, path::PathBuf, pin::Pin};
 
 /// This is the static backend dispatcher
 /// To add a new backend:
@@ -14,20 +14,23 @@ use backend_dispatcher::{
     error::Error,
     interfaces::{
         apply_hw_cluster_pin::ApplyHwClusterPin,
+        apply_session::ApplySessionTrait,
         bss::BootParametersTrait,
         cfs::CfsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
         },
+        ims::ImsTrait,
         pcs::PCSTrait,
         sat::SatTrait,
     },
     types::{
         cfs::{
             cfs_configuration_request::CfsConfigurationRequest, CfsConfigurationResponse,
-            CfsSessionGetResponse, Layer, LayerDetails,
+            CfsSessionGetResponse, CfsSessionPostRequest, Layer, LayerDetails,
         },
         ims::Image,
+        kafka::Kafka,
         BootParameters, BosSessionTemplate, Component, ComponentArrayPostArray, Group,
         HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
     },
@@ -500,6 +503,25 @@ impl BackendTrait for StaticBackendDispatcher {
 impl CfsTrait for StaticBackendDispatcher {
     type T = Pin<Box<dyn AsyncBufRead>>;
 
+    async fn post_session(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        session: &CfsSessionPostRequest,
+    ) -> Result<CfsSessionGetResponse, Error> {
+        match self {
+            CSM(b) => {
+                b.post_session(shasta_token, shasta_base_url, shasta_root_cert, session)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.post_session(shasta_token, shasta_base_url, shasta_root_cert, session)
+                    .await
+            }
+        }
+    }
+
     async fn get_sessions(
         &self,
         auth_token: &str,
@@ -565,6 +587,7 @@ impl CfsTrait for StaticBackendDispatcher {
         status_opt: Option<&String>,
         cfs_session_name_opt: Option<&String>,
         limit_number_opt: Option<&u8>,
+        is_succeded_opt: Option<bool>,
     ) -> Result<Vec<CfsSessionGetResponse>, Error> {
         match self {
             CSM(b) => {
@@ -579,6 +602,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     status_opt,
                     cfs_session_name_opt,
                     limit_number_opt,
+                    is_succeded_opt,
                 )
                 .await
             }
@@ -594,6 +618,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     status_opt,
                     cfs_session_name_opt,
                     limit_number_opt,
+                    is_succeded_opt,
                 )
                 .await
             }
@@ -1030,6 +1055,104 @@ impl ApplyHwClusterPin for StaticBackendDispatcher {
                     nodryrun,
                     create_target_hsm_group,
                     delete_empty_parent_hsm_group,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl ImsTrait for StaticBackendDispatcher {
+    async fn get_images(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        image_id_opt: Option<&str>,
+    ) -> Result<Vec<Image>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_images(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    image_id_opt,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_images(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    image_id_opt,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl ApplySessionTrait for StaticBackendDispatcher {
+    async fn apply_session(
+        &self,
+        gitea_token: &str,
+        gitea_base_url: &str,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        k8s_api_url: &str,
+        cfs_conf_sess_name: Option<&String>,
+        playbook_yaml_file_name_opt: Option<&String>,
+        hsm_group: Option<&String>,
+        repos_paths: Vec<PathBuf>,
+        ansible_limit: Option<String>,
+        ansible_verbosity: Option<String>,
+        ansible_passthrough: Option<String>,
+        watch_logs: bool,
+        /* kafka_audit: &Kafka,
+        k8s: &K8sDetails, */
+    ) -> Result<(String, String), Error> {
+        match self {
+            CSM(b) => {
+                b.apply_session(
+                    gitea_token,
+                    gitea_base_url,
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    k8s_api_url,
+                    cfs_conf_sess_name,
+                    playbook_yaml_file_name_opt,
+                    hsm_group,
+                    repos_paths,
+                    ansible_limit,
+                    ansible_verbosity,
+                    ansible_passthrough,
+                    watch_logs,
+                    /* kafka_audit,
+                    k8s, */
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.apply_session(
+                    gitea_token,
+                    gitea_base_url,
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    k8s_api_url,
+                    cfs_conf_sess_name,
+                    playbook_yaml_file_name_opt,
+                    hsm_group,
+                    repos_paths,
+                    ansible_limit,
+                    ansible_verbosity,
+                    ansible_passthrough,
+                    watch_logs,
+                    /* kafka_audit,
+                    k8s, */
                 )
                 .await
             }

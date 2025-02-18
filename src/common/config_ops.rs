@@ -5,10 +5,10 @@ use std::{
     path::PathBuf,
 };
 
+use backend_dispatcher::error::Error;
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use mesa::error::Error;
 use serde::{Deserialize, Serialize};
 
 use crate::common::kafka::Kafka;

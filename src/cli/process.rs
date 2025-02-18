@@ -1405,8 +1405,8 @@ pub async fn process_cli(
                     .get(&configuration.site.clone())
                     .unwrap();
 
-                apply_session::exec(
-                    &backend,
+                let apply_session_rslt = apply_session::exec(
+                    backend,
                     &gitea_token,
                     gitea_base_url,
                     &shasta_token,
@@ -1435,6 +1435,11 @@ pub async fn process_cli(
                     &site.k8s,
                 )
                 .await;
+
+                if let Err(e) = apply_session_rslt {
+                    eprintln!("ERROR - Could not apply session. Reason:\n{:#?}", e);
+                    std::process::exit(1);
+                }
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
