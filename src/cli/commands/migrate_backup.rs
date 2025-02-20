@@ -1,4 +1,5 @@
 use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
 use humansize::DECIMAL;
 use mesa::{bos, cfs, ims};
 use std::fs::File;
@@ -52,7 +53,27 @@ pub async fn exec(
         };
     }
 
-    let dest_path = Path::new(destination.unwrap());
+    let migrate_backup_rslt = backend
+        .migrate_backup(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            bos,
+            destination,
+        )
+        .await;
+
+    match migrate_backup_rslt {
+        Ok(_) => {
+            log::debug!("Migrate backup completed successfully.");
+        }
+        Err(e) => {
+            log::error!("Migrate backup failed. Error: {}", e);
+            exit(2);
+        }
+    }
+
+    /* let dest_path = Path::new(destination.unwrap());
     let bucket_name = "boot-images";
     let files2download = ["manifest.json", "initrd", "kernel", "rootfs"];
     let files2download_count = files2download.len() + 4; // manifest.json, initrd, kernel, rootfs, bos, cfs, hsm, ims
@@ -156,7 +177,7 @@ pub async fn exec(
         log::debug!("{:#?}", &hsm_group_json);
         let _hsmjson = serde_json::to_writer_pretty(&hsm_file, &hsm_group_json);
 
-        // CFS ------------------------------------------------------------------------------------
+    // CFS ------------------------------------------------------------------------------------
         let configuration_name = &bos_templates[0]
             .cfs
             .as_ref()
@@ -178,18 +199,18 @@ pub async fn exec(
         let cfs_file = File::create(&cfs_file_path).expect("cfs.json file could not be created.");
         println!(
             "Downloading CFS configuration {} to {} [{}/{}]",
-            // cn.clone().as_str(),
+    // cn.clone().as_str(),
             &configuration_name,
             &cfs_file_path.clone().to_string_lossy(),
             &download_counter,
             &files2download_count
         );
 
-        // Save to file only the first one returned, we don't expect other BOS templates in the array
+    // Save to file only the first one returned, we don't expect other BOS templates in the array
         let _cfsjson = serde_json::to_writer_pretty(&cfs_file, &cfs_configurations[0]);
         download_counter += 1;
 
-        // Image ----------------------------------------------------------------------------------
+    // Image ----------------------------------------------------------------------------------
         for boot_sets_value in bos_templates[0].boot_sets.as_ref().unwrap().values() {
             if let Some(path) = &boot_sets_value.path {
                 let image_id_related_to_bos_sessiontemplate = path
@@ -278,7 +299,7 @@ pub async fn exec(
                                     &src, error
                                 ),
                             };
-                        } // for file in files2download
+    } // for file in files2download
                         println!("\nDone, the following image bundle was generated:");
                         println!("\tBOS file: {}", &bos_file_path.to_string_lossy());
                         println!("\tCFS file: {}", &cfs_file_path.to_string_lossy());
@@ -293,18 +314,6 @@ pub async fn exec(
                             let src = image_id.clone() + "/" + file;
                             println!("\t\tfile: {}/{}", dest, src);
                         }
-                        if posthook.is_some() {
-                            println!("Running the post-hook {}", &posthook.unwrap());
-                            match crate::common::hooks::run_hook(posthook).await {
-                                Ok(_code) => {
-                                    log::debug!("Post-hook script completed ok. RT={}", _code)
-                                }
-                                Err(_error) => {
-                                    log::error!("{}", _error);
-                                    exit(2);
-                                }
-                            };
-                        }
                     }
                     Err(e) => {
                         panic!(
@@ -315,6 +324,18 @@ pub async fn exec(
                 };
             }
         }
+    } */
+
+    if posthook.is_some() {
+        println!("Running the post-hook {}", &posthook.unwrap());
+        match crate::common::hooks::run_hook(posthook).await {
+            Ok(_code) => {
+                log::debug!("Post-hook script completed ok. RT={}", _code)
+            }
+            Err(_error) => {
+                log::error!("{}", _error);
+                exit(2);
+            }
+        };
     }
-    std::process::exit(1);
 }

@@ -1,7 +1,10 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    interfaces::hsm::{
-        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+    interfaces::{
+        hsm::{
+            component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+        },
+        migrate_restore::MigrateRestoreTrait,
     },
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
@@ -257,8 +260,8 @@ pub async fn process_cli(
                     power_on_cluster::exec(
                         backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
                         target_hsm_group,
                         assume_yes,
                         output,
@@ -341,8 +344,8 @@ pub async fn process_cli(
                     power_off_cluster::exec(
                         &backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
                         target_hsm_group,
                         *force,
                         assume_yes,
@@ -429,8 +432,8 @@ pub async fn process_cli(
                     power_reset_cluster::exec(
                         backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
+                        /* shasta_base_url,
+                        shasta_root_cert, */
                         target_hsm_group,
                         *force,
                         assume_yes,
@@ -2008,7 +2011,7 @@ pub async fn process_cli(
                     let image_dir = cli_migrate_vcluster_restore.get_one::<String>("image-dir");
                     let prehook = cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
                     let posthook = cli_migrate_vcluster_restore.get_one::<String>("post-hook");
-                    commands::migrate_restore::exec(
+                    /* commands::migrate_restore::exec(
                         &backend,
                         &shasta_token,
                         shasta_base_url,
@@ -2021,7 +2024,19 @@ pub async fn process_cli(
                         prehook,
                         posthook,
                     )
-                    .await;
+                    .await; */
+                    backend
+                        .migrate_restore(
+                            &shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            bos_file,
+                            cfs_file,
+                            hsm_file,
+                            ims_file,
+                            image_dir,
+                        )
+                        .await?;
                 }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {

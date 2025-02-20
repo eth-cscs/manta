@@ -1,26 +1,12 @@
 use std::path::PathBuf;
 
-use backend_dispatcher::{
-    error::Error,
-    interfaces::{apply_session::ApplySessionTrait, cfs::CfsTrait},
-    types::cfs::CfsSessionPostRequest,
-};
-use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
-    // cfs::{self, session::http_client::v3::types::CfsSessionPostRequest},
-    cfs,
-    common::kubernetes,
-    hsm,
-    node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
-};
-
-use k8s_openapi::chrono;
-use substring::Substring;
+use backend_dispatcher::{error::Error, interfaces::apply_session::ApplySessionTrait};
+use mesa::common::kubernetes;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        audit::Audit, config_ops::K8sDetails, jwt_ops, kafka::Kafka, local_git_repo,
+        audit::Audit, config_ops::K8sDetails, jwt_ops, kafka::Kafka,
         vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },
 };

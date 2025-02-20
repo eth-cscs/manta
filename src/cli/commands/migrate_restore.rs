@@ -10,12 +10,12 @@ use mesa::cfs::configuration::http_client::v3::types::{
     cfs_configuration_request::CfsConfigurationRequest,
     cfs_configuration_response::CfsConfigurationResponse,
 };
-use mesa::ims::image::utils::get_by_name;
 use mesa::ims::image::{
     http_client::{
         patch,
         types::{Image, ImsImageRecord2Update, Link},
     },
+    utils::get_by_name,
     utils::get_fuzzy,
 };
 use mesa::ims::s3_client::BAR_FORMAT;
