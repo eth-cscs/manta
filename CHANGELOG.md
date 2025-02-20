@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.70] - 2025-02-20
+
+### Features
+
+- Migrate command 'migrate backup' to backend
+- Migrate command 'migrate restore' to backend
+
 ## [1.54.1-beta.69] - 2025-02-18
 
 ### Features
@@ -9,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Migrate command 'apply  session' to backend
 - Migrate command 'get images' to backend
 - Migrate command 'post session' to backend
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.69
 
 ## [1.54.1-beta.68] - 2025-02-18
 
