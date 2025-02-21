@@ -1,4 +1,4 @@
-use mesa::ims::image::r#struct::Image;
+use mesa::{cfs::session::mesa::r#struct::v3::CfsSessionGetResponse, ims::image::r#struct::Image};
 
 use crate::common;
 
@@ -33,6 +33,21 @@ pub async fn exec(
     .await
     .unwrap();
 
+    // Get/filter "GENERIC" CFS sessions
+    let generic_cfs_session_vec: Vec<CfsSessionGetResponse> = cfs_session_vec
+        .iter()
+        .filter(|cfs_session| {
+            cfs_session
+                .name
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains("generic")
+        })
+        .cloned()
+        .collect();
+
+    // Retain CFS sessions related to HSM groups
     if let Some(hsm_group_name_vec) = hsm_group_name_vec_opt {
         if !hsm_group_name_vec.is_empty() {
             mesa::cfs::session::mesa::utils::filter_by_hsm(
@@ -47,6 +62,7 @@ pub async fn exec(
         }
     }
 
+    // Retain CFS sessions related to XNAME
     if let Some(xname_vec) = xname_vec_opt {
         mesa::cfs::session::mesa::utils::filter_by_xname(
             shasta_token,
@@ -59,94 +75,39 @@ pub async fn exec(
         .await;
     }
 
+    // Merge CFS sessions with generic ones
+    cfs_session_vec.extend(generic_cfs_session_vec);
+
     if cfs_session_vec.is_empty() {
         println!("CFS session not found!");
         std::process::exit(0);
     }
 
+    // Validate images in CFS sessions exists in IMS
+    // NOTE: do we really care if image exists in IMS or not? we can have the image record
+    // in IMS but the file missing in S3, so this validation is not really useful and adds an extra
+    // HTTP call whichi is expensive from user's time perspective
     for cfs_session in cfs_session_vec.iter_mut() {
-        log::debug!("CFS session:\n{:#?}", cfs_session);
-
-        if cfs_session
-            .target
-            .as_ref()
-            .unwrap()
-            .definition
-            .as_ref()
-            .unwrap()
-            .eq("image")
-            && cfs_session
-                .status
-                .as_ref()
-                .unwrap()
-                .session
-                .as_ref()
-                .unwrap()
-                .succeeded
-                .as_ref()
-                .unwrap()
-                .eq("true")
-        {
-            log::info!(
-                "Find image ID related to CFS configuration {} in CFS session {}",
-                cfs_session
-                    .configuration
-                    .as_ref()
-                    .unwrap()
-                    .name
-                    .as_ref()
-                    .unwrap(),
-                cfs_session.name.as_ref().unwrap()
+        let cfs_session_name = cfs_session.name.as_ref().unwrap();
+        if cfs_session.is_target_def_image() && cfs_session.is_success() {
+            log::debug!(
+                "Check if Image ID/result_id related to CFS session '{}' exists in IMS",
+                cfs_session_name
             );
 
-            let new_image_id_opt = if cfs_session
-                .status
-                .as_ref()
-                .and_then(|status| {
-                    status.artifacts.as_ref().and_then(|artifacts| {
-                        artifacts
-                            .first()
-                            .and_then(|artifact| artifact.result_id.clone())
-                    })
-                })
-                .is_some()
+            let result_id = cfs_session.get_first_result_id().unwrap();
+
+            // Update cfs session result_id if image DOES NOT exists
+            if mesa::ims::image::mesa::http_client::get(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                // hsm_group_name_vec,
+                Some(&result_id),
+            )
+            .await
+            .is_err()
             {
-                let cfs_session_image_id = cfs_session
-                    .status
-                    .as_ref()
-                    .unwrap()
-                    .artifacts
-                    .as_ref()
-                    .unwrap()
-                    .first()
-                    .unwrap()
-                    .result_id
-                    .as_ref();
-
-                let new_image_vec_rslt: Result<Vec<Image>, _> =
-                    mesa::ims::image::mesa::http_client::get(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        // hsm_group_name_vec,
-                        cfs_session_image_id.map(|elem| elem.as_str()),
-                    )
-                    .await;
-
-                // if new_image_id_vec_rslt.is_ok() && new_image_id_vec_rslt.as_ref().unwrap().first().is_some()
-                if let Ok(Some(new_image)) = new_image_vec_rslt
-                    .as_ref()
-                    .map(|new_image_vec| new_image_vec.first())
-                {
-                    Some(new_image.clone().id.unwrap_or("".to_string()))
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if new_image_id_opt.is_some() {
                 cfs_session
                     .status
                     .clone()
@@ -156,7 +117,7 @@ pub async fn exec(
                     .first()
                     .unwrap()
                     .clone()
-                    .result_id = new_image_id_opt;
+                    .result_id = Some("Image missing in IMS".to_string())
             }
         }
     }
