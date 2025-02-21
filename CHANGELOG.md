@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.72] - 2025-02-21
+
+### Bug Fixes
+
+- Keep genericwa CFS sessions when filtering by hsm or xname
+
 ## [1.54.1-beta.71] - 2025-02-21
 
 ### Bug Fixes
 
 - Cargo.toml file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.71
 
 ## [1.54.1-beta.70] - 2025-02-20
 
