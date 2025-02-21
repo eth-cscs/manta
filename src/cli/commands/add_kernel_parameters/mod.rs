@@ -13,7 +13,7 @@ pub async fn exec(
     kernel_params: &str,
     xname_vec: Vec<String>,
     assume_yes: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     log::info!("Add kernel parameters");
@@ -79,19 +79,21 @@ pub async fn exec(
     }
 
     // Audit
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": format!("Add kernel parameters: {}", kernel_params)});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
+        // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {
@@ -105,7 +107,7 @@ pub async fn exec(
             true,
             assume_yes,
             "table",
-            kafka_audit,
+            kafka_audit_opt,
         )
         .await;
     }

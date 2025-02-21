@@ -15,7 +15,7 @@ pub async fn exec(
     is_regex: bool,
     hosts_string: &str,
     dryrun: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     // Convert user input to xname
     let mut xname_to_move_vec = common::node_ops::resolve_node_list_user_input_to_xname(
@@ -95,16 +95,18 @@ pub async fn exec(
     }
 
     // Audit
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "message": format!("add nodes to group: {}", target_hsm_name)});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
     }
 }

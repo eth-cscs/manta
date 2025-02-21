@@ -35,19 +35,6 @@ pub struct K8sDetails {
     pub authentication: K8sAuth,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Site {
-    pub backend: String,
-    pub socks5_proxy: Option<String>,
-    pub shasta_base_url: String,
-    pub k8s: K8sDetails,
-    pub k8s_api_url: String,
-    pub vault_base_url: String,
-    pub vault_secret_path: String,
-    pub vault_role_id: String,
-    pub root_ca_cert_file: String,
-}
-
 /* #[derive(Serialize, Deserialize, Debug)]
 pub struct Kafka {
     pub brokers: Vec<String>,
@@ -67,13 +54,26 @@ pub struct Audit {
 } */
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct Site {
+    pub backend: String,
+    pub socks5_proxy: Option<String>,
+    pub shasta_base_url: String,
+    pub k8s: Option<K8sDetails>,
+    pub k8s_api_url: Option<String>,
+    pub vault_base_url: Option<String>,
+    pub vault_secret_path: Option<String>,
+    pub vault_role_id: Option<String>,
+    pub root_ca_cert_file: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MantaConfiguration {
     pub log: String,
     pub site: String,
     pub parent_hsm_group: String,
     pub audit_file: String,
     pub sites: HashMap<String, Site>,
-    pub auditor: Auditor,
+    pub auditor: Option<Auditor>,
 }
 
 pub fn get_default_config_path() -> PathBuf {
@@ -317,26 +317,42 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
 
     let backend = backend_options[backend_selection].to_string();
 
+    // Broker is optional value
     let audit_kafka_brokers: String = Input::new()
         .with_prompt("Please type kafka broker to send audit logs")
         .default("kafka.o11y.cscs.ch:9095".to_string())
         .show_default(true)
         .interact_text()
-        .unwrap();
+        .unwrap_or_default();
 
-    let audit_kafka_topic: String = Input::new()
-        .with_prompt("Please type kafka topic to send audit logs")
-        .default("test-topic".to_string())
-        .show_default(true)
-        .interact_text()
-        .unwrap();
+    let audit_kafka_topic: String = if !audit_kafka_brokers.is_empty() {
+        Input::new()
+            .with_prompt("Please type kafka topic to send audit logs")
+            .default("test-topic".to_string())
+            .show_default(true)
+            .interact_text()
+            .unwrap_or_default()
+    } else {
+        "".to_string()
+    };
 
-    let kafka = Some(Kafka {
+    // If both kafka broker and topic are empty, then auditor is None
+    let auditor = if audit_kafka_brokers.is_empty() && audit_kafka_topic.is_empty() {
+        let kafka = Kafka {
+            brokers: vec![audit_kafka_brokers],
+            topic: audit_kafka_topic,
+        };
+
+        Some(Auditor { kafka })
+    } else {
+        None
+    };
+    /* let kafka = Some(Kafka {
         brokers: vec![audit_kafka_brokers],
         topic: audit_kafka_topic,
     });
 
-    let auditor = Auditor { kafka };
+    let auditor = Auditor { kafka }; */
 
     println!("Testing connectivity to CSM backend, please wait ...");
 
@@ -374,12 +390,12 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let site_details = Site {
         socks5_proxy,
         shasta_base_url,
-        k8s_api_url,
-        vault_base_url,
-        vault_secret_path,
-        vault_role_id,
+        k8s_api_url: Some(k8s_api_url),
+        vault_base_url: Some(vault_base_url),
+        vault_secret_path: Some(vault_secret_path),
+        vault_role_id: Some(vault_role_id),
         root_ca_cert_file,
-        k8s: k8s_details,
+        k8s: Some(k8s_details),
         backend,
     };
 

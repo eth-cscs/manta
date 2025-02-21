@@ -83,10 +83,17 @@ impl Audit for Kafka {
             .await;
 
         // This will be executed when the result is received.
-        log::info!(
-            "Delivery status for message received:\n{:?}",
-            delivery_status
-        );
+        match delivery_status {
+            Ok(_) => {
+                log::info!("Delivery status for message received");
+            }
+            Err(e) => {
+                return Err(anyhow::anyhow!(
+                    "Delivery status for message failed: {:?}",
+                    e.0
+                ));
+            }
+        }
 
         /* // This loop is non blocking: all messages will be sent one after the other, without waiting
         // for the results.

@@ -58,7 +58,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .strip_suffix("/apis")
         .unwrap_or(&shasta_base_url);
     // let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
-    let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
+    let shasta_api_url = match backend_tech.as_str() {
+        "csm" => shasta_barebone_url.to_owned() + "/apis",
+        "ochami" => shasta_barebone_url.to_owned(),
+        _ => {
+            eprintln!("ERROR - Invalid backend technology: {}", backend_tech);
+            std::process::exit(1);
+        }
+    };
+    // let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
     log::debug!("config - shasta_api_url:  {shasta_api_url}");
     // let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
     let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
@@ -68,19 +76,19 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .expect("ERROR - 'k8s_api_url' value missing in configuration file")
     .to_string(); */
     let k8s_api_url = &site_detail_value.k8s_api_url;
-    log::debug!("config - k8s_api_url:  {k8s_api_url}");
+    log::debug!("config - k8s_api_url:  {k8s_api_url:?}");
     /* let vault_base_url = site_detail_value
     .get("vault_base_url")
     .expect("ERROR - 'vault_base_url' value missing in configuration file")
     .to_string(); */
     let vault_base_url = &site_detail_value.vault_base_url;
-    log::debug!("config - vault_base_url:  {vault_base_url}");
+    log::debug!("config - vault_base_url:  {vault_base_url:?}");
     /* let vault_role_id = site_detail_value
     .get("vault_role_id")
     .expect("ERROR - 'vault_role_id' value missing in configuration file")
     .to_string(); */
     let vault_role_id = &site_detail_value.vault_role_id;
-    log::debug!("config - vault_role_id:  {vault_role_id}");
+    log::debug!("config - vault_role_id:  {vault_role_id:?}");
     /* let vault_secret_path = site_detail_value
     .get("vault_secret_path")
     .unwrap()
@@ -95,9 +103,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .clone()
     .into_table()
     .expect("kafka value must be a table"); */
-    let audit_kafka: Kafka = audit_detail
-        .kafka
-        .expect("kafka value missing in configuration file");
+    let audit_kafka_opt: Option<Kafka> = if audit_detail.is_some() {
+        Some(audit_detail.unwrap().kafka)
+    } else {
+        None
+    };
     /* let kafka_audit = Kafka {
         brokers: audit_kafka_detail_hashmap
             .get("brokers")
@@ -117,6 +127,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
     log::debug!("config - log_level:  {log_level}");
+
+    if audit_kafka_opt.is_none() {
+        log::warn!("config - Auditor not defined");
+    }
 
     let audit_file_path = if let Ok(audit_file) = settings.get_string("audit_file") {
         audit_file
@@ -181,13 +195,13 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         backend,
         &shasta_api_url,
         &shasta_root_cert,
-        vault_base_url,
-        vault_secret_path,
-        vault_role_id,
+        vault_base_url.as_ref(),
+        vault_secret_path.as_ref(),
+        vault_role_id.as_ref(),
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
-        k8s_api_url,
-        &audit_kafka,
+        k8s_api_url.as_ref(),
+        audit_kafka_opt.as_ref(),
         &settings,
         &configuration,
     )

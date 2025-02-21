@@ -12,7 +12,7 @@ pub async fn exec(
     kernel_params: &str,
     xname_vec: Vec<String>,
     assume_yes: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     println!("Delete kernel parameters");
@@ -139,7 +139,7 @@ pub async fn exec(
             true,
             assume_yes,
             "table",
-            kafka_audit,
+            kafka_audit_opt,
         )
         .await;
     }

@@ -5,7 +5,7 @@ use super::kafka::Kafka;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Auditor {
-    pub kafka: Option<Kafka>,
+    pub kafka: Kafka,
     // pub syslog: Option<Syslog>,
 }
 

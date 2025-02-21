@@ -184,11 +184,10 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
 }
 
 pub fn subcommand_get_group() -> Command {
-    Command::new("group")
+    Command::new("groups")
         // .visible_aliases(["g"])
-        .arg_required_else_help(true)
         .about("Get group details")
-        .arg(arg!(<VALUE> "Group name").required(true))
+        .arg(arg!(<VALUE> "Group name. Returns all groups if missing").required(false))
         .arg(
             arg!(-o --output <VALUE> "Output format")
                 .value_parser(["json", "table"])
@@ -306,13 +305,13 @@ pub fn subcommand_get_node_details() -> Command {
         .arg(arg!(<VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
 }
 
-pub fn subcommand_get_hsm_groups_details() -> Command {
+/* pub fn subcommand_get_hsm_groups_details() -> Command {
     Command::new("hsm-groups")
         // .visible_aliases(["h", "hg", "hsm", "hsmgrps"])
         .about("DEPRECATED - Please do not use this command.\nGet HSM groups details")
         .arg_required_else_help(true)
         .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-}
+} */
 
 pub fn subcommand_get_images() -> Command {
     Command::new("images")
@@ -349,7 +348,7 @@ pub fn subcommand_get() -> Command {
         .subcommand(subcommand_get_bos_template())
         .subcommand(subcommand_get_cluster_details())
         .subcommand(subcommand_get_node_details())
-        .subcommand(subcommand_get_hsm_groups_details())
+        // .subcommand(subcommand_get_hsm_groups_details())
         .subcommand(subcommand_get_images())
         .subcommand(subcommand_get_kernel_parameters())
 }
@@ -624,8 +623,8 @@ pub fn subcommand_add_group() -> Command {
                 .about("Add/Create new group")
                 .arg_required_else_help(true)
                 .arg(arg!(-l --label <VALUE> "Group name").required(true))
+                .arg(arg!(-d --description <VALUE> "Group description"))
                 .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
-                .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
                 .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                 .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
@@ -638,7 +637,7 @@ pub fn subcommand_add_node() -> Command {
         .arg(arg!(-i --id <VALUE> "Xname").required(true))
         .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
         .arg(
-            arg!(-H --hardware <FILE> "hardware")
+            arg!(-H --hardware <FILE> "File containing hardware information")
                 .required(true)
                 .value_parser(value_parser!(PathBuf)),
         )

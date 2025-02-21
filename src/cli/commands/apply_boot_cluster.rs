@@ -19,7 +19,7 @@ pub async fn exec(
     hsm_group_name: &String,
     assume_yes: bool,
     dry_run: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     let xname_vec = backend
         .get_member_vec_from_group_name_vec(shasta_token, vec![hsm_group_name.to_string()])
@@ -45,7 +45,7 @@ pub async fn exec(
         xname_vec.iter().map(|xname| xname.as_str()).collect(),
         assume_yes,
         dry_run,
-        kafka_audit,
+        kafka_audit_opt,
     )
     .await;
 }

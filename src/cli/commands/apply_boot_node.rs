@@ -23,7 +23,7 @@ pub async fn exec(
     xname_vec: Vec<&str>,
     assume_yes: bool,
     dry_run: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     let mut need_restart = false;
 
@@ -309,7 +309,7 @@ pub async fn exec(
                 true,
                 assume_yes,
                 "table",
-                kafka_audit,
+                kafka_audit_opt,
             )
             .await
         }

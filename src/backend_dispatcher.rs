@@ -138,6 +138,17 @@ impl GroupTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn get_groups(
+        &self,
+        auth_token: &str,
+        hsm_name_vec: Option<&[&str]>,
+    ) -> Result<Vec<Group>, Error> {
+        match self {
+            CSM(b) => b.get_groups(auth_token, hsm_name_vec).await,
+            OCHAMI(b) => b.get_groups(auth_token, hsm_name_vec).await,
+        }
+    }
+
     async fn delete_group(&self, auth_token: &str, hsm_group_label: &str) -> Result<Value, Error> {
         match self {
             CSM(b) => b.delete_group(auth_token, hsm_group_label).await,

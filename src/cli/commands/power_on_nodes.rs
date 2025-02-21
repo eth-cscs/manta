@@ -18,7 +18,7 @@ pub async fn exec(
     hosts_string: &str,
     assume_yes: bool,
     output: &str,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     // Convert user input to xname
     let xname_available_vec: Vec<String> = backend
@@ -128,17 +128,19 @@ pub async fn exec(
     common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
     // Audit
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": "power on"});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
+        // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
 }

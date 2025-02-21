@@ -19,7 +19,7 @@ pub async fn exec(
     target_hsm_group_vec: Vec<String>,
     cfs_session_name: &str,
     dry_run: &bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     let (
         _cfs_configuration_vec_opt,
@@ -266,16 +266,18 @@ pub async fn exec(
     println!("Session '{cfs_session_name}' has been deleted.");
 
     // Audit
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "message": format!("delete session '{}'", cfs_session_name)});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
     }
 }

@@ -49,13 +49,13 @@ pub async fn process_cli(
     backend: StaticBackendDispatcher,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    vault_base_url: &str,
-    vault_secret_path: &str,
-    vault_role_id: &str,
+    vault_base_url: Option<&String>,
+    vault_secret_path: Option<&String>,
+    vault_role_id: Option<&String>,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
-    k8s_api_url: &str,
-    kafka_audit: &Kafka,
+    k8s_api_url: Option<&String>,
+    kafka_audit_opt: Option<&Kafka>,
     settings: &Config,
     configuration: &MantaConfiguration,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -265,7 +265,7 @@ pub async fn process_cli(
                         target_hsm_group,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
@@ -300,7 +300,7 @@ pub async fn process_cli(
                         xname_requested,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 }
@@ -350,7 +350,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
@@ -387,7 +387,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 }
@@ -438,7 +438,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 } else if let Some(cli_power_reset_node) =
@@ -485,7 +485,7 @@ pub async fn process_cli(
                         *force,
                         assume_yes,
                         output,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 }
@@ -511,8 +511,6 @@ pub async fn process_cli(
 
                 let hw_inventory_value: serde_json::Value =
                     serde_json::from_reader(reader).unwrap();
-
-                println!("DEBUG - hw inventory:\n{:#?}", hw_inventory_value);
 
                 // let hw_inventory: HWInventoryList = serde_json::from_reader(reader).unwrap();
                 let hw_inventory: HWInventoryByLocationList =
@@ -617,9 +615,9 @@ pub async fn process_cli(
                     .get_one::<String>("label")
                     .expect("ERROR - 'label' argument is mandatory");
 
-                let node_expression: Option<&String> = cli_add_group.get_one::<String>("nodes");
+                let description = cli_add_group.get_one::<String>("description");
 
-                let is_regex = cli_add_group.get_flag("regex");
+                let node_expression: Option<&String> = cli_add_group.get_one::<String>("nodes");
 
                 let assume_yes: bool = cli_add_group.get_flag("assume-yes");
 
@@ -646,11 +644,11 @@ pub async fn process_cli(
                     backend,
                     &shasta_token,
                     label,
+                    description,
                     node_expression,
-                    is_regex,
                     assume_yes,
                     dryrun,
-                    kafka_audit,
+                    kafka_audit_opt,
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) =
@@ -773,7 +771,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
-                    kafka_audit,
+                    kafka_audit_opt,
                 )
                 .await;
 
@@ -783,7 +781,7 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
-            if let Some(cli_get_group) = cli_get.subcommand_matches("group") {
+            if let Some(cli_get_group) = cli_get.subcommand_matches("groups") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let group_name_arg_opt = cli_get_group.get_one::<String>("VALUE");
@@ -800,15 +798,20 @@ pub async fn process_cli(
                     .get_one::<String>("output")
                     .expect("ERROR - 'output' argument is mandatory");
 
+                let hsm_group_vec: Vec<&str> = target_hsm_group_vec
+                    .iter()
+                    .map(|x| &**x)
+                    .collect::<Vec<&str>>();
+
                 commands::get_group::exec(
                     &backend,
                     &shasta_token,
                     /* shasta_base_url,
                     shasta_root_cert, */
-                    target_hsm_group_vec.first().unwrap(),
+                    Some(hsm_group_vec.as_slice()),
                     output,
                 )
-                .await;
+                .await?;
             } else if let Some(cli_get_hw_configuration) =
                 cli_get.subcommand_matches("hw-component")
             {
@@ -896,9 +899,9 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before calling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
+                    vault_base_url.expect("ERROR - vault base url is mandatory"),
+                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                    vault_role_id.expect("ERROR - vault role id is mandatory"),
                 )
                 .await
                 .unwrap();
@@ -1142,37 +1145,37 @@ pub async fn process_cli(
                     is_regex,
                 )
                 .await;
-            } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
-                log::warn!("Deprecated - Do not use this command.");
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
-                let shasta_token = backend.get_api_token(&site_name).await?;
+            /* } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
+            log::warn!("Deprecated - Do not use this command.");
+            /* let shasta_token = &authentication::get_api_token(
+                shasta_base_url,
+                shasta_root_cert,
+                keycloak_base_url,
+                &site_name,
+            )
+            .await?; */
+            let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
+            let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
 
-                let target_hsm_group_vec = get_groups_available(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await?;
+            let target_hsm_group_vec = get_groups_available(
+                &backend,
+                &shasta_token,
+                /* shasta_base_url,
+                shasta_root_cert, */
+                hsm_group_name_arg_opt,
+                settings_hsm_group_name_opt,
+            )
+            .await?;
 
-                get_hsm::exec(
-                    &backend,
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_vec.first().unwrap(),
-                )
-                .await;
+            get_hsm::exec(
+                &backend,
+                &shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                target_hsm_group_vec.first().unwrap(),
+            )
+            .await; */
             } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
@@ -1361,9 +1364,9 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
+                    vault_base_url.expect("ERROR - vault base url is mandatory"),
+                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                    vault_role_id.expect("ERROR - vault role id is mandatory"),
                 )
                 .await
                 .unwrap();
@@ -1415,7 +1418,7 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    k8s_api_url,
+                    k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                     cfs_conf_sess_name_opt,
                     playbook_file_name_opt,
                     hsm_group_name_arg_opt,
@@ -1434,8 +1437,12 @@ pub async fn process_cli(
                     *cli_apply_session
                         .get_one::<bool>("watch-logs")
                         .unwrap_or(&false),
-                    kafka_audit,
-                    &site.k8s,
+                    kafka_audit_opt,
+                    &site
+                        .k8s
+                        .as_ref()
+                        .expect("ERROR - k8s section not found in configuration"), // FIXME:
+                                                                                   // refactor this, we can't check configuration here and should be done ealier
                 )
                 .await;
 
@@ -1455,9 +1462,9 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
+                    vault_base_url.expect("ERROR - vault base url is mandatory"),
+                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                    vault_role_id.expect("ERROR - vault role id is mandatory"),
                 )
                 .await
                 .unwrap();
@@ -1544,10 +1551,10 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    vault_base_url,
-                    vault_secret_path,
-                    vault_role_id,
-                    k8s_api_url,
+                    vault_base_url.expect("ERROR - vault_base_url is mandatory"),
+                    vault_secret_path.expect("ERROR - vault_secret_path is mandatory"),
+                    vault_role_id.expect("ERROR - vault_role_id is mandatory"),
+                    k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
                     sat_file_content,
                     cli_values_file_content_opt,
                     cli_value_vec_opt,
@@ -1566,7 +1573,10 @@ pub async fn process_cli(
                     true,
                     false,
                     assume_yes,
-                    &site.k8s, // settings_hsm_group_name_opt,
+                    &site
+                        .k8s
+                        .as_ref()
+                        .expect("ERROR - k8s section not found in configuration"), // FIXME:
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
@@ -1691,7 +1701,7 @@ pub async fn process_cli(
                         xname_vec,
                         assume_yes,
                         dry_run,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 } else if let Some(cli_apply_boot_cluster) =
@@ -1755,7 +1765,7 @@ pub async fn process_cli(
                         target_hsm_group_name,
                         assume_yes,
                         dry_run,
-                        kafka_audit,
+                        kafka_audit_opt,
                     )
                     .await;
                 }
@@ -1794,10 +1804,13 @@ pub async fn process_cli(
                 &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                k8s_api_url,
+                k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                 &group_available_vec,
                 user_input,
-                &site.k8s, // settings_hsm_group_name_opt,
+                &site
+                    .k8s
+                    .as_ref()
+                    .expect("ERROR - k8s section not found in configuration"), // FIXME:
             )
             .await;
         } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
@@ -1829,7 +1842,10 @@ pub async fn process_cli(
                     shasta_root_cert,
                     // k8s_api_url,
                     cli_console_node.get_one::<String>("XNAME").unwrap(),
-                    &site.k8s,
+                    &site
+                        .k8s
+                        .as_ref()
+                        .expect("ERROR - k8s section not found in configuration"), // FIXME:
                 )
                 .await;
             } else if let Some(cli_console_target_ansible) =
@@ -1871,11 +1887,14 @@ pub async fn process_cli(
                     /* vault_base_url,
                     vault_secret_path,
                     vault_role_id, */
-                    k8s_api_url,
+                    k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                     cli_console_target_ansible
                         .get_one::<String>("SESSION_NAME")
                         .unwrap(),
-                    &site.k8s,
+                    &site
+                        .k8s
+                        .as_ref()
+                        .expect("ERROR - k8s section not found in configuration"), // FIXME:
                 )
                 .await;
             }
@@ -1969,7 +1988,7 @@ pub async fn process_cli(
                     xnames_string,
                     !dry_run,
                     false,
-                    kafka_audit,
+                    kafka_audit_opt,
                 )
                 .await;
             } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
@@ -2164,7 +2183,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
-                    kafka_audit,
+                    kafka_audit_opt,
                 )
                 .await;
 
@@ -2208,7 +2227,7 @@ pub async fn process_cli(
                     target_hsm_group_vec,
                     session_name,
                     dry_run,
-                    kafka_audit,
+                    kafka_audit_opt,
                 )
                 .await;
             } else if let Some(cli_delete_configurations) =
@@ -2347,9 +2366,9 @@ pub async fn process_cli(
 
             // FIXME: gitea auth token should be calculated before colling this function
             let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-                vault_base_url,
-                vault_secret_path,
-                vault_role_id,
+                vault_base_url.expect("ERROR - vault base url is mandatory"),
+                vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                vault_role_id.expect("ERROR - vault role id is mandatory"),
             )
             .await
             .unwrap();
@@ -2389,7 +2408,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
-                kafka_audit,
+                kafka_audit_opt,
             )
             .await;
         } else if let Some(cli_remove_nodes) =
@@ -2423,7 +2442,7 @@ pub async fn process_cli(
                 is_regex,
                 nodes,
                 dryrun,
-                kafka_audit,
+                kafka_audit_opt,
             )
             .await;
         }

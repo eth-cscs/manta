@@ -16,7 +16,7 @@ pub async fn exec(
     xname_requested_hostlist: &str,
     nodryrun: bool,
     create_hsm_group: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
@@ -134,16 +134,18 @@ pub async fn exec(
     }
 
     // Audit
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "message": format!("Migrate nodes from {:?} to {:?}", parent_hsm_name_vec, target_hsm_name_vec)});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
     }
 }

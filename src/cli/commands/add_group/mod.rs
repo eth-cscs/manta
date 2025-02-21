@@ -1,4 +1,5 @@
-use crate::common::jwt_ops;
+use crate::common::node_ops::resolve_node_list_user_input_to_xname_2;
+use crate::common::{self, jwt_ops};
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
@@ -6,6 +7,8 @@ use crate::{
         node_ops::resolve_node_list_user_input_to_xname,
     },
 };
+use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
+use backend_dispatcher::types::Component;
 use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::theme::ColorfulTheme;
 
@@ -13,15 +16,65 @@ pub async fn exec(
     backend: StaticBackendDispatcher,
     auth_token: &str,
     label: &str,
+    description: Option<&String>,
     node_expression: Option<&String>,
     assume_yes: bool,
-    is_regex: bool,
     dryrun: bool,
-    kafka_audit: &Kafka,
+    kafka_audit_opt: Option<&Kafka>,
 ) {
     let xname_vec_opt: Option<Vec<String>> = match node_expression {
         Some(node_expression) => {
+            // Convert user input to xname
+            let xname_available_vec: Vec<String> = backend
+                .get_group_available(auth_token)
+                .await
+                .unwrap_or_else(|e| {
+                    eprintln!(
+                        "ERROR - Could not get group list. Reason:\n{}",
+                        e.to_string()
+                    );
+                    std::process::exit(1);
+                })
+                .iter()
+                .flat_map(|group| group.get_members())
+                .collect();
+
+            let node_metadata_vec: Vec<Component> = backend
+                .get_all_nodes(auth_token, Some("true"))
+                .await
+                .unwrap()
+                .components
+                .unwrap_or_default()
+                .iter()
+                .filter(|&node_metadata| {
+                    xname_available_vec.contains(&node_metadata.id.as_ref().unwrap())
+                })
+                .cloned()
+                .collect();
+
+            let xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
+                node_expression,
+                false,
+                node_metadata_vec,
+            )
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!(
+                    "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+                    e
+                );
+                std::process::exit(1);
+            });
+
+            Some(xname_vec)
+        }
+        None => None,
+    };
+
+    /* let xname_vec_opt: Option<Vec<String>> = match node_expression {
+        Some(node_expression) => {
             let xname_vec: Vec<String> = resolve_node_list_user_input_to_xname(
+                // let xname_vec: Vec<String> = resolve_node_list_user_input_to_xname_2(
                 &backend,
                 auth_token,
                 node_expression,
@@ -36,7 +89,7 @@ pub async fn exec(
             Some(xname_vec)
         }
         None => None,
-    };
+    }; */
 
     // Validate user has access to the list of xnames requested
     if let Some(xname_vec) = &xname_vec_opt {
@@ -44,7 +97,13 @@ pub async fn exec(
     }
 
     // Create Group instance for http payload
-    let group = Group::new(label, xname_vec_opt.clone(), None, None);
+    let group = Group::new(
+        label,
+        description.cloned(),
+        xname_vec_opt.clone(),
+        None,
+        None,
+    );
 
     if !assume_yes {
         let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
@@ -81,16 +140,18 @@ pub async fn exec(
     }
 
     // Audit
-    let username = jwt_ops::get_name(auth_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(auth_token).unwrap();
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(auth_token).unwrap_or_default();
+        let user_id = jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
+        let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "message": format!("Create Group '{}'", label)});
 
-    let msg_data =
-        serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
 
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-        log::warn!("Failed producing messages: {}", e);
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
     }
 }
