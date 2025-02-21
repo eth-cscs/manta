@@ -117,6 +117,7 @@ pub async fn exec(
             &mut cfs_sessions_vec,
             &[&xname],
             Some(&1),
+            true,
         )
         .await;
     } else {
@@ -127,6 +128,7 @@ pub async fn exec(
             &mut cfs_sessions_vec,
             hsm_name_vec,
             Some(&1),
+            true
         )
         .await;
     }

@@ -33,20 +33,6 @@ pub async fn exec(
     .await
     .unwrap();
 
-    // Get/filter "GENERIC" CFS sessions
-    let generic_cfs_session_vec: Vec<CfsSessionGetResponse> = cfs_session_vec
-        .iter()
-        .filter(|cfs_session| {
-            cfs_session
-                .name
-                .as_ref()
-                .unwrap()
-                .to_lowercase()
-                .contains("generic")
-        })
-        .cloned()
-        .collect();
-
     // Retain CFS sessions related to HSM groups
     if let Some(hsm_group_name_vec) = hsm_group_name_vec_opt {
         if !hsm_group_name_vec.is_empty() {
@@ -57,6 +43,7 @@ pub async fn exec(
                 &mut cfs_session_vec,
                 &hsm_group_name_vec,
                 limit_number_opt,
+                true,
             )
             .await;
         }
@@ -71,12 +58,10 @@ pub async fn exec(
             &mut cfs_session_vec,
             xname_vec.as_slice(),
             limit_number_opt,
+            true,
         )
         .await;
     }
-
-    // Merge CFS sessions with generic ones
-    cfs_session_vec.extend(generic_cfs_session_vec);
 
     if cfs_session_vec.is_empty() {
         println!("CFS session not found!");
