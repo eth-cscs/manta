@@ -41,6 +41,7 @@ pub async fn exec(
         &mut cfs_session_value_vec,
         hsm_group_name_vec,
         None,
+        true,
     )
     .await
     .unwrap_or_else(|e| {

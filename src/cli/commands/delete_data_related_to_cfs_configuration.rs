@@ -211,6 +211,7 @@ pub async fn delete_data_related_cfs_configuration(
         &mut cfs_session_vec,
         &hsm_name_available_vec,
         None,
+        false,
     )
     .await
     .unwrap_or_else(|e| {
