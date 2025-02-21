@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.71] - 2025-02-21
+
+### Bug Fixes
+
+- Cargo.toml file
+
 ## [1.54.1-beta.70] - 2025-02-20
 
 ### Features
 
 - Migrate command 'migrate backup' to backend
 - Migrate command 'migrate restore' to backend
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.70
 
 ## [1.54.1-beta.69] - 2025-02-18
 
