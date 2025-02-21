@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.26] - 2025-02-21
+
+### Bug Fixes
+
+- Filter cfs session including generic sessions
+
 ## [1.54.25] - 2025-02-21
 
 ### Bug Fixes
 
 - 'get session' command ignoring "generic" sessions
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.25
 
 ## [1.54.24] - 2025-02-13
 
