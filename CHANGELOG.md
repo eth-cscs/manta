@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.74] - 2025-02-22
+
+### Bug Fixes
+
+- Mesa issue with get hsm group
+
 ## [1.54.1-beta.73] - 2025-02-22
 
 ### Bug Fixes
 
 - Function argument misalignment
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.73
 
 ## [1.54.1-beta.72] - 2025-02-21
 
