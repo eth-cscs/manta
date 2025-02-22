@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.73] - 2025-02-22
+
+### Bug Fixes
+
+- Function argument misalignment
+
 ## [1.54.1-beta.72] - 2025-02-21
 
 ### Bug Fixes
 
 - Keep genericwa CFS sessions when filtering by hsm or xname
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.72
 
 ## [1.54.1-beta.71] - 2025-02-21
 
