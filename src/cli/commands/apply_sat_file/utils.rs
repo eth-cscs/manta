@@ -1089,8 +1089,7 @@ pub async fn create_image_from_sat_file_serde_yaml(
                 &cfs_session,
                 watch_logs,
             )
-            .await
-            .unwrap();
+            .await?;
 
             if !cfs_session.is_success() {
                 eprintln!(

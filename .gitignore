@@ -4,3 +4,4 @@
 *.code-workspace
 *.log
 .idea/
+Cargo.lock
