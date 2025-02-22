@@ -259,7 +259,6 @@ pub async fn resolve_node_list_user_input_to_xname(
 
         requested_xname_vec
     } else {
-        dbg!("User input seems to be XNAME");
         log::debug!("User input seems to be XNAME");
         let all_xname_vec: Vec<String> = node_metadata
             .iter()
@@ -267,13 +266,9 @@ pub async fn resolve_node_list_user_input_to_xname(
             .collect::<Option<Vec<String>>>()
             .unwrap_or_default();
 
-        dbg!(&all_xname_vec);
-
         let xname_vec: Vec<String> =
             get_xname_list_from_xname_expression(user_input, &all_xname_vec)?;
         // get_curated_hsm_group_from_xname_regex(backend, shasta_token, user_input).await
-
-        dbg!(&xname_vec);
 
         xname_vec
     };

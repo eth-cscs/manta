@@ -1778,6 +1778,7 @@ pub async fn process_cli(
                 &site_name,
             )
             .await?; */
+
             let shasta_token = backend.get_api_token(&site_name).await?;
 
             // Get all HSM groups the user has access
