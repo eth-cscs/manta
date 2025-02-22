@@ -33,7 +33,7 @@ publish = false                                                         # cargo 
 
 backend-dispatcher = "0.1.29"
 ochami-rs = "0.1.31"
-mesa = "0.42.3-beta.56"
+mesa = "0.42.3-beta.58"
 
 # DEV
 
