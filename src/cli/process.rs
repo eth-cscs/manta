@@ -652,7 +652,7 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) =
-                cli_add.subcommand_matches("hw-component")
+                cli_add.subcommand_matches("hardwar fcarg")
             {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,

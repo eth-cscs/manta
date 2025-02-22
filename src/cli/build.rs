@@ -195,7 +195,7 @@ pub fn subcommand_get_group() -> Command {
         )
 }
 
-pub fn subcommand_get_hw_components() -> Command {
+pub fn subcommand_get_hw() -> Command {
     let command_get_hw_configuration_cluster = Command::new("cluster")
         // .visible_aliases(["c", "clstr"])
         .arg_required_else_help(true)
@@ -215,10 +215,10 @@ pub fn subcommand_get_hw_components() -> Command {
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
                 .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
 
-    Command::new("hw-component")
+    Command::new("hardware")
         // .visible_alias("hw")
         .arg_required_else_help(true)
-        .about("Get hardware components1 for a cluster or a node")
+        .about("Get hardware components for a cluster or a node")
         .subcommand(command_get_hw_configuration_cluster)
         .subcommand(command_get_hw_configuration_node)
 }
@@ -342,7 +342,7 @@ pub fn subcommand_get() -> Command {
         .arg_required_else_help(true)
         .about("Get information from CSM system")
         .subcommand(subcommand_get_group())
-        .subcommand(subcommand_get_hw_components())
+        .subcommand(subcommand_get_hw())
         .subcommand(subcommand_get_cfs_session())
         .subcommand(subcommand_get_cfs_configuration())
         .subcommand(subcommand_get_bos_template())
