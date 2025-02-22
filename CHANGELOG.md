@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.27] - 2025-02-22
+
+### Bug Fixes
+
+- Apply sat file fails while watching logs because it won't wait teardown stage or the CFS session to complete
+
 ## [1.54.26] - 2025-02-21
 
 ### Bug Fixes
 
 - Filter cfs session including generic sessions
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.26
 
 ## [1.54.25] - 2025-02-21
 
