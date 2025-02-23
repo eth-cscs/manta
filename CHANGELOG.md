@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.80] - 2025-02-23
+
+### Features
+
+- Delete group command can be force and bypass the orphan node validation
+
 ## [1.54.1-beta.79] - 2025-02-23
 
 ### Bug Fixes
 
 - Update github pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.79
 
 ## [1.54.1-beta.78] - 2025-02-23
 
