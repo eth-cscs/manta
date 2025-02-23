@@ -1,10 +1,7 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    interfaces::{
-        hsm::{
-            component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
-        },
-        migrate_restore::MigrateRestoreTrait,
+    interfaces::hsm::{
+        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
     },
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
@@ -25,7 +22,7 @@ use crate::{
     cli::commands::validate_local_repo,
     common::{
         authorization::{get_groups_available, validate_target_hsm_members},
-        config_ops::MantaConfiguration,
+        config::types::MantaConfiguration,
         kafka::Kafka,
     },
 };

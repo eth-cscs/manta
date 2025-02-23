@@ -6,7 +6,7 @@ use backend_dispatcher::{
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        self, config_ops::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
+        self, config::types::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },
 };
 
@@ -105,14 +105,14 @@ pub async fn exec(
 
     // Get K8s secrets
     let shasta_k8s_secrets = match &k8s.authentication {
-        common::config_ops::K8sAuth::Native {
+        common::config::types::K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
             client_key_data,
         } => {
             serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
         }
-        common::config_ops::K8sAuth::Vault {
+        common::config::types::K8sAuth::Vault {
             base_url,
             secret_path,
             role_id,

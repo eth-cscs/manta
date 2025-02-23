@@ -6,7 +6,7 @@ use mesa::common::kubernetes;
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        audit::Audit, config_ops::K8sDetails, jwt_ops, kafka::Kafka,
+        audit::Audit, config::types::K8sDetails, jwt_ops, kafka::Kafka,
         vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },
 };
@@ -271,14 +271,14 @@ pub async fn exec(
         }; */
 
         let shasta_k8s_secrets = match &k8s.authentication {
-            crate::common::config_ops::K8sAuth::Native {
+            crate::common::config::types::K8sAuth::Native {
                 certificate_authority_data,
                 client_certificate_data,
                 client_key_data,
             } => {
                 serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
             }
-            crate::common::config_ops::K8sAuth::Vault {
+            crate::common::config::types::K8sAuth::Vault {
                 base_url,
                 secret_path,
                 role_id,

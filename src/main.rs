@@ -3,7 +3,7 @@ mod cli;
 mod common;
 
 use backend_dispatcher::StaticBackendDispatcher;
-use common::{config_ops::MantaConfiguration, kafka::Kafka};
+use common::{config::types::MantaConfiguration, kafka::Kafka};
 
 use crate::common::log_ops;
 
@@ -19,7 +19,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     // #[cfg(feature = "dhat-heap")]
     // let _profiler = dhat::Profiler::new_heap();
 
-    let settings = common::config_ops::get_configuration().await;
+    let settings = common::config::get_configuration().await;
 
     let configuration: MantaConfiguration =
         settings.clone().try_deserialize().unwrap_or_else(|e| {
@@ -173,7 +173,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
 
-    let shasta_root_cert_rslt = common::config_ops::get_csm_root_cert_content(&root_ca_cert_file);
+    let shasta_root_cert_rslt = common::config::get_csm_root_cert_content(&root_ca_cert_file);
 
     let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
         shasta_root_cert

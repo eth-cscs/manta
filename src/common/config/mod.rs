@@ -1,3 +1,5 @@
+pub mod types;
+
 use std::{
     collections::HashMap,
     fs::File,
@@ -9,72 +11,9 @@ use backend_dispatcher::error::Error;
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
+use types::{K8sAuth, K8sDetails, MantaConfiguration, Site};
 
-use crate::common::kafka::Kafka;
-
-use super::audit::Auditor;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum K8sAuth {
-    Native {
-        certificate_authority_data: String,
-        client_certificate_data: String,
-        client_key_data: String,
-    },
-    Vault {
-        base_url: String,
-        secret_path: String,
-        role_id: String,
-    },
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct K8sDetails {
-    pub api_url: String,
-    pub authentication: K8sAuth,
-}
-
-/* #[derive(Serialize, Deserialize, Debug)]
-pub struct Kafka {
-    pub brokers: Vec<String>,
-    pub topic: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SysLog {
-    pub server: String,
-    pub port: u16,
-} */
-
-/* #[derive(Serialize, Deserialize, Debug)]
-pub struct Audit {
-    pub kafka: Option<Kafka>,
-    pub syslog: Option<SysLog>,
-} */
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Site {
-    pub backend: String,
-    pub socks5_proxy: Option<String>,
-    pub shasta_base_url: String,
-    pub k8s: Option<K8sDetails>,
-    pub k8s_api_url: Option<String>,
-    pub vault_base_url: Option<String>,
-    pub vault_secret_path: Option<String>,
-    pub vault_role_id: Option<String>,
-    pub root_ca_cert_file: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct MantaConfiguration {
-    pub log: String,
-    pub site: String,
-    pub parent_hsm_group: String,
-    pub audit_file: String,
-    pub sites: HashMap<String, Site>,
-    pub auditor: Option<Auditor>,
-}
+use crate::common::{audit::Auditor, kafka::Kafka};
 
 pub fn get_default_config_path() -> PathBuf {
     // XDG Base Directory Specification

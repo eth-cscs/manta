@@ -7,7 +7,7 @@ use tokio::{io::AsyncWriteExt, select};
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        self, config_ops::K8sDetails, terminal_ops,
+        self, config::types::K8sDetails, terminal_ops,
         vault::http_client::fetch_shasta_k8s_secrets_from_vault,
     },
 };
@@ -99,14 +99,14 @@ pub async fn connect_to_console(
     fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await?; */
 
     let shasta_k8s_secrets = match &k8s.authentication {
-        common::config_ops::K8sAuth::Native {
+        common::config::types::K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
             client_key_data,
         } => {
             serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
         }
-        common::config_ops::K8sAuth::Vault {
+        common::config::types::K8sAuth::Vault {
             base_url,
             secret_path,
             role_id,
