@@ -32,7 +32,6 @@ use backend_dispatcher::{
             CfsSessionGetResponse, CfsSessionPostRequest, Layer, LayerDetails,
         },
         ims::Image,
-        kafka::Kafka,
         BootParameters, BosSessionTemplate, Component, ComponentArrayPostArray, Group,
         HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
     },

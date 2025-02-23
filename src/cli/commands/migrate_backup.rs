@@ -1,13 +1,7 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
-use humansize::DECIMAL;
-use mesa::{bos, cfs, ims};
-use std::fs::File;
-use std::path::Path;
 use std::process::exit;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
-use crate::cli::commands::migrate_restore;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -34,14 +28,6 @@ pub async fn exec(
                 exit(2);
             }
         };
-        println!("Running the pre-hook {}", &prehook.unwrap());
-        match crate::common::hooks::run_hook(prehook).await {
-            Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
-            Err(_error) => {
-                log::error!("{}", _error);
-                exit(2);
-            }
-        };
     }
     if posthook.is_some() {
         match crate::common::hooks::check_hook_perms(posthook).await {
@@ -52,6 +38,15 @@ pub async fn exec(
             }
         };
     }
+
+    println!("Running the pre-hook {}", &prehook.unwrap());
+    match crate::common::hooks::run_hook(prehook).await {
+        Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+        Err(_error) => {
+            log::error!("{}", _error);
+            exit(2);
+        }
+    };
 
     let migrate_backup_rslt = backend
         .migrate_backup(

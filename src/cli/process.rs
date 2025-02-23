@@ -38,8 +38,8 @@ use super::commands::{
     config_unset_hsm, config_unset_parent_hsm, console_cfs_session_image_target_ansible,
     console_node, delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
     delete_group, delete_hw_component_cluster, delete_image, delete_kernel_parameters,
-    delete_sessions, get_cluster, get_configuration, get_hsm, get_hw_configuration_node,
-    get_images, get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
+    delete_sessions, get_cluster, get_configuration, get_hw_configuration_node, get_images,
+    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
 };
@@ -1541,7 +1541,6 @@ pub async fn process_cli(
                     .unwrap();
 
                 apply_sat_file::command::exec(
-                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -2025,7 +2024,8 @@ pub async fn process_cli(
                     let image_dir = cli_migrate_vcluster_restore.get_one::<String>("image-dir");
                     let prehook = cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
                     let posthook = cli_migrate_vcluster_restore.get_one::<String>("post-hook");
-                    /* commands::migrate_restore::exec(
+
+                    commands::migrate_restore::exec(
                         &backend,
                         &shasta_token,
                         shasta_base_url,
@@ -2038,19 +2038,7 @@ pub async fn process_cli(
                         prehook,
                         posthook,
                     )
-                    .await; */
-                    backend
-                        .migrate_restore(
-                            &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
-                            bos_file,
-                            cfs_file,
-                            hsm_file,
-                            ims_file,
-                            image_dir,
-                        )
-                        .await?;
+                    .await;
                 }
             }
         } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {

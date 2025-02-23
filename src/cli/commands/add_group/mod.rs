@@ -1,10 +1,8 @@
-use crate::common::node_ops::resolve_node_list_user_input_to_xname_2;
 use crate::common::{self, jwt_ops};
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
         audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka,
-        node_ops::resolve_node_list_user_input_to_xname,
     },
 };
 use backend_dispatcher::interfaces::hsm::component::ComponentTrait;

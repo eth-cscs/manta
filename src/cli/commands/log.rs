@@ -35,28 +35,6 @@ pub async fn exec(
     )
     .await;
 
-    /* let mut cfs_session_vec: Vec<
-        mesa::cfs::session::http_client::v3::types::CfsSessionGetResponse,
-    > = mesa::cfs::session::http_client::v3::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    .await
-    .unwrap_or_else(|e| {
-        eprintln!("ERROR - Could not get CFS sessions. Reason:\n{e}\nExit");
-        std::process::exit(1);
-    }); */
-
     // NOTE: fancy pattern matching. Maybe not a good use case for this. Ask in the future if this
     // is redeable or not
     let cfs_sessions_vec_rslt = match xname_vec_rslt.as_deref() {
@@ -80,49 +58,11 @@ pub async fn exec(
                     None,
                 )
                 .await
-
-            /* let cfs_session_opt = cfs_session_vec
-                .iter()
-                .find(|session| session.name == Some(user_input.to_string()));
-
-            if let Some(cfs_session) = cfs_session_opt {
-                vec![cfs_session.clone()]
-            } else if group_available_vec
-                .iter()
-                .map(|group| &group.label)
-                .any(|group| group == user_input)
-            {
-                // Check if user input is a group name
-                log::debug!("User input is not a node. Checking user input as group name");
-                mesa::cfs::session::utils::filter_by_hsm(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &mut cfs_session_vec,
-                    &[user_input.to_string()],
-                    Some(&1),
-                )
-                .await;
-
-                cfs_session_vec
-            } else {
-                // User input is neither a node, group name nor CFS session name
-                eprintln!("ERROR - User input did not match node, group or session name. Exit");
-                std::process::exit(1);
-            } */
         }
         Ok([xname]) => {
             // Get most recent CFS session for node or group the node belongs to
             log::debug!("User input is a single node");
-            /* mesa::cfs::session::utils::filter_by_xname(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &mut cfs_session_vec,
-                &[xname],
-                Some(&1),
-            )
-            .await; */
+
             backend
                 .get_sessions_by_xname(
                     shasta_token,

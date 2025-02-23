@@ -3,7 +3,6 @@ use serde_yaml::Value;
 use termion::color;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::apply_sat_file::utils,
     common::{
         self, config_ops::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
@@ -11,7 +10,6 @@ use crate::{
 };
 
 pub async fn exec(
-    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],

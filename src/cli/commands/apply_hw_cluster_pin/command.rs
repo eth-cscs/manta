@@ -8,7 +8,7 @@ use crate::{
     },
 };
 use backend_dispatcher::{
-    interfaces::{apply_hw_cluster_pin::ApplyHwClusterPin, hsm::group::GroupTrait},
+    interfaces::hsm::group::GroupTrait,
     types::Group,
 };
 
