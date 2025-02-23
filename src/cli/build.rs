@@ -354,7 +354,7 @@ pub fn subcommand_get() -> Command {
 }
 
 pub fn subcommand_apply_hw_configuration() -> Command {
-    Command::new("hw-configuration")
+    Command::new("hardware")
         // .visible_alias("hw")
         .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
         .arg_required_else_help(true)

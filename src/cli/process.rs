@@ -1265,7 +1265,7 @@ pub async fn process_cli(
                 .await;
             }
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-            if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hw-configuration") {
+            if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
                 if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
                     /* let shasta_token = &authentication::get_api_token(
                         shasta_base_url,
@@ -1332,10 +1332,10 @@ pub async fn process_cli(
                         .await;
                     } else {
                         apply_hw_cluster_pin::command::exec(
-                            backend,
+                            &backend,
                             &shasta_token,
-                            shasta_base_url,
-                            shasta_root_cert,
+                            /* shasta_base_url,
+                            shasta_root_cert, */
                             target_hsm_group_vec.first().unwrap(),
                             parent_hsm_group_vec.first().unwrap(),
                             cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),

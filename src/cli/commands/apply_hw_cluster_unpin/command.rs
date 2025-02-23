@@ -79,10 +79,10 @@ pub async fn exec(
         )
         .await
         { */
-        Ok(_) => log::debug!("Target HSM group {} exists, good.", target_hsm_group_name),
+        Ok(_) => log::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name),
         Err(_) => {
             if create_target_hsm_group {
-                log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+                log::info!("Target HSM group '{}' does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
                     let group = Group {
                         label: target_hsm_group_name.to_string(),
@@ -113,7 +113,7 @@ pub async fn exec(
                     std::process::exit(1);
                 }
             } else {
-                log::error!("Target HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+                log::error!("Target HSM group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
                 std::process::exit(1);
             }
         }
@@ -312,7 +312,7 @@ pub async fn exec(
         .await; */
         if parent_group_will_be_empty {
             if delete_empty_parent_hsm_group {
-                log::info!("Parent HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
+                log::info!("Parent HSM group '{}' is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
                 match backend.delete_group(shasta_token,
                              &parent_hsm_group_name.to_string())
                     .await {
@@ -325,7 +325,7 @@ pub async fn exec(
                     Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
                 };
             } else {
-                log::debug!("Parent HSM group {} is now empty and the option to delete empty groups has NOT been selected, will not remove it.",parent_hsm_group_name)
+                log::debug!("Parent HSM group '{}' is now empty and the option to delete empty groups has NOT been selected, will not remove it.",parent_hsm_group_name)
             }
         }
     }

@@ -1,7 +1,18 @@
-use crate::backend_dispatcher::StaticBackendDispatcher;
-use backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPin;
+use std::collections::HashMap;
 
-pub async fn exec(
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    cli::commands::apply_hw_cluster_pin::utils::{
+        calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
+        resolve_hw_description_to_xnames,
+    },
+};
+use backend_dispatcher::{
+    interfaces::{apply_hw_cluster_pin::ApplyHwClusterPin, hsm::group::GroupTrait},
+    types::Group,
+};
+
+/* pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -31,9 +42,9 @@ pub async fn exec(
         eprintln!("ERROR - Could not apply hardware cluster pin. Reason:\n{e}\nExit");
         std::process::exit(1);
     });
-}
+} */
 
-/* pub async fn exec(
+pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     target_hsm_group_name: &str,
@@ -96,7 +107,7 @@ pub async fn exec(
 
     match backend.get_group(
         shasta_token,
-        &target_hsm_group_name.to_string(),
+        target_hsm_group_name,
     ).await
     /* match hsm::group::http_client::get(
         shasta_token,
@@ -106,10 +117,10 @@ pub async fn exec(
     )
     .await */
     {
-        Ok(_) => log::debug!("Target HSM group {} exists, good.", target_hsm_group_name),
+        Ok(_) => log::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name),
         Err(_) => {
             if create_target_hsm_group {
-                log::info!("Target HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+                log::info!("Target HSM group '{}' does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
                     let group = Group{
                         label: target_hsm_group_name.to_string(),
@@ -139,7 +150,7 @@ pub async fn exec(
                     std::process::exit(1);
                 }
             } else {
-                log::error!("Target HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+                log::error!("Target HSM group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
                 std::process::exit(1);
             }
         }
@@ -161,7 +172,7 @@ pub async fn exec(
     // Get HSM hw component counters for target HSM
     let mut target_hsm_node_hw_component_count_vec: Vec<(String, HashMap<String, usize>)> =
         get_hsm_node_hw_component_counter(
-        backend,
+            backend,
             shasta_token,
             &user_defined_target_hsm_hw_component_vec,
             &target_hsm_group_member_vec,
@@ -339,7 +350,7 @@ pub async fn exec(
         .await; */
         if parent_group_will_be_empty {
             if delete_empty_parent_hsm_group {
-                log::info!("Parent HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
+                log::info!("Parent HSM group '{}' is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
                 match backend.delete_group(shasta_token, parent_hsm_group_name).await {
                 /* match hsm::group::http_client::delete_hsm_group(shasta_token,
                                                                       shasta_base_url,
@@ -350,7 +361,7 @@ pub async fn exec(
                     Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
                 };
             } else {
-                log::debug!("Parent HSM group {} is now empty and the option to delete empty groups has NOT been selected, will not remove it.",parent_hsm_group_name)
+                log::debug!("Parent HSM group '{}' is now empty and the option to delete empty groups has NOT been selected, will not remove it.",parent_hsm_group_name)
             }
         }
     }
@@ -397,4 +408,4 @@ pub async fn exec(
         "{}",
         serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
     );
-} */
+}

@@ -27,6 +27,8 @@ pub async fn get_groups_available(
     // Validate the user has access to the HSM group is requested
     if let Some(target_hsm_group) = target_hsm_group_opt {
         if !hsm_name_available_vec.contains(target_hsm_group) {
+            let mut hsm_name_available_vec = hsm_name_available_vec;
+            hsm_name_available_vec.sort();
             println!(
                 "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
                 target_hsm_group,
