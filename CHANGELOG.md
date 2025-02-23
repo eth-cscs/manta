@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.76] - 2025-02-23
+
+### Refactor
+
+- [**breaking**] Rename cli commands from 'hw-configuration' to 'hardware'
+- Command 'apply hardware cluster (unpin)' pipeline has been migrated from backend to manta cli
+
 ## [1.54.1-beta.75] - 2025-02-23
 
 ### Bug Fixes
@@ -12,6 +19,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update rustc version
+- Release manta version 1.54.1-beta.75
 
 ### Refactor
 
