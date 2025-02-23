@@ -2042,12 +2042,15 @@ pub async fn process_cli(
             if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let label = cli_delete_group
-                    .get_one::<String>("label")
-                    .expect("ERROR - 'label' argument is mandatory")
-                    .clone();
+                let label: &String = cli_delete_group
+                    .get_one("VALUE")
+                    .expect("ERROR - group name argument is mandatory");
 
-                delete_group::exec(&backend, &shasta_token, &label).await;
+                let force: bool = *cli_delete_group
+                    .get_one("force")
+                    .expect("The 'force' argument must have a value");
+
+                delete_group::exec(&backend, &shasta_token, label, force).await;
             } else if let Some(cli_delete_hw_configuration) =
                 cli_delete.subcommand_matches("hardware")
             {

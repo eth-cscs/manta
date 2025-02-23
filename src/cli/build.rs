@@ -120,8 +120,9 @@ pub fn subcommand_delete_group() -> Command {
                 // .visible_alias("g")
                 .arg_required_else_help(true)
                 .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
-                .arg(arg!(-l --"label" <VALUE> "Group name to delete"))
+                .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
                 .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(<VALUE> "Group name to delete").required(true))
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
