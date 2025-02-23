@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.75] - 2025-02-23
+
+### Bug Fixes
+
+- SAT processing fails when watching CFS sessions logs because the process won't wait the CFS session to finish
+- Method to get node and cluster hardware components
+
+### Miscellaneous Tasks
+
+- Update rustc version
+
+### Refactor
+
+- Rename hw-component cli subcommand to hardware
+
 ## [1.54.1-beta.74] - 2025-02-22
 
 ### Bug Fixes
 
 - Mesa issue with get hsm group
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.74
 
 ## [1.54.1-beta.73] - 2025-02-22
 
