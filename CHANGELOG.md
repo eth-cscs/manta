@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.78] - 2025-02-23
+
+### Refactor
+
+- Manta config data
+
 ## [1.54.1-beta.77] - 2025-02-23
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.77
 
 ### Refactor
 
