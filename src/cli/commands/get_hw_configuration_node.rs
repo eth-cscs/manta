@@ -1,6 +1,7 @@
-use backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
+use backend_dispatcher::{
+    interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
+};
 use comfy_table::{Cell, Table};
-use mesa::hsm::hw_inventory::hw_component::types::NodeSummary;
 use std::string::ToString;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -17,16 +18,6 @@ pub async fn exec(
         .get_inventory_hardware_query(shasta_token, xname, None, None, None, None, None)
         .await
         .unwrap();
-    /* let mut node_hw_inventory = &hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        xname,
-    )
-    .await
-    .unwrap(); */
-
-    // node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").unwrap();
 
     node_hw_inventory = match node_hw_inventory.pointer("/Nodes/0") {
         Some(node_value) => node_value,

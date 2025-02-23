@@ -1,13 +1,14 @@
 use std::{
     collections::{HashMap, HashSet},
-    io::{self, Write},
     sync::Arc,
     time::Instant,
 };
 
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::{
+    interfaces::hsm::{group::GroupTrait, hardware_inventory::HardwareInventory},
+    types::NodeSummary,
+};
 use comfy_table::{Color, Table};
-use mesa::hsm::{self, hw_inventory::hw_component::types::NodeSummary};
 use tokio::sync::Semaphore;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -15,8 +16,6 @@ use crate::backend_dispatcher::StaticBackendDispatcher;
 pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hsm_group_name: &str,
     output_opt: Option<&String>,
 ) {
@@ -25,21 +24,9 @@ pub async fn exec(
         .get_group(shasta_token, hsm_group_name)
         .await
         .unwrap();
-    /* let hsm_group = hsm::group::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&hsm_group_name.to_string()),
-    )
-    .await
-    .unwrap()
-    .first()
-    .unwrap()
-    .clone(); */
 
     // Get target HSM group members
     let hsm_group_target_members = hsm_group.members.unwrap().ids.unwrap_or_default();
-    // let hsm_group_target_members = hsm::group::utils::get_member_vec_from_hsm_group(&hsm_group);
 
     log::debug!(
         "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
@@ -57,19 +44,19 @@ pub async fn exec(
                                            // make it faster
 
     let num_hsm_group_members = hsm_group_target_members.len();
+
     // Calculate number of digits of a number
     let width = num_hsm_group_members.checked_ilog10().unwrap_or(0) as usize + 1;
 
     // Get HW inventory details for target HSM group
     for (i, hsm_member) in hsm_group_target_members.iter().enumerate() {
         log::info!(
-            "\rGetting hw components for node '{hsm_member}' [{i:>width$}/{num_hsm_group_members}]"
+            "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
+            i + 1
         );
-        io::stdout().flush().unwrap();
 
+        let backend_cp = backend.clone();
         let shasta_token_string = shasta_token.to_string(); // TODO: make it static
-        let shasta_base_url_string = shasta_base_url.to_string(); // TODO: make it static
-        let shasta_root_cert_vec = shasta_root_cert.to_vec();
         let hsm_member_string = hsm_member.to_string(); // TODO: make it static
                                                         //
         let permit = Arc::clone(&sem).acquire_owned().await;
@@ -78,31 +65,49 @@ pub async fn exec(
 
         tasks.spawn(async move {
             let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
-            hsm::hw_inventory::hw_component::http_client::get(
-                &shasta_token_string,
-                &shasta_base_url_string,
-                &shasta_root_cert_vec,
-                &hsm_member_string,
-            )
-            .await
-            // .unwrap()
-            /* hsm::hw_inventory::hw_component::http_client::get(
-                &shasta_token_string,
-                &shasta_base_url_string,
-                &shasta_root_cert_vec,
-                &hsm_member_string,
-            )
-            .await
-            .unwrap() */
+            let hw_inventory_value = backend_cp
+                .get_inventory_hardware_query(
+                    &shasta_token_string,
+                    &hsm_member_string,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                .await;
+
+            let node_hw_inventory_value_opt =
+                hw_inventory_value.unwrap().pointer("/Nodes/0").cloned();
+
+            let node_hw_inventory = match node_hw_inventory_value_opt {
+                Some(node_hw_inventory) => NodeSummary::from_csm_value(node_hw_inventory.clone()),
+                None => {
+                    let mut node_summary_default = NodeSummary::default();
+                    node_summary_default.xname = hsm_member_string;
+                    node_summary_default
+                }
+            };
+
+            node_hw_inventory
         });
     }
 
-    println!();
-
     while let Some(message) = tasks.join_next().await {
-        match message.unwrap() {
-            Ok(node_hw_inventory) => hsm_summary.push(node_hw_inventory),
-            Err(e) => log::error!("Failed fetching node hw information: {}", e),
+        match message {
+            Ok(node_hw_inventory) => {
+                /* let node_hw_inventory_opt = node_hw_inventory.pointer("/Nodes/0");
+                let node_summary = match node_hw_inventory_opt {
+                    Some(node_hw_inventory) => {
+                        let v = NodeSummary::from_csm_value(node_hw_inventory.clone());
+                        dbg!(&v);
+                        v
+                    }
+                    None => NodeSummary::default(),
+                }; */
+                hsm_summary.push(node_hw_inventory);
+            }
+            Err(e) => log::error!("Failed fetching node hardware information: {}", e),
         }
         /* if let Ok(node_hw_inventory) = message {
             hsm_summary.push(node_hw_inventory);
@@ -129,15 +134,59 @@ pub async fn exec(
     } else if output_opt.is_some_and(|output| output.eq("details")) {
         print_table_details(&hsm_summary);
     } else if output_opt.is_some_and(|output| output.eq("summary")) {
-        let hsm_node_hw_component_summary =
-            hsm::hw_inventory::hw_component::utils::calculate_hsm_hw_component_summary(
-                &hsm_summary,
-            );
+        let hsm_node_hw_component_summary = calculate_hsm_hw_component_summary(&hsm_summary);
 
         print_table_summary(&hsm_node_hw_component_summary);
     } else {
         eprintln!("'output' value not valid. Exit");
     }
+}
+
+pub fn calculate_hsm_hw_component_summary(
+    node_summary_vec: &Vec<NodeSummary>,
+) -> HashMap<String, usize> {
+    let mut node_hw_component_summary: HashMap<String, usize> = HashMap::new();
+
+    for node_summary in node_summary_vec {
+        for artifact_summary in &node_summary.processors {
+            node_hw_component_summary
+                .entry(artifact_summary.info.as_ref().unwrap().to_string())
+                .and_modify(|summary_quantity| *summary_quantity += 1)
+                .or_insert(1);
+        }
+        for artifact_summary in &node_summary.node_accels {
+            node_hw_component_summary
+                .entry(artifact_summary.info.as_ref().unwrap().to_string())
+                .and_modify(|summary_quantity| *summary_quantity += 1)
+                .or_insert(1);
+        }
+        for artifact_summary in &node_summary.memory {
+            let memory_capacity = artifact_summary
+                .info
+                .as_ref()
+                .unwrap_or(&"ERROR NA".to_string())
+                .split(' ')
+                .collect::<Vec<_>>()
+                .first()
+                .unwrap()
+                .parse::<usize>()
+                .unwrap_or(0);
+            node_hw_component_summary
+                .entry(artifact_summary.r#type.to_string() + " (GiB)")
+                .and_modify(|summary_quantity| {
+                    *summary_quantity += memory_capacity / 1024;
+                })
+                .or_insert(memory_capacity / 1024);
+        }
+        for artifact_summary in &node_summary.node_hsn_nics {
+            node_hw_component_summary
+                .entry(artifact_summary.info.as_ref().unwrap().to_string())
+                .and_modify(|summary_quantity| *summary_quantity += 1)
+                .or_insert(1);
+        }
+    }
+
+    node_hw_component_summary
 }
 
 pub fn get_cluster_hw_pattern(hsm_summary: Vec<NodeSummary>) -> HashMap<String, usize> {

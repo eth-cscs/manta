@@ -651,9 +651,7 @@ pub async fn process_cli(
                     kafka_audit_opt,
                 )
                 .await;
-            } else if let Some(cli_add_hw_configuration) =
-                cli_add.subcommand_matches("hardwar fcarg")
-            {
+            } else if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hardware") {
                 /* let shasta_token = &authentication::get_api_token(
                     shasta_base_url,
                     shasta_root_cert,
@@ -812,9 +810,7 @@ pub async fn process_cli(
                     output,
                 )
                 .await?;
-            } else if let Some(cli_get_hw_configuration) =
-                cli_get.subcommand_matches("hw-component")
-            {
+            } else if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hardware") {
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {
@@ -843,8 +839,6 @@ pub async fn process_cli(
                     commands::get_hw_configuration_cluster::exec(
                         backend,
                         &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
                         target_hsm_group_vec.first().unwrap(),
                         cli_get_hw_configuration_cluster.get_one::<String>("output"),
                     )
@@ -2070,7 +2064,7 @@ pub async fn process_cli(
 
                 delete_group::exec(&backend, &shasta_token, &label).await;
             } else if let Some(cli_delete_hw_configuration) =
-                cli_delete.subcommand_matches("hw-component")
+                cli_delete.subcommand_matches("hardware")
             {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 

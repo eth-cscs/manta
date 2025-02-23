@@ -125,7 +125,7 @@ pub fn subcommand_delete_group() -> Command {
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
-    Command::new("hw-component")
+    Command::new("hardware")
                 // .visible_alias("hw")
                 .arg_required_else_help(true)
                 .about("WIP - Remove hw components from a cluster")
@@ -646,7 +646,7 @@ pub fn subcommand_add_node() -> Command {
 }
 
 pub fn subcommand_add_hwcomponent() -> Command {
-    Command::new("hw-component")
+    Command::new("hardware")
                 // .visible_alias("hw")
                 .arg_required_else_help(true)
                 .about("WIP - Add hw components from a cluster")

@@ -273,6 +273,13 @@ impl GroupTrait for StaticBackendDispatcher {
 }
 
 impl HardwareInventory for StaticBackendDispatcher {
+    async fn get_inventory_hardware(&self, auth_token: &str, xname: &str) -> Result<Value, Error> {
+        match self {
+            CSM(b) => b.get_inventory_hardware(auth_token, xname).await,
+            OCHAMI(b) => b.get_inventory_hardware(auth_token, xname).await,
+        }
+    }
+
     async fn get_inventory_hardware_query(
         &self,
         auth_token: &str,
