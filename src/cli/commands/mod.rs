@@ -1,6 +1,7 @@
 pub mod add_group;
 pub mod add_hw_component_cluster;
 pub mod add_kernel_parameters;
+pub mod add_node;
 pub mod add_nodes_to_hsm_groups;
 pub mod apply_boot_cluster;
 pub mod apply_boot_node;

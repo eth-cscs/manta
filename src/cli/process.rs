@@ -19,7 +19,7 @@ use k8s_openapi::chrono;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    cli::commands::validate_local_repo,
+    cli::commands::{add_node, validate_local_repo},
     common::{
         authorization::{get_groups_available, validate_target_hsm_members},
         config::types::MantaConfiguration,
@@ -514,11 +514,6 @@ pub async fn process_cli(
                     serde_json::from_value(hw_inventory_value)
                         .expect("ERROR - Could not parse hardware inventory file");
 
-                println!(
-                    "DEBUG - hw inventory:\n{}",
-                    serde_json::to_string_pretty(&hw_inventory).unwrap()
-                );
-
                 let arch_opt = cli_add_node.get_one::<String>("arch").cloned();
 
                 let enabled = cli_add_node
@@ -526,7 +521,7 @@ pub async fn process_cli(
                     .cloned()
                     .unwrap_or(true);
 
-                // Create node api payload
+                /* // Create node api payload
                 let component: ComponentCreate = ComponentCreate {
                     id: id.to_string(),
                     state: "Unknown".to_string(),
@@ -596,6 +591,49 @@ pub async fn process_cli(
                     }
 
                     std::process::exit(1);
+
+                println!(
+                    "Node '{}' created and added to group '{}'.\nGroup '{}' members:\n{:#?}",
+                    id,
+                    group,
+                    group,
+                    new_group_members_rslt.unwrap()
+                } */
+
+                let add_node_rslt = add_node::exec(
+                    &backend,
+                    &shasta_token,
+                    id,
+                    enabled,
+                    arch_opt,
+                    hw_inventory,
+                    group,
+                )
+                .await;
+
+                if let Err(error) = add_node_rslt {
+                    // Could not add xname to group. Reset operation by removing the node
+                    eprintln!("ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}\nRollback operation");
+                    let delete_node_rslt = backend
+                        .delete_node(shasta_token.as_str(), id.clone().as_str())
+                        .await;
+
+                    eprintln!("Try to delete node '{}'", id);
+
+                    if delete_node_rslt.is_ok() {
+                        eprintln!("Node '{}' deleted", id);
+                    }
+
+                    std::process::exit(1);
+                }
+
+                // Add node to group
+                let new_group_members_rslt = backend
+                    .add_members_to_group(&shasta_token, group, vec![id])
+                    .await;
+
+                if let Err(error) = &new_group_members_rslt {
+                    eprintln!("ERROR - Could not add node to group. Reason:\n{:#?}", error);
                 }
 
                 println!(

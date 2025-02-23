@@ -184,6 +184,8 @@ impl GroupTrait for StaticBackendDispatcher {
         }
     }
 
+    // Add members to group.
+    // Returns the final list of members in the group.
     async fn add_members_to_group(
         &self,
         auth_token: &str,
