@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.81] - 2025-02-24
+
+### Features
+
+- Add new command to delete a node
+
+### Refactor
+
+- Move code related to add a node to its own module
+
 ## [1.54.1-beta.80] - 2025-02-23
 
 ### Features
 
 - Delete group command can be force and bypass the orphan node validation
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.80
 
 ## [1.54.1-beta.79] - 2025-02-23
 
