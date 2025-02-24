@@ -26,6 +26,7 @@ pub mod delete_group;
 pub mod delete_hw_component_cluster;
 pub mod delete_image;
 pub mod delete_kernel_parameters;
+pub mod delete_node;
 pub mod delete_sessions;
 pub mod get_cluster;
 pub mod get_configuration;

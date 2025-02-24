@@ -108,6 +108,7 @@ pub fn subcommand_delete() -> Command {
         .arg_required_else_help(true)
         .about("Deletes data")
         .subcommand(subcommand_delete_group())
+        .subcommand(subcommand_delete_node())
         .subcommand(subcommand_delete_kernel_parameter())
         .subcommand(subcommand_delete_configuration())
         .subcommand(subcommand_delete_session())
@@ -125,6 +126,19 @@ pub fn subcommand_delete_group() -> Command {
                 .arg(arg!(<VALUE> "Group name to delete").required(true))
 }
 
+pub fn subcommand_delete_node() -> Command {
+    Command::new("node")
+        // .visible_alias("g")
+        .arg_required_else_help(true)
+        .about("Delete node.")
+        // FIXME: implement cascade
+        /* .arg(
+            arg!(-c --"cascade" "WIP - Deletes the hardware inventory, redfish and network interfaces for this node.")
+                .action(ArgAction::SetTrue),
+        ) */
+        .arg(arg!(<VALUE> "Node name to delete").required(true))
+}
+
 pub fn subcommand_delete_hw_component() -> Command {
     Command::new("hardware")
                 // .visible_alias("hw")
@@ -133,8 +147,8 @@ pub fn subcommand_delete_hw_component() -> Command {
                 .arg(arg!(-P --pattern <PATTERN> "Pattern"))
                 .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to (resources move from here)."))
                 .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving resources from the target cluster (resources move here)."))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action."))
+                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run.").action(ArgAction::SetFalse))
+                .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_delete_image() -> Command {
@@ -658,6 +672,18 @@ pub fn subcommand_add_hwcomponent() -> Command {
                 .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
 }
 
+pub fn subcommand_add_redfish_interface() -> Command {
+    Command::new("group")
+                // .visible_alias("g")
+                .about("Add/Create new group")
+                .arg_required_else_help(true)
+                .arg(arg!(-l --label <VALUE> "Group name").required(true))
+                .arg(arg!(-d --description <VALUE> "Group description"))
+                .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+}
+
 pub fn subcommand_add_kernelparameters() -> Command {
     Command::new("kernel-parameters")
                 // .visible_alias("kp")
@@ -683,6 +709,7 @@ pub fn subcommand_add() -> Command {
         .subcommand(subcommand_add_node())
         .subcommand(subcommand_add_group())
         .subcommand(subcommand_add_hwcomponent())
+        .subcommand(subcommand_add_redfish_interface())
         .subcommand(subcommand_add_kernelparameters())
 }
 

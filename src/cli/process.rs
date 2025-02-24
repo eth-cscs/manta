@@ -2094,13 +2094,9 @@ pub async fn process_cli(
             {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let nodryrun = *cli_delete_hw_configuration
-                    .get_one::<bool>("no-dryrun")
-                    .unwrap_or(&true);
+                let nodryrun = cli_delete_hw_configuration.get_flag("no-dryrun");
 
-                let delete_hsm_group = *cli_delete_hw_configuration
-                    .get_one::<bool>("delete-hsm-group")
-                    .unwrap_or(&false);
+                let delete_hsm_group = cli_delete_hw_configuration.get_flag("delete-hsm-group");
 
                 let target_hsm_group_name_arg_opt =
                     cli_delete_hw_configuration.get_one::<String>("target-cluster");
