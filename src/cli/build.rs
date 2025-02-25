@@ -356,14 +356,11 @@ pub fn subcommand_get_boot_parameters() -> Command {
         .about("Get boot-parameters information")
         .arg(arg!(-H --"hosts" <VALUE> "Comma separated list of xnames requesting boot script"))
 
-        // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-        // using the nids or macs
+    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+    // using the nids or macs
 
-        /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
-        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
-        .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
-        .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
-        .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))
+    /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+    .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
 
     // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
     // using the nids or macs

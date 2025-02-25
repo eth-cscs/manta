@@ -1351,9 +1351,6 @@ pub async fn process_cli(
                 let hosts = cli_get_boot_parameters.get_one::<String>("hosts");
                 /* let nids = cli_get_boot_parameters.get_one::<String>("nids");
                 let macs = cli_get_boot_parameters.get_one::<String>("macs"); */
-                let params = cli_get_boot_parameters.get_one::<String>("params");
-                let kernel = cli_get_boot_parameters.get_one::<String>("kernel");
-                let initrd = cli_get_boot_parameters.get_one::<String>("initrd");
 
                 let boot_parameters_vec: Vec<BootParameters> = get_boot_parameters::exec(
                     &backend,
@@ -1361,9 +1358,9 @@ pub async fn process_cli(
                     &hosts.cloned().unwrap_or_default(),
                     None,
                     None,
-                    params,
-                    kernel,
-                    initrd,
+                    None,
+                    None,
+                    None,
                 )
                 .await?;
 
