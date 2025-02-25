@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.82] - 2025-02-25
+
+### Bug Fixes
+
+- Can't search boot parameters by kernel, initrd or params
+
+### Features
+
+- New functionalities add/update/delete boot parameters
+- New functionalities get/add/update/delete redfish endpoint
+
 ## [1.54.1-beta.81] - 2025-02-24
 
 ### Features
 
 - Add new command to delete a node
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.81
 
 ### Refactor
 
