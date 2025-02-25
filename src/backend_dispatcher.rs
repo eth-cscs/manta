@@ -482,6 +482,17 @@ impl BootParametersTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn add_bootparameters(
+        &self,
+        auth_token: &str,
+        boot_parameters: &BootParameters,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => b.add_bootparameters(auth_token, boot_parameters).await,
+            OCHAMI(b) => b.add_bootparameters(auth_token, boot_parameters).await,
+        }
+    }
+
     async fn update_bootparameters(
         &self,
         auth_token: &str,
@@ -490,6 +501,17 @@ impl BootParametersTrait for StaticBackendDispatcher {
         match self {
             CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
             OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+        }
+    }
+
+    async fn delete_bootparameters(
+        &self,
+        auth_token: &str,
+        boot_parameters: &BootParameters,
+    ) -> Result<String, Error> {
+        match self {
+            CSM(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
+            OCHAMI(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
         }
     }
 }

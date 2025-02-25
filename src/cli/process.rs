@@ -1,9 +1,12 @@
 use backend_dispatcher::{
     contracts::BackendTrait,
-    interfaces::hsm::{
-        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+    interfaces::{
+        bss::BootParametersTrait,
+        hsm::{
+            component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+        },
     },
-    types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
+    types::{BootParameters, ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
 use clap_complete::{generate, generate_to};
 use std::{
@@ -28,17 +31,19 @@ use crate::{
 };
 
 use super::commands::{
-    self, add_group, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
-    apply_boot_cluster, apply_boot_node, apply_ephemeral_env, apply_hw_cluster_pin,
-    apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template, config_set_hsm,
-    config_set_log, config_set_parent_hsm, config_set_site, config_show, config_unset_auth,
-    config_unset_hsm, config_unset_parent_hsm, console_cfs_session_image_target_ansible,
-    console_node, delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration,
-    delete_group, delete_hw_component_cluster, delete_image, delete_kernel_parameters,
-    delete_sessions, get_cluster, get_configuration, get_hw_configuration_node, get_images,
+    self, add_boot_parameters, add_group, add_hw_component_cluster, add_kernel_parameters,
+    add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node, apply_ephemeral_env,
+    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
+    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
+    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    console_cfs_session_image_target_ansible, console_node,
+    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
+    delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
+    get_boot_parameters, get_cluster, get_configuration, get_hw_configuration_node, get_images,
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
+    update_boot_parameters,
 };
 
 pub async fn process_cli(
@@ -743,6 +748,55 @@ pub async fn process_cli(
                     create_hsm_group,
                 )
                 .await;
+            } else if let Some(cli_add_boot_parameters) =
+                cli_add.subcommand_matches("boot-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let hosts: &String = cli_add_boot_parameters
+                    .get_one("hosts")
+                    .expect("ERROR - 'hosts' argument is mandatory");
+
+                // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+                // using the nids or macs
+
+                let nids: Option<&String> = cli_add_boot_parameters.get_one("nids");
+                let macs: Option<&String> = cli_add_boot_parameters.get_one("macs");
+                let params: Option<&String> = cli_add_boot_parameters.get_one("params");
+                let kernel: Option<&String> = cli_add_boot_parameters.get_one("kernel");
+                let initrd: Option<&String> = cli_add_boot_parameters.get_one("initrd");
+                let xname_vec = hosts
+                    .split(",")
+                    .map(|value| value.trim().to_string())
+                    .collect();
+
+                // Validate user has access to the list of xnames requested
+                validate_target_hsm_members(
+                    &backend,
+                    &shasta_token,
+                    /* shasta_base_url,
+                    shasta_root_cert, */
+                    &xname_vec,
+                )
+                .await;
+
+                let result = add_boot_parameters::exec(
+                    &backend,
+                    &shasta_token,
+                    hosts,
+                    nids,
+                    macs,
+                    params,
+                    kernel,
+                    initrd,
+                    kafka_audit_opt,
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {
@@ -804,6 +858,59 @@ pub async fn process_cli(
                     kernel_parameters,
                     xname_vec,
                     assume_yes,
+                    kafka_audit_opt,
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
+            }
+        } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
+            if let Some(cli_update_boot_parameters) =
+                cli_update.subcommand_matches("boot-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let hosts: &String = cli_update_boot_parameters
+                    .get_one("hosts")
+                    .expect("ERROR - 'hosts' argument is mandatory");
+
+                // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+                // using the nids or macs
+
+                /* let nids: Option<&String> = cli_update_boot_parameters.get_one("nids");
+                let macs: Option<&String> = cli_update_boot_parameters.get_one("macs"); */
+                let params: Option<&String> = cli_update_boot_parameters.get_one("params");
+                let kernel: Option<&String> = cli_update_boot_parameters.get_one("kernel");
+                let initrd: Option<&String> = cli_update_boot_parameters.get_one("initrd");
+                let xname_vec = hosts
+                    .split(",")
+                    .map(|value| value.trim().to_string())
+                    .collect();
+
+                // Validate user has access to the list of xnames requested
+                validate_target_hsm_members(
+                    &backend,
+                    &shasta_token,
+                    /* shasta_base_url,
+                    shasta_root_cert, */
+                    &xname_vec,
+                )
+                .await;
+
+                let result = update_boot_parameters::exec(
+                    &backend,
+                    &shasta_token,
+                    hosts,
+                    /* nids,
+                    macs, */
+                    None,
+                    None,
+                    params,
+                    kernel,
+                    initrd,
                     kafka_audit_opt,
                 )
                 .await;
@@ -1236,6 +1343,31 @@ pub async fn process_cli(
                     cli_get_images.get_one::<u8>("limit"),
                 )
                 .await;
+            } else if let Some(cli_get_boot_parameters) =
+                cli_get.subcommand_matches("boot-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let hosts = cli_get_boot_parameters.get_one::<String>("hosts");
+                /* let nids = cli_get_boot_parameters.get_one::<String>("nids");
+                let macs = cli_get_boot_parameters.get_one::<String>("macs"); */
+                let params = cli_get_boot_parameters.get_one::<String>("params");
+                let kernel = cli_get_boot_parameters.get_one::<String>("kernel");
+                let initrd = cli_get_boot_parameters.get_one::<String>("initrd");
+
+                let boot_parameters_vec: Vec<BootParameters> = get_boot_parameters::exec(
+                    &backend,
+                    &shasta_token,
+                    &hosts.cloned().unwrap_or_default(),
+                    None,
+                    None,
+                    params,
+                    kernel,
+                    initrd,
+                )
+                .await?;
+
+                println!("{}", serde_json::to_string_pretty(&boot_parameters_vec)?);
             } else if let Some(cli_get_kernel_parameters) =
                 cli_get.subcommand_matches("kernel-parameters")
             {
@@ -2139,6 +2271,38 @@ pub async fn process_cli(
                     delete_hsm_group,
                 )
                 .await;
+            } else if let Some(cli_delete_boot_parameters) =
+                cli_delete.subcommand_matches("boot-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let xnames: Option<&String> = cli_delete_boot_parameters.get_one("hosts");
+
+                let hosts: Vec<String> = xnames
+                    .cloned()
+                    .unwrap_or_default()
+                    .split(',')
+                    .map(String::from)
+                    .collect();
+
+                let boot_parameters = BootParameters {
+                    hosts,
+                    macs: None,
+                    nids: None,
+                    params: "".to_string(),
+                    kernel: "".to_string(),
+                    initrd: "".to_string(),
+                    cloud_init: None,
+                };
+
+                let result = backend
+                    .delete_bootparameters(&shasta_token, &boot_parameters)
+                    .await;
+
+                match result {
+                    Ok(_) => println!("Boot parameters deleted successfully"),
+                    Err(error) => eprintln!("{}", error),
+                }
             } else if let Some(cli_delete_kernel_parameters) =
                 cli_delete.subcommand_matches("kernel-parameters")
             {

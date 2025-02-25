@@ -12,6 +12,7 @@ pub fn build_cli() -> Command {
         .subcommand(subcommand_config())
         .subcommand(subcommand_get())
         .subcommand(subcommand_add())
+        .subcommand(subcommand_update())
         .subcommand(subcommand_apply())
         .subcommand(subcommand_delete())
         .subcommand(subcommand_migrate())
@@ -110,6 +111,7 @@ pub fn subcommand_delete() -> Command {
         .subcommand(subcommand_delete_group())
         .subcommand(subcommand_delete_node())
         .subcommand(subcommand_delete_kernel_parameter())
+        .subcommand(subcommand_delete_boot_parameter())
         .subcommand(subcommand_delete_configuration())
         .subcommand(subcommand_delete_session())
         .subcommand(subcommand_delete_image())
@@ -196,6 +198,14 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
                 .args(["hsm-group", "xnames"])
                 .required(true),
         )
+}
+
+pub fn subcommand_delete_boot_parameter() -> Command {
+    Command::new("boot-parameters")
+        // .visible_alias("kp")
+        .arg_required_else_help(true)
+        .about("Delete boot parameters related to a list of nodes")
+        .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames"))
 }
 
 pub fn subcommand_get_group() -> Command {
@@ -340,6 +350,27 @@ pub fn subcommand_get_images() -> Command {
         .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
 }
 
+pub fn subcommand_get_boot_parameters() -> Command {
+    Command::new("boot-parameters")
+        // .visible_aliases(["n", "node"])
+        .about("Get boot-parameters information")
+        .arg(arg!(-H --"hosts" <VALUE> "Comma separated list of xnames requesting boot script"))
+
+        // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+        // using the nids or macs
+
+        /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
+        .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
+        .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
+        .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))
+
+    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+    // using the nids or macs
+
+    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
+}
+
 pub fn subcommand_get_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
         // .visible_aliases(["k", "kp", "kernel-params"])
@@ -365,6 +396,7 @@ pub fn subcommand_get() -> Command {
         .subcommand(subcommand_get_node_details())
         // .subcommand(subcommand_get_hsm_groups_details())
         .subcommand(subcommand_get_images())
+        .subcommand(subcommand_get_boot_parameters())
         .subcommand(subcommand_get_kernel_parameters())
 }
 
@@ -662,55 +694,124 @@ pub fn subcommand_add_node() -> Command {
 
 pub fn subcommand_add_hwcomponent() -> Command {
     Command::new("hardware")
-                // .visible_alias("hw")
-                .arg_required_else_help(true)
-                .about("WIP - Add hw components from a cluster")
-                .arg(arg!(-P --pattern <PATTERN> "Pattern"))
-                .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
-                .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
-                .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
-                .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
+       // .visible_alias("hw")
+       .arg_required_else_help(true)
+       .about("WIP - Add hw components from a cluster")
+       .arg(arg!(-P --pattern <PATTERN> "Pattern"))
+       .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
+       .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
+       .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
+       .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
 }
 
 pub fn subcommand_add_redfish_interface() -> Command {
     Command::new("group")
-                // .visible_alias("g")
-                .about("Add/Create new group")
-                .arg_required_else_help(true)
-                .arg(arg!(-l --label <VALUE> "Group name").required(true))
-                .arg(arg!(-d --description <VALUE> "Group description"))
-                .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
-                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+       // .visible_alias("g")
+       .about("Add/Create new group")
+       .arg_required_else_help(true)
+       .arg(arg!(-l --label <VALUE> "Group name").required(true))
+       .arg(arg!(-d --description <VALUE> "Group description"))
+       .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
+       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+       .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
 
-pub fn subcommand_add_kernelparameters() -> Command {
+pub fn subcommand_add_boot_parameters() -> Command {
+    Command::new("boot-parameters")
+        // .visible_aliases(["n", "node"])
+        .arg_required_else_help(true)
+        .about("Add/Create boot parameters")
+        .arg(arg!(-H --"hosts" <VALUE> "Comma separated list of xnames requesting boot script").required(true))
+
+        // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+        // using the nids or macs
+
+        /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
+        .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
+        .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
+        .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+
+    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+    // using the nids or macs
+
+    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
+}
+
+/* pub fn subcommand_add_boot_parameters() -> Command {
+    Command::new("boot-parameters")
+       // .visible_alias("kp")
+       .arg_required_else_help(true)
+       .about("Add/Create boot parameters")
+       .arg(arg!(-x --xnames <VALUE> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+       .arg(arg!(-n --nids <VALUE> "Comma separated list of short nids.\neg '1,2,3,4'"))
+       .arg(arg!(-m --macs <VALUE> "Comman separated list of mac addresses"))
+       .arg(arg!(-p --params <VALUE> "Kernel parameters"))
+       .arg(arg!(-k --kernel <VALUE> "S3 Path to download kernel file"))
+       .arg(arg!(-i --initrd <VALUE> "S3 Path to download initd file"))
+       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+} */
+
+pub fn subcommand_add_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
-                // .visible_alias("kp")
-                .arg_required_else_help(true)
-                .about("Add/Create kernel parameters")
-                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set kernel parameters.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
-                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-                .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
-                .group(
-                    ArgGroup::new("cluster_or_xnames")
-                        .args(["hsm-group", "xnames"])
-                        .required(true),
-                )
+       // .visible_alias("kp")
+       .arg_required_else_help(true)
+       .about("Add/Create kernel parameters")
+       .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set kernel parameters.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+       .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
+       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+       .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+       .group(
+           ArgGroup::new("cluster_or_xnames")
+               .args(["hsm-group", "xnames"])
+               .required(true),
+       )
+}
+
+pub fn subcommand_update() -> Command {
+    Command::new("update")
+        .arg_required_else_help(true)
+        .about("Update elements to system.")
+        .subcommand(subcommand_update_boot_parameters())
+    // .subcommand(subcommand_add_redfish_interface())
+}
+
+pub fn subcommand_update_boot_parameters() -> Command {
+    Command::new("boot-parameters")
+        // .visible_aliases(["n", "node"])
+        .arg_required_else_help(true)
+        .about("Update boot parameters")
+        .arg(arg!(-H --"hosts" <VALUE> "Comma separated list of xnames requesting boot script").required(true))
+
+        // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+        // using the nids or macs
+
+        /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
+        .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
+        .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
+        .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+
+    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+    // using the nids or macs
+
+    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
 
 pub fn subcommand_add() -> Command {
     Command::new("add")
         .arg_required_else_help(true)
-        .about(
-            "Add/Create new elements to system. Nodes will be added to the user's 'parent' group",
-        )
+        .about("Add/Create new elements to system.")
         .subcommand(subcommand_add_node())
         .subcommand(subcommand_add_group())
         .subcommand(subcommand_add_hwcomponent())
-        .subcommand(subcommand_add_redfish_interface())
-        .subcommand(subcommand_add_kernelparameters())
+        .subcommand(subcommand_add_boot_parameters())
+        .subcommand(subcommand_add_kernel_parameters())
+    // .subcommand(subcommand_add_redfish_interface())
 }
 
 pub fn subcommand_apply() -> Command {
