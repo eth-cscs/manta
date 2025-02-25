@@ -116,6 +116,7 @@ pub fn subcommand_delete() -> Command {
         .subcommand(subcommand_delete_session())
         .subcommand(subcommand_delete_image())
         .subcommand(subcommand_delete_hw_component())
+        .subcommand(subcommand_delete_redfish_endpoint())
 }
 
 pub fn subcommand_delete_group() -> Command {
@@ -206,6 +207,14 @@ pub fn subcommand_delete_boot_parameter() -> Command {
         .arg_required_else_help(true)
         .about("Delete boot parameters related to a list of nodes")
         .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames"))
+}
+
+pub fn subcommand_delete_redfish_endpoint() -> Command {
+    Command::new("redfish-endpoint")
+        // .visible_alias("kp")
+        .arg_required_else_help(true)
+        .about("Delete redfish endpoint")
+        .arg(arg!(-i --id <VALUE> "Xname related to the redfish endpoint to delete").required(true))
 }
 
 pub fn subcommand_get_group() -> Command {
@@ -354,7 +363,7 @@ pub fn subcommand_get_boot_parameters() -> Command {
     Command::new("boot-parameters")
         // .visible_aliases(["n", "node"])
         .about("Get boot-parameters information")
-        .arg(arg!(-H --"hosts" <VALUE> "Comma separated list of xnames requesting boot script"))
+        .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames requesting boot script"))
 
     // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
     // using the nids or macs
@@ -379,6 +388,19 @@ pub fn subcommand_get_kernel_parameters() -> Command {
         .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "xnames"]).required(true))
 }
 
+pub fn subcommand_get_redfish_endpoints() -> Command {
+    Command::new("redfish-endpoints")
+        // .visible_aliases(["n", "node"])
+        .about("Get redfish endpoints information")
+        .arg(arg!(-i --id <VALUE> "Filter the results based on xname ID(s). Can be specified multiple times for selecting entries with multiple specific xnames."))
+        .arg(arg!(-f --fqdn <VALUE> "Filter the results based on HMS type."))
+        // .arg(arg!(-t --type <VALUE> ... "Filter the results based on HMS type like Node, NodeEnclosure, NodeBMC etc. Can be specified multiple times for selecting entries of multiple types.."))
+        .arg(arg!(-u --uuid <VALUE> "Retrieve the RedfishEndpoint with the given UUID."))
+        .arg(arg!(-m --macaddr <VALUE> "Retrieve the RedfishEndpoint with the given MAC address."))
+        .arg(arg!(-I --ipaddress <VALUE> "Retrieve the RedfishEndpoint with the given IP address. A blank string will get Redfish endpoints without IP addresses."))
+    // .arg(arg!(-l --"last-status" <VALUE> "Retrieve the RedfishEndpoints with the given discovery status."))
+}
+
 pub fn subcommand_get() -> Command {
     Command::new("get")
         // .visible_alias("g")
@@ -395,6 +417,7 @@ pub fn subcommand_get() -> Command {
         .subcommand(subcommand_get_images())
         .subcommand(subcommand_get_boot_parameters())
         .subcommand(subcommand_get_kernel_parameters())
+        .subcommand(subcommand_get_redfish_endpoints())
 }
 
 pub fn subcommand_apply_hw_configuration() -> Command {
@@ -701,15 +724,25 @@ pub fn subcommand_add_hwcomponent() -> Command {
        .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
 }
 
-pub fn subcommand_add_redfish_interface() -> Command {
-    Command::new("group")
+pub fn subcommand_add_redfish_endpoint() -> Command {
+    Command::new("redfish-endpoint")
        // .visible_alias("g")
-       .about("Add/Create new group")
+       .about("Add/Create new redfish endpoint")
+       .arg(arg!(-i --id <VALUE> "Uniquely identifies the component by its physical location (xname). This is identical to a normal XName, but specifies a case where a BMC or other controller type is expected.").required(true))
+       .arg(arg!(-n --name <VALUE> "This is an arbitrary, user-provided name for the endpoint. It can describe anything that is not captured by the ID/xname."))
+       .arg(arg!(-H --hostname <VALUE> "Hostname of the endpoint's FQDN, will always be the host portion of the fully-qualified domain name. Note that the hostname should normally always be the same as the ID field (i.e. xname) of the endpoint.."))
+       .arg(arg!(-d --domain <VALUE> ".Domain of the endpoint's FQDN. Will always match remaining non-hostname portion of fully-qualified domain name (FQDN)."))
+       .arg(arg!(-f --fqdn <VALUE> "Fully-qualified domain name of RF endpoint on management network. This is not writable because it is made up of the Hostname and Domain."))
+       .arg(arg!(-e --enabled "To disable a component without deleting its data from the database, can be set to false.").action(ArgAction::SetTrue))
+       .arg(arg!(-u --user <VALUE> "Username to use when interrogating endpoint."))
+       .arg(arg!(-p --password <VALUE> "Password to use when interrogating endpoint, normally suppressed in output."))
+       .arg(arg!(-U --"use-ssdp" "Whether to use SSDP for discovery if the EP supports it..").action(ArgAction::SetTrue))
+       .arg(arg!(-m --"mac-required" "Whether the MAC must be used (e.g. in River) in setting up geolocation info so the endpoint's location in the system can be determined. The MAC does not need to be provided when creating the endpoint if the endpoint type can arrive at a geolocated hostname on its own.").action(ArgAction::SetTrue))
+       .arg(arg!(-M --macaddr <VALUE> "This is the MAC on the of the Redfish Endpoint on the management network, i.e. corresponding to the FQDN field's Ethernet interface where the root service is running. Not the HSN MAC. This is a MAC address in the standard colon-separated 12 byte hex format."))
+       .arg(arg!(-I --ipaddress <VALUE> "This is the IP of the Redfish Endpoint on the management network, i.e. corresponding to the FQDN field's Ethernet interface where the root service is running. This may be IPv4 or IPv6."))
+       .arg(arg!(-r --"rediscover-on-update" "Trigger a rediscovery when endpoint info is updated.").action(ArgAction::SetTrue))
+       .arg(arg!(-t --"template-id" <VALUE> "Links to a discovery template defining how the endpoint should be discovered."))
        .arg_required_else_help(true)
-       .arg(arg!(-l --label <VALUE> "Group name").required(true))
-       .arg(arg!(-d --description <VALUE> "Group description"))
-       .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
-       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
        .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
 
@@ -767,14 +800,6 @@ pub fn subcommand_add_kernel_parameters() -> Command {
        )
 }
 
-pub fn subcommand_update() -> Command {
-    Command::new("update")
-        .arg_required_else_help(true)
-        .about("Update elements to system.")
-        .subcommand(subcommand_update_boot_parameters())
-    // .subcommand(subcommand_add_redfish_interface())
-}
-
 pub fn subcommand_update_boot_parameters() -> Command {
     Command::new("boot-parameters")
         // .visible_aliases(["n", "node"])
@@ -799,6 +824,37 @@ pub fn subcommand_update_boot_parameters() -> Command {
     // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
 
+pub fn subcommand_update_redfish_endpoint() -> Command {
+    Command::new("redfish-endpoint")
+        // .visible_aliases(["n", "node"])
+        .arg_required_else_help(true)
+        .about("Update redfish endpoint")
+       .arg(arg!(-i --id <VALUE> "Uniquely identifies the component by its physical location (xname). This is identical to a normal XName, but specifies a case where a BMC or other controller type is expected.").required(true))
+       .arg(arg!(-n --name <VALUE> "This is an arbitrary, user-provided name for the endpoint. It can describe anything that is not captured by the ID/xname."))
+       .arg(arg!(-H --hostname <VALUE> "Hostname of the endpoint's FQDN, will always be the host portion of the fully-qualified domain name. Note that the hostname should normally always be the same as the ID field (i.e. xname) of the endpoint.."))
+       .arg(arg!(-d --domain <VALUE> ".Domain of the endpoint's FQDN. Will always match remaining non-hostname portion of fully-qualified domain name (FQDN)."))
+       .arg(arg!(-f --fqdn <VALUE> "Fully-qualified domain name of RF endpoint on management network. This is not writable because it is made up of the Hostname and Domain."))
+       .arg(arg!(-e --enabled "To disable a component without deleting its data from the database, can be set to false.").action(ArgAction::SetTrue))
+       .arg(arg!(-u --user <VALUE> "Username to use when interrogating endpoint."))
+       .arg(arg!(-p --password <VALUE> "Password to use when interrogating endpoint, normally suppressed in output."))
+       .arg(arg!(-U --"use-ssdp" "Whether to use SSDP for discovery if the EP supports it..").action(ArgAction::SetTrue))
+       .arg(arg!(-m --"mac-required" "Whether the MAC must be used (e.g. in River) in setting up geolocation info so the endpoint's location in the system can be determined. The MAC does not need to be provided when creating the endpoint if the endpoint type can arrive at a geolocated hostname on its own.").action(ArgAction::SetTrue))
+       .arg(arg!(-M --macaddr <VALUE> "This is the MAC on the of the Redfish Endpoint on the management network, i.e. corresponding to the FQDN field's Ethernet interface where the root service is running. Not the HSN MAC. This is a MAC address in the standard colon-separated 12 byte hex format."))
+       .arg(arg!(-I --ipaddress <VALUE> "This is the IP of the Redfish Endpoint on the management network, i.e. corresponding to the FQDN field's Ethernet interface where the root service is running. This may be IPv4 or IPv6."))
+       .arg(arg!(-r --"rediscover-on-update" "Trigger a rediscovery when endpoint info is updated.").action(ArgAction::SetTrue))
+       .arg(arg!(-t --"template-id" <VALUE> "Links to a discovery template defining how the endpoint should be discovered."))
+       .arg_required_else_help(true)
+       .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+}
+
+pub fn subcommand_update() -> Command {
+    Command::new("update")
+        .arg_required_else_help(true)
+        .about("Update elements to system.")
+        .subcommand(subcommand_update_boot_parameters())
+        .subcommand(subcommand_update_redfish_endpoint())
+}
+
 pub fn subcommand_add() -> Command {
     Command::new("add")
         .arg_required_else_help(true)
@@ -808,7 +864,7 @@ pub fn subcommand_add() -> Command {
         .subcommand(subcommand_add_hwcomponent())
         .subcommand(subcommand_add_boot_parameters())
         .subcommand(subcommand_add_kernel_parameters())
-    // .subcommand(subcommand_add_redfish_interface())
+        .subcommand(subcommand_add_redfish_endpoint())
 }
 
 pub fn subcommand_apply() -> Command {

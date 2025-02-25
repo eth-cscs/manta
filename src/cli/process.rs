@@ -4,9 +4,13 @@ use backend_dispatcher::{
         bss::BootParametersTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
+            redfish_endpoint::RedfishEndpointTrait,
         },
     },
-    types::{BootParameters, ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
+    types::{
+        hsm::inventory::RedfishEndpoint, BootParameters, ComponentArrayPostArray, ComponentCreate,
+        HWInventoryByLocationList,
+    },
 };
 use clap_complete::{generate, generate_to};
 use std::{
@@ -866,6 +870,84 @@ pub async fn process_cli(
                     Ok(_) => {}
                     Err(error) => eprintln!("{}", error),
                 }
+            } else if let Some(cli_add_redfish_endpoint) =
+                cli_add.subcommand_matches("redfish-endpoint")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id = cli_add_redfish_endpoint
+                    .get_one::<String>("id")
+                    .expect("ERROR - 'id' argument is mandatory")
+                    .to_string();
+
+                let name = cli_add_redfish_endpoint
+                    .get_one::<String>("name")
+                    .map(|x| x.to_string());
+
+                let hostname = cli_add_redfish_endpoint
+                    .get_one::<String>("hostname")
+                    .map(|x| x.to_string());
+
+                let domain = cli_add_redfish_endpoint
+                    .get_one::<String>("domain")
+                    .map(|x| x.to_string());
+
+                let fqdn = cli_add_redfish_endpoint
+                    .get_one::<String>("fqdn")
+                    .map(|x| x.to_string());
+
+                let enabled = cli_add_redfish_endpoint.get_flag("enabled");
+
+                let user = cli_add_redfish_endpoint
+                    .get_one::<String>("user")
+                    .map(|x| x.to_string());
+
+                let password = cli_add_redfish_endpoint
+                    .get_one::<String>("password")
+                    .map(|x| x.to_string());
+
+                let use_ssdp = cli_add_redfish_endpoint.get_flag("use-ssdp");
+
+                let mac_required = cli_add_redfish_endpoint.get_flag("mac-required");
+
+                let mac_addr = cli_add_redfish_endpoint
+                    .get_one::<String>("macaddr")
+                    .map(|x| x.to_string());
+
+                let ip_address = cli_add_redfish_endpoint
+                    .get_one::<String>("ipaddress")
+                    .map(|x| x.to_string());
+
+                let rediscover_on_update =
+                    cli_add_redfish_endpoint.get_flag("rediscover-on-update");
+
+                let template_id = cli_add_redfish_endpoint
+                    .get_one::<String>("template-id")
+                    .map(|x| x.to_string());
+
+                let redfish_endpoint = RedfishEndpoint {
+                    id,
+                    name,
+                    hostname,
+                    domain,
+                    fqdn,
+                    enabled: Some(enabled),
+                    user,
+                    password,
+                    use_ssdp: Some(use_ssdp),
+                    mac_required: Some(mac_required),
+                    mac_addr,
+                    ip_address,
+                    rediscover_on_update: Some(rediscover_on_update),
+                    template_id,
+                    r#type: None,
+                    uuid: None,
+                    discovery_info: None,
+                };
+
+                backend
+                    .add_redfish_endpoint(&shasta_token, &redfish_endpoint)
+                    .await?
             }
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_boot_parameters) =
@@ -919,6 +1001,84 @@ pub async fn process_cli(
                     Ok(_) => {}
                     Err(error) => eprintln!("{}", error),
                 }
+            } else if let Some(cli_update_redfish_endpoint) =
+                cli_update.subcommand_matches("redfish-endpoint")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id = cli_update_redfish_endpoint
+                    .get_one::<String>("id")
+                    .expect("ERROR - 'id' argument is mandatory")
+                    .to_string();
+
+                let name = cli_update_redfish_endpoint
+                    .get_one::<String>("name")
+                    .map(|x| x.to_string());
+
+                let hostname = cli_update_redfish_endpoint
+                    .get_one::<String>("hostname")
+                    .map(|x| x.to_string());
+
+                let domain = cli_update_redfish_endpoint
+                    .get_one::<String>("domain")
+                    .map(|x| x.to_string());
+
+                let fqdn = cli_update_redfish_endpoint
+                    .get_one::<String>("fqdn")
+                    .map(|x| x.to_string());
+
+                let enabled = cli_update_redfish_endpoint.get_flag("enabled");
+
+                let user = cli_update_redfish_endpoint
+                    .get_one::<String>("user")
+                    .map(|x| x.to_string());
+
+                let password = cli_update_redfish_endpoint
+                    .get_one::<String>("password")
+                    .map(|x| x.to_string());
+
+                let use_ssdp = cli_update_redfish_endpoint.get_flag("use-ssdp");
+
+                let mac_required = cli_update_redfish_endpoint.get_flag("mac-required");
+
+                let mac_addr = cli_update_redfish_endpoint
+                    .get_one::<String>("macaddr")
+                    .map(|x| x.to_string());
+
+                let ip_address = cli_update_redfish_endpoint
+                    .get_one::<String>("ipaddress")
+                    .map(|x| x.to_string());
+
+                let rediscover_on_update =
+                    cli_update_redfish_endpoint.get_flag("rediscover-on-update");
+
+                let template_id = cli_update_redfish_endpoint
+                    .get_one::<String>("template-id")
+                    .map(|x| x.to_string());
+
+                let redfish_endpoint = RedfishEndpoint {
+                    id,
+                    name,
+                    hostname,
+                    domain,
+                    fqdn,
+                    enabled: Some(enabled),
+                    user,
+                    password,
+                    use_ssdp: Some(use_ssdp),
+                    mac_required: Some(mac_required),
+                    mac_addr,
+                    ip_address,
+                    rediscover_on_update: Some(rediscover_on_update),
+                    template_id,
+                    r#type: None,
+                    uuid: None,
+                    discovery_info: None,
+                };
+
+                backend
+                    .update_redfish_endpoint(&shasta_token, &redfish_endpoint)
+                    .await?
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
             if let Some(cli_get_group) = cli_get.subcommand_matches("groups") {
@@ -1427,6 +1587,55 @@ pub async fn process_cli(
                     output,
                 )
                 .await;
+            } else if let Some(cli_get_redfish_endopints) =
+                cli_get.subcommand_matches("redfish-endpoints")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id = cli_get_redfish_endopints
+                    .get_one::<String>("id")
+                    .map(|x| x.as_str());
+                let fqdn = cli_get_redfish_endopints
+                    .get_one::<String>("fqdn")
+                    .map(|x| x.as_str());
+
+                // FIXME: ignoring 'type' argument to ship faster and simplify tests
+
+                /* let r#type = cli_get_redfish_endopints
+                .get_one::<String>("type")
+                .map(|x| x.as_str()); */
+                let uuid = cli_get_redfish_endopints
+                    .get_one::<String>("uuid")
+                    .map(|x| x.as_str());
+                let macaddr = cli_get_redfish_endopints
+                    .get_one::<String>("macaddr")
+                    .map(|x| x.as_str());
+                let ipaddress = cli_get_redfish_endopints
+                    .get_one::<String>("ipaddress")
+                    .map(|x| x.as_str());
+
+                // FIXME: ignoring 'last-status' argument to ship faster and simplify tests
+
+                /* let last_status = cli_get_redfish_endopints
+                .get_one::<String>("last-status")
+                .map(|x| x.as_str()); */
+
+                let redfish_endpoints = backend
+                    .get_redfish_endpoints(
+                        &shasta_token,
+                        id,
+                        fqdn,
+                        // r#type,
+                        None,
+                        uuid,
+                        macaddr,
+                        ipaddress,
+                        // last_status,
+                        None,
+                    )
+                    .await?;
+
+                println!("{}", serde_json::to_string_pretty(&redfish_endpoints)?);
             }
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
@@ -2298,6 +2507,21 @@ pub async fn process_cli(
 
                 match result {
                     Ok(_) => println!("Boot parameters deleted successfully"),
+                    Err(error) => eprintln!("{}", error),
+                }
+            } else if let Some(cli_delete_redfish_endpoint) =
+                cli_delete.subcommand_matches("redfish-endpoint")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id: &String = cli_delete_redfish_endpoint.get_one("id").expect(
+                    "ERROR - host argument is mandatory. Please provide the host to delete",
+                );
+
+                let result = backend.delete_redfish_endpoint(&shasta_token, &id).await;
+
+                match result {
+                    Ok(_) => println!("Boot parameters for id '{}' deleted successfully", id),
                     Err(error) => eprintln!("{}", error),
                 }
             } else if let Some(cli_delete_kernel_parameters) =
