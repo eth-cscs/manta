@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.83] - 2025-02-25
+
+### Bug Fixes
+
+- Add node
+- Cargo local path dependencies
+
+### Features
+
+- New command to delete a node
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.82] - 2025-02-25
 
 ### Bug Fixes
@@ -12,6 +27,10 @@ All notable changes to this project will be documented in this file.
 
 - New functionalities add/update/delete boot parameters
 - New functionalities get/add/update/delete redfish endpoint
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.82
 
 ## [1.54.1-beta.81] - 2025-02-24
 
