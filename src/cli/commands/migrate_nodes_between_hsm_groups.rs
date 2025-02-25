@@ -50,10 +50,6 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    log::info!("List of all nodes to work on per HSM group:");
-    for (hsm_group_name, hsm_group_members) in &hsm_group_summary {
-        log::info!("{}: {}", hsm_group_name, hsm_group_members.len());
-    }
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     for target_hsm_name in target_hsm_name_vec {

@@ -39,31 +39,14 @@ pub async fn exec(
     };
 
     // Add node to backend
-    let add_node_rslt = backend.post_nodes(shasta_token, components).await;
-
-    if let Err(e) = add_node_rslt {
-        eprintln!("ERROR - Could not create node '{}'. Reason:\n{:#?}", id, e);
-        std::process::exit(1);
-    };
+    backend.post_nodes(shasta_token, components).await?;
 
     log::info!("Node saved '{}'. Try to add hardware", id);
 
     // Add hardware inventory
-    let add_hardware_rslt = backend
+    backend
         .post_inventory_hardware(&shasta_token, hw_inventory)
-        .await;
-
-    if let Err(e) = add_hardware_rslt {
-        eprintln!("ERROR - Could not save node's hardware. Reason:\n{:#?}", e);
-        std::process::exit(1);
-    };
-
-    log::info!(
-        "Node's hardware saved '{}'. Try to join node '{}' to group '{}'",
-        id,
-        id,
-        group
-    );
+        .await?;
 
     Ok(())
 }

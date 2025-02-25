@@ -530,85 +530,6 @@ pub async fn process_cli(
                     .cloned()
                     .unwrap_or(true);
 
-                /* // Create node api payload
-                let component: ComponentCreate = ComponentCreate {
-                    id: id.to_string(),
-                    state: "Unknown".to_string(),
-                    flag: None,
-                    enabled: Some(enabled),
-                    software_status: None,
-                    role: None,
-                    sub_role: None,
-                    nid: None,
-                    subtype: None,
-                    net_type: None,
-                    arch: arch_opt,
-                    class: None,
-                };
-
-                let components = ComponentArrayPostArray {
-                    components: vec![component],
-                    force: Some(true),
-                };
-
-                // Add node to backend
-                let add_node_rslt = backend.post_nodes(shasta_token.as_str(), components).await;
-
-                if let Err(e) = add_node_rslt {
-                    eprintln!("ERROR - Could not create node '{}'. Reason:\n{:#?}", id, e);
-                    std::process::exit(1);
-                };
-
-                log::info!("Node saved '{}'. Try to add hardware", id);
-
-                // Add hardware inventory
-                let add_hardware_rslt = backend
-                    .post_inventory_hardware(&shasta_token, hw_inventory)
-                    .await;
-
-                if let Err(e) = add_hardware_rslt {
-                    eprintln!("ERROR - Could not save node's hardware. Reason:\n{:#?}", e);
-                    std::process::exit(1);
-                };
-
-                log::info!(
-                    "Node's hardware saved '{}'. Try to join node '{}' to group '{}'",
-                    id,
-                    id,
-                    group
-                );
-
-                // Add node to group
-                let new_group_members_rslt = backend
-                    .add_members_to_group(&shasta_token, group, vec![id.clone().as_str()])
-                    .await;
-
-                if new_group_members_rslt.is_err() {
-                    eprintln!(
-                        "ERROR - Could not add node to group. Reason:\n{:#?}",
-                        new_group_members_rslt
-                    );
-                    eprintln!("Try to delete node '{}'", id);
-                    // Could not add xname to group. Reset operation by removing the node
-                    eprintln!("ERROR - operation to add node '{id}' to group '{group}' failed, delete node '{id}' to reset state");
-                    let delete_node_rslt = backend
-                        .delete_node(shasta_token.as_str(), id.clone().as_str())
-                        .await;
-
-                    if delete_node_rslt.is_ok() {
-                        eprintln!("Node '{}' deleted", id);
-                    }
-
-                    std::process::exit(1);
-
-                println!(
-                    "Node '{}' created and added to group '{}'.\nGroup '{}' members:\n{:#?}",
-                    id,
-                    group,
-                    group,
-                    new_group_members_rslt.unwrap()
-                } */
-
                 let add_node_rslt = add_node::exec(
                     &backend,
                     &shasta_token,
@@ -636,6 +557,8 @@ pub async fn process_cli(
                     std::process::exit(1);
                 }
 
+                log::info!("Node '{}' created", id);
+
                 // Add node to group
                 let new_group_members_rslt = backend
                     .add_members_to_group(&shasta_token, group, vec![id])
@@ -645,13 +568,7 @@ pub async fn process_cli(
                     eprintln!("ERROR - Could not add node to group. Reason:\n{:#?}", error);
                 }
 
-                println!(
-                    "Node '{}' created and added to group '{}'.\nGroup '{}' members:\n{:#?}",
-                    id,
-                    group,
-                    group,
-                    new_group_members_rslt.unwrap()
-                );
+                println!("Node '{}' created and added to group '{}'", id, group,);
             } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
@@ -2427,6 +2344,16 @@ pub async fn process_cli(
                     .expect("The 'force' argument must have a value");
 
                 delete_group::exec(&backend, &shasta_token, label, force).await;
+            } else if let Some(cli_delete_node) = cli_delete.subcommand_matches("node") {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let id: &String = cli_delete_node
+                    .get_one("VALUE")
+                    .expect("ERROR - group name argument is mandatory");
+
+                backend.delete_node(&shasta_token, id).await?;
+
+                println!("Node '{}' deleted", id);
             } else if let Some(cli_delete_hw_configuration) =
                 cli_delete.subcommand_matches("hardware")
             {
@@ -2757,15 +2684,6 @@ pub async fn process_cli(
         } else if let Some(cli_validate_local_repo) =
             cli_root.subcommand_matches("validate-local-repo")
         {
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
-            // let shasta_token = backend.get_api_token(&site_name).await?;
-
             // FIXME: gitea auth token should be calculated before colling this function
             let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                 vault_base_url.expect("ERROR - vault base url is mandatory"),
@@ -2782,13 +2700,6 @@ pub async fn process_cli(
             validate_local_repo::exec(shasta_root_cert, gitea_base_url, &gitea_token, repo_path)
                 .await;
         } else if let Some(cli_add_nodes) = cli_root.subcommand_matches("add-nodes-to-groups") {
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
             let shasta_token = backend.get_api_token(&site_name).await?;
 
             let dryrun = *cli_add_nodes

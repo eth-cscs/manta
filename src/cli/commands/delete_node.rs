@@ -10,8 +10,6 @@ pub async fn exec(
     // Delete node
     backend.delete_node(auth_token, id).await?;
 
-    Ok(())
-    //
     // Delete hsm hardware inventory related to a node
     //
     // Delete hsm network interfaces related to a node
@@ -19,4 +17,8 @@ pub async fn exec(
     // Delete hsm redfish interfaces related to a node
     //
     // Delete BSS boot parameters related to a node
+
+    println!("Node deleted '{}'", id);
+
+    Ok(())
 }

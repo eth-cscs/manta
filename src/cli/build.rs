@@ -139,7 +139,7 @@ pub fn subcommand_delete_node() -> Command {
             arg!(-c --"cascade" "WIP - Deletes the hardware inventory, redfish and network interfaces for this node.")
                 .action(ArgAction::SetTrue),
         ) */
-        .arg(arg!(<VALUE> "Node name to delete").required(true))
+        .arg(arg!(<VALUE> "Xname to delete").required(true))
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
