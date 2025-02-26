@@ -83,10 +83,7 @@ pub async fn exec(new_site_opt: Option<&String>) {
 
 pub fn validate_site_and_site_available_config_params(site: &String, site_available_table: &Table) {
     if !site_available_table.contains_key(site) {
-        eprintln!(
-            "Site provided ({}) not valid, please choose one of the following options: {:?}",
-            site, site_available_table
-        );
+        eprintln!("Site provided ({}) not valid.", site);
         std::process::exit(1);
     }
 }
