@@ -580,9 +580,9 @@ pub async fn process_cli(
 
                 let node_expression: Option<&String> = cli_add_group.get_one::<String>("nodes");
 
-                let assume_yes: bool = cli_add_group.get_flag("assume-yes");
+                // let assume_yes: bool = cli_add_group.get_flag("assume-yes");
 
-                let dryrun = cli_add_group.get_flag("dryrun");
+                // let dryrun = cli_add_group.get_flag("dryrun");
 
                 /* // Validate user has access to the list of xnames requested
                 if let Some(xname_vec) = &xname_vec_opt {
@@ -607,8 +607,10 @@ pub async fn process_cli(
                     label,
                     description,
                     node_expression,
-                    assume_yes,
-                    dryrun,
+                    // assume_yes,
+                    true,
+                    // dryrun,
+                    false,
                     kafka_audit_opt,
                 )
                 .await;
@@ -681,8 +683,8 @@ pub async fn process_cli(
                 // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
                 // using the nids or macs
 
-                let nids: Option<&String> = cli_add_boot_parameters.get_one("nids");
-                let macs: Option<&String> = cli_add_boot_parameters.get_one("macs");
+                // let nids: Option<&String> = cli_add_boot_parameters.get_one("nids");
+                // let macs: Option<&String> = cli_add_boot_parameters.get_one("macs");
                 let params: Option<&String> = cli_add_boot_parameters.get_one("params");
                 let kernel: Option<&String> = cli_add_boot_parameters.get_one("kernel");
                 let initrd: Option<&String> = cli_add_boot_parameters.get_one("initrd");
@@ -705,8 +707,10 @@ pub async fn process_cli(
                     &backend,
                     &shasta_token,
                     hosts,
-                    nids,
-                    macs,
+                    // nids,
+                    None,
+                    // macs,
+                    None,
                     params,
                     kernel,
                     initrd,
@@ -718,6 +722,8 @@ pub async fn process_cli(
                     Ok(_) => {}
                     Err(error) => eprintln!("{}", error),
                 }
+
+                println!("Boot parameters added to hosts '{}'", hosts);
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {
@@ -843,7 +849,7 @@ pub async fn process_cli(
                     .map(|x| x.to_string());
 
                 let redfish_endpoint = RedfishEndpoint {
-                    id,
+                    id: id.clone(),
                     name,
                     hostname,
                     domain,
@@ -864,7 +870,9 @@ pub async fn process_cli(
 
                 backend
                     .add_redfish_endpoint(&shasta_token, &redfish_endpoint)
-                    .await?
+                    .await?;
+
+                println!("Redfish endpoint for node '{}' added", id);
             }
         } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
             if let Some(cli_update_boot_parameters) =
@@ -998,10 +1006,10 @@ pub async fn process_cli(
                     .await?
             }
         } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
-            if let Some(cli_get_group) = cli_get.subcommand_matches("groups") {
+            if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let group_name_arg_opt = cli_get_group.get_one::<String>("VALUE");
+                let group_name_arg_opt = cli_get_groups.get_one::<String>("VALUE");
 
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
@@ -1011,7 +1019,7 @@ pub async fn process_cli(
                 )
                 .await?;
 
-                let output = cli_get_group
+                let output = cli_get_groups
                     .get_one::<String>("output")
                     .expect("ERROR - 'output' argument is mandatory");
 

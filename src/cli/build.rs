@@ -125,7 +125,7 @@ pub fn subcommand_delete_group() -> Command {
                 .arg_required_else_help(true)
                 .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
                 .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
-                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                 .arg(arg!(<VALUE> "Group name to delete").required(true))
 }
 
@@ -692,8 +692,8 @@ pub fn subcommand_add_group() -> Command {
                 .arg(arg!(-l --label <VALUE> "Group name").required(true))
                 .arg(arg!(-d --description <VALUE> "Group description"))
                 .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
-                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-                .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+    // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+    // .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_add_node() -> Command {
@@ -731,7 +731,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
        .arg(arg!(-i --id <VALUE> "Uniquely identifies the component by its physical location (xname). This is identical to a normal XName, but specifies a case where a BMC or other controller type is expected.").required(true))
        .arg(arg!(-n --name <VALUE> "This is an arbitrary, user-provided name for the endpoint. It can describe anything that is not captured by the ID/xname."))
        .arg(arg!(-H --hostname <VALUE> "Hostname of the endpoint's FQDN, will always be the host portion of the fully-qualified domain name. Note that the hostname should normally always be the same as the ID field (i.e. xname) of the endpoint.."))
-       .arg(arg!(-d --domain <VALUE> ".Domain of the endpoint's FQDN. Will always match remaining non-hostname portion of fully-qualified domain name (FQDN)."))
+       .arg(arg!(-d --domain <VALUE> "Domain of the endpoint's FQDN. Will always match remaining non-hostname portion of fully-qualified domain name (FQDN)."))
        .arg(arg!(-f --fqdn <VALUE> "Fully-qualified domain name of RF endpoint on management network. This is not writable because it is made up of the Hostname and Domain."))
        .arg(arg!(-e --enabled "To disable a component without deleting its data from the database, can be set to false.").action(ArgAction::SetTrue))
        .arg(arg!(-u --user <VALUE> "Username to use when interrogating endpoint."))
@@ -756,8 +756,8 @@ pub fn subcommand_add_boot_parameters() -> Command {
         // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
         // using the nids or macs
 
-        /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
-        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
+        // .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+        // .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true))
         .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
         .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
         .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))

@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 - New command to delete a node
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.83
+
 ### Refactor
 
 - Clean code
