@@ -10,6 +10,7 @@ use crate::common::{
 };
 
 pub async fn exec(
+    site_name: &str,
     hsm_group_name_vec: &Vec<String>,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -104,6 +105,7 @@ pub async fn exec(
     }
 
     connect_to_console(
+        site_name,
         shasta_token,
         &cfs_session_name.to_string(),
         /* vault_base_url,
@@ -117,6 +119,7 @@ pub async fn exec(
 }
 
 pub async fn connect_to_console(
+    site_name: &str,
     shasta_token: &str,
     cfs_session_name: &String,
     /* vault_base_url: &str,
@@ -139,9 +142,15 @@ pub async fn connect_to_console(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
-            .await
-            .unwrap(),
+        } => fetch_shasta_k8s_secrets_from_vault(
+            &base_url,
+            site_name,
+            &secret_path,
+            &role_id,
+            shasta_token,
+        )
+        .await
+        .unwrap(),
     };
 
     let mut attached = console::get_container_attachment_to_cfs_session_image_target(

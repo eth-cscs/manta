@@ -10,12 +10,13 @@ use crate::{
 };
 
 pub async fn exec(
+    site_name: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
     vault_secret_path: &str,
-    vault_role_id: &str,
+    // vault_role_id: &str,
     k8s_api_url: &str,
     sat_file_content: String,
     values_file_content_opt: Option<String>,
@@ -133,9 +134,15 @@ pub async fn exec(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
-            .await
-            .unwrap(),
+        } => fetch_shasta_k8s_secrets_from_vault(
+            &base_url,
+            site_name,
+            &secret_path,
+            &role_id,
+            shasta_token,
+        )
+        .await
+        .unwrap(),
     };
 
     mesa::commands::apply_sat_file::command::exec(
@@ -144,7 +151,7 @@ pub async fn exec(
         shasta_root_cert,
         vault_base_url,
         vault_secret_path,
-        vault_role_id,
+        // vault_role_id,
         k8s_api_url,
         shasta_k8s_secrets,
         sat_file_content,

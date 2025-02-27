@@ -1018,18 +1018,32 @@ impl CfsTrait for StaticBackendDispatcher {
 
     async fn get_session_logs_stream(
         &self,
+        shasta_token: &str,
+        site_name: &str,
         cfs_session_name: &str,
         k8s_api_url: &str,
         k8s: &K8sDetails,
     ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
         match self {
             CSM(b) => {
-                b.get_session_logs_stream(cfs_session_name, k8s_api_url, k8s)
-                    .await
+                b.get_session_logs_stream(
+                    shasta_token,
+                    site_name,
+                    cfs_session_name,
+                    k8s_api_url,
+                    k8s,
+                )
+                .await
             }
             OCHAMI(b) => {
-                b.get_session_logs_stream(cfs_session_name, k8s_api_url, k8s)
-                    .await
+                b.get_session_logs_stream(
+                    shasta_token,
+                    site_name,
+                    cfs_session_name,
+                    k8s_api_url,
+                    k8s,
+                )
+                .await
             }
         }
     }
@@ -1037,17 +1051,18 @@ impl CfsTrait for StaticBackendDispatcher {
     async fn get_session_logs_stream_by_xname(
         &self,
         auth_token: &str,
+        site_name: &str,
         xname: &str,
         k8s_api_url: &str,
         k8s: &K8sDetails,
     ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
         match self {
             CSM(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, xname, k8s_api_url, k8s)
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s_api_url, k8s)
                     .await
             }
             OCHAMI(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, xname, k8s_api_url, k8s)
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s_api_url, k8s)
                     .await
             }
         }
@@ -1062,7 +1077,7 @@ impl SatTrait for StaticBackendDispatcher {
         shasta_root_cert: &[u8],
         vault_base_url: &str,
         vault_secret_path: &str,
-        vault_role_id: &str,
+        // vault_role_id: &str,
         k8s_api_url: &str,
         shasta_k8s_secrets: serde_json::Value,
         sat_file_content: String,
@@ -1088,7 +1103,7 @@ impl SatTrait for StaticBackendDispatcher {
                     shasta_root_cert,
                     vault_base_url,
                     vault_secret_path,
-                    vault_role_id,
+                    // vault_role_id,
                     k8s_api_url,
                     shasta_k8s_secrets,
                     sat_file_content,
@@ -1115,7 +1130,7 @@ impl SatTrait for StaticBackendDispatcher {
                     shasta_root_cert,
                     vault_base_url,
                     vault_secret_path,
-                    vault_role_id,
+                    // vault_role_id,
                     k8s_api_url,
                     shasta_k8s_secrets,
                     sat_file_content,

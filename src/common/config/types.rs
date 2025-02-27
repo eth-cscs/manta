@@ -51,7 +51,7 @@ pub struct Site {
     pub k8s_api_url: Option<String>,
     pub vault_base_url: Option<String>,
     pub vault_secret_path: Option<String>,
-    pub vault_role_id: Option<String>,
+    // pub vault_role_id: Option<String>,
     pub root_ca_cert_file: String,
 }
 

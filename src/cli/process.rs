@@ -57,7 +57,7 @@ pub async fn process_cli(
     shasta_root_cert: &[u8],
     vault_base_url: Option<&String>,
     vault_secret_path: Option<&String>,
-    vault_role_id: Option<&String>,
+    // vault_role_id: Option<&String>,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
     k8s_api_url: Option<&String>,
@@ -1120,9 +1120,11 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before calling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
-                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                    vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    &site_name,
+                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    "",
                 )
                 .await
                 .unwrap();
@@ -1656,9 +1658,12 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
-                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                    vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    &site_name,
+                    // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    "",
                 )
                 .await
                 .unwrap();
@@ -1705,6 +1710,7 @@ pub async fn process_cli(
 
                 let apply_session_rslt = apply_session::exec(
                     backend,
+                    &site_name,
                     &gitea_token,
                     gitea_base_url,
                     &shasta_token,
@@ -1754,9 +1760,12 @@ pub async fn process_cli(
 
                 // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                    &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
-                    vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                    vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    &site_name,
+                    // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
+                    "",
                 )
                 .await
                 .unwrap();
@@ -1839,12 +1848,13 @@ pub async fn process_cli(
                     .unwrap();
 
                 apply_sat_file::command::exec(
+                    &site_name,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url.expect("ERROR - vault_base_url is mandatory"),
                     vault_secret_path.expect("ERROR - vault_secret_path is mandatory"),
-                    vault_role_id.expect("ERROR - vault_role_id is mandatory"),
+                    // vault_role_id.expect("ERROR - vault_role_id is mandatory"),
                     k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
                     sat_file_content,
                     cli_values_file_content_opt,
@@ -2093,6 +2103,7 @@ pub async fn process_cli(
 
             commands::log::exec(
                 &backend,
+                &site_name,
                 &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -2127,6 +2138,7 @@ pub async fn process_cli(
 
                 console_node::exec(
                     &backend,
+                    &site_name,
                     settings_hsm_group_name_opt,
                     // cli_console,
                     &shasta_token,
@@ -2172,6 +2184,7 @@ pub async fn process_cli(
                     .unwrap();
 
                 console_cfs_session_image_target_ansible::exec(
+                    &site_name,
                     &target_hsm_group_vec,
                     &shasta_token,
                     shasta_base_url,
@@ -2692,11 +2705,16 @@ pub async fn process_cli(
         } else if let Some(cli_validate_local_repo) =
             cli_root.subcommand_matches("validate-local-repo")
         {
+            let shasta_token = backend.get_api_token(&site_name).await?;
+
             // FIXME: gitea auth token should be calculated before colling this function
             let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+                &shasta_token,
                 vault_base_url.expect("ERROR - vault base url is mandatory"),
-                vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                vault_role_id.expect("ERROR - vault role id is mandatory"),
+                &site_name,
+                // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
+                // vault_role_id.expect("ERROR - vault role id is mandatory"),
+                "",
             )
             .await
             .unwrap();

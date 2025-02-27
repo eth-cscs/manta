@@ -4,6 +4,11 @@ pub mod http_client {
     use serde_json::{json, Value};
 
     pub async fn auth_oidc_jwt(vault_base_url: &str, shasta_token: &str) -> Result<String, Error> {
+        // NOTE: role is hardcoded to manta, this is the role that is created in vault for the
+        // jwt-manta auth method. This role is created by the vault admin and is used to
+        // authenticate
+        let role = "manta";
+
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
@@ -11,7 +16,7 @@ pub mod http_client {
 
         log::debug!("Accessing/login to {}", api_url);
 
-        let request_payload = json!({ "jwt": shasta_token, "role": "manta" });
+        let request_payload = json!({ "jwt": shasta_token, "role": role });
 
         let resp = client
             .post(api_url.clone())
@@ -33,7 +38,7 @@ pub mod http_client {
         }
     }
 
-    pub async fn auth_approle(vault_base_url: &str, vault_role_id: &str) -> Result<String, Error> {
+    /* pub async fn auth_approle(vault_base_url: &str, vault_role_id: &str) -> Result<String, Error> {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
@@ -59,10 +64,10 @@ pub mod http_client {
                 return Err(Error::NetError(e));
             }
         }
-    }
+    } */
 
     pub async fn fetch_secret(
-        auth_token: &str,
+        vault_auth_token: &str,
         vault_base_url: &str,
         secret_path: &str,
     ) -> Result<Value, Error> {
@@ -75,7 +80,7 @@ pub mod http_client {
 
         let resp = client
             .get(api_url)
-            .header("X-Vault-Token", auth_token)
+            .header("X-Vault-Token", vault_auth_token)
             .send()
             .await?;
 
@@ -91,21 +96,28 @@ pub mod http_client {
     }
 
     pub async fn fetch_shasta_vcs_token(
+        shasta_token: &str,
         vault_base_url: &str,
-        vault_secrets_path: &str,
-        vault_role_id: &str,
+        site: &str,
+        // vault_role_id: &str,
+        secret_path: &str,
     ) -> Result<String, Error> {
-        let vault_token_resp = auth_approle(vault_base_url, vault_role_id).await;
+        let vault_token_resp = auth_oidc_jwt(vault_base_url, shasta_token).await;
+
+        let vault_secret_path = format!("manta/data/{}", site);
 
         match vault_token_resp {
             Ok(vault_token) => {
                 let vault_secret = fetch_secret(
                     &vault_token,
                     vault_base_url,
-                    &format!("/v1/{}/vcs", vault_secrets_path),
+                    &format!("/v1/{}/vcs", vault_secret_path),
                 )
                 .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
-                Ok(String::from(vault_secret["token"].as_str().unwrap())) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
+
+                Ok(String::from(
+                    vault_secret["data"]["token"].as_str().unwrap(),
+                )) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
             }
             Err(e) => {
                 eprintln!("{}", e);
@@ -116,13 +128,14 @@ pub mod http_client {
 
     pub async fn fetch_shasta_k8s_secrets_from_vault(
         vault_base_url: &str,
-        vault_secret_path: &str,
+        site: &str,
         vault_role_id: &str,
         shasta_token: &str,
+        secret_path: &str,
     ) -> Result<Value, Error> {
         let vault_token = auth_oidc_jwt(vault_base_url, shasta_token).await?;
 
-        let vault_secret_path = "manta/data/alps";
+        let vault_secret_path = format!("manta/data/{}", site);
 
         fetch_secret(
             &vault_token,

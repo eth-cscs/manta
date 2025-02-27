@@ -87,8 +87,8 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .get("vault_role_id")
     .expect("ERROR - 'vault_role_id' value missing in configuration file")
     .to_string(); */
-    let vault_role_id = &site_detail_value.vault_role_id;
-    log::debug!("config - vault_role_id:  {vault_role_id:?}");
+    /* let vault_role_id = &site_detail_value.vault_role_id;
+    log::debug!("config - vault_role_id:  {vault_role_id:?}"); */
     /* let vault_secret_path = site_detail_value
     .get("vault_secret_path")
     .unwrap()
@@ -197,7 +197,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &shasta_root_cert,
         vault_base_url.as_ref(),
         vault_secret_path.as_ref(),
-        vault_role_id.as_ref(),
+        // vault_role_id.as_ref(),
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
         k8s_api_url.as_ref(),

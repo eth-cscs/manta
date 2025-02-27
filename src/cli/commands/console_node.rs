@@ -14,6 +14,7 @@ use crate::{
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
+    site_name: &str,
     hsm_group: Option<&String>,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -70,6 +71,7 @@ pub async fn exec(
 
     let console_rslt = connect_to_console(
         shasta_token,
+        site_name,
         // included.iter().next().unwrap(),
         &xname.to_string(),
         // k8s_api_url,
@@ -91,6 +93,7 @@ pub async fn exec(
 
 pub async fn connect_to_console(
     shasta_token: &str,
+    site_name: &str,
     xname: &String,
     // k8s_api_url: &str,
     k8s: &K8sDetails,
@@ -112,9 +115,15 @@ pub async fn connect_to_console(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
-            .await
-            .unwrap(),
+        } => fetch_shasta_k8s_secrets_from_vault(
+            &base_url,
+            &site_name,
+            &secret_path,
+            &role_id,
+            shasta_token,
+        )
+        .await
+        .unwrap(),
     };
 
     /* let mut attached =

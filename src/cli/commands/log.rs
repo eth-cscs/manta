@@ -12,6 +12,7 @@ use crate::{
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
+    site_name: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
@@ -121,7 +122,7 @@ pub async fn exec(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, &role_id, shasta_token, "")
             .await
             .unwrap(),
     };
