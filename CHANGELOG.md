@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.84] - 2025-02-27
+
+### Features
+
+- Manta-vault authentication through keycloak token
+
+### Miscellaneous Tasks
+
+- Remove arguments in cli commands not supported by APIs
+
+### Refactor
+
+- Improve error messages
+
 ## [1.54.1-beta.83] - 2025-02-25
 
 ### Bug Fixes
