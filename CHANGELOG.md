@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.28] - 2025-02-27
+
+### Features
+
+- When powering off and reset --force if the default
+
 ## [1.54.27] - 2025-02-22
 
 ### Bug Fixes
 
 - Apply sat file fails while watching logs because it won't wait teardown stage or the CFS session to complete
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.27
 
 ## [1.54.26] - 2025-02-21
 
