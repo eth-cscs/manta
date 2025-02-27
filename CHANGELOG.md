@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.85] - 2025-02-27
+
+### Miscellaneous Tasks
+
+- Adapt interfaces for new vault authentication
+
 ## [1.54.1-beta.84] - 2025-02-27
 
 ### Features
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Remove arguments in cli commands not supported by APIs
+- Release manta version 1.54.1-beta.84
 
 ### Refactor
 
