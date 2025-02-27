@@ -538,7 +538,7 @@ pub fn subcommand_power() -> Command {
                         // .visible_aliases(["c", "clstr"])
                         .arg_required_else_help(true)
                         .about("Command to power off all nodes in a cluster")
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-R --reason <TEXT> "reason to power off"))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
@@ -551,7 +551,7 @@ pub fn subcommand_power() -> Command {
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
                         .arg(arg!(-r --regex "Input nodes in regex format.\neg 'x1003c1s.*'").action(ArgAction::SetTrue))
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'")),
@@ -566,10 +566,9 @@ pub fn subcommand_power() -> Command {
                         // .visible_aliases(["c", "clstr"])
                         .arg_required_else_help(true)
                         .about("Command to power reset all nodes in a cluster")
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-                        .arg(arg!(-r --reason <TEXT> "reason to power reset"))
                         .arg(arg!(<CLUSTER_NAME> "Cluster name")),
                 )
                 .subcommand(
@@ -578,7 +577,7 @@ pub fn subcommand_power() -> Command {
                         .arg_required_else_help(true)
                         .about("Command to power reset a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
                         .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
-                        .arg(arg!(-f --force "force").action(ArgAction::SetTrue))
+                        .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
                         .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
                         .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'")),

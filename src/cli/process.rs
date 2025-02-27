@@ -289,8 +289,9 @@ pub async fn process_cli(
                         .expect("The 'cluster name' argument must have a value");
 
                     let force = cli_power_off_cluster
-                        .get_one::<bool>("force")
-                        .expect("The 'force' argument must have a value");
+                        .get_one::<bool>("graceful")
+                        .expect("The 'graceful' argument must have a value");
+
                     let output: &str = cli_power_off_cluster.get_one::<String>("output").unwrap();
 
                     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
@@ -325,8 +326,8 @@ pub async fn process_cli(
                         .expect("The 'xnames' argument must have values");
 
                     let force = cli_power_off_node
-                        .get_one::<bool>("force")
-                        .expect("The 'force' argument must have a value");
+                        .get_one::<bool>("graceful")
+                        .expect("The 'graceful' argument must have a value");
 
                     let is_regex = *cli_power_off_node.get_one::<bool>("regex").unwrap_or(&true);
 
@@ -355,8 +356,8 @@ pub async fn process_cli(
                         .expect("The 'cluster name' argument must have a value");
 
                     let force = cli_power_reset_cluster
-                        .get_one::<bool>("force")
-                        .expect("The 'force' argument must have a value");
+                        .get_one::<bool>("graceful")
+                        .expect("The 'graceful' argument must have a value");
 
                     let output: &str = cli_power_reset_cluster.get_one::<String>("output").unwrap();
 
@@ -394,8 +395,8 @@ pub async fn process_cli(
                         .expect("The 'xnames' argument must have values");
 
                     let force = cli_power_reset_node
-                        .get_one::<bool>("force")
-                        .expect("The 'force' argument must have a value");
+                        .get_one::<bool>("graceful")
+                        .expect("The 'graceful' argument must have a value");
 
                     let is_regex = *cli_power_reset_node
                         .get_one::<bool>("regex")
