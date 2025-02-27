@@ -69,6 +69,7 @@ pub async fn exec(
     }
 
     let console_rslt = connect_to_console(
+        shasta_token,
         // included.iter().next().unwrap(),
         &xname.to_string(),
         // k8s_api_url,
@@ -89,6 +90,7 @@ pub async fn exec(
 }
 
 pub async fn connect_to_console(
+    shasta_token: &str,
     xname: &String,
     // k8s_api_url: &str,
     k8s: &K8sDetails,
@@ -110,7 +112,9 @@ pub async fn connect_to_console(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
+            .await
+            .unwrap(),
     };
 
     /* let mut attached =

@@ -13,7 +13,7 @@ pub mod apply_sat_file;
 pub mod apply_session;
 pub mod apply_template;
 pub mod config_set_hsm;
-pub mod config_set_log;
+pub mod config_set_oleog;
 pub mod config_set_parent_hsm;
 pub mod config_set_site;
 pub mod config_show;

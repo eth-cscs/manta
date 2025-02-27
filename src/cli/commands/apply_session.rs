@@ -282,7 +282,11 @@ pub async fn exec(
                 base_url,
                 secret_path,
                 role_id,
-            } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+            } => {
+                fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
+                    .await
+                    .unwrap()
+            }
         };
 
         let client = kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)

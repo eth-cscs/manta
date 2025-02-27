@@ -110,13 +110,20 @@ pub async fn exec(
             client_certificate_data,
             client_key_data,
         } => {
-            serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+            serde_json::json!(
+            {
+                "certificate-authority-data": certificate_authority_data,
+                "client-certificate-data": client_certificate_data,
+                "client-key-data": client_key_data
+            })
         }
         common::config::types::K8sAuth::Vault {
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
+            .await
+            .unwrap(),
     };
 
     let client =

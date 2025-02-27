@@ -104,6 +104,7 @@ pub async fn exec(
     }
 
     connect_to_console(
+        shasta_token,
         &cfs_session_name.to_string(),
         /* vault_base_url,
         vault_secret_path,
@@ -116,6 +117,7 @@ pub async fn exec(
 }
 
 pub async fn connect_to_console(
+    shasta_token: &str,
     cfs_session_name: &String,
     /* vault_base_url: &str,
     vault_secret_path: &str,
@@ -137,7 +139,9 @@ pub async fn connect_to_console(
             base_url,
             secret_path,
             role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id).await,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &secret_path, &role_id, shasta_token)
+            .await
+            .unwrap(),
     };
 
     let mut attached = console::get_container_attachment_to_cfs_session_image_target(
