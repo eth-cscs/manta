@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.29] - 2025-02-28
+
+### Miscellaneous Tasks
+
+- Show error when fetching a CFS session while waiting session to finish
+
 ## [1.54.28] - 2025-02-27
 
 ### Features
 
 - When powering off and reset --force if the default
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.28
 
 ## [1.54.27] - 2025-02-22
 
