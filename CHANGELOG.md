@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.86] - 2025-02-28
+
+### Features
+
+- Power off and power reset '--force' is now the default
+
 ## [1.54.1-beta.85] - 2025-02-27
 
 ### Miscellaneous Tasks
 
 - Adapt interfaces for new vault authentication
+- Release manta version 1.54.1-beta.85
 
 ## [1.54.1-beta.84] - 2025-02-27
 
