@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.87] - 2025-03-02
+
+### Miscellaneous Tasks
+
+- Remove vault path and vault role id
+
 ## [1.54.1-beta.86] - 2025-02-28
 
 ### Features
 
 - Power off and power reset '--force' is now the default
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.86
 
 ## [1.54.1-beta.85] - 2025-02-27
 
