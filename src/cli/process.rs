@@ -56,7 +56,7 @@ pub async fn process_cli(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: Option<&String>,
-    vault_secret_path: Option<&String>,
+    // vault_secret_path: Option<&String>,
     // vault_role_id: Option<&String>,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
@@ -1123,8 +1123,6 @@ pub async fn process_cli(
                     &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
                     &site_name,
-                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
-                    "",
                 )
                 .await
                 .unwrap();
@@ -1661,9 +1659,6 @@ pub async fn process_cli(
                     &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
                     &site_name,
-                    // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
-                    "",
                 )
                 .await
                 .unwrap();
@@ -1763,9 +1758,6 @@ pub async fn process_cli(
                     &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
                     &site_name,
-                    // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                    // vault_role_id.expect("ERROR - vault role id is mandatory"),
-                    "",
                 )
                 .await
                 .unwrap();
@@ -1853,7 +1845,7 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url.expect("ERROR - vault_base_url is mandatory"),
-                    vault_secret_path.expect("ERROR - vault_secret_path is mandatory"),
+                    // vault_secret_path.expect("ERROR - vault_secret_path is mandatory"),
                     // vault_role_id.expect("ERROR - vault_role_id is mandatory"),
                     k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
                     sat_file_content,
@@ -2712,9 +2704,6 @@ pub async fn process_cli(
                 &shasta_token,
                 vault_base_url.expect("ERROR - vault base url is mandatory"),
                 &site_name,
-                // vault_secret_path.expect("ERROR - vault secret path is mandatory"),
-                // vault_role_id.expect("ERROR - vault role id is mandatory"),
-                "",
             )
             .await
             .unwrap();

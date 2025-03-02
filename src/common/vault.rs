@@ -100,7 +100,7 @@ pub mod http_client {
         vault_base_url: &str,
         site: &str,
         // vault_role_id: &str,
-        secret_path: &str,
+        // secret_path: &str,
     ) -> Result<String, Error> {
         let vault_token_resp = auth_oidc_jwt(vault_base_url, shasta_token).await;
 
@@ -129,9 +129,9 @@ pub mod http_client {
     pub async fn fetch_shasta_k8s_secrets_from_vault(
         vault_base_url: &str,
         site: &str,
-        vault_role_id: &str,
+        // vault_role_id: &str,
         shasta_token: &str,
-        secret_path: &str,
+        // secret_path: &str,
     ) -> Result<Value, Error> {
         let vault_token = auth_oidc_jwt(vault_base_url, shasta_token).await?;
 

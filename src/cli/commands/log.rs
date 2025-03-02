@@ -120,9 +120,9 @@ pub async fn exec(
         }
         common::config::types::K8sAuth::Vault {
             base_url,
-            secret_path,
-            role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, &role_id, shasta_token, "")
+            // secret_path,
+            // role_id,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
             .await
             .unwrap(),
     };

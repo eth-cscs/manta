@@ -3,7 +3,10 @@ mod cli;
 mod common;
 
 use backend_dispatcher::StaticBackendDispatcher;
-use common::{config::types::MantaConfiguration, kafka::Kafka};
+use common::{
+    config::types::{K8sAuth, MantaConfiguration},
+    kafka::Kafka,
+};
 
 use crate::common::log_ops;
 
@@ -75,13 +78,22 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .get("k8s_api_url")
     .expect("ERROR - 'k8s_api_url' value missing in configuration file")
     .to_string(); */
-    let k8s_api_url = &site_detail_value.k8s_api_url;
+    let k8s_api_url: Option<&String> = site_detail_value
+        .k8s
+        .as_ref()
+        .map(|k8s_details| &k8s_details.api_url);
     log::debug!("config - k8s_api_url:  {k8s_api_url:?}");
     /* let vault_base_url = site_detail_value
     .get("vault_base_url")
     .expect("ERROR - 'vault_base_url' value missing in configuration file")
     .to_string(); */
-    let vault_base_url = &site_detail_value.vault_base_url;
+    let vault_base_url = site_detail_value
+        .k8s
+        .as_ref()
+        .and_then(|k8s| match &k8s.authentication {
+            K8sAuth::Vault { base_url, .. } => Some(base_url),
+            K8sAuth::Native { .. } => None,
+        });
     log::debug!("config - vault_base_url:  {vault_base_url:?}");
     /* let vault_role_id = site_detail_value
     .get("vault_role_id")
@@ -93,7 +105,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .get("vault_secret_path")
     .unwrap()
     .to_string(); */
-    let vault_secret_path = &site_detail_value.vault_secret_path;
+    /* let vault_secret_path =
+    site_detail_value
+        .k8s
+        .as_ref()
+        .and_then(|k8s| match &k8s.authentication {
+            K8sAuth::Vault { secret_path, .. } => Some(secret_path),
+            K8sAuth::Native { .. } => None,
+        }); */
 
     // let audit_detail = settings.get_table("audit").unwrap();
     let audit_detail = configuration.auditor.clone();
@@ -195,12 +214,12 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         backend,
         &shasta_api_url,
         &shasta_root_cert,
-        vault_base_url.as_ref(),
-        vault_secret_path.as_ref(),
+        vault_base_url,
+        // vault_secret_path,
         // vault_role_id.as_ref(),
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
-        k8s_api_url.as_ref(),
+        k8s_api_url,
         audit_kafka_opt.as_ref(),
         &settings,
         &configuration,

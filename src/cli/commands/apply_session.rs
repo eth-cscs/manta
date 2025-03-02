@@ -281,9 +281,8 @@ pub async fn exec(
             }
             crate::common::config::types::K8sAuth::Vault {
                 base_url,
-                secret_path,
-                role_id,
-            } => fetch_shasta_k8s_secrets_from_vault(&base_url, site, &role_id, shasta_token, "")
+                // secret_path: _secret_path,
+            } => fetch_shasta_k8s_secrets_from_vault(&base_url, site, shasta_token)
                 .await
                 .unwrap(),
         };

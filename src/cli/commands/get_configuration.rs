@@ -32,6 +32,7 @@ pub async fn exec(
         limit,
     )
     .await; */
+
     let cfs_configuration_vec: Vec<CfsConfigurationResponse> = backend
         .get_and_filter_configuration(
             shasta_token,

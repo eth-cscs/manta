@@ -329,7 +329,7 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let site_details = Site {
         socks5_proxy,
         shasta_base_url,
-        k8s_api_url: Some(k8s_api_url),
+        // k8s_api_url: Some(k8s_api_url),
         vault_base_url: Some(vault_base_url),
         vault_secret_path: Some(vault_secret_path),
         // vault_role_id: Some(vault_role_id),

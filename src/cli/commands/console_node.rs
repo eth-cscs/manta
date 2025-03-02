@@ -113,17 +113,10 @@ pub async fn connect_to_console(
         }
         common::config::types::K8sAuth::Vault {
             base_url,
-            secret_path,
-            role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(
-            &base_url,
-            &site_name,
-            &secret_path,
-            &role_id,
-            shasta_token,
-        )
-        .await
-        .unwrap(),
+            // secret_path: _secret_path,
+        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &site_name, shasta_token)
+            .await
+            .unwrap(),
     };
 
     /* let mut attached =

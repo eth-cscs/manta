@@ -13,8 +13,8 @@ pub enum K8sAuth {
     },
     Vault {
         base_url: String,
-        secret_path: String,
-        role_id: String,
+        // secret_path: String,
+        // role_id: String,
     },
 }
 
@@ -48,7 +48,7 @@ pub struct Site {
     pub socks5_proxy: Option<String>,
     pub shasta_base_url: String,
     pub k8s: Option<K8sDetails>,
-    pub k8s_api_url: Option<String>,
+    // pub k8s_api_url: Option<String>,
     pub vault_base_url: Option<String>,
     pub vault_secret_path: Option<String>,
     // pub vault_role_id: Option<String>,
