@@ -1,8 +1,6 @@
 use anyhow::Result;
 use backend_dispatcher::{
-    interfaces::hsm::{
-        component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
-    },
+    interfaces::hsm::{component::ComponentTrait, hardware_inventory::HardwareInventory},
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
 

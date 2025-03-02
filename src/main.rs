@@ -31,36 +31,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         });
 
     let site_name: String = configuration.site.clone();
-    /* let site_name = settings
-    .get_string("site")
-    .expect("ERROR - 'site' value missing in configuration file"); */
-    /* let site_detail_hashmap = settings
-    .get_table("sites")
-    .expect("ERROR - 'site' list missing in configuration file"); */
-    /* let site_detail_value = site_detail_hashmap
-    .get(&site_name)
-    .unwrap()
-    .clone()
-    .into_table()
-    .expect(format!("ERROR - site '{}' missing in configuration file", site_name).as_str()); */
     let site_detail_value = configuration.sites.get(&site_name).unwrap();
 
-    /* let backend_tech = site_detail_value
-    .get("backend")
-    .expect("ERROR - 'backend' value missing in configuration file")
-    .to_string(); */
     let backend_tech = &site_detail_value.backend;
-    /* let shasta_base_url = site_detail_value
-    .get("shasta_base_url")
-    .expect("ERROR - 'shasta_base_url' value missing in configuration file")
-    .to_string(); */
     let shasta_base_url = &site_detail_value.shasta_base_url;
     let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
         // old configuration file. TODO: remove this when needed in the future and all users are
         // using the right configuration file
         .strip_suffix("/apis")
         .unwrap_or(&shasta_base_url);
-    // let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
     let shasta_api_url = match backend_tech.as_str() {
         "csm" => shasta_barebone_url.to_owned() + "/apis",
         "ochami" => shasta_barebone_url.to_owned(),
@@ -69,24 +48,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             std::process::exit(1);
         }
     };
-    // let shasta_api_url = shasta_barebone_url.to_owned() + "/apis";
     log::debug!("config - shasta_api_url:  {shasta_api_url}");
-    // let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
     let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
     log::debug!("config - gitea_base_url:  {gitea_base_url}");
-    /* let k8s_api_url = site_detail_value
-    .get("k8s_api_url")
-    .expect("ERROR - 'k8s_api_url' value missing in configuration file")
-    .to_string(); */
     let k8s_api_url: Option<&String> = site_detail_value
         .k8s
         .as_ref()
         .map(|k8s_details| &k8s_details.api_url);
     log::debug!("config - k8s_api_url:  {k8s_api_url:?}");
-    /* let vault_base_url = site_detail_value
-    .get("vault_base_url")
-    .expect("ERROR - 'vault_base_url' value missing in configuration file")
-    .to_string(); */
     let vault_base_url = site_detail_value
         .k8s
         .as_ref()
@@ -95,54 +64,14 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
             K8sAuth::Native { .. } => None,
         });
     log::debug!("config - vault_base_url:  {vault_base_url:?}");
-    /* let vault_role_id = site_detail_value
-    .get("vault_role_id")
-    .expect("ERROR - 'vault_role_id' value missing in configuration file")
-    .to_string(); */
-    /* let vault_role_id = &site_detail_value.vault_role_id;
-    log::debug!("config - vault_role_id:  {vault_role_id:?}"); */
-    /* let vault_secret_path = site_detail_value
-    .get("vault_secret_path")
-    .unwrap()
-    .to_string(); */
-    /* let vault_secret_path =
-    site_detail_value
-        .k8s
-        .as_ref()
-        .and_then(|k8s| match &k8s.authentication {
-            K8sAuth::Vault { secret_path, .. } => Some(secret_path),
-            K8sAuth::Native { .. } => None,
-        }); */
 
     // let audit_detail = settings.get_table("audit").unwrap();
     let audit_detail = configuration.auditor.clone();
-    /* let audit_kafka_detail_hashmap = audit_detail
-    .get("kafka")
-    .expect("kafka value missing in configuration file")
-    .clone()
-    .into_table()
-    .expect("kafka value must be a table"); */
     let audit_kafka_opt: Option<Kafka> = if audit_detail.is_some() {
         Some(audit_detail.unwrap().kafka)
     } else {
         None
     };
-    /* let kafka_audit = Kafka {
-        brokers: audit_kafka_detail_hashmap
-            .get("brokers")
-            .cloned()
-            .expect("'brokers' value missing in configuration file")
-            .into_array()
-            .expect("brokers value must be an array")
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>(),
-        topic: audit_kafka_detail_hashmap
-            .clone()
-            .get("topic")
-            .expect("topic value missing in configuration file")
-            .to_string(),
-    }; */
 
     let log_level = settings.get_string("log").unwrap_or("error".to_string());
     log::debug!("config - log_level:  {log_level}");
@@ -160,16 +89,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
     log_ops::configure(log_level, audit_file_path.as_str()); // log4rs programatically configuration
 
-    /* if let Some(socks_proxy) = site_detail_value.get("socks5_proxy") {
-        let socks_proxy = socks_proxy.to_string();
-        if !socks_proxy.is_empty() {
-            std::env::set_var("SOCKS5", socks_proxy.clone());
-            log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
-            log::debug!("config - socks_proxy:  {socks_proxy}");
-        } else {
-            log::debug!("config - socks_proxy:  Not defined");
-        }
-    } */
     if let Some(socks_proxy) = &site_detail_value.socks5_proxy {
         let socks_proxy = socks_proxy.to_string();
         if !socks_proxy.is_empty() {
@@ -182,11 +101,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     }
 
     let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
-
-    /* let root_ca_cert_file = site_detail_value
-    .get("root_ca_cert_file")
-    .expect("ERROR - 'root_ca_cert_file' value missing in configuration file")
-    .to_string(); */
 
     let root_ca_cert_file = &site_detail_value.root_ca_cert_file;
 
@@ -215,8 +129,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &shasta_api_url,
         &shasta_root_cert,
         vault_base_url,
-        // vault_secret_path,
-        // vault_role_id.as_ref(),
         &gitea_base_url,
         settings_hsm_group_name_opt.as_ref(),
         k8s_api_url,

@@ -3,14 +3,10 @@ use backend_dispatcher::{
     interfaces::{
         bss::BootParametersTrait,
         hsm::{
-            component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
-            redfish_endpoint::RedfishEndpointTrait,
+            component::ComponentTrait, group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
         },
     },
-    types::{
-        hsm::inventory::RedfishEndpoint, BootParameters, ComponentArrayPostArray, ComponentCreate,
-        HWInventoryByLocationList,
-    },
+    types::{hsm::inventory::RedfishEndpoint, BootParameters, HWInventoryByLocationList},
 };
 use clap_complete::{generate, generate_to};
 use std::{
@@ -56,8 +52,6 @@ pub async fn process_cli(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: Option<&String>,
-    // vault_secret_path: Option<&String>,
-    // vault_role_id: Option<&String>,
     gitea_base_url: &str,
     settings_hsm_group_name_opt: Option<&String>,
     k8s_api_url: Option<&String>,
@@ -79,58 +73,28 @@ pub async fn process_cli(
 
     if let Some(cli_config) = cli_root.subcommand_matches("config") {
         if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
             let shasta_token_rslt = backend.get_api_token(&site_name).await;
 
-            config_show::exec(
-                &backend,
-                shasta_token_rslt.ok(),
-                /* shasta_base_url,
-                shasta_root_cert, */
-                settings,
-            )
-            .await;
+            config_show::exec(&backend, shasta_token_rslt.ok(), settings).await;
         } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
             if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 config_set_hsm::exec(
                     &backend,
                     &shasta_token,
                     cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
-                    // hsm_available_vec,
                 )
                 .await;
             }
             if let Some(cli_config_set_parent_hsm) = cli_config_set.subcommand_matches("parent-hsm")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 config_set_parent_hsm::exec(
                     &backend,
                     &shasta_token,
                     cli_config_set_parent_hsm.get_one::<String>("HSM_GROUP_NAME"),
-                    // hsm_available_vec,
                 )
                 .await;
             }
@@ -142,34 +106,12 @@ pub async fn process_cli(
             }
         } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset") {
             if let Some(_cli_config_unset_hsm) = cli_config_unset.subcommand_matches("hsm") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
-
                 config_unset_hsm::exec().await;
             }
             if let Some(_cli_config_unset_parent_hsm) =
                 cli_config_unset.subcommand_matches("parent-hsm")
             {
-                let shasta_token = backend
-                    .get_api_token(
-                        /* shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url, */
-                        &site_name,
-                    )
-                    .await?;
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
+                let shasta_token = backend.get_api_token(&site_name).await?;
 
                 config_unset_parent_hsm::exec(&backend, &shasta_token).await;
             }
@@ -232,13 +174,6 @@ pub async fn process_cli(
         if let Some(cli_power) = cli_root.subcommand_matches("power") {
             if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
                 if let Some(cli_power_on_cluster) = cli_power_on.subcommand_matches("cluster") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg = cli_power_on_cluster
@@ -248,8 +183,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
@@ -266,8 +199,6 @@ pub async fn process_cli(
                     power_on_cluster::exec(
                         backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         target_hsm_group,
                         assume_yes,
                         output,
@@ -275,13 +206,6 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_on_node) = cli_power_on.subcommand_matches("nodes") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let xname_requested: &str = cli_power_on_node
@@ -291,14 +215,6 @@ pub async fn process_cli(
                     let assume_yes: bool = cli_power_on_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
-
-                    /* let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.clone(),
-                    )
-                    .await; */
 
                     power_on_nodes::exec(
                         &backend,
@@ -312,13 +228,6 @@ pub async fn process_cli(
                 }
             } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
                 if let Some(cli_power_off_cluster) = cli_power_off.subcommand_matches("cluster") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg = cli_power_off_cluster
@@ -334,8 +243,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
@@ -350,8 +257,6 @@ pub async fn process_cli(
                     power_off_cluster::exec(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         target_hsm_group,
                         *force,
                         assume_yes,
@@ -360,13 +265,6 @@ pub async fn process_cli(
                     )
                     .await;
                 } else if let Some(cli_power_off_node) = cli_power_off.subcommand_matches("nodes") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let xname_requested: &str = cli_power_off_node
@@ -386,8 +284,6 @@ pub async fn process_cli(
                     power_off_nodes::exec(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         xname_requested,
                         is_regex,
                         *force,
@@ -400,13 +296,6 @@ pub async fn process_cli(
             } else if let Some(cli_power_reset) = cli_power.subcommand_matches("reset") {
                 if let Some(cli_power_reset_cluster) = cli_power_reset.subcommand_matches("cluster")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg = cli_power_reset_cluster
@@ -422,8 +311,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
@@ -438,8 +325,6 @@ pub async fn process_cli(
                     power_reset_cluster::exec(
                         backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         target_hsm_group,
                         *force,
                         assume_yes,
@@ -450,13 +335,6 @@ pub async fn process_cli(
                 } else if let Some(cli_power_reset_node) =
                     cli_power_reset.subcommand_matches("nodes")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let xname_requested: &str = cli_power_reset_node
@@ -474,14 +352,6 @@ pub async fn process_cli(
                     let assume_yes: bool = cli_power_reset_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
-
-                    /* let _ = validate_target_hsm_members(
-                        shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_requested,
-                    )
-                    .await; */
 
                     power_reset_nodes::exec(
                         &backend,
@@ -518,7 +388,6 @@ pub async fn process_cli(
                 let hw_inventory_value: serde_json::Value =
                     serde_json::from_reader(reader).unwrap();
 
-                // let hw_inventory: HWInventoryList = serde_json::from_reader(reader).unwrap();
                 let hw_inventory: HWInventoryByLocationList =
                     serde_json::from_value(hw_inventory_value)
                         .expect("ERROR - Could not parse hardware inventory file");
@@ -580,27 +449,6 @@ pub async fn process_cli(
 
                 let node_expression: Option<&String> = cli_add_group.get_one::<String>("nodes");
 
-                // let assume_yes: bool = cli_add_group.get_flag("assume-yes");
-
-                // let dryrun = cli_add_group.get_flag("dryrun");
-
-                /* // Validate user has access to the list of xnames requested
-                if let Some(xname_vec) = &xname_vec_opt {
-                    validate_target_hsm_members(
-                        &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        xname_vec.iter().map(|xname| xname.to_string()).collect(),
-                    )
-                    .await;
-                }
-
-                // Create Group instance for http payload
-                let group = HsmGroup::new(label, xname_vec_opt);
-
-                // Call backend to create group
-                let result = backend.add_hsm_group(&shasta_token, group).await; */
-
                 add_group::exec(
                     backend,
                     &shasta_token,
@@ -615,13 +463,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_add_hw_configuration) = cli_add.subcommand_matches("hardware") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let target_hsm_group_name_arg_opt =
@@ -630,8 +471,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     target_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -643,8 +482,6 @@ pub async fn process_cli(
                 let parent_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     parent_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -694,14 +531,7 @@ pub async fn process_cli(
                     .collect();
 
                 // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    &xname_vec,
-                )
-                .await;
+                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
                 let result = add_boot_parameters::exec(
                     &backend,
@@ -770,14 +600,7 @@ pub async fn process_cli(
                 let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
 
                 // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    &xname_vec,
-                )
-                .await;
+                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
                 let result = add_kernel_parameters::exec(
                     backend,
@@ -898,14 +721,7 @@ pub async fn process_cli(
                     .collect();
 
                 // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    &xname_vec,
-                )
-                .await;
+                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
                 let result = update_boot_parameters::exec(
                     &backend,
@@ -1031,8 +847,6 @@ pub async fn process_cli(
                 commands::get_group::exec(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     Some(hsm_group_vec.as_slice()),
                     output,
                 )
@@ -1041,13 +855,6 @@ pub async fn process_cli(
                 if let Some(cli_get_hw_configuration_cluster) =
                     cli_get_hw_configuration.subcommand_matches("cluster")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg_opt =
@@ -1056,8 +863,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
@@ -1073,13 +878,6 @@ pub async fn process_cli(
                 } else if let Some(cli_get_hw_configuration_node) =
                     cli_get_hw_configuration.subcommand_matches("node")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let xnames = cli_get_hw_configuration_node
@@ -1089,14 +887,7 @@ pub async fn process_cli(
                     let xname_vec: Vec<String> =
                         xnames.split(',').map(|xname| xname.to_string()).collect();
 
-                    validate_target_hsm_members(
-                        &backend,
-                        &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
-                        &xname_vec,
-                    )
-                    .await;
+                    validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
                     get_hw_configuration_node::exec(
                         &backend,
@@ -1109,13 +900,6 @@ pub async fn process_cli(
                 }
             } else if let Some(cli_get_configuration) = cli_get.subcommand_matches("configurations")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 // FIXME: gitea auth token should be calculated before calling this function
@@ -1132,8 +916,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     hsm_group_name_arg_rslt.unwrap_or(None),
                     settings_hsm_group_name_opt,
                 )
@@ -1161,13 +943,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
@@ -1175,8 +950,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec: Vec<String> = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     hsm_group_name_arg_opt.unwrap_or(None),
                     settings_hsm_group_name_opt,
                 )
@@ -1209,13 +982,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_template) = cli_get.subcommand_matches("templates") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
@@ -1227,28 +993,14 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     hsm_group_name_arg_opt.unwrap_or(None),
                     settings_hsm_group_name_opt,
                 )
                 .await?;
 
                 let hsm_member_vec = backend
-                    .get_member_vec_from_group_name_vec(
-                        &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
-                        target_hsm_group_vec.clone(),
-                    )
+                    .get_member_vec_from_group_name_vec(&shasta_token, target_hsm_group_vec.clone())
                     .await?;
-                /* let hsm_member_vec = hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_vec.clone(),
-                )
-                .await; */
 
                 let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
                     Some(limit)
@@ -1270,13 +1022,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
@@ -1306,14 +1051,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
-
                 // Get list of nodes from cli argument
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
@@ -1333,25 +1070,6 @@ pub async fn process_cli(
 
                 let status = *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false);
 
-                /* // Get list of nodes from cli argument
-                let node_vec: Vec<String> = cli_get_nodes
-                    .get_one::<String>("XNAMES")
-                    .expect("ERROR - need list of xnames")
-                    .clone()
-                    .split(",")
-                    .map(|xname_str| xname_str.trim().to_string())
-                    .collect();
-
-                // Validate user has access to list of xnames
-                validate_target_hsm_members(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    node_vec.clone(),
-                )
-                .await; */
-
                 get_nodes::exec(
                     &backend,
                     &shasta_token,
@@ -1366,45 +1084,7 @@ pub async fn process_cli(
                     is_regex,
                 )
                 .await;
-            /* } else if let Some(cli_get_hsm_groups) = cli_get.subcommand_matches("hsm-groups") {
-            log::warn!("Deprecated - Do not use this command.");
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
-            let shasta_token = backend.get_api_token(&site_name).await?;
-
-            let hsm_group_name_arg_opt = cli_get_hsm_groups.get_one::<String>("HSM_GROUP_NAME");
-
-            let target_hsm_group_vec = get_groups_available(
-                &backend,
-                &shasta_token,
-                /* shasta_base_url,
-                shasta_root_cert, */
-                hsm_group_name_arg_opt,
-                settings_hsm_group_name_opt,
-            )
-            .await?;
-
-            get_hsm::exec(
-                &backend,
-                &shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                target_hsm_group_vec.first().unwrap(),
-            )
-            .await; */
             } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
@@ -1412,8 +1092,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     hsm_group_name_arg_opt.unwrap_or(None),
                     settings_hsm_group_name_opt,
                 )
@@ -1434,8 +1112,6 @@ pub async fn process_cli(
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hosts = cli_get_boot_parameters.get_one::<String>("hosts");
-                /* let nids = cli_get_boot_parameters.get_one::<String>("nids");
-                let macs = cli_get_boot_parameters.get_one::<String>("macs"); */
 
                 let boot_parameters_vec: Vec<BootParameters> = get_boot_parameters::exec(
                     &backend,
@@ -1472,14 +1148,6 @@ pub async fn process_cli(
                         settings_hsm_group_name_opt,
                     )
                     .await?;
-
-                    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                        &shasta_token,
-                        shasta_base_url,
-                        shasta_root_cert,
-                        hsm_group_name_vec,
-                    )
-                    .await */
 
                     let hsm_members_rslt = backend
                         .get_member_vec_from_group_name_vec(&shasta_token, hsm_group_name_vec)
@@ -1526,9 +1194,6 @@ pub async fn process_cli(
 
                 // FIXME: ignoring 'type' argument to ship faster and simplify tests
 
-                /* let r#type = cli_get_redfish_endopints
-                .get_one::<String>("type")
-                .map(|x| x.as_str()); */
                 let uuid = cli_get_redfish_endopints
                     .get_one::<String>("uuid")
                     .map(|x| x.as_str());
@@ -1540,10 +1205,6 @@ pub async fn process_cli(
                     .map(|x| x.as_str());
 
                 // FIXME: ignoring 'last-status' argument to ship faster and simplify tests
-
-                /* let last_status = cli_get_redfish_endopints
-                .get_one::<String>("last-status")
-                .map(|x| x.as_str()); */
 
                 let redfish_endpoints = backend
                     .get_redfish_endpoints(
@@ -1565,13 +1226,6 @@ pub async fn process_cli(
         } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
             if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
                 if let Some(cli_apply_hw_cluster) = cli_apply_hw.subcommand_matches("cluster") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let target_hsm_group_name_arg_opt =
@@ -1580,8 +1234,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         target_hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
@@ -1593,8 +1245,6 @@ pub async fn process_cli(
                     let parent_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         parent_hsm_group_name_arg_opt,
                         settings_hsm_group_name_opt,
                     )
@@ -1632,8 +1282,6 @@ pub async fn process_cli(
                         apply_hw_cluster_pin::command::exec(
                             &backend,
                             &shasta_token,
-                            /* shasta_base_url,
-                            shasta_root_cert, */
                             target_hsm_group_vec.first().unwrap(),
                             parent_hsm_group_vec.first().unwrap(),
                             cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
@@ -1645,13 +1293,6 @@ pub async fn process_cli(
                     }
                 }
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 // FIXME: gitea auth token should be calculated before colling this function
@@ -1675,8 +1316,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -1688,8 +1327,6 @@ pub async fn process_cli(
                     validate_target_hsm_members(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         &ansible_limit
                             .split(',')
                             .map(|xname| xname.trim().to_string())
@@ -1744,13 +1381,6 @@ pub async fn process_cli(
                     std::process::exit(1);
                 }
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 // FIXME: gitea auth token should be calculated before colling this function
@@ -1762,15 +1392,6 @@ pub async fn process_cli(
                 .await
                 .unwrap();
 
-                /* let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    None,
-                    settings_hsm_group_name_opt,
-                )
-                .await; */
-
                 // IMPORTANT: FOR SAT FILE, THERE IS NO POINT TO CONSIDER LOCKED HSM GROUP NAME IN
                 // CONFIG FILE SINCE SAT FILES MAY USE MULTIPLE HSM GROUPS. THEREFORE HSM GROUP
                 // VALIDATION CAN'T BE DONE AGAINST CONFIG FILE OR CLI HSM GROUP ARGUMENT AGAINST
@@ -1778,12 +1399,6 @@ pub async fn process_cli(
                 // KEYCLOAK ROLES. BECAUASE OF THIS, THERE IS NO VALUE IN CALLING
                 // 'get_target_hsm_group_vec_or_all' FUNCTION
                 let target_hsm_group_vec = backend.get_group_name_available(&shasta_token).await?;
-                /* let target_hsm_group_vec = config_show::get_hsm_name_available_from_jwt_or_all(
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                )
-                .await; */
 
                 let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
@@ -1825,15 +1440,6 @@ pub async fn process_cli(
                 let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
                 let assume_yes: bool = cli_apply_sat_file.get_flag("assume-yes");
 
-                /* let dry_run: bool = *cli_apply_sat_file.get_one("dry-run").unwrap();
-                // If dry_run is true, then no need to reboot because no changes to the system are
-                // applied, otherwise, depends on user input
-                let do_not_reboot: bool = if dry_run {
-                    false
-                } else {
-                    cli_apply_sat_file.get_flag("do-not-reboot")
-                }; */
-
                 let site = configuration
                     .sites
                     .get(&configuration.site.clone())
@@ -1845,8 +1451,6 @@ pub async fn process_cli(
                     shasta_base_url,
                     shasta_root_cert,
                     vault_base_url.expect("ERROR - vault_base_url is mandatory"),
-                    // vault_secret_path.expect("ERROR - vault_secret_path is mandatory"),
-                    // vault_role_id.expect("ERROR - vault_role_id is mandatory"),
                     k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
                     sat_file_content,
                     cli_values_file_content_opt,
@@ -1873,13 +1477,6 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let bos_session_name_opt: Option<&String> = cli_apply_template.get_one("name");
@@ -1915,13 +1512,6 @@ pub async fn process_cli(
             } else if let Some(cli_apply_ephemeral_environment) =
                 cli_apply.subcommand_matches("ephemeral-environment")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 if !std::io::stdout().is_terminal() {
@@ -1943,13 +1533,6 @@ pub async fn process_cli(
                 .await;
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let xname_vec: Vec<&str> = cli_apply_boot_nodes
@@ -2000,13 +1583,6 @@ pub async fn process_cli(
                 } else if let Some(cli_apply_boot_cluster) =
                     cli_apply_boot.subcommand_matches("cluster")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg = cli_apply_boot_cluster
@@ -2035,8 +1611,6 @@ pub async fn process_cli(
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
                         &shasta_token,
-                        /* shasta_base_url,
-                        shasta_root_cert, */
                         Some(hsm_group_name_arg),
                         settings_hsm_group_name_opt,
                     )
@@ -2064,24 +1638,9 @@ pub async fn process_cli(
                 }
             }
         } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
-
             let shasta_token = backend.get_api_token(&site_name).await?;
 
             // Get all HSM groups the user has access
-            /* let target_hsm_group_vec = get_hsm_name_available_from_jwt_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-            )
-            .await; */
-
             let user_input = cli_log
                 .get_one::<String>("VALUE")
                 .expect("ERROR - value is mandatory");
@@ -2114,13 +1673,6 @@ pub async fn process_cli(
                     eprintln!("This command needs to run in interactive mode. Exit");
                     std::process::exit(1);
                 }
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let site = configuration
@@ -2151,20 +1703,11 @@ pub async fn process_cli(
                     eprintln!("This command needs to run in interactive mode. Exit");
                     std::process::exit(1);
                 }
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     None,
                     settings_hsm_group_name_opt,
                 )
@@ -2181,9 +1724,6 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    /* vault_base_url,
-                    vault_secret_path,
-                    vault_role_id, */
                     k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                     cli_console_target_ansible
                         .get_one::<String>("SESSION_NAME")
@@ -2197,21 +1737,7 @@ pub async fn process_cli(
             }
         } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
             if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
-                let shasta_token = backend
-                    .get_api_token(
-                        /* shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url, */
-                        &site_name,
-                    )
-                    .await?;
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
+                let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
 
@@ -2226,8 +1752,6 @@ pub async fn process_cli(
                 let from_rslt = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     from_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -2240,14 +1764,6 @@ pub async fn process_cli(
                         std::process::exit(1);
                     }
                 };
-                /* let from_rslt = get_target_hsm_name_group_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    from_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await; */
 
                 // Validate 'to' hsm groups
                 let to_rslt = get_groups_available(
@@ -2259,14 +1775,6 @@ pub async fn process_cli(
                     settings_hsm_group_name_opt,
                 )
                 .await;
-                /* let to_rslt = get_target_hsm_name_group_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(to),
-                    settings_hsm_group_name_opt,
-                )
-                .await; */
 
                 let to = match to_rslt {
                     Ok(to) => to,
@@ -2291,13 +1799,6 @@ pub async fn process_cli(
             } else if let Some(_cli_migrate_vcluster) = cli_migrate.subcommand_matches("vCluster") {
                 if let Some(cli_migrate_vcluster_backup) = cli_migrate.subcommand_matches("backup")
                 {
-                    /* let shasta_token = &authentication::get_api_token(
-                        shasta_base_url,
-                        shasta_root_cert,
-                        keycloak_base_url,
-                        &site_name,
-                    )
-                    .await?; */
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let bos = cli_migrate_vcluster_backup.get_one::<String>("bos");
@@ -2382,8 +1883,6 @@ pub async fn process_cli(
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     target_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -2398,8 +1897,6 @@ pub async fn process_cli(
                 let parent_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     parent_hsm_group_name_arg_opt,
                     settings_hsm_group_name_opt,
                 )
@@ -2504,14 +2001,7 @@ pub async fn process_cli(
                 };
 
                 // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(
-                    &backend,
-                    &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
-                    &xname_vec,
-                )
-                .await;
+                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
                 let kernel_parameters = cli_delete_kernel_parameters
                     .get_one::<String>("VALUE")
@@ -2534,20 +2024,11 @@ pub async fn process_cli(
                     Err(error) => eprintln!("{}", error),
                 }
             } else if let Some(cli_delete_session) = cli_delete.subcommand_matches("session") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let target_hsm_group_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     None,
                     settings_hsm_group_name_opt,
                 )
@@ -2575,29 +2056,16 @@ pub async fn process_cli(
             } else if let Some(cli_delete_configurations) =
                 cli_delete.subcommand_matches("configurations")
             {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let target_hsm_group_vec =
-                    if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
-                        vec![settings_hsm_group_name.clone()]
-                    } else {
-                        get_groups_available(
-                            &backend,
-                            &shasta_token,
-                            /* shasta_base_url,
-                            shasta_root_cert, */
-                            None,
-                            settings_hsm_group_name_opt,
-                        )
+                let target_hsm_group_vec = if let Some(settings_hsm_group_name) =
+                    settings_hsm_group_name_opt
+                {
+                    vec![settings_hsm_group_name.clone()]
+                } else {
+                    get_groups_available(&backend, &shasta_token, None, settings_hsm_group_name_opt)
                         .await?
-                    };
+                };
 
                 let since_opt =
                     if let Some(since) = cli_delete_configurations.get_one::<String>("since") {
@@ -2656,20 +2124,11 @@ pub async fn process_cli(
                 )
                 .await;
             } else if let Some(cli_delete_images) = cli_delete.subcommand_matches("images") {
-                /* let shasta_token = &authentication::get_api_token(
-                    shasta_base_url,
-                    shasta_root_cert,
-                    keycloak_base_url,
-                    &site_name,
-                )
-                .await?; */
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
                 let hsm_name_available_vec = get_groups_available(
                     &backend,
                     &shasta_token,
-                    /* shasta_base_url,
-                    shasta_root_cert, */
                     None,
                     settings_hsm_group_name_opt,
                 )
@@ -2742,13 +2201,6 @@ pub async fn process_cli(
         } else if let Some(cli_remove_nodes) =
             cli_root.subcommand_matches("remove-nodes-from-groups")
         {
-            /* let shasta_token = &authentication::get_api_token(
-                shasta_base_url,
-                shasta_root_cert,
-                keycloak_base_url,
-                &site_name,
-            )
-            .await?; */
             let shasta_token = backend.get_api_token(&site_name).await?;
 
             let dryrun = *cli_remove_nodes
