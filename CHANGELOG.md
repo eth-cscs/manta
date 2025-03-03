@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.30] - 2025-03-03
+
+### Miscellaneous Tasks
+
+- Clean keycloak roles
+
 ## [1.54.29] - 2025-02-28
 
 ### Miscellaneous Tasks
 
 - Show error when fetching a CFS session while waiting session to finish
+- Release manta version 1.54.29
 
 ## [1.54.28] - 2025-02-27
 
