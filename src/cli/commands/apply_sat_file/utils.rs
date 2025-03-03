@@ -673,6 +673,7 @@ pub async fn create_cfs_configuration_from_sat_file(
     cray_product_catalog: &BTreeMap<String, String>,
     sat_file_configuration_yaml: &serde_yaml::Value,
     // tag: &str,
+    site_name: &str,
     dry_run: bool,
 ) -> Result<CfsConfigurationResponse, Error> {
     log::debug!(
@@ -687,6 +688,7 @@ pub async fn create_cfs_configuration_from_sat_file(
             gitea_token,
             sat_file_configuration_yaml,
             cray_product_catalog,
+            site_name,
         )
         .await;
 

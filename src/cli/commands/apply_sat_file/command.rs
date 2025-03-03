@@ -45,6 +45,7 @@ pub async fn exec(
     dry_run: bool,
     assume_yes: bool,
     kafka_audit: &Kafka,
+    site_name: &str,
 ) {
     // Validate Pre-hook
     if prehook.is_some() {
@@ -318,6 +319,7 @@ pub async fn exec(
                 &cray_product_catalog,
                 configuration_yaml,
                 // tag,
+                site_name,
                 dry_run,
             )
             .await;

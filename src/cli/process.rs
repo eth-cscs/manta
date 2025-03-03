@@ -44,6 +44,7 @@ pub async fn process_cli(
     k8s_api_url: &str,
     settings: &Config,
     kafka_audit: &Kafka,
+    site_name: &str,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
     let site_name: String = match settings.get("site") {
         Ok(site_name) => site_name,
@@ -896,6 +897,7 @@ pub async fn process_cli(
                     &target_hsm_group_vec,
                     limit,
                     cli_get_configuration.get_one("output"),
+                    &site_name,
                 )
                 .await;
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
@@ -1266,6 +1268,7 @@ pub async fn process_cli(
                     gitea_token,
                     // &tag,
                     cli_apply_configuration.get_one::<String>("output"),
+                    &site_name,
                 )
                 .await;
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
@@ -1562,6 +1565,7 @@ pub async fn process_cli(
                     false,
                     assume_yes,
                     kafka_audit,
+                    &site_name,
                 )
                 .await;
             } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {

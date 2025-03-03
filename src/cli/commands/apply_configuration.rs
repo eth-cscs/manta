@@ -28,6 +28,7 @@ pub async fn exec(
     gitea_token: &str,
     // tag: &str,
     output_opt: Option<&String>,
+    site_name: &str,
 ) -> anyhow::Result<Vec<String>> {
     let sat_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
@@ -106,6 +107,7 @@ pub async fn exec(
                 &cray_product_catalog,
                 configuration_yaml,
                 // tag,
+                site_name,
                 false,
             )
             .await;

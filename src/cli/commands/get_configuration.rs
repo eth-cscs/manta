@@ -23,6 +23,7 @@ pub async fn exec(
     hsm_group_name_vec: &Vec<String>,
     limit: Option<&u8>,
     output_opt: Option<&String>,
+    site_name: &str,
 ) {
     let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
         cfs::configuration::mesa::utils::get_and_filter(
@@ -60,6 +61,7 @@ pub async fn exec(
                     gitea_base_url,
                     gitea_token,
                     layer.clone(),
+                    site_name,
                 )
                 .await;
 
@@ -96,6 +98,7 @@ pub async fn get_configuration_layer_details(
     gitea_base_url: &str,
     gitea_token: &str,
     layer: Layer,
+    site_name: &str,
 ) -> LayerDetails {
     let commit_id: String = layer.commit.clone().unwrap_or("Not defined".to_string());
     // let branch_name_opt: Option<&str> = layer.branch.as_deref();
@@ -115,8 +118,12 @@ pub async fn get_configuration_layer_details(
     let repo_ref_vec = match repo_ref_vec_rslt {
         Ok(value) => value,
         Err(error) => {
-            eprintln!("ERROR - Could not fetch repo refs. Reason:\n{:#?}", error);
-            std::process::exit(1);
+            log::warn!(
+                "Could not fetch repo '{}' refs. Reason:\n{:#?}",
+                layer.clone_url,
+                error
+            );
+            vec![]
         }
     };
 
@@ -156,6 +163,7 @@ pub async fn get_configuration_layer_details(
                 &tag_name,
                 gitea_token,
                 shasta_root_cert,
+                site_name,
             )
             .await
             .unwrap();
@@ -244,12 +252,14 @@ pub async fn get_configuration_layer_details(
             .clone_url
             .trim_start_matches("https://api-gw-service-nmn.local/vcs/")
             .trim_end_matches(".git");
+
         let commit_details_rslt = gitea::http_client::get_commit_details_from_external_url(
             // &layer.clone_url,
             repo_name,
             commit_id,
             gitea_token,
             shasta_root_cert,
+            site_name,
         )
         .await;
 

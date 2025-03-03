@@ -165,6 +165,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         &k8s_api_url,
         &settings,
         &kafka_audit,
+        &site_name,
     )
     .await;
 
