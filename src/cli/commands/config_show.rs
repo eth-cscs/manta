@@ -87,8 +87,9 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     let mut realm_access_role_vec =
         mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
 
-    realm_access_role_vec
-        .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
+    /* realm_access_role_vec
+    .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
+    filter_keycloak_roles(&mut realm_access_role_vec);
 
     if !realm_access_role_vec.contains(&ADMIN_ROLE_NAME.to_string()) {
         log::debug!("User is not admin, getting HSM groups available from JWT");
@@ -124,6 +125,14 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
 
         all_hsm_groups
     }
+}
+
+pub fn filter_keycloak_roles(roles: &mut Vec<String>) {
+    roles.retain(|role| {
+        !role.eq("offline_access")
+            && !role.eq("uma_authorization")
+            && !role.eq("default-roles-shasta")
+    });
 }
 
 /* pub async fn get_hsm_name_available_from_jwt(shasta_token: &str) -> Vec<String> {
