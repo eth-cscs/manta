@@ -2,6 +2,7 @@ use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
     types::Group,
 };
+use mesa::hsm;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
@@ -102,6 +103,11 @@ pub async fn exec(
     log::info!(
         "Get logs for CFS session:\n{}",
         common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
+    );
+
+    hsm::group::utils::check_cfs_session_against_groups_available(
+        &cfs_sessions_vec,
+        group_available_vec,
     );
 
     // Get K8s secrets

@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use toml_edit::{value, Document, Table};
+use toml_edit::{value, DocumentMut, Table};
 
 pub async fn exec(new_site_opt: Option<&String>) {
     // XDG Base Directory Specification
@@ -24,7 +24,7 @@ pub async fn exec(new_site_opt: Option<&String>) {
         .expect("Error reading configuration file");
 
     let mut doc = config_file_content
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .expect("ERROR: could not parse configuration file to TOML");
 
     /* let settings = common::config_ops::get_configuration();

@@ -13,7 +13,6 @@ pub async fn exec(
     enabled: bool,
     arch_opt: Option<String>,
     hw_inventory: HWInventoryByLocationList,
-    group: &str,
 ) -> Result<()> {
     // Create node api payload
     let component: ComponentCreate = ComponentCreate {

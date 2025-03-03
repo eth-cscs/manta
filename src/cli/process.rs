@@ -34,7 +34,7 @@ use super::commands::{
     self, add_boot_parameters, add_group, add_hw_component_cluster, add_kernel_parameters,
     add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node, apply_ephemeral_env,
     apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
-    config_set_hsm, config_set_oleog, config_set_parent_hsm, config_set_site, config_show,
+    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
     config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
@@ -102,7 +102,7 @@ pub async fn process_cli(
                 config_set_site::exec(cli_config_set_site.get_one::<String>("SITE_NAME")).await;
             }
             if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log") {
-                config_set_oleog::exec(cli_config_set_log.get_one::<String>("LOG_LEVEL")).await;
+                config_set_log::exec(cli_config_set_log.get_one::<String>("LOG_LEVEL")).await;
             }
         } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset") {
             if let Some(_cli_config_unset_hsm) = cli_config_unset.subcommand_matches("hsm") {
@@ -399,16 +399,9 @@ pub async fn process_cli(
                     .cloned()
                     .unwrap_or(true);
 
-                let add_node_rslt = add_node::exec(
-                    &backend,
-                    &shasta_token,
-                    id,
-                    enabled,
-                    arch_opt,
-                    hw_inventory,
-                    group,
-                )
-                .await;
+                let add_node_rslt =
+                    add_node::exec(&backend, &shasta_token, id, enabled, arch_opt, hw_inventory)
+                        .await;
 
                 if let Err(error) = add_node_rslt {
                     // Could not add xname to group. Reset operation by removing the node

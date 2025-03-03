@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use directories::ProjectDirs;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 
 pub async fn exec() {
     // Read configuration file
@@ -26,7 +26,7 @@ pub async fn exec() {
         .expect("Error reading configuration file");
 
     let mut doc = config_file_content
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .expect("ERROR: could not parse configuration file to TOML");
 
     /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)

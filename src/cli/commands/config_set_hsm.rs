@@ -2,7 +2,7 @@ use std::{fs, io::Write, path::PathBuf};
 
 use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use directories::ProjectDirs;
-use toml_edit::{value, Document};
+use toml_edit::{value, DocumentMut};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -34,7 +34,7 @@ pub async fn exec(
         .expect("Error reading configuration file");
 
     let mut doc = config_file_content
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .expect("ERROR: could not parse configuration file to TOML");
 
     let mut settings_hsm_available_vec = backend
