@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.31] - 2025-03-03
+
+### Bug Fixes
+
+- Manta always going to gitea instance in alps to get repo information
+- In alpsb there are repos without refs, this was making manta to panic, from now on refs in gitea repos are not mandatory and will be ignored if repo does ont have them
+
+### Miscellaneous Tasks
+
+- Fix Cargo.toml
+
 ## [1.54.30] - 2025-03-03
 
 ### Miscellaneous Tasks
 
 - Clean keycloak roles
+- Release manta version 1.54.30
 
 ## [1.54.29] - 2025-02-28
 
