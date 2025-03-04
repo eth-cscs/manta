@@ -10,7 +10,7 @@ use mesa::{
     node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
 };
 
-use super::config_show::get_hsm_name_available_from_jwt_or_all;
+use super::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all;
 
 pub async fn exec(
     shasta_token: &str,
@@ -30,9 +30,12 @@ pub async fn exec(
     // Validate
     //
     // Check user has provided valid XNAMES
-    let target_hsm_group_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+    let target_hsm_group_vec = get_hsm_name_without_system_wide_available_from_jwt_or_all(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+    )
+    .await;
 
     if !validate_xnames_format_and_membership_agaisnt_multiple_hsm(
         shasta_token,

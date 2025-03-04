@@ -17,7 +17,7 @@ pub async fn exec(
     output_opt: Option<&String>,
 ) {
     // Target HSM group
-    let hsm_group = mesa::hsm::group::http_client::get(
+    let hsm_group = mesa::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

@@ -6,7 +6,7 @@ use mesa::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::{cli::commands::config_show::get_hsm_name_available_from_jwt_or_all, common::{self, terminal_ops}};
+use crate::{cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all, common::{self, terminal_ops}};
 
 use super::power_on_nodes::is_user_input_nids;
 
@@ -22,11 +22,11 @@ pub async fn exec(
     host: &str,
 ) {
     let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
+        get_hsm_name_without_system_wide_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

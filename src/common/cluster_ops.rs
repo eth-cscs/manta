@@ -23,7 +23,7 @@ pub async fn get_details(
     let mut clusters_details = vec![];
 
     // Get HSM groups matching cluster name
-    let hsm_groups = hsm::group::http_client::get_hsm_group_vec(
+    let hsm_groups = hsm::group::http_client::get_hsm_group_without_system_wide_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

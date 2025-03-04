@@ -83,7 +83,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    let target_hsm_group_vec = mesa::hsm::group::http_client::get(
+    let target_hsm_group_vec = mesa::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

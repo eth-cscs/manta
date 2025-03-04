@@ -81,11 +81,12 @@ async fn validation(auth_token: &str, base_url: &str, root_cert: &[u8], label: &
 
     let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
 
-    let mut xname_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
-        auth_token, base_url, root_cert, xname_vec,
-    )
-    .await
-    .unwrap();
+    let mut xname_map =
+        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            auth_token, base_url, root_cert, xname_vec,
+        )
+        .await
+        .unwrap();
 
     xname_map.retain(|_xname, group_name_vec| {
         group_name_vec.len() == 1 && group_name_vec.first().unwrap() == label

@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use crate::common::{self, node_ops};
 
 use super::{
-    config_show::get_hsm_name_available_from_jwt_or_all, power_on_nodes::is_user_input_nids,
+    config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
+    power_on_nodes::is_user_input_nids,
 };
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
@@ -19,22 +20,26 @@ pub async fn exec(
     status: bool,
     is_regex: bool,
 ) {
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_name_available_vec = get_hsm_name_without_system_wide_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
     )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map =
+        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_name_available_vec
+                .iter()
+                .map(|hsm_name| hsm_name.as_str())
+                .collect(),
+        )
+        .await
+        .expect("ERROR - could not get HSM group summary");
 
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
     let mut node_list: Vec<String> = if is_user_input_nids(hosts_string) {

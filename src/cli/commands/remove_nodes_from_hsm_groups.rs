@@ -5,7 +5,7 @@ use mesa::common::jwt_ops;
 
 use crate::common::{audit::Audit, kafka::Kafka};
 
-use super::config_show::get_hsm_name_available_from_jwt_or_all;
+use super::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all;
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
@@ -18,22 +18,26 @@ pub async fn exec(
     dryrun: bool,
     kafka_audit: &Kafka,
 ) {
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_name_available_vec = get_hsm_name_without_system_wide_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
     )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map =
+        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_name_available_vec
+                .iter()
+                .map(|hsm_name| hsm_name.as_str())
+                .collect(),
+        )
+        .await
+        .expect("ERROR - could not get HSM group summary");
 
     // Filter xnames to the ones members to HSM groups the user has access to
     //
@@ -86,7 +90,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    if mesa::hsm::group::http_client::get(
+    if mesa::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

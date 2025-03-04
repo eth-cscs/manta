@@ -1482,12 +1482,13 @@ pub async fn process_cli(
                 // HSM GROUPS AVAILABLE ACCORDING TO KEYCLOAK ROLES BUT HSM GROUPS IN SAT FILE VS
                 // KEYCLOAK ROLES. BECAUASE OF THIS, THERE IS NO VALUE IN CALLING
                 // 'get_target_hsm_group_vec_or_all' FUNCTION
-                let target_hsm_group_vec = config_show::get_hsm_name_available_from_jwt_or_all(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                )
-                .await;
+                let target_hsm_group_vec =
+                    config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                    )
+                    .await;
 
                 let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
@@ -2224,76 +2225,76 @@ pub async fn process_cli(
                 )
                 .await;
             }
-        } else if let Some(cli_clean_system) = cli_root.subcommand_matches("clean-system") {
-            let hsm_group_name_arg_opt = cli_clean_system.get_one::<String>("hsm-group"); // For now, we
-                                                                                          // want to panic if this param is missing
-
-            let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                hsm_group_name_arg_opt,
-                settings_hsm_group_name_opt,
-            )
-            .await;
-
-            let since_opt = if let Some(since) = cli_clean_system.get_one::<String>("since") {
-                let date_time = chrono::NaiveDateTime::parse_from_str(
-                    &(since.to_string() + "T00:00:00"),
-                    "%Y-%m-%dT%H:%M:%S",
-                )
-                .unwrap();
-                Some(date_time)
-            } else {
-                None
-            };
-
-            let until_opt = if let Some(until) = cli_clean_system.get_one::<String>("until") {
-                let date_time = chrono::NaiveDateTime::parse_from_str(
-                    &(until.to_string() + "T00:00:00"),
-                    "%Y-%m-%dT%H:%M:%S",
-                )
-                .unwrap();
-                Some(date_time)
-            } else {
-                None
-            };
-
-            let cfs_configuration_name_opt =
-                cli_clean_system.get_one::<String>("configuration-name");
-
-            let cfs_configuration_name_pattern = cli_clean_system.get_one::<String>("pattern");
-
-            let yes = cli_clean_system
-                .get_one::<bool>("assume-yes")
-                .unwrap_or(&false);
-
-            let hsm_group_name_opt = if settings_hsm_group_name_opt.is_some() {
-                settings_hsm_group_name_opt
-            } else {
-                cli_clean_system.get_one::<String>("hsm-group")
-            };
-
-            // INPUT VALIDATION - Check since date is prior until date
-            if since_opt.is_some() && until_opt.is_some() && since_opt.unwrap() > until_opt.unwrap()
-            {
-                eprintln!("ERROR - 'since' date can't be after 'until' date. Exit");
-                std::process::exit(1);
-            }
-
-            delete_data_related_cfs_configuration(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                hsm_group_name_opt,
-                target_hsm_group_vec,
-                cfs_configuration_name_opt,
-                cfs_configuration_name_pattern,
-                since_opt,
-                until_opt,
-                yes,
-            )
-            .await;
+        // } else if let Some(cli_clean_system) = cli_root.subcommand_matches("clean-system") {
+        //     let hsm_group_name_arg_opt = cli_clean_system.get_one::<String>("hsm-group"); // For now, we
+        //                                                                                   // want to panic if this param is missing
+        //
+        //     let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+        //         shasta_token,
+        //         shasta_base_url,
+        //         shasta_root_cert,
+        //         hsm_group_name_arg_opt,
+        //         settings_hsm_group_name_opt,
+        //     )
+        //     .await;
+        //
+        //     let since_opt = if let Some(since) = cli_clean_system.get_one::<String>("since") {
+        //         let date_time = chrono::NaiveDateTime::parse_from_str(
+        //             &(since.to_string() + "T00:00:00"),
+        //             "%Y-%m-%dT%H:%M:%S",
+        //         )
+        //         .unwrap();
+        //         Some(date_time)
+        //     } else {
+        //         None
+        //     };
+        //
+        //     let until_opt = if let Some(until) = cli_clean_system.get_one::<String>("until") {
+        //         let date_time = chrono::NaiveDateTime::parse_from_str(
+        //             &(until.to_string() + "T00:00:00"),
+        //             "%Y-%m-%dT%H:%M:%S",
+        //         )
+        //         .unwrap();
+        //         Some(date_time)
+        //     } else {
+        //         None
+        //     };
+        //
+        //     let cfs_configuration_name_opt =
+        //         cli_clean_system.get_one::<String>("configuration-name");
+        //
+        //     let cfs_configuration_name_pattern = cli_clean_system.get_one::<String>("pattern");
+        //
+        //     let yes = cli_clean_system
+        //         .get_one::<bool>("assume-yes")
+        //         .unwrap_or(&false);
+        //
+        //     let hsm_group_name_opt = if settings_hsm_group_name_opt.is_some() {
+        //         settings_hsm_group_name_opt
+        //     } else {
+        //         cli_clean_system.get_one::<String>("hsm-group")
+        //     };
+        //
+        //     // INPUT VALIDATION - Check since date is prior until date
+        //     if since_opt.is_some() && until_opt.is_some() && since_opt.unwrap() > until_opt.unwrap()
+        //     {
+        //         eprintln!("ERROR - 'since' date can't be after 'until' date. Exit");
+        //         std::process::exit(1);
+        //     }
+        //
+        //     delete_data_related_cfs_configuration(
+        //         shasta_token,
+        //         shasta_base_url,
+        //         shasta_root_cert,
+        //         hsm_group_name_opt,
+        //         target_hsm_group_vec,
+        //         cfs_configuration_name_opt,
+        //         cfs_configuration_name_pattern,
+        //         since_opt,
+        //         until_opt,
+        //         yes,
+        //     )
+        //     .await;
         } else if let Some(cli_validate_local_repo) =
             cli_root.subcommand_matches("validate-local-repo")
         {
@@ -2392,12 +2393,13 @@ pub async fn get_target_hsm_name_group_vec(
     hsm_group_cli_arg_opt: Option<&String>,
     hsm_group_env_or_config_file_opt: Option<&String>,
 ) -> Result<Vec<String>, Error> {
-    let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt_or_all(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-    )
-    .await;
+    let hsm_name_available_vec =
+        config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await;
 
     let target_hsm_name_vec = if let Some(hsm_group_cli_arg) = hsm_group_cli_arg_opt {
         hsm_group_cli_arg
@@ -2429,12 +2431,13 @@ pub async fn get_target_hsm_group_vec_or_all(
     hsm_group_cli_arg_opt: Option<&String>,
     hsm_group_env_or_config_file_opt: Option<&String>,
 ) -> Vec<String> {
-    let hsm_name_available_vec = config_show::get_hsm_name_available_from_jwt_or_all(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-    )
-    .await;
+    let hsm_name_available_vec =
+        config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await;
 
     let target_hsm_group_opt = if hsm_group_cli_arg_opt.is_some() {
         hsm_group_cli_arg_opt
@@ -2510,12 +2513,13 @@ pub async fn validate_target_hsm_members(
     shasta_root_cert: &[u8],
     hsm_group_members_opt: Vec<String>,
 ) -> Vec<String> {
-    let hsm_groups_user_has_access = config_show::get_hsm_name_available_from_jwt_or_all(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-    )
-    .await;
+    let hsm_groups_user_has_access =
+        config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await;
 
     let all_xnames_user_has_access = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,

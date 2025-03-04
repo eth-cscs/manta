@@ -5,7 +5,7 @@ use hostlist_parser::parse;
 use mesa::{bss::bootparameters::BootParameters, error::Error, node::r#struct::NodeDetails};
 use regex::Regex;
 
-use crate::cli::commands::config_show::get_hsm_name_available_from_jwt_or_all;
+use crate::cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all;
 
 /// Get list of xnames user has access to based on input regex.
 /// This method will:
@@ -26,22 +26,26 @@ pub async fn get_curated_hsm_group_from_nid_regex(
         .map(|regex_str| Regex::new(regex_str.trim()).expect("ERROR - regex not valid"))
         .collect();
 
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_name_available_vec = get_hsm_name_without_system_wide_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
     )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map =
+        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_name_available_vec
+                .iter()
+                .map(|hsm_name| hsm_name.as_str())
+                .collect(),
+        )
+        .await
+        .expect("ERROR - could not get HSM group summary");
 
     // Filter hsm group members
     for (hsm_name, xnames) in hsm_group_available_map {

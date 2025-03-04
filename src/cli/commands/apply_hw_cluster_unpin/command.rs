@@ -70,7 +70,7 @@ pub async fn exec(
     // *********************************************************************************************************
     // PREPREQUISITES - GET DATA - TARGET HSM
 
-    match mesa::hsm::group::http_client::get(
+    match mesa::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

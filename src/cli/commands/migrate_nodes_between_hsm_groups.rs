@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mesa::common::jwt_ops;
 
 use crate::{
-    cli::commands::config_show::get_hsm_name_available_from_jwt_or_all,
+    cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
     common::{audit::Audit, kafka::Kafka},
 };
 
@@ -24,22 +24,26 @@ pub async fn exec(
     // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
     // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
     // hostlist have been removed
-    let hsm_name_available_vec =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
-
-    // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_name_available_vec = get_hsm_name_without_system_wide_available_from_jwt_or_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        hsm_name_available_vec
-            .iter()
-            .map(|hsm_name| hsm_name.as_str())
-            .collect(),
     )
-    .await
-    .expect("ERROR - could not get HSM group summary");
+    .await;
+
+    // Get HSM group user has access to
+    let hsm_group_available_map =
+        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            hsm_name_available_vec
+                .iter()
+                .map(|hsm_name| hsm_name.as_str())
+                .collect(),
+        )
+        .await
+        .expect("ERROR - could not get HSM group summary");
 
     // Filter xnames to the ones members to HSM groups the user has access to
     //
@@ -76,7 +80,7 @@ pub async fn exec(
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     for target_hsm_name in &target_hsm_name_vec {
-        if mesa::hsm::group::http_client::get(
+        if mesa::hsm::group::http_client::get_without_system_wide(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

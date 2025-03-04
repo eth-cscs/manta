@@ -45,8 +45,12 @@ pub async fn exec(
     let settings_hsm_available_vec = realm_access_role_vec; */
 
     let hsm_group_available: Vec<String> =
-        get_hsm_name_available_from_jwt_or_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await;
+        get_hsm_name_without_system_wide_available_from_jwt_or_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await;
 
     let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
 
@@ -85,7 +89,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     const ADMIN_ROLE_NAME: &str = "pa_admin";
 
     let mut realm_access_role_vec =
-        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+        mesa::common::jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
 
     /* realm_access_role_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
@@ -115,6 +119,65 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
                 .iter()
                 .map(|hsm_value| hsm_value.label.clone())
                 .collect::<Vec<String>>();
+
+        all_hsm_groups.sort();
+
+        log::debug!(
+            "User has access to all HSM group available: {:?}",
+            all_hsm_groups
+        );
+
+        all_hsm_groups
+    }
+}
+
+/// Returns the list of available HSM groups for a user. System wide (alps, alpsb, alpse, prealps,
+/// etc) are filtered out.
+/// NOTE: The list is filtered and system HSM groups (eg alps, alpsm, alpse, etc)
+/// NOTE: this function does not check if the user is admin or not, it just returns the list of HSM
+pub async fn get_hsm_name_without_system_wide_available_from_jwt_or_all(
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+) -> Vec<String> {
+    log::debug!("Get HSM names available from JWT or all");
+
+    const ADMIN_ROLE_NAME: &str = "pa_admin";
+
+    let mut realm_access_role_vec =
+        mesa::common::jwt_ops::get_roles_without_system_wide(shasta_token).unwrap_or(Vec::new());
+
+    /* realm_access_role_vec
+    .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
+    filter_keycloak_roles(&mut realm_access_role_vec);
+
+    if !realm_access_role_vec.contains(&ADMIN_ROLE_NAME.to_string()) {
+        log::debug!("User is not admin, getting HSM groups available from JWT");
+        //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
+        //wide operations instead of using roles
+        let mut realm_access_role_filtered_vec =
+            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+
+        realm_access_role_filtered_vec.sort();
+
+        log::debug!(
+            "HSM groups available from JWT: {:?}",
+            realm_access_role_filtered_vec
+        );
+
+        realm_access_role_filtered_vec
+    } else {
+        log::debug!("User is admin, getting all HSM groups in the system");
+        let mut all_hsm_groups = mesa::hsm::group::http_client::get_all_without_system_wide(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|hsm_value| hsm_value.label.clone())
+        .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
 

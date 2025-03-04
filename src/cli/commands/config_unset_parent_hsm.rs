@@ -30,8 +30,7 @@ pub async fn exec(shasta_token: &str) {
         .parse::<Document>()
         .expect("ERROR: could not parse configuration file to TOML");
 
-    let mut settings_hsm_available_vec =
-        jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+    let mut settings_hsm_available_vec = jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
 
     /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
     .unwrap()
