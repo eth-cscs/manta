@@ -2,7 +2,10 @@ use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
     types::Group,
 };
-use mesa::hsm;
+use mesa::{
+    cfs::{self, session::http_client::v3::types::CfsSessionGetResponse},
+    hsm,
+};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
@@ -105,8 +108,17 @@ pub async fn exec(
         common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
     );
 
-    hsm::group::utils::check_cfs_session_against_groups_available(
-        &cfs_sessions_vec,
+    let cfs_session = cfs_sessions_vec.first().unwrap();
+
+    let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
+
+    let group_available_vec: Vec<mesa::hsm::group::types::Group> = group_available_vec
+        .into_iter()
+        .map(|group| group.clone().into())
+        .collect::<Vec<_>>();
+
+    cfs::session::utils::check_cfs_session_against_groups_available(
+        &cfs_session_backend,
         group_available_vec,
     );
 
@@ -140,7 +152,7 @@ pub async fn exec(
 
     let log_rslt = mesa::common::kubernetes::print_cfs_session_logs(
         client,
-        cfs_sessions_vec.first().unwrap().name.as_ref().unwrap(),
+        cfs_session.name.as_ref().unwrap(),
     )
     .await;
 
