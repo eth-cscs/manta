@@ -20,6 +20,7 @@ pub async fn exec(
     hsm_group_name_vec: &Vec<String>,
     limit: Option<&u8>,
     output_opt: Option<&String>,
+    site_name: &str,
 ) {
     /* let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
     cfs::configuration::utils::get_and_filter(
@@ -74,6 +75,7 @@ pub async fn exec(
                         gitea_base_url,
                         gitea_token,
                         layer.clone(),
+                        site_name,
                     )
                     .await
                     .unwrap_or_else(|e| {

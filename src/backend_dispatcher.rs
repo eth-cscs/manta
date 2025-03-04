@@ -899,6 +899,7 @@ impl CfsTrait for StaticBackendDispatcher {
         gitea_base_url: &str,
         gitea_token: &str,
         layer: Layer,
+        site_name: &str,
     ) -> Result<LayerDetails, Error> {
         match self {
             CSM(b) => {
@@ -907,6 +908,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     gitea_base_url,
                     gitea_token,
                     layer,
+                    site_name,
                 )
                 .await
             }
@@ -916,6 +918,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     gitea_base_url,
                     gitea_token,
                     layer,
+                    site_name,
                 )
                 .await
             }

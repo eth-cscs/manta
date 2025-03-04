@@ -933,6 +933,7 @@ pub async fn process_cli(
                     &target_hsm_group_vec,
                     limit,
                     cli_get_configuration.get_one("output"),
+                    &site_name,
                 )
                 .await;
             } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {

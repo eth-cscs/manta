@@ -18,8 +18,10 @@ pub mod http_client {
 
         let request_payload = json!({ "jwt": shasta_token, "role": role });
 
+        dbg!(&request_payload);
+
         let resp = client
-            .post(api_url.clone())
+            .post(api_url)
             .header("X-Vault-Request", "true")
             .json(&request_payload)
             .send()
@@ -98,32 +100,24 @@ pub mod http_client {
     pub async fn fetch_shasta_vcs_token(
         shasta_token: &str,
         vault_base_url: &str,
-        site: &str,
+        site_name: &str,
         // vault_role_id: &str,
         // secret_path: &str,
     ) -> Result<String, Error> {
-        let vault_token_resp = auth_oidc_jwt(vault_base_url, shasta_token).await;
+        let vault_token = auth_oidc_jwt(vault_base_url, shasta_token).await?;
 
-        let vault_secret_path = format!("manta/data/{}", site);
+        let vault_secret_path = format!("manta/data/{}", site_name);
 
-        match vault_token_resp {
-            Ok(vault_token) => {
-                let vault_secret = fetch_secret(
-                    &vault_token,
-                    vault_base_url,
-                    &format!("/v1/{}/vcs", vault_secret_path),
-                )
-                .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
+        let vault_secret = fetch_secret(
+            &vault_token,
+            vault_base_url,
+            &format!("/v1/{}/vcs", vault_secret_path),
+        )
+        .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
 
-                Ok(String::from(
-                    vault_secret["data"]["token"].as_str().unwrap(),
-                )) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
-            }
-            Err(e) => {
-                eprintln!("{}", e);
-                std::process::exit(1);
-            }
-        }
+        Ok(String::from(
+            vault_secret["data"]["token"].as_str().unwrap(),
+        )) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
     }
 
     pub async fn fetch_shasta_k8s_secrets_from_vault(
