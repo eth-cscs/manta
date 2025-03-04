@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.32] - 2025-03-04
+
+### Bug Fixes
+
+- Add nodes to hsm group command works with nodes that are members of a system wide hsm group (eg alps, prealps, aplsm, etc)
+
 ## [1.54.31] - 2025-03-03
 
 ### Bug Fixes
@@ -12,6 +18,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Fix Cargo.toml
+- Release manta version 1.54.31
 
 ## [1.54.30] - 2025-03-03
 
