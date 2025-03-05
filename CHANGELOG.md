@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.33] - 2025-03-05
+
+### Bug Fixes
+
+- Fail processing 'delete session'
+
 ## [1.54.32] - 2025-03-04
 
 ### Bug Fixes
 
 - Add nodes to hsm group command works with nodes that are members of a system wide hsm group (eg alps, prealps, aplsm, etc)
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.32
 
 ## [1.54.31] - 2025-03-03
 
