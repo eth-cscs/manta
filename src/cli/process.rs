@@ -1134,7 +1134,7 @@ pub async fn process_cli(
 
                 let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
 
-                let xnames: Vec<String> = if hsm_group_name_arg_opt.is_some() {
+                let nodes: &String = if hsm_group_name_arg_opt.is_some() {
                     let hsm_group_name_vec = get_groups_available(
                         &backend,
                         &shasta_token,
@@ -1148,7 +1148,7 @@ pub async fn process_cli(
                         .await;
 
                     match hsm_members_rslt {
-                        Ok(hsm_members) => hsm_members,
+                        Ok(hsm_members) => &hsm_members.join(","),
                         Err(e) => {
                             eprintln!(
                                 "ERROR - could not fetch HSM groups members. Reason:\n{}",
@@ -1159,21 +1159,13 @@ pub async fn process_cli(
                     }
                 } else {
                     cli_get_kernel_parameters
-                        .get_one::<String>("xnames")
-                        .expect("Neither HSM group nor xnames defined")
-                        .split(",")
-                        .map(|value| value.to_string())
-                        .collect()
+                        .get_one::<String>("nodes")
+                        .expect("Neither HSM group nor nodes defined")
                 };
 
-                let _ = get_kernel_parameters::exec(
-                    &backend,
-                    &shasta_token,
-                    xnames,
-                    filter_opt,
-                    output,
-                )
-                .await;
+                let _ =
+                    get_kernel_parameters::exec(&backend, &shasta_token, nodes, filter_opt, output)
+                        .await;
             } else if let Some(cli_get_redfish_endopints) =
                 cli_get.subcommand_matches("redfish-endpoints")
             {

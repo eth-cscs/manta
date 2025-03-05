@@ -161,16 +161,14 @@ pub async fn resolve_node_list_user_input_to_xname_2(
         let xname_vec = get_xname_from_nid_regex(&regex, &node_metadata_available_vec).await?;
 
         log::debug!("Regex format: {}", regex);
-        log::debug!("NID list from regex: {:#?}", xname_vec);
+        log::debug!("NID list from regex: {:?}", xname_vec);
 
         let xname_vec: Vec<String> = if xname_vec.is_empty() {
             log::debug!("No NIDs found from regex");
             // Filter, validate and translate list of regex xnames to xnames
             get_xname_from_xname_regex(&regex, &node_metadata_available_vec).await?
         } else {
-            return Err(Error::Message(format!(
-                "Could not parse user input as a list of nodes from a regex expression.",
-            )));
+            xname_vec
         };
 
         xname_vec
@@ -179,6 +177,12 @@ pub async fn resolve_node_list_user_input_to_xname_2(
             "Could not parse user input as a list of nodes from a hostlist or regex expression.",
         )));
     };
+
+    if xname_vec.is_empty() {
+        return Err(Error::Message(format!(
+            "Could not parse user input as a list of nodes from a hostlist or regex expression.",
+        )));
+    }
 
     // Include siblings if requested
     let xname_vec: Vec<String> = if is_include_siblings {

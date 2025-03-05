@@ -381,11 +381,11 @@ pub fn subcommand_get_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
         // .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
-        .arg(arg!(-x --xnames <VALUE> "Comma separated list of xnames to retrieve the kernel parameters from.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'"))
+        .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
         .arg(arg!(-H --"hsm-group" <VALUE> "List kernel parameters for all nodes in a HSM group name"))
         .arg(arg!(-f --filter <VALUE> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"))
         .arg(arg!(-o --output <VALUE> "Output format.").value_parser(["table", "json"]).default_value("table"))
-        .group(ArgGroup::new("hsm-group_or_xnames").args(["hsm-group", "xnames"]).required(true))
+        .group(ArgGroup::new("hsm-group_or_nodes").args(["hsm-group", "nodes"]).required(true))
 }
 
 pub fn subcommand_get_redfish_endpoints() -> Command {
