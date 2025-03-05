@@ -1,8 +1,17 @@
-use backend_dispatcher::{interfaces::bss::BootParametersTrait, types};
+use backend_dispatcher::{
+    interfaces::{
+        bss::BootParametersTrait,
+        hsm::{component::ComponentTrait, group::GroupTrait},
+    },
+    types::{self, Component},
+};
 use dialoguer::theme::ColorfulTheme;
 use mesa::{common::jwt_ops, error::Error};
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common::kafka::Kafka};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2},
+};
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
@@ -10,7 +19,7 @@ pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
     kernel_params: &str,
-    xname_vec: Vec<String>,
+    node_expression: &str,
     assume_yes: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
@@ -19,43 +28,45 @@ pub async fn exec(
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
-    /* let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        hsm::group::utils::get_member_vec_from_hsm_name_vec(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            hsm_group_name_vec.clone(),
-        )
+    // Convert user input to xname
+    let xname_available_vec: Vec<String> = backend
+        .get_group_available(shasta_token)
         .await
-    } else if let Some(xname_vec) = xname_vec_opt {
-        xname_vec.clone()
-    } else {
-        return Err(Error::Message(
-            "ERROR - Deleting kernel parameters without a list of nodes".to_string(),
-        ));
-    };
+        .unwrap_or_else(|e| {
+            eprintln!(
+                "ERROR - Could not get group list. Reason:\n{}",
+                e.to_string()
+            );
+            std::process::exit(1);
+        })
+        .iter()
+        .flat_map(|group| group.get_members())
+        .collect();
 
-    // Get current node boot params
-    let current_node_boot_params_vec: Vec<BootParameters> = bss::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xnames
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap(); */
+    let node_metadata_vec: Vec<Component> = backend
+        .get_all_nodes(shasta_token, Some("true"))
+        .await
+        .unwrap()
+        .components
+        .unwrap_or_default()
+        .iter()
+        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
+        .cloned()
+        .collect();
+
+    let xname_vec =
+        resolve_node_list_user_input_to_xname_2(node_expression, false, node_metadata_vec)
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!(
+                    "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+                    e
+                );
+                std::process::exit(1);
+            });
 
     let current_node_boot_params_vec: Vec<types::BootParameters> = backend
-        .get_bootparameters(
-            shasta_token,
-            &xname_vec
-                .iter()
-                .map(|xname| xname.to_string())
-                .collect::<Vec<String>>(),
-        )
+        .get_bootparameters(shasta_token, &xname_vec)
         .await
         .unwrap();
 
@@ -75,35 +86,22 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    /* // Delete kernel parameters
-    current_node_boot_params_vec
-        .iter_mut()
-        .for_each(|boot_parameter| {
-            log::info!(
-                "Deleting '{:?}' kernel parameters to '{}'",
-                boot_parameter.hosts,
-                kernel_params
-            );
-
-            need_restart = need_restart || boot_parameter.delete_kernel_param(&kernel_params);
-            log::info!("need restart? {}", need_restart);
-            // NOTE: No need to touch 'kernel' and 'initrd' values
-            // let _ = boot_parameter.delete_boot_image(&boot_parameter.get_boot_image());
-        }); */
-
     log::debug!(
-        "kernel params to delete: {:#?}",
+        "Current boot parameters: {:#?}",
         current_node_boot_params_vec
     );
 
     for mut boot_parameter in current_node_boot_params_vec {
+        dbg!(&boot_parameter);
         log::info!(
-            "Deleting '{:?}' kernel parameters to '{}'",
+            "Deleting '{}' kernel parameters for nodes '{:?}'",
+            kernel_params,
             boot_parameter.hosts,
-            kernel_params
         );
 
-        need_restart = need_restart || boot_parameter.delete_kernel_params(&kernel_params);
+        let is_kernel_params_deleted = boot_parameter.delete_kernel_params(&kernel_params);
+
+        need_restart = need_restart || is_kernel_params_deleted;
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
@@ -125,7 +123,7 @@ pub async fn exec(
     }
 
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), node_expression);
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {

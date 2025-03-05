@@ -62,8 +62,6 @@ pub async fn exec(
                 std::process::exit(1);
             });
 
-    let xname_vec: Vec<String> = xname_vec;
-
     let boot_parameter_vec: Vec<BootParameters> = backend
         .get_bootparameters(shasta_token, &xname_vec)
         .await

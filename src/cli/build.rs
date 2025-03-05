@@ -190,13 +190,13 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
         // .visible_alias("kp")
         .arg_required_else_help(true)
         .about("Delete kernel parameters")
-        .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
         .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
         .group(
-            ArgGroup::new("cluster_or_xnames")
-                .args(["hsm-group", "xnames"])
+            ArgGroup::new("cluster_or_nodes")
+                .args(["hsm-group", "nodes"])
                 .required(true),
         )
 }
