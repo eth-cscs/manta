@@ -2168,7 +2168,7 @@ pub async fn process_cli(
                     Ok(_) => {}
                     Err(error) => eprintln!("{}", error),
                 }
-            } else if let Some(cli_delete_session) = cli_root.subcommand_matches("session") {
+            } else if let Some(cli_delete_session) = cli_delete.subcommand_matches("session") {
                 let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
@@ -2179,7 +2179,7 @@ pub async fn process_cli(
                 .await;
 
                 let session_name = cli_delete_session
-                    .get_one::<String>("SESSION_NAME")
+                    .get_one::<String>("VALUE")
                     .expect("'session-name' argument must be provided");
 
                 let dry_run: &bool = cli_delete_session
@@ -2196,7 +2196,7 @@ pub async fn process_cli(
                     kafka_audit,
                 )
                 .await;
-            } else if let Some(cli_delete_images) = cli_root.subcommand_matches("images") {
+            } else if let Some(cli_delete_images) = cli_delete.subcommand_matches("images") {
                 let hsm_name_available_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,

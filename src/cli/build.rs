@@ -151,7 +151,7 @@ pub fn subcommand_delete_session() -> Command {
             .arg_required_else_help(true)
             .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-            .arg(arg!(<SESSION_NAME> "Session name to delete").required(true))
+            .arg(arg!(<VALUE> "Session name to delete").required(true))
 }
 
 pub fn subcommand_delete_kernel_parameter() -> Command {
