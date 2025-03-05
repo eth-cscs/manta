@@ -2,11 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.88] - 2025-03-05
+
+### Bug Fixes
+
+- Get session logs now validates the user has access to the CFS session is working on
+- Regex expression like 'nid00128(8|9)' was failing
+- Command 'delete kernel-parameters' is not updating all nodes
+
+### Features
+
+- Clean keycloak roles
+- Parametrisize gitea url based on 'site name'
+- Get kernel parameters command now accets node expression
+- [**breaking**] Command 'get kernel-parameters' accepts node expression
+- [**breaking**] Command 'delete kernel-parameters' accepts node expression
+
+### Miscellaneous Tasks
+
+- Clean code
+- Code housekeeping
+- Update mesa version
+- Update Cargo.toml
+
 ## [1.54.1-beta.87] - 2025-03-02
 
 ### Miscellaneous Tasks
 
 - Remove vault path and vault role id
+- Release manta version 1.54.1-beta.87
 
 ## [1.54.1-beta.86] - 2025-02-28
 
