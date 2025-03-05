@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.34] - 2025-03-05
+
+### Features
+
+- Add new command to delete configurations and cascade
+
 ## [1.54.33] - 2025-03-05
 
 ### Bug Fixes
 
 - Fail processing 'delete session'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.33
 
 ## [1.54.32] - 2025-03-04
 
