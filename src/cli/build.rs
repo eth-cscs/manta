@@ -109,6 +109,7 @@ pub fn subcommand_delete() -> Command {
         .about("Deletes data")
         .subcommand(subcommand_delete_group())
         .subcommand(subcommand_delete_kernel_parameter())
+        .subcommand(subcommand_delete_configurations())
         .subcommand(subcommand_delete_session())
         .subcommand(subcommand_delete_image())
         .subcommand(subcommand_delete_hw_component())
@@ -143,6 +144,19 @@ pub fn subcommand_delete_image() -> Command {
             .about("WIP - Deletes a list of images.")
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
             .arg(arg!(<IMAGE_LIST> "Comma separated list of image ids to delete/\neg: e2ce82f0-e7ba-4f36-9f5c-750346599600,59e0180a-3fdd-4936-bba7-14ba914ffd34").required(true))
+}
+
+pub fn subcommand_delete_configurations() -> Command {
+    Command::new("configurations")
+            // .visible_aliases(["configuration", "c"])
+            .arg_required_else_help(true)
+            .about("Deletes CFS configurations and all data related (CFS sessions, BOS sessiontemplates, BOS sessions and images).")
+            .arg(arg!(-n --"configuration-name" <CONFIGURATION> "CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and IMS images related to the CFS configuration will be deleted.\neg:\nmanta delete --configuration-name my-config-v1.0\nDeletes all data related to CFS configuration with name 'my-config-v0.1'"))
+            .arg(arg!(-p --pattern <CONFIGURATION_NAME_PATTERN> "Glob pattern for configuration name"))
+            .arg(arg!(-s --since <DATE> "Deletes CFS configurations, CFS sessions, BOS sessiontemplate, BOS sessions and images related to CFS configurations with 'last updated' after since date. Note: date format is %Y-%m-%d\neg:\nmanta delete --since 2023-01-01 --until 2023-10-01\nDeletes all data related to CFS configurations created or updated between 01/01/2023T00:00:00Z and 01/10/2023T00:00:00Z"))
+            .arg(arg!(-u --until <DATE> "Deletes CFS configuration, CFS sessions, BOS sessiontemplate, BOS sessions and images related to the CFS configuration with 'last updated' before until date. Note: date format is %Y-%m-%d\neg:\nmanta delete --until 2023-10-01\nDeletes all data related to CFS configurations created or updated before 01/10/2023T00:00:00Z"))
+            .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted").action(ArgAction::SetTrue))
+            .group(ArgGroup::new("since_and_until").args(["since", "until"]).multiple(true).requires("until").conflicts_with("configuration-name"))
 }
 
 pub fn subcommand_delete_session() -> Command {

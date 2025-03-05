@@ -8,6 +8,7 @@ use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::bootparameters::BootParameters;
 use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v3::CfsConfigurationResponse;
+use mesa::common::authentication;
 use mesa::{bos, cfs};
 use serde_json::Value;
 
@@ -20,7 +21,6 @@ pub async fn delete_data_related_cfs_configuration(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_opt: Option<&String>,
     hsm_name_available_vec: Vec<String>,
     configuration_name_opt: Option<&String>,
     configuration_name_pattern: Option<&String>,
@@ -28,13 +28,13 @@ pub async fn delete_data_related_cfs_configuration(
     until_opt: Option<NaiveDateTime>,
     yes: &bool,
 ) {
-    if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
+    /* if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
         eprintln!(
             "No access to HSM group {}. Exit",
             hsm_group_name_opt.unwrap()
         );
         std::process::exit(1);
-    }
+    } */
 
     // COLLECT SITE WIDE DATA FOR VALIDATION
     //
@@ -85,7 +85,7 @@ pub async fn delete_data_related_cfs_configuration(
         shasta_root_cert,
         &mut cfs_configuration_vec,
         configuration_name_pattern.map(|elem| elem.as_str()),
-        &vec![hsm_group_name_opt.unwrap().to_string()],
+        &hsm_name_available_vec,
         None,
     )
     .await;
@@ -187,6 +187,11 @@ pub async fn delete_data_related_cfs_configuration(
     .unwrap();
 
     // Filter CFS sessions related to a HSM group
+    // NOTE: Admins (pa-admin) are the only ones who can delete generic sessions
+    let keep_generic_sessions = mesa::common::jwt_ops::is_user_admin(shasta_token).unwrap();
+
+    dbg!(&keep_generic_sessions);
+
     mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
@@ -194,7 +199,7 @@ pub async fn delete_data_related_cfs_configuration(
         &mut cfs_session_vec,
         &hsm_name_available_vec,
         None,
-        false,
+        keep_generic_sessions,
     )
     .await;
 
@@ -502,7 +507,7 @@ pub async fn delete_data_related_cfs_configuration(
                 until_opt.unwrap()
             );
         }
-        print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
+        // print!(" in HSM '{}'. Exit", hsm_group_name_opt.unwrap());
         io::stdout().flush().unwrap();
 
         std::process::exit(0);
