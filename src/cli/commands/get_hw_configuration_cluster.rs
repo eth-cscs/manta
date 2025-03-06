@@ -96,15 +96,6 @@ pub async fn exec(
     while let Some(message) = tasks.join_next().await {
         match message {
             Ok(node_hw_inventory) => {
-                /* let node_hw_inventory_opt = node_hw_inventory.pointer("/Nodes/0");
-                let node_summary = match node_hw_inventory_opt {
-                    Some(node_hw_inventory) => {
-                        let v = NodeSummary::from_csm_value(node_hw_inventory.clone());
-                        dbg!(&v);
-                        v
-                    }
-                    None => NodeSummary::default(),
-                }; */
                 hsm_summary.push(node_hw_inventory);
             }
             Err(e) => log::error!("Failed fetching node hardware information: {}", e),

@@ -92,7 +92,6 @@ pub async fn exec(
     );
 
     for mut boot_parameter in current_node_boot_params_vec {
-        dbg!(&boot_parameter);
         log::info!(
             "Deleting '{}' kernel parameters for nodes '{:?}'",
             kernel_params,

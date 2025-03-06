@@ -18,8 +18,6 @@ pub mod http_client {
 
         let request_payload = json!({ "jwt": shasta_token, "role": role });
 
-        dbg!(&request_payload);
-
         let resp = client
             .post(api_url)
             .header("X-Vault-Request", "true")
