@@ -31,15 +31,15 @@ publish = false                                                         # cargo 
 
 # PROD
 
-# backend-dispatcher = "0.1.35"
-# ochami-rs = "0.1.37"
-# mesa = "0.42.3-beta.66"
+backend-dispatcher = "0.1.35"
+ochami-rs = "0.1.37"
+mesa = "0.42.3-beta.68"
 
 # DEV
 
-backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-ochami-rs = { path = "../ochami-rs" } # Only for development purposes
-mesa = { path = "../mesa" } # Only for development purposes
+# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
+# ochami-rs = { path = "../ochami-rs" } # Only for development purposes
+# mesa = { path = "../mesa" } # Only for development purposes
 
 # --- END MANTA DEPENDENCIES ---
 
