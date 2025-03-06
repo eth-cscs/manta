@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.35] - 2025-03-06
+
+### Features
+
+- Clean code
+
 ## [1.54.34] - 2025-03-05
 
 ### Features
 
 - Add new command to delete configurations and cascade
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.34
 
 ## [1.54.33] - 2025-03-05
 
