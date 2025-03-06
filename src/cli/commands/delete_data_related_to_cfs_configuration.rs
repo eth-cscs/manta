@@ -190,8 +190,6 @@ pub async fn delete_data_related_cfs_configuration(
     // NOTE: Admins (pa-admin) are the only ones who can delete generic sessions
     let keep_generic_sessions = mesa::common::jwt_ops::is_user_admin(shasta_token).unwrap();
 
-    dbg!(&keep_generic_sessions);
-
     mesa::cfs::session::mesa::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
