@@ -204,6 +204,10 @@ pub async fn delete_data_related_cfs_configuration(
     .unwrap();
 
     // Filter CFS sessions related to a HSM group
+    // NOTE: Admins (pa-admin) are the only ones who can delete generic sessions
+    let keep_generic_sessions = mesa::common::jwt_ops::is_user_admin(shasta_token);
+
+    // Filter CFS sessions related to a HSM group
     cfs::session::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
@@ -211,7 +215,7 @@ pub async fn delete_data_related_cfs_configuration(
         &mut cfs_session_vec,
         &hsm_name_available_vec,
         None,
-        false,
+        keep_generic_sessions,
     )
     .await
     .unwrap_or_else(|e| {
