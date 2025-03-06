@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.89] - 2025-03-06
+
+### Features
+
+- Allow 'pa_admin' users deleting 'generic sessions'
+
+### Miscellaneous Tasks
+
+- Udpate Cargo.toml
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.88] - 2025-03-05
 
 ### Bug Fixes
@@ -24,6 +38,7 @@ All notable changes to this project will be documented in this file.
 - Code housekeeping
 - Update mesa version
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.88
 
 ## [1.54.1-beta.87] - 2025-03-02
 
