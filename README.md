@@ -2,9 +2,7 @@
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
-Manta is a frontend cli to interact with Shasta, it uses [mesa](https://crates.io/crates/mesa) for all Shasta interaction.
-
-User guide can be found here https://eth-cscs.github.io/manta/
+Manta is a frontend cli to interact with CSM and OCHAMI.
 
 ## Deployment
 
@@ -16,6 +14,13 @@ Install build dependencies
 $ cargo install cargo-release cargo-dist git-cliff
 ```
 
+### Clone repo
+
+```bash
+git clone https://github.com/eth-cscs/manta && cd manta
+git checkout 1.5
+```
+
 ### Build container image
 
 This repo contains a Dockerfile to build a Container with manta cli.
@@ -24,11 +29,70 @@ This repo contains a Dockerfile to build a Container with manta cli.
 docker build -t manta .
 ```
 
-#### Run
+#### Copy configuration file
 
+```bash
+mkdir -p ~/.config/manta
+cat > ~/.config/manta/config.toml <<EOF
+log = "info"
+
+site = "ochami"
+parent_hsm_group = "nodes_free"
+audit_file = "/tmp/manta_audit.log"
+
+[sites]
+
+[sites.ochami]
+backend = "ochami"
+shasta_base_url = "https://foobar.openchami.cluster:8443"
+root_ca_cert_file = "ochami_root_cert.pem"
+EOF
 ```
-$ docker run -it --network=host -v ~:/root/ manta --help
+
+#### Start the `ochami` services from the [deployment recipe quickstart](https://github.com/OpenCHAMI/deployment-recipes/tree/main/quickstart).
+
+> [!NOTE]
+> Make sure to set the `ACCESS_TOKEN` environment variable and create a CA certificate in the same directory as the config file. This can be done using the convienience functions from the the OpenCHAMI deployment recipe repository.
+>
+> To set the `ACCESS_TOKEN` environment variable and create/renew the CA certificate (assuming you have cloned the deployment recipe quickstart):
+> ```bash
+> # collection of useful functions
+> ochami_deployment_recipe_quickstart=path/to/quickstart
+> source $ochami_deployment_recipe_quickstart/bash_functions.sh
+>
+> # set environment variable then create the cert
+> export ACCESS_TOKEN=$(gen_access_token)
+> get_ca_cert > $HOME/.config/manta/ochami_root_cert.pem
+> ```
+
+#### Run the CLI with one of the two options mentioned above to confirm that `manta` is working.
+
+```bash
+docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta manta get redfish-endpoints
 ```
+
+> [!NOTE]
+> Some commands will not work yet with OpenCHAMI services and will sometimes show a message indicating no implementation for the backend.
+>
+> ```bash
+> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest manta get sessions
+> INFO  | Get CFS sessions for HSM groups: Some([])
+> ERROR | Failed to get CFS sessions. Reason:
+> ERROR - Message: Get and filter sessions command not implemented for this backend
+> exit status 1
+> ```
+>
+> Some of the other commands may fail simply due to CSM services not included with OpenCHAMI if only using the OpenCHAMI deployment recipes:
+>
+> ```bash
+> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest manta get images
+> INFO  | Get IMS images 'all available'
+>
+> thread 'main' panicked at src/cli/commands/get_images.rs:23:6:
+> called `Result::unwrap()` on an `Err` value: NetError(reqwest::Error { kind: Status(503), url: Url { scheme: "https", cannot_be_a_base: false, username: "", password: None, host: Some(Domain("foobar.openchami.cluster") ), port: Some(8443), path: "/ims/v3/images", query: None, fragment: None } })
+> note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+> exit status 101
+> ```
 
 ### Build from sources
 
