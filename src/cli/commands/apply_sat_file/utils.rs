@@ -890,9 +890,21 @@ pub async fn create_image_from_sat_file_serde_yaml(
         .map(|group_name| group_name.as_str().unwrap().to_string())
         .collect();
 
-    //TODO: Get rid of this by making sure CSM admins don't create HSM groups for system
-    //wide operations instead of using roles
-    let groups_name = mesa::hsm::group::hacks::filter_system_hsm_group_names(groups_name);
+    // VALIDATION: make sure grups in SAT.images "CFS session" are valid
+    // NOTE: this is temporary until we get rid off "group" names as ansible folder names
+    let invalid_groups: Vec<String> =
+        mesa::cfs::session::mesa::utils::validate_groups(&groups_name, shasta_token);
+
+    if !invalid_groups.is_empty() {
+        log::debug!("CFS session group validation - failed");
+
+        return Err(Error::Message(format!(
+            "Please fix 'images' section in SAT file.\nInvalid groups: {:?}",
+            invalid_groups
+        )));
+    } else {
+        log::debug!("CFS session group validation - passed");
+    }
 
     let base_image_id: String;
 
