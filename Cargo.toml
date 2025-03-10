@@ -24,7 +24,7 @@ publish = false                                                         # cargo 
 # strum_macros = "*"
 
 [dependencies]
-mesa = "0.43.13"
+mesa = "0.43.14"
 # mesa = { path = "../mesa" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
