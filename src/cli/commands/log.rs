@@ -2,10 +2,7 @@ use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
     types::Group,
 };
-use mesa::{
-    cfs::{self, session::http_client::v3::types::CfsSessionGetResponse},
-    hsm,
-};
+use mesa::cfs::{self, session::http_client::v3::types::CfsSessionGetResponse};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
