@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.36] - 2025-03-10
+
+### Bug Fixes
+
+- Command 'apply sat-file' process CFS session groups in a better way by cleaning both available groups (jwt/auth) token and groups in SAT images group section to validate if SAT file ran by user has access to the groups the user has access to
+
 ## [1.54.35] - 2025-03-06
 
 ### Features
 
 - Clean code
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.35
 
 ## [1.54.34] - 2025-03-05
 
