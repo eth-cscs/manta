@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.92] - 2025-03-12
+
+### Bug Fixes
+
+- Rename enum fields in manta config
+
+### Features
+
+- Vault login path is now customized with the 'site_name'
+
+### Miscellaneous Tasks
+
+- Cargo fix
+- Remove 'homebrew' from cargo dist
+- Update Cargo.toml to local folders crates
+- Update Cargo.toml
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.91] - 2025-03-10
 
 ### Features
@@ -11,6 +32,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.91
 
 ## [1.54.1-beta.90] - 2025-03-06
 
