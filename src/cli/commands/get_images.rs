@@ -37,8 +37,6 @@ pub async fn exec(
             std::process::exit(1);
         });
 
-    log::debug!("Image list already filtered:\n{:#?}", image_detail_vec);
-
     // Print data
     let mut table = Table::new();
 
