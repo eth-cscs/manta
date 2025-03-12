@@ -3,7 +3,11 @@ pub mod http_client {
     use backend_dispatcher::error::Error;
     use serde_json::{json, Value};
 
-    pub async fn auth_oidc_jwt(vault_base_url: &str, shasta_token: &str) -> Result<String, Error> {
+    pub async fn auth_oidc_jwt(
+        vault_base_url: &str,
+        shasta_token: &str,
+        site_name: &str,
+    ) -> Result<String, Error> {
         // NOTE: role is hardcoded to manta, this is the role that is created in vault for the
         // jwt-manta auth method. This role is created by the vault admin and is used to
         // authenticate
@@ -12,7 +16,7 @@ pub mod http_client {
         // rest client create new cfs sessions
         let client = reqwest::Client::builder().build()?;
 
-        let api_url = vault_base_url.to_owned() + "/v1/auth/jwt-manta/login";
+        let api_url = format!("{}/v1/auth/jwt-manta-{}/login", vault_base_url, site_name);
 
         log::debug!("Accessing/login to {}", api_url);
 
@@ -102,7 +106,7 @@ pub mod http_client {
         // vault_role_id: &str,
         // secret_path: &str,
     ) -> Result<String, Error> {
-        let vault_token = auth_oidc_jwt(vault_base_url, shasta_token).await?;
+        let vault_token = auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
         let vault_secret_path = format!("manta/data/{}", site_name);
 
@@ -120,14 +124,14 @@ pub mod http_client {
 
     pub async fn fetch_shasta_k8s_secrets_from_vault(
         vault_base_url: &str,
-        site: &str,
+        site_name: &str,
         // vault_role_id: &str,
         shasta_token: &str,
         // secret_path: &str,
     ) -> Result<Value, Error> {
-        let vault_token = auth_oidc_jwt(vault_base_url, shasta_token).await?;
+        let vault_token = auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-        let vault_secret_path = format!("manta/data/{}", site);
+        let vault_secret_path = format!("manta/data/{}", site_name);
 
         fetch_secret(
             &vault_token,
