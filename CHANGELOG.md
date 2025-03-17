@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.95] - 2025-03-17
+
+### Features
+
+- Integrate homebrew-tab eth-cscs/homebrew-tap
+
 ## [1.54.1-beta.94] - 2025-03-17
 
 ### Features
 
 - Integrate homebrew-tab eth-cscs/homebrew-tap
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.94
 
 ## [1.54.1-beta.93] - 2025-03-17
 
