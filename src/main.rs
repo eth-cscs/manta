@@ -2,11 +2,9 @@ mod backend_dispatcher;
 mod cli;
 mod common;
 
+use ::backend_dispatcher::types::K8sAuth;
 use backend_dispatcher::StaticBackendDispatcher;
-use common::{
-    config::types::{K8sAuth, MantaConfiguration},
-    kafka::Kafka,
-};
+use common::{config::types::MantaConfiguration, kafka::Kafka};
 
 use crate::common::log_ops;
 

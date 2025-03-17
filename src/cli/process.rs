@@ -1334,7 +1334,6 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                     cfs_conf_sess_name_opt,
                     playbook_file_name_opt,
                     hsm_group_name_arg_opt,
@@ -1644,7 +1643,6 @@ pub async fn process_cli(
                 &shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
-                k8s_api_url.expect("ERROR - k8s api url is mandatory"),
                 &group_available_vec,
                 user_input,
                 &site

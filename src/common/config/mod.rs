@@ -7,11 +7,14 @@ use std::{
     path::PathBuf,
 };
 
-use backend_dispatcher::error::Error;
+use backend_dispatcher::{
+    error::Error,
+    types::{K8sAuth, K8sDetails},
+};
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use types::{K8sAuth, K8sDetails, MantaConfiguration, Site};
+use types::{MantaConfiguration, Site};
 
 use crate::common::{audit::Auditor, kafka::Kafka};
 
@@ -227,12 +230,12 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .interact_text()
         .unwrap();
 
-    let vault_role_id: String = Input::new()
-        .with_prompt("Please type Hashicorp Vault role id")
-        .default("b15517de-cabb-06ba-af98-633d216c6d99".to_string())
-        .show_default(true)
-        .interact_text()
-        .unwrap();
+    /* let vault_role_id: String = Input::new()
+    .with_prompt("Please type Hashicorp Vault role id")
+    .default("b15517de-cabb-06ba-af98-633d216c6d99".to_string())
+    .show_default(true)
+    .interact_text()
+    .unwrap(); */
 
     let root_ca_cert_file: String = Input::new()
         .with_prompt("Please type full path for the CA public certificate file")

@@ -1,12 +1,11 @@
+use backend_dispatcher::types::{K8sAuth, K8sDetails};
 use dialoguer::theme::ColorfulTheme;
 use serde_yaml::Value;
 use termion::color;
 
 use crate::{
     cli::commands::apply_sat_file::utils,
-    common::{
-        self, config::types::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-    },
+    common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
 };
 
 pub async fn exec(
@@ -123,14 +122,14 @@ pub async fn exec(
 
     // Get K8s secrets
     let shasta_k8s_secrets = match &k8s.authentication {
-        common::config::types::K8sAuth::Native {
+        K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
             client_key_data,
         } => {
             serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
         }
-        common::config::types::K8sAuth::Vault {
+        K8sAuth::Vault {
             base_url,
             // secret_path: _secret_path,
         } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
@@ -148,7 +147,7 @@ pub async fn exec(
         // vault_role_id,
         k8s_api_url,
         shasta_k8s_secrets,
-        sat_file_content,
+        // sat_file_content,
         sat_template_file_yaml,
         hsm_group_param_opt,
         hsm_group_available_vec,

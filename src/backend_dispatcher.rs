@@ -1024,7 +1024,7 @@ impl CfsTrait for StaticBackendDispatcher {
         shasta_token: &str,
         site_name: &str,
         cfs_session_name: &str,
-        k8s_api_url: &str,
+        // k8s_api_url: &str,
         k8s: &K8sDetails,
     ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
         match self {
@@ -1033,7 +1033,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     shasta_token,
                     site_name,
                     cfs_session_name,
-                    k8s_api_url,
+                    // k8s_api_url,
                     k8s,
                 )
                 .await
@@ -1043,7 +1043,7 @@ impl CfsTrait for StaticBackendDispatcher {
                     shasta_token,
                     site_name,
                     cfs_session_name,
-                    k8s_api_url,
+                    // k8s_api_url,
                     k8s,
                 )
                 .await
@@ -1056,16 +1056,15 @@ impl CfsTrait for StaticBackendDispatcher {
         auth_token: &str,
         site_name: &str,
         xname: &str,
-        k8s_api_url: &str,
         k8s: &K8sDetails,
     ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
         match self {
             CSM(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s_api_url, k8s)
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
                     .await
             }
             OCHAMI(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s_api_url, k8s)
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
                     .await
             }
         }
@@ -1083,7 +1082,7 @@ impl SatTrait for StaticBackendDispatcher {
         // vault_role_id: &str,
         k8s_api_url: &str,
         shasta_k8s_secrets: serde_json::Value,
-        sat_file_content: String,
+        // sat_file_content: String,
         sat_template_file_yaml: serde_yaml::Value,
         hsm_group_param_opt: Option<&String>,
         hsm_group_available_vec: &Vec<String>,
@@ -1109,7 +1108,7 @@ impl SatTrait for StaticBackendDispatcher {
                     // vault_role_id,
                     k8s_api_url,
                     shasta_k8s_secrets,
-                    sat_file_content,
+                    // sat_file_content,
                     sat_template_file_yaml,
                     hsm_group_param_opt,
                     hsm_group_available_vec,
@@ -1136,7 +1135,7 @@ impl SatTrait for StaticBackendDispatcher {
                     // vault_role_id,
                     k8s_api_url,
                     shasta_k8s_secrets,
-                    sat_file_content,
+                    // sat_file_content,
                     sat_template_file_yaml,
                     hsm_group_param_opt,
                     hsm_group_available_vec,
@@ -1242,7 +1241,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
-        k8s_api_url: &str,
+        // k8s_api_url: &str,
         cfs_conf_sess_name: Option<&String>,
         playbook_yaml_file_name_opt: Option<&String>,
         hsm_group: Option<&String>,
@@ -1250,7 +1249,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
         ansible_limit: Option<String>,
         ansible_verbosity: Option<String>,
         ansible_passthrough: Option<String>,
-        watch_logs: bool,
+        // watch_logs: bool,
         /* kafka_audit: &Kafka,
         k8s: &K8sDetails, */
     ) -> Result<(String, String), Error> {
@@ -1262,7 +1261,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    k8s_api_url,
+                    // k8s_api_url,
                     cfs_conf_sess_name,
                     playbook_yaml_file_name_opt,
                     hsm_group,
@@ -1270,7 +1269,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
                     ansible_limit,
                     ansible_verbosity,
                     ansible_passthrough,
-                    watch_logs,
+                    // watch_logs,
                     /* kafka_audit,
                     k8s, */
                 )
@@ -1283,7 +1282,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    k8s_api_url,
+                    // k8s_api_url,
                     cfs_conf_sess_name,
                     playbook_yaml_file_name_opt,
                     hsm_group,
@@ -1291,7 +1290,7 @@ impl ApplySessionTrait for StaticBackendDispatcher {
                     ansible_limit,
                     ansible_verbosity,
                     ansible_passthrough,
-                    watch_logs,
+                    // watch_logs,
                     /* kafka_audit,
                     k8s, */
                 )

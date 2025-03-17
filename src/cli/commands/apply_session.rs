@@ -1,14 +1,15 @@
 use std::path::PathBuf;
 
-use backend_dispatcher::{error::Error, interfaces::apply_session::ApplySessionTrait};
-use mesa::common::kubernetes;
+use backend_dispatcher::{
+    error::Error,
+    interfaces::{apply_session::ApplySessionTrait, cfs::CfsTrait},
+    types::K8sDetails,
+};
+use futures::{AsyncBufReadExt, TryStreamExt};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{
-        audit::Audit, config::types::K8sDetails, jwt_ops, kafka::Kafka,
-        vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-    },
+    common::{audit::Audit, jwt_ops, kafka::Kafka},
 };
 
 /// Creates a CFS session target dynamic
@@ -21,7 +22,6 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    k8s_api_url: &str,
     cfs_conf_sess_name: Option<&String>,
     playbook_yaml_file_name_opt: Option<&String>,
     hsm_group: Option<&String>,
@@ -231,7 +231,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            k8s_api_url,
+            // k8s_api_url,
             cfs_conf_sess_name,
             playbook_yaml_file_name_opt,
             hsm_group,
@@ -239,7 +239,7 @@ pub async fn exec(
             ansible_limit,
             ansible_verbosity,
             ansible_passthrough,
-            watch_logs,
+            // watch_logs,
             /* kafka_audit,
             k8s, */
         )
@@ -271,15 +271,15 @@ pub async fn exec(
             }
         }; */
 
-        let shasta_k8s_secrets = match &k8s.authentication {
-            crate::common::config::types::K8sAuth::Native {
+        /* let shasta_k8s_secrets = match &k8s.authentication {
+            K8sAuth::Native {
                 certificate_authority_data,
                 client_certificate_data,
                 client_key_data,
             } => {
                 serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
             }
-            crate::common::config::types::K8sAuth::Vault {
+            K8sAuth::Vault {
                 base_url,
                 // secret_path: _secret_path,
             } => fetch_shasta_k8s_secrets_from_vault(&base_url, site, shasta_token)
@@ -292,8 +292,18 @@ pub async fn exec(
             .unwrap();
 
         kubernetes::print_cfs_session_logs(client, &cfs_session_name)
-            .await
-            .unwrap();
+        .await
+        .unwrap(); */
+
+        let mut cfs_session_log_stream = backend
+            .get_session_logs_stream(shasta_token, site, &cfs_session_name, k8s)
+            .await?
+            .lines();
+
+        while let Some(line) = cfs_session_log_stream.try_next().await.unwrap() {
+            println!("{}", line);
+        }
+
         /* // Get CFS session logs
         let logs_stream_rslt = kubernetes::get_cfs_session_init_container_git_clone_logs_stream(
             client.clone(),

@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use crate::common::audit::Auditor;
 
+use backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+/* #[derive(Serialize, Deserialize, Debug)]
 pub enum K8sAuth {
     #[serde(rename = "native")]
     Native {
@@ -24,7 +25,7 @@ pub enum K8sAuth {
 pub struct K8sDetails {
     pub api_url: String,
     pub authentication: K8sAuth,
-}
+} */
 
 /* #[derive(Serialize, Deserialize, Debug)]
 pub struct Kafka {

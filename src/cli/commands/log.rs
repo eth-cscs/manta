@@ -1,15 +1,16 @@
 use backend_dispatcher::{
+    error::Error,
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
-    types::Group,
+    types::{Group, K8sDetails},
 };
 use mesa::cfs::{self, session::http_client::v3::types::CfsSessionGetResponse};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{
-        self, config::types::K8sDetails, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-    },
+    common::{self},
 };
+
+use futures::{AsyncBufReadExt, TryStreamExt};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -17,7 +18,6 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    k8s_api_url: &str,
     group_available_vec: &[Group],
     user_input: &str,
     k8s: &K8sDetails,
@@ -124,8 +124,8 @@ pub async fn exec(
     );
 
     // Get K8s secrets
-    let shasta_k8s_secrets = match &k8s.authentication {
-        common::config::types::K8sAuth::Native {
+    /* let shasta_k8s_secrets = match &k8s.authentication {
+        K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
             client_key_data,
@@ -137,7 +137,7 @@ pub async fn exec(
                 "client-key-data": client_key_data
             })
         }
-        common::config::types::K8sAuth::Vault {
+        K8sAuth::Vault {
             base_url,
             // secret_path,
             // role_id,
@@ -155,10 +155,42 @@ pub async fn exec(
         client,
         cfs_session.name.as_ref().unwrap(),
     )
+    .await; */
+
+    let log_rslt = print_cfs_session_logs(
+        backend,
+        shasta_token,
+        site_name,
+        cfs_session.name.as_ref().unwrap(),
+        k8s,
+    )
     .await;
 
     if let Err(e) = log_rslt {
         eprintln!("ERROR - {e}. Exit");
         std::process::exit(1);
     }
+}
+
+pub async fn print_cfs_session_logs(
+    backend: &StaticBackendDispatcher,
+    shasta_token: &str,
+    site_name: &str,
+    cfs_session_name: &str,
+    k8s: &K8sDetails,
+) -> Result<(), Error> {
+    let logs_stream = backend
+        .get_session_logs_stream(shasta_token, site_name, cfs_session_name, k8s)
+        .await?;
+
+    /* get_cfs_session_init_container_git_clone_logs_stream(client.clone(), cfs_session_name)
+    .await?; */
+
+    let mut lines = logs_stream.lines();
+
+    while let Some(line) = lines.try_next().await.unwrap() {
+        println!("{}", line);
+    }
+
+    Ok(())
 }

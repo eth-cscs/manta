@@ -31,9 +31,9 @@ publish = false                                                         # cargo 
 
 # PROD
 
-backend-dispatcher = "0.1.38"
+backend-dispatcher = "0.1.40"
 ochami-rs = "0.1.40"
-mesa = "0.42.3-beta.72"
+mesa = "0.42.3-beta.73"
 
 # DEV
 

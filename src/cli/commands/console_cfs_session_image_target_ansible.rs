@@ -1,13 +1,11 @@
+use backend_dispatcher::types::{K8sAuth, K8sDetails};
 use futures::StreamExt;
 
 use mesa::{cfs, node::console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::{
-    self, config::types::K8sDetails, terminal_ops,
-    vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-};
+use crate::common::{terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault};
 
 pub async fn exec(
     site_name: &str,
@@ -131,14 +129,14 @@ pub async fn connect_to_console(
     log::info!("CFS session name: {}", cfs_session_name);
 
     let shasta_k8s_secrets = match &k8s.authentication {
-        common::config::types::K8sAuth::Native {
+        K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
             client_key_data,
         } => {
             serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
         }
-        common::config::types::K8sAuth::Vault {
+        K8sAuth::Vault {
             base_url,
             // secret_path: _secret_path,
         } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
