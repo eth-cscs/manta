@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.43] - 2025-03-21
+
+### Features
+
+- Homebrew tap github deployment
+
 ## [1.54.42] - 2025-03-21
 
 ### Bug Fixes
 
 - Command 'delete session' ignoring argument 'assume-yes'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.42
 
 ## [1.54.41] - 2025-03-21
 
