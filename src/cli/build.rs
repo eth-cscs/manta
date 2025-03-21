@@ -405,7 +405,7 @@ pub fn subcommand_apply_template() -> Command {
                     .arg(arg!(-n --name <VALUE> "Name of the Session"))
                     .arg(arg!(-o --operation <VALUE> "An operation to perform on Components in this Session. Boot Applies the Template to the Components and boots/reboots if necessary. Reboot Applies the Template to the Components; guarantees a reboot. Shutdown Power down Components that are on").value_parser(["reboot", "boot", "shutdown"]).default_value("reboot"))
                     .arg(arg!(-t --template <VALUE> "Name of the Session Template").required(true))
-                    .arg(arg!(-l --limit <VALUE> "A comma-separated list of nodes, groups, or roles to which the Session will be limited. Components are treated as OR operations unless preceded by '&' for AND or '!' for NOT"))
+                    .arg(arg!(-l --limit <VALUE> "A comma-separated list of nodes, groups, or roles to which the Session will be limited. Components are treated as OR operations unless preceded by '&' for AND or '!' for NOT").required(true))
                     .arg(arg!(-i --"include-disabled" <VALUE> "Set to include nodes that have been disabled as indicated in the Hardware State Manager (HSM)").action(ArgAction::SetTrue))
                     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
