@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.40] - 2025-03-21
+
+### Features
+
+- Command 'apply template' not accepts 'limit' as a mandatory argument
+
 ## [1.54.39] - 2025-03-11
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.39
 
 ## [1.54.38] - 2025-03-10
 
