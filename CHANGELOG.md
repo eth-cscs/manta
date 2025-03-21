@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.42] - 2025-03-21
+
+### Bug Fixes
+
+- Command 'delete session' ignoring argument 'assume-yes'
+
 ## [1.54.41] - 2025-03-21
 
 ### Features
 
 - Command 'delete session' has a new argument 'assume-yes' to avoid asking user for confirmation
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.41
 
 ## [1.54.40] - 2025-03-21
 
