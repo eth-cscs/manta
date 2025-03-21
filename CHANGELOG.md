@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.41] - 2025-03-21
+
+### Features
+
+- Command 'delete session' has a new argument 'assume-yes' to avoid asking user for confirmation
+
 ## [1.54.40] - 2025-03-21
 
 ### Features
 
 - Command 'apply template' not accepts 'limit' as a mandatory argument
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.40
 
 ## [1.54.39] - 2025-03-11
 
