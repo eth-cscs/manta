@@ -2016,6 +2016,8 @@ pub async fn process_cli(
                     .get_one::<String>("SESSION_NAME")
                     .expect("'session-name' argument must be provided");
 
+                let assume_yes: bool = cli_delete_session.get_flag("assume-yes");
+
                 let dry_run: &bool = cli_delete_session
                     .get_one("dry-run")
                     .expect("'dry-run' argument must be provided");
@@ -2028,6 +2030,7 @@ pub async fn process_cli(
                     target_hsm_group_vec,
                     session_name,
                     dry_run,
+                    assume_yes,
                     kafka_audit_opt,
                 )
                 .await;

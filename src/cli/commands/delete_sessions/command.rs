@@ -19,6 +19,7 @@ pub async fn exec(
     target_hsm_group_vec: Vec<String>,
     cfs_session_name: &str,
     dry_run: &bool,
+    assume_yes: &bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     let (
@@ -99,30 +100,32 @@ pub async fn exec(
         let image_created_by_cfs_configuration = cfs_session.get_result_id_vec();
         if image_created_by_cfs_configuration.len() > 0 {
             // Ask user for confirmation
-            let user_msg = format!(
+            if !assume_yes {
+                let user_msg = format!(
                 "Session '{}' used to build images listed below which will get deleted:\n{}\nDo you want to continue?",
                 cfs_session_name,
                 image_created_by_cfs_configuration.join("\n"),
             );
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(user_msg)
-                .interact()
-                .unwrap()
-            {
-                log::info!("Continue",);
-            } else {
-                println!("Cancelled by user. Aborting.");
-                std::process::exit(0);
-            }
+                if Confirm::with_theme(&ColorfulTheme::default())
+                    .with_prompt(user_msg)
+                    .interact()
+                    .unwrap()
+                {
+                    log::info!("Continue",);
+                } else {
+                    println!("Cancelled by user. Aborting.");
+                    std::process::exit(0);
+                }
 
-            for image_name in image_created_by_cfs_configuration {
-                let _ = ims::image::http_client::delete(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &image_name,
-                )
-                .await;
+                for image_name in image_created_by_cfs_configuration {
+                    let _ = ims::image::http_client::delete(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        &image_name,
+                    )
+                    .await;
+                }
             }
         }
     } else if cfs_session_target_definition == "dynamic" {
