@@ -13,6 +13,7 @@ pub async fn exec(
     target_hsm_group_vec: Vec<String>,
     cfs_session_name: &str,
     dry_run: &bool,
+    assume_yes: bool,
     kafka_audit: &Kafka,
 ) {
     let (
@@ -68,27 +69,6 @@ pub async fn exec(
         std::process::exit(1);
     };
 
-    /* // Check session exists
-    let cfs_session_vec_rslt = mesa::cfs::session::mesa::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        Some(&session_name.to_string()),
-        None,
-    )
-    .await;
-
-    let mut cfs_session_vec = match cfs_session_vec_rslt {
-        Ok(cfs_session_vec) => cfs_session_vec,
-        Err(e) => {
-            eprintln!("ERROR - Problem fetching sessions.\n{:#?}", e);
-            std::process::exit(1);
-        }
-    }; */
-
     // Validate:
     // - Check CFS session to delete exists
     // - Check CFS session belongs to a cluster the user has access to
@@ -100,30 +80,28 @@ pub async fn exec(
     if cfs_session_target_definition == "image" {
         // Validate CFS session type image:
         // - check CFS configuration related to CFS session is not used to build any other image
-        /* let cfs_configuration_used_by_other_hsm_groups = is_cfs_configuration_used_to_build_image(
-            &cfs_session_vec,
-            &cfs_session_name,
-            &cfs_configuration_name,
-        ); */
 
         // Get Image ids to delete
         let image_created_by_cfs_configuration = cfs_session.get_result_id_vec();
         if image_created_by_cfs_configuration.len() > 0 {
-            // Ask user for confirmation
-            let user_msg = format!(
+            if assume_yes {
+                // Ask user for confirmation
+                let user_msg = format!(
                 "Session '{}' used to build images listed below which will get deleted:\n{}\nDo you want to continue?",
                 cfs_session_name,
                 image_created_by_cfs_configuration.join("\n"),
             );
-            if Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(user_msg)
-                .interact()
-                .unwrap()
-            {
-                log::info!("Continue",);
-            } else {
-                println!("Cancelled by user. Aborting.");
-                std::process::exit(0);
+
+                if Confirm::with_theme(&ColorfulTheme::default())
+                    .with_prompt(user_msg)
+                    .interact()
+                    .unwrap()
+                {
+                    log::info!("Continue",);
+                } else {
+                    println!("Cancelled by user. Aborting.");
+                    std::process::exit(0);
+                }
             }
 
             for image_name in image_created_by_cfs_configuration {
@@ -137,28 +115,7 @@ pub async fn exec(
             }
         }
     } else if cfs_session_target_definition == "dynamic" {
-        /* // Validate CFS session type image:
-        // - check CFS configuration related to CFS session is not a desired configuration used by
-        // any other nodes outside HSM group the CFS session 'dynamic' is intended
-        if let Some(ref cfs_component_vec) = cfs_component_vec_opt {
-            let xname_configured_by_cfs_config_vec =
-                is_cfs_configuration_a_desired_configuration_of_other(
-                    cfs_component_vec,
-                    &cfs_configuration_name,
-                    xname_vec.iter().map(|xname| xname.as_str()).collect(),
-                );
-            println!(
-                "DEBUG - nodes using cfs configuration '{}' as desired configuration outside node list {:?}: {:?}",
-                cfs_configuration_name, xname_vec, xname_configured_by_cfs_config_vec
-            );
-            if xname_configured_by_cfs_config_vec.len() > 0 {
-                eprintln!(
-                    "ERROR - Session '{}' used to configure {:?}. Operation cancelled. Exit",
-                    cfs_session_name, xname_configured_by_cfs_config_vec
-                );
-                std::process::exit(1);
-            }
-        } */
+        // Nothing to do ... dynamic CFS sessions will be processed below
     } else {
         eprintln!(
             "CFS session target definition is '{}'. Don't know how to continue. Exit",
@@ -208,15 +165,6 @@ pub async fn exec(
         );
 
         // Update CFS component error_count
-        // Get original CFS components
-        /* let cfs_component_vec = mesa::cfs::component::mesa::http_client::get_multiple(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &xname_vec,
-        )
-        .await
-        .unwrap(); */
 
         let cfs_component_vec: Vec<ComponentResponse> = cfs_component_vec_opt
             .expect("No CFS components")
@@ -269,31 +217,6 @@ pub async fn exec(
         }
     } else if cfs_session_target_definition == "image" {
         // The CFS session is not of type 'target dynamic' (runtime CFS batcher)
-
-        /* let cfs_configuration_name = cfs_session.get_configuration_name().unwrap();
-
-        // Delete CFS configuration related to the CFS session to delete
-        log::info!(
-            "CFS session target definition is 'image'. Deleting configuration '{}'",
-            cfs_configuration_name
-        );
-
-        // Delete CFS configuration related to CFS session
-        if !dry_run {
-            let _ = mesa::cfs::configuration::shasta::http_client::v2::delete(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &cfs_configuration_name,
-            )
-            .await;
-        } else {
-            println!(
-                "CFS session target definition is 'image'. Deleting configuration '{}'",
-                cfs_configuration_name
-            );
-        } */
-
         let image_vec = cfs_session.get_result_id_vec();
         for image_id in image_vec {
             if !dry_run {

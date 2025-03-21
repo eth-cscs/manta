@@ -164,6 +164,7 @@ pub fn subcommand_delete_session() -> Command {
             // .visible_alias("ds")
             .arg_required_else_help(true)
             .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
+            .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
             .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
             .arg(arg!(<VALUE> "Session name to delete").required(true))
 }
