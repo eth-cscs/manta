@@ -17,9 +17,11 @@ installers = ["shell", "homebrew"]
 dist = true
 # Which actions to run on pull requests
 pr-run-mode = "plan"
-# Publish jobs to run in CI
-publish-jobs = ["homebrew"]
 # Whether to install an updater program
 install-updater = false
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
+# A GitHub repo to push Homebrew formulas to
+tap = "eth-cscs/homebrew-tap"
+# Publish jobs to run in CI
+publish-jobs = ["homebrew"]
