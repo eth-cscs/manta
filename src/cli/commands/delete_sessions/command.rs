@@ -84,7 +84,7 @@ pub async fn exec(
         // Get Image ids to delete
         let image_created_by_cfs_configuration = cfs_session.get_result_id_vec();
         if image_created_by_cfs_configuration.len() > 0 {
-            if assume_yes {
+            if !assume_yes {
                 // Ask user for confirmation
                 let user_msg = format!(
                 "Session '{}' used to build images listed below which will get deleted:\n{}\nDo you want to continue?",
