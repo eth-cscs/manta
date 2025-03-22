@@ -90,7 +90,7 @@ pub async fn exec(
     let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "group": hsm_group_name_arg_opt, "message": "power on"});
+        { "user": {"id": user_id, "name": username}, "group": vec![hsm_group_name_arg_opt], "message": "power on"});
 
     let msg_data =
         serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

@@ -150,8 +150,19 @@ pub async fn exec(
     let username = jwt_ops::get_name(shasta_token).unwrap();
     let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
+    let group_vec = mesa::hsm::group::utils::get_hsm_group_vec_from_xname_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &xname_vec
+            .iter()
+            .map(|xname| xname.as_str())
+            .collect::<Vec<&str>>(),
+    )
+    .await;
+
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": "power off"});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_vec, "message": "power off"});
 
     let msg_data =
         serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

@@ -119,7 +119,7 @@ pub async fn exec(
     let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xnames}, "message": format!("Add kernel parameters: {}", kernel_params)});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xnames}, "group": hsm_group_name_opt.map(|group_name| vec![group_name]), "message": format!("Add kernel parameters: {}", kernel_params)});
 
     let msg_data =
         serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

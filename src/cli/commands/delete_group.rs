@@ -55,7 +55,7 @@ pub async fn exec(
     let user_id = jwt_ops::get_preferred_username(auth_token).unwrap();
 
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": Vec::<String>::new()}, "message": format!("Delete Group '{}'", label)});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": Vec::<String>::new()}, "group": vec![label], "message": "Delete Group"});
 
     let msg_data =
         serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

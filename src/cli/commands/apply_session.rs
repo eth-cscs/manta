@@ -138,7 +138,7 @@ pub async fn exec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        Some(xname_list.into_iter().collect::<Vec<_>>().join(",")), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
+        Some(xname_list.clone().into_iter().collect::<Vec<_>>().join(",")), // Convert Hashset to String with comma separator, need to convert to Vec first following https://stackoverflow.com/a/47582249/1918003
         Some(
             ansible_verbosity
                 .unwrap_or("3".to_string())
@@ -203,8 +203,16 @@ pub async fn exec(
     let username = jwt_ops::get_name(shasta_token).unwrap();
     let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
+    let group_vec = mesa::hsm::group::utils::get_hsm_group_vec_from_xname_vec(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &xname_list,
+    )
+    .await;
+
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "message": "Apply session"});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_list}, "group": group_vec, "message": "Apply session"});
 
     let msg_data =
         serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

@@ -48,7 +48,5 @@ pub mod power_on_nodes;
 pub mod power_reset_cluster;
 pub mod power_reset_nodes;
 pub mod remove_nodes_from_hsm_groups;
-pub mod set_boot_configuration;
-pub mod set_boot_image;
 pub mod set_runtime_configuration;
 pub mod validate_local_repo;
