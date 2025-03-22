@@ -2,11 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.97] - 2025-03-22
+
+### Features
+
+- Command 'apply template' not accepts 'limit' as a mandatory argument
+- Command 'delete session' has a new argument 'assume-yes' so the command can run unattended
+- Add group to audit messages
+- Add 'group' to audit messages
+
 ## [1.54.1-beta.96] - 2025-03-17
 
 ### Features
 
 - Integrate homebrew-tab eth-cscs/homebrew-tap
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.96
 
 ## [1.54.1-beta.95] - 2025-03-17
 
