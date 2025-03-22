@@ -10,7 +10,7 @@ use mesa::{common::jwt_ops, error::Error};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2},
+    common::{audit::Audit, kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2},
 };
 
 /// Updates the kernel parameters for a set of nodes
@@ -121,8 +121,34 @@ pub async fn exec(
         }
     }
 
+    /* // Audit
+    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), node_expression); */
+
     // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), node_expression);
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+        // FIXME: We should not need to make this call here but at the beginning of the method as a
+        // prerequisite
+        let xnames: Vec<&str> = xname_vec.iter().map(|xname| xname.as_str()).collect();
+
+        let group_map_vec = backend
+            .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
+            .await
+            .map_err(|e| Error::Message(e.to_string()))?;
+
+        let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<&String>>(), "message": format!("Delete kernel parameters: {}", kernel_params)});
+
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
+        // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
+    }
 
     // Reboot if needed
     if xname_to_reboot_vec.is_empty() {

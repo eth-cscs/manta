@@ -4,7 +4,10 @@ use backend_dispatcher::{
     types::{ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList},
 };
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{audit::Audit, jwt_ops, kafka::Kafka},
+};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -13,6 +16,7 @@ pub async fn exec(
     enabled: bool,
     arch_opt: Option<String>,
     hw_inventory: HWInventoryByLocationList,
+    kafka_audit_opt: Option<&Kafka>,
 ) -> Result<()> {
     // Create node api payload
     let component: ComponentCreate = ComponentCreate {
@@ -44,6 +48,22 @@ pub async fn exec(
     backend
         .post_inventory_hardware(&shasta_token, hw_inventory)
         .await?;
+
+    // Audit
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(shasta_token).unwrap();
+        let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+
+        let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": id}, "group": [], "message": "add node"});
+
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
+        }
+    }
 
     Ok(())
 }

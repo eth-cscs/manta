@@ -1,9 +1,7 @@
 use crate::common::{self, jwt_ops};
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{
-        audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka,
-    },
+    common::{audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka},
 };
 use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use backend_dispatcher::types::Component;
@@ -130,7 +128,9 @@ pub async fn exec(
     let result = backend.add_group(&auth_token, group).await;
 
     match result {
-        Ok(_) => {}
+        Ok(_) => {
+            eprintln!("Group '{}' created", label);
+        }
         Err(error) => {
             eprintln!("{}", error);
             std::process::exit(1);
@@ -143,7 +143,7 @@ pub async fn exec(
         let user_id = jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
 
         let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "message": format!("Create Group '{}'", label)});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "group": label, "message": format!("Create Group '{}'", label)});
 
         let msg_data =
             serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

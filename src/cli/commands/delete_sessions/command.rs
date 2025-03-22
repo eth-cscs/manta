@@ -19,7 +19,7 @@ pub async fn exec(
     target_hsm_group_vec: Vec<String>,
     cfs_session_name: &str,
     dry_run: &bool,
-    assume_yes: &bool,
+    assume_yes: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     let (

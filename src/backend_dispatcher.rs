@@ -125,6 +125,23 @@ impl GroupTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn get_group_map_and_filter_by_member_vec(
+        &self,
+        auth_token: &str,
+        member_vec: &[&str],
+    ) -> Result<HashMap<String, Vec<String>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_group_map_and_filter_by_member_vec(auth_token, member_vec)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_group_map_and_filter_by_member_vec(auth_token, member_vec)
+                    .await
+            }
+        }
+    }
+
     async fn get_all_groups(&self, auth_token: &str) -> Result<Vec<Group>, Error> {
         match self {
             CSM(b) => b.get_all_groups(auth_token).await,

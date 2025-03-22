@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::pcs::PCSTrait;
+use backend_dispatcher::interfaces::{hsm::group::GroupTrait, pcs::PCSTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{
@@ -160,8 +160,16 @@ pub async fn exec(
         let username = jwt_ops::get_name(shasta_token).unwrap();
         let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
+        let group_map = backend
+            .get_group_map_and_filter_by_member_vec(
+                shasta_token,
+                &xname_vec.iter().map(|member| member.as_str().collect()),
+            )
+            .await
+            .unwrap();
+
         let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": "power off"});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map.keys().collect(), "message": "power off"});
 
         let msg_data =
             serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

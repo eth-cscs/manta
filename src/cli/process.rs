@@ -399,9 +399,16 @@ pub async fn process_cli(
                     .cloned()
                     .unwrap_or(true);
 
-                let add_node_rslt =
-                    add_node::exec(&backend, &shasta_token, id, enabled, arch_opt, hw_inventory)
-                        .await;
+                let add_node_rslt = add_node::exec(
+                    &backend,
+                    &shasta_token,
+                    id,
+                    enabled,
+                    arch_opt,
+                    hw_inventory,
+                    kafka_audit_opt,
+                )
+                .await;
 
                 if let Err(error) = add_node_rslt {
                     // Could not add xname to group. Reset operation by removing the node
@@ -1841,7 +1848,7 @@ pub async fn process_cli(
                     .get_one("force")
                     .expect("The 'force' argument must have a value");
 
-                delete_group::exec(&backend, &shasta_token, label, force).await;
+                delete_group::exec(&backend, &shasta_token, label, force, kafka_audit_opt).await;
             } else if let Some(cli_delete_node) = cli_delete.subcommand_matches("node") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 

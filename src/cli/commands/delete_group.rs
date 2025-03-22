@@ -1,7 +1,16 @@
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{audit::Audit, jwt_ops, kafka::Kafka},
+};
 use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
-pub async fn exec(backend: &StaticBackendDispatcher, auth_token: &str, label: &str, force: bool) {
+pub async fn exec(
+    backend: &StaticBackendDispatcher,
+    auth_token: &str,
+    label: &str,
+    force: bool,
+    kafka_audit_opt: Option<&Kafka>,
+) {
     if !force {
         // Validate if group can be deleted
         validation(backend, auth_token, label).await.unwrap();
@@ -12,11 +21,27 @@ pub async fn exec(backend: &StaticBackendDispatcher, auth_token: &str, label: &s
 
     match result {
         Ok(_) => {
-            println!("Group '{}' deleted", label);
+            eprintln!("Group '{}' deleted", label);
         }
         Err(error) => {
             eprintln!("{}", error);
             std::process::exit(1);
+        }
+    }
+
+    // Audit
+    if let Some(kafka_audit) = kafka_audit_opt {
+        let username = jwt_ops::get_name(auth_token).unwrap_or_default();
+        let user_id = jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
+
+        let msg_json = serde_json::json!(
+        { "user": {"id": user_id, "name": username}, "group": label, "message": format!("Delete Group '{}'", label)});
+
+        let msg_data =
+            serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
+
+        if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
+            log::warn!("Failed producing messages: {}", e);
         }
     }
 }

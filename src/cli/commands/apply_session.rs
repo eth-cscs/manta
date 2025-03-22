@@ -24,7 +24,7 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     cfs_conf_sess_name: Option<&String>,
     playbook_yaml_file_name_opt: Option<&String>,
-    hsm_group: Option<&String>,
+    hsm_group_opt: Option<&String>,
     repos_paths: Vec<PathBuf>,
     ansible_limit: Option<String>,
     ansible_verbosity: Option<String>,
@@ -234,9 +234,9 @@ pub async fn exec(
             // k8s_api_url,
             cfs_conf_sess_name,
             playbook_yaml_file_name_opt,
-            hsm_group,
+            hsm_group_opt,
             repos_paths,
-            ansible_limit,
+            ansible_limit.clone(),
             ansible_verbosity,
             ansible_passthrough,
             // watch_logs,
@@ -336,7 +336,7 @@ pub async fn exec(
         let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
         let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "message": "Apply session"});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": ansible_limit}, "group": vec![hsm_group_opt], "message": "Apply session"});
 
         let msg_data =
             serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

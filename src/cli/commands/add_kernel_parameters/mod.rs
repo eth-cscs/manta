@@ -2,7 +2,11 @@ use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, jwt_ops, kafka::Kafka},
 };
-use backend_dispatcher::{error::Error, interfaces::bss::BootParametersTrait, types};
+use backend_dispatcher::{
+    error::Error,
+    interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
+    types,
+};
 use dialoguer::theme::ColorfulTheme;
 
 /// Updates the kernel parameters for a set of nodes
@@ -83,8 +87,16 @@ pub async fn exec(
         let username = jwt_ops::get_name(shasta_token).unwrap();
         let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
+        // FIXME: We should not need to make this call here but at the beginning of the method as a
+        // prerequisite
+        let xnames: Vec<&str> = xname_vec.iter().map(|xname| xname.as_str()).collect();
+
+        let group_map_vec = backend
+            .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
+            .await?;
+
         let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "message": format!("Add kernel parameters: {}", kernel_params)});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<_>>(), "message": format!("Add kernel parameters: {}", kernel_params)});
 
         let msg_data =
             serde_json::to_string(&msg_json).expect("Could not serialize audit message data");
