@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.44] - 2025-03-22
+
+### Features
+
+- Add group to audit messages
+
 ## [1.54.43] - 2025-03-21
 
 ### Features
 
 - Homebrew tap github deployment
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.43
 
 ## [1.54.42] - 2025-03-21
 
