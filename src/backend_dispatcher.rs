@@ -641,7 +641,7 @@ impl BackendTrait for StaticBackendDispatcher {
 }
 
 impl CfsTrait for StaticBackendDispatcher {
-    type T = Pin<Box<dyn AsyncBufRead>>;
+    type T = Pin<Box<dyn AsyncBufRead + Send>>;
 
     async fn post_session(
         &self,
@@ -1043,7 +1043,7 @@ impl CfsTrait for StaticBackendDispatcher {
         cfs_session_name: &str,
         // k8s_api_url: &str,
         k8s: &K8sDetails,
-    ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
+    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
         match self {
             CSM(b) => {
                 b.get_session_logs_stream(
@@ -1074,7 +1074,7 @@ impl CfsTrait for StaticBackendDispatcher {
         site_name: &str,
         xname: &str,
         k8s: &K8sDetails,
-    ) -> Result<Pin<Box<dyn AsyncBufRead>>, Error> {
+    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
         match self {
             CSM(b) => {
                 b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)

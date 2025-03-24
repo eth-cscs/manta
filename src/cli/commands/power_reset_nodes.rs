@@ -144,13 +144,16 @@ pub async fn exec(
         let group_map = backend
             .get_group_map_and_filter_by_member_vec(
                 shasta_token,
-                &xname_vec.iter().map(|member| member.as_str().collect()),
+                &xname_vec
+                    .iter()
+                    .map(|member| member.as_str())
+                    .collect::<Vec<_>>(),
             )
             .await
             .unwrap();
 
         let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map.keys().collect(), "message": "power reset"});
+        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map.keys().collect::<Vec<_>>(), "message": "power reset"});
 
         let msg_data =
             serde_json::to_string(&msg_json).expect("Could not serialize audit message data");

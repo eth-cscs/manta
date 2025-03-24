@@ -7,7 +7,7 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec_opt: Option<Vec<String>>,
+    hsm_group_name_available_vec_opt: Option<Vec<String>>,
     xname_vec_opt: Option<Vec<&str>>,
     min_age_opt: Option<&String>,
     max_age_opt: Option<&String>,
@@ -18,7 +18,7 @@ pub async fn exec(
 ) {
     log::info!(
         "Get CFS sessions for HSM groups: {:?}",
-        hsm_group_name_vec_opt
+        hsm_group_name_available_vec_opt
     );
 
     /* let mut cfs_session_vec = cfs::session::get(
@@ -167,7 +167,7 @@ pub async fn exec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            hsm_group_name_vec_opt,
+            hsm_group_name_available_vec_opt,
             xname_vec_opt,
             min_age_opt,
             max_age_opt,

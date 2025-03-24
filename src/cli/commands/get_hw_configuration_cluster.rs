@@ -19,6 +19,8 @@ pub async fn exec(
     hsm_group_name: &str,
     output_opt: Option<&String>,
 ) {
+    let pipe_size = 15;
+
     // Target HSM group
     let hsm_group = backend
         .get_group(shasta_token, hsm_group_name)
@@ -40,16 +42,18 @@ pub async fn exec(
 
     let mut tasks = tokio::task::JoinSet::new();
 
-    let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher number of concurrent tasks won't
-                                           // make it faster
+    let sem = Arc::new(Semaphore::new(pipe_size));
+    // make it faster
 
     let num_hsm_group_members = hsm_group_target_members.len();
+
+    let mut i = 1;
 
     // Calculate number of digits of a number
     let width = num_hsm_group_members.checked_ilog10().unwrap_or(0) as usize + 1;
 
     // Get HW inventory details for target HSM group
-    for (i, hsm_member) in hsm_group_target_members.iter().enumerate() {
+    for hsm_member in hsm_group_target_members.iter() {
         log::info!(
             "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
             i + 1
@@ -91,6 +95,8 @@ pub async fn exec(
 
             node_hw_inventory
         });
+
+        i += 1;
     }
 
     while let Some(message) = tasks.join_next().await {

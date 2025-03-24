@@ -851,14 +851,14 @@ pub async fn process_cli(
                     output,
                 )
                 .await?;
-            } else if let Some(cli_get_hw_configuration) = cli_get.subcommand_matches("hardware") {
-                if let Some(cli_get_hw_configuration_cluster) =
-                    cli_get_hw_configuration.subcommand_matches("cluster")
+            } else if let Some(cli_get_hardware) = cli_get.subcommand_matches("hardware") {
+                if let Some(cli_get_hardware_cluster) =
+                    cli_get_hardware.subcommand_matches("cluster")
                 {
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
                     let hsm_group_name_arg_opt =
-                        cli_get_hw_configuration_cluster.get_one::<String>("CLUSTER_NAME");
+                        cli_get_hardware_cluster.get_one::<String>("CLUSTER_NAME");
 
                     let target_hsm_group_vec = get_groups_available(
                         &backend,
@@ -872,11 +872,11 @@ pub async fn process_cli(
                         backend,
                         &shasta_token,
                         target_hsm_group_vec.first().unwrap(),
-                        cli_get_hw_configuration_cluster.get_one::<String>("output"),
+                        cli_get_hardware_cluster.get_one::<String>("output"),
                     )
                     .await;
                 } else if let Some(cli_get_hw_configuration_node) =
-                    cli_get_hw_configuration.subcommand_matches("node")
+                    cli_get_hardware.subcommand_matches("node")
                 {
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
@@ -948,7 +948,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
-                let target_hsm_group_vec: Vec<String> = get_groups_available(
+                let hsm_group_available_vec: Vec<String> = get_groups_available(
                     &backend,
                     &shasta_token,
                     hsm_group_name_arg_opt.unwrap_or(None),
@@ -972,7 +972,7 @@ pub async fn process_cli(
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some(target_hsm_group_vec),
+                    Some(hsm_group_available_vec),
                     xname_vec_opt,
                     cli_get_session.get_one::<String>("min-age"),
                     cli_get_session.get_one::<String>("max-age"),
