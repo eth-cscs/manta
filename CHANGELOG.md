@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.98] - 2025-03-24
+
+### Bug Fixes
+
+- Add 'Send' trait to async/futes stream traits
+
+### Features
+
+- Improve/reduce runtime for command 'get hardware cluster' command
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.97] - 2025-03-22
 
 ### Features
@@ -10,6 +28,10 @@ All notable changes to this project will be documented in this file.
 - Command 'delete session' has a new argument 'assume-yes' so the command can run unattended
 - Add group to audit messages
 - Add 'group' to audit messages
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.97
 
 ## [1.54.1-beta.96] - 2025-03-17
 
