@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.45] - 2025-03-25
+
+### Bug Fixes
+
+- Pa_admin have access to all groups
+
 ## [1.54.44] - 2025-03-22
 
 ### Features
 
 - Add group to audit messages
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.44
 
 ## [1.54.43] - 2025-03-21
 
