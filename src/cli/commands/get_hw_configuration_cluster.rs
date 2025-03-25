@@ -9,11 +9,6 @@ use comfy_table::{Color, Table};
 use mesa::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
 use tokio::sync::Semaphore;
 
-use crate::cli::{
-    commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
-    process::get_target_hsm_group_vec_or_all,
-};
-
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
