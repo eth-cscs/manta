@@ -290,7 +290,7 @@ pub async fn exec(
         target_hsm_node_hw_component_count_vec
     );
 
-    let hw_configuration_table = crate::cli::commands::get_hw_configuration_cluster::get_table(
+    let hw_configuration_table = crate::cli::commands::get_hardware_cluster::get_table(
         &user_defined_delta_hw_component_vec,
         &target_hsm_node_hw_component_count_vec,
     );

@@ -39,7 +39,7 @@ use super::commands::{
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
-    get_boot_parameters, get_cluster, get_configuration, get_hw_configuration_node, get_images,
+    get_boot_parameters, get_cluster, get_configuration, get_hardware_node, get_images,
     get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
     migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
     power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
@@ -868,19 +868,19 @@ pub async fn process_cli(
                     )
                     .await?;
 
-                    commands::get_hw_configuration_cluster::exec(
+                    commands::get_hardware_cluster::exec(
                         backend,
                         &shasta_token,
                         target_hsm_group_vec.first().unwrap(),
                         cli_get_hardware_cluster.get_one::<String>("output"),
                     )
                     .await;
-                } else if let Some(cli_get_hw_configuration_node) =
+                } else if let Some(cli_get_hardware_node) =
                     cli_get_hardware.subcommand_matches("node")
                 {
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
-                    let xnames = cli_get_hw_configuration_node
+                    let xnames = cli_get_hardware_node
                         .get_one::<String>("XNAMES")
                         .expect("HSM group name is needed at this point");
 
@@ -889,12 +889,12 @@ pub async fn process_cli(
 
                     validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
 
-                    get_hw_configuration_node::exec(
+                    get_hardware_node::exec(
                         &backend,
                         &shasta_token,
                         xnames,
-                        cli_get_hw_configuration_node.get_one::<String>("type"),
-                        cli_get_hw_configuration_node.get_one::<String>("output"),
+                        cli_get_hardware_node.get_one::<String>("type"),
+                        cli_get_hardware_node.get_one::<String>("output"),
                     )
                     .await;
                 }
