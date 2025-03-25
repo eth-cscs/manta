@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.46] - 2025-03-25
+
+### Bug Fixes
+
+- Bug in command 'get hw-component alps'
+
 ## [1.54.45] - 2025-03-25
 
 ### Bug Fixes
 
 - Pa_admin have access to all groups
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.45
 
 ## [1.54.44] - 2025-03-22
 
