@@ -9,6 +9,11 @@ use comfy_table::{Color, Table};
 use mesa::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
 use tokio::sync::Semaphore;
 
+use crate::cli::{
+    commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
+    process::get_target_hsm_group_vec_or_all,
+};
+
 pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -16,8 +21,9 @@ pub async fn exec(
     hsm_group_name: &str,
     output_opt: Option<&String>,
 ) {
+    // We assume target HSM group is already validated
     // Target HSM group
-    let hsm_group = mesa::hsm::group::http_client::get_without_system_wide(
+    let hsm_group = mesa::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -45,8 +51,7 @@ pub async fn exec(
 
     let mut tasks = tokio::task::JoinSet::new();
 
-    let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher number of concurrent tasks won't
-                                           // make it faster
+    let sem = Arc::new(Semaphore::new(15));
 
     let num_hsm_group_members = hsm_group_target_members.len();
     // Calculate number of digits of a number
