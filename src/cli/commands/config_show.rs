@@ -168,16 +168,14 @@ pub async fn get_hsm_name_without_system_wide_available_from_jwt_or_all(
         realm_access_role_filtered_vec
     } else {
         log::debug!("User is admin, getting all HSM groups in the system");
-        let mut all_hsm_groups = mesa::hsm::group::http_client::get_all_without_system_wide(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-        )
-        .await
-        .unwrap()
-        .iter()
-        .map(|hsm_value| hsm_value.label.clone())
-        .collect::<Vec<String>>();
+        // let mut all_hsm_groups = mesa::hsm::group::http_client::get_all_without_system_wide(
+        let mut all_hsm_groups =
+            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+                .await
+                .unwrap()
+                .iter()
+                .map(|hsm_value| hsm_value.label.clone())
+                .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
 
