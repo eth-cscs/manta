@@ -94,15 +94,15 @@ pub async fn exec(
             kernel_params
         );
 
-        need_restart = need_restart || boot_parameter.delete_kernel_params(&kernel_params);
+        need_restart = boot_parameter.delete_kernel_params(&kernel_params);
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            let _ = mesa::bss::bootparameters::http_client::patch(
+            let _ = mesa::bss::bootparameters::http_client::put(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
-                &boot_parameter,
+                boot_parameter.clone(),
             )
             .await;
 
