@@ -87,22 +87,23 @@ pub async fn exec(
 
     for mut boot_parameter in current_node_boot_params_vec {
         log::info!(
-            "Add '{:?}' kernel parameters to '{}'",
+            "Add '{}' kernel parameters to '{:?}'",
+            kernel_params,
             boot_parameter.hosts,
-            kernel_params
         );
 
         need_restart = need_restart || boot_parameter.add_kernel_params(&kernel_params);
+
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
-            boot_parameter.params = kernel_params.to_string();
+            // boot_parameter.params = kernel_params.to_string();
 
-            let _ = mesa::bss::bootparameters::http_client::patch(
+            let _ = mesa::bss::bootparameters::http_client::put(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
-                &boot_parameter,
+                boot_parameter.clone(),
             )
             .await;
 
