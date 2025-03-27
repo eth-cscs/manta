@@ -61,7 +61,7 @@ pub async fn exec(
             kernel_params
         );
 
-        need_restart = need_restart || boot_parameter.add_kernel_params(&kernel_params);
+        need_restart = boot_parameter.add_kernel_params(&kernel_params);
         log::info!("need restart? {}", need_restart);
 
         if need_restart {

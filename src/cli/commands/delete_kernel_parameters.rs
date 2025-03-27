@@ -100,7 +100,7 @@ pub async fn exec(
 
         let is_kernel_params_deleted = boot_parameter.delete_kernel_params(&kernel_params);
 
-        need_restart = need_restart || is_kernel_params_deleted;
+        need_restart = is_kernel_params_deleted;
         log::info!("need restart? {}", need_restart);
 
         if need_restart {
