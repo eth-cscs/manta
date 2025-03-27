@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.48] - 2025-03-27
+
+### Bug Fixes
+
+- Command 'add kernel-parameters -H <group name>' only updating one node
+
 ## [1.54.47] - 2025-03-27
 
 ### Bug Fixes
 
 - Command 'add kernel-parameters' overwriting existing kernel parameters with new ones
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.47
 
 ### Refactor
 
