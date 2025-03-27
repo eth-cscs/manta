@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.99] - 2025-03-27
+
+### Features
+
+- Add new command 'apply kernel-parameters'
+- Add new command 'apply kernel-parameters'
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.98] - 2025-03-24
 
 ### Bug Fixes
@@ -15,6 +30,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.98
 
 ### Refactor
 
