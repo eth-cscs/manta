@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.47] - 2025-03-27
+
+### Bug Fixes
+
+- Command 'add kernel-parameters' overwriting existing kernel parameters with new ones
+
+### Refactor
+
+- Clean code
+
 ## [1.54.46] - 2025-03-25
 
 ### Bug Fixes
 
 - Bug in command 'get hw-component alps'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.46
 
 ## [1.54.45] - 2025-03-25
 
