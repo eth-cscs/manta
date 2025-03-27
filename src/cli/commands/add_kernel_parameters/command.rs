@@ -92,7 +92,7 @@ pub async fn exec(
             boot_parameter.hosts,
         );
 
-        need_restart = need_restart || boot_parameter.add_kernel_params(&kernel_params);
+        need_restart = boot_parameter.add_kernel_params(&kernel_params);
 
         log::info!("need restart? {}", need_restart);
 
