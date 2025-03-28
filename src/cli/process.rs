@@ -15,9 +15,9 @@ use crate::{cli::commands::validate_local_repo, common::kafka::Kafka};
 use super::commands::{
     self, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
     apply_boot_cluster, apply_boot_node, apply_configuration, apply_ephemeral_env,
-    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
-    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
-    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file,
+    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
+    config_set_site, config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
@@ -1214,6 +1214,60 @@ pub async fn process_cli(
                         )
                         .await;
                     }
+                }
+            } else if let Some(cli_apply_kernel_parameters) =
+                cli_apply.subcommand_matches("kernel-parameters")
+            {
+                let hsm_group_name_arg_opt = cli_apply_kernel_parameters.get_one("hsm-group");
+                let xnames_arg_opt = cli_apply_kernel_parameters.get_one::<String>("xnames");
+
+                let target_hsm_group_vec_opt = if hsm_group_name_arg_opt.is_some() {
+                    Some(
+                        get_target_hsm_group_vec_or_all(
+                            shasta_token,
+                            shasta_base_url,
+                            shasta_root_cert,
+                            hsm_group_name_arg_opt,
+                            settings_hsm_group_name_opt,
+                        )
+                        .await,
+                    )
+                } else {
+                    None
+                };
+
+                let xname_vec_opt = if let Some(xnames_arg) = xnames_arg_opt {
+                    Some(
+                        xnames_arg
+                            .split(",")
+                            .map(|elem| elem.to_string())
+                            .collect::<Vec<String>>(),
+                    )
+                } else {
+                    None
+                };
+
+                let kernel_parameters = cli_apply_kernel_parameters
+                    .get_one::<String>("VALUE")
+                    .unwrap(); // clap should validate the argument
+
+                let assume_yes: bool = cli_apply_kernel_parameters.get_flag("assume-yes");
+
+                let result = apply_kernel_parameters::command::exec(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    kernel_parameters,
+                    target_hsm_group_vec_opt.as_ref(),
+                    xname_vec_opt.as_ref(),
+                    assume_yes,
+                    kafka_audit,
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
                 }
             } else if let Some(cli_apply_configuration) =
                 cli_apply.subcommand_matches("configuration")

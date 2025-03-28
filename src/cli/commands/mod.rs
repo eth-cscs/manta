@@ -8,6 +8,7 @@ pub mod apply_configuration;
 pub mod apply_ephemeral_env;
 pub mod apply_hw_cluster_pin;
 pub mod apply_hw_cluster_unpin;
+pub mod apply_kernel_parameters;
 pub mod apply_sat_file;
 pub mod apply_session;
 pub mod apply_template;

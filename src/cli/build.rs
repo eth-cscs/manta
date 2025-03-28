@@ -358,6 +358,22 @@ pub fn subcommand_apply_hw_configuration() -> Command {
         )
 }
 
+pub fn subcommand_apply_kernel_parameters() -> Command {
+    Command::new("kernel-parameters")
+                // .visible_alias("kp")
+                .arg_required_else_help(true)
+                .about("Apply kernel parameters")
+                .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set runtime configuration.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+                .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
+                .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+                .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+                .group(
+                    ArgGroup::new("cluster_or_xnames")
+                        .args(["hsm-group", "xnames"])
+                        .required(true),
+                )
+}
+
 pub fn subcommand_apply_session() -> Command {
     Command::new("session")
         // .visible_aliases(["s", "se", "ses", "sess", "sssn"])
@@ -666,6 +682,7 @@ pub fn subcommand_apply() -> Command {
         .arg_required_else_help(true)
         .about("Make changes to Shasta system")
         .subcommand(subcommand_apply_hw_configuration())
+        .subcommand(subcommand_apply_kernel_parameters())
         .subcommand(subcommand_apply_configuration())
         .subcommand(subcommand_apply_sat_file(/* hsm_group */))
         .subcommand(

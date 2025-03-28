@@ -20,7 +20,7 @@ pub async fn exec(
     kafka_audit: &Kafka,
 ) -> Result<(), Error> {
     let mut need_restart = false;
-    println!("Add kernel parameters");
+    println!("Apply kernel parameters");
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
@@ -36,7 +36,7 @@ pub async fn exec(
         xname_vec.clone()
     } else {
         return Err(Error::Message(
-            "ERROR - Adding kernel parameters without a list of nodes".to_string(),
+            "ERROR - Apply kernel parameters without a list of nodes".to_string(),
         ));
     };
 
@@ -54,13 +54,13 @@ pub async fn exec(
     .unwrap();
 
     println!(
-        "Add kernel params:\n{:?}\nFor nodes:\n{:?}",
+        "Apply kernel params:\n{:?}\nFor nodes:\n{:?}",
         kernel_params,
         xnames.join(", ")
     );
 
     let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("This operation will add the kernel parameters for the nodes above. Please confirm to proceed")
+        .with_prompt("This operation will replace the kernel parameters for the nodes above. Please confirm to proceed")
         .interact()
         .unwrap();
 
@@ -69,30 +69,16 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    /* // Add kernel parameters
-    current_node_boot_params_vec
-        .iter_mut()
-        .for_each(|boot_parameter| {
-            log::info!(
-                "Add '{:?}' kernel parameters to '{}'",
-                boot_parameter.hosts,
-                kernel_params
-            );
-
-            need_restart = need_restart || boot_parameter.add_kernel_param(&kernel_params);
-            log::info!("need restart? {}", need_restart);
-        }); */
-
     log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
 
     for mut boot_parameter in current_node_boot_params_vec {
         log::info!(
-            "Add '{}' kernel parameters to '{:?}'",
+            "Apply '{}' kernel parameters to '{:?}'",
             kernel_params,
             boot_parameter.hosts,
         );
 
-        need_restart = boot_parameter.add_kernel_params(&kernel_params);
+        need_restart = boot_parameter.apply_kernel_params(&kernel_params);
 
         log::info!("need restart? {}", need_restart);
 
