@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.50] - 2025-03-28
+
+### Features
+
+- Add command 'apply kernel-parameters'
+
 ## [1.54.49] - 2025-03-27
 
 ### Bug Fixes
 
 - Command 'delete kernel-parameters -H <group name>:wa' only updating one node
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.49
 
 ## [1.54.48] - 2025-03-27
 
