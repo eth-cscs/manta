@@ -98,9 +98,9 @@ pub async fn exec(
             boot_parameter.hosts,
         );
 
-        let is_kernel_params_deleted = boot_parameter.delete_kernel_params(&kernel_params);
+        let kernel_params_changed = boot_parameter.delete_kernel_params(&kernel_params);
+        need_restart = kernel_params_changed || need_restart;
 
-        need_restart = is_kernel_params_deleted;
         log::info!("need restart? {}", need_restart);
 
         if need_restart {

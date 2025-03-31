@@ -33,9 +33,9 @@ use crate::{
 use super::commands::{
     self, add_boot_parameters, add_group, add_hw_component_cluster, add_kernel_parameters,
     add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node, apply_ephemeral_env,
-    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_sat_file, apply_session, apply_template,
-    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
-    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file,
+    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
+    config_set_site, config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
@@ -561,7 +561,7 @@ pub async fn process_cli(
 
                 let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
 
-                let xname_vec: Vec<String> = if hsm_group_name_arg_opt.is_some() {
+                let nodes: &String = if hsm_group_name_arg_opt.is_some() {
                     let hsm_group_name_vec = get_groups_available(
                         &backend,
                         &shasta_token,
@@ -575,7 +575,7 @@ pub async fn process_cli(
                         .await;
 
                     match hsm_members_rslt {
-                        Ok(hsm_members) => hsm_members,
+                        Ok(hsm_members) => &hsm_members.join(","),
                         Err(e) => {
                             eprintln!(
                                 "ERROR - could not fetch HSM groups members. Reason:\n{}",
@@ -586,11 +586,8 @@ pub async fn process_cli(
                     }
                 } else {
                     cli_add_kernel_parameters
-                        .get_one::<String>("xnames")
-                        .expect("Neither HSM group nor xnames defined")
-                        .split(",")
-                        .map(|value| value.to_string())
-                        .collect()
+                        .get_one::<String>("nodes")
+                        .expect("Neither HSM group nor nodes defined")
                 };
 
                 let kernel_parameters = cli_add_kernel_parameters
@@ -599,14 +596,11 @@ pub async fn process_cli(
 
                 let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
 
-                // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
-
                 let result = add_kernel_parameters::exec(
                     backend,
                     &shasta_token,
                     kernel_parameters,
-                    xname_vec,
+                    nodes,
                     assume_yes,
                     kafka_audit_opt,
                 )
@@ -1135,10 +1129,6 @@ pub async fn process_cli(
                 let hsm_group_name_arg_opt =
                     cli_get_kernel_parameters.get_one::<String>("hsm-group");
 
-                let output: &String = cli_get_kernel_parameters
-                    .get_one("output")
-                    .expect("ERROR - output value missing");
-
                 let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
 
                 let nodes: &String = if hsm_group_name_arg_opt.is_some() {
@@ -1169,6 +1159,10 @@ pub async fn process_cli(
                         .get_one::<String>("nodes")
                         .expect("Neither HSM group nor nodes defined")
                 };
+
+                let output: &String = cli_get_kernel_parameters
+                    .get_one("output")
+                    .expect("ERROR - output value missing");
 
                 let _ =
                     get_kernel_parameters::exec(&backend, &shasta_token, nodes, filter_opt, output)
@@ -1523,6 +1517,62 @@ pub async fn process_cli(
                         .unwrap(),
                 )
                 .await;
+            } else if let Some(cli_apply_kernel_parameters) =
+                cli_apply.subcommand_matches("kernel-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let hsm_group_name_arg_opt = cli_apply_kernel_parameters.get_one("hsm-group");
+
+                let nodes: &String = if hsm_group_name_arg_opt.is_some() {
+                    let hsm_group_name_vec = get_groups_available(
+                        &backend,
+                        &shasta_token,
+                        hsm_group_name_arg_opt,
+                        settings_hsm_group_name_opt,
+                    )
+                    .await?;
+
+                    let hsm_members_rslt = backend
+                        .get_member_vec_from_group_name_vec(&shasta_token, hsm_group_name_vec)
+                        .await;
+
+                    match hsm_members_rslt {
+                        Ok(hsm_members) => &hsm_members.join(","),
+                        Err(e) => {
+                            eprintln!(
+                                "ERROR - could not fetch HSM groups members. Reason:\n{}",
+                                e.to_string()
+                            );
+                            std::process::exit(1);
+                        }
+                    }
+                } else {
+                    cli_apply_kernel_parameters
+                        .get_one::<String>("nodes")
+                        .expect("Neither HSM group nor nodes defined")
+                };
+
+                let kernel_parameters = cli_apply_kernel_parameters
+                    .get_one::<String>("VALUE")
+                    .unwrap(); // clap should validate the argument
+
+                let assume_yes: bool = cli_apply_kernel_parameters.get_flag("assume-yes");
+
+                let result = apply_kernel_parameters::exec(
+                    backend,
+                    &shasta_token,
+                    kernel_parameters,
+                    nodes,
+                    assume_yes,
+                    kafka_audit_opt,
+                )
+                .await;
+
+                match result {
+                    Ok(_) => {}
+                    Err(error) => eprintln!("{}", error),
+                }
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
                     let shasta_token = backend.get_api_token(&site_name).await?;

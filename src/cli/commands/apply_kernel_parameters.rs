@@ -1,11 +1,16 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, jwt_ops, kafka::Kafka},
+    common::{
+        audit::Audit, jwt_ops, kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2,
+    },
 };
 use backend_dispatcher::{
     error::Error,
-    interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
-    types,
+    interfaces::{
+        bss::BootParametersTrait,
+        hsm::{component::ComponentTrait, group::GroupTrait},
+    },
+    types::{self, Component},
 };
 use dialoguer::theme::ColorfulTheme;
 
@@ -15,12 +20,49 @@ pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
     kernel_params: &str,
-    xname_vec: Vec<String>,
+    node_expression: &str,
     assume_yes: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
     let mut need_restart = false;
     log::info!("Apply kernel parameters");
+
+    // Convert user input to xname
+    let xname_available_vec: Vec<String> = backend
+        .get_group_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!(
+                "ERROR - Could not get group list. Reason:\n{}",
+                e.to_string()
+            );
+            std::process::exit(1);
+        })
+        .iter()
+        .flat_map(|group| group.get_members())
+        .collect();
+
+    let node_metadata_vec: Vec<Component> = backend
+        .get_all_nodes(shasta_token, Some("true"))
+        .await
+        .unwrap()
+        .components
+        .unwrap_or_default()
+        .iter()
+        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
+        .cloned()
+        .collect();
+
+    let xname_vec =
+        resolve_node_list_user_input_to_xname_2(node_expression, false, node_metadata_vec)
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!(
+                    "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+                    e
+                );
+                std::process::exit(1);
+            });
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
@@ -61,7 +103,9 @@ pub async fn exec(
             kernel_params
         );
 
-        need_restart = boot_parameter.apply_kernel_params(&kernel_params);
+        let kernel_params_changed = boot_parameter.apply_kernel_params(&kernel_params);
+        need_restart = kernel_params_changed || need_restart;
+
         log::info!("need restart? {}", need_restart);
 
         if need_restart {

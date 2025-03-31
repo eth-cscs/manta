@@ -194,7 +194,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
         .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
         .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-        .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+        .arg(arg!(<VALUE> "Comma separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
         .group(
             ArgGroup::new("cluster_or_nodes")
                 .args(["hsm-group", "nodes"])
@@ -230,7 +230,7 @@ pub fn subcommand_get_group() -> Command {
         )
 }
 
-pub fn subcommand_get_hw() -> Command {
+pub fn subcommand_get_hardware() -> Command {
     let command_get_hw_configuration_cluster = Command::new("cluster")
         // .visible_aliases(["c", "clstr"])
         .arg_required_else_help(true)
@@ -408,7 +408,7 @@ pub fn subcommand_get() -> Command {
         .arg_required_else_help(true)
         .about("Get information from CSM system")
         .subcommand(subcommand_get_group())
-        .subcommand(subcommand_get_hw())
+        .subcommand(subcommand_get_hardware())
         .subcommand(subcommand_get_cfs_session())
         .subcommand(subcommand_get_cfs_configuration())
         .subcommand(subcommand_get_bos_template())
@@ -789,14 +789,30 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     Command::new("kernel-parameters")
        // .visible_alias("kp")
        .arg_required_else_help(true)
-       .about("Add/Create kernel parameters")
-       .arg(arg!(-x --xnames <XNAMES> "Comma separated list of nodes to set kernel parameters.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+       .about("Add kernel parameters")
+       .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
        .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
        .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-       .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: console,bad_page,crashkernel,hugepagelist,quiet"))
+       .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M"))
        .group(
-           ArgGroup::new("cluster_or_xnames")
-               .args(["hsm-group", "xnames"])
+           ArgGroup::new("cluster_or_nodes")
+               .args(["hsm-group", "nodes"])
+               .required(true),
+       )
+}
+
+pub fn subcommand_apply_kernel_parameters() -> Command {
+    Command::new("kernel-parameters")
+       // .visible_alias("kp")
+       .arg_required_else_help(true)
+       .about("Apply kernel parameters")
+       .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
+       .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
+       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+       .arg(arg!(<VALUE> "Space separated list of kernel parameters. Eg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M"))
+       .group(
+           ArgGroup::new("cluster_or_nodes")
+               .args(["hsm-group", "nodes"])
                .required(true),
        )
 }
@@ -884,6 +900,7 @@ pub fn subcommand_apply() -> Command {
                 .subcommand(subcommand_apply_boot_nodes())
                 .subcommand(subcommand_apply_boot_cluster()),
         )
+        .subcommand(subcommand_apply_kernel_parameters())
         .subcommand(subcommand_apply_session())
         .subcommand(subcommand_apply_ephemeral_environment())
         .subcommand(subcommand_apply_template())
