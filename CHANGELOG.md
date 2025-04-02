@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.101] - 2025-04-02
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.100] - 2025-03-31
 
 ### Bug Fixes
 
 - Normalize command to get/add/delete/apply kernel parameters
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.100
 
 ## [1.54.1-beta.99] - 2025-03-27
 
