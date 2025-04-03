@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.51] - 2025-04-03
+
+### Bug Fixes
+
+- Remove argument '--nodes' in command 'power off nodes'
+
 ## [1.54.50] - 2025-03-28
 
 ### Features
 
 - Add command 'apply kernel-parameters'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.50
 
 ## [1.54.49] - 2025-03-27
 
