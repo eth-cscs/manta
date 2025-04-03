@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.102] - 2025-04-03
+
+### Bug Fixes
+
+- Remove argument '--nodes' in command 'power off nodes'
+
 ## [1.54.1-beta.101] - 2025-04-02
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.101
 
 ## [1.54.1-beta.100] - 2025-03-31
 
