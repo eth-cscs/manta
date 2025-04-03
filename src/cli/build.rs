@@ -580,7 +580,6 @@ pub fn subcommand_power() -> Command {
                         // .visible_aliases(["n", "node"])
                         .arg_required_else_help(true)
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
-                        .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
                         .arg(arg!(-r --regex "Input nodes in regex format.\neg 'x1003c1s.*'").action(ArgAction::SetTrue))
                         .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
