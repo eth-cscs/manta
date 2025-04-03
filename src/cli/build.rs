@@ -22,6 +22,8 @@ pub fn build_cli() -> Command {
         .subcommand(subcommand_validate_local_repo())
         .subcommand(subcommand_add_nodes_to_groups())
         .subcommand(subcommand_remove_nodes_from_groups())
+    /* .subcommand(subcommand_download_boot_image())
+    .subcommand(subcommand_upload_artifact()) */
 }
 
 pub fn subcommand_config() -> Command {
@@ -634,7 +636,6 @@ pub fn subcommand_power() -> Command {
                         // .visible_aliases(["n", "node"])
                         .arg_required_else_help(true)
                         .about("Command to power off a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
-                        .arg(arg!(-n --nodes <VALUE> "Comma separated list of nodes"))
                         .arg(arg!(-r --regex "Input nodes in regex format.\neg 'x1003c1s.*'").action(ArgAction::SetTrue))
                         .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
                         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
@@ -951,20 +952,33 @@ pub fn subcommand_console() -> Command {
 
 pub fn subcommand_add_nodes_to_groups() -> Command {
     Command::new("add-nodes-to-groups")
-            // .visible_aliases(["ag"])
-            .about("Add nodes to a list of groups")
-            .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
-            .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
-            .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+        // .visible_aliases(["ag"])
+        .about("Add nodes to a list of groups")
+        .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
+        .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
+        .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_remove_nodes_from_groups() -> Command {
     Command::new("remove-nodes-from-groups")
-           // .visible_aliases(["rg"])
-           .about("Remove nodes from groups")
-           .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
-            .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
-           .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
-           .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+        // .visible_aliases(["rg"])
+        .about("Remove nodes from groups")
+        .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
+        .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Hostlist format also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid0000[10-15]'"))
+        .arg(arg!(-r --regex "Input nodes in regex format.").action(ArgAction::SetTrue))
+        .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+}
+
+pub fn subcommand_download_boot_image() -> Command {
+    Command::new("download-boot-image")
+        .about("Download artifact related to a boot image")
+        .arg(arg!(<IMAGE_ID> "Image id to download"))
+}
+
+pub fn subcommand_upload_artifact() -> Command {
+    Command::new("upload-boot-image")
+        .about("Remove nodes from groups")
+        .about("Download artifact related to a boot image")
+        .arg(arg!(<IMAGE_ID> "Image id to download"))
 }
