@@ -15,7 +15,7 @@ pub async fn exec(
     id: &str,
     enabled: bool,
     arch_opt: Option<String>,
-    hw_inventory: HWInventoryByLocationList,
+    hw_inventory_opt: Option<HWInventoryByLocationList>,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<()> {
     // Create node api payload
@@ -45,9 +45,11 @@ pub async fn exec(
     log::info!("Node saved '{}'. Try to add hardware", id);
 
     // Add hardware inventory
-    backend
-        .post_inventory_hardware(&shasta_token, hw_inventory)
-        .await?;
+    if let Some(hw_inventory) = hw_inventory_opt {
+        backend
+            .post_inventory_hardware(&shasta_token, hw_inventory)
+            .await?;
+    }
 
     // Audit
     if let Some(kafka_audit) = kafka_audit_opt {

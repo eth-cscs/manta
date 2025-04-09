@@ -707,7 +707,6 @@ pub fn subcommand_add_node() -> Command {
         .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
         .arg(
             arg!(-H --hardware <FILE> "File containing hardware information")
-                .required(true)
                 .value_parser(value_parser!(PathBuf)),
         )
         .arg(arg!(-a --arch <VALUE> "Architecture").value_parser(["X86", "ARM", "Other"]))

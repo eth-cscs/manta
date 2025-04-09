@@ -378,19 +378,23 @@ pub async fn process_cli(
                     .get_one::<String>("group")
                     .expect("ERROR - 'group' argument is mandatory");
 
-                let hardware_file = cli_add_node
-                    .get_one::<PathBuf>("hardware")
-                    .expect("ERROR - 'hardware' argument is mandatory");
+                let hardware_file_opt = cli_add_node.get_one::<PathBuf>("hardware");
 
-                let file = File::open(hardware_file)?;
-                let reader = BufReader::new(file);
+                let hw_inventory_opt: Option<HWInventoryByLocationList> =
+                    if let Some(hardware_file) = hardware_file_opt {
+                        let file = File::open(hardware_file)?;
+                        let reader = BufReader::new(file);
 
-                let hw_inventory_value: serde_json::Value =
-                    serde_json::from_reader(reader).unwrap();
+                        let hw_inventory_value: serde_json::Value =
+                            serde_json::from_reader(reader).unwrap();
 
-                let hw_inventory: HWInventoryByLocationList =
-                    serde_json::from_value(hw_inventory_value)
-                        .expect("ERROR - Could not parse hardware inventory file");
+                        Some(
+                            serde_json::from_value::<HWInventoryByLocationList>(hw_inventory_value)
+                                .expect("ERROR - Could not parse hardware inventory file"),
+                        )
+                    } else {
+                        None
+                    };
 
                 let arch_opt = cli_add_node.get_one::<String>("arch").cloned();
 
@@ -405,7 +409,7 @@ pub async fn process_cli(
                     id,
                     enabled,
                     arch_opt,
-                    hw_inventory,
+                    hw_inventory_opt,
                     kafka_audit_opt,
                 )
                 .await;
