@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.104] - 2025-04-09
+
+### Features
+
+- Add member also includes member into group
+
 ## [1.54.1-beta.103] - 2025-04-09
 
 ### Miscellaneous Tasks
 
 - Subcommand 'add node' no longer requires hardware inventory file
+- Release manta version 1.54.1-beta.103
 
 ## [1.54.1-beta.102] - 2025-04-03
 
