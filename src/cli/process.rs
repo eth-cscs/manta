@@ -407,6 +407,7 @@ pub async fn process_cli(
                     &backend,
                     &shasta_token,
                     id,
+                    group,
                     enabled,
                     arch_opt,
                     hw_inventory_opt,
