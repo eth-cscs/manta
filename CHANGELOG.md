@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.105] - 2025-04-10
+
+### Miscellaneous Tasks
+
+- Update ochami-rs version
+
 ## [1.54.1-beta.104] - 2025-04-09
 
 ### Features
 
 - Add member also includes member into group
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.104
 
 ## [1.54.1-beta.103] - 2025-04-09
 
