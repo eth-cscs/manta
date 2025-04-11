@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.52] - 2025-04-11
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Clean code
+
 ## [1.54.51] - 2025-04-03
 
 ### Bug Fixes
 
 - Remove argument '--nodes' in command 'power off nodes'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.51
 
 ## [1.54.50] - 2025-03-28
 
