@@ -944,7 +944,7 @@ pub async fn process_cli(
                     .get_one("output")
                     .expect("ERROR - output must be a valid value");
 
-                let target_hsm_group_vec = get_target_hsm_group_vec_or_all(
+                let hsm_group_available_vec = get_target_hsm_group_vec_or_all(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -953,13 +953,14 @@ pub async fn process_cli(
                 )
                 .await;
 
-                let hsm_member_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_vec.clone(),
-                )
-                .await;
+                let xname_available_vec =
+                    mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                        shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_available_vec.clone(),
+                    )
+                    .await;
 
                 let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
                     Some(limit)
@@ -973,8 +974,8 @@ pub async fn process_cli(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    &target_hsm_group_vec,
-                    &hsm_member_vec,
+                    &hsm_group_available_vec,
+                    &xname_available_vec,
                     cli_get_template.get_one::<String>("name"),
                     limit_number_opt,
                     output,

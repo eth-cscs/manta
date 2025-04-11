@@ -2,15 +2,15 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &Vec<String>,
-    hsm_member_vec: &[String],
+    hsm_group_available_vec: &Vec<String>,
+    xname_available_vec: &[String],
     bos_sessiontemplate_name_opt: Option<&String>,
     limit_number_opt: Option<&u8>,
     output: &str,
 ) {
     log::info!(
         "Get BOS sessiontemplates for HSM groups: {:?}",
-        hsm_group_name_vec
+        hsm_group_available_vec
     );
 
     let bos_sessiontemplate_vec_rslt = mesa::bos::template::mesa::http_client::get(
@@ -34,8 +34,8 @@ pub async fn exec(
 
     mesa::bos::template::mesa::utils::filter(
         &mut bos_sessiontemplate_vec,
-        hsm_group_name_vec,
-        hsm_member_vec,
+        hsm_group_available_vec,
+        xname_available_vec,
         limit_number_opt,
     )
     .await;
