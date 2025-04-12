@@ -14,7 +14,6 @@ use backend_dispatcher::{
     types::{BootParameters, Component},
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -25,9 +24,9 @@ pub async fn exec(
     new_boot_image_configuration_opt: Option<&String>,
     new_runtime_configuration_opt: Option<&String>,
     new_kernel_parameters_opt: Option<&String>,
-    // xname_vec: Vec<&str>,
     hosts_string: &str,
     assume_yes: bool,
+    do_not_reboot: bool,
     dry_run: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
@@ -105,6 +104,7 @@ pub async fn exec(
     )
     .await
     .unwrap(); */
+
     let mut current_node_boot_param_vec: Vec<BootParameters> = backend
         .get_bootparameters(
             shasta_token,
@@ -195,8 +195,13 @@ pub async fn exec(
                     new_kernel_parameters
                 );
 
-                need_restart =
-                    need_restart || boot_parameter.apply_kernel_params(&new_kernel_parameters);
+                let kernel_params_changed =
+                    boot_parameter.apply_kernel_params(&new_kernel_parameters);
+                need_restart = kernel_params_changed || need_restart;
+
+                /* need_restart =
+                need_restart || boot_parameter.apply_kernel_params(&new_kernel_parameters); */
+
                 log::info!("need restart? {}", need_restart);
                 let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
             });
@@ -296,18 +301,6 @@ pub async fn exec(
                 desired_configuration_name
             );
 
-            /* cfs::component::utils::update_component_list_desired_configuration(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                xname_vec.iter().map(|xname| xname.to_string()).collect(), // TODO: modify function signature
-                // for this field so it accepts
-                // Vec<&str> instead of
-                // Vec<String>
-                desired_configuration_name,
-                true,
-            )
-            .await; */
             let _ = backend
                 .update_runtime_configuration(
                     shasta_token,
@@ -326,7 +319,7 @@ pub async fn exec(
             log::info!("Runtime configuration does not change.");
         }
 
-        if need_restart {
+        if !do_not_reboot && need_restart {
             log::info!("Restarting nodes");
 
             let nodes: Vec<String> = xname_vec

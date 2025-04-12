@@ -18,6 +18,7 @@ pub async fn exec(
     new_kernel_parameters_opt: Option<&String>,
     hsm_group_name: &String,
     assume_yes: bool,
+    do_not_reboot: bool,
     dry_run: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
@@ -37,6 +38,7 @@ pub async fn exec(
         new_kernel_parameters_opt,
         &xname_vec.join(","),
         assume_yes,
+        do_not_reboot,
         dry_run,
         kafka_audit_opt,
     )

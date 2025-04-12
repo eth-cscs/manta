@@ -1588,6 +1588,7 @@ pub async fn process_cli(
                     .split(',')
                     .map(|xname| xname.trim())
                     .collect(); */
+
                     let hosts_string: &str = cli_apply_boot_nodes
                         .get_one::<String>("VALUE")
                         .expect("The 'xnames' argument must have values");
@@ -1611,9 +1612,11 @@ pub async fn process_cli(
                     let new_kernel_parameters_opt: Option<&String> =
                         cli_apply_boot_nodes.get_one::<String>("kernel-parameters");
 
-                    let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
-
                     let assume_yes: bool = cli_apply_boot_nodes.get_flag("assume-yes");
+
+                    let do_not_reboot: bool = cli_apply_boot_nodes.get_flag("do-not-reboot");
+
+                    let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
 
                     apply_boot_node::exec(
                         &backend,
@@ -1627,6 +1630,7 @@ pub async fn process_cli(
                         // xname_vec,
                         hosts_string,
                         assume_yes,
+                        do_not_reboot,
                         dry_run,
                         kafka_audit_opt,
                     )
@@ -1653,6 +1657,8 @@ pub async fn process_cli(
                         cli_apply_boot_cluster.get_one::<String>("kernel-parameters");
 
                     let assume_yes = cli_apply_boot_cluster.get_flag("assume-yes");
+
+                    let do_not_reboot: bool = cli_apply_boot_cluster.get_flag("do-not-reboot");
 
                     let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
 
@@ -1682,6 +1688,7 @@ pub async fn process_cli(
                         new_kernel_parameters_opt,
                         target_hsm_group_name,
                         assume_yes,
+                        do_not_reboot,
                         dry_run,
                         kafka_audit_opt,
                     )

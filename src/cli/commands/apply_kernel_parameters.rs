@@ -85,7 +85,7 @@ pub async fn exec(
 
     let proceed = dialoguer::Confirm::with_theme(
         &ColorfulTheme::default())
-        .with_prompt("This operation will add the kernel parameters for the nodes below. Please confirm to proceed")
+        .with_prompt("This operation will replace the kernel parameters for the nodes below. Please confirm to proceed")
         .interact()
         .unwrap();
 
