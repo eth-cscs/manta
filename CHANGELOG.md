@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.106] - 2025-04-12
+
+### Features
+
+- Subcommand 'apply boot' accepts a host expression (nid, xname, hostlist, regex)
+- Add flag '--do-not-reboot' to subcommand 'apply boot'
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Remove dependencies to mesa library
+- Clean code
+
 ## [1.54.1-beta.105] - 2025-04-10
 
 ### Miscellaneous Tasks
 
 - Update ochami-rs version
+- Release manta version 1.54.1-beta.105
 
 ## [1.54.1-beta.104] - 2025-04-09
 
