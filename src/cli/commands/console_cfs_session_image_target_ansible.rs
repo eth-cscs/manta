@@ -1,13 +1,20 @@
-use backend_dispatcher::types::{K8sAuth, K8sDetails};
+use backend_dispatcher::{
+    interfaces::cfs::CfsTrait,
+    types::{K8sAuth, K8sDetails},
+};
 use futures::StreamExt;
 
-use mesa::{cfs, node::console};
+use mesa::node::console;
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
-use crate::common::{terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault};
+use crate::{
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault},
+};
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     site_name: &str,
     hsm_group_name_vec: &Vec<String>,
     shasta_token: &str,
@@ -20,7 +27,7 @@ pub async fn exec(
     cfs_session_name: &str,
     k8s: &K8sDetails,
 ) {
-    let mut cfs_session_value_vec = cfs::session::get_and_sort(
+    /* let mut cfs_session_value_vec = cfs::session::get_and_sort(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -46,13 +53,32 @@ pub async fn exec(
     .unwrap_or_else(|e| {
         eprintln!("ERROR - {}", e);
         std::process::exit(1);
-    });
+    }); */
 
-    if cfs_session_value_vec.is_empty() {
+    let cfs_session_vec = backend
+        .get_and_filter_sessions(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(&cfs_session_name.to_string()),
+            None,
+            None,
+        )
+        .await
+        .unwrap_or_else(|e| {
+            log::error!("Failed to get CFS sessions. Reason:\n{e}");
+            std::process::exit(1);
+        });
+    if cfs_session_vec.is_empty() {
         eprintln!("No CFS session found. Exit",);
         std::process::exit(1);
     }
-    let cfs_session_details = cfs_session_value_vec.first().unwrap();
+    let cfs_session_details = cfs_session_vec.first().unwrap();
     if cfs_session_details
         .target
         .as_ref()

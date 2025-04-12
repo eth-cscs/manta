@@ -22,18 +22,6 @@ pub async fn exec(
     output_opt: Option<&String>,
     site_name: &str,
 ) {
-    /* let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-    cfs::configuration::utils::get_and_filter(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        configuration_name.map(|elem| elem.as_str()),
-        configuration_name_pattern.map(|elem| elem.as_str()),
-        hsm_group_name_vec,
-        limit,
-    )
-    .await; */
-
     let cfs_configuration_vec: Vec<CfsConfigurationResponse> = backend
         .get_and_filter_configuration(
             shasta_token,
@@ -89,14 +77,6 @@ pub async fn exec(
                 layer_details_vec.push(layer_details);
             }
 
-            /* let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
-            cfs::configuration::utils::get_derivatives(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &most_recent_cfs_configuration.name,
-            )
-            .await; */
             let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) = backend
                 .get_derivatives(
                     shasta_token,

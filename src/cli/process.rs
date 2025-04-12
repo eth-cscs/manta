@@ -1582,12 +1582,15 @@ pub async fn process_cli(
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
                     let shasta_token = backend.get_api_token(&site_name).await?;
 
-                    let xname_vec: Vec<&str> = cli_apply_boot_nodes
-                        .get_one::<String>("XNAMES")
-                        .unwrap()
-                        .split(',')
-                        .map(|xname| xname.trim())
-                        .collect();
+                    /* let xname_vec: Vec<&str> = cli_apply_boot_nodes
+                    .get_one::<String>("XNAMES")
+                    .unwrap()
+                    .split(',')
+                    .map(|xname| xname.trim())
+                    .collect(); */
+                    let hosts_string: &str = cli_apply_boot_nodes
+                        .get_one::<String>("VALUE")
+                        .expect("The 'xnames' argument must have values");
 
                     let new_boot_image_id_opt: Option<&String> =
                         cli_apply_boot_nodes.get_one("boot-image");
@@ -1621,7 +1624,8 @@ pub async fn process_cli(
                         new_boot_image_configuration_opt,
                         new_runtime_configuration_opt,
                         new_kernel_parameters_opt,
-                        xname_vec,
+                        // xname_vec,
+                        hosts_string,
                         assume_yes,
                         dry_run,
                         kafka_audit_opt,
@@ -1765,6 +1769,7 @@ pub async fn process_cli(
                     .unwrap();
 
                 console_cfs_session_image_target_ansible::exec(
+                    &backend,
                     &site_name,
                     &target_hsm_group_vec,
                     &shasta_token,

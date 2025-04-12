@@ -141,8 +141,8 @@ pub async fn connect_to_console(
     let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
     let mut stdout = tokio::io::stdout();
 
-    let mut output = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
     let mut input = attached.stdin().unwrap();
+    let mut output = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
 
     let term_tx = attached.terminal_size().unwrap();
 
@@ -169,6 +169,7 @@ pub async fn connect_to_console(
                     },
                 }
             },
+
             message = output.next() => {
                 match message {
                     Some(Ok(message)) => {
@@ -187,6 +188,7 @@ pub async fn connect_to_console(
                     },
                 }
             },
+
             result = &mut handle_terminal_size_handle => {
                 match result {
                     Ok(_) => log::info!("End of terminal size stream"),

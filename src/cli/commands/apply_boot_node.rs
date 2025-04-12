@@ -1,15 +1,20 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     cli::commands::power_reset_nodes,
-    common::{ims_ops::get_image_id_from_cfs_configuration_name, kafka::Kafka},
+    common::{self, ims_ops::get_image_id_from_cfs_configuration_name, kafka::Kafka},
 };
 
 use backend_dispatcher::{
-    interfaces::{bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait},
-    types::BootParameters,
+    interfaces::{
+        bss::BootParametersTrait,
+        cfs::CfsTrait,
+        hsm::{component::ComponentTrait, group::GroupTrait},
+        ims::ImsTrait,
+    },
+    types::{BootParameters, Component},
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{ims, node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm};
+use mesa::node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
@@ -20,33 +25,53 @@ pub async fn exec(
     new_boot_image_configuration_opt: Option<&String>,
     new_runtime_configuration_opt: Option<&String>,
     new_kernel_parameters_opt: Option<&String>,
-    xname_vec: Vec<&str>,
+    // xname_vec: Vec<&str>,
+    hosts_string: &str,
     assume_yes: bool,
     dry_run: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     let mut need_restart = false;
 
-    // Validate
-    //
-    // Check user has provided valid XNAMES
-    let target_hsm_group_vec = backend
-        .get_group_name_available(shasta_token)
+    // Convert user input to xname
+    let xname_available_vec: Vec<String> = backend
+        .get_group_available(shasta_token)
         .await
-        .unwrap();
+        .unwrap_or_else(|e| {
+            eprintln!(
+                "ERROR - Could not get group list. Reason:\n{}",
+                e.to_string()
+            );
+            std::process::exit(1);
+        })
+        .iter()
+        .flat_map(|group| group.get_members())
+        .collect();
 
-    if !validate_xnames_format_and_membership_agaisnt_multiple_hsm(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xname_vec,
-        Some(target_hsm_group_vec),
+    let node_metadata_vec: Vec<Component> = backend
+        .get_all_nodes(shasta_token, Some("true"))
+        .await
+        .unwrap()
+        .components
+        .unwrap_or_default()
+        .iter()
+        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
+        .cloned()
+        .collect();
+
+    let xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
+        hosts_string,
+        false,
+        node_metadata_vec,
     )
     .await
-    {
-        eprintln!("xname/s invalid. Exit");
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
         std::process::exit(1);
-    }
+    });
 
     // Check new configuration exists and exit otherwise
     let runtime_configuration_detail_list_rslt = backend
@@ -126,13 +151,21 @@ pub async fn exec(
         } else if let Some(boot_image_id) = new_boot_image_id_opt {
             log::info!("Boot image id '{}' provided", boot_image_id);
             // Check image id exists
-            let image_id_in_csm = ims::image::http_client::get(
+            /* let image_id_in_csm = ims::image::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 new_boot_image_id_opt.map(|image_id| image_id.as_str()),
             )
-            .await;
+            .await; */
+            let image_id_in_csm = backend
+                .get_images(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    new_boot_image_id_opt.map(|image_id| image_id.as_str()),
+                )
+                .await;
 
             if image_id_in_csm.is_err() {
                 eprintln!("ERROR - boot image id '{}' not found", boot_image_id);

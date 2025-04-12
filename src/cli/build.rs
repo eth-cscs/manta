@@ -543,7 +543,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
         .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
-        .arg(arg!(<XNAMES> "Comma separated list of xnames which boot image will be updated.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
+        .arg(arg!(<VALUE> "List of xnames or nids.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0' or 'nid001313,nid001314'\n Host list also accepted eg 'x1003c1s7b0n[0-1],x1003c1s7b1n0' or 'nid00131[0-9]'"))
 }
 
 pub fn subcommand_apply_boot_cluster() -> Command {

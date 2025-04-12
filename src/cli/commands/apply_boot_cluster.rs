@@ -25,13 +25,6 @@ pub async fn exec(
         .get_member_vec_from_group_name_vec(shasta_token, vec![hsm_group_name.to_string()])
         .await
         .unwrap();
-    /* let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_group_name,
-    )
-    .await; */
 
     apply_boot_node::exec(
         &backend,
@@ -42,7 +35,7 @@ pub async fn exec(
         new_boot_image_configuration_opt,
         new_runtime_configuration_opt,
         new_kernel_parameters_opt,
-        xname_vec.iter().map(|xname| xname.as_str()).collect(),
+        &xname_vec.join(","),
         assume_yes,
         dry_run,
         kafka_audit_opt,
