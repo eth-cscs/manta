@@ -2,7 +2,7 @@ use backend_dispatcher::{
     interfaces::get_bos_session_templates::GetTemplatesTrait, types::BosSessionTemplate,
 };
 use comfy_table::Table;
-use mesa::{bos, ims, node};
+use mesa::{ims, node};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 

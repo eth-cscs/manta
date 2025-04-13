@@ -6,6 +6,7 @@ pub mod cfs_session_utils;
 pub mod cluster_ops;
 pub mod config;
 pub mod hooks;
+pub mod hw_inventory_utils;
 pub mod ims_ops;
 pub mod jwt_ops;
 pub mod kafka;

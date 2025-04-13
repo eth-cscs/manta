@@ -4,7 +4,6 @@ use backend_dispatcher::interfaces::hsm::{
     group::GroupTrait, hardware_inventory::HardwareInventory,
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
@@ -14,6 +13,7 @@ use crate::{
         calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
         get_hsm_node_hw_component_counter,
     },
+    common,
 };
 
 pub async fn exec(
@@ -509,13 +509,13 @@ pub fn get_node_hw_properties_from_value(
     hw_component_pattern_list: Vec<String>,
 ) -> (Vec<String>, Vec<u64>) {
     let processor_vec =
-        hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
+        common::hw_inventory_utils::get_list_processor_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
 
     let accelerator_vec =
-        hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
+        common::hw_inventory_utils::get_list_accelerator_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
@@ -543,11 +543,10 @@ pub fn get_node_hw_properties_from_value(
         }
     }
 
-    let memory_vec =
-        hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
-            node_hw_inventory_value,
-        )
-        .unwrap_or_default();
+    let memory_vec = common::hw_inventory_utils::get_list_memory_capacity_from_hw_inventory_value(
+        node_hw_inventory_value,
+    )
+    .unwrap_or_default();
 
     (node_hw_component_pattern_vec, memory_vec)
 }

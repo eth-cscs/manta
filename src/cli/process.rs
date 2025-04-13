@@ -2282,12 +2282,9 @@ pub async fn process_cli(
                 kafka_audit_opt,
             )
             .await;
-        } else if let Some(cli_download_boot_image) =
-            cli_root.subcommand_matches("download-boot-image")
-        {
+        } else if let Some(_) = cli_root.subcommand_matches("download-boot-image") {
             println!("Download boot image");
-        } else if let Some(cli_upload_boot_image) = cli_root.subcommand_matches("upload-boot-image")
-        {
+        } else if let Some(_) = cli_root.subcommand_matches("upload-boot-image") {
             println!("Upload boot image");
         }
     }
