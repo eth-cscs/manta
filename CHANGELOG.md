@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.110] - 2025-04-13
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.109] - 2025-04-13
 
 ### Features
 
 - Remove 'mesa' dependencies in subcommand 'add nodes to hsm groups'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.109
 
 ## [1.54.1-beta.108] - 2025-04-13
 
