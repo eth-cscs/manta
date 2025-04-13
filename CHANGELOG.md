@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.107] - 2025-04-13
+
+### Features
+
+- Remove 'mesa' dependencies in subcommand 'get images'
+
+### Refactor
+
+- Remove dead code
+
 ## [1.54.1-beta.106] - 2025-04-12
 
 ### Features
@@ -12,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.106
 
 ### Refactor
 
