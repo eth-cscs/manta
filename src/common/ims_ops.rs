@@ -44,6 +44,7 @@ pub async fn get_image_id_from_cfs_configuration_name(
     );
 
     bos_sessiontemplate_utils::get_image_id_related_to_cfs_configuration(
+        backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

@@ -1011,6 +1011,7 @@ pub async fn process_cli(
                 };
 
                 get_template::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

@@ -1,6 +1,10 @@
+use backend_dispatcher::{
+    interfaces::get_bos_session_templates::GetTemplatesTrait, types::BosSessionTemplate,
+};
 use comfy_table::Table;
-use mesa::bos::template::http_client::v2::types::BosSessionTemplate;
 use mesa::{bos, ims, node};
+
+use crate::backend_dispatcher::StaticBackendDispatcher;
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
     let mut table = Table::new();
@@ -57,16 +61,29 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
 }
 
 pub async fn get_image_id_related_to_cfs_configuration(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all BOS sessiontemplates
-    let bos_sessiontemplate_value_list =
-        bos::template::http_client::v2::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await
-            .unwrap();
+    /* let bos_sessiontemplate_value_list =
+    bos::template::http_client::v2::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        .await
+        .unwrap(); */
+    let bos_sessiontemplate_value_list = backend
+        .get_templates(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &vec![],
+            &[],
+            None,
+            None,
+        )
+        .await
+        .unwrap();
 
     get_image_id_from_bos_sessiontemplate_list(
         shasta_token,
