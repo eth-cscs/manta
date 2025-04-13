@@ -17,6 +17,7 @@ use backend_dispatcher::{
         apply_session::ApplySessionTrait,
         bss::BootParametersTrait,
         cfs::CfsTrait,
+        get_images_and_details::GetImagesAndDetailsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
             redfish_endpoint::RedfishEndpointTrait,
@@ -1387,6 +1388,43 @@ impl MigrateBackupTrait for StaticBackendDispatcher {
                     shasta_root_cert,
                     bos,
                     destination,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
+    async fn get_images_and_details(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        hsm_group_name_vec: &[String],
+        id_opt: Option<&String>,
+        limit_number: Option<&u8>,
+    ) -> Result<Vec<(Image, String, String, bool)>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_images_and_details(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_vec,
+                    id_opt,
+                    limit_number,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_images_and_details(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_name_vec,
+                    id_opt,
+                    limit_number,
                 )
                 .await
             }

@@ -1098,6 +1098,7 @@ pub async fn process_cli(
                 .await?;
 
                 get_images::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
