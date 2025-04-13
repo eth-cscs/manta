@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.108] - 2025-04-13
+
+### Features
+
+- Remove 'mesa' dependencies in subcommand 'get templates'
+
 ## [1.54.1-beta.107] - 2025-04-13
 
 ### Features
 
 - Remove 'mesa' dependencies in subcommand 'get images'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.107
 
 ### Refactor
 
