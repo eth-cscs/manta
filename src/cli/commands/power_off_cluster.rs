@@ -94,11 +94,5 @@ pub async fn exec(
         if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
             log::warn!("Failed producing messages: {}", e);
         }
-        /* let user = mesa::common::jwt_ops::get_name(shasta_token)
-            .expect("ERROR - claim 'user' not found in JWT token");
-        let username = mesa::common::jwt_ops::get_preferred_username(shasta_token)
-            .expect("ERROR - claim 'preferred_uername' not found in JWT token");
-
-        log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power off cluster {}", user, username, hsm_group_name_arg); */
     }
 }
