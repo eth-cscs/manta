@@ -1,8 +1,13 @@
 pub mod command {
 
-    use mesa::ims::image::{self, http_client::types::Image};
+    use backend_dispatcher::interfaces::{
+        get_images_and_details::GetImagesAndDetailsTrait, ims::ImsTrait,
+    };
+
+    use crate::backend_dispatcher::StaticBackendDispatcher;
 
     pub async fn exec(
+        backend: &StaticBackendDispatcher,
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
@@ -15,7 +20,7 @@ pub mod command {
             image_id_vec.join(", "),
         );
 
-        let mut image_vec: Vec<Image> =
+        /* let mut image_vec: Vec<Image> =
             image::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap();
@@ -27,6 +32,21 @@ pub mod command {
                 shasta_root_cert,
                 &mut image_vec,
                 &hsm_name_available_vec,
+                None,
+            )
+            .await
+            .unwrap_or_else(|e| {
+                eprintln!("ERROR - {}", e);
+                std::process::exit(1);
+            }); */
+
+        let image_detail_tuple_vec = backend
+            .get_images_and_details(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                &hsm_name_available_vec,
+                None,
                 None,
             )
             .await
@@ -58,13 +78,9 @@ pub mod command {
             if dry_run {
                 eprintln!("Dry-run enabled. No changes persisted into the system");
             } else {
-                let _ = image::http_client::delete(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &image_id,
-                )
-                .await;
+                let _ = backend
+                    .delete_image(shasta_token, shasta_base_url, shasta_root_cert, image_id)
+                    .await;
             }
         }
 

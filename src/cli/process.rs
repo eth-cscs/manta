@@ -2201,6 +2201,7 @@ pub async fn process_cli(
                 let dry_run: bool = cli_delete_images.get_flag("dry-run");
 
                 delete_image::command::exec(
+                    &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
