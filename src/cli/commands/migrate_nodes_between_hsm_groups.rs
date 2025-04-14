@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use mesa::common::jwt_ops;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, kafka::Kafka},
+    common::{audit::Audit, jwt_ops, kafka::Kafka},
 };
 
 pub async fn exec(
@@ -57,14 +56,6 @@ pub async fn exec(
             .get_group(shasta_token, &target_hsm_name)
             .await
             .is_ok()
-        /* if hsm::group::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(&target_hsm_name),
-        )
-        .await
-        .is_ok() */
         {
             log::debug!("The HSM group {} exists, good.", target_hsm_name);
         } else {
@@ -97,19 +88,6 @@ pub async fn exec(
                         .collect(),
                 )
                 .await;
-            /* let node_migration_rslt = hsm::group::utils::migrate_hsm_members(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                &target_hsm_name,
-                &parent_hsm_name,
-                xname_to_move_vec
-                    .iter()
-                    .map(|xname| xname.as_str())
-                    .collect(),
-                nodryrun,
-            )
-            .await; */
 
             match node_migration_rslt {
                 Ok((mut target_hsm_group_member_vec, mut parent_hsm_group_member_vec)) => {
