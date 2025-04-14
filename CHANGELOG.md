@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.112] - 2025-04-14
+
+### Features
+
+- Remove 'mesa' dependencies in subcommand 'delete images'
+
 ## [1.54.1-beta.111] - 2025-04-14
 
 ### Features
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Clean code
+- Release manta version 1.54.1-beta.111
 
 ## [1.54.1-beta.110] - 2025-04-13
 
