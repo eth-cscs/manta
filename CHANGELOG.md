@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.115] - 2025-04-14
+
+### Features
+
+- Remove 'mesa' dependencies in file 'migrate_nodes_between_hsm_groups'
+
 ## [1.54.1-beta.114] - 2025-04-14
 
 ### Features
 
 - Remove 'mesa' dependencies in subcommand 'migrate restore'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.114
 
 ## [1.54.1-beta.113] - 2025-04-14
 
