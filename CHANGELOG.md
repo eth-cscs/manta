@@ -2,7 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.111] - 2025-04-14
+
+### Features
+
+- Remove 'mesa' dependencies in subcommand 'apply templates'
+
+### Miscellaneous Tasks
+
+- Clean code
+
 ## [1.54.1-beta.110] - 2025-04-13
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.110
 
 ### Refactor
 
