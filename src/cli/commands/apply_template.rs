@@ -1,8 +1,14 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use mesa::{bos, node};
+use backend_dispatcher::{
+    interfaces::{
+        bos::ClusterSessionTrait, get_bos_session_templates::GetTemplatesTrait,
+        hsm::group::GroupTrait,
+    },
+    types::bos::session::{BosSession, Operation},
+};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher, common::authorization::validate_target_hsm_members,
+    backend_dispatcher::StaticBackendDispatcher,
+    common::{authorization::validate_target_hsm_members, node_ops::validate_xname_format},
 };
 
 pub async fn exec(
@@ -22,7 +28,40 @@ pub async fn exec(
     //
     // Get BOS sessiontemplate
     //
-    let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
+    let bos_sessiontemplate_vec_rslt = backend
+        .get_templates(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            &vec![],
+            &[],
+            Some(&bos_sessiontemplate_name.to_string()),
+            None,
+        )
+        .await;
+
+    let bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
+        Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
+        Err(e) => {
+            eprintln!(
+                "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+                e
+            );
+            std::process::exit(1);
+        }
+    };
+
+    let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
+        eprintln!(
+            "ERROR - No BOS sessiontemplate '{}' found\nExit",
+            bos_sessiontemplate_name
+        );
+        std::process::exit(1);
+    } else {
+        bos_sessiontemplate_vec.first().unwrap()
+    };
+
+    /* let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -43,13 +82,13 @@ pub async fn exec(
 
     let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
         eprintln!(
-            "ERROR - could not fetch BOS sessiontemplate '{}'\nExit",
+            "ERROR - No BOS sessiontemplate '{}' found\nExit",
             bos_sessiontemplate_name
         );
         std::process::exit(1);
     } else {
         bos_sessiontemplate_vec.first().unwrap()
-    };
+    }; */
 
     // END GET DATA
     //***********************************************************
@@ -96,7 +135,7 @@ pub async fn exec(
         let mut xnames_to_validate_access_vec = Vec::new();
         for limit_value in &limit_vec {
             log::info!("Check if limit value '{}', is an xname", limit_value);
-            if node::utils::validate_xname_format(limit_value) {
+            if validate_xname_format(limit_value) {
                 // limit_value is an xname
                 log::info!("limit value '{}' is an xname", limit_value);
                 xnames_to_validate_access_vec.push(limit_value.to_string());
@@ -104,13 +143,6 @@ pub async fn exec(
                 .get_member_vec_from_group_name_vec(shasta_token, vec![limit_value.to_string()])
                 .await
                 .ok()
-            /* hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
-                shasta_token,
-                shasta_base_url,
-                shasta_root_cert,
-                limit_value,
-            )
-            .await */
             {
                 // limit_value is an HSM group
                 log::info!(
@@ -130,14 +162,8 @@ pub async fn exec(
 
         log::info!("Validate list of xnames translated from 'limit argument'");
 
-        let _ = validate_target_hsm_members(
-            &backend,
-            shasta_token,
-            /* shasta_base_url,
-            shasta_root_cert, */
-            &xnames_to_validate_access_vec,
-        )
-        .await;
+        let _ = validate_target_hsm_members(&backend, shasta_token, &xnames_to_validate_access_vec)
+            .await;
 
         log::info!("Access to '{}' granted. Continue.", limit);
 
@@ -154,11 +180,10 @@ pub async fn exec(
     //
     // Create BOS session request payload
     //
-    let bos_session = bos::session::http_client::v2::types::BosSession {
+    let bos_session = BosSession {
         name: bos_session_name_opt.cloned(),
         tenant: None,
-        operation: bos::session::http_client::v2::types::Operation::from_str(bos_session_operation)
-            .ok(),
+        operation: Operation::from_str(bos_session_operation).ok(),
         template_name: bos_sessiontemplate_name.to_string(),
         limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
         stage: Some(false),
@@ -171,13 +196,21 @@ pub async fn exec(
         println!("Dry-run enabled. No changes persisted into the system");
         println!("BOS session info:\n{:#?}", bos_session);
     } else {
-        let create_bos_session_rslt = bos::session::http_client::v2::post(
+        /* let create_bos_session_rslt = bos::session::http_client::v2::post(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            bos_session,
+            bos_session.into(),
         )
-        .await;
+        .await; */
+        let create_bos_session_rslt = backend
+            .post_template_session(
+                shasta_token,
+                shasta_base_url,
+                shasta_root_cert,
+                bos_session.into(),
+            )
+            .await;
 
         match create_bos_session_rslt {
              Ok(bos_session) => println!(

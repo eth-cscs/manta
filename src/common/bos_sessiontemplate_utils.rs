@@ -1,5 +1,6 @@
 use backend_dispatcher::{
-    interfaces::get_bos_session_templates::GetTemplatesTrait, types::BosSessionTemplate,
+    interfaces::get_bos_session_templates::GetTemplatesTrait,
+    types::bos::session_template::BosSessionTemplate,
 };
 use comfy_table::Table;
 use mesa::{ims, node};

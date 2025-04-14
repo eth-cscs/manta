@@ -1,7 +1,7 @@
 use backend_dispatcher::types::{
+    bos::session_template::BosSessionTemplate,
     cfs::{CfsConfigurationResponse, CfsSessionGetResponse, ConfigurationDetails},
     ims::Image,
-    BosSessionTemplate,
 };
 use chrono::{DateTime, Local};
 use comfy_table::Table;

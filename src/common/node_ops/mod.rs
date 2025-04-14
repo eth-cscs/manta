@@ -116,6 +116,10 @@ pub async fn get_xname_from_xname_regex(
     Ok(xname_vec)
 }
 
+/// Translates and filters a 'host expression' into a list of xnames.
+/// a host expression is a comma separated list of NIDs or XNAMEs, a regex or a hostlist
+/// NOTE: regex expressions needs to be compared/filtered with a list of nodes available to the user
+/// NOTE: user can provice a host expression and expand the list to all siblings
 pub async fn resolve_node_list_user_input_to_xname_2(
     user_input: &str,
     is_include_siblings: bool,
@@ -130,8 +134,7 @@ pub async fn resolve_node_list_user_input_to_xname_2(
 
     let xname_vec = if let Ok(node_vec) = hostlist_expanded_vec_rslt {
         // If hostlist, expand hostlist
-        let xname_vec: Vec<String> = if mesa::node::utils::validate_nid_format_vec(node_vec.clone())
-        {
+        let xname_vec: Vec<String> = if validate_nid_format_vec(node_vec.clone()) {
             // If hostlist of NIDs, convert to xname
             // Validate NIDs
             log::debug!("NID format is valid");
@@ -139,7 +142,7 @@ pub async fn resolve_node_list_user_input_to_xname_2(
             log::debug!("hostlist Nids expanded: {:?}", node_vec);
 
             get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec).await?
-        } else if mesa::node::utils::validate_xname_format_vec(node_vec.clone()) {
+        } else if validate_xname_format_vec(node_vec.clone()) {
             // If hostlist of XNAMEs, return hostlist expanded xnames
             // Validate XNAMEs
             log::debug!("NID format is valid");
@@ -709,6 +712,32 @@ pub async fn get_curated_hsm_group_from_hostlist(
 
     hsm_group_summary
 } */
+
+/// Check if input is a NID
+pub fn validate_nid_format_vec(node_vec: Vec<String>) -> bool {
+    node_vec.iter().all(|nid| validate_nid_format(nid))
+}
+
+/// Check if input is a NID
+pub fn validate_nid_format(nid: &str) -> bool {
+    nid.to_lowercase().starts_with("nid")
+        && nid.len() == 9
+        && nid
+            .strip_prefix("nid")
+            .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
+}
+
+/// Validate xname is correct (it uses regex taken from HPE Cray CSM docs)
+pub fn validate_xname_format_vec(node_vec: Vec<String>) -> bool {
+    node_vec.iter().all(|nid| validate_xname_format(nid))
+}
+
+/// Validate xname is correct (it uses regex taken from HPE Cray CSM docs)
+pub fn validate_xname_format(xname: &str) -> bool {
+    let xname_re = Regex::new(r"^x\d{4}c[0-7]s([0-9]|[1-5][0-9]|6[0-4])b[0-1]n[0-7]$").unwrap();
+
+    xname_re.is_match(xname)
+}
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
     let mut table = Table::new();

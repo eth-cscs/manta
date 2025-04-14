@@ -15,6 +15,7 @@ use backend_dispatcher::{
     interfaces::{
         apply_hw_cluster_pin::ApplyHwClusterPin,
         apply_session::ApplySessionTrait,
+        bos::ClusterSessionTrait,
         bss::BootParametersTrait,
         cfs::CfsTrait,
         get_bos_session_templates::GetTemplatesTrait,
@@ -30,14 +31,15 @@ use backend_dispatcher::{
         sat::SatTrait,
     },
     types::{
+        bos::session_template::BosSessionTemplate,
         cfs::{
             cfs_configuration_request::CfsConfigurationRequest, CfsConfigurationResponse,
             CfsSessionGetResponse, CfsSessionPostRequest, Layer, LayerDetails,
         },
         hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
         ims::Image,
-        BootParameters, BosSessionTemplate, Component, ComponentArrayPostArray, Group,
-        HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
+        BootParameters, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+        K8sDetails, NodeMetadataArray,
     },
 };
 
@@ -1466,6 +1468,37 @@ impl GetTemplatesTrait for StaticBackendDispatcher {
                     hsm_member_vec,
                     bos_sessiontemplate_name_opt,
                     limit_number_opt,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl ClusterSessionTrait for StaticBackendDispatcher {
+    async fn post_template_session(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        bos_session: backend_dispatcher::types::bos::session::BosSession,
+    ) -> Result<Value, Error> {
+        match self {
+            CSM(b) => {
+                b.post_template_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos_session,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.post_template_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    bos_session,
                 )
                 .await
             }
