@@ -1,13 +1,12 @@
 use backend_dispatcher::{
     error::Error,
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
-    types::{Group, K8sDetails},
+    types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
 };
-use mesa::cfs::{self, session::http_client::v3::types::CfsSessionGetResponse};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{self},
+    common::{self, cfs_session_utils::check_cfs_session_against_groups_available},
 };
 
 use futures::{AsyncBufReadExt, TryStreamExt};
@@ -113,49 +112,12 @@ pub async fn exec(
     // FIXME: convert from CFS session backend to mesa CFS session
     let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
 
-    let group_available_vec: Vec<mesa::hsm::group::types::Group> = group_available_vec
+    let group_available_vec: Vec<Group> = group_available_vec
         .into_iter()
         .map(|group| group.clone().into())
         .collect::<Vec<_>>();
 
-    cfs::session::utils::check_cfs_session_against_groups_available(
-        &cfs_session_backend,
-        group_available_vec,
-    );
-
-    // Get K8s secrets
-    /* let shasta_k8s_secrets = match &k8s.authentication {
-        K8sAuth::Native {
-            certificate_authority_data,
-            client_certificate_data,
-            client_key_data,
-        } => {
-            serde_json::json!(
-            {
-                "certificate-authority-data": certificate_authority_data,
-                "client-certificate-data": client_certificate_data,
-                "client-key-data": client_key_data
-            })
-        }
-        K8sAuth::Vault {
-            base_url,
-            // secret_path,
-            // role_id,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
-            .await
-            .unwrap(),
-    };
-
-    let client =
-        mesa::common::kubernetes::get_k8s_client_programmatically(k8s_api_url, shasta_k8s_secrets)
-            .await
-            .unwrap();
-
-    let log_rslt = mesa::common::kubernetes::print_cfs_session_logs(
-        client,
-        cfs_session.name.as_ref().unwrap(),
-    )
-    .await; */
+    check_cfs_session_against_groups_available(&cfs_session_backend, group_available_vec);
 
     let log_rslt = print_cfs_session_logs(
         backend,

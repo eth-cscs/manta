@@ -1,5 +1,5 @@
 use backend_dispatcher::{
-    interfaces::sat::SatTrait,
+    interfaces::apply_sat_file::SatTrait,
     types::{K8sAuth, K8sDetails},
 };
 use dialoguer::theme::ColorfulTheme;

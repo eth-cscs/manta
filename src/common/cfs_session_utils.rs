@@ -1,6 +1,6 @@
 use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, ims::ImsTrait},
-    types::cfs::session::CfsSessionGetResponse,
+    types::{cfs::session::CfsSessionGetResponse, Group},
 };
 use chrono::{DateTime, Local};
 use comfy_table::Table;
@@ -94,6 +94,25 @@ pub fn cfs_session_struct_to_vec(
     );
 
     result
+}
+
+// Check if a session is related to a group the user has access to
+pub fn check_cfs_session_against_groups_available(
+    cfs_session: &CfsSessionGetResponse,
+    group_available: Vec<Group>,
+) -> bool {
+    group_available.iter().any(|group| {
+        cfs_session
+            .get_target_hsm()
+            .is_some_and(|group_vec| group_vec.contains(&group.label))
+            || cfs_session
+                .get_target_xname()
+                .is_some_and(|session_xname_vec| {
+                    session_xname_vec
+                        .iter()
+                        .all(|xname| group.get_members().contains(xname))
+                })
+    })
 }
 
 pub fn print_table_struct(
