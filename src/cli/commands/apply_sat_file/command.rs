@@ -1,14 +1,18 @@
-use backend_dispatcher::types::{K8sAuth, K8sDetails};
+use backend_dispatcher::{
+    interfaces::sat::SatTrait,
+    types::{K8sAuth, K8sDetails},
+};
 use dialoguer::theme::ColorfulTheme;
 use serde_yaml::Value;
 use termion::color;
 
 use crate::{
-    cli::commands::apply_sat_file::utils,
+    backend_dispatcher::StaticBackendDispatcher, cli::commands::apply_sat_file::utils,
     common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
 };
 
 pub async fn exec(
+    backend: &StaticBackendDispatcher,
     site_name: &str,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -137,36 +141,37 @@ pub async fn exec(
             .unwrap(),
     };
 
-    mesa::commands::apply_sat_file::command::exec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        vault_base_url,
-        site_name,
-        // vault_secret_path,
-        // vault_role_id,
-        k8s_api_url,
-        shasta_k8s_secrets,
-        // sat_file_content,
-        sat_template_file_yaml,
-        hsm_group_param_opt,
-        hsm_group_available_vec,
-        ansible_verbosity_opt,
-        ansible_passthrough_opt,
-        gitea_base_url,
-        gitea_token,
-        do_not_reboot,
-        watch_logs,
-        image_only,
-        session_template_only,
-        debug_on_failure,
-        dry_run,
-    )
-    .await
-    .unwrap_or_else(|e| {
-        eprintln!("{}", e);
-        std::process::exit(1);
-    });
+    backend
+        .apply_sat_file(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+            vault_base_url,
+            site_name,
+            // vault_secret_path,
+            // vault_role_id,
+            k8s_api_url,
+            shasta_k8s_secrets,
+            // sat_file_content,
+            sat_template_file_yaml,
+            hsm_group_param_opt,
+            hsm_group_available_vec,
+            ansible_verbosity_opt,
+            ansible_passthrough_opt,
+            gitea_base_url,
+            gitea_token,
+            do_not_reboot,
+            watch_logs,
+            image_only,
+            session_template_only,
+            debug_on_failure,
+            dry_run,
+        )
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        });
 
     /* // GET DATA
     //

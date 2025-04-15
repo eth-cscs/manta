@@ -1438,6 +1438,7 @@ pub async fn process_cli(
                     .unwrap();
 
                 apply_sat_file::command::exec(
+                    &backend,
                     &site_name,
                     &shasta_token,
                     shasta_base_url,
