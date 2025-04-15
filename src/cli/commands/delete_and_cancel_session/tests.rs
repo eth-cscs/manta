@@ -5,7 +5,7 @@ use mesa::cfs::{
     },
 };
 
-/// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration
+/* /// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration
 /// name appears as desired configuration in a list of CFS components
 #[test]
 fn test_is_cfs_configuration_a_desired_configuration_of_other_true() {
@@ -57,9 +57,9 @@ fn test_is_cfs_configuration_a_desired_configuration_of_other_true() {
     );
 
     assert!(sol.eq(&vec!["1".to_string()]));
-}
+} */
 
-/// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration
+/* /// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration
 /// name appears as desired configuration in a list of CFS components
 #[test]
 fn test_is_cfs_configuration_a_desired_configuration_of_other_false() {
@@ -101,9 +101,9 @@ fn test_is_cfs_configuration_a_desired_configuration_of_other_false() {
     );
 
     assert!(sol.is_empty());
-}
+} */
 
-/// Test is_cfs_configuration_a_desired_configuration returns FALSE when a CFS configuration
+/* /// Test is_cfs_configuration_a_desired_configuration returns FALSE when a CFS configuration
 /// name appears as desired configuration in a list of CFS components
 #[test]
 fn test_is_cfs_configuration_a_desired_configuration_of_other_false_2() {
@@ -145,9 +145,9 @@ fn test_is_cfs_configuration_a_desired_configuration_of_other_false_2() {
     );
 
     assert!(sol.is_empty());
-}
+} */
 
-#[test]
+/* #[test]
 fn test_is_cfs_configuration_used_to_build_image_true() {
     let cfs_config = Configuration {
         name: Some("cfs_config_1".to_string()),
@@ -197,9 +197,9 @@ fn test_is_cfs_configuration_used_to_build_image_true() {
         cfs_configuration_name
     )
     .is_empty());
-}
+} */
 
-#[test]
+/* #[test]
 fn test_is_cfs_configuration_used_to_build_image_false() {
     let cfs_config = Configuration {
         name: Some("cfs_config_1".to_string()),
@@ -232,9 +232,9 @@ fn test_is_cfs_configuration_used_to_build_image_false() {
         .len()
             > 0
     );
-}
+} */
 
-#[test]
+/* #[test]
 fn test_is_cfs_configuration_used_to_build_image_false_2() {
     let cfs_config = Configuration {
         name: Some("cfs_config_1".to_string()),
@@ -273,7 +273,7 @@ fn test_is_cfs_configuration_used_to_build_image_false_2() {
         .len()
             > 0
     );
-}
+} */
 
 /* /// Validate CFS session type dynamic:
 /// - check CFS configuration related to CFS session is not a desired configuration
@@ -291,7 +291,7 @@ pub fn is_cfs_configuration_a_desired_configuration(
     })
 } */
 
-/// Validate CFS session type dynamic:
+/* /// Validate CFS session type dynamic:
 /// - check CFS configuration related to CFS session is a desired configuration used by a node or
 /// hsm group different than the provided one.
 /// We need this validation because, when deleting a CFS session, we need to make sure it is not
@@ -314,9 +314,9 @@ pub fn is_cfs_configuration_a_desired_configuration_of_other(
         })
         .map(|cfs_component| cfs_component.id.clone().unwrap())
         .collect()
-}
+} */
 
-/// Validate CFS session type image:
+/* /// Validate CFS session type image:
 /// - check CFS configuration related to CFS session is not used to build any other image
 pub fn is_cfs_configuration_used_to_build_image(
     cfs_session_vec: &Vec<CfsSessionGetResponse>,
@@ -349,4 +349,4 @@ pub fn is_cfs_configuration_used_to_build_image(
         })
         .flat_map(|cfs_session| cfs_session.get_result_id_vec())
         .collect()
-}
+} */

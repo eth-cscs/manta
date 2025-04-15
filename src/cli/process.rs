@@ -2,7 +2,6 @@ use backend_dispatcher::{
     contracts::BackendTrait,
     interfaces::{
         bss::BootParametersTrait,
-        cfs::CfsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
         },
@@ -10,7 +9,6 @@ use backend_dispatcher::{
     types::{hsm::inventory::RedfishEndpoint, BootParameters, HWInventoryByLocationList},
 };
 use clap_complete::{generate, generate_to};
-use mesa::commands::delete_and_cancel_session;
 use std::{
     env,
     fs::File,
@@ -2095,11 +2093,9 @@ pub async fn process_cli(
 
                 let assume_yes: bool = cli_delete_session.get_flag("assume-yes");
 
-                let dry_run: &bool = cli_delete_session
-                    .get_one("dry-run")
-                    .expect("'dry-run' argument must be provided");
+                let dry_run: bool = cli_delete_session.get_flag("dry-run");
 
-                crate::cli::commands::delete_and_cancel_sessions::exec(
+                crate::cli::commands::delete_and_cancel_session::command::exec(
                     &backend,
                     &shasta_token,
                     shasta_base_url,

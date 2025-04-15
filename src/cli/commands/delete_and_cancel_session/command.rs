@@ -12,17 +12,19 @@ pub async fn exec(
     shasta_root_cert: &[u8],
     hsm_group_available_vec: Vec<String>,
     cfs_session_name: &str,
-    dry_run: &bool,
+    dry_run: bool,
     assume_yes: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     let _ = backend
-        .delete_and_cancel_session(
+        .i_delete_and_cancel_session(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             hsm_group_available_vec,
             cfs_session_name,
+            dry_run,
+            assume_yes,
         )
         .await;
 

@@ -824,32 +824,38 @@ impl CfsTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn delete_and_cancel_session(
+    async fn i_delete_and_cancel_session(
         &self,
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
         hsm_group_available_vec: Vec<String>,
         cfs_session_name: &str,
+        dry_run: bool,
+        assume_yes: bool,
     ) -> Result<(), Error> {
         match self {
             CSM(b) => {
-                b.delete_and_cancel_session(
+                b.i_delete_and_cancel_session(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     hsm_group_available_vec,
                     cfs_session_name,
+                    dry_run,
+                    assume_yes,
                 )
                 .await
             }
             OCHAMI(b) => {
-                b.delete_and_cancel_session(
+                b.i_delete_and_cancel_session(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
                     hsm_group_available_vec,
                     cfs_session_name,
+                    dry_run,
+                    assume_yes,
                 )
                 .await
             }
