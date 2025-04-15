@@ -1131,30 +1131,33 @@ impl CfsTrait for StaticBackendDispatcher {
         }
     }
 
-    async fn get_cfs_component(
+    async fn get_cfs_components(
         &self,
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
+        configuration_name: Option<&str>,
         components_ids: Option<&str>,
         status: Option<&str>,
     ) -> Result<Vec<backend_dispatcher::types::cfs::component::Component>, Error> {
         match self {
             CSM(b) => {
-                b.get_cfs_component(
+                b.get_cfs_components(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    configuration_name,
                     components_ids,
                     status,
                 )
                 .await
             }
             OCHAMI(b) => {
-                b.get_cfs_component(
+                b.get_cfs_components(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
+                    configuration_name,
                     components_ids,
                     status,
                 )

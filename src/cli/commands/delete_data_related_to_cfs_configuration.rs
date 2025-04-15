@@ -27,14 +27,6 @@ pub async fn delete_data_related_cfs_configuration(
     until_opt: Option<NaiveDateTime>,
     yes: &bool,
 ) {
-    /* if !hsm_name_available_vec.contains(hsm_group_name_opt.unwrap()) {
-        eprintln!(
-            "No access to HSM group {}. Exit",
-            hsm_group_name_opt.unwrap()
-        );
-        std::process::exit(1);
-    } */
-
     let xname_vec = backend
         .get_member_vec_from_group_name_vec(shasta_token, hsm_name_available_vec.clone())
         .await
