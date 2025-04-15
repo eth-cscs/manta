@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.117] - 2025-04-15
+
+### Miscellaneous Tasks
+
+- Clean code and update backend dispatcher trait function
+
 ## [1.54.1-beta.116] - 2025-04-15
 
 ### Bug Fixes
 
 - Import of backend dispatcher CFS files
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.116
 
 ## [1.54.1-beta.115] - 2025-04-14
 
