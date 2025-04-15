@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.120] - 2025-04-15
+
+### Features
+
+- Remove 'mesa' dependencies in subcommand 'log'
+
 ## [1.54.1-beta.119] - 2025-04-15
 
 ### Features
 
 - Remove 'mesa' dependencies in subcommand 'log'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.119
 
 ## [1.54.1-beta.118] - 2025-04-15
 
