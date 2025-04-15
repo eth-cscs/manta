@@ -1,6 +1,7 @@
 use backend_dispatcher::{
     interfaces::cfs::CfsTrait,
-    types::cfs::{CfsConfigurationResponse, ConfigurationDetails, LayerDetails},
+    types::cfs::cfs_configuration_details::{ConfigurationDetails, LayerDetails},
+    types::cfs::cfs_configuration_response::CfsConfigurationResponse,
 };
 
 use crate::{

@@ -1,15 +1,14 @@
 use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, ims::ImsTrait},
-    types::cfs::CfsSessionGetResponse,
+    types::cfs::session::CfsSessionGetResponse,
 };
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-// use mesa::cfs::{self, session::http_client::v3::types::CfsSessionGetResponse};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
 pub fn cfs_session_struct_to_vec(
-    cfs_session: backend_dispatcher::types::cfs::CfsSessionGetResponse,
+    cfs_session: backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
 ) -> Vec<String> {
     let start_time_utc_str = cfs_session
         .get_start_time()
@@ -24,33 +23,8 @@ pub fn cfs_session_struct_to_vec(
             .unwrap()
             .format("%d/%m/%Y %H:%M:%S")
             .to_string(),
-        /* result.push(
-        cfs_session.get_start_time().unwrap_or("".to_string()), */
-        /* cfs_session
-            .get_start_time()
-            .unwrap_or("".to_string())
-            .to_string(), */
     );
-    /* result.push(
-        cfs_session
-            .ansible
-            .as_ref()
-            .unwrap()
-            .passthrough
-            .as_ref()
-            .unwrap_or(&"".to_string())
-            .to_string(),
-    );
-    result.push(
-        cfs_session
-            .ansible
-            .as_ref()
-            .unwrap()
-            .verbosity
-            .as_ref()
-            .unwrap()
-            .to_string(),
-    ); */
+
     result.push(
         cfs_session
             .status
@@ -123,7 +97,9 @@ pub fn cfs_session_struct_to_vec(
 }
 
 pub fn print_table_struct(
-    get_cfs_session_value_list: &Vec<backend_dispatcher::types::cfs::CfsSessionGetResponse>,
+    get_cfs_session_value_list: &Vec<
+        backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
+    >,
 ) {
     let table = get_table_struct(get_cfs_session_value_list);
 
@@ -131,7 +107,9 @@ pub fn print_table_struct(
 }
 
 pub fn get_table_struct(
-    get_cfs_session_value_list: &Vec<backend_dispatcher::types::cfs::CfsSessionGetResponse>,
+    get_cfs_session_value_list: &Vec<
+        backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
+    >,
 ) -> Table {
     let mut table = Table::new();
 
@@ -139,8 +117,6 @@ pub fn get_table_struct(
         "Session Name",
         "Configuration Name",
         "Start",
-        /* "Passthrough",
-        "Verbosity", */
         "Status",
         "Succeeded",
         "Target Def",
@@ -163,18 +139,6 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all CFS sessions which has succeeded
-    /* let cfs_sessions_list = cfs::session::get_and_sort(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        None,
-        Some(true),
-    )
-    .await
-    .unwrap(); */
     let cfs_sessions_list = backend
         .get_and_filter_sessions(
             shasta_token,
@@ -237,23 +201,6 @@ pub async fn get_image_id_from_cfs_session_list(
         );
 
         // Get IMS image related to the CFS session
-        /* if ims::image::http_client::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(&image_id),
-        )
-        .await
-        .is_ok()
-        {
-            log::info!(
-                "Found the image ID '{}' related to CFS sesison '{}'",
-                image_id,
-                cfs_session_name,
-            );
-
-            return Some(image_id.to_string()); // from https://users.rust-lang.org/t/convert-option-str-to-option-string/20533/2
-        }; */
         let image_vec_rslt = backend
             .get_images(
                 shasta_token,

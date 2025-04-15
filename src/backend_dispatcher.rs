@@ -33,8 +33,10 @@ use backend_dispatcher::{
     types::{
         bos::session_template::BosSessionTemplate,
         cfs::{
-            cfs_configuration_request::CfsConfigurationRequest, CfsConfigurationResponse,
-            CfsSessionGetResponse, CfsSessionPostRequest, Layer, LayerDetails,
+            cfs_configuration_details::LayerDetails,
+            cfs_configuration_request::CfsConfigurationRequest,
+            cfs_configuration_response::{CfsConfigurationResponse, Layer},
+            session::{CfsSessionGetResponse, CfsSessionPostRequest},
         },
         hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
         ims::Image,
@@ -822,6 +824,38 @@ impl CfsTrait for StaticBackendDispatcher {
         }
     }
 
+    async fn delete_and_cancel_session(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        hsm_group_available_vec: Vec<String>,
+        cfs_session_name: &str,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.delete_and_cancel_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    cfs_session_name,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.delete_and_cancel_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    cfs_session_name,
+                )
+                .await
+            }
+        }
+    }
+
     async fn create_configuration_from_repos(
         &self,
         gitea_token: &str,
@@ -1087,6 +1121,38 @@ impl CfsTrait for StaticBackendDispatcher {
             OCHAMI(b) => {
                 b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
                     .await
+            }
+        }
+    }
+
+    async fn get_cfs_component(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        components_ids: Option<&str>,
+        status: Option<&str>,
+    ) -> Result<Vec<backend_dispatcher::types::cfs::component::Component>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_cfs_component(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    components_ids,
+                    status,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_cfs_component(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    components_ids,
+                    status,
+                )
+                .await
             }
         }
     }

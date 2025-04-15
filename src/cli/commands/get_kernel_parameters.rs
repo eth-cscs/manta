@@ -1,11 +1,11 @@
 use backend_dispatcher::{
+    error::Error,
     interfaces::{
         bss::BootParametersTrait,
         hsm::{component::ComponentTrait, group::GroupTrait},
     },
     types::{BootParameters, Component},
 };
-use mesa::error::Error;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
@@ -20,10 +20,6 @@ pub async fn exec(
     output: &str,
 ) -> Result<(), Error> {
     // Get BSS boot parameters
-    /* let boot_parameter_vec =
-    bss::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, &xname_vec)
-        .await
-        .unwrap(); */
 
     // Convert user input to xname
     let xname_available_vec: Vec<String> = backend

@@ -1,6 +1,7 @@
 use backend_dispatcher::types::{
     bos::session_template::BosSessionTemplate,
-    cfs::{CfsConfigurationResponse, CfsSessionGetResponse, ConfigurationDetails},
+    cfs::cfs_configuration_details::ConfigurationDetails,
+    cfs::cfs_configuration_response::CfsConfigurationResponse, cfs::session::CfsSessionGetResponse,
     ims::Image,
 };
 use chrono::{DateTime, Local};

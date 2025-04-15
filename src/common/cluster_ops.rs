@@ -1,11 +1,8 @@
 use backend_dispatcher::{
     interfaces::{cfs::CfsTrait, hsm::group::GroupTrait},
-    types::cfs::{CfsConfigurationResponse, CfsSessionGetResponse},
+    types::cfs::cfs_configuration_response::CfsConfigurationResponse,
+    types::cfs::session::CfsSessionGetResponse,
 };
-/* use mesa::cfs::{
-    configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse,
-    session::http_client::v3::types::CfsSessionGetResponse,
-}; */
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -28,47 +25,8 @@ pub async fn get_details(
 
     // Get HSM groups matching cluster name
     let hsm_group = backend.get_group(shasta_token, cluster_name).await.unwrap();
-    /* let hsm_groups = hsm::group::http_client::get_hsm_group_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&cluster_name.to_string()),
-    )
-    .await
-    .unwrap(); */
 
     let hsm_group_name = &hsm_group.label;
-
-    /* let hsm_group_members: String =
-    hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(","); */
-
-    /* // Get all CFS sessions
-    let mut cfs_sessions_value_vec = cfs::session::get_and_sort(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    .await
-    .unwrap();
-
-    cfs::session::utils::filter_by_hsm(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &mut cfs_sessions_value_vec,
-        &[hsm_group_name.to_string()],
-        None,
-    )
-    .await
-    .unwrap_or_else(|e| {
-        eprintln!("ERROR - {}", e);
-        std::process::exit(1);
-    }); */
 
     let cfs_sessions_value_vec = backend
         .get_and_filter_sessions(
@@ -93,22 +51,6 @@ pub async fn get_details(
     for cfs_session_value in cfs_sessions_value_vec {
         // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
         // members
-        /* let cfs_configuration_vec = cfs::configuration::http_client::v3::get(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            Some(
-                cfs_session_value
-                    .configuration
-                    .as_ref()
-                    .unwrap()
-                    .name
-                    .as_ref()
-                    .unwrap(),
-            ),
-        )
-        .await
-        .unwrap(); */
         let configuration_name_opt = cfs_session_value
             .configuration
             .as_ref()

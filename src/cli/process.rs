@@ -2,6 +2,7 @@ use backend_dispatcher::{
     contracts::BackendTrait,
     interfaces::{
         bss::BootParametersTrait,
+        cfs::CfsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
         },
@@ -9,6 +10,7 @@ use backend_dispatcher::{
     types::{hsm::inventory::RedfishEndpoint, BootParameters, HWInventoryByLocationList},
 };
 use clap_complete::{generate, generate_to};
+use mesa::commands::delete_and_cancel_session;
 use std::{
     env,
     fs::File,
@@ -38,12 +40,11 @@ use super::commands::{
     config_set_site, config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node,
     delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
-    delete_hw_component_cluster, delete_image, delete_kernel_parameters, delete_sessions,
-    get_boot_parameters, get_cluster, get_configuration, get_hardware_node, get_images,
-    get_kernel_parameters, get_nodes, get_session, get_template, migrate_backup,
-    migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes, power_on_cluster,
-    power_on_nodes, power_reset_cluster, power_reset_nodes, remove_nodes_from_hsm_groups,
-    update_boot_parameters,
+    delete_hw_component_cluster, delete_image, delete_kernel_parameters, get_boot_parameters,
+    get_cluster, get_configuration, get_hardware_node, get_images, get_kernel_parameters,
+    get_nodes, get_session, get_template, migrate_backup, migrate_nodes_between_hsm_groups,
+    power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
+    power_reset_nodes, remove_nodes_from_hsm_groups, update_boot_parameters,
 };
 
 pub async fn process_cli(
@@ -2080,7 +2081,7 @@ pub async fn process_cli(
             } else if let Some(cli_delete_session) = cli_delete.subcommand_matches("session") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let target_hsm_group_vec = get_groups_available(
+                let hsm_group_available_vec = get_groups_available(
                     &backend,
                     &shasta_token,
                     None,
@@ -2098,12 +2099,12 @@ pub async fn process_cli(
                     .get_one("dry-run")
                     .expect("'dry-run' argument must be provided");
 
-                delete_sessions::command::exec(
+                crate::cli::commands::delete_and_cancel_sessions::exec(
                     &backend,
                     &shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    target_hsm_group_vec,
+                    hsm_group_available_vec,
                     session_name,
                     dry_run,
                     assume_yes,

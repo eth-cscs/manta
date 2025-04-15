@@ -1,4 +1,5 @@
 use backend_dispatcher::{
+    error::Error,
     interfaces::{
         bss::BootParametersTrait,
         hsm::{component::ComponentTrait, group::GroupTrait},
@@ -6,11 +7,12 @@ use backend_dispatcher::{
     types::{self, Component},
 };
 use dialoguer::theme::ColorfulTheme;
-use mesa::{common::jwt_ops, error::Error};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2},
+    common::{
+        audit::Audit, jwt_ops, kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2,
+    },
 };
 
 /// Updates the kernel parameters for a set of nodes
@@ -121,9 +123,6 @@ pub async fn exec(
         }
     }
 
-    /* // Audit
-    log::info!(target: "app::audit", "User: {} ({}) ; Operation: Delete kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), node_expression); */
-
     // Audit
     if let Some(kafka_audit) = kafka_audit_opt {
         let username = jwt_ops::get_name(shasta_token).unwrap();
@@ -147,7 +146,6 @@ pub async fn exec(
         if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
             log::warn!("Failed producing messages: {}", e);
         }
-        // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
     }
 
     // Reboot if needed

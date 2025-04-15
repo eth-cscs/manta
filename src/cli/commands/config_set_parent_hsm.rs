@@ -41,8 +41,6 @@ pub async fn exec(
         .get_group_name_available(shasta_token)
         .await
         .unwrap_or(Vec::new());
-    /* let mut settings_hsm_available_vec =
-    mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new()); */
 
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
@@ -56,12 +54,6 @@ pub async fn exec(
             .into_iter()
             .map(|hsm_group_value| hsm_group_value.label)
             .collect::<Vec<String>>()
-        /* hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|hsm_group_value| hsm_group_value.label)
-        .collect::<Vec<String>>() */
     } else {
         settings_hsm_available_vec
     };
@@ -87,12 +79,6 @@ pub async fn exec(
             .into_iter()
             .map(|hsm_group_value| hsm_group_value.label)
             .collect::<Vec<String>>();
-        /* hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|hsm_group_value| hsm_group_value.label)
-        .collect::<Vec<String>>(); */
 
         validate_hsm_group_and_hsm_available_config_params(
             new_hsm_opt.unwrap(),
@@ -121,9 +107,6 @@ pub async fn exec(
         .open(path_to_manta_configuration_file)
         .unwrap();
 
-    /* let mut output = File::create(path_to_manta_configuration_file).unwrap();
-    write!(output, "{}", doc.to_string()); */
-
     manta_configuration_file
         .write_all(doc.to_string().as_bytes())
         .unwrap();
@@ -147,13 +130,3 @@ pub fn validate_hsm_group_and_hsm_available_config_params(
         std::process::exit(1);
     }
 }
-
-/* pub fn unset_hsm(new_hsm_opt: Option<&String>, hsm_available: Option<&toml_edit::Item>) {
-    if hsm_available.is_some()
-        && hsm_available.unwrap().as_array().is_some()
-        && !hsm_available.unwrap().as_array().unwrap().is_empty()
-    {
-        println!("HSM can't be unset. Exit");
-        std::process::exit(1);
-    }
-} */
