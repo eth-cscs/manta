@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.54] - 2025-04-16
+
+### Miscellaneous Tasks
+
+- Update ubuntu image version in github workflow
+
 ## [1.54.53] - 2025-04-16
 
 ### Bug Fixes
 
 - Revert back CFS to v2
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.53
 
 ## [1.54.52] - 2025-04-11
 
