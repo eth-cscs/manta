@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.53] - 2025-04-16
+
+### Bug Fixes
+
+- Revert back CFS to v2
+
 ## [1.54.52] - 2025-04-11
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.52
 
 ### Refactor
 
