@@ -145,7 +145,7 @@ pub async fn exec(
     if cfs_session_target_definition == "dynamic" {
         // The CFS session is of type 'target dynamic' (runtime CFS batcher)
         log::info!("CFS session target definition is 'dynamic'.");
-        let cfs_global_options = mesa::cfs::component::shasta::http_client::v3::get_options(
+        let cfs_global_options = mesa::cfs::component::shasta::http_client::v2::get_options(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

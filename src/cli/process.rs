@@ -1270,7 +1270,7 @@ pub async fn process_cli(
                     Ok(_) => {}
                     Err(error) => eprintln!("{}", error),
                 }
-            } else if let Some(cli_apply_configuration) =
+            /* } else if let Some(cli_apply_configuration) =
                 cli_apply.subcommand_matches("configuration")
             {
                 log::warn!("Deprecated - Please use 'manta apply sat-file' command instead.");
@@ -1325,7 +1325,7 @@ pub async fn process_cli(
                     cli_apply_configuration.get_one::<String>("output"),
                     &site_name,
                 )
-                .await;
+                .await; */
             } else if let Some(cli_apply_session) = cli_apply.subcommand_matches("session") {
                 let hsm_group_name_arg_opt: Option<&String> =
                     cli_apply_session.try_get_one("hsm-group").unwrap_or(None);

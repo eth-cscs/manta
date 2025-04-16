@@ -1,5 +1,3 @@
-use mesa::{cfs::session::mesa::r#struct::v3::CfsSessionGetResponse, ims::image::r#struct::Image};
-
 use crate::common;
 
 pub async fn exec(

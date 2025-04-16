@@ -10,10 +10,10 @@ use mesa::{
     cfs::{
         self,
         configuration::mesa::r#struct::{
-            cfs_configuration_request::v3::CfsConfigurationRequest,
-            cfs_configuration_response::v3::CfsConfigurationResponse,
+            cfs_configuration_request::v2::CfsConfigurationRequest,
+            cfs_configuration_response::v2::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v3::CfsSessionPostRequest,
+        session::mesa::r#struct::v2::CfsSessionPostRequest,
     },
     common::jwt_ops,
     error::Error,
@@ -627,43 +627,6 @@ pub fn render_jinja2_sat_file_yaml(
     sat_file_yaml
 }
 
-/* pub fn render_jinja2_sat_file_struct(
-    sat_file_content: &String,
-    values_file_content_opt: Option<&String>,
-    value_cli_vec_opt: Option<Vec<String>>,
-) -> SatFile {
-    let env = minijinja::Environment::new();
-
-    // Render session values file
-    let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
-        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
-        // Read sesson vars file and parse it to YAML
-        let values_file_yaml: Value = serde_yaml::from_str(values_file_content).unwrap();
-        // Render session vars file with itself (copying ansible behaviour where the ansible vars
-        // file is also a jinja template and combine both vars and values in it)
-        let values_file_rendered = env
-            .render_str(values_file_content, values_file_yaml)
-            .expect("ERROR - Error parsing values file to YAML. Exit");
-        serde_yaml::from_str(&values_file_rendered).unwrap()
-    } else {
-        serde_yaml::from_str(sat_file_content).unwrap()
-    };
-
-    if let Some(value_option_vec) = value_cli_vec_opt {
-        for value_option in value_option_vec {
-            let cli_var_context_yaml = dot_notation_to_yaml(&value_option).unwrap();
-            values_file_yaml = merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
-        }
-    }
-
-    // render sat template file
-    let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml).unwrap();
-
-    let sat_file_yaml: SatFile = serde_yaml::from_str(&sat_file_rendered).unwrap();
-
-    sat_file_yaml
-} */
-
 pub async fn create_cfs_configuration_from_sat_file(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -1078,17 +1041,17 @@ pub async fn create_image_from_sat_file_serde_yaml(
         let cfs_session = CfsSessionPostRequest::new(
             image_name.clone(),
             configuration_name,
+            // None,
             None,
-            None,
-            None,
+            // None,
             ansible_verbosity_opt,
             ansible_passthrough_opt.cloned(),
             true,
             Some(groups_name.to_vec()),
             Some(base_image_id),
-            None,
-            debug_on_failure,
-            Some(image_name.clone()),
+            // None,
+            // debug_on_failure,
+            // Some(image_name.clone()),
         );
 
         if !dry_run {

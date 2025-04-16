@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_response::v3::{
+    cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::{
         CfsConfigurationResponse, Layer,
     },
     error::Error,
@@ -424,7 +424,7 @@ fn test_old_image_format_in_sat_file_pass_because_configuration_found_in_csm() {
             name: "my-layer-name".to_string(),
             playbook: "my-playbook".to_string(),
             branch: None,
-            source: None,
+            // source: None,
         }],
         additional_inventory: None,
     }];

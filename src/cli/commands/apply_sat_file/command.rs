@@ -4,7 +4,7 @@ use dialoguer::theme::ColorfulTheme;
 use mesa::{
     cfs::{
         self,
-        configuration::mesa::r#struct::cfs_configuration_response::v3::CfsConfigurationResponse,
+        configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
     },
     common::kubernetes,
     error::Error,

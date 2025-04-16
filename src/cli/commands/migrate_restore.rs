@@ -5,8 +5,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 use md5::Digest;
 use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
 use mesa::cfs::configuration::mesa::r#struct::{
-    cfs_configuration_request::v3::CfsConfigurationRequest,
-    cfs_configuration_response::v3::CfsConfigurationResponse,
+    cfs_configuration_request::v2::CfsConfigurationRequest,
+    cfs_configuration_response::v2::CfsConfigurationResponse,
 };
 use mesa::hsm::group::{
     http_client::{create_new_hsm_group, delete_hsm_group},

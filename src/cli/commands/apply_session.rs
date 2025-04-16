@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use futures::TryStreamExt;
 use mesa::{
-    cfs::{self, session::mesa::r#struct::v3::CfsSessionPostRequest},
+    cfs::{self, session::mesa::r#struct::v2::CfsSessionPostRequest},
     common::{jwt_ops, kubernetes, vault::http_client::fetch_shasta_k8s_secrets},
     error::Error,
     node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm,
@@ -501,17 +501,17 @@ pub async fn check_nodes_are_ready_to_run_cfs_configuration_and_run_cfs_session(
     let session = CfsSessionPostRequest::new(
         cfs_session_name,
         cfs_configuration_name.clone(),
-        None,
+        // None,
         limit,
-        None,
+        // None,
         ansible_verbosity,
         ansible_passthrough,
         false,
         None,
         None,
-        None,
-        false,
-        None,
+        // None,
+        // false,
+        // None,
     );
 
     let cfs_session_resp = mesa::cfs::session::mesa::http_client::post(

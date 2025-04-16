@@ -7,8 +7,7 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::bootparameters::BootParameters;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v3::CfsConfigurationResponse;
-use mesa::common::authentication;
+use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
 use mesa::{bos, cfs};
 use serde_json::Value;
 
@@ -763,7 +762,7 @@ pub async fn delete(
         log::info!("Deleting CFS configuration '{}'", cfs_configuration);
         let mut counter = 0;
         loop {
-            let deletion_rslt = cfs::configuration::shasta::http_client::v3::delete(
+            let deletion_rslt = cfs::configuration::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

@@ -7,10 +7,10 @@ use mesa::{
     cfs::{
         configuration::mesa::r#struct::{
             cfs_configuration::ConfigurationDetails,
-            cfs_configuration_request::v3::{CfsConfigurationRequest, Layer},
-            cfs_configuration_response::v3::CfsConfigurationResponse,
+            cfs_configuration_request::v2::{CfsConfigurationRequest, Layer},
+            cfs_configuration_response::v2::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v3::CfsSessionGetResponse,
+        session::mesa::r#struct::v2::CfsSessionGetResponse,
     },
     common::gitea,
     ims::image::r#struct::Image,
