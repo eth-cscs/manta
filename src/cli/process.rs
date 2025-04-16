@@ -2152,9 +2152,7 @@ pub async fn process_cli(
                 let cfs_configuration_name_pattern =
                     cli_delete_configurations.get_one::<String>("pattern");
 
-                let yes = cli_delete_configurations
-                    .get_one::<bool>("assume-yes")
-                    .unwrap_or(&false);
+                let assume_yes = cli_delete_configurations.get_flag("assume-yes");
 
                 // INPUT VALIDATION - Check since date is prior until date
                 if since_opt.is_some()
@@ -2175,7 +2173,7 @@ pub async fn process_cli(
                     cfs_configuration_name_pattern,
                     since_opt,
                     until_opt,
-                    yes,
+                    assume_yes,
                 )
                 .await;
             } else if let Some(cli_delete_images) = cli_delete.subcommand_matches("images") {

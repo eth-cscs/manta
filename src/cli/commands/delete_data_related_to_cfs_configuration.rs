@@ -25,7 +25,7 @@ pub async fn delete_data_related_cfs_configuration(
     configuration_name_pattern: Option<&String>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
-    yes: &bool,
+    assume_yes: bool,
 ) {
     let xname_vec = backend
         .get_member_vec_from_group_name_vec(shasta_token, hsm_name_available_vec.clone())
@@ -350,7 +350,7 @@ pub async fn delete_data_related_cfs_configuration(
         Vec::new();
 
     for bos_sessiontemplate_value in &bos_sessiontemplate_value_vec {
-        let cfs_session_name: &str = bos_sessiontemplate_value.name.as_ref().unwrap();
+        let bos_sessiontemplate_name: &str = bos_sessiontemplate_value.name.as_ref().unwrap();
         let cfs_configuration_name: &String = bos_sessiontemplate_value
             .cfs
             .as_ref()
@@ -376,7 +376,7 @@ pub async fn delete_data_related_cfs_configuration(
             };
 
             bos_sessiontemplate_cfs_configuration_image_id_tuple_vec.push((
-                cfs_session_name,
+                bos_sessiontemplate_name,
                 cfs_configuration_name,
                 image_id,
             ));
@@ -592,7 +592,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // ASK USER FOR CONFIRMATION
     //
-    if !*yes {
+    if !assume_yes {
         if Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Please revew the data above and confirm to delete:")
             .interact()
