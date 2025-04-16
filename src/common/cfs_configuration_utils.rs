@@ -1,11 +1,13 @@
+use anyhow::Error;
 use backend_dispatcher::types::{
     bos::session_template::BosSessionTemplate,
     cfs::cfs_configuration_details::ConfigurationDetails,
     cfs::cfs_configuration_response::CfsConfigurationResponse, cfs::session::CfsSessionGetResponse,
     ims::Image,
 };
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::Table;
+use globset::Glob;
 
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
@@ -129,4 +131,52 @@ pub fn print_table_details_struct(
     ]);
 
     println!("{table}");
+}
+
+pub fn filter(
+    cfs_configuration_vec: &mut Vec<CfsConfigurationResponse>,
+    configuration_name_pattern_opt: Option<&str>,
+    limit_number_opt: Option<&u8>,
+    since_opt: Option<NaiveDateTime>,
+    until_opt: Option<NaiveDateTime>,
+) -> Result<Vec<CfsConfigurationResponse>, Error> {
+    log::info!("Filter CFS configurations");
+
+    // Filter CFS configurations based on user input (date range or configuration name)
+    if let (Some(since), Some(until)) = (since_opt, until_opt) {
+        cfs_configuration_vec.retain(|cfs_configuration| {
+            let date = chrono::DateTime::parse_from_rfc3339(&cfs_configuration.last_updated)
+                .unwrap()
+                .naive_utc();
+
+            since <= date && date < until
+        });
+    }
+
+    // Sort by last updated date in ASC order
+    cfs_configuration_vec.sort_by(|cfs_configuration_1, cfs_configuration_2| {
+        cfs_configuration_1
+            .last_updated
+            .cmp(&cfs_configuration_2.last_updated)
+    });
+
+    if let Some(limit_number) = limit_number_opt {
+        // Limiting the number of results to return to client
+
+        *cfs_configuration_vec = cfs_configuration_vec[cfs_configuration_vec
+            .len()
+            .saturating_sub(*limit_number as usize)..]
+            .to_vec();
+    }
+
+    // Filter CFS configurations based on pattern matching
+    if let Some(configuration_name_pattern) = configuration_name_pattern_opt {
+        let glob = Glob::new(configuration_name_pattern)
+            .unwrap()
+            .compile_matcher();
+        cfs_configuration_vec
+            .retain(|cfs_configuration| glob.is_match(cfs_configuration.name.clone()));
+    }
+
+    Ok(cfs_configuration_vec.to_vec())
 }

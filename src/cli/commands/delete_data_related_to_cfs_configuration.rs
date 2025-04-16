@@ -3,13 +3,13 @@ use std::collections::HashMap;
 
 use std::io::{self, Write};
 
+use backend_dispatcher::interfaces::cfs::CfsTrait;
 use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::types::BootParameters;
 use mesa::cfs::component::http_client::v3::types::Component;
-use mesa::cfs::configuration::http_client::v3::types::cfs_configuration_response::CfsConfigurationResponse;
 use mesa::{bos, bss, cfs, ims};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -76,50 +76,31 @@ pub async fn delete_data_related_cfs_configuration(
             .unwrap();
 
     // Get all CFS configurations in CSM
-    let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-        cfs::configuration::http_client::v3::get(
+    let mut cfs_configuration_vec: Vec<
+        backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse,
+    > = backend
+        .get_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            configuration_name_opt.map(|value| value.as_str()),
+            configuration_name_opt,
         )
         .await
         .unwrap();
 
     // Filter CFS configurations related to HSM group, configuration name or configuration name
     // pattern
-    cfs::configuration::utils::filter_2(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        cfs_components.clone(),
+    crate::common::cfs_configuration_utils::filter(
         &mut cfs_configuration_vec,
         configuration_name_pattern.map(|elem| elem.as_str()),
-        &hsm_name_available_vec,
         None,
+        since_opt,
+        until_opt,
     )
-    .await
     .unwrap_or_else(|e| {
         eprintln!("ERROR - {}", e);
         std::process::exit(1);
     });
-
-    // Filter CFS configurations based on user input (date range or configuration name)
-    if let (Some(since), Some(until)) = (since_opt, until_opt) {
-        cfs_configuration_vec.retain(|cfs_configuration| {
-            let date = chrono::DateTime::parse_from_rfc3339(&cfs_configuration.last_updated)
-                .unwrap()
-                .naive_utc();
-
-            since <= date && date < until
-        });
-    } else if let Some(cfs_configuration_name) = configuration_name_opt {
-        cfs_configuration_vec.retain(|cfs_configuration| {
-            cfs_configuration
-                .name
-                .eq_ignore_ascii_case(cfs_configuration_name)
-        });
-    }
 
     // Get list CFS configuration names
     let mut cfs_configuration_name_vec = cfs_configuration_vec

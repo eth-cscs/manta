@@ -83,6 +83,7 @@ minijinja = { version = "2.4.0", features = ["custom_syntax"] }
 uuid = { version = "1.10.0", features = ["fast-rng", "v4"] }
 rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.13.1", default-features = false }
+globset = { version = "0.4.14", default-features = false }
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.
