@@ -25,3 +25,6 @@ install-path = "CARGO_HOME"
 tap = "eth-cscs/homebrew-tap"
 # Publish jobs to run in CI
 publish-jobs = ["homebrew"]
+[dist.github-custom-runners]
+# The GitHub runner to use for the CI jobs (ref: https://github.com/axodotdev/cargo-dist/issues/1760#issuecomment-2769218034)
+global = "ubuntu-latest"
