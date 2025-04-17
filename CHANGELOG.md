@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.69] - 2025-04-17
+
+### Miscellaneous Tasks
+
+- Fix github workflow
+
 ## [1.54.68] - 2025-04-17
 
 ### Miscellaneous Tasks
 
 - Fix github workflow
+- Release manta version 1.54.68
 
 ## [1.54.67] - 2025-04-17
 
