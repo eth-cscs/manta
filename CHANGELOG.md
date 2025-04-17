@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.56] - 2025-04-17
+
+### Bug Fixes
+
+- Update ubuntu image version in github runner for github workflow
+
 ## [1.54.55] - 2025-04-16
 
 ### Miscellaneous Tasks
 
 - Check github workflow
+- Release manta version 1.54.55
 
 ## [1.54.54] - 2025-04-16
 
