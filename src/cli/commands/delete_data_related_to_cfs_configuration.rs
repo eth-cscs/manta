@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
 use mesa::bss::types::BootParameters;
-use mesa::cfs::component::http_client::v3::types::Component;
+use mesa::cfs::component::http_client::v2::types::Component;
 use mesa::{bos, bss, cfs, ims};
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
@@ -39,7 +39,7 @@ pub async fn delete_data_related_cfs_configuration(
     //
     // Get all CFS components in CSM
     let cfs_component_vec_rslt = if let Some(configuration_name) = configuration_name_opt {
-        cfs::component::http_client::v3::get_query(
+        cfs::component::http_client::v2::get_query(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -49,7 +49,7 @@ pub async fn delete_data_related_cfs_configuration(
         )
         .await
     } else {
-        cfs::component::http_client::v3::get_parallel(
+        cfs::component::http_client::v2::get_parallel(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

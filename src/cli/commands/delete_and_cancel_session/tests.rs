@@ -1,6 +1,6 @@
 /* use mesa::cfs::{
     component::http_client::v2::types::{ComponentResponse, StateResponse},
-    session::http_client::v3::types::{
+    session::http_client::v2::types::{
         CfsSessionGetResponse, Configuration, Session, Status, Target,
     },
 }; */
