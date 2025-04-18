@@ -83,7 +83,7 @@ impl SatFile {
                 .unwrap_or(&Vec::new())
                 .iter()
                 .filter_map(|sessiontemplate| match &sessiontemplate.image {
-                    sessiontemplate::Image::ImageRef(name) => Some(name),
+                    sessiontemplate::Image::ImageRef { image_ref: name } => Some(name),
                     sessiontemplate::Image::Ims { ims } => match ims {
                         sessiontemplate::ImsDetails::Name { name } => Some(name),
                         sessiontemplate::ImsDetails::Id { .. } => None,
@@ -131,7 +131,7 @@ pub mod sessiontemplate {
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Image {
         Ims { ims: ImsDetails },
-        ImageRef(String),
+        ImageRef { image_ref: String },
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -173,7 +173,6 @@ pub mod image {
     use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Serialize, Debug)]
-    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Arch {
         #[serde(rename(serialize = "aarch64", deserialize = "aarch64"))]
         Aarch64,
@@ -232,14 +231,14 @@ pub mod image {
     #[derive(Deserialize, Serialize, Debug)]
     pub struct Image {
         pub name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub ref_name: Option<String>,
         #[serde(flatten)]
         pub base_or_ims: BaseOrIms,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub configuration: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub configuration_group_names: Option<Vec<String>>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub ref_name: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub description: Option<String>,
     }
