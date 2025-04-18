@@ -115,7 +115,7 @@ impl SatFile {
                 .unwrap_or(&Vec::new())
                 .iter()
                 .filter_map(|sessiontemplate| match &sessiontemplate.image {
-                    sessiontemplate::Image::ImageRef(name) => Some(name),
+                    sessiontemplate::Image::ImageRef { image_ref } => Some(image_ref),
                     sessiontemplate::Image::Ims { ims } => match ims {
                         sessiontemplate::ImsDetails::Name { name } => Some(name),
                         sessiontemplate::ImsDetails::Id { .. } => None,
@@ -162,7 +162,7 @@ pub mod sessiontemplate {
     #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Image {
         Ims { ims: ImsDetails },
-        ImageRef(String),
+        ImageRef { image_ref: String },
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -272,7 +272,6 @@ pub mod image {
     use serde::{Deserialize, Serialize};
 
     #[derive(Deserialize, Serialize, Debug)]
-    #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
     pub enum Arch {
         #[serde(rename(serialize = "aarch64", deserialize = "aarch64"))]
         Aarch64,
