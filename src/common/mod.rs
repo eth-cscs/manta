@@ -4,6 +4,7 @@ pub mod bos_sessiontemplate_utils;
 pub mod cfs_configuration_utils;
 pub mod cfs_session_utils;
 pub mod cluster_ops;
+pub mod collections;
 pub mod config;
 pub mod hooks;
 pub mod hw_inventory_utils;

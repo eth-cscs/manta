@@ -2,6 +2,7 @@ use backend_dispatcher::{
     contracts::BackendTrait,
     interfaces::{
         bss::BootParametersTrait,
+        commands::CommandsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
         },
@@ -36,8 +37,7 @@ use super::commands::{
     apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file,
     apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
     config_set_site, config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
-    console_cfs_session_image_target_ansible, console_node,
-    delete_data_related_to_cfs_configuration::delete_data_related_cfs_configuration, delete_group,
+    console_cfs_session_image_target_ansible, console_node, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, get_boot_parameters,
     get_cluster, get_configuration, get_hardware_node, get_images, get_kernel_parameters,
     get_nodes, get_session, get_template, migrate_backup, migrate_nodes_between_hsm_groups,
@@ -2163,19 +2163,19 @@ pub async fn process_cli(
                     std::process::exit(1);
                 }
 
-                delete_data_related_cfs_configuration(
-                    &backend,
-                    &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    target_hsm_group_vec,
-                    cfs_configuration_name_opt,
-                    cfs_configuration_name_pattern,
-                    since_opt,
-                    until_opt,
-                    assume_yes,
-                )
-                .await;
+                backend
+                    .i_delete_data_related_to_cfs_configuration(
+                        &shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        target_hsm_group_vec,
+                        cfs_configuration_name_opt,
+                        cfs_configuration_name_pattern,
+                        since_opt,
+                        until_opt,
+                        assume_yes,
+                    )
+                    .await?;
             } else if let Some(cli_delete_images) = cli_delete.subcommand_matches("images") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 

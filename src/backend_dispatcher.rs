@@ -19,6 +19,7 @@ use backend_dispatcher::{
         bos::{ClusterSessionTrait, ClusterTemplateTrait},
         bss::BootParametersTrait,
         cfs::CfsTrait,
+        commands::CommandsTrait,
         get_bos_session_templates::GetTemplatesTrait,
         get_images_and_details::GetImagesAndDetailsTrait,
         hsm::{
@@ -45,6 +46,7 @@ use backend_dispatcher::{
     },
 };
 
+use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
 use StaticBackendDispatcher::*;
 
@@ -818,44 +820,6 @@ impl CfsTrait for StaticBackendDispatcher {
                     name_contains_opt,
                     is_succeded_opt,
                     tags_opt,
-                )
-                .await
-            }
-        }
-    }
-
-    async fn i_delete_and_cancel_session(
-        &self,
-        shasta_token: &str,
-        shasta_base_url: &str,
-        shasta_root_cert: &[u8],
-        hsm_group_available_vec: Vec<String>,
-        cfs_session_name: &str,
-        dry_run: bool,
-        assume_yes: bool,
-    ) -> Result<(), Error> {
-        match self {
-            CSM(b) => {
-                b.i_delete_and_cancel_session(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    hsm_group_available_vec,
-                    cfs_session_name,
-                    dry_run,
-                    assume_yes,
-                )
-                .await
-            }
-            OCHAMI(b) => {
-                b.i_delete_and_cancel_session(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    hsm_group_available_vec,
-                    cfs_session_name,
-                    dry_run,
-                    assume_yes,
                 )
                 .await
             }
@@ -1684,6 +1648,90 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
                     shasta_base_url,
                     shasta_root_cert,
                     bos_template_id,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl CommandsTrait for StaticBackendDispatcher {
+    async fn i_delete_and_cancel_session(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        hsm_group_available_vec: Vec<String>,
+        cfs_session_name: &str,
+        dry_run: bool,
+        assume_yes: bool,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.i_delete_and_cancel_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    cfs_session_name,
+                    dry_run,
+                    assume_yes,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.i_delete_and_cancel_session(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_group_available_vec,
+                    cfs_session_name,
+                    dry_run,
+                    assume_yes,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn i_delete_data_related_to_cfs_configuration(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        hsm_name_available_vec: Vec<String>,
+        configuration_name_opt: Option<&String>,
+        configuration_name_pattern: Option<&String>,
+        since_opt: Option<NaiveDateTime>,
+        until_opt: Option<NaiveDateTime>,
+        assume_yes: bool,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.i_delete_data_related_to_cfs_configuration(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_name_available_vec,
+                    configuration_name_opt,
+                    configuration_name_pattern,
+                    since_opt,
+                    until_opt,
+                    assume_yes,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.i_delete_data_related_to_cfs_configuration(
+                    shasta_token,
+                    shasta_base_url,
+                    shasta_root_cert,
+                    hsm_name_available_vec,
+                    configuration_name_opt,
+                    configuration_name_pattern,
+                    since_opt,
+                    until_opt,
+                    assume_yes,
                 )
                 .await
             }

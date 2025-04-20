@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::cfs::CfsTrait;
+use backend_dispatcher::interfaces::commands::CommandsTrait;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
