@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.123] - 2025-04-20
+
+### Features
+
+- Add new interactive command function to delete data related to a configuration
+- Improve async code
+- Rollback to CFS v2
+
+### Miscellaneous Tasks
+
+- Refactor code
+
 ## [1.54.1-beta.122] - 2025-04-18
 
 ### Bug Fixes
 
 - Sat file schema compatibility
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.122
 
 ## [1.54.1-beta.121] - 2025-04-18
 
