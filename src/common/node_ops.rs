@@ -1,6 +1,3 @@
-#[cfg(test)]
-pub mod tests;
-
 use std::collections::HashMap;
 
 use backend_dispatcher::{
