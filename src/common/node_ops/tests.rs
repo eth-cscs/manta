@@ -1,5 +1,3 @@
-use crate::common::node_ops::get_xname_from_user_nid_expression;
-
 #[test]
 fn test_get_xname_from_user_nid_expression() {
     let user_input_nid = "nid000001,  nid000002";
