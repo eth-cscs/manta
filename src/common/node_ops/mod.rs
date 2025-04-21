@@ -10,7 +10,7 @@ use backend_dispatcher::{
 };
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
-use mesa::{bss::types::BootParameters, node::types::NodeDetails};
+use mesa::node::types::NodeDetails;
 use regex::Regex;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
