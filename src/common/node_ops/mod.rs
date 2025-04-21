@@ -493,14 +493,6 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
     println!("{table}");
 }
 
-pub fn nodes_to_string_format_one_line(nodes: Option<&Vec<String>>) -> String {
-    if let Some(nodes_content) = nodes {
-        nodes_to_string_format_discrete_columns(nodes, nodes_content.len() + 1)
-    } else {
-        "".to_string()
-    }
-}
-
 pub fn nodes_to_string_format_discrete_columns(
     nodes: Option<&Vec<String>>,
     num_columns: usize,
@@ -528,21 +520,4 @@ pub fn nodes_to_string_format_discrete_columns(
     }
 
     members
-}
-
-/// Given a list of boot params, this function returns the list of hosts booting an image_id
-pub fn get_node_vec_booting_image(
-    image_id: &str,
-    boot_param_vec: &[BootParameters],
-) -> Vec<String> {
-    let mut node_booting_image_vec = boot_param_vec
-        .iter()
-        .cloned()
-        .filter(|boot_param| boot_param.get_boot_image().eq(image_id))
-        .flat_map(|boot_param| boot_param.hosts)
-        .collect::<Vec<_>>();
-
-    node_booting_image_vec.sort();
-
-    node_booting_image_vec
 }
