@@ -1,7 +1,7 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        audit::Audit, jwt_ops, kafka::Kafka, node_ops::resolve_node_list_user_input_to_xname_2,
+        self, audit::Audit, jwt_ops, kafka::Kafka, node_ops::from_hosts_expression_to_xname_vec,
     },
 };
 use backend_dispatcher::{
@@ -20,7 +20,7 @@ pub async fn exec(
     backend: StaticBackendDispatcher,
     shasta_token: &str,
     kernel_params: &str,
-    node_expression: &str,
+    hosts_expression: &str,
     assume_yes: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
@@ -28,41 +28,27 @@ pub async fn exec(
     log::info!("Add kernel parameters");
 
     // Convert user input to xname
-    let xname_available_vec: Vec<String> = backend
-        .get_group_available(shasta_token)
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
         .await
         .unwrap_or_else(|e| {
-            eprintln!(
-                "ERROR - Could not get group list. Reason:\n{}",
-                e.to_string()
-            );
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
             std::process::exit(1);
-        })
-        .iter()
-        .flat_map(|group| group.get_members())
-        .collect();
+        });
 
-    let node_metadata_vec: Vec<Component> = backend
-        .get_all_nodes(shasta_token, Some("true"))
-        .await
-        .unwrap()
-        .components
-        .unwrap_or_default()
-        .iter()
-        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
-        .cloned()
-        .collect();
-
-    let xname_vec =
-        resolve_node_list_user_input_to_xname_2(node_expression, false, node_metadata_vec)
-            .await
-            .unwrap_or_else(|e| {
-                eprintln!(
-                    "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-                    e
-                );
-                std::process::exit(1);
-            });
+    let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
+        false,
+        node_metadata_available_vec,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
 
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
@@ -159,7 +145,6 @@ pub async fn exec(
             &backend,
             shasta_token,
             &xname_to_reboot_vec.join(","),
-            false,
             true,
             assume_yes,
             "table",

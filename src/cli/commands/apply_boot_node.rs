@@ -24,7 +24,7 @@ pub async fn exec(
     new_boot_image_configuration_opt: Option<&String>,
     new_runtime_configuration_opt: Option<&String>,
     new_kernel_parameters_opt: Option<&String>,
-    hosts_string: &str,
+    hosts_expression: &str,
     assume_yes: bool,
     do_not_reboot: bool,
     dry_run: bool,
@@ -33,35 +33,18 @@ pub async fn exec(
     let mut need_restart = false;
 
     // Convert user input to xname
-    let xname_available_vec: Vec<String> = backend
-        .get_group_available(shasta_token)
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
         .await
         .unwrap_or_else(|e| {
-            eprintln!(
-                "ERROR - Could not get group list. Reason:\n{}",
-                e.to_string()
-            );
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
             std::process::exit(1);
-        })
-        .iter()
-        .flat_map(|group| group.get_members())
-        .collect();
+        });
 
-    let node_metadata_vec: Vec<Component> = backend
-        .get_all_nodes(shasta_token, Some("true"))
-        .await
-        .unwrap()
-        .components
-        .unwrap_or_default()
-        .iter()
-        .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
-        .cloned()
-        .collect();
-
-    let xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
-        hosts_string,
+    let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
         false,
-        node_metadata_vec,
+        node_metadata_available_vec,
     )
     .await
     .unwrap_or_else(|e| {
@@ -331,7 +314,6 @@ pub async fn exec(
                 &backend,
                 shasta_token,
                 &nodes.join(","),
-                false,
                 true,
                 assume_yes,
                 "table",

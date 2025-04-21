@@ -1,4 +1,7 @@
-use backend_dispatcher::types::{K8sAuth, K8sDetails};
+use backend_dispatcher::{
+    interfaces::hsm::component::ComponentTrait,
+    types::{K8sAuth, K8sDetails},
+};
 use futures::StreamExt;
 
 use mesa::node::{self, console};
@@ -22,12 +25,18 @@ pub async fn exec(
     k8s: &K8sDetails,
 ) {
     // Convert user input to xname
-    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
-        backend,
-        shasta_token,
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
+    let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
         xname,
         false,
-        false,
+        node_metadata_available_vec,
     )
     .await
     .unwrap_or_else(|e| {

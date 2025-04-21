@@ -1,3 +1,5 @@
+use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
+
 use crate::{backend_dispatcher::StaticBackendDispatcher, common};
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
@@ -7,21 +9,26 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     // mut node_list: Vec<String>,
-    hosts_string: &str,
+    hosts_expression: &str,
     is_include_siblings: bool,
     silent_nid: bool,
     silent_xname: bool,
     output_opt: Option<&String>,
     status: bool,
-    is_regex: bool,
 ) {
     // Convert user input to xname
-    let mut node_list = common::node_ops::resolve_node_list_user_input_to_xname(
-        backend,
-        shasta_token,
-        hosts_string,
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
+    let mut node_list = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
         is_include_siblings,
-        is_regex,
+        node_metadata_available_vec,
     )
     .await
     .unwrap_or_else(|e| {

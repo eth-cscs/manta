@@ -8,50 +8,32 @@ use backend_dispatcher::types::Component;
 use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::theme::ColorfulTheme;
 
+/// Creates a group of nodes. It is allowed to create a group with no nodes.
 pub async fn exec(
     backend: StaticBackendDispatcher,
     auth_token: &str,
     label: &str,
     description: Option<&String>,
-    node_expression: Option<&String>,
+    hosts_expression_opt: Option<&String>,
     assume_yes: bool,
     dryrun: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
-    let xname_vec_opt: Option<Vec<String>> = match node_expression {
-        Some(node_expression) => {
+    let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
+        Some(hosts_expression) => {
             // Convert user input to xname
-            let xname_available_vec: Vec<String> = backend
-                .get_group_available(auth_token)
+            let node_metadata_available_vec = backend
+                .get_node_metadata_available(auth_token)
                 .await
                 .unwrap_or_else(|e| {
-                    eprintln!(
-                        "ERROR - Could not get group list. Reason:\n{}",
-                        e.to_string()
-                    );
+                    eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
                     std::process::exit(1);
-                })
-                .iter()
-                .flat_map(|group| group.get_members())
-                .collect();
+                });
 
-            let node_metadata_vec: Vec<Component> = backend
-                .get_all_nodes(auth_token, Some("true"))
-                .await
-                .unwrap()
-                .components
-                .unwrap_or_default()
-                .iter()
-                .filter(|&node_metadata| {
-                    xname_available_vec.contains(&node_metadata.id.as_ref().unwrap())
-                })
-                .cloned()
-                .collect();
-
-            let xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
-                node_expression,
+            let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+                hosts_expression,
                 false,
-                node_metadata_vec,
+                node_metadata_available_vec,
             )
             .await
             .unwrap_or_else(|e| {

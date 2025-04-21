@@ -1,4 +1,7 @@
-use backend_dispatcher::interfaces::{hsm::group::GroupTrait, pcs::PCSTrait};
+use backend_dispatcher::interfaces::{
+    hsm::{component::ComponentTrait, group::GroupTrait},
+    pcs::PCSTrait,
+};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{
@@ -9,8 +12,7 @@ use crate::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    hosts_string: &str,
-    is_regex: bool,
+    hosts_expression: &str,
     force: bool,
     assume_yes: bool,
     output: &str,
@@ -19,12 +21,18 @@ pub async fn exec(
     // Filter xnames to the ones members to HSM groups the user has access to
     //
     // Convert user input to xname
-    let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname(
-        backend,
-        shasta_token,
-        hosts_string,
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
+    let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
         false,
-        is_regex,
+        node_metadata_available_vec,
     )
     .await
     .unwrap_or_else(|e| {
@@ -34,49 +42,6 @@ pub async fn exec(
         );
         std::process::exit(1);
     });
-
-    /* // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
-    let mut xname_vec = if is_user_input_nids(hosts_string) {
-        log::debug!("User input seems to be NID");
-        backend
-            .nid_to_xname(shasta_token, hosts_string, is_regex)
-            .await
-            .expect("Could not convert NID to XNAME")
-        /* common::node_ops::nid_to_xname(
-            shasta_base_url,
-            shasta_token,
-            shasta_root_cert,
-            hosts_string,
-            is_regex,
-        )
-        .await
-        .expect("Could not convert NID to XNAME") */
-    } else {
-        log::debug!("User input seems to be XNAME");
-        let hsm_group_summary: HashMap<String, Vec<String>> = if is_regex {
-            common::node_ops::get_curated_hsm_group_from_xname_regex(
-                backend,
-                shasta_token,
-                /* shasta_base_url,
-                shasta_root_cert, */
-                &hosts_string,
-            )
-            .await
-        } else {
-            // Get HashMap with HSM groups and members curated for this request.
-            // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
-            // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
-            // hostlist have been removed
-            common::node_ops::get_curated_hsm_group_from_xname_hostlist(
-                backend,
-                shasta_token,
-                &hosts_string,
-            )
-            .await
-        };
-
-        hsm_group_summary.values().flatten().cloned().collect()
-    }; */
 
     if xname_vec.is_empty() {
         eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");

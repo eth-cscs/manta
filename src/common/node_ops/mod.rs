@@ -120,7 +120,7 @@ pub async fn get_xname_from_xname_regex(
 /// a host expression is a comma separated list of NIDs or XNAMEs, a regex or a hostlist
 /// NOTE: regex expressions needs to be compared/filtered with a list of nodes available to the user
 /// NOTE: user can provice a host expression and expand the list to all siblings
-pub async fn resolve_node_list_user_input_to_xname_2(
+pub async fn from_hosts_expression_to_xname_vec(
     user_input: &str,
     is_include_siblings: bool,
     node_metadata_available_vec: Vec<Component>,
@@ -220,7 +220,7 @@ pub async fn resolve_node_list_user_input_to_xname_2(
     Ok(xname_vec)
 }
 
-pub async fn resolve_node_list_user_input_to_xname(
+/* pub async fn resolve_node_list_user_input_to_xname(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     user_input: &str,
@@ -306,7 +306,7 @@ pub async fn resolve_node_list_user_input_to_xname(
     };
 
     Ok(xname_vec)
-}
+} */
 
 /// Get list of nids from a list of user expressions related to NIDs
 /// A user expressions related to NID can be:

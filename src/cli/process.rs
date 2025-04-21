@@ -274,8 +274,6 @@ pub async fn process_cli(
                         .get_one::<bool>("graceful")
                         .expect("The 'graceful' argument must have a value");
 
-                    let is_regex = *cli_power_off_node.get_one::<bool>("regex").unwrap_or(&true);
-
                     let assume_yes: bool = cli_power_off_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_off_node.get_one::<String>("output").unwrap();
@@ -284,7 +282,6 @@ pub async fn process_cli(
                         &backend,
                         &shasta_token,
                         xname_requested,
-                        is_regex,
                         *force,
                         assume_yes,
                         output,
@@ -344,10 +341,6 @@ pub async fn process_cli(
                         .get_one::<bool>("graceful")
                         .expect("The 'graceful' argument must have a value");
 
-                    let is_regex = *cli_power_reset_node
-                        .get_one::<bool>("regex")
-                        .unwrap_or(&true);
-
                     let assume_yes: bool = cli_power_reset_node.get_flag("assume-yes");
 
                     let output: &str = cli_power_reset_node.get_one::<String>("output").unwrap();
@@ -356,7 +349,6 @@ pub async fn process_cli(
                         &backend,
                         &shasta_token,
                         xname_requested,
-                        is_regex,
                         *force,
                         assume_yes,
                         output,
@@ -512,52 +504,6 @@ pub async fn process_cli(
                     create_hsm_group,
                 )
                 .await;
-            } else if let Some(cli_add_boot_parameters) =
-                cli_add.subcommand_matches("boot-parameters")
-            {
-                let shasta_token = backend.get_api_token(&site_name).await?;
-
-                let hosts: &String = cli_add_boot_parameters
-                    .get_one("hosts")
-                    .expect("ERROR - 'hosts' argument is mandatory");
-
-                // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-                // using the nids or macs
-
-                // let nids: Option<&String> = cli_add_boot_parameters.get_one("nids");
-                // let macs: Option<&String> = cli_add_boot_parameters.get_one("macs");
-                let params: Option<&String> = cli_add_boot_parameters.get_one("params");
-                let kernel: Option<&String> = cli_add_boot_parameters.get_one("kernel");
-                let initrd: Option<&String> = cli_add_boot_parameters.get_one("initrd");
-                let xname_vec = hosts
-                    .split(",")
-                    .map(|value| value.trim().to_string())
-                    .collect();
-
-                // Validate user has access to the list of xnames requested
-                validate_target_hsm_members(&backend, &shasta_token, &xname_vec).await;
-
-                let result = add_boot_parameters::exec(
-                    &backend,
-                    &shasta_token,
-                    hosts,
-                    // nids,
-                    None,
-                    // macs,
-                    None,
-                    params,
-                    kernel,
-                    initrd,
-                    kafka_audit_opt,
-                )
-                .await;
-
-                match result {
-                    Ok(_) => {}
-                    Err(error) => eprintln!("{}", error),
-                }
-
-                println!("Boot parameters added to hosts '{}'", hosts);
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {
@@ -1060,8 +1006,6 @@ pub async fn process_cli(
 
                 let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
 
-                let is_regex = *cli_get_nodes.get_one::<bool>("regex").unwrap_or(&true);
-
                 let nids_only = cli_get_nodes
                     .get_one::<bool>("nids-only-one-line")
                     .unwrap_or(&false);
@@ -1081,7 +1025,6 @@ pub async fn process_cli(
                     false,
                     output,
                     status,
-                    is_regex,
                 )
                 .await;
             } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
@@ -2251,13 +2194,10 @@ pub async fn process_cli(
                 .get_one::<String>("group")
                 .expect("Error - target cluster is mandatory");
 
-            let is_regex = *cli_add_nodes.get_one::<bool>("regex").unwrap_or(&true);
-
             add_nodes_to_hsm_groups::exec(
                 &backend,
                 &shasta_token,
                 target_hsm_name,
-                is_regex,
                 nodes,
                 dryrun,
                 kafka_audit_opt,
@@ -2278,13 +2218,10 @@ pub async fn process_cli(
                 .get_one::<String>("group")
                 .expect("Error - target cluster is mandatory");
 
-            let is_regex = *cli_remove_nodes.get_one::<bool>("regex").unwrap_or(&true);
-
             remove_nodes_from_hsm_groups::exec(
                 &backend,
                 &shasta_token,
                 target_hsm_name,
-                is_regex,
                 nodes,
                 dryrun,
                 kafka_audit_opt,

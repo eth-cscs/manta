@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{
@@ -11,18 +11,23 @@ pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     target_hsm_name: &String,
-    is_regex: bool,
-    hosts_string: &str,
+    hosts_expression: &str,
     dryrun: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     // Convert user input to xname
-    let mut xname_to_move_vec = common::node_ops::resolve_node_list_user_input_to_xname(
-        backend,
-        shasta_token,
-        hosts_string,
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
+    let mut xname_to_move_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
         false,
-        is_regex,
+        node_metadata_available_vec,
     )
     .await
     .unwrap_or_else(|e| {
@@ -32,6 +37,11 @@ pub async fn exec(
         );
         std::process::exit(1);
     });
+
+    if xname_to_move_vec.len() != 1 {
+        eprintln!("ERROR - The node to operate is not valid. Nothing to do. Exit");
+        std::process::exit(0);
+    }
 
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();

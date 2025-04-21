@@ -18,7 +18,7 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     group_available_vec: &[Group],
-    user_input: &str,
+    hosts_expression: &str,
     k8s: &K8sDetails,
 ) {
     let node_metadata_available_vec = backend
@@ -29,8 +29,8 @@ pub async fn exec(
             std::process::exit(1);
         });
 
-    let xname_vec_rslt = common::node_ops::resolve_node_list_user_input_to_xname_2(
-        user_input,
+    let xname_vec_rslt = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
         false,
         node_metadata_available_vec,
     )
@@ -48,7 +48,7 @@ pub async fn exec(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
-                    Some(&user_input.to_string()),
+                    Some(&hosts_expression.to_string()),
                     None,
                     None,
                     None,
