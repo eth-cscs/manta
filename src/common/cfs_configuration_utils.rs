@@ -8,7 +8,6 @@ use backend_dispatcher::types::{
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::Table;
 use globset::Glob;
-use mesa::cfs::configuration::http_client::v2::types::cfs_configuration_response::CfsConfigurationResponse as MesaCfsConfigurationResponse;
 
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
