@@ -23,7 +23,7 @@ pub fn build_cli() -> Command {
         .subcommand(subcommand_add_nodes_to_groups())
         .subcommand(subcommand_remove_nodes_from_groups())
     /* .subcommand(subcommand_download_boot_image())
-    .subcommand(subcommand_upload_artifact()) */
+    .subcommand(subcommand_upload_bood_image()) */
 }
 
 pub fn subcommand_config() -> Command {
@@ -967,13 +967,12 @@ pub fn subcommand_remove_nodes_from_groups() -> Command {
 
 pub fn subcommand_download_boot_image() -> Command {
     Command::new("download-boot-image")
-        .about("Download artifact related to a boot image")
+        .about("Downloads a boot image")
         .arg(arg!(<IMAGE_ID> "Image id to download"))
 }
 
-pub fn subcommand_upload_artifact() -> Command {
+pub fn subcommand_upload_boot_image() -> Command {
     Command::new("upload-boot-image")
-        .about("Remove nodes from groups")
-        .about("Download artifact related to a boot image")
-        .arg(arg!(<IMAGE_ID> "Image id to download"))
+        .about("Uploads a boot image")
+        .arg(arg!(<IMAGE_ID> "Image id to upload"))
 }

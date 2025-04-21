@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{
-    error::Error,
-    interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
-    types::Component,
-};
+use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait, types::Component};
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
 use mesa::node::types::NodeDetails;

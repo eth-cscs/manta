@@ -1,4 +1,3 @@
-pub mod add_boot_parameters;
 pub mod add_group;
 pub mod add_hw_component_cluster;
 pub mod add_kernel_parameters;
