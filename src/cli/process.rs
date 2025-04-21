@@ -2096,7 +2096,18 @@ pub async fn process_cli(
 
                 let dry_run: bool = cli_delete_session.get_flag("dry-run");
 
-                crate::cli::commands::delete_and_cancel_session::command::exec(
+                backend
+                    .i_delete_and_cancel_session(
+                        &shasta_token,
+                        shasta_base_url,
+                        shasta_root_cert,
+                        hsm_group_available_vec,
+                        session_name,
+                        dry_run,
+                        assume_yes,
+                    )
+                    .await?;
+                /* crate::cli::commands::delete_and_cancel_session::command::exec(
                     &backend,
                     &shasta_token,
                     shasta_base_url,
@@ -2107,7 +2118,7 @@ pub async fn process_cli(
                     assume_yes,
                     kafka_audit_opt,
                 )
-                .await;
+                .await; */
             } else if let Some(cli_delete_configurations) =
                 cli_delete.subcommand_matches("configurations")
             {
