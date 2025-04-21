@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.124] - 2025-04-21
+
+### Bug Fixes
+
+- Delete and cancel session
+
+### Features
+
+- Update cargo dist configuration to update github runner to ubuntu-22.04
+
+### Miscellaneous Tasks
+
+- Cargo fix
+- Clean code
+- Cargo fix
+- Clean code
+- Clean code
+- Update Cargo.toml
+
+### Refactor
+
+- Merge traits related to BOS
+- Normalize code to convert a hosts expression into a list of xnames
+- Clean code
+- Clean code
+- Clean code
+
+### Shore
+
+- Clean code
+
 ## [1.54.1-beta.123] - 2025-04-20
 
 ### Features
@@ -13,6 +44,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Refactor code
+- Release manta version 1.54.1-beta.123
 
 ## [1.54.1-beta.122] - 2025-04-18
 
