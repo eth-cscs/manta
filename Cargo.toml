@@ -22,7 +22,7 @@ publish = false                                                         # cargo 
 # clap = "*"
 # clap_complete = "*"
 # backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-# # backend-dispatcher = "*"
+# backend-dispatcher = "*"
 # strum = "*"
 # strum_macros = "*"
 
@@ -31,15 +31,15 @@ publish = false                                                         # cargo 
 
 # PROD
 
-backend-dispatcher = "0.1.57"
-ochami-rs = "0.1.59"
-mesa = "0.42.3-beta.94"
+# backend-dispatcher = "0.1.57"
+# ochami-rs = "0.1.59"
+# mesa = "0.42.3-beta.94"
 
 # DEV - Only for development purposes
 
-# backend-dispatcher = { path = "../backend-dispatcher" }
-# ochami-rs = { path = "../ochami-rs" }
-# mesa = { path = "../mesa" }
+backend-dispatcher = { path = "../backend-dispatcher" }
+ochami-rs = { path = "../ochami-rs" }
+mesa = { path = "../mesa" }
 
 # --- END MANTA DEPENDENCIES ---
 

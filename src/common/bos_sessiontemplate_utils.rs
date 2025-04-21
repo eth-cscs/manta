@@ -1,6 +1,5 @@
 use backend_dispatcher::{
-    interfaces::get_bos_session_templates::GetTemplatesTrait,
-    types::bos::session_template::BosSessionTemplate,
+    interfaces::bos::ClusterTemplateTrait, types::bos::session_template::BosSessionTemplate,
 };
 use comfy_table::Table;
 use mesa::{ims, node};
@@ -74,7 +73,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
         .await
         .unwrap(); */
     let bos_sessiontemplate_value_list = backend
-        .get_templates(
+        .get_and_filter_templates(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

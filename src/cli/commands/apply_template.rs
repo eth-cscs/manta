@@ -1,6 +1,6 @@
 use backend_dispatcher::{
     interfaces::{
-        bos::ClusterSessionTrait, get_bos_session_templates::GetTemplatesTrait,
+        bos::{ClusterSessionTrait, ClusterTemplateTrait},
         hsm::group::GroupTrait,
     },
     types::bos::session::{BosSession, Operation},
@@ -29,7 +29,7 @@ pub async fn exec(
     // Get BOS sessiontemplate
     //
     let bos_sessiontemplate_vec_rslt = backend
-        .get_templates(
+        .get_and_filter_templates(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

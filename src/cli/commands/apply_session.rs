@@ -34,7 +34,7 @@ pub async fn exec(
     k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
     let (cfs_configuration_name, cfs_session_name) = backend
-        .apply_session(
+        .i_apply_session(
             gitea_token,
             gitea_base_url,
             shasta_token,

@@ -1,4 +1,4 @@
-use backend_dispatcher::interfaces::get_bos_session_templates::GetTemplatesTrait;
+use backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
 
 use crate::backend_dispatcher::StaticBackendDispatcher;
 
@@ -18,34 +18,8 @@ pub async fn exec(
         hsm_group_name_vec
     );
 
-    /* let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        bos_sessiontemplate_name_opt.map(|value| value.as_str()),
-    )
-    .await;
-
-    let mut bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
-        Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
-        Err(e) => {
-            eprintln!(
-                "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
-                e
-            );
-            std::process::exit(1);
-        }
-    };
-
-    bos::template::utils::filter(
-        &mut bos_sessiontemplate_vec,
-        hsm_group_name_vec,
-        hsm_member_vec,
-        limit_number_opt,
-    ); */
-
     let bos_sessiontemplate_vec_rslt = backend
-        .get_templates(
+        .get_and_filter_templates(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
