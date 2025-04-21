@@ -1,10 +1,7 @@
-use backend_dispatcher::{
-    interfaces::{
+use backend_dispatcher::interfaces::{
         hsm::{component::ComponentTrait, group::GroupTrait},
         pcs::PCSTrait,
-    },
-    types::Component,
-};
+    };
 use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{

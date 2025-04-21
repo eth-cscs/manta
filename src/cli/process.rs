@@ -32,7 +32,7 @@ use crate::{
 };
 
 use super::commands::{
-    self, add_boot_parameters, add_group, add_hw_component_cluster, add_kernel_parameters,
+    self, add_group, add_hw_component_cluster, add_kernel_parameters,
     add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node, apply_ephemeral_env,
     apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file,
     apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,

@@ -8,10 +8,10 @@ use backend_dispatcher::{
     interfaces::{
         bss::BootParametersTrait,
         cfs::CfsTrait,
-        hsm::{component::ComponentTrait, group::GroupTrait},
+        hsm::component::ComponentTrait,
         ims::ImsTrait,
     },
-    types::{BootParameters, Component},
+    types::BootParameters,
 };
 use dialoguer::{theme::ColorfulTheme, Confirm};
 

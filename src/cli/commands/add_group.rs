@@ -4,7 +4,6 @@ use crate::{
     common::{audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka},
 };
 use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
-use backend_dispatcher::types::Component;
 use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::theme::ColorfulTheme;
 

@@ -2,14 +2,14 @@ use backend_dispatcher::{
     error::Error,
     interfaces::{
         bss::BootParametersTrait,
-        hsm::{component::ComponentTrait, group::GroupTrait},
+        hsm::component::ComponentTrait,
     },
-    types::{BootParameters, Component},
+    types::BootParameters,
 };
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{self, node_ops::from_hosts_expression_to_xname_vec},
+    common::{self},
 };
 
 pub async fn exec(

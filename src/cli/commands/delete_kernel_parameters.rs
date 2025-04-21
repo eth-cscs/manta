@@ -4,14 +4,14 @@ use backend_dispatcher::{
         bss::BootParametersTrait,
         hsm::{component::ComponentTrait, group::GroupTrait},
     },
-    types::{self, Component},
+    types::{self},
 };
 use dialoguer::theme::ColorfulTheme;
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     common::{
-        self, audit::Audit, jwt_ops, kafka::Kafka, node_ops::from_hosts_expression_to_xname_vec,
+        self, audit::Audit, jwt_ops, kafka::Kafka,
     },
 };
 

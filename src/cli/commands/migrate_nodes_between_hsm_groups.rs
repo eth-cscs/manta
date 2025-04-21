@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{audit::Audit, jwt_ops, kafka::Kafka},
+    common::{self, audit::Audit, jwt_ops, kafka::Kafka},
 };
 
 pub async fn exec(
@@ -12,29 +12,60 @@ pub async fn exec(
     shasta_token: &str,
     target_hsm_name_vec: &Vec<String>,
     parent_hsm_name_vec: &Vec<String>,
-    xname_requested_hostlist: &str,
+    hosts_expression: &str,
     nodryrun: bool,
     create_hsm_group: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
     // Filter xnames to the ones members to HSM groups the user has access to
     //
+    // Convert user input to xname
+    let node_metadata_available_vec = backend
+        .get_node_metadata_available(shasta_token)
+        .await
+        .unwrap_or_else(|e| {
+            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
+            std::process::exit(1);
+        });
+
+    let mut xname_to_move_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+        hosts_expression,
+        false,
+        node_metadata_available_vec,
+    )
+    .await
+    .unwrap_or_else(|e| {
+        eprintln!(
+            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+            e
+        );
+        std::process::exit(1);
+    });
+
+    if xname_to_move_vec.is_empty() {
+        eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");
+        std::process::exit(0);
+    }
+
+    xname_to_move_vec.sort();
+    xname_to_move_vec.dedup();
+
     // Get HashMap with HSM groups and members curated for this request.
     // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within
     // the hostlist input. Also, each HSM goup member list is also curated so xnames not in
     // hostlist have been removed
     let mut hsm_group_summary: HashMap<String, Vec<String>> =
-        crate::common::node_ops::get_curated_hsm_group_from_xname_hostlist(
+        common::node_ops::get_curated_hsm_group_from_xname_hostlist(
             backend,
             shasta_token,
-            xname_requested_hostlist,
+            &xname_to_move_vec,
         )
         .await;
 
     // Keep HSM groups based on list of parent HSM groups provided
     hsm_group_summary.retain(|hsm_name, _xname_vec| parent_hsm_name_vec.contains(hsm_name));
 
-    // Get list of xnames available
+    /* // Get list of xnames available
     let mut xname_to_move_vec: Vec<&String> = hsm_group_summary
         .iter()
         .flat_map(|(_hsm_group_name, hsm_group_members)| hsm_group_members)
@@ -47,7 +78,7 @@ pub async fn exec(
     if xname_to_move_vec.is_empty() {
         println!("No hosts to move. Exit");
         std::process::exit(0);
-    }
+    } */
 
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
