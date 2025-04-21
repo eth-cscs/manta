@@ -1,13 +1,11 @@
-use anyhow::Error;
 use backend_dispatcher::types::{
     bos::session_template::BosSessionTemplate,
     cfs::cfs_configuration_details::ConfigurationDetails,
     cfs::cfs_configuration_response::CfsConfigurationResponse, cfs::session::CfsSessionGetResponse,
     ims::Image,
 };
-use chrono::{DateTime, Local, NaiveDateTime};
+use chrono::{DateTime, Local};
 use comfy_table::Table;
-use globset::Glob;
 
 pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
     let mut table = Table::new();
