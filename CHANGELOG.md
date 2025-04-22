@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.127] - 2025-04-22
+
+### Bug Fixes
+
+- Github pipeline
+- Command 'apply sat-file' ignoring flag --dry-run when creating an IMS job
+- Command 'apply sat-file' not filtering configurations properly with flag --sessiontemplate-only used
+
 ## [1.54.1-beta.126] - 2025-04-22
 
 ### Bug Fixes
 
 - Github pipeline
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.126
 
 ## [1.54.1-beta.125] - 2025-04-22
 
@@ -922,20 +934,12 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Release manta version 1.54.1-beta.47
 - Release manta version 1.54.1-beta.48
 
 ### Refactor
 
 - Hsm hardware inventory
-
-## [1.54.1-beta.47] - 2025-02-01
-
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.47
-
-### Refactor
-
 - Hsm hardware inventory
 - Hsm hardware inventory
 
@@ -1087,16 +1091,6 @@ All notable changes to this project will be documented in this file.
 
 ## [1.54.1-beta.34] - 2025-01-23
 
-### Features
-
-- Migrate code related to translate nid to xnames to bakcends
-
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.34
-
-## [1.54.1-beta.33] - 2025-01-23
-
 ### Bug Fixes
 
 - Power management operations exit if list of nodes after expanding user input is empty
@@ -1105,10 +1099,12 @@ All notable changes to this project will be documented in this file.
 
 - Power commands now accepts nid nodes
 - Upgrade github pipeline
+- Migrate code related to translate nid to xnames to bakcends
 
 ### Miscellaneous Tasks
 
 - Release manta version 1.54.1-beta.33
+- Release manta version 1.54.1-beta.34
 
 ## [1.54.1-beta.32] - 2025-01-20
 
