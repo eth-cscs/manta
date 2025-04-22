@@ -1290,6 +1290,50 @@ impl ImsTrait for StaticBackendDispatcher {
             }
         }
     }
+
+    async fn get_all_images(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+    ) -> Result<Vec<Image>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_all_images(shasta_token, shasta_base_url, shasta_root_cert)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_all_images(shasta_token, shasta_base_url, shasta_root_cert)
+                    .await
+            }
+        }
+    }
+
+    fn filter_images(&self, image_vec: &mut Vec<Image>) -> Result<(), Error> {
+        match self {
+            CSM(b) => b.filter_images(image_vec),
+            OCHAMI(b) => b.filter_images(image_vec),
+        }
+    }
+
+    async fn delete_image(
+        &self,
+        shasta_token: &str,
+        shasta_base_url: &str,
+        shasta_root_cert: &[u8],
+        image_id: &str,
+    ) -> Result<(), Error> {
+        match self {
+            CSM(b) => {
+                b.delete_image(shasta_token, shasta_base_url, shasta_root_cert, image_id)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.delete_image(shasta_token, shasta_base_url, shasta_root_cert, image_id)
+                    .await
+            }
+        }
+    }
 }
 
 impl ApplySessionTrait for StaticBackendDispatcher {

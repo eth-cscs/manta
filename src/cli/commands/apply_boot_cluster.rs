@@ -22,12 +22,19 @@ pub async fn exec(
     dry_run: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) {
-    let xname_vec = backend
+    let xname_vec_rslt = backend
         .get_member_vec_from_group_name_vec(shasta_token, vec![hsm_group_name.to_string()])
-        .await
-        .unwrap();
+        .await;
 
-    apply_boot_node::exec(
+    let xname_vec = match xname_vec_rslt {
+        Ok(xname_vec) => xname_vec,
+        Err(e) => {
+            eprintln!("Failed to get xnames from HSM group: {:?}", e);
+            return;
+        }
+    };
+
+    let result = apply_boot_node::exec(
         &backend,
         shasta_token,
         shasta_base_url,
@@ -43,4 +50,9 @@ pub async fn exec(
         kafka_audit_opt,
     )
     .await;
+
+    if result.is_err() {
+        eprintln!("Failed to apply boot node: {:?}", result);
+        return;
+    }
 }

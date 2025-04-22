@@ -175,7 +175,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
         .await
         .unwrap();
 
-    get_image_id_from_cfs_session_list(
+    get_image_id_from_cfs_session_and_cfs_configuration(
         backend,
         shasta_token,
         shasta_base_url,
@@ -186,7 +186,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     .await
 }
 
-pub async fn get_image_id_from_cfs_session_list(
+pub async fn get_image_id_from_cfs_session_and_cfs_configuration(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
     shasta_base_url: &str,
@@ -207,8 +207,6 @@ pub async fn get_image_id_from_cfs_session_list(
 
     // Find image in CFS sessions
     for cfs_session in cfs_session_image_succeeded {
-        log::debug!("CFS session details:\n{:#?}", cfs_session);
-
         let cfs_session_name = cfs_session.name.as_ref().unwrap();
 
         let image_id = cfs_session.get_first_result_id().unwrap();

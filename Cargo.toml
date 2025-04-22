@@ -31,9 +31,9 @@ publish = false                                                         # cargo 
 
 # PROD
 
-backend-dispatcher = "0.1.58"
-ochami-rs = "0.1.61"
-mesa = "0.42.3-beta.97"
+backend-dispatcher = "0.1.60"
+ochami-rs = "0.1.62"
+mesa = "0.42.3-beta.98"
 
 # DEV - Only for development purposes
 
@@ -47,7 +47,7 @@ hostlist-parser = "0.1.6"
 strum = "0.25.0"
 strum_macros = "0.25"
 chrono = { version = "0.4.31", default-features = false }
-anyhow = { version = "1.0.44", default-features = false }
+anyhow = { version = "1.0.44" }
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls", "socks"] }
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0"

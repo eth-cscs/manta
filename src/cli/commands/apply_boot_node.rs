@@ -1,15 +1,13 @@
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
     cli::commands::power_reset_nodes,
-    common::{self, ims_ops::get_image_id_from_cfs_configuration_name, kafka::Kafka},
+    common::{self, ims_ops::get_image_vec_related_cfs_configuration_name, kafka::Kafka},
 };
 
+use anyhow::Error;
 use backend_dispatcher::{
     interfaces::{
-        bss::BootParametersTrait,
-        cfs::CfsTrait,
-        hsm::component::ComponentTrait,
-        ims::ImsTrait,
+        bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait, ims::ImsTrait,
     },
     types::BootParameters,
 };
@@ -29,64 +27,28 @@ pub async fn exec(
     do_not_reboot: bool,
     dry_run: bool,
     kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
     let mut need_restart = false;
 
     // Convert user input to xname
-    let node_metadata_available_vec = backend
-        .get_node_metadata_available(shasta_token)
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
-            std::process::exit(1);
-        });
+    let node_metadata_available_vec = backend.get_node_metadata_available(shasta_token).await?;
 
     let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
         hosts_expression,
         false,
         node_metadata_available_vec,
     )
-    .await
-    .unwrap_or_else(|e| {
-        eprintln!(
-            "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-            e
-        );
-        std::process::exit(1);
-    });
+    .await?;
 
     // Check new configuration exists and exit otherwise
-    let runtime_configuration_detail_list_rslt = backend
+    let _ = backend
         .get_configuration(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
             new_runtime_configuration_opt,
         )
-        .await;
-
-    if runtime_configuration_detail_list_rslt.is_err()
-        || runtime_configuration_detail_list_rslt.unwrap().is_empty()
-    {
-        eprintln!(
-            "Runtime configuration '{}' does not exists. Exit",
-            new_runtime_configuration_opt.unwrap()
-        );
-        std::process::exit(1);
-    }
-
-    // Get current node boot params
-    /* let mut current_node_boot_param_vec: Vec<BootParameters> = bss::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &xname_vec
-            .iter()
-            .map(|xname| xname.to_string())
-            .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap(); */
+        .await?;
 
     let mut current_node_boot_param_vec: Vec<BootParameters> = backend
         .get_bootparameters(
@@ -106,23 +68,16 @@ pub async fn exec(
                 "Boot configuration '{}' provided",
                 new_boot_image_configuration
             );
-            let new_boot_image_id_opt = get_image_id_from_cfs_configuration_name(
+            let mut image_vec = get_image_vec_related_cfs_configuration_name(
                 backend,
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
                 new_boot_image_configuration.to_string(),
             )
-            .await;
+            .await?;
 
-            if new_boot_image_id_opt.is_some() {
-                println!(
-                    "Image related to configuration '{}' found.",
-                    new_boot_image_configuration,
-                );
-            }
-
-            if new_boot_image_id_opt == None {
+            if image_vec.is_empty() {
                 eprintln!(
                     "ERROR - Could not find boot image related to configuration '{}'",
                     new_boot_image_configuration
@@ -130,7 +85,18 @@ pub async fn exec(
                 std::process::exit(1);
             }
 
-            new_boot_image_id_opt
+            backend.filter_images(&mut image_vec)?;
+
+            let most_recent_image_related_to_cfs_configuration = image_vec.iter().last().unwrap();
+
+            let image_id = most_recent_image_related_to_cfs_configuration.id.clone();
+
+            println!(
+                "Boot image id related to configuration '{}' found\n{:#?}",
+                new_boot_image_configuration, image_id
+            );
+
+            image_id
         } else if let Some(boot_image_id) = new_boot_image_id_opt {
             log::info!("Boot image id '{}' provided", boot_image_id);
             // Check image id exists
@@ -148,9 +114,9 @@ pub async fn exec(
                     shasta_root_cert,
                     new_boot_image_id_opt.map(|image_id| image_id.as_str()),
                 )
-                .await;
+                .await?;
 
-            if image_id_in_csm.is_err() {
+            if image_id_in_csm.is_empty() {
                 eprintln!("ERROR - boot image id '{}' not found", boot_image_id);
                 std::process::exit(1);
             }
@@ -250,18 +216,13 @@ pub async fn exec(
 
     if dry_run {
         println!("Dry-run enabled. No changes persisted into the system");
+        println!("New boot parameters:\n{:#?}", current_node_boot_param_vec);
+        Ok(())
     } else {
         log::info!("Persist changes");
 
         // Update boot params
         for boot_parameter in current_node_boot_param_vec {
-            /* let component_patch_rep = bss::http_client::patch(
-                shasta_base_url,
-                shasta_token,
-                shasta_root_cert,
-                &boot_parameter,
-            )
-            .await; */
             let component_patch_rep = backend
                 .update_bootparameters(
                     // shasta_base_url,
@@ -319,7 +280,9 @@ pub async fn exec(
                 "table",
                 kafka_audit_opt,
             )
-            .await
+            .await;
         }
+
+        Ok(())
     }
 }

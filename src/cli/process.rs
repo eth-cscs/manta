@@ -32,11 +32,11 @@ use crate::{
 };
 
 use super::commands::{
-    self, add_group, add_hw_component_cluster, add_kernel_parameters,
-    add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node, apply_ephemeral_env,
-    apply_hw_cluster_pin, apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file,
-    apply_session, apply_template, config_set_hsm, config_set_log, config_set_parent_hsm,
-    config_set_site, config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
+    self, add_group, add_hw_component_cluster, add_kernel_parameters, add_nodes_to_hsm_groups,
+    apply_boot_cluster, apply_boot_node, apply_ephemeral_env, apply_hw_cluster_pin,
+    apply_hw_cluster_unpin, apply_kernel_parameters, apply_sat_file, apply_session, apply_template,
+    config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site, config_show,
+    config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
     console_cfs_session_image_target_ansible, console_node, delete_group,
     delete_hw_component_cluster, delete_image, delete_kernel_parameters, get_boot_parameters,
     get_cluster, get_configuration, get_hardware_node, get_images, get_kernel_parameters,
@@ -1563,7 +1563,7 @@ pub async fn process_cli(
 
                     let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
 
-                    apply_boot_node::exec(
+                    let result = apply_boot_node::exec(
                         &backend,
                         &shasta_token,
                         shasta_base_url,
@@ -1580,6 +1580,11 @@ pub async fn process_cli(
                         kafka_audit_opt,
                     )
                     .await;
+
+                    match result {
+                        Ok(_) => {}
+                        Err(error) => eprintln!("{}", error),
+                    }
                 } else if let Some(cli_apply_boot_cluster) =
                     cli_apply_boot.subcommand_matches("cluster")
                 {
