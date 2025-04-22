@@ -1375,6 +1375,8 @@ pub async fn process_cli(
                 let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
                 let assume_yes: bool = cli_apply_sat_file.get_flag("assume-yes");
 
+                let dry_run: bool = cli_apply_sat_file.get_flag("dry-run");
+
                 let site = configuration
                     .sites
                     .get(&configuration.site.clone())
@@ -1404,7 +1406,7 @@ pub async fn process_cli(
                     cli_apply_sat_file.get_flag("image-only"),
                     cli_apply_sat_file.get_flag("sessiontemplate-only"),
                     true,
-                    false,
+                    dry_run,
                     assume_yes,
                     &site
                         .k8s
@@ -1428,9 +1430,7 @@ pub async fn process_cli(
                     .get_one("include-disabled")
                     .expect("ERROR - include disabled must have a value");
 
-                let dry_run: bool = *cli_apply_template
-                    .get_one("dry-run")
-                    .expect("ERROR - dry-run must have a value");
+                let dry_run: bool = cli_apply_template.get_flag("dry-run");
 
                 apply_template::exec(
                     &backend,
@@ -1747,7 +1747,7 @@ pub async fn process_cli(
             if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                let dry_run: bool = *cli_migrate_nodes.get_one("dry-run").unwrap();
+                let dry_run: bool = cli_migrate_nodes.get_flag("dry-run");
 
                 let from_opt: Option<&String> = cli_migrate_nodes.get_one("from");
                 let to: &String = cli_migrate_nodes

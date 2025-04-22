@@ -52,31 +52,6 @@ impl SatFile {
             let sessiontemplate_vec_opt: Option<&Vec<SessionTemplate>> =
                 self.session_templates.as_ref();
 
-            let configuration_name_sessiontemplate_vec: Vec<String> = match sessiontemplate_vec_opt
-            {
-                Some(sessiontemplate_vec) => sessiontemplate_vec
-                    .iter()
-                    .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
-                    .collect(),
-                None => {
-                    eprintln!("ERROR - 'session_templates' section not defined in SAT file");
-                    std::process::exit(1);
-                }
-            };
-
-            // Remove configurations not used by any sessiontemplate
-
-            if let Some(&[_]) = self.configurations.as_deref() {
-                self.configurations
-                    .as_mut()
-                    .unwrap_or(&mut Vec::new())
-                    .retain(|configuration| {
-                        configuration_name_sessiontemplate_vec.contains(&configuration.name)
-                    })
-            } else {
-                self.configurations = None;
-            }
-
             let image_name_sessiontemplate_vec: Vec<String> = self
                 .session_templates
                 .as_ref()
@@ -100,6 +75,47 @@ impl SatFile {
 
             if self.images.as_ref().is_some_and(|images| images.is_empty()) {
                 self.images = None;
+            }
+
+            // Get configuration names from session templates
+            let configuration_name_sessiontemplate_vec: Vec<String> = match sessiontemplate_vec_opt
+            {
+                Some(sessiontemplate_vec) => sessiontemplate_vec
+                    .iter()
+                    .map(|sat_sessiontemplate| sat_sessiontemplate.configuration.clone())
+                    .collect(),
+                None => {
+                    eprintln!("ERROR - 'session_templates' section not defined in SAT file");
+                    std::process::exit(1);
+                }
+            };
+
+            // Get configuration names from images used by the session templates
+            let configuration_name_image_vec: Vec<String> = self
+                .images
+                .as_ref()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .map(|image| image.configuration.as_ref().unwrap().clone())
+                .collect();
+
+            // Merge configuration names from images and session templates
+            let configuration_to_keep_vec = [
+                configuration_name_image_vec,
+                configuration_name_sessiontemplate_vec,
+            ]
+            .concat();
+
+            // Remove configurations not used by any sessiontemplate or image used by the
+            // sessiontemplate
+
+            if self.configurations.is_some() {
+                self.configurations
+                    .as_mut()
+                    .unwrap_or(&mut Vec::new())
+                    .retain(|configuration| configuration_to_keep_vec.contains(&configuration.name))
+            } else {
+                self.configurations = None;
             }
         }
     }

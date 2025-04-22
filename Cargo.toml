@@ -33,7 +33,7 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 
 backend-dispatcher = "0.1.60"
 ochami-rs = "0.1.62"
-mesa = "0.42.3-beta.98"
+mesa = "0.42.3-beta.99"
 
 # DEV - Only for development purposes
 
