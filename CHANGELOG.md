@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.126] - 2025-04-22
+
+### Bug Fixes
+
+- Github pipeline
+
 ## [1.54.1-beta.125] - 2025-04-22
 
 ### Miscellaneous Tasks
 
 - Update cargo dist configuration
 - Update ubuntu image version (github runner) in github pipeline
+- Release manta version 1.54.1-beta.125
 
 ## [1.54.1-beta.124] - 2025-04-21
 
