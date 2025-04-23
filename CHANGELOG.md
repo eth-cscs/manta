@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.129] - 2025-04-23
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.128] - 2025-04-23
 
 ### Bug Fixes
 
 - Github workload
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.128
 
 ## [1.54.1-beta.127] - 2025-04-22
 
