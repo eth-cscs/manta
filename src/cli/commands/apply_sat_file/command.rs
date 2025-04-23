@@ -42,6 +42,7 @@ pub async fn exec(
     k8s: &K8sDetails,
 ) {
     // Validate Pre-hook
+    log::info!("Validating pre-hook script");
     if prehook.is_some() {
         match crate::common::hooks::check_hook_perms(prehook).await {
             Ok(_r) => println!(
@@ -56,6 +57,7 @@ pub async fn exec(
     }
 
     // Validate Post-hook
+    log::info!("Validating post-hook script");
     if posthook.is_some() {
         match crate::common::hooks::check_hook_perms(posthook).await {
             Ok(_) => println!(
@@ -69,6 +71,7 @@ pub async fn exec(
         };
     }
 
+    log::info!("Render SAT template file");
     let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
         &sat_file_content,
         values_file_content_opt.as_ref(),
@@ -162,8 +165,6 @@ pub async fn exec(
             gitea_token,
             do_not_reboot,
             watch_logs,
-            image_only,
-            session_template_only,
             debug_on_failure,
             dry_run,
         )

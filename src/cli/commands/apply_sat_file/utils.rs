@@ -486,7 +486,8 @@ pub fn render_jinja2_sat_file_yaml(
 
     // Render session values file
     let mut values_file_yaml: Value = if let Some(values_file_content) = values_file_content_opt {
-        log::info!("'Session vars' file provided. Going to process SAT file as a template.");
+        log::info!("'Session vars' file provided. Going to process SAT file as a jinja template.");
+        log::info!("Expand variables in 'session vars' file");
         // Read sesson vars file and parse it to YAML
         let values_file_yaml: Value = serde_yaml::from_str(values_file_content).unwrap();
         // Render session vars file with itself (copying ansible behaviour where the ansible vars
@@ -516,6 +517,7 @@ pub fn render_jinja2_sat_file_yaml(
     }
 
     // render sat template file
+    log::info!("Expand variables in 'SAT file'");
     let sat_file_rendered_rslt = env.render_str(sat_file_content, values_file_yaml);
 
     let sat_file_rendered = match sat_file_rendered_rslt {
