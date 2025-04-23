@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.128] - 2025-04-23
+
+### Bug Fixes
+
+- Github workload
+
 ## [1.54.1-beta.127] - 2025-04-22
 
 ### Bug Fixes
@@ -9,6 +15,10 @@ All notable changes to this project will be documented in this file.
 - Github pipeline
 - Command 'apply sat-file' ignoring flag --dry-run when creating an IMS job
 - Command 'apply sat-file' not filtering configurations properly with flag --sessiontemplate-only used
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.127
 
 ## [1.54.1-beta.126] - 2025-04-22
 
