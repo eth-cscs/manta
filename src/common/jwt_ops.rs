@@ -2,10 +2,6 @@ use backend_dispatcher::error::Error;
 use base64::decode;
 use serde_json::Value;
 
-/* // FIXME: replace Error to my own one
-#[deprecated(
-    note = "Please, avoid using this function, if you need to get the list of HSM groups available to the user, then use `mesa::common::jwt_ops::get_hsm_name_available` because this function has the hack removing system wide hsm group names like alps, aplsm, alpse, etc. If you want the preffereed username, then use `mesa::common::jwt_ops::`mesa::common::jwt_ops::get_preferred_username"
-)] */
 fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
     let base64_claims = token
         .split(' ')
@@ -56,19 +52,3 @@ pub fn get_preferred_username(token: &str) -> Result<String, Error> {
         )),
     }
 }
-
-/* /// Returns the list of available HSM groups in JWT user token. The list is filtered and system HSM
-/// groups (eg alps, alpsm, alpse, etc)
-pub fn get_roles(token: &str) -> Vec<String> {
-    // If JWT does not have `/realm_access/roles` claim, then we will assume, user is admin
-    get_claims_from_jwt_token(token)
-        .unwrap()
-        .pointer("/realm_access/roles")
-        .unwrap_or(&serde_json::json!([]))
-        .as_array()
-        .cloned()
-        .unwrap_or_default()
-        .iter()
-        .map(|role_value| role_value.as_str().unwrap().to_string())
-        .collect()
-} */

@@ -16,7 +16,9 @@ use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use types::{MantaConfiguration, Site};
 
-use crate::common::{audit::Auditor, kafka::Kafka};
+use crate::common::{
+    audit::Auditor, check_network_connectivity::check_network_connectivity_to_backend, kafka::Kafka,
+};
 
 pub fn get_default_config_path() -> PathBuf {
     // XDG Base Directory Specification
@@ -158,12 +160,6 @@ pub async fn get_configuration() -> Config {
 
 pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     eprintln!("Confguration file not found. Please introduce values below:");
-    /* let log: String = Input::new()
-    .with_prompt("Please enter a value for param 'log'")
-    .with_initial_text("error")
-    .show_default(true)
-    .interact_text()
-    .unwrap(); */
 
     let log_level_values = vec!["error", "info", "warning", "debug", "trace"];
 
@@ -177,11 +173,6 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     let log = log_level_values[log_selection].to_string();
 
     let parent_hsm_group = "".to_string();
-
-    /* let mut parent_hsm_group = String::new();
-    print!("Please enter a value for param 'parent_hsm_group': ");
-    let _ = stdout().flush();
-    stdin().read_line(&mut parent_hsm_group).unwrap(); */
 
     let audit_file: String = Input::new()
         .with_prompt("Please type full path for the audit file")
@@ -289,19 +280,12 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     } else {
         None
     };
-    /* let kafka = Some(Kafka {
-        brokers: vec![audit_kafka_brokers],
-        topic: audit_kafka_topic,
-    });
-
-    let auditor = Auditor { kafka }; */
 
     println!("Testing connectivity to CSM backend, please wait ...");
 
-    let test_backend_api =
-        mesa::common::authentication::test_connectivity_to_backend(&shasta_base_url).await;
+    let test_backend_api = check_network_connectivity_to_backend(&shasta_base_url).await;
 
-    let socks5_proxy = if test_backend_api {
+    let socks5_proxy = if test_backend_api.is_ok() {
         println!("This machine can access CSM API, no need to setup SOCKS5 proxy");
         None
     } else {

@@ -514,3 +514,29 @@ pub fn nodes_to_string_format_discrete_columns(
 
     members
 }
+
+pub fn string_vec_to_multi_line_string(nodes: Option<&Vec<String>>, num_columns: usize) -> String {
+    let mut members: String;
+
+    match nodes {
+        Some(nodes) if !nodes.is_empty() => {
+            members = nodes.first().unwrap().to_string(); // take first element
+
+            for (i, _) in nodes.iter().enumerate().skip(1) {
+                // iterate for the rest of the list
+                if i % num_columns == 0 {
+                    // breaking the cell content into multiple lines (only 2 xnames per line)
+
+                    members.push_str(",\n");
+                } else {
+                    members.push(',');
+                }
+
+                members.push_str(&nodes[i]);
+            }
+        }
+        _ => members = "".to_string(),
+    }
+
+    members
+}
