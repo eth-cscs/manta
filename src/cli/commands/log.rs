@@ -104,12 +104,8 @@ pub async fn exec(
         common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
     );
 
-    // FIXME: at this point we are calling a mesa function with CFS sessions from backend. We
-    // need to convert them to mesa CFS sessions
-    // FIXME: convert from CFS session backend to mesa CFS session
     let cfs_session = cfs_sessions_vec.first().unwrap();
 
-    // FIXME: convert from CFS session backend to mesa CFS session
     let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
 
     let group_available_vec: Vec<Group> = group_available_vec

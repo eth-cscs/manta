@@ -20,6 +20,7 @@ use backend_dispatcher::{
         bss::BootParametersTrait,
         cfs::CfsTrait,
         commands::CommandsTrait,
+        console::ConsoleTrait,
         get_images_and_details::GetImagesAndDetailsTrait,
         hsm::{
             component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
@@ -47,6 +48,7 @@ use backend_dispatcher::{
 
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
+use tokio::io::{AsyncRead, AsyncWrite};
 use StaticBackendDispatcher::*;
 
 use mesa::backend_connector::Csm;
@@ -650,6 +652,57 @@ impl BackendTrait for StaticBackendDispatcher {
 impl CfsTrait for StaticBackendDispatcher {
     type T = Pin<Box<dyn AsyncBufRead + Send>>;
 
+    async fn get_session_logs_stream(
+        &self,
+        shasta_token: &str,
+        site_name: &str,
+        cfs_session_name: &str,
+        // k8s_api_url: &str,
+        k8s: &K8sDetails,
+    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_session_logs_stream(
+                    shasta_token,
+                    site_name,
+                    cfs_session_name,
+                    // k8s_api_url,
+                    k8s,
+                )
+                .await
+            }
+            OCHAMI(b) => {
+                b.get_session_logs_stream(
+                    shasta_token,
+                    site_name,
+                    cfs_session_name,
+                    // k8s_api_url,
+                    k8s,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn get_session_logs_stream_by_xname(
+        &self,
+        auth_token: &str,
+        site_name: &str,
+        xname: &str,
+        k8s: &K8sDetails,
+    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
+        match self {
+            CSM(b) => {
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
+                    .await
+            }
+        }
+    }
+
     async fn post_session(
         &self,
         shasta_token: &str,
@@ -1038,57 +1091,6 @@ impl CfsTrait for StaticBackendDispatcher {
             }
             OCHAMI(b) => {
                 b.get_derivatives(auth_token, base_url, root_cert, configuration_name)
-                    .await
-            }
-        }
-    }
-
-    async fn get_session_logs_stream(
-        &self,
-        shasta_token: &str,
-        site_name: &str,
-        cfs_session_name: &str,
-        // k8s_api_url: &str,
-        k8s: &K8sDetails,
-    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
-        match self {
-            CSM(b) => {
-                b.get_session_logs_stream(
-                    shasta_token,
-                    site_name,
-                    cfs_session_name,
-                    // k8s_api_url,
-                    k8s,
-                )
-                .await
-            }
-            OCHAMI(b) => {
-                b.get_session_logs_stream(
-                    shasta_token,
-                    site_name,
-                    cfs_session_name,
-                    // k8s_api_url,
-                    k8s,
-                )
-                .await
-            }
-        }
-    }
-
-    async fn get_session_logs_stream_by_xname(
-        &self,
-        auth_token: &str,
-        site_name: &str,
-        xname: &str,
-        k8s: &K8sDetails,
-    ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
-        match self {
-            CSM(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
-                    .await
-            }
-            OCHAMI(b) => {
-                b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
                     .await
             }
         }
@@ -1731,6 +1733,30 @@ impl CommandsTrait for StaticBackendDispatcher {
                     assume_yes,
                 )
                 .await
+            }
+        }
+    }
+}
+
+impl ConsoleTrait for StaticBackendDispatcher {
+    type T = Box<dyn AsyncWrite + Unpin>;
+    type U = Box<dyn AsyncRead + Unpin>;
+
+    async fn attach_to_console(
+        &self,
+        shasta_token: &str,
+        site_name: &str,
+        xname: &str,
+        k8s: &K8sDetails,
+    ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error> {
+        match self {
+            CSM(b) => {
+                b.attach_to_console(shasta_token, site_name, xname, k8s)
+                    .await
+            }
+            OCHAMI(b) => {
+                b.attach_to_console(shasta_token, site_name, xname, k8s)
+                    .await
             }
         }
     }

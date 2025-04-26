@@ -1,5 +1,5 @@
 use backend_dispatcher::{
-    interfaces::hsm::component::ComponentTrait,
+    interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
     types::{K8sAuth, K8sDetails},
 };
 use futures::StreamExt;
@@ -77,6 +77,7 @@ pub async fn exec(
     }
 
     let console_rslt = connect_to_console(
+        backend,
         shasta_token,
         site_name,
         // included.iter().next().unwrap(),
@@ -99,6 +100,7 @@ pub async fn exec(
 }
 
 pub async fn connect_to_console(
+    backend: &StaticBackendDispatcher,
     shasta_token: &str,
     site_name: &str,
     xname: &String,
@@ -127,8 +129,6 @@ pub async fn connect_to_console(
     };
 
     /* let mut attached =
-    console::get_container_attachment_to_conman(xname, k8s_api_url, shasta_k8s_secrets).await?; */
-    let mut attached =
         console::get_container_attachment_to_conman(xname, &k8s.api_url, shasta_k8s_secrets)
             .await?;
 
@@ -155,7 +155,17 @@ pub async fn connect_to_console(
 
     let term_tx = attached.terminal_size().unwrap();
 
-    let mut handle_terminal_size_handle = tokio::spawn(terminal_ops::handle_terminal_size(term_tx));
+    let mut handle_terminal_size_handle = tokio::spawn(terminal_ops::handle_terminal_size(term_tx)); */
+
+    let (a_input, a_output) = backend
+        .attach_to_console(shasta_token, site_name, xname, &k8s)
+        .await?;
+
+    let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
+    let mut stdout = tokio::io::stdout();
+
+    let mut output = tokio_util::io::ReaderStream::new(a_output);
+    let mut input = a_input;
 
     crossterm::terminal::enable_raw_mode()?;
 
@@ -198,7 +208,7 @@ pub async fn connect_to_console(
                 }
             },
 
-            result = &mut handle_terminal_size_handle => {
+            /* result = &mut handle_terminal_size_handle => {
                 match result {
                     Ok(_) => log::info!("End of terminal size stream"),
                     Err(e) => {
@@ -206,63 +216,11 @@ pub async fn connect_to_console(
                         log::error!("Error getting terminal size: {e:?}")
                     }
                 }
-            },
+            }, */
         };
     }
 
     crossterm::terminal::disable_raw_mode()?;
 
     Ok(())
-
-    /* let mut stdin_writer = attached.stdin().unwrap();
-    let mut stdout_stream = ReaderStream::new(attached.stdout().unwrap());
-
-    let mut stdin = std::io::stdin();
-    let mut stdout = stdout().into_raw_mode().unwrap();
-
-    let rt = Runtime::new().unwrap();
-    rt.spawn(async move {
-        let mut next_stdout;
-
-        loop {
-            next_stdout = stdout_stream.next().await;
-            match next_stdout {
-                Some(next_from_remote_stdout) => {
-                    // Print stream to stdout while steam lives
-                    match next_from_remote_stdout {
-                        Ok(remote_stdout) => {
-                            print!("{}", String::from_utf8_lossy(&remote_stdout));
-                            stdout.flush().unwrap();
-                        }
-                        Err(e) => {
-                            log::warn!("There was an error reading stream input");
-                            eprintln!("{:?}", e);
-                            stdout.suspend_raw_mode().unwrap();
-                            // std::process::exit(1);
-                        }
-                    }
-                }
-                None => {
-                    // Stream has finished. Reseting terminal and Exiting application.
-                    stdout.suspend_raw_mode().unwrap();
-                    std::process::exit(0);
-                }
-            }
-        }
-    });
-
-    loop {
-        let mut buffer = [0; 1];
-
-        let n = stdin.read(&mut buffer[..])?;
-
-        stdin_writer
-            .write_all(
-                String::from_utf8(buffer[..n].to_vec())
-                    .unwrap()
-                    .to_string()
-                    .as_bytes(),
-            )
-            .await?;
-    } */
 }
