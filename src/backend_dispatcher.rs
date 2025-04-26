@@ -1747,15 +1747,17 @@ impl ConsoleTrait for StaticBackendDispatcher {
         shasta_token: &str,
         site_name: &str,
         xname: &str,
+        width: u16,
+        height: u16,
         k8s: &K8sDetails,
     ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error> {
         match self {
             CSM(b) => {
-                b.attach_to_console(shasta_token, site_name, xname, k8s)
+                b.attach_to_console(shasta_token, site_name, xname, width, height, k8s)
                     .await
             }
             OCHAMI(b) => {
-                b.attach_to_console(shasta_token, site_name, xname, k8s)
+                b.attach_to_console(shasta_token, site_name, xname, width, height, k8s)
                     .await
             }
         }

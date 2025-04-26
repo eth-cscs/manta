@@ -157,8 +157,10 @@ pub async fn connect_to_console(
 
     let mut handle_terminal_size_handle = tokio::spawn(terminal_ops::handle_terminal_size(term_tx)); */
 
+    let (width, height) = crossterm::terminal::size()?;
+
     let (a_input, a_output) = backend
-        .attach_to_console(shasta_token, site_name, xname, &k8s)
+        .attach_to_console(shasta_token, site_name, xname, width, height, &k8s)
         .await?;
 
     let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
