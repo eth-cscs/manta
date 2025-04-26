@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.132] - 2025-04-26
+
+### Features
+
+- Add function to test backend network connectivity
+
+### Refactor
+
+- Clean code
+- Clean code
+
 ## [1.54.1-beta.131] - 2025-04-26
 
 ### Features
 
 - Send terminal size to backend when connecting to node console
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.131
 
 ## [1.54.1-beta.130] - 2025-04-26
 
