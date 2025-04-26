@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.130] - 2025-04-26
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.129] - 2025-04-23
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.129
 
 ### Refactor
 
