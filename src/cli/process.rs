@@ -1318,7 +1318,6 @@ pub async fn process_cli(
             } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
                 let shasta_token = backend.get_api_token(&site_name).await?;
 
-                // FIXME: gitea auth token should be calculated before colling this function
                 let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
                     &shasta_token,
                     vault_base_url.expect("ERROR - vault base url is mandatory"),
@@ -1393,7 +1392,6 @@ pub async fn process_cli(
                     sat_file_content,
                     cli_values_file_content_opt,
                     cli_value_vec_opt,
-                    settings_hsm_group_name_opt,
                     &target_hsm_group_vec,
                     ansible_verbosity,
                     ansible_passthrough.as_ref(),
@@ -1690,12 +1688,7 @@ pub async fn process_cli(
                 console_node::exec(
                     &backend,
                     &site_name,
-                    settings_hsm_group_name_opt,
-                    // cli_console,
                     &shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    // k8s_api_url,
                     cli_console_node.get_one::<String>("XNAME").unwrap(),
                     &site
                         .k8s

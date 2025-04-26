@@ -1,26 +1,20 @@
 use backend_dispatcher::{
     interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
-    types::{K8sAuth, K8sDetails},
+    types::K8sDetails,
 };
 use futures::StreamExt;
 
-use mesa::node::{self, console};
-use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
 use crate::{
     backend_dispatcher::StaticBackendDispatcher,
-    common::{self, terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault},
+    common::{self},
 };
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     site_name: &str,
-    hsm_group: Option<&String>,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    // k8s_api_url: &str,
     xname: &str,
     k8s: &K8sDetails,
 ) {
@@ -33,7 +27,7 @@ pub async fn exec(
             std::process::exit(1);
         });
 
-    let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+    let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
         xname,
         false,
         node_metadata_available_vec,
@@ -52,29 +46,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    xname_vec.dedup();
-
     let xname = xname_vec.first().unwrap();
-
-    if hsm_group.is_some() {
-        // Check user has provided valid XNAMES
-        if !node::utils::validate_xnames_format_and_membership_agaisnt_single_hsm(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &[xname],
-            hsm_group,
-        )
-        .await
-        {
-            eprintln!("xname/s invalid. Exit");
-            std::process::exit(1);
-        }
-    } else {
-        // no hsm_group value provided
-        // included = xnames.clone();
-        node::utils::validate_xname_format(xname);
-    }
 
     let console_rslt = connect_to_console(
         backend,
@@ -109,10 +81,7 @@ pub async fn connect_to_console(
 ) -> Result<(), anyhow::Error> {
     log::info!("xname: {}", xname);
 
-    /* let shasta_k8s_secrets =
-    fetch_shasta_k8s_secrets(vault_base_url, vault_secret_path, vault_role_id).await?; */
-
-    let shasta_k8s_secrets = match &k8s.authentication {
+    /* let shasta_k8s_secrets = match &k8s.authentication {
         K8sAuth::Native {
             certificate_authority_data,
             client_certificate_data,
@@ -126,36 +95,7 @@ pub async fn connect_to_console(
         } => fetch_shasta_k8s_secrets_from_vault(&base_url, &site_name, shasta_token)
             .await
             .unwrap(),
-    };
-
-    /* let mut attached =
-        console::get_container_attachment_to_conman(xname, &k8s.api_url, shasta_k8s_secrets)
-            .await?;
-
-    println!(
-        "Connected to {}{}{}!",
-        color::Fg(color::Blue),
-        xname,
-        color::Fg(color::Reset)
-    );
-    println!(
-        "Use {}&.{} key combination to exit the console.",
-        color::Fg(color::Green),
-        color::Fg(color::Reset)
-    );
-
-    println!("Connected to {}!", xname,);
-    println!("Use &. key combination to exit the console.",);
-
-    let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
-    let mut stdout = tokio::io::stdout();
-
-    let mut input = attached.stdin().unwrap();
-    let mut output = tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
-
-    let term_tx = attached.terminal_size().unwrap();
-
-    let mut handle_terminal_size_handle = tokio::spawn(terminal_ops::handle_terminal_size(term_tx)); */
+    }; */
 
     let (width, height) = crossterm::terminal::size()?;
 

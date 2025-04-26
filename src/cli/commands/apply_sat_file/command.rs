@@ -18,13 +18,10 @@ pub async fn exec(
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     vault_base_url: &str,
-    // vault_secret_path: &str,
-    // vault_role_id: &str,
     k8s_api_url: &str,
     sat_file_content: String,
     values_file_content_opt: Option<String>,
     values_cli_opt: Option<Vec<String>>,
-    hsm_group_param_opt: Option<&String>,
     hsm_group_available_vec: &Vec<String>,
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&String>,
@@ -77,8 +74,6 @@ pub async fn exec(
         values_file_content_opt.as_ref(),
         values_cli_opt,
     )
-    // .as_mapping_mut()
-    // .unwrap()
     .clone();
 
     let sat_template_file_string = serde_yaml::to_string(&sat_template_file_yaml).unwrap();
@@ -136,12 +131,11 @@ pub async fn exec(
         } => {
             serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
         }
-        K8sAuth::Vault {
-            base_url,
-            // secret_path: _secret_path,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
-            .await
-            .unwrap(),
+        K8sAuth::Vault { base_url } => {
+            fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
+                .await
+                .unwrap()
+        }
     };
 
     backend
@@ -151,13 +145,9 @@ pub async fn exec(
             shasta_root_cert,
             vault_base_url,
             site_name,
-            // vault_secret_path,
-            // vault_role_id,
             k8s_api_url,
             shasta_k8s_secrets,
-            // sat_file_content,
             sat_template_file_yaml,
-            hsm_group_param_opt,
             hsm_group_available_vec,
             ansible_verbosity_opt,
             ansible_passthrough_opt,
