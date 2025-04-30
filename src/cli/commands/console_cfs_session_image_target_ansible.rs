@@ -20,41 +20,10 @@ pub async fn exec(
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    /* vault_base_url: &str,
-    vault_secret_path: &str,
-    vault_role_id: &str, */
     k8s_api_url: &str,
     cfs_session_name: &str,
     k8s: &K8sDetails,
 ) {
-    /* let mut cfs_session_value_vec = cfs::session::get_and_sort(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        None,
-        None,
-        None,
-        Some(&cfs_session_name.to_string()),
-        Some(false),
-    )
-    .await
-    .unwrap();
-
-    cfs::session::utils::filter_by_hsm(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &mut cfs_session_value_vec,
-        hsm_group_name_vec,
-        None,
-        true,
-    )
-    .await
-    .unwrap_or_else(|e| {
-        eprintln!("ERROR - {}", e);
-        std::process::exit(1);
-    }); */
-
     let cfs_session_vec = backend
         .get_and_filter_sessions(
             shasta_token,
@@ -256,56 +225,4 @@ pub async fn connect_to_console(
     crossterm::terminal::disable_raw_mode()?;
 
     Ok(())
-
-    /* let mut stdin_writer = attached.stdin().unwrap();
-    let mut stdout_stream = ReaderStream::new(attached.stdout().unwrap());
-
-    let mut stdin = std::io::stdin();
-    let mut stdout = stdout().into_raw_mode().unwrap();
-
-    let rt = Runtime::new().unwrap();
-    rt.spawn(async move {
-        let mut next_stdout;
-
-        loop {
-            next_stdout = stdout_stream.next().await;
-            match next_stdout {
-                Some(next_from_remote_stdout) => {
-                    // Print stream to stdout while steam lives
-                    match next_from_remote_stdout {
-                        Ok(remote_stdout) => {
-                            print!("{}", String::from_utf8_lossy(&remote_stdout));
-                            stdout.flush().unwrap();
-                        }
-                        Err(e) => {
-                            log::warn!("There was an error reading stream input");
-                            eprintln!("{:?}", e);
-                            stdout.suspend_raw_mode().unwrap();
-                            // std::process::exit(1);
-                        }
-                    }
-                }
-                None => {
-                    // Stream has finished. Reseting terminal and Exiting application.
-                    stdout.suspend_raw_mode().unwrap();
-                    std::process::exit(0);
-                }
-            }
-        }
-    });
-
-    loop {
-        let mut buffer = [0; 1];
-
-        let n = stdin.read(&mut buffer[..])?;
-
-        stdin_writer
-            .write_all(
-                String::from_utf8(buffer[..n].to_vec())
-                    .unwrap()
-                    .to_string()
-                    .as_bytes(),
-            )
-            .await?;
-    } */
 }
