@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.134] - 2025-05-03
+
+### Bug Fixes
+
+- Errors when running subcommand 'get redfish-endpoints'
+
 ## [1.54.1-beta.133] - 2025-05-03
 
 ### Bug Fixes
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Udpate Cargo.toml
+- Release manta version 1.54.1-beta.133
 
 ### Refactor
 
