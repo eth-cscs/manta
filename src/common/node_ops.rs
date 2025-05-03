@@ -122,6 +122,7 @@ pub async fn from_hosts_expression_to_xname_vec(
     let regexexp_rslt = Regex::new(user_input).map_err(|e| Error::Message(e.to_string()));
 
     let xname_vec = if let Ok(node_vec) = hostlist_expanded_vec_rslt {
+        log::debug!("Hostlist format is valid");
         // If hostlist, expand hostlist
         let xname_vec: Vec<String> = if validate_nid_format_vec(node_vec.clone()) {
             // If hostlist of NIDs, convert to xname
