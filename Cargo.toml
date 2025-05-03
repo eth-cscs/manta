@@ -21,7 +21,7 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 # [build-dependencies]
 # clap = "*"
 # clap_complete = "*"
-# backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
+# manta-backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
 # backend-dispatcher = "*"
 # strum = "*"
 # strum_macros = "*"
@@ -31,9 +31,9 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 
 # PROD
 
-backend-dispatcher = "0.1.69"
+manta-backend-dispatcher = "0.1.69"
 ochami-rs = "0.1.68"
-mesa = "=0.42.3-beta.106"
+mesa = "0.42.3-beta.106"
 
 # DEV - Only for development purposes
 
