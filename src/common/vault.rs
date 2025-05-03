@@ -1,6 +1,6 @@
 pub mod http_client {
 
-    use backend_dispatcher::error::Error;
+    use manta_backend_dispatcher::error::Error;
     use serde_json::{json, Value};
 
     pub async fn auth_oidc_jwt(

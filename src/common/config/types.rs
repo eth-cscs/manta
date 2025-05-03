@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::common::audit::Auditor;
 
-use backend_dispatcher::types::K8sDetails;
+use manta_backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
 /* #[derive(Serialize, Deserialize, Debug)]

@@ -1,5 +1,5 @@
-use backend_dispatcher::types::ArtifactType;
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
+use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;
 
 use std::path::PathBuf;

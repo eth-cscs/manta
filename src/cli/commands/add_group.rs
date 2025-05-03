@@ -1,11 +1,11 @@
 use crate::common::{self, jwt_ops};
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
-use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::theme::ColorfulTheme;
+use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
+use manta_backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 
 /// Creates a group of nodes. It is allowed to create a group with no nodes.
 pub async fn exec(

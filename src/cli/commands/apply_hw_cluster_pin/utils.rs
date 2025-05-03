@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use comfy_table::Color;
+use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common};
+use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 // Returns a tuple (target_hsm, parent_hsm) with 2 list of nodes and its hardware components.
 // The left tuple element are the nodes moved from the

@@ -1,12 +1,12 @@
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     error::Error,
     interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
     types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self, cfs_session_utils::check_cfs_session_against_groups_available},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 use futures::{AsyncBufReadExt, TryStreamExt};

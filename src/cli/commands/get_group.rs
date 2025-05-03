@@ -1,7 +1,7 @@
-use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait, types::Group};
 use comfy_table::Table;
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait, types::Group};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

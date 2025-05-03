@@ -1,10 +1,10 @@
 use anyhow::Error;
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     interfaces::{cfs::CfsTrait, ims::ImsTrait},
     types::ims::Image,
 };
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// This function retrieves the list of image IDs related to a CFS configuration name.
 /// It first checks the CFS sessions for any succeeded sessions that built an image related to the

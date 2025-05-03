@@ -1,7 +1,7 @@
-use backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
+use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
 use std::process::exit;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

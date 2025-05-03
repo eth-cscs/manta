@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
+use manta_backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

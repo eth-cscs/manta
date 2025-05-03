@@ -1,6 +1,6 @@
-use backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
+use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

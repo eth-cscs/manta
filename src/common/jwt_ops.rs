@@ -1,5 +1,5 @@
-use backend_dispatcher::error::Error;
 use base64::decode;
+use manta_backend_dispatcher::error::Error;
 use serde_json::Value;
 
 fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {

@@ -1,6 +1,6 @@
-use backend_dispatcher::{error::Error, interfaces::hsm::component::ComponentTrait};
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::component::ComponentTrait};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

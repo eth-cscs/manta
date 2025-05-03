@@ -1,5 +1,5 @@
-use backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 use comfy_table::Table;
+use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::common;
 

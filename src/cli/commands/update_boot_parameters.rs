@@ -1,10 +1,10 @@
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     error::Error, interfaces::bss::BootParametersTrait, types::BootParameters,
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

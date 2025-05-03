@@ -1,15 +1,15 @@
 use std::path::PathBuf;
 
-use backend_dispatcher::{
+use futures::{AsyncBufReadExt, TryStreamExt};
+use manta_backend_dispatcher::{
     error::Error,
     interfaces::{apply_session::ApplySessionTrait, cfs::CfsTrait},
     types::K8sDetails,
 };
-use futures::{AsyncBufReadExt, TryStreamExt};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Creates a CFS session target dynamic

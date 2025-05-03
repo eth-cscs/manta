@@ -1,12 +1,12 @@
-use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
+use manta_backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use std::collections::HashMap;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::apply_hw_cluster_unpin::utils::{
         calculate_hsm_hw_component_summary, get_hsm_node_hw_component_counter,
         resolve_hw_description_to_xnames,
     },
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

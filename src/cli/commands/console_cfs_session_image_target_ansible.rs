@@ -1,16 +1,16 @@
-use backend_dispatcher::{
+use futures::StreamExt;
+use manta_backend_dispatcher::{
     interfaces::cfs::CfsTrait,
     types::{K8sAuth, K8sDetails},
 };
-use futures::StreamExt;
 
 use mesa::node::console;
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

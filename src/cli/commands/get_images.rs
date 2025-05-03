@@ -1,10 +1,10 @@
-use backend_dispatcher::{
-    error::Error, interfaces::get_images_and_details::GetImagesAndDetailsTrait, types::ims::Image,
-};
 use chrono::{DateTime, Local};
 use comfy_table::Table;
+use manta_backend_dispatcher::{
+    error::Error, interfaces::get_images_and_details::GetImagesAndDetailsTrait, types::ims::Image,
+};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason

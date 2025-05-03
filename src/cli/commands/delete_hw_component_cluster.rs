@@ -1,19 +1,19 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use backend_dispatcher::interfaces::hsm::{
+use dialoguer::{theme::ColorfulTheme, Confirm};
+use manta_backend_dispatcher::interfaces::hsm::{
     group::GroupTrait, hardware_inventory::HardwareInventory,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::apply_hw_cluster_pin::utils::{
         calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
         get_hsm_node_hw_component_counter,
     },
     common,
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

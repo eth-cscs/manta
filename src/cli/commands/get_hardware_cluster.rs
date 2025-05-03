@@ -4,14 +4,14 @@ use std::{
     time::Instant,
 };
 
-use backend_dispatcher::{
+use comfy_table::{Color, Table};
+use manta_backend_dispatcher::{
     interfaces::hsm::{group::GroupTrait, hardware_inventory::HardwareInventory},
     types::NodeSummary,
 };
-use comfy_table::{Color, Table};
 use tokio::sync::Semaphore;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
     backend: StaticBackendDispatcher,

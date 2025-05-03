@@ -1,9 +1,9 @@
-use backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use manta_backend_dispatcher::interfaces::hsm::{component::ComponentTrait, group::GroupTrait};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Add/assign a list of xnames to a list of HSM groups

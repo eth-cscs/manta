@@ -1,9 +1,9 @@
-use backend_dispatcher::interfaces::{hsm::group::GroupTrait, pcs::PCSTrait};
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use manta_backend_dispatcher::interfaces::{hsm::group::GroupTrait, pcs::PCSTrait};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

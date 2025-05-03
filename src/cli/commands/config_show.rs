@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use config::{Config, Value};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Prints Manta's configuration on screen
 pub async fn exec(

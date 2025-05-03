@@ -1,6 +1,6 @@
-use backend_dispatcher::interfaces::cfs::CfsTrait;
+use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common};
+use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

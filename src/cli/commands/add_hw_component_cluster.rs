@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use manta_backend_dispatcher::{interfaces::hsm::group::GroupTrait, types::Group};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::apply_hw_cluster_pin::utils::{
         calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
         get_hsm_node_hw_component_counter,
     },
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

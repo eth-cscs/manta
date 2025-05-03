@@ -1,15 +1,12 @@
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     error::Error,
-    interfaces::{
-        bss::BootParametersTrait,
-        hsm::component::ComponentTrait,
-    },
+    interfaces::{bss::BootParametersTrait, hsm::component::ComponentTrait},
     types::BootParameters,
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

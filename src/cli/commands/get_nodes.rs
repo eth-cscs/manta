@@ -1,6 +1,6 @@
-use backend_dispatcher::interfaces::hsm::component::ComponentTrait;
+use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 
-use crate::{backend_dispatcher::StaticBackendDispatcher, common};
+use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(

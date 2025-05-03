@@ -1,8 +1,8 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher, cli::commands::apply_boot_node,
-    common::kafka::Kafka,
+    cli::commands::apply_boot_node, common::kafka::Kafka,
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Updates boot params and desired configuration for all nodes that belongs to a HSM group

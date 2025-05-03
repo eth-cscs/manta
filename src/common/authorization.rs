@@ -1,6 +1,6 @@
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Returns a curated list of 'groups' the user has access to.
 /// This function validates the list of groups and returns an error if user tries to access a
@@ -11,7 +11,7 @@ pub async fn get_groups_available(
     auth_token: &str,
     group_cli_arg_opt: Option<&String>,
     group_env_or_config_file_opt: Option<&String>,
-) -> Result<Vec<String>, backend_dispatcher::error::Error> {
+) -> Result<Vec<String>, manta_backend_dispatcher::error::Error> {
     // Get list of groups the user has access to
     let hsm_name_available_vec = backend.get_group_name_available(auth_token).await?;
 

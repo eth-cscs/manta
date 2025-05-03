@@ -1,14 +1,14 @@
-use backend_dispatcher::{
+use futures::StreamExt;
+use manta_backend_dispatcher::{
     interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
     types::K8sDetails,
 };
-use futures::StreamExt;
 
 use tokio::{io::AsyncWriteExt, select};
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{self},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

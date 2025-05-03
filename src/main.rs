@@ -1,10 +1,10 @@
-mod backend_dispatcher;
 mod cli;
 mod common;
+mod manta_backend_dispatcher;
 
-use ::backend_dispatcher::types::K8sAuth;
-use backend_dispatcher::StaticBackendDispatcher;
+use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{config::types::MantaConfiguration, kafka::Kafka};
+use manta_backend_dispatcher::StaticBackendDispatcher;
 
 use crate::common::log_ops;
 

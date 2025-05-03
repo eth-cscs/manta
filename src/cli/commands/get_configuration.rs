@@ -1,12 +1,12 @@
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     interfaces::cfs::CfsTrait,
     types::cfs::cfs_configuration_details::{ConfigurationDetails, LayerDetails},
     types::cfs::cfs_configuration_response::CfsConfigurationResponse,
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::cfs_configuration_utils::print_table_struct,
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

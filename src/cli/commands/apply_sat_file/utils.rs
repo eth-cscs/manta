@@ -1,5 +1,5 @@
-use backend_dispatcher::error::Error;
 use image::Image;
+use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 

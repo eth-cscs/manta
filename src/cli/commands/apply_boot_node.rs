@@ -1,17 +1,17 @@
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::power_reset_nodes,
     common::{self, ims_ops::get_image_vec_related_cfs_configuration_name, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 use anyhow::Error;
-use backend_dispatcher::{
+use dialoguer::{theme::ColorfulTheme, Confirm};
+use manta_backend_dispatcher::{
     interfaces::{
         bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait, ims::ImsTrait,
     },
     types::BootParameters,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

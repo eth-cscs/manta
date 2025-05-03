@@ -1,10 +1,9 @@
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
-    common::{
-        self, audit::Audit, jwt_ops, kafka::Kafka,
-    },
+    common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use backend_dispatcher::{
+use dialoguer::theme::ColorfulTheme;
+use manta_backend_dispatcher::{
     error::Error,
     interfaces::{
         bss::BootParametersTrait,
@@ -12,7 +11,6 @@ use backend_dispatcher::{
     },
     types::{self},
 };
-use dialoguer::theme::ColorfulTheme;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed

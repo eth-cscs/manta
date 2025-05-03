@@ -1,14 +1,15 @@
-use backend_dispatcher::{
+use dialoguer::theme::ColorfulTheme;
+use manta_backend_dispatcher::{
     interfaces::apply_sat_file::SatTrait,
     types::{K8sAuth, K8sDetails},
 };
-use dialoguer::theme::ColorfulTheme;
 use serde_yaml::Value;
 use termion::color;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher, cli::commands::apply_sat_file::utils,
+    cli::commands::apply_sat_file::utils,
     common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

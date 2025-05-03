@@ -1,5 +1,5 @@
 use anyhow::Result;
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     interfaces::hsm::{
         component::ComponentTrait, group::GroupTrait, hardware_inventory::HardwareInventory,
     },
@@ -7,8 +7,8 @@ use backend_dispatcher::{
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

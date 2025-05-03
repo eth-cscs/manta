@@ -9,7 +9,7 @@ use std::{collections::HashMap, path::PathBuf, pin::Pin};
 /// To add new functionalities:
 /// # Implement new functionalities to BackendTrait implementation
 /// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     contracts::BackendTrait,
     error::Error,
     interfaces::{
@@ -32,6 +32,7 @@ use backend_dispatcher::{
         pcs::PCSTrait,
     },
     types::{
+        self,
         bos::session_template::BosSessionTemplate,
         cfs::{
             cfs_configuration_details::LayerDetails,
@@ -1104,7 +1105,7 @@ impl CfsTrait for StaticBackendDispatcher {
         configuration_name: Option<&str>,
         components_ids: Option<&str>,
         status: Option<&str>,
-    ) -> Result<Vec<backend_dispatcher::types::cfs::component::Component>, Error> {
+    ) -> Result<Vec<manta_backend_dispatcher::types::cfs::component::Component>, Error> {
         match self {
             CSM(b) => {
                 b.get_cfs_components(
@@ -1510,7 +1511,7 @@ impl ClusterSessionTrait for StaticBackendDispatcher {
         shasta_token: &str,
         shasta_base_url: &str,
         shasta_root_cert: &[u8],
-        bos_session: backend_dispatcher::types::bos::session::BosSession,
+        bos_session: types::bos::session::BosSession,
     ) -> Result<Value, Error> {
         match self {
             CSM(b) => {

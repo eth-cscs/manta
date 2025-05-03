@@ -1,14 +1,14 @@
-use backend_dispatcher::{
-    interfaces::{cfs::CfsTrait, ims::ImsTrait},
-    types::{cfs::session::CfsSessionGetResponse, Group},
-};
 use chrono::{DateTime, Local};
 use comfy_table::Table;
+use manta_backend_dispatcher::{
+    interfaces::{cfs::CfsTrait, ims::ImsTrait},
+    types::{self, cfs::session::CfsSessionGetResponse, Group},
+};
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub fn cfs_session_struct_to_vec(
-    cfs_session: backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
+    cfs_session: manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
 ) -> Vec<String> {
     let start_time_utc_str = cfs_session
         .get_start_time()
@@ -116,9 +116,7 @@ pub fn check_cfs_session_against_groups_available(
 }
 
 pub fn print_table_struct(
-    get_cfs_session_value_list: &Vec<
-        backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
-    >,
+    get_cfs_session_value_list: &Vec<types::cfs::session::CfsSessionGetResponse>,
 ) {
     let table = get_table_struct(get_cfs_session_value_list);
 
@@ -126,9 +124,7 @@ pub fn print_table_struct(
 }
 
 pub fn get_table_struct(
-    get_cfs_session_value_list: &Vec<
-        backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
-    >,
+    get_cfs_session_value_list: &Vec<types::cfs::session::CfsSessionGetResponse>,
 ) -> Table {
     let mut table = Table::new();
 

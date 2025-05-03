@@ -1,10 +1,10 @@
 pub mod command {
 
-    use backend_dispatcher::interfaces::{
+    use manta_backend_dispatcher::interfaces::{
         get_images_and_details::GetImagesAndDetailsTrait, ims::ImsTrait,
     };
 
-    use crate::backend_dispatcher::StaticBackendDispatcher;
+    use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
     pub async fn exec(
         backend: &StaticBackendDispatcher,

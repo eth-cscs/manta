@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait, types::Component};
 use comfy_table::{Cell, Table};
 use hostlist_parser::parse;
+use manta_backend_dispatcher::{
+    error::Error, interfaces::hsm::group::GroupTrait, types::Component,
+};
 use mesa::node::types::NodeDetails;
 use regex::Regex;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 // Validate and get short nid
 pub fn get_short_nid(long_nid: &str) -> Result<usize, Error> {

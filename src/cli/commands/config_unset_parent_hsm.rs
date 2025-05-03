@@ -1,10 +1,10 @@
 use std::{fs, io::Write, path::PathBuf};
 
-use backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use directories::ProjectDirs;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::DocumentMut;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(backend: &StaticBackendDispatcher, shasta_token: &str) {
     // Read configuration file

@@ -1,4 +1,4 @@
-use backend_dispatcher::{
+use manta_backend_dispatcher::{
     interfaces::{
         bos::{ClusterSessionTrait, ClusterTemplateTrait},
         hsm::group::GroupTrait,
@@ -7,8 +7,8 @@ use backend_dispatcher::{
 };
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{authorization::validate_target_hsm_members, node_ops::validate_xname_format},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(

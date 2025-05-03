@@ -1,8 +1,8 @@
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     common::{audit::Audit, jwt_ops, kafka::Kafka},
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
 pub async fn exec(
     backend: &StaticBackendDispatcher,

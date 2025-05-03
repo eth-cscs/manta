@@ -1,4 +1,5 @@
-use backend_dispatcher::{
+use clap_complete::{generate, generate_to};
+use manta_backend_dispatcher::{
     contracts::BackendTrait,
     interfaces::{
         bss::BootParametersTrait,
@@ -9,7 +10,6 @@ use backend_dispatcher::{
     },
     types::{hsm::inventory::RedfishEndpoint, BootParameters, HWInventoryByLocationList},
 };
-use clap_complete::{generate, generate_to};
 use std::{
     env,
     fs::File,
@@ -22,13 +22,13 @@ use config::Config;
 use k8s_openapi::chrono;
 
 use crate::{
-    backend_dispatcher::StaticBackendDispatcher,
     cli::commands::{add_node, validate_local_repo},
     common::{
         authorization::{get_groups_available, validate_target_hsm_members},
         config::types::MantaConfiguration,
         kafka::Kafka,
     },
+    manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 use super::commands::{
@@ -1959,7 +1959,7 @@ pub async fn process_cli(
                 let result = backend.delete_redfish_endpoint(&shasta_token, &id).await;
 
                 match result {
-                    Ok(_) => println!("Boot parameters for id '{}' deleted successfully", id),
+                    Ok(_) => println!("Redfish endpoint for id '{}' deleted successfully", id),
                     Err(error) => eprintln!("{}", error),
                 }
             } else if let Some(cli_delete_kernel_parameters) =

@@ -1,10 +1,10 @@
-use backend_dispatcher::{
+use comfy_table::{Cell, Table};
+use manta_backend_dispatcher::{
     interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
 };
-use comfy_table::{Cell, Table};
 use std::string::ToString;
 
-use crate::backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
