@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.133] - 2025-05-03
+
+### Bug Fixes
+
+- Bug when listing redfish-endponts
+
+### Miscellaneous Tasks
+
+- Udpate Cargo.toml
+
+### Refactor
+
+- Clean code
+- Migrate module backend-dispatcher to manta-backend-dispatcher
+
 ## [1.54.1-beta.132] - 2025-04-26
 
 ### Features
 
 - Add function to test backend network connectivity
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.132
 
 ### Refactor
 
