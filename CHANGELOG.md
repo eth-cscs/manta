@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.135] - 2025-05-05
+
+### Bug Fixes
+
+- Manta audit breaks if JWT token does not have fields name and user_id
+
 ## [1.54.1-beta.134] - 2025-05-03
 
 ### Bug Fixes
 
 - Errors when running subcommand 'get redfish-endpoints'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.134
 
 ## [1.54.1-beta.133] - 2025-05-03
 
