@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.136] - 2025-05-05
+
+### Bug Fixes
+
+- Get hsm member summary
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.135] - 2025-05-05
 
 ### Bug Fixes
 
 - Manta audit breaks if JWT token does not have fields name and user_id
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.135
 
 ## [1.54.1-beta.134] - 2025-05-03
 
