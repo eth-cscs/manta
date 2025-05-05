@@ -31,15 +31,15 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 
 # PROD
 
-manta-backend-dispatcher = "0.1.69"
-ochami-rs = "0.1.69"
-mesa = "0.5.0-beta.1"
+# manta-backend-dispatcher = "0.1.69"
+# ochami-rs = "0.1.69"
+# mesa = "0.5.0-beta.1"
 
 # DEV - Only for development purposes
 
-# manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-# ochami-rs = { path = "../ochami-rs" }
-# mesa = { path = "../mesa" }
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+ochami-rs = { path = "../ochami-rs" }
+mesa = { path = "../mesa" }
 
 # --- END MANTA DEPENDENCIES ---
 
