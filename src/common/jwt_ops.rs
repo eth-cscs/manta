@@ -34,9 +34,7 @@ pub fn get_name(token: &str) -> Result<String, Error> {
 
     match jwt_name {
         Some(name) => Ok(name.to_string()),
-        None => Err(Error::Message(
-            "ERROR - claim 'name' not found in JWT auth token".to_string(),
-        )),
+        None => Ok("MISSING".to_string()),
     }
 }
 
@@ -47,8 +45,6 @@ pub fn get_preferred_username(token: &str) -> Result<String, Error> {
 
     match jwt_preferred_username {
         Some(name) => Ok(name.to_string()),
-        None => Err(Error::Message(
-            "ERROR - claim 'name' not found in JWT auth token".to_string(),
-        )),
+        None => Ok("MISSING".to_string()),
     }
 }
