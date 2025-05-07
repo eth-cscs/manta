@@ -81,22 +81,6 @@ pub async fn connect_to_console(
 ) -> Result<(), anyhow::Error> {
     log::info!("xname: {}", xname);
 
-    /* let shasta_k8s_secrets = match &k8s.authentication {
-        K8sAuth::Native {
-            certificate_authority_data,
-            client_certificate_data,
-            client_key_data,
-        } => {
-            serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
-        }
-        K8sAuth::Vault {
-            base_url,
-            // secret_path: _secret_path,
-        } => fetch_shasta_k8s_secrets_from_vault(&base_url, &site_name, shasta_token)
-            .await
-            .unwrap(),
-    }; */
-
     let (width, height) = crossterm::terminal::size()?;
 
     let (a_input, a_output) = backend
