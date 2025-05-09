@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.139] - 2025-05-09
+
+### Bug Fixes
+
+- Add boot parameters
+
 ## [1.54.1-beta.138] - 2025-05-09
 
 ### Bug Fixes
 
 - Command to add nodes to a group
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.138
 
 ## [1.54.1-beta.137] - 2025-05-09
 
