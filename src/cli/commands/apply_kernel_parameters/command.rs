@@ -1,5 +1,5 @@
 use dialoguer::theme::ColorfulTheme;
-use mesa::{
+use csm_rs::{
     bss::{self, bootparameters::BootParameters},
     common::jwt_ops,
     error::Error,
@@ -25,7 +25,7 @@ pub async fn exec(
     let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -85,7 +85,7 @@ pub async fn exec(
         if need_restart {
             // boot_parameter.params = kernel_params.to_string();
 
-            let _ = mesa::bss::bootparameters::http_client::put(
+            let _ = csm_rs::bss::bootparameters::http_client::put(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,

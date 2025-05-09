@@ -36,14 +36,14 @@ pub async fn exec(
         .expect("ERROR: could not parse configuration file to TOML");
 
     let mut settings_hsm_available_vec =
-        mesa::common::jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
+        csm_rs::common::jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
 
     settings_hsm_available_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
     // VALIDATION
     let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-        mesa::hsm::group::http_client::get_all_without_system_wide(
+        csm_rs::hsm::group::http_client::get_all_without_system_wide(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -71,7 +71,7 @@ pub async fn exec(
         // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
         // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
         // asking to put a valid HSM group in the configuration file
-        let all_hsm_available_vec = mesa::hsm::group::http_client::get_all_without_system_wide(
+        let all_hsm_available_vec = csm_rs::hsm::group::http_client::get_all_without_system_wide(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

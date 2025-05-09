@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::theme::ColorfulTheme;
-use mesa::{common::jwt_ops, hsm::group::r#struct::HsmGroup};
+use csm_rs::{common::jwt_ops, hsm::group::r#struct::HsmGroup};
 
 use crate::{
     cli::process::validate_target_hsm_members,
@@ -34,7 +34,7 @@ pub async fn exec(
 
         // Get HSM group user has access to
         let hsm_group_available_map =
-            mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+            csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -137,7 +137,7 @@ pub async fn exec(
     }
 
     // Call backend to create group
-    let group_rslt = mesa::hsm::group::http_client::post(
+    let group_rslt = csm_rs::hsm::group::http_client::post(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

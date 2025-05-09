@@ -18,7 +18,7 @@ pub async fn exec(
         hsm_group_name_vec_opt
     );
 
-    let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
+    let mut cfs_session_vec = csm_rs::cfs::session::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -34,7 +34,7 @@ pub async fn exec(
     // Retain CFS sessions related to HSM groups
     if let Some(hsm_group_name_vec) = hsm_group_name_vec_opt {
         if !hsm_group_name_vec.is_empty() {
-            mesa::cfs::session::mesa::utils::filter_by_hsm(
+            csm_rs::cfs::session::csm_rs::utils::filter_by_hsm(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -49,7 +49,7 @@ pub async fn exec(
 
     // Retain CFS sessions related to XNAME
     if let Some(xname_vec) = xname_vec_opt {
-        mesa::cfs::session::mesa::utils::filter_by_xname(
+        csm_rs::cfs::session::csm_rs::utils::filter_by_xname(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -81,7 +81,7 @@ pub async fn exec(
             let result_id = cfs_session.get_first_result_id().unwrap();
 
             // Update cfs session result_id if image DOES NOT exists
-            if mesa::ims::image::mesa::http_client::get(
+            if csm_rs::ims::image::csm_rs::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

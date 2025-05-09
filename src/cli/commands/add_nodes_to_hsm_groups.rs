@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::common::jwt_ops;
+use csm_rs::common::jwt_ops;
 
 use crate::common::{self, audit::Audit, kafka::Kafka};
 
@@ -23,7 +23,7 @@ pub async fn exec(
             .await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
+    let hsm_group_available_map = csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -83,7 +83,7 @@ pub async fn exec(
         std::process::exit(0);
     }
 
-    let target_hsm_group_vec = mesa::hsm::group::http_client::get_without_system_wide(
+    let target_hsm_group_vec = csm_rs::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -99,7 +99,7 @@ pub async fn exec(
         );
     }
 
-    let node_migration_rslt = mesa::hsm::group::utils::add_hsm_members(
+    let node_migration_rslt = csm_rs::hsm::group::utils::add_hsm_members(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

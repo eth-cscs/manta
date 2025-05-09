@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::ims::image::{self, r#struct::Image};
+use csm_rs::ims::image::{self, r#struct::Image};
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason
@@ -13,7 +13,7 @@ pub async fn exec(
     id_opt: Option<&String>,
     limit_number: Option<&u8>,
 ) {
-    let mut image_vec: Vec<Image> = image::mesa::http_client::get(
+    let mut image_vec: Vec<Image> = image::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

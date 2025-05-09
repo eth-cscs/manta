@@ -1,6 +1,6 @@
-use mesa::cfs::{
+use csm_rs::cfs::{
     component::shasta::r#struct::v2::{ComponentResponse, StateResponse},
-    session::mesa::r#struct::v3::{CfsSessionGetResponse, Configuration, Session, Status, Target},
+    session::csm_rs::r#struct::v3::{CfsSessionGetResponse, Configuration, Session, Status, Target},
 };
 
 /// Test is_cfs_configuration_a_desired_configuration returns TRUE when a CFS configuration

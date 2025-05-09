@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
+use csm_rs::hsm;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
@@ -20,7 +20,7 @@ pub async fn exec(
     nodryrun: bool,
     delete_hsm_group: bool,
 ) {
-    match mesa::hsm::group::http_client::get_without_system_wide(
+    match csm_rs::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -86,7 +86,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let target_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -152,7 +152,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -461,7 +461,7 @@ pub async fn get_node_hw_component_count(
     user_defined_hw_profile_vec: Vec<String>,
 ) -> (String, Vec<String>, Vec<u64>) {
     let node_hw_inventory_value =
-        mesa::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+        csm_rs::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
             &shasta_token,
             &shasta_base_url,
             &shasta_root_cert,
@@ -485,13 +485,13 @@ pub fn get_node_hw_properties_from_value(
     hw_component_pattern_list: Vec<String>,
 ) -> (Vec<String>, Vec<u64>) {
     let processor_vec =
-        mesa::hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
+        csm_rs::hsm::hw_inventory::hw_component::utils::get_list_processor_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
 
     let accelerator_vec =
-        mesa::hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
+        csm_rs::hsm::hw_inventory::hw_component::utils::get_list_accelerator_model_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();
@@ -520,7 +520,7 @@ pub fn get_node_hw_properties_from_value(
     }
 
     let memory_vec =
-        mesa::hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
+        csm_rs::hsm::hw_inventory::hw_component::utils::get_list_memory_capacity_from_hw_inventory_value(
             node_hw_inventory_value,
         )
         .unwrap_or_default();

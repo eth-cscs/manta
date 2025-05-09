@@ -1,4 +1,4 @@
-use mesa::bos;
+use csm_rs::bos;
 
 use crate::cli::process::validate_target_hsm_members;
 
@@ -18,7 +18,7 @@ pub async fn exec(
     //
     // Get BOS sessiontemplate
     //
-    let bos_sessiontemplate_vec_rslt = bos::template::mesa::http_client::get(
+    let bos_sessiontemplate_vec_rslt = bos::template::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -60,7 +60,7 @@ pub async fn exec(
     log::info!("Validate user has access to HSM group in BOS sessiontemplate");
     let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
     let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -87,12 +87,12 @@ pub async fn exec(
         let mut xnames_to_validate_access_vec = Vec::new();
         for limit_value in &limit_vec {
             log::info!("Check if limit value '{}', is an xname", limit_value);
-            if mesa::node::utils::validate_xname_format(limit_value) {
+            if csm_rs::node::utils::validate_xname_format(limit_value) {
                 // limit_value is an xname
                 log::info!("limit value '{}' is an xname", limit_value);
                 xnames_to_validate_access_vec.push(limit_value.to_string());
             } else if let Some(mut hsm_members_vec) =
-                mesa::hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
+                csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name_opt(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

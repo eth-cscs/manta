@@ -4,7 +4,7 @@ use crate::{
 };
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
+use csm_rs::{
     bss::{self, bootparameters::BootParameters},
     cfs,
     node::utils::validate_xnames_format_and_membership_agaisnt_multiple_hsm,
@@ -51,7 +51,7 @@ pub async fn exec(
     }
 
     // Check new configuration exists and exit otherwise
-    let runtime_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+    let runtime_configuration_detail_list_rslt = cfs::configuration::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -117,7 +117,7 @@ pub async fn exec(
         } else if let Some(boot_image_id) = new_boot_image_id_opt {
             log::info!("Boot image id '{}' provided", boot_image_id);
             // Check image id exists
-            let image_id_in_csm = mesa::ims::image::shasta::http_client::get(
+            let image_id_in_csm = csm_rs::ims::image::shasta::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -225,7 +225,7 @@ pub async fn exec(
 
         // Update boot params
         for boot_parameter in current_node_boot_param_vec {
-            let component_patch_rep = mesa::bss::bootparameters::http_client::patch(
+            let component_patch_rep = csm_rs::bss::bootparameters::http_client::patch(
                 shasta_base_url,
                 shasta_token,
                 shasta_root_cert,
@@ -246,7 +246,7 @@ pub async fn exec(
                 desired_configuration_name
             );
 
-            mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
+            csm_rs::cfs::component::shasta::utils::update_component_list_desired_configuration(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -315,7 +315,7 @@ pub async fn exec(
         std::process::exit(1);
     }
 
-    let runtime_configuration_detail_list_rslt = cfs::configuration::mesa::http_client::get(
+    let runtime_configuration_detail_list_rslt = cfs::configuration::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -439,7 +439,7 @@ pub async fn exec(
             node_boot_params.set_boot_image(&new_boot_image_id_opt.unwrap());
         }
 
-        let component_patch_rep = mesa::bss::http_client::patch(
+        let component_patch_rep = csm_rs::bss::http_client::patch(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -462,7 +462,7 @@ pub async fn exec(
                 desired_configuration_name
             );
 
-            mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
+            csm_rs::cfs::component::shasta::utils::update_component_list_desired_configuration(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::hsm;
+use csm_rs::hsm;
 
 use crate::cli::commands::apply_hw_cluster_pin::command::utils::{
     calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
@@ -20,7 +20,7 @@ pub async fn exec(
 ) {
     let pattern = format!("{}:{}", target_hsm_group_name, pattern);
 
-    match mesa::hsm::group::http_client::get_without_system_wide(
+    match csm_rs::hsm::group::http_client::get_without_system_wide(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -33,7 +33,7 @@ pub async fn exec(
             if create_hsm_group {
                 log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
                 if nodryrun {
-                    mesa::hsm::group::http_client::create_new_hsm_group(
+                    csm_rs::hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -103,7 +103,7 @@ pub async fn exec(
 
     // Get parent HSM group members
     let parent_hsm_group_member_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -188,7 +188,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let mut target_hsm_node_vec: Vec<String> =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

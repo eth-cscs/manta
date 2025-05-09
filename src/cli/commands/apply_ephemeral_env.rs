@@ -5,13 +5,13 @@ pub async fn exec(
     /* block: Option<bool>, */ image_id: &str,
 ) {
     // Take user name and check if there is an SSH public key with that name already in Alps
-    let user_public_key_name = mesa::common::jwt_ops::get_preferred_username(shasta_token)
+    let user_public_key_name = csm_rs::common::jwt_ops::get_preferred_username(shasta_token)
         .expect("ERROR - claim 'preferred_user' not found in JWT token");
 
     log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
     let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
-        mesa::ims::image::utils::get_single(
+        csm_rs::ims::image::utils::get_single(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -35,7 +35,7 @@ pub async fn exec(
         "Creating ephemeral environment baed on image ID {}",
         image_id
     );
-    let resp_json_rslt = mesa::ims::job::http_client::post_customize(
+    let resp_json_rslt = csm_rs::ims::job::http_client::post_customize(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

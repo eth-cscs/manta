@@ -6,7 +6,7 @@ use std::{
 };
 
 use comfy_table::{Color, Table};
-use mesa::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
+use csm_rs::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
 use tokio::sync::Semaphore;
 
 pub async fn exec(
@@ -18,7 +18,7 @@ pub async fn exec(
 ) {
     // We assume target HSM group is already validated
     // Target HSM group
-    let hsm_group = mesa::hsm::group::http_client::get(
+    let hsm_group = csm_rs::hsm::group::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -32,7 +32,7 @@ pub async fn exec(
 
     // Get target HSM group members
     let hsm_group_target_members =
-        mesa::hsm::group::utils::get_member_vec_from_hsm_group(&hsm_group);
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_group(&hsm_group);
 
     log::debug!(
         "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
@@ -70,7 +70,7 @@ pub async fn exec(
 
         tasks.spawn(async move {
             let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
-            mesa::hsm::hw_inventory::hw_component::http_client::get(
+            csm_rs::hsm::hw_inventory::hw_component::http_client::get(
                 &shasta_token_string,
                 &shasta_base_url_string,
                 &shasta_root_cert_vec,
@@ -110,7 +110,7 @@ pub async fn exec(
         print_table_details(&hsm_summary);
     } else if output_opt.is_some_and(|output| output.eq("summary")) {
         let hsm_node_hw_component_summary =
-            mesa::hsm::hw_inventory::hw_component::utils::calculate_hsm_hw_component_summary(
+            csm_rs::hsm::hw_inventory::hw_component::utils::calculate_hsm_hw_component_summary(
                 &hsm_summary,
             );
 

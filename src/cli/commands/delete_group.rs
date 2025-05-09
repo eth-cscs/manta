@@ -1,5 +1,5 @@
 use dialoguer::theme::ColorfulTheme;
-use mesa::common::jwt_ops;
+use csm_rs::common::jwt_ops;
 
 use crate::common::{audit::Audit, kafka::Kafka};
 
@@ -37,7 +37,7 @@ pub async fn exec(
 
     // Delete group
     let result =
-        mesa::hsm::group::http_client::delete(auth_token, base_url, root_cert, &label.to_string())
+        csm_rs::hsm::group::http_client::delete(auth_token, base_url, root_cert, &label.to_string())
             .await;
 
     match result {
@@ -71,7 +71,7 @@ pub async fn exec(
 async fn validation(auth_token: &str, base_url: &str, root_cert: &[u8], label: &str) {
     // Find the list of xnames belonging only to the label to delete and if any, then stop
     // processing the request because those nodes can't get orphan
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+    let xname_vec = csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
         auth_token,
         base_url,
         root_cert,
@@ -82,7 +82,7 @@ async fn validation(auth_token: &str, base_url: &str, root_cert: &[u8], label: &
     let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
 
     let mut xname_map =
-        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             auth_token, base_url, root_cert, xname_vec,
         )
         .await

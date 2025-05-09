@@ -1,6 +1,6 @@
 use dialoguer::theme::ColorfulTheme;
-use mesa::{
-    cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+use csm_rs::{
+    cfs::configuration::csm_rs::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
     common::kubernetes, error::Error,
 };
 use serde_yaml::Value;

@@ -6,9 +6,9 @@ use std::io::{self, Write};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::bss::bootparameters::BootParameters;
-use mesa::cfs::configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
-use mesa::{bos, cfs};
+use csm_rs::bss::bootparameters::BootParameters;
+use csm_rs::cfs::configuration::csm_rs::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse;
+use csm_rs::{bos, cfs};
 use serde_json::Value;
 
 use crate::{
@@ -42,7 +42,7 @@ pub async fn delete_data_related_cfs_configuration(
     //
     // Get all CFS components in CSM
     let cfs_components: Vec<Value> =
-        mesa::cfs::component::shasta::http_client::v3::get_multiple_components(
+        csm_rs::cfs::component::shasta::http_client::v3::get_multiple_components(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -56,7 +56,7 @@ pub async fn delete_data_related_cfs_configuration(
     // this we need to get images from both CFS session and BOS sessiontemplate because CSCS staff
     //
     // Get all BSS boot params
-    let boot_param_vec: Vec<BootParameters> = mesa::bss::bootparameters::http_client::get(
+    let boot_param_vec: Vec<BootParameters> = csm_rs::bss::bootparameters::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -67,7 +67,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // Get all CFS configurations in CSM
     let mut cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-        cfs::configuration::mesa::http_client::get(
+        cfs::configuration::csm_rs::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -78,7 +78,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // Filter CFS configurations related to HSM group, configuration name or configuration name
     // pattern
-    cfs::configuration::mesa::utils::filter(
+    cfs::configuration::csm_rs::utils::filter(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -117,7 +117,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all BOS session templates
-    let mut bos_sessiontemplate_value_vec = mesa::bos::template::mesa::http_client::get(
+    let mut bos_sessiontemplate_value_vec = csm_rs::bos::template::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -127,7 +127,7 @@ pub async fn delete_data_related_cfs_configuration(
     .unwrap();
 
     // Filter BOS sessiontemplate related to a HSM group
-    mesa::bos::template::mesa::utils::filter(
+    csm_rs::bos::template::csm_rs::utils::filter(
         &mut bos_sessiontemplate_value_vec,
         &hsm_name_available_vec,
         &Vec::new(),
@@ -172,7 +172,7 @@ pub async fn delete_data_related_cfs_configuration(
     // deletes all CFS sessions every now and then
     //
     // Get all CFS sessions
-    let mut cfs_session_vec = mesa::cfs::session::mesa::http_client::get(
+    let mut cfs_session_vec = csm_rs::cfs::session::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -187,9 +187,9 @@ pub async fn delete_data_related_cfs_configuration(
 
     // Filter CFS sessions related to a HSM group
     // NOTE: Admins (pa-admin) are the only ones who can delete generic sessions
-    let keep_generic_sessions = mesa::common::jwt_ops::is_user_admin(shasta_token).unwrap();
+    let keep_generic_sessions = csm_rs::common::jwt_ops::is_user_admin(shasta_token).unwrap();
 
-    mesa::cfs::session::mesa::utils::filter_by_hsm(
+    csm_rs::cfs::session::csm_rs::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -241,7 +241,7 @@ pub async fn delete_data_related_cfs_configuration(
 
     // Get image ids from CFS sessions related to CFS configuration to delete
     let image_id_from_cfs_session_vec =
-        cfs::session::mesa::utils::get_image_id_from_cfs_session_vec(&cfs_session_vec);
+        cfs::session::csm_rs::utils::get_image_id_from_cfs_session_vec(&cfs_session_vec);
 
     /* // Get image ids from BOS session template related to CFS configuration to delete
     // NOTE: This assumes runtime configuration and boot image configuration are the same
@@ -280,7 +280,7 @@ pub async fn delete_data_related_cfs_configuration(
     // previously and the CFS session and BOS sessiontemplate not being cleared)
     let mut image_id_filtered_vec: Vec<&str> = Vec::new();
     for image_id in image_id_vec {
-        if !mesa::ims::image::mesa::http_client::get(
+        if !csm_rs::ims::image::csm_rs::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -631,7 +631,7 @@ pub async fn delete(
     // DELETE IMAGES
     for image_id in image_id_vec {
         log::info!("Deleting IMS image '{}'", image_id);
-        let image_deleted_value_rslt = mesa::ims::image::shasta::http_client::delete(
+        let image_deleted_value_rslt = csm_rs::ims::image::shasta::http_client::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -730,7 +730,7 @@ pub async fn delete(
         );
         let mut counter = 0;
         loop {
-            let deletion_rslt = mesa::bos::template::shasta::http_client::v2::delete(
+            let deletion_rslt = csm_rs::bos::template::shasta::http_client::v2::delete(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

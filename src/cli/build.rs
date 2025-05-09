@@ -1,5 +1,5 @@
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
-use mesa::hsm::hw_inventory::hw_component::r#struct::ArtifactType;
+use csm_rs::hsm::hw_inventory::hw_component::r#struct::ArtifactType;
 use strum::IntoEnumIterator;
 
 use std::path::PathBuf;

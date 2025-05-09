@@ -2,15 +2,15 @@ use std::path::PathBuf;
 
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use mesa::{
-    bos::template::mesa::r#struct::v2::BosSessionTemplate,
+use csm_rs::{
+    bos::template::csm_rs::r#struct::v2::BosSessionTemplate,
     cfs::{
-        configuration::mesa::r#struct::{
+        configuration::csm_rs::r#struct::{
             cfs_configuration::ConfigurationDetails,
             cfs_configuration_request::v2::{CfsConfigurationRequest, Layer},
             cfs_configuration_response::v2::CfsConfigurationResponse,
         },
-        session::mesa::r#struct::v2::CfsSessionGetResponse,
+        session::csm_rs::r#struct::v2::CfsSessionGetResponse,
     },
     common::gitea,
     ims::image::r#struct::Image,

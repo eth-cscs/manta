@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::exit;
 
 use crate::cli::commands::migrate_restore;
-use mesa::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
+use csm_rs::ims::s3::{s3_auth, s3_download_object, s3_get_object_size};
 
 pub async fn exec(
     shasta_token: &str,
@@ -69,7 +69,7 @@ pub async fn exec(
     let hsm_file_path = dest_path.join(hsm_file_name);
 
     let _empty_hsm_group_name: Vec<String> = Vec::new();
-    let mut bos_templates = mesa::bos::template::mesa::http_client::get(
+    let mut bos_templates = csm_rs::bos::template::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -78,7 +78,7 @@ pub async fn exec(
     .await
     .unwrap();
 
-    mesa::bos::template::mesa::utils::filter(
+    csm_rs::bos::template::csm_rs::utils::filter(
         &mut bos_templates,
         &Vec::new(),
         &Vec::new(),
@@ -129,7 +129,7 @@ pub async fn exec(
             .unwrap()[0]
             .clone()
             .replace('\"', "");
-        let hsm_group_json = match mesa::hsm::group::http_client::get_without_system_wide(
+        let hsm_group_json = match csm_rs::hsm::group::http_client::get_without_system_wide(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -156,7 +156,7 @@ pub async fn exec(
             .as_ref()
             .unwrap()
             .to_owned();
-        let cfs_configurations = mesa::cfs::configuration::mesa::http_client::get(
+        let cfs_configurations = csm_rs::cfs::configuration::csm_rs::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -206,7 +206,7 @@ pub async fn exec(
                     &download_counter,
                     &files2download_count
                 );
-                match mesa::ims::image::shasta::http_client::get(
+                match csm_rs::ims::image::shasta::http_client::get(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
