@@ -20,6 +20,7 @@ pub async fn exec(
     kernel_params: &str,
     hosts_expression: &str,
     assume_yes: bool,
+    do_not_reboot: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
     let mut need_restart = false;
@@ -136,19 +137,24 @@ pub async fn exec(
     }
 
     // Reboot if needed
-    if xname_to_reboot_vec.is_empty() {
-        println!("Nothing to change. Exit");
+    if do_not_reboot {
+        println!("Kernel parameters applied. Reboot canceled by user");
+        return Ok(());
     } else {
-        crate::cli::commands::power_reset_nodes::exec(
-            &backend,
-            shasta_token,
-            &xname_to_reboot_vec.join(","),
-            true,
-            assume_yes,
-            "table",
-            kafka_audit_opt,
-        )
-        .await;
+        if xname_to_reboot_vec.is_empty() {
+            println!("Nothing to change. Exit");
+        } else {
+            crate::cli::commands::power_reset_nodes::exec(
+                &backend,
+                shasta_token,
+                &xname_to_reboot_vec.join(","),
+                true,
+                assume_yes,
+                "table",
+                kafka_audit_opt,
+            )
+            .await;
+        }
     }
 
     Ok(())

@@ -20,6 +20,7 @@ pub async fn exec(
     kernel_params: &str,
     hosts_expression: &str,
     assume_yes: bool,
+    do_not_reboot: bool,
     kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
     let mut need_restart = false;
@@ -132,23 +133,27 @@ pub async fn exec(
         if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
             log::warn!("Failed producing messages: {}", e);
         }
-        // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
     }
 
     // Reboot if needed
-    if xname_to_reboot_vec.is_empty() {
-        println!("Nothing to change. Exit");
+    if do_not_reboot {
+        println!("Kernel parameters added. Reboot canceled by user");
+        return Ok(());
     } else {
-        crate::cli::commands::power_reset_nodes::exec(
-            &backend,
-            shasta_token,
-            &xname_to_reboot_vec.join(","),
-            true,
-            assume_yes,
-            "table",
-            kafka_audit_opt,
-        )
-        .await;
+        if xname_to_reboot_vec.is_empty() {
+            println!("Nothing to change. Exit");
+        } else {
+            crate::cli::commands::power_reset_nodes::exec(
+                &backend,
+                shasta_token,
+                &xname_to_reboot_vec.join(","),
+                true,
+                assume_yes,
+                "table",
+                kafka_audit_opt,
+            )
+            .await;
+        }
     }
 
     Ok(())

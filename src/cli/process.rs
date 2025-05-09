@@ -545,6 +545,7 @@ pub async fn process_cli(
                     .unwrap(); // clap should validate the argument
 
                 let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
+                let do_not_reboot: bool = cli_add_kernel_parameters.get_flag("do-not-reboot");
 
                 let result = add_kernel_parameters::exec(
                     backend,
@@ -552,6 +553,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     nodes,
                     assume_yes,
+                    do_not_reboot,
                     kafka_audit_opt,
                 )
                 .await;
@@ -1506,6 +1508,7 @@ pub async fn process_cli(
                     .unwrap(); // clap should validate the argument
 
                 let assume_yes: bool = cli_apply_kernel_parameters.get_flag("assume-yes");
+                let do_not_reboot: bool = cli_apply_kernel_parameters.get_flag("do-not-reboot");
 
                 let result = apply_kernel_parameters::exec(
                     backend,
@@ -1513,6 +1516,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     nodes,
                     assume_yes,
+                    do_not_reboot,
                     kafka_audit_opt,
                 )
                 .await;
@@ -1524,13 +1528,6 @@ pub async fn process_cli(
             } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
                 if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
                     let shasta_token = backend.get_api_token(&site_name).await?;
-
-                    /* let xname_vec: Vec<&str> = cli_apply_boot_nodes
-                    .get_one::<String>("XNAMES")
-                    .unwrap()
-                    .split(',')
-                    .map(|xname| xname.trim())
-                    .collect(); */
 
                     let hosts_string: &str = cli_apply_boot_nodes
                         .get_one::<String>("VALUE")
@@ -1570,7 +1567,6 @@ pub async fn process_cli(
                         new_boot_image_configuration_opt,
                         new_runtime_configuration_opt,
                         new_kernel_parameters_opt,
-                        // xname_vec,
                         hosts_string,
                         assume_yes,
                         do_not_reboot,
@@ -2003,6 +1999,7 @@ pub async fn process_cli(
                     .unwrap(); // clap should validate the argument
 
                 let assume_yes: bool = cli_delete_kernel_parameters.get_flag("assume-yes");
+                let do_not_reboot: bool = cli_delete_kernel_parameters.get_flag("do-not-reboot");
 
                 let result = delete_kernel_parameters::exec(
                     backend,
@@ -2010,6 +2007,7 @@ pub async fn process_cli(
                     kernel_parameters,
                     node_expression,
                     assume_yes,
+                    do_not_reboot,
                     kafka_audit_opt,
                 )
                 .await;
