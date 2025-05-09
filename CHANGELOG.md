@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.138] - 2025-05-09
+
+### Bug Fixes
+
+- Command to add nodes to a group
+
 ## [1.54.1-beta.137] - 2025-05-09
 
 ### Features
 
 - Add argument '--do-not-reboot' to subcommands 'add kernel-parameters', 'apply kernel-parameters' and 'delete kernel-parameters'
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.137
 
 ### Refactor
 
