@@ -44,6 +44,7 @@ use super::commands::{
     power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
     power_reset_nodes, remove_nodes_from_hsm_groups, update_boot_parameters,
 };
+use serde_json::Value;
 
 pub async fn process_cli(
     mut cli: Command,
@@ -504,6 +505,67 @@ pub async fn process_cli(
                     create_hsm_group,
                 )
                 .await;
+            } else if let Some(cli_add_boot_parameters) =
+                cli_add.subcommand_matches("boot-parameters")
+            {
+                let shasta_token = backend.get_api_token(&site_name).await?;
+
+                let hosts = cli_add_boot_parameters
+                    .get_one::<String>("hosts")
+                    .expect("ERROR - 'hosts' argument is mandatory");
+                let macs = cli_add_boot_parameters.get_one::<String>("macs");
+                let nids = cli_add_boot_parameters.get_one::<String>("nids");
+                let params = cli_add_boot_parameters
+                    .get_one::<String>("params")
+                    .expect("ERROR - 'params' argument is mandatory")
+                    .clone();
+                let kernel = cli_add_boot_parameters
+                    .get_one::<String>("kernel")
+                    .expect("ERROR - 'kernel' argument is mandatory")
+                    .clone();
+                let initrd = cli_add_boot_parameters
+                    .get_one::<String>("initrd")
+                    .expect("ERROR - 'initrd' argument is mandatory")
+                    .clone();
+                let cloud_init = cli_add_boot_parameters
+                    .get_one::<Value>("cloud-init")
+                    .cloned();
+
+                let dry_run = cli_add_boot_parameters.get_flag("dry-run");
+                let assume_yes: bool = cli_add_boot_parameters.get_flag("assume-yes");
+
+                let host_vec = hosts
+                    .split(",")
+                    .map(|value| value.trim().to_string())
+                    .collect::<Vec<String>>();
+
+                let mac_vec = macs.map(|x| {
+                    x.split(",")
+                        .map(|value| value.trim().to_string())
+                        .collect::<Vec<String>>()
+                });
+
+                let nid_vec: Option<Vec<u32>> = nids.map(|x| {
+                    x.split(",")
+                        .map(|value| value.trim().parse().unwrap())
+                        .collect()
+                });
+
+                let boot_parameters = BootParameters {
+                    hosts: host_vec,
+                    macs: mac_vec,
+                    nids: nid_vec,
+                    params,
+                    kernel,
+                    initrd,
+                    cloud_init,
+                };
+
+                backend
+                    .add_bootparameters(&shasta_token, &boot_parameters)
+                    .await?;
+
+                println!("Boot parameters created successfully");
             } else if let Some(cli_add_kernel_parameters) =
                 cli_add.subcommand_matches("kernel-parameters")
             {

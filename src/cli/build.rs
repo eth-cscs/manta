@@ -756,11 +756,12 @@ pub fn subcommand_add_boot_parameters() -> Command {
         // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
         // using the nids or macs
 
-        // .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
-        // .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true))
+        .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script"))
+        .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script"))
         .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
         .arg(arg!(-k --"kernel" <VALUE> "S3 path to download kernel file name"))
         .arg(arg!(-i --"initrd" <VALUE> "S3 path to download initrd file name"))
+        .arg(arg!(-c --"cloud-init" <VALUE> "Cloud init script."))
         .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
 
