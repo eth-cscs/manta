@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.137] - 2025-05-09
+
+### Features
+
+- Add argument '--do-not-reboot' to subcommands 'add kernel-parameters', 'apply kernel-parameters' and 'delete kernel-parameters'
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.136] - 2025-05-05
 
 ### Bug Fixes
@@ -11,6 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.136
 
 ## [1.54.1-beta.135] - 2025-05-05
 
