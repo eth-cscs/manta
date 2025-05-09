@@ -2184,7 +2184,7 @@ pub async fn process_cli(
                 .get_one::<bool>("dry-run")
                 .expect("'dry-run' argument must be provided");
 
-            let nodes = cli_add_nodes.get_one::<String>("nodes").unwrap();
+            let hosts_expression = cli_add_nodes.get_one::<String>("nodes").unwrap();
 
             let target_hsm_name: &String = cli_add_nodes
                 .get_one::<String>("group")
@@ -2194,7 +2194,7 @@ pub async fn process_cli(
                 &backend,
                 &shasta_token,
                 target_hsm_name,
-                nodes,
+                hosts_expression,
                 dryrun,
                 kafka_audit_opt,
             )

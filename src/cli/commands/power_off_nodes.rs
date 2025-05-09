@@ -12,8 +12,6 @@ use crate::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    /* shasta_base_url: &str,
-    shasta_root_cert: &[u8], */
     hosts_expression: &str,
     force: bool,
     assume_yes: bool,

@@ -38,11 +38,6 @@ pub async fn exec(
         std::process::exit(1);
     });
 
-    if xname_to_move_vec.len() != 1 {
-        eprintln!("ERROR - The node to operate is not valid. Nothing to do. Exit");
-        std::process::exit(0);
-    }
-
     xname_to_move_vec.sort();
     xname_to_move_vec.dedup();
 

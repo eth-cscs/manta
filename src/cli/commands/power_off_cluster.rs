@@ -9,8 +9,6 @@ use crate::{
 pub async fn exec(
     backend: &StaticBackendDispatcher,
     shasta_token: &str,
-    /* shasta_root_cert: &[u8],
-    shasta_base_url: &str, */
     hsm_group_name_arg: &str,
     force: bool,
     assume_yes: bool,
@@ -18,21 +16,9 @@ pub async fn exec(
     kafka_audit_opt: Option<&Kafka>,
 ) {
     let xname_vec = backend
-        .get_member_vec_from_group_name_vec(
-            shasta_token,
-            /* shasta_base_url,
-            shasta_root_cert, */
-            vec![hsm_group_name_arg.to_string()],
-        )
+        .get_member_vec_from_group_name_vec(shasta_token, vec![hsm_group_name_arg.to_string()])
         .await
         .unwrap();
-    /* let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_group_name_arg_opt,
-    )
-    .await; */
 
     if !assume_yes {
         if Confirm::with_theme(&ColorfulTheme::default())
@@ -50,17 +36,6 @@ pub async fn exec(
         }
     }
 
-    /* let operation = if force { "force-off" } else { "soft-off" };
-
-    let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
-        shasta_base_url,
-        shasta_token,
-        shasta_root_cert,
-        operation,
-        &xname_vec,
-    )
-    .await
-    .map_err(|e| Error::Message(e.to_string())); */
     let power_mgmt_summary_rslt = backend
         .power_off_sync(shasta_token, &xname_vec, force)
         .await;
