@@ -192,7 +192,7 @@ fn test_get_next_image_to_process_4() {
 /// Test rendering a SAT template file with the values file
 #[test]
 fn test_render_sat_file_yaml_template_with_yaml_values_file() {
-    let sat_file_content = r#"
+  let sat_file_content = r#"
         name: "{{ config.name }}"
         configurations:
         - name: "{{ config.name }}-{{ config.version }}"
@@ -240,7 +240,7 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
                 - "{{ hsm.group_name }}"
         "#;
 
-    let values_file_content = r#"
+  let values_file_content = r#"
         hsm:
           group_name: "zinal_cta"
         config:
@@ -253,13 +253,13 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
           version: "v1.0"
         "#;
 
-    let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
+  let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
-    render_jinja2_sat_file_yaml(
-        &sat_file_content.to_string(),
-        Some(&values_file_content.to_string()),
-        Some(var_content),
-    );
+  render_jinja2_sat_file_yaml(
+    &sat_file_content.to_string(),
+    Some(&values_file_content.to_string()),
+    Some(var_content),
+  );
 }
 
 /* /// Test SAT file

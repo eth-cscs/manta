@@ -5,70 +5,73 @@ use strum::IntoEnumIterator;
 use std::path::PathBuf;
 
 pub fn build_cli() -> Command {
-    Command::new(env!("CARGO_PKG_NAME"))
-        .term_width(100)
-        .version(env!("CARGO_PKG_VERSION"))
-        .arg_required_else_help(true)
-        .subcommand(subcommand_config())
-        .subcommand(subcommand_get())
-        .subcommand(subcommand_add())
-        .subcommand(subcommand_update())
-        .subcommand(subcommand_apply())
-        .subcommand(subcommand_delete())
-        .subcommand(subcommand_migrate())
-        .subcommand(subcommand_power())
-        .subcommand(subcommand_log())
-        .subcommand(subcommand_console())
-        .subcommand(subcommand_validate_local_repo())
-        .subcommand(subcommand_add_nodes_to_groups())
-        .subcommand(subcommand_remove_nodes_from_groups())
-    /* .subcommand(subcommand_download_boot_image())
-    .subcommand(subcommand_upload_bood_image()) */
+  Command::new(env!("CARGO_PKG_NAME"))
+    .term_width(100)
+    .version(env!("CARGO_PKG_VERSION"))
+    .arg_required_else_help(true)
+    .subcommand(subcommand_config())
+    .subcommand(subcommand_get())
+    .subcommand(subcommand_add())
+    .subcommand(subcommand_update())
+    .subcommand(subcommand_apply())
+    .subcommand(subcommand_delete())
+    .subcommand(subcommand_migrate())
+    .subcommand(subcommand_power())
+    .subcommand(subcommand_log())
+    .subcommand(subcommand_console())
+    .subcommand(subcommand_validate_local_repo())
+    .subcommand(subcommand_add_nodes_to_groups())
+    .subcommand(subcommand_remove_nodes_from_groups())
+  /* .subcommand(subcommand_download_boot_image())
+  .subcommand(subcommand_upload_bood_image()) */
 }
 
 pub fn subcommand_config() -> Command {
-    // Enforce user to choose a HSM group is hsm_available config param is not empty. This is to
-    // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
-    // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
-    // will be able to access any HSM. The security meassures for this is to setup sticky bit to
-    // manta binary so it runs as manta user, then 'chown manta:manta /home/manta/.config/manta/config.toml' so only manta and root users can edit the config file. Tenants can neither su to manta nor root under the access VM (eg castaneda)
-    /* let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
-        Command::new("hsm")
-            .about("Change config values")
-            .about("Set target HSM group")
-            .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-    } else {
-        Command::new("hsm")
-            .about("Change config value")
-            .about("Set target HSM group")
-            .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
-    }; */
+  // Enforce user to choose a HSM group is hsm_available config param is not empty. This is to
+  // make sure tenants like PSI won't unset parameter hsm_group and take over all HSM groups.
+  // NOTE: by default 'manta config set hsm' will unset the hsm_group config value and the user
+  // will be able to access any HSM. The security meassures for this is to setup sticky bit to
+  // manta binary so it runs as manta user, then 'chown manta:manta /home/manta/.config/manta/config.toml' so only manta and root users can edit the config file. Tenants can neither su to manta nor root under the access VM (eg castaneda)
+  /* let subcommand_config_set_hsm = if !hsm_available_opt.is_empty() {
+      Command::new("hsm")
+          .about("Change config values")
+          .about("Set target HSM group")
+          .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
+  } else {
+      Command::new("hsm")
+          .about("Change config value")
+          .about("Set target HSM group")
+          .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
+  }; */
 
-    let subcommand_config_set_hsm = Command::new("hsm")
-        .about("Set target HSM group")
-        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
+  let subcommand_config_set_hsm = Command::new("hsm")
+    .about("Set target HSM group")
+    .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
 
-    let subcommand_config_set_parent_hsm = Command::new("parent-hsm")
-        .about("Set parent HSM group")
-        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
+  let subcommand_config_set_parent_hsm = Command::new("parent-hsm")
+    .about("Set parent HSM group")
+    .arg(arg!(<HSM_GROUP_NAME> "hsm group name"));
 
-    let subcommand_config_set_site = Command::new("site")
-        .about("Set site to work on")
-        .arg(arg!(<SITE_NAME> "site name"));
+  let subcommand_config_set_site = Command::new("site")
+    .about("Set site to work on")
+    .arg(arg!(<SITE_NAME> "site name"));
 
-    let subcommand_config_set_log = Command::new("log").about("Set site to work on").arg(
-        arg!(<LOG_LEVEL> "log verbority level")
-            .value_parser(["error", "warn", "info", "debug", "trace"]),
+  let subcommand_config_set_log =
+    Command::new("log").about("Set site to work on").arg(
+      arg!(<LOG_LEVEL> "log verbority level")
+        .value_parser(["error", "warn", "info", "debug", "trace"]),
     );
 
-    let subcommand_config_unset_hsm = Command::new("hsm").about("Unset target HSM group");
+  let subcommand_config_unset_hsm =
+    Command::new("hsm").about("Unset target HSM group");
 
-    let subcommand_config_unset_parent_hsm =
-        Command::new("parent-hsm").about("Unset parent HSM group");
+  let subcommand_config_unset_parent_hsm =
+    Command::new("parent-hsm").about("Unset parent HSM group");
 
-    let subcommand_config_unset_auth = Command::new("auth").about("Unset authentication token");
+  let subcommand_config_unset_auth =
+    Command::new("auth").about("Unset authentication token");
 
-    Command::new("config")
+  Command::new("config")
         // .visible_alias("C")
         .arg_required_else_help(true)
         .about("Manta's configuration")
@@ -106,23 +109,23 @@ pub fn subcommand_config() -> Command {
 }
 
 pub fn subcommand_delete() -> Command {
-    Command::new("delete")
-        // .visible_alias("d")
-        .arg_required_else_help(true)
-        .about("Deletes data")
-        .subcommand(subcommand_delete_group())
-        .subcommand(subcommand_delete_node())
-        .subcommand(subcommand_delete_kernel_parameter())
-        .subcommand(subcommand_delete_boot_parameter())
-        .subcommand(subcommand_delete_configuration())
-        .subcommand(subcommand_delete_session())
-        .subcommand(subcommand_delete_image())
-        .subcommand(subcommand_delete_hw_component())
-        .subcommand(subcommand_delete_redfish_endpoint())
+  Command::new("delete")
+    // .visible_alias("d")
+    .arg_required_else_help(true)
+    .about("Deletes data")
+    .subcommand(subcommand_delete_group())
+    .subcommand(subcommand_delete_node())
+    .subcommand(subcommand_delete_kernel_parameter())
+    .subcommand(subcommand_delete_boot_parameter())
+    .subcommand(subcommand_delete_configuration())
+    .subcommand(subcommand_delete_session())
+    .subcommand(subcommand_delete_image())
+    .subcommand(subcommand_delete_hw_component())
+    .subcommand(subcommand_delete_redfish_endpoint())
 }
 
 pub fn subcommand_delete_group() -> Command {
-    Command::new("group")
+  Command::new("group")
                 // .visible_alias("g")
                 .arg_required_else_help(true)
                 .about("Delete group. This command will fail if the group is not empty, please move group members to another group using command 'migrate nodes' before deletion")
@@ -132,20 +135,20 @@ pub fn subcommand_delete_group() -> Command {
 }
 
 pub fn subcommand_delete_node() -> Command {
-    Command::new("node")
-        // .visible_alias("g")
-        .arg_required_else_help(true)
-        .about("Delete node.")
-        // FIXME: implement cascade
-        /* .arg(
-            arg!(-c --"cascade" "WIP - Deletes the hardware inventory, redfish and network interfaces for this node.")
-                .action(ArgAction::SetTrue),
-        ) */
-        .arg(arg!(<VALUE> "Xname to delete").required(true))
+  Command::new("node")
+    // .visible_alias("g")
+    .arg_required_else_help(true)
+    .about("Delete node.")
+    // FIXME: implement cascade
+    /* .arg(
+        arg!(-c --"cascade" "WIP - Deletes the hardware inventory, redfish and network interfaces for this node.")
+            .action(ArgAction::SetTrue),
+    ) */
+    .arg(arg!(<VALUE> "Xname to delete").required(true))
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
-    Command::new("hardware")
+  Command::new("hardware")
                 // .visible_alias("hw")
                 .arg_required_else_help(true)
                 .about("WIP - Remove hw components from a cluster")
@@ -157,7 +160,7 @@ pub fn subcommand_delete_hw_component() -> Command {
 }
 
 pub fn subcommand_delete_image() -> Command {
-    Command::new("images")
+  Command::new("images")
             // .visible_aliases(["image", "i"])
             .arg_required_else_help(true)
             .about("WIP - Deletes a list of images.")
@@ -166,7 +169,7 @@ pub fn subcommand_delete_image() -> Command {
 }
 
 pub fn subcommand_delete_configuration() -> Command {
-    Command::new("configurations")
+  Command::new("configurations")
             // .visible_aliases(["configuration", "c"])
             .arg_required_else_help(true)
             .about("Deletes CFS configurations and all data related (CFS sessions, BOS sessiontemplates, BOS sessions and images).")
@@ -179,7 +182,7 @@ pub fn subcommand_delete_configuration() -> Command {
 }
 
 pub fn subcommand_delete_session() -> Command {
-    Command::new("session")
+  Command::new("session")
             // .visible_alias("s")
             .arg_required_else_help(true)
             .about("Deletes a session. For 'image' sessions, it also removes the associated image. For 'dynamic' sessions, it sets the 'error count' to its maximum value.")
@@ -189,7 +192,7 @@ pub fn subcommand_delete_session() -> Command {
 }
 
 pub fn subcommand_delete_kernel_parameter() -> Command {
-    Command::new("kernel-parameters")
+  Command::new("kernel-parameters")
         // .visible_alias("kp")
         .arg_required_else_help(true)
         .about("Delete kernel parameters")
@@ -206,46 +209,51 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
 }
 
 pub fn subcommand_delete_boot_parameter() -> Command {
-    Command::new("boot-parameters")
-        // .visible_alias("kp")
-        .arg_required_else_help(true)
-        .about("Delete boot parameters related to a list of nodes")
-        .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames"))
+  Command::new("boot-parameters")
+    // .visible_alias("kp")
+    .arg_required_else_help(true)
+    .about("Delete boot parameters related to a list of nodes")
+    .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames"))
 }
 
 pub fn subcommand_delete_redfish_endpoint() -> Command {
-    Command::new("redfish-endpoint")
-        // .visible_alias("kp")
-        .arg_required_else_help(true)
-        .about("Delete redfish endpoint")
-        .arg(arg!(-i --id <VALUE> "Xname related to the redfish endpoint to delete").required(true))
+  Command::new("redfish-endpoint")
+    // .visible_alias("kp")
+    .arg_required_else_help(true)
+    .about("Delete redfish endpoint")
+    .arg(
+      arg!(-i --id <VALUE> "Xname related to the redfish endpoint to delete")
+        .required(true),
+    )
 }
 
 pub fn subcommand_get_group() -> Command {
-    Command::new("groups")
-        // .visible_aliases(["g"])
-        .about("Get group details")
-        .arg(arg!(<VALUE> "Group name. Returns all groups if missing").required(false))
-        .arg(
-            arg!(-o --output <VALUE> "Output format")
-                .value_parser(["json", "table"])
-                .default_value("table"),
-        )
+  Command::new("groups")
+    // .visible_aliases(["g"])
+    .about("Get group details")
+    .arg(
+      arg!(<VALUE> "Group name. Returns all groups if missing").required(false),
+    )
+    .arg(
+      arg!(-o --output <VALUE> "Output format")
+        .value_parser(["json", "table"])
+        .default_value("table"),
+    )
 }
 
 pub fn subcommand_get_hardware() -> Command {
-    let command_get_hw_configuration_cluster = Command::new("cluster")
-        // .visible_aliases(["c", "clstr"])
-        .arg_required_else_help(true)
-        .about("Get hw components for a cluster")
-        .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
-        .arg(
-            arg!(-o --output <FORMAT> "Output format")
-                .value_parser(["json", "summary", "details"])
-                .default_value("summary"),
-        );
+  let command_get_hw_configuration_cluster = Command::new("cluster")
+    // .visible_aliases(["c", "clstr"])
+    .arg_required_else_help(true)
+    .about("Get hw components for a cluster")
+    .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
+    .arg(
+      arg!(-o --output <FORMAT> "Output format")
+        .value_parser(["json", "summary", "details"])
+        .default_value("summary"),
+    );
 
-    let command_get_hw_configuration_node = Command::new("node")
+  let command_get_hw_configuration_node = Command::new("node")
                 // .visible_alias("n")
                 .arg_required_else_help(true)
                 .about("Get hw components for some nodes")
@@ -253,16 +261,16 @@ pub fn subcommand_get_hardware() -> Command {
                 .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
                 .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
 
-    Command::new("hardware")
-        // .visible_alias("hw")
-        .arg_required_else_help(true)
-        .about("Get hardware components for a cluster or a node")
-        .subcommand(command_get_hw_configuration_cluster)
-        .subcommand(command_get_hw_configuration_node)
+  Command::new("hardware")
+    // .visible_alias("hw")
+    .arg_required_else_help(true)
+    .about("Get hardware components for a cluster or a node")
+    .subcommand(command_get_hw_configuration_cluster)
+    .subcommand(command_get_hw_configuration_node)
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {
-    Command::new("configurations")
+  Command::new("configurations")
         // .visible_aliases(["c", "cfg", "conf", "config", "cnfgrtn", "configuration"])
         .about("Get information from Shasta CFS configuration")
         .arg(arg!(-n --name <CONFIGURATION_NAME> "configuration name"))
@@ -279,7 +287,7 @@ pub fn subcommand_get_cfs_configuration() -> Command {
 }
 
 pub fn subcommand_get_cfs_session() -> Command {
-    Command::new("sessions")
+  Command::new("sessions")
         // .visible_aliases(["s", "se", "ses", "sess", "sssn", "session"])
         .about("Get information from Shasta CFS session")
         .arg(arg!(-n --name <SESSION_NAME> "Return only sessions with the given session name"))
@@ -304,7 +312,7 @@ pub fn subcommand_get_cfs_session() -> Command {
 }
 
 pub fn subcommand_get_bos_template() -> Command {
-    Command::new("templates")
+  Command::new("templates")
         // .visible_aliases(["t", "tplt", "templ", "tmplt", "template"])
         .about("Get information from Shasta BOS template")
         .arg(arg!(-n --name <TEMPLATE_NAME> "template name"))
@@ -319,7 +327,7 @@ pub fn subcommand_get_bos_template() -> Command {
 }
 
 pub fn subcommand_get_cluster_details() -> Command {
-    Command::new("cluster")
+  Command::new("cluster")
         // .visible_aliases(["C", "clstr"])
         .about("Get cluster details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
@@ -331,7 +339,7 @@ pub fn subcommand_get_cluster_details() -> Command {
 }
 
 pub fn subcommand_get_node_details() -> Command {
-    Command::new("nodes")
+  Command::new("nodes")
         // .visible_aliases(["n", "node", "nd"])
         .about("Get node details")
         .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
@@ -351,7 +359,7 @@ pub fn subcommand_get_node_details() -> Command {
 } */
 
 pub fn subcommand_get_images() -> Command {
-    Command::new("images")
+  Command::new("images")
         // .visible_aliases(["i", "img", "imag", "image"])
         .about("Get image information")
         .arg(arg!(-i --id <VALUE> "Image ID"))
@@ -363,25 +371,25 @@ pub fn subcommand_get_images() -> Command {
 }
 
 pub fn subcommand_get_boot_parameters() -> Command {
-    Command::new("boot-parameters")
+  Command::new("boot-parameters")
         // .visible_aliases(["n", "node"])
         .about("Get boot-parameters information")
         .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames requesting boot script"))
 
-    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-    // using the nids or macs
+  // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+  // using the nids or macs
 
-    /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
-    .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
+  /* .arg(arg!(-n --"nids" <VALUE> "Comma separated list of node ID (NID) of host requesting boot script").required(true))
+  .arg(arg!(-m --"macs" <VALUE> "Comma separated list of MAC address of hosts requesting boot script").required(true)) */
 
-    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-    // using the nids or macs
+  // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+  // using the nids or macs
 
-    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
+  // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
 
 pub fn subcommand_get_kernel_parameters() -> Command {
-    Command::new("kernel-parameters")
+  Command::new("kernel-parameters")
         // .visible_aliases(["k", "kp", "kernel-params"])
         .about("Get kernel-parameters information")
         .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
@@ -392,7 +400,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
 }
 
 pub fn subcommand_get_redfish_endpoints() -> Command {
-    Command::new("redfish-endpoints")
+  Command::new("redfish-endpoints")
         // .visible_aliases(["n", "node"])
         .about("Get redfish endpoints information")
         .arg(arg!(-i --id <VALUE> "Filter the results based on xname ID(s). Can be specified multiple times for selecting entries with multiple specific xnames."))
@@ -401,30 +409,30 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
         .arg(arg!(-u --uuid <VALUE> "Retrieve the RedfishEndpoint with the given UUID."))
         .arg(arg!(-m --macaddr <VALUE> "Retrieve the RedfishEndpoint with the given MAC address."))
         .arg(arg!(-I --ipaddress <VALUE> "Retrieve the RedfishEndpoint with the given IP address. A blank string will get Redfish endpoints without IP addresses."))
-    // .arg(arg!(-l --"last-status" <VALUE> "Retrieve the RedfishEndpoints with the given discovery status."))
+  // .arg(arg!(-l --"last-status" <VALUE> "Retrieve the RedfishEndpoints with the given discovery status."))
 }
 
 pub fn subcommand_get() -> Command {
-    Command::new("get")
-        // .visible_alias("g")
-        .arg_required_else_help(true)
-        .about("Get information from CSM system")
-        .subcommand(subcommand_get_group())
-        .subcommand(subcommand_get_hardware())
-        .subcommand(subcommand_get_cfs_session())
-        .subcommand(subcommand_get_cfs_configuration())
-        .subcommand(subcommand_get_bos_template())
-        .subcommand(subcommand_get_cluster_details())
-        .subcommand(subcommand_get_node_details())
-        // .subcommand(subcommand_get_hsm_groups_details())
-        .subcommand(subcommand_get_images())
-        .subcommand(subcommand_get_boot_parameters())
-        .subcommand(subcommand_get_kernel_parameters())
-        .subcommand(subcommand_get_redfish_endpoints())
+  Command::new("get")
+    // .visible_alias("g")
+    .arg_required_else_help(true)
+    .about("Get information from CSM system")
+    .subcommand(subcommand_get_group())
+    .subcommand(subcommand_get_hardware())
+    .subcommand(subcommand_get_cfs_session())
+    .subcommand(subcommand_get_cfs_configuration())
+    .subcommand(subcommand_get_bos_template())
+    .subcommand(subcommand_get_cluster_details())
+    .subcommand(subcommand_get_node_details())
+    // .subcommand(subcommand_get_hsm_groups_details())
+    .subcommand(subcommand_get_images())
+    .subcommand(subcommand_get_boot_parameters())
+    .subcommand(subcommand_get_kernel_parameters())
+    .subcommand(subcommand_get_redfish_endpoints())
 }
 
 pub fn subcommand_apply_hw_configuration() -> Command {
-    Command::new("hardware")
+  Command::new("hardware")
         // .visible_alias("hw")
         .about("WIP - Upscale/downscale hw components in a cluster based on user input pattern. If the cluster does not exists, then a new one will be created, otherwise, the nodes of the existing cluster will be changed according to the new configuration")
         .arg_required_else_help(true)
@@ -443,7 +451,7 @@ pub fn subcommand_apply_hw_configuration() -> Command {
 }
 
 pub fn subcommand_apply_session() -> Command {
-    Command::new("session")
+  Command::new("session")
         // .visible_aliases(["s", "se", "ses", "sess", "sssn"])
         .arg_required_else_help(true)
         .about("Runs the ansible script in local directory against HSM group or xnames.\nNote: the local repo must alrady exists in Shasta VCS")
@@ -465,7 +473,7 @@ pub fn subcommand_apply_session() -> Command {
 }
 
 pub fn subcommand_apply_configuration() -> Command {
-    Command::new("configuration")
+  Command::new("configuration")
         // .visible_aliases(["conf", "config"])
         .arg_required_else_help(true)
         .about("DEPRECATED - Please use 'manta apply sat-file' command instead.\nCreate a CFS configuration")
@@ -483,7 +491,7 @@ pub fn subcommand_apply_configuration() -> Command {
 }
 
 pub fn subcommand_apply_template() -> Command {
-    Command::new("template")
+  Command::new("template")
                     // .visible_aliases(["t", "temp", "tmpl"])
                     .arg_required_else_help(true)
                     .about("Create a new BOS session from an existing BOS sessiontemplate")
@@ -496,7 +504,7 @@ pub fn subcommand_apply_template() -> Command {
 }
 
 pub fn subcommand_apply_ephemeral_environment() -> Command {
-    Command::new("ephemeral-environment")
+  Command::new("ephemeral-environment")
                     // .visible_aliases(["ee", "eph", "ephemeral"])
                     .arg_required_else_help(true)
                     .about("Returns a hostname use can ssh with the image ID provided. This call is async which means, the user will have to wait a few seconds for the environment to be ready, normally, this takes a few seconds.")
@@ -506,7 +514,7 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
 }
 
 pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
-    Command::new("sat-file")
+  Command::new("sat-file")
         // .visible_alias("sat")
         .arg_required_else_help(true)
         .about("Process a SAT file and creates the configurations, images, boot parameters and runtime configurations. If runtime configuration and boot parameters are defined, then, reboots the nodes to configure.\nThe ansible container for the session building the image will remain running after an Ansible failure.  The container will remain running for a number of seconds specified by the 'debug_wait_time options'")
@@ -532,7 +540,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
 }
 
 pub fn subcommand_apply_boot_nodes() -> Command {
-    Command::new("nodes")
+  Command::new("nodes")
         // .visible_aliases(["n", "node"])
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel parameters) for a list of nodes. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot nodes --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
@@ -548,7 +556,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
 }
 
 pub fn subcommand_apply_boot_cluster() -> Command {
-    Command::new("cluster")
+  Command::new("cluster")
         // .visible_alias("c")
         .arg_required_else_help(true)
         .about("Update the boot parameters (boot image id, runtime configuration and kernel params) for all nodes in a cluster. The boot image could be specified by either image id or the configuration name used to create the image id.\neg:\nmanta apply boot cluster --boot-image-configuration <cfs configuration name used to build an image> --runtime-configuration <cfs configuration name to apply during runtime configuration>")
@@ -564,7 +572,7 @@ pub fn subcommand_apply_boot_cluster() -> Command {
 }
 
 pub fn subcommand_migrate_backup() -> Command {
-    Command::new("backup")
+  Command::new("backup")
         // .visible_aliases(["mb"])
         .arg_required_else_help(true)
         .about("Backup the configuration (BOS, CFS, image and HSM group) of a given vCluster/BOS session template.")
@@ -575,7 +583,7 @@ pub fn subcommand_migrate_backup() -> Command {
 }
 
 pub fn subcommand_migrate_restore() -> Command {
-    Command::new("restore")
+  Command::new("restore")
         // .visible_aliases(["mr"])
         .arg_required_else_help(true)
         .about("MIGRATE RESTORE of all the nodes in a HSM group. Boot configuration means updating the image used to boot the machine. Configuration of a node means the CFS configuration with the ansible scripts running once a node has been rebooted.\neg:\nmanta update hsm-group --boot-image <boot cfs configuration name> --desired-configuration <desired cfs configuration name>")
@@ -589,7 +597,7 @@ pub fn subcommand_migrate_restore() -> Command {
 }
 
 pub fn subcommand_power() -> Command {
-    Command::new("power")
+  Command::new("power")
         // .visible_aliases(["p", "pwr"])
         .arg_required_else_help(true)
         .about("Command to submit commands related to cluster/node power management")
@@ -672,48 +680,56 @@ pub fn subcommand_power() -> Command {
 }
 
 pub fn subcommand_log() -> Command {
-    Command::new("log")
+  Command::new("log")
         // .visible_alias("l")
         .about("get cfs session logs")
         .arg(arg!([VALUE] "Show logs related to a session name, group name, xname or nid. eg: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2a3"))
 }
 
 pub fn subcommand_validate_local_repo() -> Command {
-    Command::new("validate-local-repo")
+  Command::new("validate-local-repo")
         // .visible_alias("vlr")
         .about("Check all tags and HEAD information related to a local repo exists in Gitea")
         .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
 
 pub fn subcommand_add_group() -> Command {
-    Command::new("group")
+  Command::new("group")
                 // .visible_alias("g")
                 .about("Add/Create new group")
                 .arg_required_else_help(true)
                 .arg(arg!(-l --label <VALUE> "Group name").required(true))
                 .arg(arg!(-d --description <VALUE> "Group description"))
                 .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
-    // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-    // .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+  // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
+  // .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_add_node() -> Command {
-    Command::new("node")
-        // .visible_alias("n")
-        .about("Add/Create new node")
-        .arg_required_else_help(true)
-        .arg(arg!(-i --id <VALUE> "Xname").required(true))
-        .arg(arg!(-g --group <VALUE> "Group name the node belongs to").required(true))
-        .arg(
-            arg!(-H --hardware <FILE> "File containing hardware information")
-                .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(arg!(-a --arch <VALUE> "Architecture").value_parser(["X86", "ARM", "Other"]))
-        .arg(arg!(-d --disabled "Disable node upon creation").action(ArgAction::SetFalse))
+  Command::new("node")
+    // .visible_alias("n")
+    .about("Add/Create new node")
+    .arg_required_else_help(true)
+    .arg(arg!(-i --id <VALUE> "Xname").required(true))
+    .arg(
+      arg!(-g --group <VALUE> "Group name the node belongs to").required(true),
+    )
+    .arg(
+      arg!(-H --hardware <FILE> "File containing hardware information")
+        .value_parser(value_parser!(PathBuf)),
+    )
+    .arg(
+      arg!(-a --arch <VALUE> "Architecture")
+        .value_parser(["X86", "ARM", "Other"]),
+    )
+    .arg(
+      arg!(-d --disabled "Disable node upon creation")
+        .action(ArgAction::SetFalse),
+    )
 }
 
 pub fn subcommand_add_hwcomponent() -> Command {
-    Command::new("hardware")
+  Command::new("hardware")
        // .visible_alias("hw")
        .arg_required_else_help(true)
        .about("WIP - Add hw components from a cluster")
@@ -725,7 +741,7 @@ pub fn subcommand_add_hwcomponent() -> Command {
 }
 
 pub fn subcommand_add_redfish_endpoint() -> Command {
-    Command::new("redfish-endpoint")
+  Command::new("redfish-endpoint")
        // .visible_alias("g")
        .about("Add/Create new redfish endpoint")
        .arg(arg!(-i --id <VALUE> "Uniquely identifies the component by its physical location (xname). This is identical to a normal XName, but specifies a case where a BMC or other controller type is expected.").required(true))
@@ -747,7 +763,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
 }
 
 pub fn subcommand_add_boot_parameters() -> Command {
-    Command::new("boot-parameters")
+  Command::new("boot-parameters")
         // .visible_aliases(["n", "node"])
         .arg_required_else_help(true)
         .about("Add/Create boot parameters")
@@ -765,10 +781,10 @@ pub fn subcommand_add_boot_parameters() -> Command {
         .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
 
-    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-    // using the nids or macs
+  // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+  // using the nids or macs
 
-    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
+  // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
 
 /* pub fn subcommand_add_boot_parameters() -> Command {
@@ -786,7 +802,7 @@ pub fn subcommand_add_boot_parameters() -> Command {
 } */
 
 pub fn subcommand_add_kernel_parameters() -> Command {
-    Command::new("kernel-parameters")
+  Command::new("kernel-parameters")
        // .visible_alias("kp")
        .arg_required_else_help(true)
        .about("Add kernel parameters")
@@ -803,7 +819,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {
-    Command::new("kernel-parameters")
+  Command::new("kernel-parameters")
        // .visible_alias("kp")
        .arg_required_else_help(true)
        .about("Apply kernel parameters")
@@ -820,7 +836,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
 }
 
 pub fn subcommand_update_boot_parameters() -> Command {
-    Command::new("boot-parameters")
+  Command::new("boot-parameters")
         // .visible_aliases(["n", "node"])
         .arg_required_else_help(true)
         .about("Update boot parameters")
@@ -837,14 +853,14 @@ pub fn subcommand_update_boot_parameters() -> Command {
         .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
         .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
 
-    // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
-    // using the nids or macs
+  // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
+  // using the nids or macs
 
-    // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
+  // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
 
 pub fn subcommand_update_redfish_endpoint() -> Command {
-    Command::new("redfish-endpoint")
+  Command::new("redfish-endpoint")
         // .visible_aliases(["n", "node"])
         .arg_required_else_help(true)
         .about("Update redfish endpoint")
@@ -867,49 +883,49 @@ pub fn subcommand_update_redfish_endpoint() -> Command {
 }
 
 pub fn subcommand_update() -> Command {
-    Command::new("update")
-        .arg_required_else_help(true)
-        .about("Update elements to system.")
-        .subcommand(subcommand_update_boot_parameters())
-        .subcommand(subcommand_update_redfish_endpoint())
+  Command::new("update")
+    .arg_required_else_help(true)
+    .about("Update elements to system.")
+    .subcommand(subcommand_update_boot_parameters())
+    .subcommand(subcommand_update_redfish_endpoint())
 }
 
 pub fn subcommand_add() -> Command {
-    Command::new("add")
-        .arg_required_else_help(true)
-        .about("Add/Create new elements to system.")
-        .subcommand(subcommand_add_node())
-        .subcommand(subcommand_add_group())
-        .subcommand(subcommand_add_hwcomponent())
-        .subcommand(subcommand_add_boot_parameters())
-        .subcommand(subcommand_add_kernel_parameters())
-        .subcommand(subcommand_add_redfish_endpoint())
+  Command::new("add")
+    .arg_required_else_help(true)
+    .about("Add/Create new elements to system.")
+    .subcommand(subcommand_add_node())
+    .subcommand(subcommand_add_group())
+    .subcommand(subcommand_add_hwcomponent())
+    .subcommand(subcommand_add_boot_parameters())
+    .subcommand(subcommand_add_kernel_parameters())
+    .subcommand(subcommand_add_redfish_endpoint())
 }
 
 pub fn subcommand_apply() -> Command {
-    Command::new("apply")
-        // .visible_alias("a")
+  Command::new("apply")
+    // .visible_alias("a")
+    .arg_required_else_help(true)
+    .about("Make changes to Shasta system")
+    .subcommand(subcommand_apply_hw_configuration())
+    .subcommand(subcommand_apply_configuration())
+    .subcommand(subcommand_apply_sat_file(/* hsm_group */))
+    .subcommand(
+      Command::new("boot")
+        // .visible_alias("b")
         .arg_required_else_help(true)
-        .about("Make changes to Shasta system")
-        .subcommand(subcommand_apply_hw_configuration())
-        .subcommand(subcommand_apply_configuration())
-        .subcommand(subcommand_apply_sat_file(/* hsm_group */))
-        .subcommand(
-            Command::new("boot")
-                // .visible_alias("b")
-                .arg_required_else_help(true)
-                .about("Change boot operations")
-                .subcommand(subcommand_apply_boot_nodes())
-                .subcommand(subcommand_apply_boot_cluster()),
-        )
-        .subcommand(subcommand_apply_kernel_parameters())
-        .subcommand(subcommand_apply_session())
-        .subcommand(subcommand_apply_ephemeral_environment())
-        .subcommand(subcommand_apply_template())
+        .about("Change boot operations")
+        .subcommand(subcommand_apply_boot_nodes())
+        .subcommand(subcommand_apply_boot_cluster()),
+    )
+    .subcommand(subcommand_apply_kernel_parameters())
+    .subcommand(subcommand_apply_session())
+    .subcommand(subcommand_apply_ephemeral_environment())
+    .subcommand(subcommand_apply_template())
 }
 
 pub fn subcommand_migrate() -> Command {
-    Command::new("migrate")
+  Command::new("migrate")
         // .visible_alias("m")
         .arg_required_else_help(true)
         .subcommand(Command::new("vCluster")
@@ -930,7 +946,7 @@ pub fn subcommand_migrate() -> Command {
 }
 
 pub fn subcommand_console() -> Command {
-    Command::new("console")
+  Command::new("console")
         // .visible_aliases(["c", "con", "cons", "conso"])
         .arg_required_else_help(true)
         .about("Opens an interective session to a node or CFS session ansible target container")
@@ -952,7 +968,7 @@ pub fn subcommand_console() -> Command {
 }
 
 pub fn subcommand_add_nodes_to_groups() -> Command {
-    Command::new("add-nodes-to-groups")
+  Command::new("add-nodes-to-groups")
         // .visible_aliases(["ag"])
         .about("Add nodes to a list of groups")
         .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
@@ -961,7 +977,7 @@ pub fn subcommand_add_nodes_to_groups() -> Command {
 }
 
 pub fn subcommand_remove_nodes_from_groups() -> Command {
-    Command::new("remove-nodes-from-groups")
+  Command::new("remove-nodes-from-groups")
         // .visible_aliases(["rg"])
         .about("Remove nodes from groups")
         .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
@@ -970,13 +986,13 @@ pub fn subcommand_remove_nodes_from_groups() -> Command {
 }
 
 pub fn subcommand_download_boot_image() -> Command {
-    Command::new("download-boot-image")
-        .about("Downloads a boot image")
-        .arg(arg!(<IMAGE_ID> "Image id to download"))
+  Command::new("download-boot-image")
+    .about("Downloads a boot image")
+    .arg(arg!(<IMAGE_ID> "Image id to download"))
 }
 
 pub fn subcommand_upload_boot_image() -> Command {
-    Command::new("upload-boot-image")
-        .about("Uploads a boot image")
-        .arg(arg!(<IMAGE_ID> "Image id to upload"))
+  Command::new("upload-boot-image")
+    .about("Uploads a boot image")
+    .arg(arg!(<IMAGE_ID> "Image id to upload"))
 }

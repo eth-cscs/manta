@@ -47,23 +47,23 @@ pub struct Audit {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Site {
-    pub backend: String,
-    pub socks5_proxy: Option<String>,
-    pub shasta_base_url: String,
-    pub k8s: Option<K8sDetails>,
-    // pub k8s_api_url: Option<String>,
-    pub vault_base_url: Option<String>,
-    pub vault_secret_path: Option<String>,
-    // pub vault_role_id: Option<String>,
-    pub root_ca_cert_file: String,
+  pub backend: String,
+  pub socks5_proxy: Option<String>,
+  pub shasta_base_url: String,
+  pub k8s: Option<K8sDetails>,
+  // pub k8s_api_url: Option<String>,
+  pub vault_base_url: Option<String>,
+  pub vault_secret_path: Option<String>,
+  // pub vault_role_id: Option<String>,
+  pub root_ca_cert_file: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MantaConfiguration {
-    pub log: String,
-    pub site: String,
-    pub parent_hsm_group: String,
-    pub audit_file: String,
-    pub sites: HashMap<String, Site>,
-    pub auditor: Option<Auditor>,
+  pub log: String,
+  pub site: String,
+  pub parent_hsm_group: String,
+  pub audit_file: String,
+  pub sites: HashMap<String, Site>,
+  pub auditor: Option<Auditor>,
 }
