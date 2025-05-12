@@ -2,11 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.140] - 2025-05-12
+
+### Bug Fixes
+
+- Get templates
+
+### Refactor
+
+- Apply new format rules
+- Format code with new rules
+
 ## [1.54.1-beta.139] - 2025-05-09
 
 ### Bug Fixes
 
 - Add boot parameters
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.139
 
 ## [1.54.1-beta.138] - 2025-05-09
 
