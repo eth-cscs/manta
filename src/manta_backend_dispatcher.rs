@@ -1650,6 +1650,44 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     }
   }
 
+  async fn get_and_filter_templates(
+    &self,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    hsm_group_name_vec: &Vec<String>,
+    hsm_member_vec: &[String],
+    bos_sessiontemplate_name_opt: Option<&String>,
+    limit_number_opt: Option<&u8>,
+  ) -> Result<Vec<BosSessionTemplate>, Error> {
+    match self {
+      CSM(b) => {
+        b.get_and_filter_templates(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          hsm_group_name_vec,
+          hsm_member_vec,
+          bos_sessiontemplate_name_opt,
+          limit_number_opt,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.get_and_filter_templates(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          hsm_group_name_vec,
+          hsm_member_vec,
+          bos_sessiontemplate_name_opt,
+          limit_number_opt,
+        )
+        .await
+      }
+    }
+  }
+
   async fn get_all_templates(
     &self,
     shasta_token: &str,

@@ -206,13 +206,6 @@ pub async fn exec(
     println!("Dry-run enabled. No changes persisted into the system");
     println!("BOS session info:\n{:#?}", bos_session);
   } else {
-    /* let create_bos_session_rslt = bos::session::http_client::v2::post(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        bos_session.into(),
-    )
-    .await; */
     let create_bos_session_rslt = backend
       .post_template_session(
         shasta_token,
