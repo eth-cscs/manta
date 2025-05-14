@@ -500,6 +500,7 @@ pub fn subcommand_apply_template() -> Command {
     .arg(arg!(-t --template <VALUE> "Name of the Session Template").required(true))
     .arg(arg!(-l --limit <VALUE> "A comma-separated list of nodes, groups, or roles to which the Session will be limited. Components are treated as OR operations unless preceded by '&' for AND or '!' for NOT").required(true))
     .arg(arg!(-i --"include-disabled" <VALUE> "Set to include nodes that have been disabled as indicated in the Hardware State Manager (HSM)").action(ArgAction::SetTrue))
+    .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively. Image artifacts and configurations used by nodes will not be deleted").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 

@@ -10,7 +10,8 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
-    hsm::inventory::RedfishEndpoint, BootParameters, HWInventoryByLocationList,
+    hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
+    BootParameters, HWInventoryByLocationList,
   },
 };
 use std::{
@@ -749,8 +750,12 @@ pub async fn process_cli(
           discovery_info: None,
         };
 
+        let redfish_endpoint_array = RedfishEndpointArray {
+          redfish_endpoints: Some(vec![redfish_endpoint]),
+        };
+
         backend
-          .add_redfish_endpoint(&shasta_token, &redfish_endpoint)
+          .add_redfish_endpoint(&shasta_token, &redfish_endpoint_array)
           .await?;
 
         println!("Redfish endpoint for node '{}' added", id);
@@ -1584,7 +1589,9 @@ pub async fn process_cli(
         let bos_sessiontemplate_name: &String = cli_apply_template
           .get_one("template")
           .expect("ERROR - template name is mandatory");
-        let limit_opt: Option<&String> = cli_apply_template.get_one("limit");
+        let limit: &String = cli_apply_template
+          .get_one("limit")
+          .expect("ERROR - limit is mandatory");
         let bos_session_operation: &String = cli_apply_template
           .get_one("operation")
           .expect("ERROR - operation is mandatory");
@@ -1593,6 +1600,7 @@ pub async fn process_cli(
           .get_one("include-disabled")
           .expect("ERROR - include disabled must have a value");
 
+        let assume_yes: bool = cli_apply_template.get_flag("assume-yes");
         let dry_run: bool = cli_apply_template.get_flag("dry-run");
 
         apply_template::exec(
@@ -1603,8 +1611,9 @@ pub async fn process_cli(
           bos_session_name_opt,
           &bos_sessiontemplate_name,
           &bos_session_operation,
-          limit_opt,
+          limit,
           include_disabled,
+          assume_yes,
           dry_run,
         )
         .await;

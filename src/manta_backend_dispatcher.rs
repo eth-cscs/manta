@@ -657,7 +657,7 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
   async fn add_redfish_endpoint(
     &self,
     auth_token: &str,
-    redfish_endpoint: &RedfishEndpoint,
+    redfish_endpoint: &RedfishEndpointArray,
   ) -> Result<(), Error> {
     match self {
       CSM(b) => b.add_redfish_endpoint(auth_token, redfish_endpoint).await,

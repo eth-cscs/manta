@@ -12,6 +12,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -21,8 +22,9 @@ pub async fn exec(
   bos_session_name_opt: Option<&String>,
   bos_sessiontemplate_name: &str,
   bos_session_operation: &str,
-  limit_opt: Option<&String>,
+  limit: &String,
   include_disabled: bool,
+  assume_yes: bool,
   dry_run: bool,
 ) {
   //***********************************************************
@@ -132,58 +134,79 @@ pub async fn exec(
   // Validate user has access to the xnames defined in `limit` argument
   //
   log::info!("Validate user has access to xnames in BOS sessiontemplate");
-  let limit_vec_opt = if let Some(limit) = limit_opt {
-    let limit_vec: Vec<String> =
-      limit.split(",").map(|value| value.to_string()).collect();
-    let mut xnames_to_validate_access_vec = Vec::new();
-    for limit_value in &limit_vec {
-      log::info!("Check if limit value '{}', is an xname", limit_value);
-      if validate_xname_format(limit_value) {
-        // limit_value is an xname
-        log::info!("limit value '{}' is an xname", limit_value);
-        xnames_to_validate_access_vec.push(limit_value.to_string());
-      } else if let Some(mut hsm_members_vec) = backend
-        .get_member_vec_from_group_name_vec(
-          shasta_token,
-          vec![limit_value.to_string()],
-        )
-        .await
-        .ok()
-      {
-        // limit_value is an HSM group
-        log::info!(
-          "Check if limit value '{}', is an HSM group name",
+  let limit_vec: Vec<String> =
+    limit.split(",").map(|value| value.to_string()).collect();
+  let mut xnames_to_validate_access_vec = Vec::new();
+  for limit_value in &limit_vec {
+    log::info!("Check if limit value '{}', is an xname", limit_value);
+    if validate_xname_format(limit_value) {
+      // limit_value is an xname
+      log::info!("limit value '{}' is an xname", limit_value);
+      xnames_to_validate_access_vec.push(limit_value.to_string());
+    } else if let Some(mut hsm_members_vec) = backend
+      .get_member_vec_from_group_name_vec(
+        shasta_token,
+        vec![limit_value.to_string()],
+      )
+      .await
+      .ok()
+    {
+      // limit_value is an HSM group
+      log::info!(
+        "Check if limit value '{}', is an HSM group name",
+        limit_value
+      );
+
+      xnames_to_validate_access_vec.append(&mut hsm_members_vec);
+    } else {
+      // limit_value neither is an xname nor an HSM group
+      panic!(
+          "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
           limit_value
         );
-
-        xnames_to_validate_access_vec.append(&mut hsm_members_vec);
-      } else {
-        // limit_value neither is an xname nor an HSM group
-        panic!(
-                    "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
-                    limit_value
-                );
-      }
     }
+  }
 
-    log::info!("Validate list of xnames translated from 'limit argument'");
+  log::info!("Validate list of xnames translated from 'limit argument'");
 
-    let _ = validate_target_hsm_members(
-      &backend,
-      shasta_token,
-      &xnames_to_validate_access_vec,
-    )
-    .await;
+  let _ = validate_target_hsm_members(
+    &backend,
+    shasta_token,
+    &xnames_to_validate_access_vec,
+  )
+  .await;
 
-    log::info!("Access to '{}' granted. Continue.", limit);
-
-    Some(limit_vec)
-  } else {
-    None
-  };
+  log::info!("Access to '{}' granted. Continue.", limit);
 
   // END VALIDATION
   //***********************************************************
+
+  //***********************************************************
+  // ASK USER FOR CONFIRMATION
+  //
+
+  if !assume_yes {
+    let operation = if bos_session_operation.to_lowercase() == "boot" {
+      "reboot (if necessary)"
+    } else {
+      bos_session_operation
+    };
+
+    if Confirm::with_theme(&ColorfulTheme::default())
+      .with_prompt(format!(
+        "{:?}\nThe nodes above will {}. Please confirm to proceed?",
+        limit_vec.clone().join(","),
+        operation
+      ))
+      .interact()
+      .unwrap()
+    {
+      log::info!("Continue",);
+    } else {
+      println!("Cancelled by user. Aborting.");
+      std::process::exit(0);
+    }
+  }
 
   //***********************************************************
   // CREATE BOS SESSION
@@ -195,7 +218,7 @@ pub async fn exec(
     tenant: None,
     operation: Operation::from_str(bos_session_operation).ok(),
     template_name: bos_sessiontemplate_name.to_string(),
-    limit: limit_vec_opt.clone().map(|limit_vec| limit_vec.join(",")),
+    limit: Some(limit_vec.clone().join(",")),
     stage: Some(false),
     components: None,
     include_disabled: Some(include_disabled),
