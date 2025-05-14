@@ -47,7 +47,7 @@ pub async fn exec(
   node_list.sort();
   node_list.dedup();
 
-  let node_details_list_rslt = mesa::node::utils::get_node_details(
+  let node_details_list_rslt = csm_rs::node::utils::get_node_details(
     shasta_token,
     shasta_base_url,
     shasta_root_cert,

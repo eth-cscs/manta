@@ -232,6 +232,7 @@ pub async fn exec(
 
     // Update boot params
     for boot_parameter in current_node_boot_param_vec {
+      log::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
       let component_patch_rep = backend
         .update_bootparameters(
           // shasta_base_url,
@@ -248,6 +249,7 @@ pub async fn exec(
     }
 
     // Update desired configuration
+    // NOTE: this is going to foce CFS session to configure the nodes
     if let Some(desired_configuration_name) = new_runtime_configuration_opt {
       println!(
         "Updating runtime configuration to '{}'",

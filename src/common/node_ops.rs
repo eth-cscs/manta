@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
+use csm_rs::node::types::NodeDetails;
 use hostlist_parser::parse;
 use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::group::GroupTrait, types::Component,
 };
-use mesa::node::types::NodeDetails;
 use regex::Regex;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;

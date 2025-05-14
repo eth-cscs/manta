@@ -4,7 +4,7 @@ use manta_backend_dispatcher::{
   types::{K8sAuth, K8sDetails},
 };
 
-use mesa::node::console;
+use csm_rs::node::console;
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 

@@ -1,4 +1,4 @@
-use mesa::ims;
+use csm_rs::ims;
 
 pub async fn exec(
   shasta_token: &str,
@@ -8,7 +8,7 @@ pub async fn exec(
 ) {
   // Take user name and check if there is an SSH public key with that name already in Alps
   let user_public_key_name =
-    mesa::common::jwt_ops::get_preferred_username(shasta_token)
+    csm_rs::common::jwt_ops::get_preferred_username(shasta_token)
       .expect("ERROR - claim 'preferred_user' not found in JWT token");
 
   log::info!("Looking for user '{}' public SSH key", user_public_key_name);

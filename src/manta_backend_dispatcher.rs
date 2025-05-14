@@ -53,7 +53,7 @@ use futures::AsyncBufRead;
 use tokio::io::{AsyncRead, AsyncWrite};
 use StaticBackendDispatcher::*;
 
-use mesa::backend_connector::Csm;
+use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
@@ -603,6 +603,16 @@ impl BootParametersTrait for StaticBackendDispatcher {
 }
 
 impl RedfishEndpointTrait for StaticBackendDispatcher {
+  async fn get_all_redfish_endpoints(
+    &self,
+    auth_token: &str,
+  ) -> Result<RedfishEndpointArray, Error> {
+    match self {
+      CSM(b) => b.get_all_redfish_endpoints(auth_token).await,
+      OCHAMI(b) => b.get_all_redfish_endpoints(auth_token).await,
+    }
+  }
+
   async fn get_redfish_endpoints(
     &self,
     auth_token: &str,
