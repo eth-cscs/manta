@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.142] - 2025-05-14
+
+### Bug Fixes
+
+- Command apply template tends or will shutdownn or reboot the nodes (even if the 'operation' argument has 'boot' value). This fix address this by reminding the user that this command will interrup working nodes.
+- Command apply template has an argument 'limit' which is mandatory but some of the code was assuming this value was options. We address this here and hopefully the code is more clear
+
+### Miscellaneous Tasks
+
+- Update cargo.toml
+
 ## [1.54.1-beta.141] - 2025-05-14
 
 ### Features
@@ -11,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.141
 
 ## [1.54.1-beta.140] - 2025-05-12
 
