@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.141] - 2025-05-14
+
+### Features
+
+- Integrate function to fetch all redfish interfaces
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.140] - 2025-05-12
 
 ### Bug Fixes
 
 - Get templates
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.140
 
 ### Refactor
 
