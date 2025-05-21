@@ -112,6 +112,7 @@ pub async fn get_configuration_layer_details(
         gitea_token,
         &layer.clone_url,
         shasta_root_cert,
+        site_name,
     )
     .await;
 
