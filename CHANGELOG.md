@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.75] - 2025-05-21
+
+### Bug Fixes
+
+- GitHub workflow fails because it tries to use an old ubuntu image, this fix is to update the ubuntu image used to run the GitHub workflow
+
 ## [1.54.74] - 2025-05-21
 
 ### Bug Fixes
 
 - GitHub workflow fails because it tries to use an old ubuntu image, this fix is to update the ubuntu image used to run the GitHub workflow
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.74
 
 ## [1.54.73] - 2025-05-21
 
