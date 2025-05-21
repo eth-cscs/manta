@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.73] - 2025-05-21
+
+### Bug Fixes
+
+- Rename module mesa to csm-rs
+- Rename module form mesa to csm-rs
+- Logic to get repo name from gitea repo url needs to know the site manta is using otherwise it won't be able to trim the repo url prefix to get the repo name
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.72] - 2025-05-21
 
 ### Bug Fixes
 
 - Image creation date format
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.72
 
 ## [1.54.71] - 2025-04-18
 
