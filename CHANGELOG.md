@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.72] - 2025-05-21
+
+### Bug Fixes
+
+- Image creation date format
+
 ## [1.54.71] - 2025-04-18
 
 ### Bug Fixes
 
 - Sat file schema compatibility
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.71
 
 ## [1.54.70] - 2025-04-17
 
