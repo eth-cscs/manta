@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::Table;
 use manta_backend_dispatcher::{
   error::Error, interfaces::get_images_and_details::GetImagesAndDetailsTrait,
@@ -53,18 +53,22 @@ pub async fn exec(
   ]);
 
   for image_details in image_detail_vec {
+    let creation_date = image_details.0.created.as_ref().unwrap();
+
+    // NOTE: CSM can have different date formats, so we need to try to parse it in different
+    // ways
+    let creation_date = if let Ok(v) = creation_date.parse::<NaiveDateTime>() {
+      v.format("%d/%m/%Y %H:%M:%S").to_string()
+    } else if let Ok(v) = creation_date.parse::<DateTime<Local>>() {
+      v.naive_local().format("%d/%m/%Y %H:%M:%S").to_string()
+    } else {
+      creation_date.to_string()
+    };
+
     table.add_row(vec![
       image_details.0.id.as_ref().unwrap(),
       &image_details.0.name,
-      &image_details
-        .0
-        .created
-        .as_ref()
-        .unwrap()
-        .parse::<DateTime<Local>>()
-        .unwrap()
-        .format("%d/%m/%Y %H:%M:%S")
-        .to_string(),
+      &creation_date,
       &image_details.1,
       &image_details.2,
     ]);
