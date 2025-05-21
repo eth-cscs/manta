@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.143] - 2025-05-21
+
+### Bug Fixes
+
+- Command 'get images' fail because the date format in json image.created field does not have he same format as before. This patch fixes this so manta will formant the date with or without timezone
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.142] - 2025-05-14
 
 ### Bug Fixes
@@ -12,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update cargo.toml
+- Release manta version 1.54.1-beta.142
 
 ## [1.54.1-beta.141] - 2025-05-14
 
