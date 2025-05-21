@@ -1,6 +1,6 @@
 pub mod command {
 
-    use mesa::ims::image::{self, r#struct::Image};
+    use csm_rs::ims::image::{self, r#struct::Image};
 
     pub async fn exec(
         shasta_token: &str,
@@ -16,7 +16,7 @@ pub mod command {
         );
 
         let mut image_vec: Vec<Image> =
-            image::mesa::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+            image::csm_rs::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
                 .await
                 .unwrap();
 

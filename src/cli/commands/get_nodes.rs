@@ -29,7 +29,7 @@ pub async fn exec(
 
     // Get HSM group user has access to
     let hsm_group_available_map =
-        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -106,7 +106,7 @@ pub async fn exec(
     node_list.sort();
     node_list.dedup();
 
-    let node_details_list = mesa::node::utils::get_node_details(
+    let node_details_list = csm_rs::node::utils::get_node_details(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

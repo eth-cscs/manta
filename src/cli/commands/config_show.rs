@@ -89,7 +89,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
     const ADMIN_ROLE_NAME: &str = "pa_admin";
 
     let mut realm_access_role_vec =
-        mesa::common::jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
+        csm_rs::common::jwt_ops::get_roles(shasta_token).unwrap_or(Vec::new());
 
     /* realm_access_role_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
@@ -100,7 +100,7 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
-            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+            csm_rs::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
 
         realm_access_role_filtered_vec.sort();
 
@@ -112,13 +112,16 @@ pub async fn get_hsm_name_available_from_jwt_or_all(
         realm_access_role_filtered_vec
     } else {
         log::debug!("User is admin, getting all HSM groups in the system");
-        let mut all_hsm_groups =
-            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-                .await
-                .unwrap()
-                .iter()
-                .map(|hsm_value| hsm_value.label.clone())
-                .collect::<Vec<String>>();
+        let mut all_hsm_groups = csm_rs::hsm::group::http_client::get_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|hsm_value| hsm_value.label.clone())
+        .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
 
@@ -145,7 +148,7 @@ pub async fn get_hsm_name_without_system_wide_available_from_jwt_or_all(
     const ADMIN_ROLE_NAME: &str = "pa_admin";
 
     let mut realm_access_role_vec =
-        mesa::common::jwt_ops::get_roles_without_system_wide(shasta_token).unwrap_or(Vec::new());
+        csm_rs::common::jwt_ops::get_roles_without_system_wide(shasta_token).unwrap_or(Vec::new());
 
     /* realm_access_role_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization")); */
@@ -156,7 +159,7 @@ pub async fn get_hsm_name_without_system_wide_available_from_jwt_or_all(
         //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
-            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+            csm_rs::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
 
         realm_access_role_filtered_vec.sort();
 
@@ -168,14 +171,17 @@ pub async fn get_hsm_name_without_system_wide_available_from_jwt_or_all(
         realm_access_role_filtered_vec
     } else {
         log::debug!("User is admin, getting all HSM groups in the system");
-        // let mut all_hsm_groups = mesa::hsm::group::http_client::get_all_without_system_wide(
-        let mut all_hsm_groups =
-            mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-                .await
-                .unwrap()
-                .iter()
-                .map(|hsm_value| hsm_value.label.clone())
-                .collect::<Vec<String>>();
+        // let mut all_hsm_groups = csm_rs::hsm::group::http_client::get_all_without_system_wide(
+        let mut all_hsm_groups = csm_rs::hsm::group::http_client::get_all(
+            shasta_token,
+            shasta_base_url,
+            shasta_root_cert,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|hsm_value| hsm_value.label.clone())
+        .collect::<Vec<String>>();
 
         all_hsm_groups.sort();
 
@@ -202,7 +208,7 @@ pub fn filter_keycloak_roles(roles: &mut Vec<String>) {
     const ADMIN_ROLE_NAME: &str = "pa_admin";
 
     let mut realm_access_role_vec =
-        mesa::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
+        csm_rs::common::jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new());
 
     realm_access_role_vec
         .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
@@ -212,7 +218,7 @@ pub fn filter_keycloak_roles(roles: &mut Vec<String>) {
         //FIXME: Get rid of this by making sure CSM admins don't create HSM groups for system
         //wide operations instead of using roles
         let mut realm_access_role_filtered_vec =
-            mesa::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
+            csm_rs::hsm::group::hacks::filter_system_hsm_group_names(realm_access_role_vec);
 
         realm_access_role_filtered_vec.sort();
 

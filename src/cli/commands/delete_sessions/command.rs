@@ -1,8 +1,8 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
+use csm_rs::{
     cfs::component::shasta::r#struct::v2::{ComponentRequest, ComponentResponse},
     common::jwt_ops,
 };
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::common::{audit::Audit, kafka::Kafka};
 
@@ -22,7 +22,7 @@ pub async fn exec(
         _bos_sessiontemplate_vec_opt,
         _image_vec_opt,
         cfs_component_vec_opt,
-    ) = mesa::common::utils::get_configurations_sessions_bos_sessiontemplates_images_components(
+    ) = csm_rs::common::utils::get_configurations_sessions_bos_sessiontemplates_images_components(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -55,7 +55,7 @@ pub async fn exec(
     // - xnames belonging to HSM group related to CFS session
     // - xnames in CFS session
     let xname_vec = if let Some(target_hsm) = cfs_session.get_target_hsm() {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -105,7 +105,7 @@ pub async fn exec(
             }
 
             for image_name in image_created_by_cfs_configuration {
-                let _ = mesa::ims::image::shasta::http_client::delete(
+                let _ = csm_rs::ims::image::shasta::http_client::delete(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -125,7 +125,7 @@ pub async fn exec(
     };
 
     // Check if the session to stop belongs to a cluster the user has access
-    mesa::cfs::session::mesa::utils::filter_by_hsm(
+    csm_rs::cfs::session::csm_rs::utils::filter_by_hsm(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -145,7 +145,7 @@ pub async fn exec(
     if cfs_session_target_definition == "dynamic" {
         // The CFS session is of type 'target dynamic' (runtime CFS batcher)
         log::info!("CFS session target definition is 'dynamic'.");
-        let cfs_global_options = mesa::cfs::component::shasta::http_client::v2::get_options(
+        let cfs_global_options = csm_rs::cfs::component::shasta::http_client::v2::get_options(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -196,7 +196,7 @@ pub async fn exec(
             retry_policy
         );
         if !dry_run {
-            let put_rslt_vec = mesa::cfs::component::shasta::http_client::v2::put_component_list(
+            let put_rslt_vec = csm_rs::cfs::component::shasta::http_client::v2::put_component_list(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,
@@ -220,7 +220,7 @@ pub async fn exec(
         let image_vec = cfs_session.get_result_id_vec();
         for image_id in image_vec {
             if !dry_run {
-                let _ = mesa::ims::image::shasta::http_client::delete(
+                let _ = csm_rs::ims::image::shasta::http_client::delete(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -245,7 +245,7 @@ pub async fn exec(
     // Delete CFS session
     log::info!("Delete CFS session '{}'", cfs_session_name);
     if !dry_run {
-        let _ = mesa::cfs::session::shasta::http_client::v3::delete(
+        let _ = csm_rs::cfs::session::shasta::http_client::v3::delete(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

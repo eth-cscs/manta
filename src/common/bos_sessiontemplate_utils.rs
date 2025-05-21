@@ -1,6 +1,6 @@
 use comfy_table::Table;
-use mesa::bos::template::mesa::r#struct::v2::BosSessionTemplate;
-use mesa::node;
+use csm_rs::bos::template::csm_rs::r#struct::v2::BosSessionTemplate;
+use csm_rs::node;
 
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
     let mut table = Table::new();
@@ -63,7 +63,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
     cfs_configuration_name: &String,
 ) -> Option<String> {
     // Get all BOS sessiontemplates
-    let bos_sessiontemplate_value_list = mesa::bos::template::mesa::http_client::get_all(
+    let bos_sessiontemplate_value_list = csm_rs::bos::template::csm_rs::http_client::get_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -126,7 +126,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if mesa::ims::image::shasta::http_client::get_raw(
+                if csm_rs::ims::image::shasta::http_client::get_raw(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,
@@ -197,7 +197,7 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
                     image_id_related_to_bos_sessiontemplate
                 );
 
-                if mesa::ims::image::shasta::http_client::get_raw(
+                if csm_rs::ims::image::shasta::http_client::get_raw(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

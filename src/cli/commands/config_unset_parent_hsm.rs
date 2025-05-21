@@ -1,7 +1,7 @@
 use std::{fs, io::Write, path::PathBuf};
 
+use csm_rs::common::jwt_ops;
 use directories::ProjectDirs;
-use mesa::common::jwt_ops;
 use toml_edit::Document;
 
 pub async fn exec(shasta_token: &str) {

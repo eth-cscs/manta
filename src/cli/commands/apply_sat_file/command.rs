@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 
-use dialoguer::theme::ColorfulTheme;
-use mesa::{
+use csm_rs::{
     cfs::{
         self,
-        configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+        configuration::csm_rs::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
     },
     common::kubernetes,
     error::Error,
     hsm,
 };
+use dialoguer::theme::ColorfulTheme;
 use serde_yaml::Value;
 use termion::color;
 
@@ -172,7 +172,7 @@ pub async fn exec(
     // Get data from CSM
     //
     // Get configurations from CSM
-    let configuration_vec = cfs::configuration::mesa::http_client::get(
+    let configuration_vec = cfs::configuration::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -182,7 +182,7 @@ pub async fn exec(
     .unwrap();
 
     // Get images from CSM
-    let image_vec = mesa::ims::image::mesa::http_client::get_all(
+    let image_vec = csm_rs::ims::image::csm_rs::http_client::get_all(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -191,10 +191,14 @@ pub async fn exec(
     .unwrap();
 
     // Get IMS recipes from CSM
-    let ims_recipe_vec =
-        mesa::ims::recipe::http_client::get(shasta_token, shasta_base_url, shasta_root_cert, None)
-            .await
-            .unwrap();
+    let ims_recipe_vec = csm_rs::ims::recipe::http_client::get(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        None,
+    )
+    .await
+    .unwrap();
 
     // VALIDATION
     //

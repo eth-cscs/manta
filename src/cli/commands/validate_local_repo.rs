@@ -65,7 +65,7 @@ pub async fn exec(
         println!("Local changes committed: ✅");
     }
 
-    let remote_ref_value_vec = mesa::common::gitea::http_client::get_all_refs(
+    let remote_ref_value_vec = csm_rs::common::gitea::http_client::get_all_refs(
         gitea_base_url,
         gitea_token,
         repo_name,
@@ -103,7 +103,7 @@ pub async fn exec(
     }
 
     // Validate most recent commit id in local repo agaisnt remote repo
-    let gitea_commit_details = mesa::common::gitea::http_client::get_commit_details(
+    let gitea_commit_details = csm_rs::common::gitea::http_client::get_commit_details(
         gitea_base_url,
         repo_name,
         &head_commit_id.to_string(),

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mesa::common::jwt_ops;
+use csm_rs::common::jwt_ops;
 
 use crate::{
     cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
@@ -33,7 +33,7 @@ pub async fn exec(
 
     // Get HSM group user has access to
     let hsm_group_available_map =
-        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -80,7 +80,7 @@ pub async fn exec(
     log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     for target_hsm_name in &target_hsm_name_vec {
-        if mesa::hsm::group::http_client::get_without_system_wide(
+        if csm_rs::hsm::group::http_client::get_without_system_wide(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -97,7 +97,7 @@ pub async fn exec(
                     target_hsm_name
                 );
                 if nodryrun {
-                    /* mesa::hsm::group::http_client::create_new_hsm_group(
+                    /* csm_rs::hsm::group::http_client::create_new_hsm_group(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -121,7 +121,7 @@ pub async fn exec(
 
         // Migrate nodes
         for (parent_hsm_name, xname_to_move_vec) in &hsm_group_summary {
-            let node_migration_rslt = mesa::hsm::group::utils::migrate_hsm_members(
+            let node_migration_rslt = csm_rs::hsm::group::utils::migrate_hsm_members(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

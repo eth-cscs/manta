@@ -1,7 +1,7 @@
-use mesa::{
+use csm_rs::{
     cfs::{
-        configuration::mesa::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
-        session::mesa::r#struct::v2::CfsSessionGetResponse,
+        configuration::csm_rs::r#struct::cfs_configuration_response::v2::CfsConfigurationResponse,
+        session::csm_rs::r#struct::v2::CfsSessionGetResponse,
     },
     hsm,
 };
@@ -39,7 +39,7 @@ pub async fn get_details(
         hsm::group::shasta::utils::get_member_vec_from_hsm_group_value(&hsm_group).join(","); */
 
         // Get all CFS sessions
-        let mut cfs_sessions_value_vec = mesa::cfs::session::mesa::http_client::get(
+        let mut cfs_sessions_value_vec = csm_rs::cfs::session::csm_rs::http_client::get(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -52,7 +52,7 @@ pub async fn get_details(
         .await
         .unwrap();
 
-        mesa::cfs::session::mesa::utils::filter_by_hsm(
+        csm_rs::cfs::session::csm_rs::utils::filter_by_hsm(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -69,7 +69,7 @@ pub async fn get_details(
         for cfs_session_value in cfs_sessions_value_vec {
             // Get CFS configuration linked to CFS session related to HSM GROUP or any of its
             // members
-            let cfs_configuration_vec = mesa::cfs::configuration::mesa::http_client::get(
+            let cfs_configuration_vec = csm_rs::cfs::configuration::csm_rs::http_client::get(
                 shasta_token,
                 shasta_base_url,
                 shasta_root_cert,

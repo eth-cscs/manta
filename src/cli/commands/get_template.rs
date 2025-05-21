@@ -13,7 +13,7 @@ pub async fn exec(
         hsm_group_available_vec
     );
 
-    let bos_sessiontemplate_vec_rslt = mesa::bos::template::mesa::http_client::get(
+    let bos_sessiontemplate_vec_rslt = csm_rs::bos::template::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -32,7 +32,7 @@ pub async fn exec(
         }
     };
 
-    mesa::bos::template::mesa::utils::filter(
+    csm_rs::bos::template::csm_rs::utils::filter(
         &mut bos_sessiontemplate_vec,
         hsm_group_available_vec,
         xname_available_vec,

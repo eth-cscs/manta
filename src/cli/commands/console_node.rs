@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use futures::StreamExt;
 
-use mesa::node::{self, console};
+use csm_rs::node::{self, console};
 use termion::color;
 use tokio::{io::AsyncWriteExt, select};
 
@@ -26,7 +26,7 @@ pub async fn exec(
             .await;
 
     // Get HSM group user has access to
-    let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+    let hsm_group_available_map = csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -40,7 +40,7 @@ pub async fn exec(
 
     // Filter xnames to the ones members to HSM groups the user has access to
     //
-    /* let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+    /* let _ = csm_rs::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
         .await; */
 
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed

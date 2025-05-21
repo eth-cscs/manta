@@ -1,9 +1,9 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
+use csm_rs::{
     common::jwt_ops::{self},
     error::Error,
     pcs,
 };
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::common::{self, audit::Audit, kafka::Kafka};
 
@@ -16,7 +16,7 @@ pub async fn exec(
     output: &str,
     kafka_audit: &Kafka,
 ) {
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -24,7 +24,7 @@ pub async fn exec(
     )
     .await;
 
-    /* let _ = mesa::capmc::http_client::node_power_on::post_sync(
+    /* let _ = csm_rs::capmc::http_client::node_power_on::post_sync(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

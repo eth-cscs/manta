@@ -1,26 +1,26 @@
 use chrono::Local;
-use dialoguer::Confirm;
-use humansize::DECIMAL;
-use indicatif::{ProgressBar, ProgressStyle};
-use md5::Digest;
-use mesa::bos::template::mesa::r#struct::v1::BosSessionTemplate;
-use mesa::cfs::configuration::mesa::r#struct::{
+use csm_rs::bos::template::csm_rs::r#struct::v1::BosSessionTemplate;
+use csm_rs::cfs::configuration::csm_rs::r#struct::{
     cfs_configuration_request::v2::CfsConfigurationRequest,
     cfs_configuration_response::v2::CfsConfigurationResponse,
 };
-use mesa::hsm::group::{
+use csm_rs::hsm::group::{
     http_client::{create_new_hsm_group, delete_hsm_group},
     r#struct::HsmGroup,
 };
-use mesa::ims::{
+use csm_rs::ims::{
     image::{
-        mesa::utils::update_image,
+        csm_rs::utils::update_image,
         r#struct::{Image, ImsImageRecord2Update, Link},
         utils::{get_fuzzy, register_new_image},
     },
     s3::{s3_auth, s3_multipart_upload_object, s3_upload_object, BAR_FORMAT},
 };
-use mesa::{bos, cfs};
+use csm_rs::{bos, cfs};
+use dialoguer::Confirm;
+use humansize::DECIMAL;
+use indicatif::{ProgressBar, ProgressStyle};
+use md5::Digest;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::File;
@@ -297,7 +297,7 @@ async fn create_bos_sessiontemplate(
     // BOS sessiontemplates need the new ID of the image!
     log::debug!("BOS sessiontemplate name: {}", &bos_sessiontemplate_name);
 
-    let vector = bos::template::mesa::http_client::get(
+    let vector = bos::template::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -458,7 +458,7 @@ async fn create_cfs_config(
 
     log::debug!("CFS config:\n{:#?}", &cfs_configuration);
 
-    match cfs::configuration::mesa::http_client::put(
+    match cfs::configuration::csm_rs::http_client::put(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -503,12 +503,12 @@ async fn ims_update_image_add_manifest(
         Err(error) =>  panic!("Error: Unable to determine if there are other images in IMS with the name {}. Error code: {}", &ims_image_name, &error),
     };
 
-    let _ims_record = mesa::ims::image::r#struct::Image {
+    let _ims_record = csm_rs::ims::image::r#struct::Image {
         name: ims_image_name.clone().to_string(),
         id: Some(ims_image_id.clone().to_string()),
         created: None,
         arch: None,
-        link: Some(mesa::ims::image::r#struct::Link {
+        link: Some(csm_rs::ims::image::r#struct::Link {
             etag: None,
             path: format!(
                 "s3://boot-images/{}/manifest.json",

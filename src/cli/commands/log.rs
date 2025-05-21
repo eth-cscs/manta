@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mesa::{common::kubernetes, hsm};
+use csm_rs::{common::kubernetes, hsm};
 
 use crate::{cli::commands::{config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all, power_on_nodes::is_user_input_nids}, common::{self, vault::http_client::fetch_shasta_k8s_secrets}};
 
@@ -24,7 +24,7 @@ pub async fn exec(
                 .await;
 
         // Get HSM group user has access to
-        let hsm_group_available_map = mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        let hsm_group_available_map = csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -84,7 +84,7 @@ pub async fn exec(
     // `manta logs`
 
     // Get CFS sessions
-    let cfs_sessions_vec_opt = mesa::cfs::session::mesa::http_client::get(
+    let cfs_sessions_vec_opt = csm_rs::cfs::session::csm_rs::http_client::get(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
@@ -110,7 +110,7 @@ pub async fn exec(
 
     // Filter CFS sessions by group or xname. If user input is xname, then find the most recent CFS session for that xname (keep in mind, this could mean the target for that session coul be the xname or the groups it belongs to)
     if let Some(xname) = xname_opt {
-        mesa::cfs::session::mesa::utils::filter_by_xname(
+        csm_rs::cfs::session::csm_rs::utils::filter_by_xname(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -121,7 +121,7 @@ pub async fn exec(
         )
         .await;
     } else {
-        mesa::cfs::session::mesa::utils::filter_by_hsm(
+        csm_rs::cfs::session::csm_rs::utils::filter_by_hsm(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

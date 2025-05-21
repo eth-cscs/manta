@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use dialoguer::{theme::ColorfulTheme, Confirm};
-use mesa::{
+use csm_rs::{
     common::jwt_ops,
     error::Error,
     pcs::{self},
 };
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 use crate::{
     cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all,
@@ -32,7 +32,7 @@ pub async fn exec(
 
     // Get HSM group user has access to
     let hsm_group_available_map =
-        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -46,7 +46,7 @@ pub async fn exec(
 
     // Filter xnames to the ones members to HSM groups the user has access to
     //
-    // let _ = mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+    // let _ = csm_rs::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
     //     .await;
 
     // Check if user input is 'nid' or 'xname' and convert to 'xname' if needed
@@ -150,7 +150,7 @@ pub async fn exec(
     let username = jwt_ops::get_name(shasta_token).unwrap();
     let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
 
-    let group_vec = mesa::hsm::group::utils::get_hsm_group_vec_from_xname_vec(
+    let group_vec = csm_rs::hsm::group::utils::get_hsm_group_vec_from_xname_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

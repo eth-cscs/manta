@@ -1,5 +1,5 @@
 use comfy_table::{Cell, Table};
-use mesa::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
+use csm_rs::hsm::hw_inventory::hw_component::r#struct::NodeSummary;
 use std::string::ToString;
 
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
@@ -12,7 +12,7 @@ pub async fn exec(
     output_opt: Option<&String>,
 ) {
     let mut node_hw_inventory =
-        &mesa::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
+        &csm_rs::hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,

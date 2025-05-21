@@ -1,5 +1,5 @@
+use csm_rs::error::Error;
 use dialoguer::theme::ColorfulTheme;
-use mesa::error::Error;
 
 // Translates HSM group to a list of nodes
 // Validates list of nodes have valid xname format
@@ -14,7 +14,7 @@ pub async fn exec(
     xname_vec_opt: Option<&Vec<String>>,
 ) -> Result<(), Error> {
     let xnames = if let Some(hsm_group_name_vec) = hsm_group_name_opt {
-        mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+        csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -46,7 +46,7 @@ pub async fn exec(
 
     // TODO: try to not modify the CFS component directly but create a new BOS sessiontemplate,
     // this requires using BOS sessions v2
-    mesa::cfs::component::shasta::utils::update_component_list_desired_configuration(
+    csm_rs::cfs::component::shasta::utils::update_component_list_desired_configuration(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

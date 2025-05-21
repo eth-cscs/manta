@@ -7,8 +7,8 @@ use std::{
 
 use clap::Command;
 use config::Config;
+use csm_rs::{common::authentication, error::Error};
 use k8s_openapi::chrono;
-use mesa::{common::authentication, error::Error};
 
 use crate::{cli::commands::validate_local_repo, common::kafka::Kafka};
 
@@ -954,7 +954,7 @@ pub async fn process_cli(
                 .await;
 
                 let xname_available_vec =
-                    mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -1120,7 +1120,7 @@ pub async fn process_cli(
                     )
                     .await;
 
-                    mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+                    csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
                         shasta_token,
                         shasta_base_url,
                         shasta_root_cert,
@@ -2654,7 +2654,7 @@ pub async fn validate_target_hsm_members(
         )
         .await;
 
-    let all_xnames_user_has_access = mesa::hsm::group::utils::get_member_vec_from_hsm_name_vec(
+    let all_xnames_user_has_access = csm_rs::hsm::group::utils::get_member_vec_from_hsm_name_vec(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

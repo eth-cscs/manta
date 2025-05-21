@@ -15,7 +15,7 @@ pub async fn exec(
     dry_run: bool,
     kafka_audit: &Kafka,
 ) {
-    let xname_vec = mesa::hsm::group::utils::get_member_vec_from_hsm_group_name(
+    let xname_vec = csm_rs::hsm::group::utils::get_member_vec_from_hsm_group_name(
         shasta_token,
         shasta_base_url,
         shasta_root_cert,

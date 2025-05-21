@@ -1,7 +1,7 @@
-use mesa::{
+use csm_rs::{
     cfs::{
         self,
-        configuration::mesa::r#struct::{
+        configuration::csm_rs::r#struct::{
             cfs_configuration::{ConfigurationDetails, LayerDetails},
             cfs_configuration_response::v2::{CfsConfigurationResponse, Layer},
         },
@@ -26,7 +26,7 @@ pub async fn exec(
     site_name: &str,
 ) {
     let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-        cfs::configuration::mesa::utils::get_and_filter(
+        cfs::configuration::csm_rs::utils::get_and_filter(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -69,7 +69,7 @@ pub async fn exec(
             }
 
             let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
-                mesa::cfs::configuration::mesa::utils::get_derivatives(
+                csm_rs::cfs::configuration::csm_rs::utils::get_derivatives(
                     shasta_token,
                     shasta_base_url,
                     shasta_root_cert,

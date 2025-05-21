@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
+use csm_rs::{bss::bootparameters::BootParameters, error::Error, node::r#struct::NodeDetails};
 use hostlist_parser::parse;
-use mesa::{bss::bootparameters::BootParameters, error::Error, node::r#struct::NodeDetails};
 use regex::Regex;
 
 use crate::cli::commands::config_show::get_hsm_name_without_system_wide_available_from_jwt_or_all;
@@ -35,7 +35,7 @@ pub async fn get_curated_hsm_group_from_nid_regex(
 
     // Get HSM group user has access to
     let hsm_group_available_map =
-        mesa::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
+        csm_rs::hsm::group::utils::get_hsm_map_and_filter_by_hsm_name_without_system_wide_vec(
             shasta_token,
             shasta_base_url,
             shasta_root_cert,
@@ -97,7 +97,7 @@ pub async fn nid_to_xname(
             .collect();
 
         // Get all HSM components (list of xnames + nids)
-        let hsm_component_vec = mesa::hsm::component::http_client::get_all_nodes(
+        let hsm_component_vec = csm_rs::hsm::component::http_client::get_all_nodes(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -156,7 +156,7 @@ pub async fn nid_to_xname(
 
         log::debug!("short NID list: {}", nid_short);
 
-        let hsm_components = mesa::hsm::component::http_client::get(
+        let hsm_components = csm_rs::hsm::component::http_client::get(
             shasta_base_url,
             shasta_token,
             shasta_root_cert,
@@ -352,11 +352,11 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
     // Get all HSM groups in the system
     // FIXME: client should not fetch all info in backend. Create a method in backend to do provide
     // information already filtered to the client:
-    // mesa::hsm::groups::utils::get_hsm_group_available_vec(shasta_token, shasta_base_url,
+    // csm_rs::hsm::groups::utils::get_hsm_group_available_vec(shasta_token, shasta_base_url,
     // shasta_root_cert) -> Vec<HsmGroup> to get the list of HSM available to the user and return
     // a Vec of HsmGroups the user has access to
     let hsm_group_vec_all =
-        mesa::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
+        csm_rs::hsm::group::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
             .await
             .expect("Error - fetching HSM groups"); */
 
