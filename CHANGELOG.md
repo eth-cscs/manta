@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.77] - 2025-05-22
+
+### Miscellaneous Tasks
+
+- Manta fails in bastion-alps because the version of GLIBC is too old there, the glibc version in the github runner is 2.39 but the one in bastion-alps is 2.38. This patch will set the github runner version to ubuntu-22.04 instead of ubuntu-latest
+
 ## [1.54.76] - 2025-05-21
 
 ### Bug Fixes
 
 - Github workflow complains it can't compile openssl on macos images, I am removing apple artifacts to I can compile because I need the artifact to create prealps images
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.76
 
 ## [1.54.75] - 2025-05-21
 
