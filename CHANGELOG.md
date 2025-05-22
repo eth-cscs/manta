@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.144] - 2025-05-22
+
+### Miscellaneous Tasks
+
+- Manta fails in bastion-alps because the version of GLIBC is too old there, the glibc version in the github runner is 2.39 but the one in bastion-alps is 2.38. This patch will set the github runner version to ubuntu-22.04 instead of ubuntu-latest
+
 ## [1.54.1-beta.143] - 2025-05-21
 
 ### Bug Fixes
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.54.1-beta.143
 
 ## [1.54.1-beta.142] - 2025-05-14
 
