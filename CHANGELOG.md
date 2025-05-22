@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.148] - 2025-05-22
+
+### Miscellaneous Tasks
+
+- Clean dependencies
+- Update manta dependencies
+
 ## [1.54.1-beta.147] - 2025-05-22
 
 ### Bug Fixes
 
 - Musl target compilation failure because host can't find openssl/libssl library. To fix this issue, we need to add vendored feature to openssl and this is what we are doing here with the  in request
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.147
 
 ## [1.54.1-beta.146] - 2025-05-22
 
