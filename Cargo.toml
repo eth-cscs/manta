@@ -31,9 +31,9 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 
 # PROD
 
-manta-backend-dispatcher = "0.1.77"
+manta-backend-dispatcher = "0.1.78"
 ochami-rs = "0.1.77"
-csm-rs = "0.5.0-beta.8"
+csm-rs = "0.5.0-beta.9"
 
 # DEV - Only for development purposes
 
@@ -48,7 +48,7 @@ strum = { version = "0.27.1", default-features = false }
 strum_macros = "0.27.1"
 chrono = { version = "0.4.41", default-features = false }
 anyhow = { version = "1.0.44", default-features = false }
-reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls", "socks", "native-tls-vendored"] } # We need native-tls-vendored feature to be able to compile on `musl` target
+reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls", "socks"] } # We need native-tls-vendored feature to be able to compile on `musl` target
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.34"
@@ -60,7 +60,7 @@ kube = { version = "0.87.2", default-features = false }
 k8s-openapi = "0.20.0"
 md5 = { version = "0.7.0", default-features = false }
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
-git2 = { version = "0.18.1", default-features = false }
+git2 = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
 dialoguer = { version = "0.11.0", default-features = false }
 indicatif = { version = "0.17.7", default-features = false }
 futures = { version = "0.3.31", default-features = false }
