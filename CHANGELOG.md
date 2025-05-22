@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.146] - 2025-05-22
+
+### Miscellaneous Tasks
+
+- Update github runner for musl artifact
+
 ## [1.54.1-beta.145] - 2025-05-22
 
 ### Miscellaneous Tasks
 
 - Adding a musl target to cargo dist to have glibc statically compiled
+- Release manta version 1.54.1-beta.145
 
 ## [1.54.1-beta.144] - 2025-05-22
 
