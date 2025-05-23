@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.79] - 2025-05-23
+
+### Features
+
+- Add new artifacts for apple and linux musl
+
 ## [1.54.78] - 2025-05-22
 
 ### Miscellaneous Tasks
 
 - Musl target compilation/build fails because openssl/libssl can't be found on host. To fix this, add openssl vendored feature to git2 dependency
+- Release manta version 1.54.78
 
 ## [1.54.77] - 2025-05-22
 
