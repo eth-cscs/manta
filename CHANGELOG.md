@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.81] - 2025-05-23
+
+### Bug Fixes
+
+- When processing a SAT file, manta hardcodes the value of field 'rootfs_provider' to 'cpss3' this was working for CSM < 1.6 but in CSM 1.6.x this value may change, therefore, we need to take this value from the SAT file
+
 ## [1.54.80] - 2025-05-23
 
 ### Bug Fixes
 
 - Force ubuntu-22.04 to build artifacts
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.80
 
 ## [1.54.79] - 2025-05-23
 
