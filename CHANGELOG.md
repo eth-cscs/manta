@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.80] - 2025-05-23
+
+### Bug Fixes
+
+- Force ubuntu-22.04 to build artifacts
+
 ## [1.54.79] - 2025-05-23
 
 ### Features
 
 - Add new artifacts for apple and linux musl
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.79
 
 ## [1.54.78] - 2025-05-22
 
