@@ -242,7 +242,8 @@ impl TryFrom<SessionTemplate> for BosSessionTemplate {
                 node_list: boot_set.node_list,
                 node_roles_groups: boot_set.node_roles_group,
                 node_groups: boot_set.node_groups,
-                rootfs_provider: Some("cpss3".to_string()),
+                // rootfs_provider: Some("cpss3".to_string()),
+                rootfs_provider: boot_set.rootfs_provider,
                 rootfs_provider_passthrough: boot_set.rootfs_provider_passthrough,
                 cfs: Some(b_st_cfs.clone()),
                 arch: boot_set.arch.map(|value| value.to_string()),
@@ -2240,7 +2241,10 @@ pub async fn process_session_template_section_in_sat_file(
                 configuration: Some(bos_session_template_configuration_name.clone()),
             };
 
-            let rootfs_provider = Some("cpss3".to_string());
+            // let rootfs_provider = Some("cpss3".to_string());
+            let rootfs_provider = boot_set["rootfs_provider"]
+                .as_str()
+                .map(|value| value.to_string());
             let rootfs_provider_passthrough = boot_set["rootfs_provider_passthrough"]
                 .as_str()
                 .map(|value| value.to_string());
