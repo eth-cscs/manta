@@ -65,6 +65,8 @@ jobs:
         run: git clone https://github.com/richfelker/musl-cross-make.git
       - name: Install musl-cross-make
         run: cd musl-cross-make
+      - name: check folder
+        run: pwd
       - name: Install musl-cross-make
         run: make TARGET=x86_64-linux-musl install
       - name: Install dist
@@ -192,6 +194,8 @@ jobs:
         run: git clone https://github.com/richfelker/musl-cross-make.git
       - name: Install musl-cross-make
         run: cd musl-cross-make
+      - name: check folder
+        run: pwd
       - name: Install musl-cross-make
         run: make TARGET=x86_64-linux-musl install
       - name: Install cached dist
