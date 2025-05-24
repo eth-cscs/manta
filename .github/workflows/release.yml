@@ -61,8 +61,10 @@ jobs:
           submodules: recursive
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
-      - name: Install musl
-        run: sudo apt-get install -y musl-dev musl-tools
+      - name: Clone musl-cross-make
+        run: git clone https://github.com/richfelker/musl-cross-make.git
+      - name: Install musl-cross-make
+        run: cd musl-cross-make && make install
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -184,8 +186,10 @@ jobs:
           submodules: recursive
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
-      - name: Install musl
-        run: sudo apt-get install -y musl-dev musl-tools
+      - name: Clone musl-cross-make
+        run: git clone https://github.com/richfelker/musl-cross-make.git
+      - name: Install musl-cross-make
+        run: cd musl-cross-make && make install
       - name: Install cached dist
         uses: actions/download-artifact@v4
         with:
