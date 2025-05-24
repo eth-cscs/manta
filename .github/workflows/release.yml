@@ -60,11 +60,9 @@ jobs:
         with:
           submodules: recursive
       - name: Clone musl-cross-make
-        run: git clone https://github.com/richfelker/musl-cross-make.git
+        run: git clone https://github.com/richfelker/musl-cross-make.git && cd musl-cross-make
       - name: Check cloned folder
         run: ls
-      - name: cd musl-cross-make
-        run: cd musl-cross-make
       - name: check folder
         run: pwd
       - name: Install musl-cross-make
@@ -191,11 +189,9 @@ jobs:
         with:
           submodules: recursive
       - name: Clone musl-cross-make
-        run: git clone https://github.com/richfelker/musl-cross-make.git
+        run: git clone https://github.com/richfelker/musl-cross-make.git && cd musl-cross-make
       - name: Check cloned folder
         run: ls
-      - name: cd musl-cross-make
-        run: cd musl-cross-make
       - name: check folder
         run: pwd
       - name: Install musl-cross-make
