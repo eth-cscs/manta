@@ -63,6 +63,8 @@ jobs:
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
       - name: Clone musl-cross-make
         run: git clone https://github.com/richfelker/musl-cross-make.git
+      - name: Check cloned folder
+        run: ls
       - name: Install musl-cross-make
         run: cd musl-cross-make
       - name: check folder
@@ -192,6 +194,8 @@ jobs:
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
       - name: Clone musl-cross-make
         run: git clone https://github.com/richfelker/musl-cross-make.git
+      - name: Check cloned folder
+        run: ls
       - name: Install musl-cross-make
         run: cd musl-cross-make
       - name: check folder
