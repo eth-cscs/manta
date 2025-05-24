@@ -64,7 +64,9 @@ jobs:
       - name: Clone musl-cross-make
         run: git clone https://github.com/richfelker/musl-cross-make.git
       - name: Install musl-cross-make
-        run: cd musl-cross-make && make install
+        run: cd musl-cross-make
+      - name: Install musl-cross-make
+        run: make install
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -189,7 +191,9 @@ jobs:
       - name: Clone musl-cross-make
         run: git clone https://github.com/richfelker/musl-cross-make.git
       - name: Install musl-cross-make
-        run: cd musl-cross-make && make install
+        run: cd musl-cross-make
+      - name: Install musl-cross-make
+        run: make install
       - name: Install cached dist
         uses: actions/download-artifact@v4
         with:
