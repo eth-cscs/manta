@@ -66,7 +66,7 @@ jobs:
       - name: Install musl-cross-make
         run: cd musl-cross-make
       - name: Install musl-cross-make
-        run: make all
+        run: make TARGET=x86_64-linux-musl install
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -193,7 +193,7 @@ jobs:
       - name: Install musl-cross-make
         run: cd musl-cross-make
       - name: Install musl-cross-make
-        run: make all
+        run: make TARGET=x86_64-linux-musl install
       - name: Install cached dist
         uses: actions/download-artifact@v4
         with:
