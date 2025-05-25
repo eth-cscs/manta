@@ -59,8 +59,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install musl-tools
-        run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
+      # - name: Install musl-tools
+      #   run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
       # - name: Install musl-cross-make
       #   run: |
       #     git clone https://github.com/richfelker/musl-cross-make.git
@@ -68,8 +68,8 @@ jobs:
       #     make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
-      - name: Add musl target
-        run: rustup target add x86_64-unknown-linux-musl
+      # - name: Add musl target
+      #   run: rustup target add x86_64-unknown-linux-musl
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -189,8 +189,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install musl-tools
-        run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
+      # - name: Install musl-tools
+      #   run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
       # - name: Install musl-cross-make
       #   run: |
       #     git clone https://github.com/richfelker/musl-cross-make.git
@@ -198,8 +198,8 @@ jobs:
       #     make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
-      - name: Add musl target
-        run: rustup target add x86_64-unknown-linux-musl
+      # - name: Add musl target
+      #   run: rustup target add x86_64-unknown-linux-musl
       - name: Install cached dist
         uses: actions/download-artifact@v4
         with:
