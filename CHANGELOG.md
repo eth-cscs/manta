@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.99] - 2025-05-25
+
+### Miscellaneous Tasks
+
+- Add musl
+
 ## [1.54.98] - 2025-05-25
 
 ### Miscellaneous Tasks
 
 - Add musl
+- Release manta version 1.54.98
 
 ## [1.54.97] - 2025-05-25
 
