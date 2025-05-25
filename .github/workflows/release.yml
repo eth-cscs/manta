@@ -61,11 +61,11 @@ jobs:
           submodules: recursive
       - name: Install musl-tools
         run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
-      - name: Install musl-cross-make
-        run: |
-          git clone https://github.com/richfelker/musl-cross-make.git
-          cd musl-cross-make
-          make TARGET=x86_64-linux-musl install
+      # - name: Install musl-cross-make
+      #   run: |
+      #     git clone https://github.com/richfelker/musl-cross-make.git
+      #     cd musl-cross-make
+      #     make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
       - name: Add musl target
@@ -191,11 +191,11 @@ jobs:
           submodules: recursive
       - name: Install musl-tools
         run: sudo apt update && sudo apt install -y musl-tools musl-dev musl
-      - name: Install musl-cross-make
-        run: |
-          git clone https://github.com/richfelker/musl-cross-make.git
-          cd musl-cross-make
-          make TARGET=x86_64-linux-musl install
+      # - name: Install musl-cross-make
+      #   run: |
+      #     git clone https://github.com/richfelker/musl-cross-make.git
+      #     cd musl-cross-make
+      #     make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
       - name: Add musl target
