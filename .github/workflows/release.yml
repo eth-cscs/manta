@@ -66,6 +66,8 @@ jobs:
           make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
       - name: Install dist
         # we specify bash to get pipefail; it guards against the `curl` command
         # failing. otherwise `sh` won't catch that `curl` returned non-0
@@ -192,6 +194,8 @@ jobs:
           make TARGET=x86_64-linux-musl install
       - name: Install Rust
         run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
       - name: Install cached dist
         uses: actions/download-artifact@v4
         with:
