@@ -216,7 +216,7 @@ jobs:
       - id: cargo-dist
         shell: bash
         run: |
-          CXX=../musl-cross-make/output/x86_64-linux-musl/bin dist build ${{ needs.plan.outputs.tag-flag }} --output-format=json "--artifacts=global" > dist-manifest.json
+          dist build ${{ needs.plan.outputs.tag-flag }} --output-format=json "--artifacts=global" > dist-manifest.json
           echo "dist ran successfully"
 
           # Parse out what we just built and upload it to scratch storage
