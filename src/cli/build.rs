@@ -155,8 +155,8 @@ pub fn subcommand_delete_hw_component() -> Command {
     .arg(arg!(-P --pattern <PATTERN> "Pattern"))
     .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to (resources move from here)."))
     .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one receiving resources from the target cluster (resources move here)."))
-    .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run.").action(ArgAction::SetFalse))
-    .arg(arg!(-d --"delete-hsm-group" "Delete the HSM group if empty after this action.").action(ArgAction::SetTrue))
+    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
+    .arg(arg!(-D --"delete-hsm-group" "Delete the HSM group if empty after this action.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_delete_image() -> Command {
@@ -443,9 +443,9 @@ pub fn subcommand_apply_hw_configuration() -> Command {
       .arg(arg!(-P -- pattern <VALUE> "Hw pattern with keywords to fuzzy find hardware componented to assign to the cluster like <hw component name>:<hw component quantity>[:<hw component name>:<hw component quantity>]. Eg 'a100:12:epic:5' will update the nodes assigned to cluster 'zinal' with 4 nodes:\n - 3 nodes with 4 Nvidia gpus A100 and 1 epyc AMD cpu each\n - 1 node with 2 epyc AMD cpus").required(true))
       .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to.").required(true))
       .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster.").required(true))
-      .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
+      .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
       .arg(arg!(-c --"create-target-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
-      .arg(arg!(-d --"delete-empty-parent-hsm-group" "If the target HSM group is empty after this action, remove it."))
+      .arg(arg!(-D --"delete-empty-parent-hsm-group" "If the target HSM group is empty after this action, remove it."))
       .arg(arg!(-u --"unpin-nodes" "It will try to get any nodes available."))
     )
 }
@@ -703,7 +703,7 @@ pub fn subcommand_add_group() -> Command {
     .arg(arg!(-d --description <VALUE> "Group description"))
     .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
   // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-  // .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+  // .arg(arg!(-D --"dry-run" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_add_node() -> Command {
@@ -737,7 +737,7 @@ pub fn subcommand_add_hwcomponent() -> Command {
     .arg(arg!(-P --pattern <PATTERN> "Pattern"))
     .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Target cluster name. This is the name of the cluster the pattern is applying to."))
     .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Parent cluster name. The parent cluster is the one offering and receiving resources from the target cluster."))
-    .arg(arg!(-x --"no-dryrun" "No dry-run, actually change the status of the system. The default for this command is a dry-run."))
+    .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
     .arg(arg!(-c --"create-hsm-group" "If the target cluster name does not exist as HSM group, create it."))
 }
 
@@ -760,7 +760,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
     .arg(arg!(-r --"rediscover-on-update" "Trigger a rediscovery when endpoint info is updated.").action(ArgAction::SetTrue))
     .arg(arg!(-t --"template-id" <VALUE> "Links to a discovery template defining how the endpoint should be discovered."))
     .arg_required_else_help(true)
-    .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+  // .arg(arg!(-D --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_add_boot_parameters() -> Command {
@@ -880,7 +880,7 @@ pub fn subcommand_update_redfish_endpoint() -> Command {
     .arg(arg!(-r --"rediscover-on-update" "Trigger a rediscovery when endpoint info is updated.").action(ArgAction::SetTrue))
     .arg(arg!(-t --"template-id" <VALUE> "Links to a discovery template defining how the endpoint should be discovered."))
     .arg_required_else_help(true)
-    .arg(arg!(-D --"dryrun" "No changes applied to the system.").action(ArgAction::SetTrue))
+  // .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_update() -> Command {

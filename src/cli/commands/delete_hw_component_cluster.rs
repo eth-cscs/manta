@@ -22,7 +22,7 @@ pub async fn exec(
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
   pattern: &str,
-  nodryrun: bool,
+  dryrun: bool,
   delete_hsm_group: bool,
 ) {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
@@ -127,7 +127,7 @@ pub async fn exec(
             "The target HSM group {} is already empty, cannot remove hardware from it.",
             target_hsm_group_name
         );
-    if nodryrun && delete_hsm_group {
+    if !dryrun && delete_hsm_group {
       log::info!(
         "The option to delete empty groups has been selected, removing it."
       );
@@ -340,7 +340,7 @@ pub async fn exec(
   // *********************************************************************************************************
   // UPDATE HSM GROUP MEMBERS IN CSM
 
-  if !nodryrun {
+  if dryrun {
     log::info!("Dry run enabled, not modifying the HSM groups on the system.")
   } else {
     let target_group_will_be_empty =
