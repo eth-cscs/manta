@@ -2,12 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.149] - 2025-06-01
+
+### Features
+
+- Some cli commands had argument --dry-run while other --no-dryrun this was confusing and this patch tries to normalize all commands to use --dry-run
+
+### Miscellaneous Tasks
+
+- Try to build musl binary
+
 ## [1.54.1-beta.148] - 2025-05-22
 
 ### Miscellaneous Tasks
 
 - Clean dependencies
 - Update manta dependencies
+- Release manta version 1.54.1-beta.148
 
 ## [1.54.1-beta.147] - 2025-05-22
 
