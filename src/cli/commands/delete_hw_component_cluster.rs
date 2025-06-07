@@ -127,7 +127,11 @@ pub async fn exec(
             "The target HSM group {} is already empty, cannot remove hardware from it.",
             target_hsm_group_name
         );
-    if !dryrun && delete_hsm_group {
+
+    if dryrun && delete_hsm_group {
+      log::info!("The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action.");
+      return;
+    } else {
       log::info!(
         "The option to delete empty groups has been selected, removing it."
       );
@@ -135,14 +139,6 @@ pub async fn exec(
                 .delete_group(shasta_token, &target_hsm_group_name.to_string())
                 .await
             {
-                /* match hsm::group::http_client::delete_hsm_group(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &target_hsm_group_name.to_string(),
-                )
-                .await
-                { */
                 Ok(_) => {
                     log::info!("HSM group removed successfully, we are done with this action.");
                     return;
@@ -152,9 +148,6 @@ pub async fn exec(
                     e2
                 ),
             };
-    } else {
-      log::info!("The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action.");
-      return;
     }
   }
   // sort nodes hw counters by node name

@@ -88,7 +88,6 @@ pub async fn exec(
             "Dryrun selected, cannot create the new group and continue."
           );
         } else {
-          std::process::exit(1);
           let group = Group {
             label: target_hsm_group_name.to_string(),
             description: None,

@@ -311,27 +311,11 @@ pub async fn exec(
         .delete_member_from_group(shasta_token, parent_hsm_group_name, &xname)
         .await
         .unwrap();
-      /* let _ = hsm::group::http_client::delete_member(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          parent_hsm_group_name,
-          &xname,
-      )
-      .await; */
 
       let _ = backend
         .add_members_to_group(shasta_token, target_hsm_group_name, vec![&xname])
         .await
         .unwrap();
-      /* let _ = hsm::group::http_client::post_member(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          target_hsm_group_name,
-          &xname,
-      )
-      .await; */
     }
   }
   let target_hsm_group_value = serde_json::json!({
