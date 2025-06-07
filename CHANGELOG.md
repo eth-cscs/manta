@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.150] - 2025-06-07
+
+### Bug Fixes
+
+- Fix missbehaviour managing dryrun flag
+- Remove unwanted exit instruction
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.149] - 2025-06-01
 
 ### Features
@@ -11,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Try to build musl binary
+- Release manta version 1.54.1-beta.149
 
 ## [1.54.1-beta.148] - 2025-05-22
 
