@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.101] - 2025-06-14
+
+### Bug Fixes
+
+- There are BOS sessiontemplates without CFS configuration and this creates a bug when filtering BOS sessiontemplates by CFS configuration
+
+### Refactor
+
+- Clean  code
+
 ## [1.54.100] - 2025-05-25
 
 ### Miscellaneous Tasks
 
 - Give up musl artifact
+- Release manta version 1.54.100
 
 ## [1.54.99] - 2025-05-25
 
