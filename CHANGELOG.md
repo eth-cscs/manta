@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.151] - 2025-06-14
+
+### Bug Fixes
+
+- This patch fixes compilation errors because manta-backend-dispatcher did not have a default code in function to get power status
+
 ## [1.54.1-beta.150] - 2025-06-07
 
 ### Bug Fixes
 
 - Fix missbehaviour managing dryrun flag
 - Remove unwanted exit instruction
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.150
 
 ### Refactor
 
