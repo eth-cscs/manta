@@ -81,75 +81,6 @@ pub async fn get_image_id_related_to_cfs_configuration(
     .await
 }
 
-/* pub async fn get_image_id_from_bos_sessiontemplate_list(
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    cfs_configuration_name: &String,
-    bos_sessiontemplate_value_list: &[Value],
-) -> Option<String> {
-    // Get all BOS sessiontemplates related to CFS configuration
-    let bos_sessiontemplate_value_target_list =
-        bos_sessiontemplate_value_list
-            .iter()
-            .filter(|bos_session_template| {
-                bos_session_template
-                    .pointer("/cfs/configuration")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .eq(cfs_configuration_name)
-            });
-
-    for bos_sessiontemplate_value_target in bos_sessiontemplate_value_target_list {
-        log::debug!(
-            "BOS sessiontemplate details:\n{:#?}",
-            bos_sessiontemplate_value_target
-        );
-
-        let bos_sessiontemplate_name = bos_sessiontemplate_value_target["name"].as_str().unwrap();
-
-        for (_boot_sets_param, boot_sets_value) in bos_sessiontemplate_value_target["boot_sets"]
-            .as_object()
-            .unwrap()
-        {
-            if let Some(path) = boot_sets_value.get("path") {
-                let image_id_related_to_bos_sessiontemplate = path
-                    .as_str()
-                    .unwrap()
-                    .trim_start_matches("s3://boot-images/")
-                    .trim_end_matches("/manifest.json")
-                    .to_string();
-
-                log::info!(
-                    "Get image details for ID {}",
-                    image_id_related_to_bos_sessiontemplate
-                );
-
-                if csm_rs::ims::image::shasta::http_client::get_raw(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    Some(&image_id_related_to_bos_sessiontemplate),
-                )
-                .await
-                .is_ok()
-                {
-                    log::info!(
-                        "Image ID found related to BOS sessiontemplate {} is {}",
-                        bos_sessiontemplate_name,
-                        image_id_related_to_bos_sessiontemplate
-                    );
-
-                    return Some(image_id_related_to_bos_sessiontemplate);
-                };
-            }
-        }
-    }
-
-    None
-} */
-
 pub async fn get_image_id_from_bos_sessiontemplate_list(
     shasta_token: &str,
     shasta_base_url: &str,
@@ -162,14 +93,12 @@ pub async fn get_image_id_from_bos_sessiontemplate_list(
         bos_sessiontemplate_value_list
             .iter()
             .filter(|bos_session_template| {
-                bos_session_template
-                    .cfs
-                    .as_ref()
-                    .unwrap()
-                    .configuration
-                    .as_ref()
-                    .unwrap()
-                    .eq(cfs_configuration_name)
+                bos_session_template.cfs.as_ref().is_some_and(|cfs| {
+                    cfs.configuration
+                        .as_ref()
+                        .unwrap()
+                        .eq(cfs_configuration_name)
+                })
             });
 
     for bos_sessiontemplate_value_target in bos_sessiontemplate_value_target_list {
