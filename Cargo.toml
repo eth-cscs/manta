@@ -24,7 +24,7 @@ publish = false                                                         # cargo 
 # strum_macros = "*"
 
 [dependencies]
-csm-rs = "0.43.22"
+csm-rs = "0.43.23"
 # csm-rs = { path = "../csm-rs" } # Only for development purposes
 hostlist-parser = "0.1.6"
 strum = "0.25.0"
