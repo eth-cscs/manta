@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.102] - 2025-07-09
+
+### Bug Fixes
+
+- Error conversion
+
+### Miscellaneous Tasks
+
+- Update cargo.toml
+
 ## [1.54.101] - 2025-06-14
 
 ### Bug Fixes
 
 - There are BOS sessiontemplates without CFS configuration and this creates a bug when filtering BOS sessiontemplates by CFS configuration
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.101
 
 ### Refactor
 
