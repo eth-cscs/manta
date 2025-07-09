@@ -664,6 +664,12 @@ pub async fn create_cfs_configuration_from_sat_file(
             &mut cfs_configuration,
         )
         .await
+        .map_err(|e| {
+            Error::Message(format!(
+                "Error creating CFS configuration '{}': {}",
+                cfs_configuration_name, e
+            ))
+        })
     } else {
         println!("Create CFS configuration:\n{:#?}", cfs_configuration);
 
