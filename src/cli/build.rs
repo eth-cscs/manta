@@ -531,6 +531,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
       .default_value("2")
       .default_missing_value("2"))
     .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session to create an image. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
+    .arg(arg!(-o --"overwrite-configuration" "Overwrite configuration if already exists").action(ArgAction::SetTrue))
     .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts").action(ArgAction::SetTrue))
     .arg(arg!(-i --"image-only" "Only process `configurations` and `images` sections in SAT file. The `session_templates` section will be ignored.").action(ArgAction::SetTrue))
     .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))

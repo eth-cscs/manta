@@ -1126,6 +1126,7 @@ impl CfsTrait for StaticBackendDispatcher {
     shasta_root_cert: &[u8],
     configuration: &CfsConfigurationRequest,
     configuration_name: &str,
+    overwrite: bool,
   ) -> Result<CfsConfigurationResponse, Error> {
     match self {
       CSM(b) => {
@@ -1135,6 +1136,7 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_root_cert,
           configuration,
           configuration_name,
+          overwrite,
         )
         .await
       }
@@ -1145,6 +1147,7 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_root_cert,
           configuration,
           configuration_name,
+          overwrite,
         )
         .await
       }
@@ -1236,6 +1239,7 @@ impl SatTrait for StaticBackendDispatcher {
     do_not_reboot: bool,
     watch_logs: bool,
     debug_on_failure: bool,
+    overwrite: bool,
     dry_run: bool,
   ) -> Result<(), Error> {
     match self {
@@ -1257,6 +1261,7 @@ impl SatTrait for StaticBackendDispatcher {
           do_not_reboot,
           watch_logs,
           debug_on_failure,
+          overwrite,
           dry_run,
         )
         .await
@@ -1279,6 +1284,7 @@ impl SatTrait for StaticBackendDispatcher {
           do_not_reboot,
           watch_logs,
           debug_on_failure,
+          overwrite,
           dry_run,
         )
         .await

@@ -1528,6 +1528,9 @@ pub async fn process_cli(
           .get_one::<String>("ansible-verbosity")
           .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap());
 
+        let overwrite: bool =
+          cli_apply_sat_file.get_flag("overwrite-configuration");
+
         let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
         let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
@@ -1565,6 +1568,7 @@ pub async fn process_cli(
           cli_apply_sat_file.get_flag("image-only"),
           cli_apply_sat_file.get_flag("sessiontemplate-only"),
           true,
+          overwrite,
           dry_run,
           assume_yes,
           &site

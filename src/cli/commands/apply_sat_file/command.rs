@@ -35,6 +35,7 @@ pub async fn exec(
   image_only: bool,
   session_template_only: bool,
   debug_on_failure: bool,
+  overwrite: bool,
   dry_run: bool,
   assume_yes: bool,
   k8s: &K8sDetails,
@@ -160,6 +161,7 @@ pub async fn exec(
       do_not_reboot,
       watch_logs,
       debug_on_failure,
+      overwrite,
       dry_run,
     )
     .await
