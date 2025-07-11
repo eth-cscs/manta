@@ -60,7 +60,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+        run: rustup update "1.88.0" --no-self-update && rustup default "1.88.0"
       - name: Install musl toolchain
         run: rustup target add x86_64-unknown-linux-musl
       - name: Install dist
@@ -130,7 +130,7 @@ jobs:
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
       - name: Use rustup to set correct Rust version
-        run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+        run: rustup update "1.88.0" --no-self-update && rustup default "1.88.0"
       - name: Install musl toolchain
         run: rustup target add x86_64-unknown-linux-musl
       - name: Install dist
@@ -185,7 +185,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+        run: rustup update "1.88.0" --no-self-update && rustup default "1.88.0"
       - name: Install musl toolchain
         run: rustup target add x86_64-unknown-linux-musl
       - name: Install cached dist
@@ -238,7 +238,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.84.0" --no-self-update && rustup default "1.84.0"
+        run: rustup update "1.88.0" --no-self-update && rustup default "1.88.0"
       - name: Install musl toolchain
         run: rustup target add x86_64-unknown-linux-musl
       - name: Install cached dist
