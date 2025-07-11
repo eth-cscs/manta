@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.152] - 2025-07-11
+
+### Features
+
+- Add new flag '--overwrite-configuration' to command apply sat-file to overwrite and clean images if a CFS configuration needs to be overwritten
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.54.1-beta.151] - 2025-06-14
 
 ### Bug Fixes
 
 - This patch fixes compilation errors because manta-backend-dispatcher did not have a default code in function to get power status
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.151
 
 ## [1.54.1-beta.150] - 2025-06-07
 
