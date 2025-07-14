@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Github pipeline fails becuase rdkafka can't be compiled. This commit addresses this by increasing the rdkafka version
+- Release manta version 1.54.1-beta.154
 
 ## [1.54.1-beta.153] - 2025-07-11
 
