@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.155] - 2025-07-14
+
+### Miscellaneous Tasks
+
+- Github pipeline fails when building musl binary, this commit will address this by removing the musl binary from the pipeline
+
 ## [1.54.1-beta.154] - 2025-07-14
 
 ### Miscellaneous Tasks
