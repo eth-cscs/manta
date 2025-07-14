@@ -78,7 +78,7 @@ humansize = "2.0.0"
 execute = "0.2.13"
 is_executable = "1.0.1"
 minijinja = { version = "2.4.0", features = ["custom_syntax"] }
-rdkafka = { version = "0.37", features = ["cmake-build"] }
+rdkafka = { version = "0.38", features = ["cmake-build"] }
 base64 = { version = "0.13.1", default-features = false }
 globset = { version = "0.4.14", default-features = false }
 config = { version = "0.13.2", features = ["toml"], default-features = false }
