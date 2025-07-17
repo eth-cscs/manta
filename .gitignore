@@ -1,7 +1,7 @@
 /target
 /.vscode
 /sat-file
-Cargo.lock
+#Cargo.lock
 *.code-workspace
 *.log
 .idea/
