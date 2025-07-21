@@ -1,7 +1,8 @@
 pub mod command {
 
   use manta_backend_dispatcher::interfaces::{
-    get_images_and_details::GetImagesAndDetailsTrait, ims::ImsTrait,
+    bss::BootParametersTrait, get_images_and_details::GetImagesAndDetailsTrait,
+    ims::ImsTrait,
   };
 
   use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -20,47 +21,25 @@ pub mod command {
       image_id_vec.join(", "),
     );
 
-    /* let mut image_vec: Vec<Image> =
-        image::http_client::get_all(shasta_token, shasta_base_url, shasta_root_cert)
-            .await
-            .unwrap();
+    let boot_parameter_vec_rslt =
+      backend.get_all_bootparameters(shasta_token).await;
 
-    let image_detail_tuple_vec: Vec<(Image, String, String, bool)> =
-        image::utils::get_image_cfs_config_name_hsm_group_name(
-            shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            &mut image_vec,
-            &hsm_name_available_vec,
-            None,
-        )
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("ERROR - {}", e);
-            std::process::exit(1);
-        }); */
+    let boot_parameter_vec = boot_parameter_vec_rslt.unwrap_or_else(|e| {
+      eprintln!("ERROR - {}", e);
+      std::process::exit(1);
+    });
 
-    let image_detail_tuple_vec = backend
-      .get_images_and_details(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &hsm_name_available_vec,
-        None,
-        None,
-      )
-      .await
-      .unwrap_or_else(|e| {
-        eprintln!("ERROR - {}", e);
-        std::process::exit(1);
-      });
+    // Get list of image ids that are used to boot nodes (Node of these images can be deleted)
+    let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
+      .iter()
+      .map(|boot_param| boot_param.get_boot_image())
+      .collect();
 
-    // VALIDATE
-    // Check images user wants to delete are not being used to boot nodes
+    // Get list of image ids requested to delete that are used to boot nodes (these images cannot
+    // be deleted and will trigger the command to fail)
     let mut image_xnames_boot_map = Vec::new();
-    for image_details_tuple in image_detail_tuple_vec {
-      let image_id = image_details_tuple.0.name;
-      if image_details_tuple.3 && image_id_vec.contains(&image_id.as_str()) {
+    for image_id in image_id_vec {
+      if image_used_to_boot_nodes.contains(&image_id.to_string()) {
         image_xnames_boot_map.push(image_id);
       }
     }
@@ -68,17 +47,17 @@ pub mod command {
     // Exit if any image id user wants to delete is used to boot nodes
     if !image_xnames_boot_map.is_empty() {
       eprintln!(
-                "ERROR - The following images could not be deleted since they boot nodes.\n{:#?}",
-                image_xnames_boot_map
-            );
+        "ERROR - The following images could not be deleted since they boot nodes.\n{:#?}",
+        image_xnames_boot_map
+      );
       std::process::exit(1);
     }
 
-    for image_id in image_id_vec {
-      if dry_run {
-        eprintln!("Dry-run enabled. No changes persisted into the system");
-      } else {
-        let _ = backend
+    if dry_run {
+      eprintln!("Dry-run enabled. No changes persisted into the system");
+    } else {
+      for image_id in image_id_vec {
+        let del_rslt = backend
           .delete_image(
             shasta_token,
             shasta_base_url,
@@ -86,9 +65,21 @@ pub mod command {
             image_id,
           )
           .await;
+
+        match del_rslt {
+          Ok(_) => {
+            log::info!("Image {} deleted successfully", image_id);
+          }
+          Err(e) => {
+            eprintln!(
+              "ERROR - Failed to delete image {}:\n{}\nContinue",
+              image_id, e
+            );
+          }
+        }
       }
     }
 
-    println!("Images deleted:\n{:#?}", image_id_vec);
+    println!("Images deleted:\n{:?}", image_id_vec);
   }
 }

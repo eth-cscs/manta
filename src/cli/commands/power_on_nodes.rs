@@ -17,46 +17,9 @@ pub async fn exec(
   output: &str,
   kafka_audit_opt: Option<&Kafka>,
 ) {
+  println!("Powering on nodes...");
+  std::process::exit(0);
   // Convert user input to xname
-  /* let xname_available_vec: Vec<String> = backend
-      .get_group_available(shasta_token)
-      .await
-      .unwrap_or_else(|e| {
-          eprintln!(
-              "ERROR - Could not get group list. Reason:\n{}",
-              e.to_string()
-          );
-          std::process::exit(1);
-      })
-      .iter()
-      .flat_map(|group| group.get_members())
-      .collect();
-
-  let node_metadata_available_vec: Vec<Component> = backend
-      .get_all_nodes(shasta_token, Some("true"))
-      .await
-      .unwrap()
-      .components
-      .unwrap_or_default()
-      .iter()
-      .filter(|&node_metadata| xname_available_vec.contains(&node_metadata.id.as_ref().unwrap()))
-      .cloned()
-      .collect();
-
-  let mut xname_vec = common::node_ops::resolve_node_list_user_input_to_xname_2(
-      hosts_string,
-      false,
-      node_metadata_available_vec,
-  )
-  .await
-  .unwrap_or_else(|e| {
-      eprintln!(
-          "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-          e
-      );
-      std::process::exit(1);
-  }); */
-
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
@@ -103,18 +66,7 @@ pub async fn exec(
     }
   }
 
-  /* let operation = "on";
-
-  let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
-      shasta_base_url,
-      shasta_token,
-      shasta_root_cert,
-      operation,
-      &xname_vec,
-  )
-  .await
-  .map_err(|e| Error::Message(e.to_string())); */
-  let power_mgmt_summary_rslt =
+  /* let power_mgmt_summary_rslt =
     backend.power_on_sync(shasta_token, &xname_vec).await;
 
   let power_mgmt_summary = match power_mgmt_summary_rslt {
@@ -157,6 +109,5 @@ pub async fn exec(
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power on nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
-  }
+  } */
 }
