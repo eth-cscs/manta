@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.54.1-beta.156] - 2025-07-22
+## [1.54.1-beta.157] - 2025-07-22
 
 ### Features
 
@@ -10,9 +10,12 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Commit Cargo.lock (#99)
 - Clean code
 - Clean CASMTRIAGE-7232-kdump-1 folder which was introduced by mistake
 - Remove files copied by mistake
+- Release manta version 1.54.1-beta.156
+- Add Cargo.lock file
 
 ## [1.54.1-beta.155] - 2025-07-14
 
