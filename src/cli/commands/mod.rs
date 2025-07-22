@@ -24,7 +24,7 @@ pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
 pub mod delete_group;
 pub mod delete_hw_component_cluster;
-pub mod delete_image;
+pub mod delete_images;
 pub mod delete_kernel_parameters;
 pub mod delete_node;
 pub mod get_boot_parameters;

@@ -43,7 +43,7 @@ use super::commands::{
   config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
   config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
   console_cfs_session_image_target_ansible, console_node, delete_group,
-  delete_hw_component_cluster, delete_image, delete_kernel_parameters,
+  delete_hw_component_cluster, delete_images, delete_kernel_parameters,
   get_boot_parameters, get_cluster, get_configuration, get_hardware_node,
   get_images, get_kernel_parameters, get_nodes, get_session, get_template,
   migrate_backup, migrate_nodes_between_hsm_groups, power_off_cluster,
@@ -2371,7 +2371,7 @@ pub async fn process_cli(
 
         let dry_run: bool = cli_delete_images.get_flag("dry-run");
 
-        delete_image::command::exec(
+        delete_images::command::exec(
           &backend,
           &shasta_token,
           shasta_base_url,

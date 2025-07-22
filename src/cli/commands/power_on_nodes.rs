@@ -18,7 +18,6 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
 ) {
   println!("Powering on nodes...");
-  std::process::exit(0);
   // Convert user input to xname
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
