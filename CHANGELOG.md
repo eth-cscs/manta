@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Remove files copied by mistake
 - Release manta version 1.54.1-beta.156
 - Add Cargo.lock file
+- Release manta version 1.54.1-beta.157
 
 ## [1.54.1-beta.155] - 2025-07-14
 
