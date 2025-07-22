@@ -2,11 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.156] - 2025-07-22
+
+### Features
+
+- When deleting an image, code validates the image belongs to a node the user has access to and also check the image is not being used to boot a node
+
+### Miscellaneous Tasks
+
+- Clean code
+- Clean CASMTRIAGE-7232-kdump-1 folder which was introduced by mistake
+- Remove files copied by mistake
+
 ## [1.54.1-beta.155] - 2025-07-14
 
 ### Miscellaneous Tasks
 
 - Github pipeline fails when building musl binary, this commit will address this by removing the musl binary from the pipeline
+- Release manta version 1.54.1-beta.155
 
 ## [1.54.1-beta.154] - 2025-07-14
 
