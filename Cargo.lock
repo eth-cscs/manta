@@ -837,9 +837,9 @@ dependencies = [
 
 [[package]]
 name = "csm-rs"
-version = "0.5.0-beta.15"
+version = "0.5.0-beta.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a5c3cc55afd1dd54e7931d339d8128929e3bf56139129dfc6ebbcb9d52b4571"
+checksum = "88ea715ed5dc4276f702064cc9321f4c0411962798582ddefff0eaa7a22bcbef"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -2243,9 +2243,9 @@ dependencies = [
 
 [[package]]
 name = "ochami-rs"
-version = "0.1.79"
+version = "0.1.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96543976f393a77b4b1ac73dcc793819a00480e01fbb570ec7bced62bc121b88"
+checksum = "6de85c8807f3b21ae75e7efcf0b5938d06fcdbafd897e94a63758d3ef9703231"
 dependencies = [
  "futures-io",
  "hostlist-parser",
