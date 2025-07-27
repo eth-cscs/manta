@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.54.1-beta.157] - 2025-07-22
+## [1.54.1-beta.159] - 2025-07-27
+
+### Bug Fixes
+
+- Remove interactive features in function apply_session
+- Remove interactive features in function apply_session
 
 ### Features
 
@@ -17,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.54.1-beta.156
 - Add Cargo.lock file
 - Release manta version 1.54.1-beta.157
+- Release manta version 1.54.1-beta.158
 
 ## [1.54.1-beta.155] - 2025-07-14
 
