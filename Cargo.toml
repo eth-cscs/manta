@@ -32,8 +32,8 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 # PROD
 
 manta-backend-dispatcher = "0.1.83"
-ochami-rs = "0.1.79"
-csm-rs = "0.5.0-beta.13"
+ochami-rs = "0.1.80"
+csm-rs = "0.5.0-beta.16"
 
 # DEV - Only for development purposes
 
