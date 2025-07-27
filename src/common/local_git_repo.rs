@@ -1,3 +1,4 @@
+// Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 use std::path::{Path, PathBuf};
 
 use git2::{Commit, ObjectType, Repository};
@@ -20,31 +21,6 @@ pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
 pub fn untracked_changed_local_files(
   repo: &Repository,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-  // use walkdir::WalkDir;
-
-  // let root = std::env::current_dir().unwrap();
-
-  // // Check tree/indexes Adding all files (git add)
-  // for file in WalkDir::new(&root) {
-
-  //     let file_aux = file.unwrap();
-
-  //     if file_aux.metadata().unwrap().is_file() {
-
-  //         // println!("{}", file_aux.path().display());
-  //         // println!("{}", file_aux.path().strip_prefix(&root).unwrap().display());
-
-  //         let status = repo.status_file(file_aux.path().strip_prefix(&root).unwrap()).unwrap();
-
-  //         if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
-  //             println!("{}", file_aux.path().display());
-  //             return Ok(false);
-  //         }
-  //     }
-  // }
-
-  // Ok(true)
-
   let mut index = repo.index().unwrap();
 
   log::debug!("Checking git index...");

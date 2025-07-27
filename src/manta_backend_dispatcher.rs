@@ -1425,65 +1425,56 @@ impl ImsTrait for StaticBackendDispatcher {
 }
 
 impl ApplySessionTrait for StaticBackendDispatcher {
-  async fn i_apply_session(
+  async fn apply_session(
     &self,
     gitea_token: &str,
     gitea_base_url: &str,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    // k8s_api_url: &str,
     cfs_conf_sess_name: Option<&String>,
     playbook_yaml_file_name_opt: Option<&String>,
     hsm_group: Option<&String>,
-    repos_paths: Vec<PathBuf>,
+    repos_name_vec: Vec<String>,
+    repos_last_commit_id_vec: Vec<String>,
     ansible_limit: Option<String>,
     ansible_verbosity: Option<String>,
     ansible_passthrough: Option<String>,
-    // watch_logs: bool,
-    /* kafka_audit: &Kafka,
-    k8s: &K8sDetails, */
   ) -> Result<(String, String), Error> {
     match self {
       CSM(b) => {
-        b.i_apply_session(
+        b.apply_session(
           gitea_token,
           gitea_base_url,
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          // k8s_api_url,
           cfs_conf_sess_name,
           playbook_yaml_file_name_opt,
           hsm_group,
-          repos_paths,
+          repos_name_vec,
+          repos_last_commit_id_vec,
           ansible_limit,
           ansible_verbosity,
           ansible_passthrough,
-          // watch_logs,
-          /* kafka_audit,
-          k8s, */
         )
         .await
       }
       OCHAMI(b) => {
-        b.i_apply_session(
+        b.apply_session(
           gitea_token,
           gitea_base_url,
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          // k8s_api_url,
           cfs_conf_sess_name,
           playbook_yaml_file_name_opt,
           hsm_group,
-          repos_paths,
+          repos_name_vec,
+          repos_last_commit_id_vec,
           ansible_limit,
           ansible_verbosity,
           ansible_passthrough,
-          // watch_logs,
-          /* kafka_audit,
-          k8s, */
         )
         .await
       }

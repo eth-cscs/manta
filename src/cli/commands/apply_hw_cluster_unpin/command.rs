@@ -45,7 +45,8 @@ pub async fn exec(
     usize,
   > = HashMap::new();
 
-  // Check user input is correct
+  // Check user pattern is of format <hw component>:<quantity> where
+  // `hw component` is a string and `quantity` is a number.
   for hw_component_counter in pattern_element_vec.chunks(2) {
     if hw_component_counter[0].parse::<String>().is_ok()
       && hw_component_counter[1].parse::<usize>().is_ok()
