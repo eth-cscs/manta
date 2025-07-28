@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.54.1-beta.161] - 2025-07-28
+## [1.54.1-beta.162] - 2025-07-28
 
 ### Bug Fixes
 
@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - Update Cargo.toml
 - Update Cargo.toml
 - Release manta version 1.54.1-beta.160
+- Release manta version 1.54.1-beta.161
 
 ## [1.54.1-beta.155] - 2025-07-14
 
