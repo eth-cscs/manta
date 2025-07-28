@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.168] - 2025-07-28
+
+### Miscellaneous Tasks
+
+- Cargo dist is now back and this commit is to push newest cargo dist version and configurations
+
 ## [1.54.1-beta.167] - 2025-07-28
 
 ### Bug Fixes
@@ -34,6 +40,7 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.54.1-beta.164
 - Release manta version 1.54.1-beta.165
 - Release manta version 1.54.1-beta.166
+- Release manta version 1.54.1-beta.167
 
 ## [1.54.1-beta.155] - 2025-07-14
 
