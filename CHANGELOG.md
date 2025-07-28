@@ -35,6 +35,7 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.54.1-beta.166
 - Clean Cargo.toml
 - Clean Cargo.toml
+- Release manta version 1.54.1-beta.163
 
 ## [1.54.1-beta.155] - 2025-07-14
 
