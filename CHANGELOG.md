@@ -2,34 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.54.1-beta.165] - 2025-07-28
-
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.165
-
-## [1.54.1-beta.164] - 2025-07-28
-
-### Miscellaneous Tasks
-
-- Release manta version 1.54.1-beta.164
-
-## [1.54.1-beta.163] - 2025-07-28
+## [1.54.1-beta.167] - 2025-07-28
 
 ### Bug Fixes
 
 - Remove interactive features in function apply_session
 - Remove interactive features in function apply_session
 
-### Features
-
-- When deleting an image, code validates the image belongs to a node the user has access to and also check the image is not being used to boot a node
-
 ### Miscellaneous Tasks
 
 - Commit Cargo.lock (#99)
 - Clean code
-- Remove files copied by mistake
+- Remove files copied by mistake feat: when deleting an image, code validates the image belongs to a node the user has access to and also check the image is not being used to boot a node
 - Release manta version 1.54.1-beta.156
 - Add Cargo.lock file
 - Release manta version 1.54.1-beta.157
@@ -47,6 +31,9 @@ All notable changes to this project will be documented in this file.
 - Clean Cargo.toml
 - Clean Cargo.toml
 - Release manta version 1.54.1-beta.163
+- Release manta version 1.54.1-beta.164
+- Release manta version 1.54.1-beta.165
+- Release manta version 1.54.1-beta.166
 
 ## [1.54.1-beta.155] - 2025-07-14
 
