@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.170] - 2025-07-29
+
+### Bug Fixes
+
+- We are still using cargo dist 'dirty' which means github pipeline is not checked/validated because it assumes it has been modified by the user which is true due to the discontinuation of cargo dist and the necesity to upload the gitlab vm image. This fix is to update the cargo dist version to install in the vm to the most recent one which is the one we are now using
+
 ## [1.54.1-beta.169] - 2025-07-28
 
 ### Bug Fixes
 
 - We are still using cargo dist 'dirty' which means github pipeline is not checked/validated because it assumes it has been modified by the user which is true due to the discontinuation of cargo dist and the necesity to upload the gitlab vm image. This fix is to update the cargo dist version to install in the vm to the most recent one which is the one we are now using
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.169
 
 ## [1.54.1-beta.168] - 2025-07-28
 
