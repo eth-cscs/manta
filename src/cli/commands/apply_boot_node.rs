@@ -44,6 +44,7 @@ pub async fn exec(
   )
   .await?;
 
+  // VALIDATE
   // Check new configuration exists and exit otherwise
   let _ = backend
     .get_configuration(
@@ -250,10 +251,11 @@ pub async fn exec(
 
     // Update desired configuration
     // NOTE: this is going to foce CFS session to configure the nodes
-    if let Some(desired_configuration_name) = new_runtime_configuration_opt {
+    if let Some(new_runtime_configuration_name) = new_runtime_configuration_opt
+    {
       println!(
         "Updating runtime configuration to '{}'",
-        desired_configuration_name
+        new_runtime_configuration_name
       );
 
       let _ = backend
@@ -262,7 +264,7 @@ pub async fn exec(
           shasta_base_url,
           shasta_root_cert,
           xname_vec.iter().map(|xname| xname.to_string()).collect(), // TODO: modify function signature
-          desired_configuration_name,
+          new_runtime_configuration_name,
           true,
         )
         .await
