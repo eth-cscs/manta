@@ -1677,6 +1677,8 @@ pub async fn process_cli(
             .expect("Neither HSM group nor nodes defined")
         };
 
+        let dryrun = cli_apply_kernel_parameters.get_flag("dry-run");
+
         let kernel_parameters = cli_apply_kernel_parameters
           .get_one::<String>("VALUE")
           .unwrap(); // clap should validate the argument
@@ -1694,6 +1696,7 @@ pub async fn process_cli(
           assume_yes,
           do_not_reboot,
           kafka_audit_opt,
+          dryrun,
         )
         .await;
 

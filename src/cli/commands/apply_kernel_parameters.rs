@@ -22,6 +22,7 @@ pub async fn exec(
   assume_yes: bool,
   do_not_reboot: bool,
   kafka_audit_opt: Option<&Kafka>,
+  dry_run: bool,
 ) -> Result<(), Error> {
   let mut need_restart = false;
   log::info!("Apply kernel parameters");
@@ -63,7 +64,7 @@ pub async fn exec(
     .unwrap();
 
   println!(
-    "Apply kernel params:\n{:?}\nFor nodes:\n{:?}",
+    "Apply kernel parameters:\n{:?}\nTo nodes:\n{:?}",
     kernel_params,
     xname_vec.join(", ")
   );
@@ -73,6 +74,11 @@ pub async fn exec(
         .with_prompt("This operation will replace the kernel parameters for the nodes below. Please confirm to proceed")
         .interact()
         .unwrap();
+
+  if dry_run {
+    println!("Dry run mode. No changes will be made.");
+    return Ok(());
+  }
 
   if !proceed {
     println!("Operation canceled by the user. Exit");

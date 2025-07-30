@@ -65,7 +65,7 @@ pub async fn exec(
     }
   }
 
-  /* let power_mgmt_summary_rslt =
+  let power_mgmt_summary_rslt =
     backend.power_on_sync(shasta_token, &xname_vec).await;
 
   let power_mgmt_summary = match power_mgmt_summary_rslt {
@@ -108,5 +108,5 @@ pub async fn exec(
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
     }
-  } */
+  }
 }
