@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.172] - 2025-07-30
+
+### Features
+
+- Add functinality dry-run to command apply kernel-parameters
+
+### Miscellaneous Tasks
+
+- Update Cargo.lock
+
 ## [1.54.1-beta.171] - 2025-07-29
 
 ### Bug Fixes
 
 - BOS boot_set.rootfs_provider value was hardcoded to 'cpss3' and this is incompatible with iSCSI. This fix sets boot_set.rootfs_provider in bos to the same value user specifies in the SAT file
 - BOS boot_set.rootfs_provider value was hardcoded to 'cpss3' and this is incompatible with iSCSI. This fix sets boot_set.rootfs_provider in bos to the same value user specifies in the SAT file
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.171
 
 ### Refactor
 
