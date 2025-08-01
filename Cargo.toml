@@ -44,6 +44,7 @@ csm-rs = "0.5.0-beta.18"
 # --- END MANTA DEPENDENCIES ---
 
 hostlist-parser = "0.1.6"
+nodeset = "0.5.0"
 strum = { version = "0.27.1", default-features = false }
 strum_macros = "0.27.1"
 chrono = { version = "0.4.41", default-features = false }

@@ -7,6 +7,7 @@ use crate::{
   common::{self, audit::Audit, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use nodeset::NodeSet;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -25,12 +26,19 @@ pub async fn exec(
     .await
     .unwrap();
 
+  let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
+
+  println!(
+    "Number of nodes: {}\nlist of nodes: {}",
+    node_group.len(),
+    node_group.to_string()
+  );
+
   if !assume_yes {
     if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(format!(
-        "{:?}\nThe nodes above will be powered off. Please confirm to proceed?",
-        xname_vec
-      ))
+      .with_prompt(
+        "The nodes above will be powered off. Please confirm to proceed?",
+      )
       .interact()
       .unwrap()
     {
