@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.173] - 2025-08-01
+
+### Features
+
+- Power management command now shows a summary of the nodes affected by the operation. The summary contains a hostlist to make the summary more readable
+
+### Miscellaneous Tasks
+
+- Clean code
+
 ## [1.54.1-beta.172] - 2025-07-30
 
 ### Features
@@ -11,6 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.lock
+- Release manta version 1.54.1-beta.172
 
 ## [1.54.1-beta.171] - 2025-07-29
 
