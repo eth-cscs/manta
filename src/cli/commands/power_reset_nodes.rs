@@ -73,21 +73,6 @@ pub async fn exec(
     }
   }
 
-  /* let operation = if force {
-      "hard-restart"
-  } else {
-      "soft-restart"
-  };
-
-  let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
-      shasta_base_url,
-      shasta_token,
-      shasta_root_cert,
-      operation,
-      &xname_vec,
-  )
-  .await
-  .map_err(|e| Error::Message(e.to_string())); */
   let power_mgmt_summary_rslt = backend
     .power_reset_sync(shasta_token, &xname_vec, force)
     .await;
@@ -132,6 +117,5 @@ pub async fn exec(
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset nodes {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
   }
 }

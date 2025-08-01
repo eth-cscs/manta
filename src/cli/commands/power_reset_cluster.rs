@@ -12,8 +12,6 @@ use nodeset::NodeSet;
 pub async fn exec(
   backend: StaticBackendDispatcher,
   shasta_token: &str,
-  /* shasta_base_url: &str,
-  shasta_root_cert: &[u8], */
   hsm_group_name_arg: &str,
   force: bool,
   assume_yes: bool,
@@ -23,19 +21,10 @@ pub async fn exec(
   let xname_vec = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
-      /* shasta_base_url,
-      shasta_root_cert, */
       vec![hsm_group_name_arg.to_string()],
     )
     .await
     .unwrap();
-  /* let xname_vec = hsm::group::utils::get_member_vec_from_hsm_group_name(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      hsm_group_name_arg_opt,
-  )
-  .await; */
 
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
@@ -58,21 +47,6 @@ pub async fn exec(
     }
   }
 
-  /* let operation = if force {
-      "hard-restart"
-  } else {
-      "soft-restart"
-  };
-
-  let power_mgmt_summary_rslt = pcs::transitions::http_client::post_block(
-      shasta_base_url,
-      shasta_token,
-      shasta_root_cert,
-      operation,
-      &xname_vec,
-  )
-  .await
-  .map_err(|e| Error::Message(e.to_string())); */
   let power_mgmt_summary_rslt = backend
     .power_reset_sync(shasta_token, &xname_vec, force)
     .await;
@@ -106,6 +80,5 @@ pub async fn exec(
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Power reset cluster {:?}", jwt_ops::get_name(shasta_token).unwrap(), jwt_ops::get_preferred_username(shasta_token).unwrap(), xname_vec);
   }
 }
