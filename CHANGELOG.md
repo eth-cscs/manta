@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.174] - 2025-08-03
+
+### Features
+
+- Move interactive code in functionality to delete and cancel CFS sessions to higher levels
+- Move interactive code in functionality to delete and cancel CFS sessions to higher levels
+
+### Miscellaneous Tasks
+
+- Clean data
+
 ## [1.54.1-beta.173] - 2025-08-01
 
 ### Features
@@ -11,6 +22,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Clean code
+- Release manta version 1.54.1-beta.173
 
 ## [1.54.1-beta.172] - 2025-07-30
 
