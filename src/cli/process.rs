@@ -10,8 +10,9 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
+    bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    BootParameters, HWInventoryByLocationList,
+    HWInventoryByLocationList,
   },
 };
 use std::{
@@ -42,13 +43,14 @@ use super::commands::{
   apply_kernel_parameters, apply_sat_file, apply_session, apply_template,
   config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
   config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
-  console_cfs_session_image_target_ansible, console_node, delete_group,
-  delete_hw_component_cluster, delete_images, delete_kernel_parameters,
-  get_boot_parameters, get_cluster, get_configuration, get_hardware_node,
-  get_images, get_kernel_parameters, get_nodes, get_session, get_template,
-  migrate_backup, migrate_nodes_between_hsm_groups, power_off_cluster,
-  power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
-  power_reset_nodes, remove_nodes_from_hsm_groups, update_boot_parameters,
+  console_cfs_session_image_target_ansible, console_node,
+  delete_and_cancel_session, delete_group, delete_hw_component_cluster,
+  delete_images, delete_kernel_parameters, get_boot_parameters, get_cluster,
+  get_configuration, get_hardware_node, get_images, get_kernel_parameters,
+  get_nodes, get_session, get_template, migrate_backup,
+  migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes,
+  power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
+  remove_nodes_from_hsm_groups, update_boot_parameters,
 };
 use serde_json::Value;
 
@@ -2254,18 +2256,16 @@ pub async fn process_cli(
         let assume_yes: bool = cli_delete_session.get_flag("assume-yes");
 
         let dry_run: bool = cli_delete_session.get_flag("dry-run");
-
-        backend
-          .i_delete_and_cancel_session(
-            &shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            hsm_group_available_vec,
-            session_name,
-            dry_run,
-            assume_yes,
-          )
-          .await?;
+        delete_and_cancel_session::exec(
+          backend,
+          &shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          hsm_group_available_vec,
+          session_name,
+          dry_run,
+          assume_yes,
+        );
       } else if let Some(cli_delete_configurations) =
         cli_delete.subcommand_matches("configurations")
       {

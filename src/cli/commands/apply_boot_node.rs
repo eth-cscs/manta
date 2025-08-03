@@ -13,7 +13,7 @@ use manta_backend_dispatcher::{
     bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait,
     ims::ImsTrait,
   },
-  types::BootParameters,
+  types::bss::BootParameters,
 };
 
 pub async fn exec(

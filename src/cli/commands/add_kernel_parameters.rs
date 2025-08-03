@@ -51,7 +51,7 @@ pub async fn exec(
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
-  let current_node_boot_params_vec: Vec<types::BootParameters> = backend
+  let current_node_boot_params_vec: Vec<types::bss::BootParameters> = backend
     .get_bootparameters(
       shasta_token,
       &xname_vec

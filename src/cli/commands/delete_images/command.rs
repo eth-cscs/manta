@@ -2,7 +2,7 @@ use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, hsm::group::GroupTrait, ims::ImsTrait,
   },
-  types::{BootParameters, Group},
+  types::{bss::BootParameters, Group},
 };
 
 use crate::{

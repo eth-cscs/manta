@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, Table};
-use manta_backend_dispatcher::types::BootParameters;
+use manta_backend_dispatcher::types::bss::BootParameters;
 
 pub fn print_table(
   boot_parameters_vec: Vec<BootParameters>,

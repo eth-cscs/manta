@@ -1,7 +1,7 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{bss::BootParametersTrait, hsm::component::ComponentTrait},
-  types::BootParameters,
+  types::bss::BootParameters,
 };
 
 use crate::{

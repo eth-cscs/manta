@@ -35,16 +35,18 @@ use manta_backend_dispatcher::{
   types::{
     self,
     bos::session_template::BosSessionTemplate,
+    bss::BootParameters,
     cfs::{
       cfs_configuration_details::LayerDetails,
       cfs_configuration_request::CfsConfigurationRequest,
       cfs_configuration_response::{CfsConfigurationResponse, Layer},
+      component::Component as CfsComponent,
       session::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
     ims::Image,
-    BootParameters, Component, ComponentArrayPostArray, Group,
-    HWInventoryByLocationList, K8sDetails, NodeMetadataArray,
+    Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+    K8sDetails, NodeMetadataArray,
   },
 };
 
@@ -950,6 +952,47 @@ impl CfsTrait for StaticBackendDispatcher {
     }
   }
 
+  async fn delete_and_cancel_session(
+    &self,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    group_available_vec: &[Group],
+    cfs_session: &CfsSessionGetResponse,
+    cfs_component_vec: &[CfsComponent],
+    bss_bootparameter_vec: &[BootParameters],
+    dry_run: bool,
+  ) -> Result<(), Error> {
+    match self {
+      CSM(b) => {
+        b.delete_and_cancel_session(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          group_available_vec,
+          cfs_session,
+          cfs_component_vec,
+          bss_bootparameter_vec,
+          dry_run,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.delete_and_cancel_session(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          group_available_vec,
+          cfs_session,
+          cfs_component_vec,
+          bss_bootparameter_vec,
+          dry_run,
+        )
+        .await
+      }
+    }
+  }
+
   async fn create_configuration_from_repos(
     &self,
     gitea_token: &str,
@@ -1776,44 +1819,6 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
 }
 
 impl CommandsTrait for StaticBackendDispatcher {
-  async fn i_delete_and_cancel_session(
-    &self,
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    hsm_group_available_vec: Vec<String>,
-    cfs_session_name: &str,
-    dry_run: bool,
-    assume_yes: bool,
-  ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.i_delete_and_cancel_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_available_vec,
-          cfs_session_name,
-          dry_run,
-          assume_yes,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.i_delete_and_cancel_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_available_vec,
-          cfs_session_name,
-          dry_run,
-          assume_yes,
-        )
-        .await
-      }
-    }
-  }
-
   async fn i_delete_data_related_to_cfs_configuration(
     &self,
     shasta_token: &str,

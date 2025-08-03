@@ -1,4 +1,4 @@
-use manta_backend_dispatcher::types::{BootParameters, Group};
+use manta_backend_dispatcher::types::{bss::BootParameters, Group};
 
 /// Get a vector of boot parameters that are restricted based on the groups available to the user.
 pub fn get_restricted_boot_parameters(
