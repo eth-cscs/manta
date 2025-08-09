@@ -1,6 +1,7 @@
 use clap_complete::{generate, generate_to};
 use manta_backend_dispatcher::{
   contracts::BackendTrait,
+  error::Error,
   interfaces::{
     bss::BootParametersTrait,
     commands::CommandsTrait,
@@ -44,8 +45,9 @@ use super::commands::{
   config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
   config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
   console_cfs_session_image_target_ansible, console_node,
-  delete_and_cancel_session, delete_group, delete_hw_component_cluster,
-  delete_images, delete_kernel_parameters, get_boot_parameters, get_cluster,
+  delete_and_cancel_session, delete_configurations_and_derivatives,
+  delete_group, delete_hw_component_cluster, delete_images,
+  delete_kernel_parameters, get_boot_parameters, get_cluster,
   get_configuration, get_hardware_node, get_images, get_kernel_parameters,
   get_nodes, get_session, get_template, migrate_backup,
   migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes,
@@ -2271,19 +2273,6 @@ pub async fn process_cli(
       {
         let shasta_token = backend.get_api_token(&site_name).await?;
 
-        let target_hsm_group_vec =
-          if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
-            vec![settings_hsm_group_name.clone()]
-          } else {
-            get_groups_available(
-              &backend,
-              &shasta_token,
-              None,
-              settings_hsm_group_name_opt,
-            )
-            .await?
-          };
-
         let since_opt = if let Some(since) =
           cli_delete_configurations.get_one::<String>("since")
         {
@@ -2327,19 +2316,37 @@ pub async fn process_cli(
           std::process::exit(1);
         }
 
-        backend
-          .i_delete_data_related_to_cfs_configuration(
-            &shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            target_hsm_group_vec,
-            cfs_configuration_name_opt,
-            cfs_configuration_name_pattern,
-            since_opt,
-            until_opt,
-            assume_yes,
-          )
-          .await?;
+        let target_hsm_group_vec =
+          if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
+            vec![settings_hsm_group_name.clone()]
+          } else {
+            get_groups_available(
+              &backend,
+              &shasta_token,
+              None,
+              settings_hsm_group_name_opt,
+            )
+            .await?
+          };
+
+        let result = delete_configurations_and_derivatives::exec(
+          backend,
+          &shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          target_hsm_group_vec,
+          cfs_configuration_name_opt,
+          cfs_configuration_name_pattern,
+          since_opt,
+          until_opt,
+          assume_yes,
+        )
+        .await;
+
+        if let Err(e) = result {
+          eprintln!("{}", e.to_string());
+          std::process::exit(1);
+        }
       } else if let Some(cli_delete_images) =
         cli_delete.subcommand_matches("images")
       {

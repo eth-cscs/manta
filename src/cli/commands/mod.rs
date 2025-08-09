@@ -23,6 +23,7 @@ pub mod config_unset_parent_hsm;
 pub mod console_cfs_session_image_target_ansible;
 pub mod console_node;
 pub mod delete_and_cancel_session;
+pub mod delete_configurations_and_derivatives;
 pub mod delete_group;
 pub mod delete_hw_component_cluster;
 pub mod delete_images;

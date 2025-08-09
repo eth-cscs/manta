@@ -1,5 +1,5 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use manta_backend_dispatcher::types::BootParameters;
+use manta_backend_dispatcher::types::bss::BootParameters;
 
 /* #[test]
 fn test_error_if_deleting_image_used_to_boot() {
