@@ -8,6 +8,7 @@ use crate::{
   common::cfs_configuration_utils::print_table_struct,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use chrono::NaiveDateTime;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -19,6 +20,8 @@ pub async fn exec(
   configuration_name: Option<&String>,
   configuration_name_pattern: Option<&String>,
   hsm_group_name_vec: &Vec<String>,
+  since_opt: Option<NaiveDateTime>,
+  until_opt: Option<NaiveDateTime>,
   limit: Option<&u8>,
   output_opt: Option<&String>,
   site_name: &str,
@@ -31,6 +34,8 @@ pub async fn exec(
       configuration_name.map(|elem| elem.as_str()),
       configuration_name_pattern.map(|elem| elem.as_str()),
       hsm_group_name_vec,
+      since_opt,
+      until_opt,
       limit,
     )
     .await

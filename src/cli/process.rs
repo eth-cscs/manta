@@ -1010,6 +1010,8 @@ pub async fn process_cli(
           cli_get_configuration.get_one::<String>("name"),
           cli_get_configuration.get_one::<String>("pattern"),
           &target_hsm_group_vec,
+          None,
+          None,
           limit,
           cli_get_configuration.get_one("output"),
           &site_name,
