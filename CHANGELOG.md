@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.175] - 2025-08-11
+
+### Features
+
+- CFS configuration interface has been updated so now it allows filtering configuration based on date range. this patch updates the backend new interface but it does not provides new functionalities to cli
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Update Cargo.lock
+
+### Refactor
+
+- We are trying to improve the quality of the code by improving its structure. This patch addresses this for the code related to delete configurations and derivatives by moving the code to its own module
+
 ## [1.54.1-beta.174] - 2025-08-03
 
 ### Features
@@ -12,6 +27,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Clean data
+- Release manta version 1.54.1-beta.174
 
 ## [1.54.1-beta.173] - 2025-08-01
 
