@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.177] - 2025-08-13
+
+### Features
+
+- The way manta prints the table with kernel parameters never felt right because it would try to arrange values depending on a threshold calculated based on the largest kernel parameter. This patch address this by using comfy-table dynamic table to adapt table width to the screen size
+
 ## [1.54.1-beta.176] - 2025-08-13
 
 ### Features
 
 - CSM 1.6.2 provides iSCSI which requires etag and image id in kernel parameters to match. Command 'apply boot' now makes sure etag in kernel param matches with the image id
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.176
 
 ### Refactor
 
