@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use comfy_table::{Cell, Table};
+use comfy_table::{Cell, ContentArrangement, Table};
 use manta_backend_dispatcher::types::bss::BootParameters;
 
 pub fn print_table(
@@ -60,10 +60,11 @@ pub fn print_table(
   let mut table = Table::new();
 
   table.set_header(vec!["XNAME", "Kernel Params"]);
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   // Format kernel params in table cell
   for (kernel_params_vec, xname_vec) in kernel_param_node_map {
-    let cell_max_width = kernel_params_vec
+    /* let cell_max_width = kernel_params_vec
       .iter()
       .map(|value| value.len())
       .max()
@@ -88,11 +89,15 @@ pub fn print_table(
       }
 
       kernel_params_string.push_str(&kernel_param);
-    }
+    } */
 
     let xnames = xname_vec.join("\n");
 
-    table.add_row(vec![Cell::new(xnames), Cell::new(kernel_params_string)]);
+    // table.add_row(vec![Cell::new(xnames), Cell::new(kernel_params_string)]);
+    table.add_row(vec![
+      Cell::new(xnames),
+      Cell::new(kernel_params_vec.join(" ")),
+    ]);
   }
 
   /* for boot_parameters in boot_parameters_vec {
