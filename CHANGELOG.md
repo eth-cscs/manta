@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.176] - 2025-08-13
+
+### Features
+
+- CSM 1.6.2 provides iSCSI which requires etag and image id in kernel parameters to match. Command 'apply boot' now makes sure etag in kernel param matches with the image id
+
+### Refactor
+
+- Update Cargo.lock
+
 ## [1.54.1-beta.175] - 2025-08-11
 
 ### Features
@@ -12,6 +22,7 @@ All notable changes to this project will be documented in this file.
 
 - Update Cargo.toml
 - Update Cargo.lock
+- Release manta version 1.54.1-beta.175
 
 ### Refactor
 
