@@ -43,7 +43,7 @@ pub async fn exec(
   // Get list of image ids that are used to boot nodes (Node of these images can be deleted)
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
     .iter()
-    .map(|boot_param| boot_param.get_boot_image())
+    .map(|boot_param| boot_param.get_boot_image_id())
     .collect();
 
   // Get list of image ids requested to delete that are used to boot nodes (these images cannot
@@ -108,6 +108,6 @@ pub fn get_restricted_image_ids(
 ) -> Vec<String> {
   get_restricted_boot_parameters(group_available_vec, boot_parameter_vec)
     .iter()
-    .map(|boot_param| boot_param.get_boot_image())
+    .map(|boot_param| boot_param.get_boot_image_id())
     .collect()
 }

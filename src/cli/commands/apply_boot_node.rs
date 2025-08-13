@@ -67,73 +67,87 @@ pub async fn exec(
     .unwrap();
 
   // Get new boot image
-  let new_boot_image_id_opt: Option<String> = if let Some(
-    new_boot_image_configuration,
-  ) =
-    new_boot_image_configuration_opt
-  {
-    log::info!(
-      "Boot configuration '{}' provided",
-      new_boot_image_configuration
-    );
-    let mut image_vec = get_image_vec_related_cfs_configuration_name(
-      backend,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      new_boot_image_configuration.to_string(),
-    )
-    .await?;
-
-    if image_vec.is_empty() {
-      eprintln!(
-        "ERROR - Could not find boot image related to configuration '{}'",
+  let (new_boot_image_id_opt, etag_opt): (Option<String>, Option<String>) =
+    if let Some(new_boot_image_configuration) = new_boot_image_configuration_opt
+    {
+      log::info!(
+        "Boot configuration '{}' provided",
         new_boot_image_configuration
       );
-      std::process::exit(1);
-    }
-
-    backend.filter_images(&mut image_vec)?;
-
-    let most_recent_image_related_to_cfs_configuration =
-      image_vec.iter().last().unwrap();
-
-    let image_id = most_recent_image_related_to_cfs_configuration.id.clone();
-
-    println!(
-      "Boot image id related to configuration '{}' found\n{:#?}",
-      new_boot_image_configuration, image_id
-    );
-
-    image_id
-  } else if let Some(boot_image_id) = new_boot_image_id_opt {
-    log::info!("Boot image id '{}' provided", boot_image_id);
-    // Check image id exists
-    /* let image_id_in_csm = ims::image::http_client::get(
+      let mut image_vec = get_image_vec_related_cfs_configuration_name(
+        backend,
         shasta_token,
         shasta_base_url,
         shasta_root_cert,
-        new_boot_image_id_opt.map(|image_id| image_id.as_str()),
-    )
-    .await; */
-    let image_id_in_csm = backend
-      .get_images(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        new_boot_image_id_opt.map(|image_id| image_id.as_str()),
+        new_boot_image_configuration.to_string(),
       )
       .await?;
 
-    if image_id_in_csm.is_empty() {
-      eprintln!("ERROR - boot image id '{}' not found", boot_image_id);
-      std::process::exit(1);
-    }
+      if image_vec.is_empty() {
+        eprintln!(
+          "ERROR - Could not find boot image related to configuration '{}'",
+          new_boot_image_configuration
+        );
+        std::process::exit(1);
+      }
 
-    Some(boot_image_id).cloned()
-  } else {
-    None
-  };
+      backend.filter_images(&mut image_vec)?;
+
+      let most_recent_image_related_to_cfs_configuration =
+        image_vec.iter().last().unwrap();
+
+      let image_id = most_recent_image_related_to_cfs_configuration.id.clone();
+
+      let etag_opt = most_recent_image_related_to_cfs_configuration
+        .link
+        .as_ref()
+        .and_then(|link| link.clone().etag);
+
+      println!(
+        "Boot image id related to configuration '{}' found:\n{:#?}",
+        new_boot_image_configuration, image_id
+      );
+
+      println!(
+        "Boot image etag related to configuration '{}' found:\n{:#?}",
+        new_boot_image_configuration, etag_opt
+      );
+
+      (image_id, etag_opt)
+    } else if let Some(boot_image_id) = new_boot_image_id_opt {
+      log::info!("Boot image id '{}' provided", boot_image_id);
+      // Check image id exists
+      let image_in_csm_vec = backend
+        .get_images(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          new_boot_image_id_opt.map(|image_id| image_id.as_str()),
+        )
+        .await?;
+
+      if image_in_csm_vec.is_empty() {
+        eprintln!("ERROR - boot image id '{}' not found", boot_image_id);
+        std::process::exit(1);
+      }
+
+      let etag_opt = image_in_csm_vec
+        .first()
+        .unwrap()
+        .link
+        .as_ref()
+        .and_then(|link| link.clone().etag);
+
+      let etag = etag_opt.unwrap_or_else(|| "Not found".to_string());
+
+      log::info!("Boot image id:\n{:#?}", boot_image_id);
+
+      log::info!("Boot image etag:\n{}", etag);
+
+      (Some(boot_image_id).cloned(), Some(etag))
+    } else {
+      (None, None)
+    };
 
   // Update BSS BOOT PARAMETERS
   //
@@ -145,24 +159,24 @@ pub async fn exec(
   if let Some(new_kernel_parameters) = new_kernel_parameters_opt {
     // Update boot params
     current_node_boot_param_vec
-            .iter_mut()
-            .for_each(|boot_parameter| {
-                log::info!(
-                    "Updating '{:?}' kernel parameters to '{}'",
-                    boot_parameter.hosts,
-                    new_kernel_parameters
-                );
+      .iter_mut()
+      .for_each(|boot_parameter| {
+        log::info!(
+            "Updating '{:?}' kernel parameters to '{}'",
+            boot_parameter.hosts,
+            new_kernel_parameters
+        );
 
-                let kernel_params_changed =
-                    boot_parameter.apply_kernel_params(&new_kernel_parameters);
-                need_restart = kernel_params_changed || need_restart;
+        let kernel_params_changed =
+            boot_parameter.apply_kernel_params(&new_kernel_parameters);
+        need_restart = kernel_params_changed || need_restart;
 
-                /* need_restart =
-                need_restart || boot_parameter.apply_kernel_params(&new_kernel_parameters); */
+        /* need_restart =
+        need_restart || boot_parameter.apply_kernel_params(&new_kernel_parameters); */
 
-                log::info!("need restart? {}", need_restart);
-                let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image());
-            });
+        log::info!("need restart? {}", need_restart);
+        let _ = boot_parameter.update_boot_image(&boot_parameter.get_boot_image_id(), &boot_parameter.get_boot_image_etag());
+      });
   }
 
   log::debug!("new kernel params: {:#?}", current_node_boot_param_vec);
@@ -173,11 +187,15 @@ pub async fn exec(
   // Update boot image
   //
   // Check if boot image changes and notify the user and update the node boot params struct
-  if let Some(new_boot_image_id) = new_boot_image_id_opt {
+  if let (Some(new_boot_image_id), Some(etag)) =
+    (new_boot_image_id_opt, etag_opt)
+  {
     let boot_params_to_update_vec: Vec<&BootParameters> =
       current_node_boot_param_vec
         .iter()
-        .filter(|boot_param| boot_param.get_boot_image() != new_boot_image_id)
+        .filter(|boot_param| {
+          boot_param.get_boot_image_id() != new_boot_image_id
+        })
         .collect();
 
     if !boot_params_to_update_vec.is_empty() {
@@ -191,7 +209,7 @@ pub async fn exec(
             new_boot_image_id
           );
 
-          let _ = boot_parameter.update_boot_image(&new_boot_image_id);
+          let _ = boot_parameter.update_boot_image(&new_boot_image_id, &etag);
         });
 
       need_restart = true;
