@@ -374,7 +374,8 @@ pub fn subcommand_get_boot_parameters() -> Command {
   Command::new("boot-parameters")
     // .visible_aliases(["n", "node"])
     .about("Get boot-parameters information")
-    .arg(arg!(-H --hosts <VALUE> "Comma separated list of xnames requesting boot script"))
+    .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
 
   // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
   // using the nids or macs

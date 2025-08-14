@@ -1199,13 +1199,46 @@ pub async fn process_cli(
       {
         let shasta_token = backend.get_api_token(&site_name).await?;
 
-        let hosts = cli_get_boot_parameters.get_one::<String>("hosts");
+        let hsm_group_name_arg_opt =
+          cli_get_boot_parameters.get_one::<String>("hsm-group");
+
+        let nodes: &String = if hsm_group_name_arg_opt.is_some() {
+          let hsm_group_name_vec = get_groups_available(
+            &backend,
+            &shasta_token,
+            hsm_group_name_arg_opt,
+            settings_hsm_group_name_opt,
+          )
+          .await?;
+
+          let hsm_members_rslt = backend
+            .get_member_vec_from_group_name_vec(
+              &shasta_token,
+              hsm_group_name_vec,
+            )
+            .await;
+
+          match hsm_members_rslt {
+            Ok(hsm_members) => &hsm_members.join(","),
+            Err(e) => {
+              eprintln!(
+                "ERROR - could not fetch HSM groups members. Reason:\n{}",
+                e.to_string()
+              );
+              std::process::exit(1);
+            }
+          }
+        } else {
+          cli_get_boot_parameters
+            .get_one::<String>("nodes")
+            .expect("Neither HSM group nor nodes defined")
+        };
 
         let boot_parameters_vec: Vec<BootParameters> =
           get_boot_parameters::exec(
             &backend,
             &shasta_token,
-            &hosts.cloned().unwrap_or_default(),
+            nodes,
             None,
             None,
             None,
