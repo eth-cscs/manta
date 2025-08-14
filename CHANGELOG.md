@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.178] - 2025-08-14
+
+### Features
+
+- Change printing table as dynamic to force table width to fit in screen
+- Command get boot-parameters only supports a list of xnames as an entry point, however, manta supports host expression and this patch fixes this by adding support to HSM group name and host expressions
+
 ## [1.54.1-beta.177] - 2025-08-13
 
 ### Features
 
 - The way manta prints the table with kernel parameters never felt right because it would try to arrange values depending on a threshold calculated based on the largest kernel parameter. This patch address this by using comfy-table dynamic table to adapt table width to the screen size
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.177
 
 ## [1.54.1-beta.176] - 2025-08-13
 
