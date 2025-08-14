@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use comfy_table::{Cell, Table};
+use comfy_table::{Cell, ContentArrangement, Table};
 use csm_rs::node::types::NodeDetails;
 use hostlist_parser::parse;
 use manta_backend_dispatcher::{
@@ -302,17 +302,17 @@ pub fn validate_xname_format(xname: &str) -> bool {
 
 pub fn print_table(nodes_status: Vec<NodeDetails>) {
   let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   table.set_header(vec![
     "XNAME",
     "NID",
     "HSM",
-    "Power Status",
-    "Runtime Configuration",
-    "Configuration Status",
+    "Power",
+    "Runtime Config",
+    "Config Stat",
     "Enabled",
-    "Error Count",
-    "Image Configuration",
+    "# Error",
     "Image ID",
   ]);
 
@@ -333,7 +333,6 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
       Cell::new(node_status.configuration_status),
       Cell::new(node_status.enabled),
       Cell::new(node_status.error_count),
-      Cell::new(node_status.boot_configuration),
       Cell::new(node_status.boot_image_id),
     ]);
   }
@@ -343,17 +342,17 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
 
 pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
   let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   table.set_header(vec![
     "XNAME",
     "NID",
     "HSM",
-    "Power Status",
-    "Runtime Configuration",
-    "Configuration Status",
+    "Power",
+    "Runtime Config",
+    "Config Status",
     "Enabled",
-    "Error Count",
-    "Image Configuration",
+    "Error #",
     "Image ID",
     "Kernel Params",
   ]);
@@ -399,7 +398,6 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
       Cell::new(node_status.configuration_status),
       Cell::new(node_status.enabled),
       Cell::new(node_status.error_count),
-      Cell::new(node_status.boot_configuration),
       Cell::new(node_status.boot_image_id),
       Cell::new(kernel_params_string),
     ]);

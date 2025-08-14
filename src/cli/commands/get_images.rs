@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local, NaiveDateTime};
-use comfy_table::Table;
+use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
   error::Error, interfaces::get_images_and_details::GetImagesAndDetailsTrait,
   types::ims::Image,
@@ -41,6 +41,7 @@ pub async fn exec(
 
   // Print data
   let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   table.set_header(vec![
     "Image ID",
@@ -70,7 +71,12 @@ pub async fn exec(
       &image_details.0.name,
       &creation_date,
       &image_details.1,
-      &image_details.2,
+      &image_details
+        .2
+        .split(",")
+        .map(|v| v.trim())
+        .collect::<Vec<_>>()
+        .join("\n"),
     ]);
   }
 

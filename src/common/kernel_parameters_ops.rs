@@ -64,33 +64,6 @@ pub fn print_table(
 
   // Format kernel params in table cell
   for (kernel_params_vec, xname_vec) in kernel_param_node_map {
-    /* let cell_max_width = kernel_params_vec
-      .iter()
-      .map(|value| value.len())
-      .max()
-      .unwrap_or(0);
-
-    let mut kernel_params_string: String = if !kernel_params_vec.is_empty() {
-      kernel_params_vec[0].to_string()
-    } else {
-      "".to_string()
-    };
-
-    let mut cell_width = kernel_params_string.len();
-
-    for kernel_param in kernel_params_vec.iter().skip(1) {
-      cell_width += kernel_param.len();
-
-      if cell_width + kernel_param.len() >= cell_max_width {
-        kernel_params_string.push_str("\n");
-        cell_width = 0;
-      } else {
-        kernel_params_string.push_str(" ");
-      }
-
-      kernel_params_string.push_str(&kernel_param);
-    } */
-
     let xnames = xname_vec.join("\n");
 
     // table.add_row(vec![Cell::new(xnames), Cell::new(kernel_params_string)]);
@@ -99,49 +72,6 @@ pub fn print_table(
       Cell::new(kernel_params_vec.join(" ")),
     ]);
   }
-
-  /* for boot_parameters in boot_parameters_vec {
-      let kernel_params_vec: Vec<String> = boot_parameters
-          .params
-          .split_whitespace()
-          .map(|value| value.to_string())
-          .collect();
-
-      let kernel_params_vec: Vec<String> = if !kernel_params_key_vec.is_empty() {
-          kernel_params_vec
-              .into_iter()
-              .filter(|kp| kernel_params_key_vec.iter().any(|kp_k| kp.contains(kp_k)))
-              .collect()
-      } else {
-          kernel_params_vec.clone()
-      };
-
-      let cell_max_width = kernel_params_vec
-          .iter()
-          .map(|value| value.len())
-          .max()
-          .unwrap_or(0);
-
-      let mut kernel_params_string: String = kernel_params_vec[0].to_string();
-      let mut cell_width = kernel_params_string.len();
-
-      for kernel_param in kernel_params_vec.iter().skip(1) {
-          cell_width += kernel_param.len();
-
-          if cell_width + kernel_param.len() >= cell_max_width {
-              kernel_params_string.push_str("\n");
-              cell_width = 0;
-          } else {
-              kernel_params_string.push_str(" ");
-          }
-
-          kernel_params_string.push_str(&kernel_param);
-      }
-
-      let xname = boot_parameters.hosts.first().unwrap().clone();
-
-      table.add_row(vec![Cell::new(xname), Cell::new(kernel_params_string)]);
-  } */
 
   println!("{table}");
 }
