@@ -2,12 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.179] - 2025-08-15
+
+### Features
+
+- Add dry-run argument to commands 'add kernel-parameters' and 'delete kernel-parameters'
+- Commands related to kernel parameters improve the user prompt by using host lists to list nodes affected by user operations
+- [**breaking**] Changes in command "get cluster" --status argument changes to --status-summary and --status now filters by status
+- [**breaking**] Changes in command "get nodes" --status argument changes to --status-summary and --status now filters by status
+- Command "get ndoes" now sorts alphabetically returns by xnames
+
+### Refactor
+
+- Apply cargo fix
+
 ## [1.54.1-beta.178] - 2025-08-14
 
 ### Features
 
 - Change printing table as dynamic to force table width to fit in screen
 - Command get boot-parameters only supports a list of xnames as an entry point, however, manta supports host expression and this patch fixes this by adding support to HSM group name and host expressions
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.178
 
 ## [1.54.1-beta.177] - 2025-08-13
 
