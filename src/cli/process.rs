@@ -1153,14 +1153,10 @@ pub async fn process_cli(
           .expect("The 'xnames' argument must have values");
 
         let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
-
-        let nids_only = cli_get_nodes
-          .get_one::<bool>("nids-only-one-line")
-          .unwrap_or(&false);
-
+        let nids_only = cli_get_nodes.get_flag("nids-only-one-line");
+        let status: Option<&String> = cli_get_nodes.get_one("status");
         let output = cli_get_nodes.get_one::<String>("output");
-
-        let status = *cli_get_nodes.get_one::<bool>("status").unwrap_or(&false);
+        let status_summary = cli_get_nodes.get_flag("summary-status");
 
         get_nodes::exec(
           &backend,
@@ -1168,11 +1164,12 @@ pub async fn process_cli(
           shasta_base_url,
           shasta_root_cert,
           xname_requested,
+          status,
           is_include_siblings,
-          *nids_only,
+          nids_only,
           false,
           output,
-          status,
+          status_summary,
         )
         .await;
       } else if let Some(cli_get_images) = cli_get.subcommand_matches("images")

@@ -8,13 +8,13 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  // mut node_list: Vec<String>,
   hosts_expression: &str,
+  status: Option<&String>,
   is_include_siblings: bool,
   silent_nid: bool,
   silent_xname: bool,
   output_opt: Option<&String>,
-  status: bool,
+  status_summary: bool,
 ) {
   // Convert user input to xname
   let node_metadata_available_vec = backend
@@ -55,7 +55,7 @@ pub async fn exec(
   )
   .await;
 
-  let node_details_list = match node_details_list_rslt {
+  let mut node_details_list = match node_details_list_rslt {
     Err(e) => {
       eprintln!("{}", e);
       std::process::exit(1);
@@ -63,7 +63,20 @@ pub async fn exec(
     Ok(node_details_list) => node_details_list,
   };
 
-  if status {
+  node_details_list.retain(|node_details| {
+    if let Some(status) = status {
+      node_details.power_status.eq_ignore_ascii_case(status)
+        || node_details
+          .configuration_status
+          .eq_ignore_ascii_case(status)
+    } else {
+      true
+    }
+  });
+
+  node_details_list.sort_by_key(|node_details| node_details.xname.clone());
+
+  if status_summary {
     let status_output = if node_details_list.iter().any(|node_details| {
       node_details
         .configuration_status
