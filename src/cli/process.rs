@@ -660,6 +660,8 @@ pub async fn process_cli(
         let do_not_reboot: bool =
           cli_add_kernel_parameters.get_flag("do-not-reboot");
 
+        let dryrun = cli_add_kernel_parameters.get_flag("dry-run");
+
         let result = add_kernel_parameters::exec(
           backend,
           &shasta_token,
@@ -668,6 +670,7 @@ pub async fn process_cli(
           assume_yes,
           do_not_reboot,
           kafka_audit_opt,
+          dryrun,
         )
         .await;
 
@@ -2258,6 +2261,8 @@ pub async fn process_cli(
         let do_not_reboot: bool =
           cli_delete_kernel_parameters.get_flag("do-not-reboot");
 
+        let dryrun = cli_delete_kernel_parameters.get_flag("dry-run");
+
         let result = delete_kernel_parameters::exec(
           backend,
           &shasta_token,
@@ -2266,6 +2271,7 @@ pub async fn process_cli(
           assume_yes,
           do_not_reboot,
           kafka_audit_opt,
+          dryrun,
         )
         .await;
 

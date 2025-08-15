@@ -22,6 +22,7 @@ pub async fn exec(
   assume_yes: bool,
   do_not_reboot: bool,
   kafka_audit_opt: Option<&Kafka>,
+  dry_run: bool,
 ) -> Result<(), Error> {
   let mut need_restart = false;
   log::info!("Add kernel parameters");
@@ -95,13 +96,17 @@ pub async fn exec(
     log::info!("need restart? {}", need_restart);
 
     if need_restart {
-      let boot_parametes_rslt = backend
-        .update_bootparameters(shasta_token, &boot_parameter)
-        .await;
-
-      if let Err(e) = boot_parametes_rslt {
-        eprintln!("{:#?}", e);
-        std::process::exit(1);
+      if dry_run {
+        println!("Dry-run enabled. No changes persisted into the system");
+        println!(
+          "Dry run mode. Would update kernel parameters for {}: {}",
+          boot_parameter.hosts.join(", "),
+          boot_parameter.params
+        );
+      } else {
+        backend
+          .update_bootparameters(shasta_token, &boot_parameter)
+          .await?;
       }
 
       if need_restart {
@@ -146,16 +151,21 @@ pub async fn exec(
     if xname_to_reboot_vec.is_empty() {
       println!("Nothing to change. Exit");
     } else {
-      crate::cli::commands::power_reset_nodes::exec(
-        &backend,
-        shasta_token,
-        &xname_to_reboot_vec.join(","),
-        true,
-        assume_yes,
-        "table",
-        kafka_audit_opt,
-      )
-      .await;
+      if dry_run {
+        println!("Dry-run enabled. No changes persisted into the system");
+        println!("Would reboot nodes: {}", xname_to_reboot_vec.join(", "));
+      } else {
+        crate::cli::commands::power_reset_nodes::exec(
+          &backend,
+          shasta_token,
+          &xname_to_reboot_vec.join(","),
+          true,
+          assume_yes,
+          "table",
+          kafka_audit_opt,
+        )
+        .await;
+      }
     }
   }
 
