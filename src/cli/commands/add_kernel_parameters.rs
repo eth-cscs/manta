@@ -11,6 +11,7 @@ use manta_backend_dispatcher::{
   },
   types::{self},
 };
+use nodeset::NodeSet;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
@@ -63,10 +64,12 @@ pub async fn exec(
     .await
     .unwrap();
 
+  let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
+
   println!(
     "Add kernel params:\n{:?}\nFor nodes:\n{:?}",
     kernel_params,
-    xname_vec.join(", ")
+    node_group.to_string()
   );
 
   let proceed = dialoguer::Confirm::with_theme(
