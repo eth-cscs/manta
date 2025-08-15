@@ -331,9 +331,11 @@ pub fn subcommand_get_cluster_details() -> Command {
   Command::new("cluster")
     // .visible_aliases(["C", "clstr"])
     .about("Get cluster details")
-    .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,..."))
-    .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,..."))
-    .arg(arg!(-s --"status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed"))
+    .arg(arg!(-n --"nids-only-one-line" "Prints nids in one line eg nidxxxxxx,nidyyyyyy,nidzzzzzz,...").action(ArgAction::SetTrue))
+    .arg(arg!(-x --"xnames-only-one-line" "Prints xnames in one line eg x1001c1s5b0n0,x1001c1s5b0n1,...").action(ArgAction::SetTrue))
+    .arg(arg!(-s --status <VALUE> "Filter by status")
+        .value_parser(["OFF", "ON", "READY", "STANDBY", "PENDING", "FAILED", "CONFIGURED"]))
+    .arg(arg!(-S --"summary-status" "Get cluster status:\n - OK: All nodes are operational (booted and configured)\n - OFF: At least one node is OFF\n - ON: No nodes OFF and at least one is ON\n - STANDBY: At least one node's heartbeat is lost\n - UNCONFIGURED: All nodes are READY but at least one of them is being configured\n - FAILED: At least one node configuration failed").action(ArgAction::SetTrue))
     .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
     .arg_required_else_help(true)
     .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
@@ -350,14 +352,6 @@ pub fn subcommand_get_node_details() -> Command {
     .arg_required_else_help(true)
     .arg(arg!(<VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
 }
-
-/* pub fn subcommand_get_hsm_groups_details() -> Command {
-    Command::new("hsm-groups")
-        // .visible_aliases(["h", "hg", "hsm", "hsmgrps"])
-        .about("DEPRECATED - Please do not use this command.\nGet HSM groups details")
-        .arg_required_else_help(true)
-        .arg(arg!(<HSM_GROUP_NAME> "hsm group name"))
-} */
 
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
@@ -790,20 +784,6 @@ pub fn subcommand_add_boot_parameters() -> Command {
 
   // .group(ArgGroup::new("hosts_or_macs_or_nids").args(["hosts", "macs", "nids"]).required(true))
 }
-
-/* pub fn subcommand_add_boot_parameters() -> Command {
-    Command::new("boot-parameters")
-       // .visible_alias("kp")
-       .arg_required_else_help(true)
-       .about("Add/Create boot parameters")
-       .arg(arg!(-x --xnames <VALUE> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-       .arg(arg!(-n --nids <VALUE> "Comma separated list of short nids.\neg '1,2,3,4'"))
-       .arg(arg!(-m --macs <VALUE> "Comman separated list of mac addresses"))
-       .arg(arg!(-p --params <VALUE> "Kernel parameters"))
-       .arg(arg!(-k --kernel <VALUE> "S3 Path to download kernel file"))
-       .arg(arg!(-i --initrd <VALUE> "S3 Path to download initd file"))
-       .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
-} */
 
 pub fn subcommand_add_kernel_parameters() -> Command {
   Command::new("kernel-parameters")

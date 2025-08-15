@@ -11,10 +11,11 @@ pub async fn exec(
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   hsm_name_vec: &[String],
-  silent: bool,
-  silent_xname: bool,
+  status: Option<&String>,
+  nids_only: bool,
+  xnames_only: bool,
   output_opt: Option<&String>,
-  status: bool,
+  summary_status: bool,
 ) {
   // Take all nodes for all hsm_groups found and put them in a Vec
   let mut hsm_groups_node_list: Vec<String> = backend
@@ -40,9 +41,20 @@ pub async fn exec(
     }
   };
 
+  node_details_list.retain(|node_details| {
+    if let Some(status) = status {
+      node_details.power_status.eq_ignore_ascii_case(status)
+        || node_details
+          .configuration_status
+          .eq_ignore_ascii_case(status)
+    } else {
+      true
+    }
+  });
+
   node_details_list.sort_by_key(|node_details| node_details.xname.clone());
 
-  if status {
+  if summary_status {
     let status_output = if node_details_list.iter().any(|node_details| {
       node_details
         .configuration_status
@@ -74,7 +86,7 @@ pub async fn exec(
     };
 
     println!("{}", status_output);
-  } else if silent {
+  } else if nids_only {
     let node_nid_list = node_details_list
       .iter()
       .map(|node_details| node_details.nid.clone())
@@ -85,7 +97,7 @@ pub async fn exec(
     } else {
       println!("{}", node_nid_list.join(","));
     }
-  } else if silent_xname {
+  } else if xnames_only {
     let node_xname_list = node_details_list
       .iter()
       .map(|node_details| node_details.xname.clone())

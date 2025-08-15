@@ -1124,20 +1124,24 @@ pub async fn process_cli(
         )
         .await?;
 
+        let status: Option<&String> = cli_get_cluster.get_one("status");
+
+        let nids_only = cli_get_cluster.get_flag("nids-only-one-line");
+        let xnames_only = cli_get_cluster.get_flag("xnames-only-one-line");
+        let output: Option<&String> = cli_get_cluster.get_one("output");
+        let summary_status = cli_get_cluster.get_flag("summary-status");
+
         get_cluster::exec(
           &backend,
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
           &target_hsm_group_vec,
-          *cli_get_cluster
-            .get_one::<bool>("nids-only-one-line")
-            .unwrap_or(&false),
-          *cli_get_cluster
-            .get_one::<bool>("xnames-only-one-line")
-            .unwrap_or(&false),
-          cli_get_cluster.get_one::<String>("output"),
-          *cli_get_cluster.get_one::<bool>("status").unwrap_or(&false),
+          status,
+          nids_only,
+          xnames_only,
+          output,
+          summary_status,
         )
         .await;
       } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
