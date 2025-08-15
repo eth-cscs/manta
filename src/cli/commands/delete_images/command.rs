@@ -35,7 +35,7 @@ pub async fn exec(
   let boot_parameter_vec_rslt =
     backend.get_all_bootparameters(shasta_token).await;
 
-  let mut boot_parameter_vec = boot_parameter_vec_rslt.unwrap_or_else(|e| {
+  let boot_parameter_vec = boot_parameter_vec_rslt.unwrap_or_else(|e| {
     eprintln!("ERROR - {}", e);
     std::process::exit(1);
   });

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, pin::Pin};
+use std::{collections::HashMap, pin::Pin};
 
 /// This is the static backend dispatcher
 /// To add a new backend:

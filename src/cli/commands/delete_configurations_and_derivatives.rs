@@ -1,7 +1,4 @@
-use crate::{
-  common::authorization::get_groups_available,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::{
   error::Error, interfaces::commands::CommandsTrait,

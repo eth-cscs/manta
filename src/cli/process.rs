@@ -1,10 +1,8 @@
 use clap_complete::{generate, generate_to};
 use manta_backend_dispatcher::{
   contracts::BackendTrait,
-  error::Error,
   interfaces::{
     bss::BootParametersTrait,
-    commands::CommandsTrait,
     hsm::{
       component::ComponentTrait, group::GroupTrait,
       redfish_endpoint::RedfishEndpointTrait,

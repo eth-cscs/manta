@@ -3,7 +3,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
-    bss::BootParametersTrait, cfs::CfsTrait, commands::CommandsTrait,
+    bss::BootParametersTrait, cfs::CfsTrait,
     hsm::group::GroupTrait,
   },
 };
@@ -24,7 +24,7 @@ pub async fn exec(
   log::info!("Fetching data from the backend...");
   let (
     group_available_vec,
-    mut cfs_session_vec,
+    cfs_session_vec,
     cfs_component_vec,
     bss_bootparameters_vec,
   ) = tokio::try_join!(

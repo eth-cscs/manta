@@ -2,9 +2,7 @@ mod cli;
 mod common;
 mod manta_backend_dispatcher;
 
-use ::manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::K8sAuth,
-};
+use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{config::types::MantaConfiguration, kafka::Kafka};
 use manta_backend_dispatcher::StaticBackendDispatcher;
 
