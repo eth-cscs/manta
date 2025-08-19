@@ -207,7 +207,7 @@ pub async fn exec(
     match create_bos_session_rslt {
              Ok(bos_session) => println!(
                  "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
-                 bos_session["name"].as_str().unwrap(), bos_sessiontemplate_name
+                 bos_session.name.unwrap(), bos_sessiontemplate_name
              ),
              Err(e) => eprintln!(
                  "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit", e),

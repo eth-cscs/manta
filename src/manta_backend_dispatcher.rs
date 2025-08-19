@@ -34,7 +34,7 @@ use manta_backend_dispatcher::{
   },
   types::{
     self,
-    bos::session_template::BosSessionTemplate,
+    bos::{session::BosSession, session_template::BosSessionTemplate},
     bss::BootParameters,
     cfs::{
       cfs_configuration_details::LayerDetails,
@@ -1652,7 +1652,7 @@ impl ClusterSessionTrait for StaticBackendDispatcher {
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     bos_session: types::bos::session::BosSession,
-  ) -> Result<Value, Error> {
+  ) -> Result<BosSession, Error> {
     match self {
       CSM(b) => {
         b.post_template_session(
