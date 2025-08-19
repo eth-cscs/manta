@@ -654,6 +654,7 @@ pub async fn process_cli(
           .get_one::<String>("VALUE")
           .unwrap(); // clap should validate the argument
 
+        let overwrite: bool = cli_add_kernel_parameters.get_flag("overwrite");
         let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
         let do_not_reboot: bool =
           cli_add_kernel_parameters.get_flag("do-not-reboot");
@@ -665,6 +666,7 @@ pub async fn process_cli(
           &shasta_token,
           kernel_parameters,
           nodes,
+          overwrite,
           assume_yes,
           do_not_reboot,
           kafka_audit_opt,

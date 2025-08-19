@@ -20,6 +20,7 @@ pub async fn exec(
   shasta_token: &str,
   kernel_params: &str,
   hosts_expression: &str,
+  overwrite: bool,
   assume_yes: bool,
   do_not_reboot: bool,
   kafka_audit_opt: Option<&Kafka>,
@@ -86,15 +87,15 @@ pub async fn exec(
   log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
 
   for mut boot_parameter in current_node_boot_params_vec {
+    let kernel_params_changed =
+      boot_parameter.add_kernel_params(&kernel_params, overwrite);
+    need_restart = kernel_params_changed || need_restart;
+
     log::info!(
       "Add '{:?}' kernel parameters to '{}'",
       boot_parameter.hosts,
       kernel_params
     );
-
-    let kernel_params_changed =
-      boot_parameter.add_kernel_params(&kernel_params);
-    need_restart = kernel_params_changed || need_restart;
 
     log::info!("need restart? {}", need_restart);
 
@@ -103,7 +104,7 @@ pub async fn exec(
         println!("Dry-run enabled. No changes persisted into the system");
         println!(
           "Dry run mode. Would update kernel parameters for {}: {}",
-          boot_parameter.hosts.join(", "),
+          boot_parameter.hosts.join(" "),
           boot_parameter.params
         );
       } else {

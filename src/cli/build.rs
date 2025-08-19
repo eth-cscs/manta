@@ -794,6 +794,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     .about("Add kernel parameters")
     .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
     .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
+    .arg(arg!(-O --"overwrite" "If kernel parameter exists, then overwrite its value.").action(ArgAction::SetTrue))
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Don't reboot nodes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
