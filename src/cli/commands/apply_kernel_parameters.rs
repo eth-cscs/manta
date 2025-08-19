@@ -78,11 +78,6 @@ pub async fn exec(
         .interact()
         .unwrap();
 
-  if dry_run {
-    println!("Dry run mode. No changes will be made.");
-    return Ok(());
-  }
-
   if !proceed {
     println!("Operation canceled by the user. Exit");
     std::process::exit(1);
@@ -101,23 +96,29 @@ pub async fn exec(
       boot_parameter.apply_kernel_params(&kernel_params);
     need_restart = kernel_params_changed || need_restart;
 
-    log::info!("need restart? {}", need_restart);
-
-    if need_restart {
-      let boot_parametes_rslt = backend
-        .update_bootparameters(shasta_token, &boot_parameter)
-        .await;
-
-      if let Err(e) = boot_parametes_rslt {
-        eprintln!("{:#?}", e);
-        std::process::exit(1);
-      }
+    if dry_run {
+      println!("Dry run mode. No changes will be made.");
+      println!("New kernel parameters:\n{}", boot_parameter.params);
+      return Ok(());
+    } else {
+      log::info!("need restart? {}", need_restart);
 
       if need_restart {
-        xname_to_reboot_vec =
-          [xname_to_reboot_vec, boot_parameter.hosts].concat();
-        xname_to_reboot_vec.sort();
-        xname_to_reboot_vec.dedup();
+        let boot_parametes_rslt = backend
+          .update_bootparameters(shasta_token, &boot_parameter)
+          .await;
+
+        if let Err(e) = boot_parametes_rslt {
+          eprintln!("{:#?}", e);
+          std::process::exit(1);
+        }
+
+        if need_restart {
+          xname_to_reboot_vec =
+            [xname_to_reboot_vec, boot_parameter.hosts].concat();
+          xname_to_reboot_vec.sort();
+          xname_to_reboot_vec.dedup();
+        }
       }
     }
   }
