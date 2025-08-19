@@ -65,35 +65,6 @@ pub async fn exec(
     bos_sessiontemplate_vec.first().unwrap()
   };
 
-  /* let bos_sessiontemplate_vec_rslt = bos::template::http_client::v2::get(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      Some(bos_sessiontemplate_name),
-  )
-  .await;
-
-  let bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
-      Ok(value) => value,
-      Err(e) => {
-          eprintln!(
-              "ERROR - could not fetch BOS sessiontemplate '{}'. Reason:\n{:#?}\nExit",
-              bos_sessiontemplate_name, e
-          );
-          std::process::exit(1);
-      }
-  };
-
-  let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
-      eprintln!(
-          "ERROR - No BOS sessiontemplate '{}' found\nExit",
-          bos_sessiontemplate_name
-      );
-      std::process::exit(1);
-  } else {
-      bos_sessiontemplate_vec.first().unwrap()
-  }; */
-
   // END GET DATA
   //***********************************************************
 
@@ -122,14 +93,9 @@ pub async fn exec(
     bos_sessiontemplate.get_target_xname()
   };
 
-  let _ = validate_target_hsm_members(
-    &backend,
-    shasta_token,
-    /* shasta_base_url,
-    shasta_root_cert, */
-    &target_xname_vec,
-  )
-  .await;
+  let _ =
+    validate_target_hsm_members(&backend, shasta_token, &target_xname_vec)
+      .await;
 
   // Validate user has access to the xnames defined in `limit` argument
   //
