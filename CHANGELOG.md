@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.181] - 2025-08-19
+
+### Refactor
+
+- Migrate BOS session from json serde Value to struct
+
 ## [1.54.1-beta.180] - 2025-08-19
 
 ### Bug Fixes
@@ -12,6 +18,10 @@ All notable changes to this project will be documented in this file.
 
 - Add new argument --overwrite to command 'add kernel-parameters' to is overwrites kernel parameter value is key already exists
 - Add new argument --overwrite to command 'add kernel-parameters' to is overwrites kernel parameter value is key already exists
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.180
 
 ### Refactor
 
