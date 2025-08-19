@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.54.1-beta.180] - 2025-08-19
+
+### Bug Fixes
+
+- Command 'apply kernel-parameters' was not logging the right information when running --dry-run argument and it was not applying the kernel parameters properly
+
+### Features
+
+- Add new argument --overwrite to command 'add kernel-parameters' to is overwrites kernel parameter value is key already exists
+- Add new argument --overwrite to command 'add kernel-parameters' to is overwrites kernel parameter value is key already exists
+
+### Refactor
+
+- Clean code
+
 ## [1.54.1-beta.179] - 2025-08-15
 
 ### Features
@@ -11,6 +26,10 @@ All notable changes to this project will be documented in this file.
 - [**breaking**] Changes in command "get cluster" --status argument changes to --status-summary and --status now filters by status
 - [**breaking**] Changes in command "get nodes" --status argument changes to --status-summary and --status now filters by status
 - Command "get ndoes" now sorts alphabetically returns by xnames
+
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.179
 
 ### Refactor
 
