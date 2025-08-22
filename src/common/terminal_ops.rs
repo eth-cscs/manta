@@ -1,4 +1,4 @@
-use futures::{channel::mpsc::Sender, SinkExt};
+/* use futures::{channel::mpsc::Sender, SinkExt};
 
 use kube::api::TerminalSize;
 
@@ -21,4 +21,4 @@ pub async fn handle_terminal_size(
     let (width, height) = crossterm::terminal::size()?;
     channel.send(TerminalSize { height, width }).await?;
   }
-}
+} */

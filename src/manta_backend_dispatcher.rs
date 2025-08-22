@@ -1874,7 +1874,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
   type T = Box<dyn AsyncWrite + Unpin>;
   type U = Box<dyn AsyncRead + Unpin>;
 
-  async fn attach_to_console(
+  async fn attach_to_node_console(
     &self,
     shasta_token: &str,
     site_name: &str,
@@ -1886,12 +1886,62 @@ impl ConsoleTrait for StaticBackendDispatcher {
   {
     match self {
       CSM(b) => {
-        b.attach_to_console(shasta_token, site_name, xname, width, height, k8s)
-          .await
+        b.attach_to_node_console(
+          shasta_token,
+          site_name,
+          xname,
+          width,
+          height,
+          k8s,
+        )
+        .await
       }
       OCHAMI(b) => {
-        b.attach_to_console(shasta_token, site_name, xname, width, height, k8s)
-          .await
+        b.attach_to_node_console(
+          shasta_token,
+          site_name,
+          xname,
+          width,
+          height,
+          k8s,
+        )
+        .await
+      }
+    }
+  }
+
+  async fn attach_to_session_console(
+    &self,
+    shasta_token: &str,
+    site_name: &str,
+    session_name: &str,
+    width: u16,
+    height: u16,
+    k8s: &K8sDetails,
+  ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error>
+  {
+    match self {
+      CSM(b) => {
+        b.attach_to_session_console(
+          shasta_token,
+          site_name,
+          session_name,
+          width,
+          height,
+          k8s,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.attach_to_session_console(
+          shasta_token,
+          site_name,
+          session_name,
+          width,
+          height,
+          k8s,
+        )
+        .await
       }
     }
   }

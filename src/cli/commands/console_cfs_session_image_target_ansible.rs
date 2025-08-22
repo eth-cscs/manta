@@ -1,19 +1,12 @@
-use futures::StreamExt;
 use manta_backend_dispatcher::{
-  interfaces::cfs::CfsTrait,
-  types::{K8sAuth, K8sDetails},
+  interfaces::{cfs::CfsTrait, console::ConsoleTrait},
+  types::K8sDetails,
 };
 
-use csm_rs::node::console;
-use termion::color;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+
+use futures::StreamExt;
 use tokio::{io::AsyncWriteExt, select};
-
-use crate::{
-  common::{
-    terminal_ops, vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -22,8 +15,7 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  k8s_api_url: &str,
-  cfs_session_name: &str,
+  session_name: &str,
   k8s: &K8sDetails,
 ) {
   let cfs_session_vec = backend
@@ -36,7 +28,7 @@ pub async fn exec(
       None,
       None,
       None,
-      Some(&cfs_session_name.to_string()),
+      Some(&session_name.to_string()),
       None,
       None,
     )
@@ -45,11 +37,14 @@ pub async fn exec(
       log::error!("Failed to get CFS sessions. Reason:\n{e}");
       std::process::exit(1);
     });
+
   if cfs_session_vec.is_empty() {
     eprintln!("No CFS session found. Exit",);
     std::process::exit(1);
   }
+
   let cfs_session_details = cfs_session_vec.first().unwrap();
+
   if cfs_session_details
     .target
     .as_ref()
@@ -65,6 +60,7 @@ pub async fn exec(
     );
     std::process::exit(1);
   }
+
   if cfs_session_details
     .status
     .as_ref()
@@ -81,6 +77,7 @@ pub async fn exec(
     );
     std::process::exit(1);
   }
+
   if !cfs_session_details
     .target
     .as_ref()
@@ -99,84 +96,54 @@ pub async fn exec(
     std::process::exit(1);
   }
 
-  connect_to_console(
-    site_name,
+  let console_rslt = connect_to_console(
+    backend,
     shasta_token,
-    &cfs_session_name.to_string(),
-    /* vault_base_url,
-    vault_secret_path,
-    vault_role_id, */
-    k8s_api_url,
+    site_name,
+    &session_name.to_string(),
     k8s,
   )
-  .await
-  .unwrap();
+  .await;
+
+  match console_rslt {
+    Ok(_) => {
+      crossterm::terminal::disable_raw_mode().unwrap();
+      log::info!("Console closed");
+    }
+    Err(error) => {
+      crossterm::terminal::disable_raw_mode().unwrap();
+      log::error!("{:?}", error);
+    }
+  }
 }
 
 pub async fn connect_to_console(
-  site_name: &str,
+  backend: &StaticBackendDispatcher,
   shasta_token: &str,
-  cfs_session_name: &String,
-  /* vault_base_url: &str,
-  vault_secret_path: &str,
-  vault_role_id: &str, */
-  k8s_api_url: &str,
+  site_name: &str,
+  session_name: &String,
   k8s: &K8sDetails,
 ) -> Result<(), anyhow::Error> {
-  log::info!("CFS session name: {}", cfs_session_name);
+  log::info!("session: {}", session_name);
 
-  let shasta_k8s_secrets = match &k8s.authentication {
-    K8sAuth::Native {
-      certificate_authority_data,
-      client_certificate_data,
-      client_key_data,
-    } => {
-      serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
-    }
-    K8sAuth::Vault {
-      base_url,
-      // secret_path: _secret_path,
-    } => {
-      fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
-        .await
-        .unwrap()
-    }
-  };
+  let (width, height) = crossterm::terminal::size()?;
 
-  let mut attached =
-    console::get_container_attachment_to_cfs_session_image_target(
-      cfs_session_name,
-      /* vault_base_url,
-      vault_secret_path,
-      vault_role_id, */
-      k8s_api_url,
-      shasta_k8s_secrets,
+  let (a_input, a_output) = backend
+    .attach_to_session_console(
+      shasta_token,
+      site_name,
+      &session_name,
+      width,
+      height,
+      &k8s,
     )
     .await?;
-
-  println!(
-    "Connected to {}{}{}!",
-    color::Fg(color::Blue),
-    cfs_session_name,
-    color::Fg(color::Reset)
-  );
-  println!(
-    "Use {}&.{} key combination to exit the console.",
-    color::Fg(color::Green),
-    color::Fg(color::Reset)
-  );
 
   let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
   let mut stdout = tokio::io::stdout();
 
-  let mut output =
-    tokio_util::io::ReaderStream::new(attached.stdout().unwrap());
-  let mut input = attached.stdin().unwrap();
-
-  let term_tx = attached.terminal_size().unwrap();
-
-  let mut handle_terminal_size_handle =
-    tokio::spawn(terminal_ops::handle_terminal_size(term_tx));
+  let mut output = tokio_util::io::ReaderStream::new(a_output);
+  let mut input = a_input;
 
   crossterm::terminal::enable_raw_mode()?;
 
@@ -199,6 +166,7 @@ pub async fn connect_to_console(
                 },
             }
         },
+
         message = output.next() => {
             match message {
                 Some(Ok(message)) => {
@@ -215,15 +183,6 @@ pub async fn connect_to_console(
                     log::info!("Exit console");
                     break
                 },
-            }
-        },
-        result = &mut handle_terminal_size_handle => {
-            match result {
-                Ok(_) => log::info!("End of terminal size stream"),
-                Err(e) => {
-                    crossterm::terminal::disable_raw_mode()?;
-                    log::error!("Error getting terminal size: {e:?}")
-                }
             }
         },
     };

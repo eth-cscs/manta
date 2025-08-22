@@ -1,15 +1,15 @@
-use futures::StreamExt;
+use crate::{
+  common::{self},
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
+
 use manta_backend_dispatcher::{
   interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
   types::K8sDetails,
 };
 
+use futures::StreamExt;
 use tokio::{io::AsyncWriteExt, select};
-
-use crate::{
-  common::{self},
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -52,9 +52,7 @@ pub async fn exec(
     backend,
     shasta_token,
     site_name,
-    // included.iter().next().unwrap(),
     &xname.to_string(),
-    // k8s_api_url,
     k8s,
   )
   .await;
@@ -76,7 +74,6 @@ pub async fn connect_to_console(
   shasta_token: &str,
   site_name: &str,
   xname: &String,
-  // k8s_api_url: &str,
   k8s: &K8sDetails,
 ) -> Result<(), anyhow::Error> {
   log::info!("xname: {}", xname);
@@ -84,7 +81,7 @@ pub async fn connect_to_console(
   let (width, height) = crossterm::terminal::size()?;
 
   let (a_input, a_output) = backend
-    .attach_to_console(shasta_token, site_name, xname, width, height, &k8s)
+    .attach_to_node_console(shasta_token, site_name, xname, width, height, &k8s)
     .await?;
 
   let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
@@ -133,16 +130,6 @@ pub async fn connect_to_console(
                 },
             }
         },
-
-        /* result = &mut handle_terminal_size_handle => {
-            match result {
-                Ok(_) => log::info!("End of terminal size stream"),
-                Err(e) => {
-                    crossterm::terminal::disable_raw_mode()?;
-                    log::error!("Error getting terminal size: {e:?}")
-                }
-            }
-        }, */
     };
   }
 

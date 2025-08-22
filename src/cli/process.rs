@@ -23,7 +23,6 @@ use std::{
 
 use clap::Command;
 use config::Config;
-use k8s_openapi::chrono;
 
 use crate::{
   cli::commands::{add_node, validate_local_repo},
@@ -1949,7 +1948,6 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          k8s_api_url.expect("ERROR - k8s api url is mandatory"),
           cli_console_target_ansible
             .get_one::<String>("SESSION_NAME")
             .unwrap(),

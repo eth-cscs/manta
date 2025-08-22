@@ -148,9 +148,6 @@ pub async fn print_cfs_session_logs(
     .get_session_logs_stream(shasta_token, site_name, cfs_session_name, k8s)
     .await?;
 
-  /* get_cfs_session_init_container_git_clone_logs_stream(client.clone(), cfs_session_name)
-  .await?; */
-
   let mut lines = logs_stream.lines();
 
   while let Some(line) = lines.try_next().await.unwrap() {
