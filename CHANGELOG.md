@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.54.1-beta.181] - 2025-08-19
 
+### Miscellaneous Tasks
+
+- Release manta version 1.54.1-beta.181
+
 ### Refactor
 
 - Migrate BOS session from json serde Value to struct
