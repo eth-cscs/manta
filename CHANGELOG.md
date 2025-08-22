@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.55.1] - 2025-08-22
+
+### Features
+
+- Rename interface to attach to a node's console
+- Add interface to attach console to a session to build an image
+
+### Refactor
+
+- Clean code, get rid of kube-rs dependency
+
+## [1.55.0] - 2025-08-22
+
+### Miscellaneous Tasks
+
+- Release manta version 1.55.0
+
 ## [1.54.1-beta.181] - 2025-08-19
 
 ### Miscellaneous Tasks
