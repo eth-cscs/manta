@@ -888,9 +888,9 @@ dependencies = [
 
 [[package]]
 name = "csm-rs"
-version = "0.81.0"
+version = "0.82.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa2ebfbca454eee69360fa88dd00e56c7bf9ad5ee53483718fe450fdeb091202"
+checksum = "102732ee9297c2c18687379eb508f07a5f8bbbdcfb50a1b2886fcb99791d01f7"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -901,7 +901,7 @@ dependencies = [
  "chrono",
  "comfy-table",
  "config",
- "dialoguer 0.10.4",
+ "dialoguer",
  "directories",
  "futures",
  "futures-channel",
@@ -917,7 +917,7 @@ dependencies = [
  "kube",
  "log",
  "log4rs",
- "manta-backend-dispatcher 0.5.0",
+ "manta-backend-dispatcher",
  "md5",
  "regex",
  "reqwest",
@@ -991,17 +991,6 @@ dependencies = [
  "console",
  "shell-words",
  "zeroize",
-]
-
-[[package]]
-name = "dialoguer"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "658bce805d770f407bc62102fca7c2c64ceef2fbcb2b8bd19d2765ce093980de"
-dependencies = [
- "console",
- "shell-words",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -2187,7 +2176,7 @@ dependencies = [
  "config",
  "crossterm 0.27.0",
  "csm-rs",
- "dialoguer 0.11.0",
+ "dialoguer",
  "directories",
  "execute",
  "futures",
@@ -2199,7 +2188,7 @@ dependencies = [
  "is_executable",
  "log",
  "log4rs",
- "manta-backend-dispatcher 0.5.0",
+ "manta-backend-dispatcher",
  "md5",
  "minijinja",
  "nodeset",
@@ -2223,30 +2212,9 @@ dependencies = [
 
 [[package]]
 name = "manta-backend-dispatcher"
-version = "0.4.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db1904a4a58f8b3320339b27ea47c03d012b1ed4bcb596c32c8196427b9135a"
-dependencies = [
- "chrono",
- "futures-io",
- "log",
- "rdkafka 0.37.0",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "strum 0.27.2",
- "strum_macros 0.27.2",
- "thiserror 2.0.15",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "manta-backend-dispatcher"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c803bc3fc645da7990badf984a0e9faf3e70c579d259e1ad71836cdc3d19432b"
+checksum = "89459dcb6a174eac272599522b22b3190d3cb7e7093febd4e8814a0e19614f81"
 dependencies = [
  "chrono",
  "futures-io",
@@ -2439,14 +2407,14 @@ dependencies = [
 
 [[package]]
 name = "ochami-rs"
-version = "0.1.85"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec4916bb002f6ae12cc3a2185a616830048898eec57eb2cc72e688b76221eebf"
+checksum = "317bd09716f97a8cdfa829036e9267473097be540e471a865848fea54f5943b7"
 dependencies = [
  "futures-io",
  "hostlist-parser",
  "log",
- "manta-backend-dispatcher 0.4.0",
+ "manta-backend-dispatcher",
  "regex",
  "reqwest",
  "serde",

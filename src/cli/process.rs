@@ -1,7 +1,7 @@
 use clap_complete::{generate, generate_to};
 use manta_backend_dispatcher::{
-  contracts::BackendTrait,
   interfaces::{
+    authentication::AuthenticationTrait,
     bss::BootParametersTrait,
     hsm::{
       component::ComponentTrait, group::GroupTrait,
@@ -27,6 +27,7 @@ use config::Config;
 use crate::{
   cli::commands::{add_node, validate_local_repo},
   common::{
+    authentication::get_api_token,
     authorization::{get_groups_available, validate_target_hsm_members},
     config::types::MantaConfiguration,
     kafka::Kafka,
@@ -80,13 +81,13 @@ pub async fn process_cli(
 
   if let Some(cli_config) = cli_root.subcommand_matches("config") {
     if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-      let shasta_token_rslt = backend.get_api_token(&site_name).await;
+      let shasta_token_rslt = get_api_token(&backend, &site_name).await;
 
       config_show::exec(&backend, shasta_token_rslt.ok(), settings).await;
     } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
       if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         config_set_hsm::exec(
           &backend,
@@ -98,7 +99,7 @@ pub async fn process_cli(
       if let Some(cli_config_set_parent_hsm) =
         cli_config_set.subcommand_matches("parent-hsm")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         config_set_parent_hsm::exec(
           &backend,
@@ -131,7 +132,7 @@ pub async fn process_cli(
       if let Some(_cli_config_unset_parent_hsm) =
         cli_config_unset.subcommand_matches("parent-hsm")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         config_unset_parent_hsm::exec(&backend, &shasta_token).await;
       }
@@ -198,7 +199,7 @@ pub async fn process_cli(
         if let Some(cli_power_on_cluster) =
           cli_power_on.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hsm_group_name_arg = cli_power_on_cluster
             .get_one::<String>("CLUSTER_NAME")
@@ -233,7 +234,7 @@ pub async fn process_cli(
         } else if let Some(cli_power_on_node) =
           cli_power_on.subcommand_matches("nodes")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let xname_requested: &str = cli_power_on_node
             .get_one::<String>("VALUE")
@@ -258,7 +259,7 @@ pub async fn process_cli(
         if let Some(cli_power_off_cluster) =
           cli_power_off.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hsm_group_name_arg = cli_power_off_cluster
             .get_one::<String>("CLUSTER_NAME")
@@ -298,7 +299,7 @@ pub async fn process_cli(
         } else if let Some(cli_power_off_node) =
           cli_power_off.subcommand_matches("nodes")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let xname_requested: &str = cli_power_off_node
             .get_one::<String>("VALUE")
@@ -330,7 +331,7 @@ pub async fn process_cli(
         if let Some(cli_power_reset_cluster) =
           cli_power_reset.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hsm_group_name_arg = cli_power_reset_cluster
             .get_one::<String>("CLUSTER_NAME")
@@ -370,7 +371,7 @@ pub async fn process_cli(
         } else if let Some(cli_power_reset_node) =
           cli_power_reset.subcommand_matches("nodes")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let xname_requested: &str = cli_power_reset_node
             .get_one::<String>("VALUE")
@@ -399,7 +400,7 @@ pub async fn process_cli(
       }
     } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
       if let Some(cli_add_node) = cli_add.subcommand_matches("node") {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id = cli_add_node
           .get_one::<String>("id")
@@ -480,7 +481,7 @@ pub async fn process_cli(
 
         println!("Node '{}' created and added to group '{}'", id, group,);
       } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let label = cli_add_group
           .get_one::<String>("label")
@@ -505,7 +506,7 @@ pub async fn process_cli(
       } else if let Some(cli_add_hw_configuration) =
         cli_add.subcommand_matches("hardware")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let target_hsm_group_name_arg_opt =
           cli_add_hw_configuration.get_one::<String>("target-cluster");
@@ -551,7 +552,7 @@ pub async fn process_cli(
       } else if let Some(cli_add_boot_parameters) =
         cli_add.subcommand_matches("boot-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hosts = cli_add_boot_parameters
           .get_one::<String>("hosts")
@@ -612,7 +613,7 @@ pub async fn process_cli(
       } else if let Some(cli_add_kernel_parameters) =
         cli_add.subcommand_matches("kernel-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_add_kernel_parameters.get_one("hsm-group");
@@ -680,7 +681,7 @@ pub async fn process_cli(
       } else if let Some(cli_add_redfish_endpoint) =
         cli_add.subcommand_matches("redfish-endpoint")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id = cli_add_redfish_endpoint
           .get_one::<String>("id")
@@ -766,7 +767,7 @@ pub async fn process_cli(
       if let Some(cli_update_boot_parameters) =
         cli_update.subcommand_matches("boot-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hosts: &String = cli_update_boot_parameters
           .get_one("hosts")
@@ -813,7 +814,7 @@ pub async fn process_cli(
       } else if let Some(cli_update_redfish_endpoint) =
         cli_update.subcommand_matches("redfish-endpoint")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id = cli_update_redfish_endpoint
           .get_one::<String>("id")
@@ -891,7 +892,7 @@ pub async fn process_cli(
       }
     } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
       if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let group_name_arg_opt = cli_get_groups.get_one::<String>("VALUE");
 
@@ -925,7 +926,7 @@ pub async fn process_cli(
         if let Some(cli_get_hardware_cluster) =
           cli_get_hardware.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hsm_group_name_arg_opt =
             cli_get_hardware_cluster.get_one::<String>("CLUSTER_NAME");
@@ -948,7 +949,7 @@ pub async fn process_cli(
         } else if let Some(cli_get_hardware_node) =
           cli_get_hardware.subcommand_matches("node")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let xnames = cli_get_hardware_node
             .get_one::<String>("XNAMES")
@@ -972,7 +973,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_configuration) =
         cli_get.subcommand_matches("configurations")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         // FIXME: gitea auth token should be calculated before calling this function
         let gitea_token =
@@ -1022,7 +1023,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_session) =
         cli_get.subcommand_matches("sessions")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
 
@@ -1065,7 +1066,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_template) =
         cli_get.subcommand_matches("templates")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
 
@@ -1112,7 +1113,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_cluster) =
         cli_get.subcommand_matches("cluster")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
@@ -1147,7 +1148,7 @@ pub async fn process_cli(
         .await;
       } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
         // Get list of nodes from cli argument
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let xname_requested: &str = cli_get_nodes
           .get_one::<String>("VALUE")
@@ -1175,7 +1176,7 @@ pub async fn process_cli(
         .await;
       } else if let Some(cli_get_images) = cli_get.subcommand_matches("images")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
 
@@ -1200,7 +1201,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_boot_parameters) =
         cli_get.subcommand_matches("boot-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_get_boot_parameters.get_one::<String>("hsm-group");
@@ -1254,7 +1255,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_kernel_parameters) =
         cli_get.subcommand_matches("kernel-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_get_kernel_parameters.get_one::<String>("hsm-group");
@@ -1309,7 +1310,7 @@ pub async fn process_cli(
       } else if let Some(cli_get_redfish_endopints) =
         cli_get.subcommand_matches("redfish-endpoints")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id = cli_get_redfish_endopints
           .get_one::<String>("id")
@@ -1354,7 +1355,7 @@ pub async fn process_cli(
         if let Some(cli_apply_hw_cluster) =
           cli_apply_hw.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let target_hsm_group_name_arg_opt =
             cli_apply_hw_cluster.get_one::<String>("target-cluster");
@@ -1421,7 +1422,7 @@ pub async fn process_cli(
       } else if let Some(cli_apply_session) =
         cli_apply.subcommand_matches("session")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         // FIXME: gitea auth token should be calculated before colling this function
         let gitea_token =
@@ -1513,7 +1514,7 @@ pub async fn process_cli(
       } else if let Some(cli_apply_sat_file) =
         cli_apply.subcommand_matches("sat-file")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let gitea_token =
           crate::common::vault::http_client::fetch_shasta_vcs_token(
@@ -1622,7 +1623,7 @@ pub async fn process_cli(
       } else if let Some(cli_apply_template) =
         cli_apply.subcommand_matches("template")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let bos_session_name_opt: Option<&String> =
           cli_apply_template.get_one("name");
@@ -1660,7 +1661,7 @@ pub async fn process_cli(
       } else if let Some(cli_apply_ephemeral_environment) =
         cli_apply.subcommand_matches("ephemeral-environment")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         if !std::io::stdout().is_terminal() {
           eprintln!("This command needs to run in interactive mode. Exit");
@@ -1682,7 +1683,7 @@ pub async fn process_cli(
       } else if let Some(cli_apply_kernel_parameters) =
         cli_apply.subcommand_matches("kernel-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_apply_kernel_parameters.get_one("hsm-group");
@@ -1751,7 +1752,7 @@ pub async fn process_cli(
         if let Some(cli_apply_boot_nodes) =
           cli_apply_boot.subcommand_matches("nodes")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hosts_string: &str = cli_apply_boot_nodes
             .get_one::<String>("VALUE")
@@ -1807,7 +1808,7 @@ pub async fn process_cli(
         } else if let Some(cli_apply_boot_cluster) =
           cli_apply_boot.subcommand_matches("cluster")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let hsm_group_name_arg = cli_apply_boot_cluster
             .get_one::<String>("CLUSTER_NAME")
@@ -1866,7 +1867,7 @@ pub async fn process_cli(
         }
       }
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
-      let shasta_token = backend.get_api_token(&site_name).await?;
+      let shasta_token = get_api_token(&backend, &site_name).await?;
 
       // Get all HSM groups the user has access
       let user_input = cli_log
@@ -1901,7 +1902,7 @@ pub async fn process_cli(
           eprintln!("This command needs to run in interactive mode. Exit");
           std::process::exit(1);
         }
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let site = configuration
           .sites
@@ -1926,7 +1927,7 @@ pub async fn process_cli(
           eprintln!("This command needs to run in interactive mode. Exit");
           std::process::exit(1);
         }
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let target_hsm_group_vec = get_groups_available(
           &backend,
@@ -1960,7 +1961,7 @@ pub async fn process_cli(
       }
     } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
       if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let dry_run: bool = cli_migrate_nodes.get_flag("dry-run");
 
@@ -2026,7 +2027,7 @@ pub async fn process_cli(
         if let Some(cli_migrate_vcluster_backup) =
           cli_migrate.subcommand_matches("backup")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let bos = cli_migrate_vcluster_backup.get_one::<String>("bos");
           let destination =
@@ -2049,7 +2050,7 @@ pub async fn process_cli(
         } else if let Some(cli_migrate_vcluster_restore) =
           cli_migrate.subcommand_matches("restore")
         {
-          let shasta_token = backend.get_api_token(&site_name).await?;
+          let shasta_token = get_api_token(&backend, &site_name).await?;
 
           let bos_file =
             cli_migrate_vcluster_restore.get_one::<String>("bos-file");
@@ -2084,7 +2085,7 @@ pub async fn process_cli(
       }
     } else if let Some(cli_delete) = cli_root.subcommand_matches("delete") {
       if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let label: &String = cli_delete_group
           .get_one("VALUE")
@@ -2105,7 +2106,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_node) =
         cli_delete.subcommand_matches("node")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id: &String = cli_delete_node
           .get_one("VALUE")
@@ -2117,7 +2118,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_hw_configuration) =
         cli_delete.subcommand_matches("hardware")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let dryrun = cli_delete_hw_configuration.get_flag("dry-run");
 
@@ -2164,7 +2165,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_boot_parameters) =
         cli_delete.subcommand_matches("boot-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let xnames: Option<&String> =
           cli_delete_boot_parameters.get_one("hosts");
@@ -2197,7 +2198,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_redfish_endpoint) =
         cli_delete.subcommand_matches("redfish-endpoint")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let id: &String = cli_delete_redfish_endpoint.get_one("id").expect(
                     "ERROR - host argument is mandatory. Please provide the host to delete",
@@ -2214,7 +2215,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_kernel_parameters) =
         cli_delete.subcommand_matches("kernel-parameters")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_name_arg_opt =
           cli_delete_kernel_parameters.get_one("hsm-group");
@@ -2281,7 +2282,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_session) =
         cli_delete.subcommand_matches("session")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_group_available_vec = get_groups_available(
           &backend,
@@ -2311,7 +2312,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_configurations) =
         cli_delete.subcommand_matches("configurations")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let since_opt = if let Some(since) =
           cli_delete_configurations.get_one::<String>("since")
@@ -2390,7 +2391,7 @@ pub async fn process_cli(
       } else if let Some(cli_delete_images) =
         cli_delete.subcommand_matches("images")
       {
-        let shasta_token = backend.get_api_token(&site_name).await?;
+        let shasta_token = get_api_token(&backend, &site_name).await?;
 
         let hsm_name_available_vec = get_groups_available(
           &backend,
@@ -2423,7 +2424,7 @@ pub async fn process_cli(
     } else if let Some(cli_validate_local_repo) =
       cli_root.subcommand_matches("validate-local-repo")
     {
-      let shasta_token = backend.get_api_token(&site_name).await?;
+      let shasta_token = get_api_token(&backend, &site_name).await?;
 
       // FIXME: gitea auth token should be calculated before colling this function
       let gitea_token =
@@ -2449,7 +2450,7 @@ pub async fn process_cli(
     } else if let Some(cli_add_nodes) =
       cli_root.subcommand_matches("add-nodes-to-groups")
     {
-      let shasta_token = backend.get_api_token(&site_name).await?;
+      let shasta_token = get_api_token(&backend, &site_name).await?;
 
       let dryrun = cli_add_nodes.get_flag("dry-run");
 
@@ -2471,7 +2472,7 @@ pub async fn process_cli(
     } else if let Some(cli_remove_nodes) =
       cli_root.subcommand_matches("remove-nodes-from-groups")
     {
-      let shasta_token = backend.get_api_token(&site_name).await?;
+      let shasta_token = get_api_token(&backend, &site_name).await?;
 
       let dryrun = cli_remove_nodes.get_flag("dry-run");
 

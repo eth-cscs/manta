@@ -10,12 +10,12 @@ use std::{collections::HashMap, pin::Pin};
 /// # Implement new functionalities to BackendTrait implementation
 /// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
-  contracts::BackendTrait,
   error::Error,
   interfaces::{
     apply_hw_cluster_pin::ApplyHwClusterPin,
     apply_sat_file::SatTrait,
     apply_session::ApplySessionTrait,
+    authentication::AuthenticationTrait,
     bos::{ClusterSessionTrait, ClusterTemplateTrait},
     bss::BootParametersTrait,
     cfs::CfsTrait,
@@ -509,6 +509,18 @@ impl ComponentTrait for StaticBackendDispatcher {
       OCHAMI(b) => b.delete_node(auth_token, id).await,
     }
   }
+
+  async fn nid_to_xname(
+    &self,
+    auth_token: &str,
+    user_input_nid: &str,
+    is_regex: bool,
+  ) -> Result<Vec<String>, Error> {
+    match self {
+      CSM(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+      OCHAMI(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+    }
+  }
 }
 
 impl PCSTrait for StaticBackendDispatcher {
@@ -696,29 +708,22 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
   }
 }
 
-impl BackendTrait for StaticBackendDispatcher {
-  fn test_backend_trait(&self) -> String {
-    println!("in manta backend");
-    "in manta backend".to_string()
-  }
-
-  // AUTHENTICATION
-  async fn get_api_token(&self, site_name: &str) -> Result<String, Error> {
+impl AuthenticationTrait for StaticBackendDispatcher {
+  async fn get_api_token(
+    &self,
+    username: &str,
+    password: &str,
+  ) -> Result<String, Error> {
     match self {
-      CSM(b) => b.get_api_token(site_name).await,
-      OCHAMI(b) => b.get_api_token(site_name).await,
+      CSM(b) => b.get_api_token(username, password).await,
+      OCHAMI(b) => b.get_api_token(username, password).await,
     }
   }
 
-  async fn nid_to_xname(
-    &self,
-    auth_token: &str,
-    user_input_nid: &str,
-    is_regex: bool,
-  ) -> Result<Vec<String>, Error> {
+  async fn validate_api_token(&self, auth_token: &str) -> Result<(), Error> {
     match self {
-      CSM(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
-      OCHAMI(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
+      CSM(b) => b.validate_api_token(auth_token).await,
+      OCHAMI(b) => b.validate_api_token(auth_token).await,
     }
   }
 }

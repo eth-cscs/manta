@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod authentication;
 pub mod authorization;
 pub mod boot_parameters;
 pub mod bos_sessiontemplate_utils;

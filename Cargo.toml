@@ -31,9 +31,9 @@ publish = false # cargo dist --> Avoid publishing to crates.io
 
 # PROD
 
-manta-backend-dispatcher = "0.5.0"
-ochami-rs = "0.1.85"
-csm-rs = "0.81.0"
+manta-backend-dispatcher = "0.6.0"
+ochami-rs = "0.2.0"
+csm-rs = "0.82.0"
 
 # DEV - Only for development purposes
 
@@ -60,7 +60,7 @@ tokio-util = "0.7.4" # used by manta_console to create a read stream from contai
 md5 = { version = "0.7.0", default-features = false }
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
 git2 = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
-dialoguer = { version = "0.11.0", default-features = false }
+dialoguer = { version = "0.10.2", features = ["password"], default-features = false }
 indicatif = { version = "0.17.7", default-features = false }
 futures = { version = "0.3.31", default-features = false }
 toml = "0.8.16"

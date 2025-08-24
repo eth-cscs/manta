@@ -15,6 +15,7 @@ vault_base_url = "https://hashicorp-vault.cscs.ch:8200"
 vault_secret_path = "shasta"
 vault_role_id = "b15517de-cabb-06ba-af98-633d216c6d99" # vault in hashicorp-vault.cscs.ch
 root_ca_cert_file = "alps_root_cert.pem"
+dialoguer = { version = "0.10.2", features = ["password"], default-features = false }
 
 [sites.alps.k8s]
 api_url = "https://10.252.1.12:6442"
