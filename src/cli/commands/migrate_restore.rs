@@ -15,6 +15,7 @@ pub async fn exec(
   image_dir: Option<&String>,
   prehook: Option<&String>,
   posthook: Option<&String>,
+  overwrite: bool,
 ) {
   println!(
         "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
@@ -66,6 +67,10 @@ pub async fn exec(
       hsm_file,
       ims_file,
       image_dir,
+      overwrite,
+      overwrite,
+      overwrite,
+      overwrite,
     )
     .await;
 

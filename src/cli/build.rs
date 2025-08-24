@@ -594,6 +594,7 @@ pub fn subcommand_migrate_restore() -> Command {
     .arg(arg!(-i --"image-dir" <IMAGE_path> "Path where the image files are stored.").value_hint(ValueHint::DirPath))
     .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before doing the backup. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
     .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run immediately after the backup is completed successfully. Use \" or \'.\neg: --pre-hook \"echo hello\"."))
+    .arg(arg!(-o --"overwrite" "Overwrite data if exists.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
 }
 
 pub fn subcommand_power() -> Command {

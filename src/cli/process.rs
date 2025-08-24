@@ -2036,6 +2036,7 @@ pub async fn process_cli(
             cli_migrate_vcluster_backup.get_one::<String>("pre-hook");
           let posthook =
             cli_migrate_vcluster_backup.get_one::<String>("post-hook");
+
           migrate_backup::exec(
             &backend,
             &shasta_token,
@@ -2066,6 +2067,7 @@ pub async fn process_cli(
             cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
           let posthook =
             cli_migrate_vcluster_restore.get_one::<String>("post-hook");
+          let overwrite = cli_migrate_vcluster_restore.get_flag("overwrite");
 
           commands::migrate_restore::exec(
             &backend,
@@ -2079,6 +2081,7 @@ pub async fn process_cli(
             image_dir,
             prehook,
             posthook,
+            overwrite,
           )
           .await;
         }
