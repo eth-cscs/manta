@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.55.2] - 2025-08-24
+
+### Refactor
+
+- Update to newer version of backend dispatcher
+
 ## [1.55.1] - 2025-08-22
 
 ### Features
 
 - Rename interface to attach to a node's console
 - Add interface to attach console to a session to build an image
+
+### Miscellaneous Tasks
+
+- Release manta version 1.55.1
 
 ### Refactor
 
