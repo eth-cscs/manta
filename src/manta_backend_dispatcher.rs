@@ -117,7 +117,7 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_member_vec_from_group_name_vec(
     &self,
     auth_token: &str,
-    hsm_group_name_vec: Vec<String>,
+    hsm_group_name_vec: &[&str],
   ) -> Result<Vec<String>, Error> {
     match self {
       CSM(b) => {
@@ -134,7 +134,7 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_group_map_and_filter_by_group_vec(
     &self,
     auth_token: &str,
-    hsm_name_vec: Vec<&str>,
+    hsm_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
     match self {
       CSM(b) => {
@@ -211,7 +211,7 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_hsm_map_and_filter_by_hsm_name_vec(
     &self,
     auth_token: &str,
-    hsm_name_vec: Vec<&str>,
+    hsm_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
     match self {
       CSM(b) => {
@@ -243,7 +243,7 @@ impl GroupTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     group_label: &str,
-    xnames: Vec<&str>,
+    xnames: &[&str],
   ) -> Result<Vec<String>, Error> {
     match self {
       CSM(b) => {
@@ -281,7 +281,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
-    new_target_hsm_members: Vec<&str>,
+    new_target_hsm_members: &[&str],
   ) -> Result<(Vec<String>, Vec<String>), Error> {
     match self {
       CSM(b) => {
@@ -310,8 +310,8 @@ impl GroupTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     group_name: &str,
-    members_to_remove: &Vec<String>,
-    members_to_add: &Vec<String>,
+    members_to_remove: &[&str],
+    members_to_add: &[&str],
   ) -> Result<(), Error> {
     match self {
       CSM(b) => {
@@ -1003,9 +1003,9 @@ impl CfsTrait for StaticBackendDispatcher {
     gitea_token: &str,
     gitea_base_url: &str,
     shasta_root_cert: &[u8],
-    repo_name_vec: Vec<String>,
-    local_git_commit_vec: Vec<String>,
-    playbook_file_name_opt: Option<&String>,
+    repo_name_vec: &[&str],
+    local_git_commit_vec: &[&str],
+    playbook_file_name_opt: Option<&str>,
   ) -> Result<CfsConfigurationRequest, Error> {
     match self {
       CSM(b) => {
@@ -1069,7 +1069,7 @@ impl CfsTrait for StaticBackendDispatcher {
     root_cert: &[u8],
     configuration_name: Option<&str>,
     configuration_name_pattern: Option<&str>,
-    hsm_group_name_vec: &[String],
+    hsm_group_name_vec: &[&str],
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
     limit_number_opt: Option<&u8>,
@@ -1285,9 +1285,9 @@ impl SatTrait for StaticBackendDispatcher {
     k8s_api_url: &str,
     shasta_k8s_secrets: serde_json::Value,
     sat_template_file_yaml: serde_yaml::Value,
-    hsm_group_available_vec: &Vec<String>,
+    hsm_group_available_vec: &[&str],
     ansible_verbosity_opt: Option<u8>,
-    ansible_passthrough_opt: Option<&String>,
+    ansible_passthrough_opt: Option<&str>,
     gitea_base_url: &str,
     gitea_token: &str,
     do_not_reboot: bool,
@@ -1486,14 +1486,14 @@ impl ApplySessionTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    cfs_conf_sess_name: Option<&String>,
-    playbook_yaml_file_name_opt: Option<&String>,
-    hsm_group: Option<&String>,
-    repos_name_vec: Vec<String>,
-    repos_last_commit_id_vec: Vec<String>,
-    ansible_limit: Option<String>,
-    ansible_verbosity: Option<String>,
-    ansible_passthrough: Option<String>,
+    cfs_conf_sess_name: Option<&str>,
+    playbook_yaml_file_name_opt: Option<&str>,
+    hsm_group: Option<&str>,
+    repos_name_vec: &[&str],
+    repos_last_commit_id_vec: &[&str],
+    ansible_limit: Option<&str>,
+    ansible_verbosity: Option<&str>,
+    ansible_passthrough: Option<&str>,
   ) -> Result<(String, String), Error> {
     match self {
       CSM(b) => {
@@ -1542,11 +1542,11 @@ impl MigrateRestoreTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    bos_file: Option<&String>,
-    cfs_file: Option<&String>,
-    hsm_file: Option<&String>,
-    ims_file: Option<&String>,
-    image_dir: Option<&String>,
+    bos_file: Option<&str>,
+    cfs_file: Option<&str>,
+    hsm_file: Option<&str>,
+    ims_file: Option<&str>,
+    image_dir: Option<&str>,
     overwrite_group: bool,
     overwrite_configuration: bool,
     overwrite_image: bool,
@@ -1597,8 +1597,8 @@ impl MigrateBackupTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    bos: Option<&String>,
-    destination: Option<&String>,
+    bos: Option<&str>,
+    destination: Option<&str>,
   ) -> Result<(), Error> {
     match self {
       CSM(b) => {
@@ -1631,8 +1631,8 @@ impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &[String],
-    id_opt: Option<&String>,
+    hsm_group_name_vec: &[&str],
+    id_opt: Option<&str>,
     limit_number: Option<&u8>,
   ) -> Result<Vec<(Image, String, String, bool)>, Error> {
     match self {
@@ -1728,9 +1728,9 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &Vec<String>,
-    hsm_member_vec: &[String],
-    bos_sessiontemplate_name_opt: Option<&String>,
+    hsm_group_name_vec: &[&str],
+    hsm_member_vec: &[&str],
+    bos_sessiontemplate_name_opt: Option<&str>,
     limit_number_opt: Option<&u8>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
     match self {
@@ -1847,9 +1847,9 @@ impl CommandsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_name_available_vec: Vec<String>,
+    hsm_name_available_vec: &[&str],
     // configuration_name_opt: Option<&String>,
-    configuration_name_pattern: Option<&String>,
+    configuration_name_pattern: Option<&str>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
     assume_yes: bool,

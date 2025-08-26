@@ -111,10 +111,7 @@ pub async fn exec(
 
   // Get target HSM group members
   let target_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      vec![target_hsm_group_name.to_string()],
-    )
+    .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
     .await
     .unwrap();
 
@@ -151,10 +148,7 @@ pub async fn exec(
 
   // Get target HSM group members
   let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      vec![parent_hsm_group_name.to_string()],
-    )
+    .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
     .await
     .unwrap();
 
@@ -260,8 +254,14 @@ pub async fn exec(
       .update_group_members(
         shasta_token,
         target_hsm_group_name,
-        &target_hsm_group_member_vec,
-        &target_hsm_node_vec,
+        &target_hsm_group_member_vec
+          .iter()
+          .map(String::as_str)
+          .collect::<Vec<&str>>(),
+        &target_hsm_node_vec
+          .iter()
+          .map(String::as_str)
+          .collect::<Vec<&str>>(),
       )
       .await;
   }
@@ -283,8 +283,14 @@ pub async fn exec(
       .update_group_members(
         shasta_token,
         parent_hsm_group_name,
-        &parent_hsm_group_member_vec,
-        &parent_hsm_node_vec,
+        &parent_hsm_group_member_vec
+          .iter()
+          .map(String::as_str)
+          .collect::<Vec<&str>>(),
+        &parent_hsm_node_vec
+          .iter()
+          .map(String::as_str)
+          .collect::<Vec<&str>>(),
       )
       .await;
     if parent_group_will_be_empty {

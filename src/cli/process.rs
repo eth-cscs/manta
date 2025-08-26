@@ -472,7 +472,7 @@ pub async fn process_cli(
 
         // Add node to group
         let new_group_members_rslt = backend
-          .add_members_to_group(&shasta_token, group, vec![id])
+          .add_members_to_group(&shasta_token, group, &[id])
           .await;
 
         if let Err(error) = &new_group_members_rslt {
@@ -633,7 +633,10 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              hsm_group_name_vec,
+              &hsm_group_name_vec
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>(),
             )
             .await;
 
@@ -988,6 +991,12 @@ pub async fn process_cli(
           .await
           .unwrap();
 
+        let name: Option<&String> =
+          cli_get_configuration.get_one::<String>("name");
+
+        let pattern: Option<&String> =
+          cli_get_configuration.get_one::<String>("pattern");
+
         let hsm_group_name_arg_rslt =
           cli_get_configuration.try_get_one("hsm-group");
 
@@ -1006,6 +1015,8 @@ pub async fn process_cli(
             cli_get_configuration.get_one::<u8>("limit")
           };
 
+        let output: Option<&String> = cli_get_configuration.get_one("output");
+
         get_configuration::exec(
           &backend,
           gitea_base_url,
@@ -1013,13 +1024,16 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          cli_get_configuration.get_one::<String>("name"),
-          cli_get_configuration.get_one::<String>("pattern"),
-          &target_hsm_group_vec,
+          name.map(String::as_str),
+          pattern.map(String::as_str),
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
           None,
           None,
           limit,
-          cli_get_configuration.get_one("output"),
+          output.map(String::as_str),
           &site_name,
         )
         .await;
@@ -1090,6 +1104,8 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
+        let name: Option<&String> = cli_get_template.get_one::<String>("name");
+
         let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
 
         let output: &String = cli_get_template
@@ -1107,7 +1123,10 @@ pub async fn process_cli(
         let hsm_member_vec = backend
           .get_member_vec_from_group_name_vec(
             &shasta_token,
-            target_hsm_group_vec.clone(),
+            &target_hsm_group_vec
+              .iter()
+              .map(String::as_str)
+              .collect::<Vec<&str>>(),
           )
           .await?;
 
@@ -1125,9 +1144,15 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec,
-          &hsm_member_vec,
-          cli_get_template.get_one::<String>("name"),
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
+          &hsm_member_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
+          name.map(String::as_str),
           limit_number_opt,
           output,
         )
@@ -1160,11 +1185,14 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec,
-          status,
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
+          status.map(String::as_str),
           nids_only,
           xnames_only,
-          output,
+          output.map(String::as_str),
           summary_status,
         )
         .await;
@@ -1200,7 +1228,11 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
+        let id: Option<&String> = cli_get_images.get_one::<String>("id");
+
         let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
+
+        let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
 
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
@@ -1215,9 +1247,12 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec,
-          cli_get_images.get_one::<String>("id"),
-          cli_get_images.get_one::<u8>("limit"),
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
+          id.map(String::as_str),
+          limit,
         )
         .await;
       } else if let Some(cli_get_boot_parameters) =
@@ -1240,7 +1275,10 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              hsm_group_name_vec,
+              &hsm_group_name_vec
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>(),
             )
             .await;
 
@@ -1297,7 +1335,10 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              hsm_group_name_vec,
+              &hsm_group_name_vec
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>(),
             )
             .await;
 
@@ -1456,6 +1497,12 @@ pub async fn process_cli(
           .await
           .unwrap();
 
+        let repo_path_vec: Vec<PathBuf> = cli_apply_session
+          .get_many("repo-path")
+          .unwrap()
+          .cloned()
+          .collect();
+
         let hsm_group_name_arg_opt: Option<&String> =
           cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
 
@@ -1466,6 +1513,14 @@ pub async fn process_cli(
 
         let hsm_group_members_opt =
           cli_apply_session.get_one::<String>("ansible-limit");
+
+        let ansible_verbosity: Option<&String> =
+          cli_apply_session.get_one("ansible-verbosity");
+
+        let ansible_passthrough: Option<&String> =
+          cli_apply_session.get_one("ansible-passthrough");
+
+        let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
 
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
@@ -1502,24 +1557,14 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          cfs_conf_sess_name_opt,
-          playbook_file_name_opt,
-          hsm_group_name_arg_opt,
-          cli_apply_session
-            .get_many("repo-path")
-            .unwrap()
-            .cloned()
-            .collect(),
-          hsm_group_members_opt.cloned(),
-          cli_apply_session
-            .get_one::<String>("ansible-verbosity")
-            .cloned(),
-          cli_apply_session
-            .get_one::<String>("ansible-passthrough")
-            .cloned(),
-          *cli_apply_session
-            .get_one::<bool>("watch-logs")
-            .unwrap_or(&false),
+          cfs_conf_sess_name_opt.map(String::as_str),
+          playbook_file_name_opt.map(String::as_str),
+          hsm_group_name_arg_opt.map(String::as_str),
+          &repo_path_vec,
+          hsm_group_members_opt.map(String::as_str),
+          ansible_verbosity.map(String::as_str),
+          ansible_passthrough.map(String::as_str),
+          watch_logs,
           kafka_audit_opt,
           &site
             .k8s
@@ -1618,18 +1663,24 @@ pub async fn process_cli(
           shasta_root_cert,
           vault_base_url.expect("ERROR - vault_base_url is mandatory"),
           k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
-          sat_file_content,
-          cli_values_file_content_opt,
-          cli_value_vec_opt,
-          &target_hsm_group_vec,
+          sat_file_content.as_str(),
+          cli_values_file_content_opt.as_deref(),
+          cli_value_vec_opt
+            .as_ref()
+            .map(|vec| vec.iter().map(String::as_str).collect::<Vec<&str>>())
+            .as_deref(),
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
           ansible_verbosity,
-          ansible_passthrough.as_ref(),
+          ansible_passthrough.as_deref(),
           gitea_base_url,
           &gitea_token,
           do_not_reboot,
           watch_logs,
-          prehook,
-          posthook,
+          prehook.map(String::as_str),
+          posthook.map(String::as_str),
           cli_apply_sat_file.get_flag("image-only"),
           cli_apply_sat_file.get_flag("sessiontemplate-only"),
           true,
@@ -1671,7 +1722,7 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          bos_session_name_opt,
+          bos_session_name_opt.map(String::as_str),
           &bos_sessiontemplate_name,
           &bos_session_operation,
           limit,
@@ -1722,7 +1773,10 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              hsm_group_name_vec,
+              &hsm_group_name_vec
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>(),
             )
             .await;
 
@@ -2051,23 +2105,23 @@ pub async fn process_cli(
         {
           let shasta_token = get_api_token(&backend, &site_name).await?;
 
-          let bos = cli_migrate_vcluster_backup.get_one::<String>("bos");
-          let destination =
-            cli_migrate_vcluster_backup.get_one::<String>("destination");
-          let prehook =
-            cli_migrate_vcluster_backup.get_one::<String>("pre-hook");
-          let posthook =
-            cli_migrate_vcluster_backup.get_one::<String>("post-hook");
+          let bos: Option<&String> = cli_migrate_vcluster_backup.get_one("bos");
+          let destination: Option<&String> =
+            cli_migrate_vcluster_backup.get_one("destination");
+          let prehook: Option<&String> =
+            cli_migrate_vcluster_backup.get_one("pre-hook");
+          let posthook: Option<&String> =
+            cli_migrate_vcluster_backup.get_one("post-hook");
 
           migrate_backup::exec(
             &backend,
             &shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            bos,
-            destination,
-            prehook,
-            posthook,
+            bos.map(String::as_str),
+            destination.map(String::as_str),
+            prehook.map(String::as_str),
+            posthook.map(String::as_str),
           )
           .await;
         } else if let Some(cli_migrate_vcluster_restore) =
@@ -2075,34 +2129,35 @@ pub async fn process_cli(
         {
           let shasta_token = get_api_token(&backend, &site_name).await?;
 
-          let bos_file =
-            cli_migrate_vcluster_restore.get_one::<String>("bos-file");
-          let cfs_file =
-            cli_migrate_vcluster_restore.get_one::<String>("cfs-file");
-          let hsm_file =
-            cli_migrate_vcluster_restore.get_one::<String>("hsm-file");
-          let ims_file =
-            cli_migrate_vcluster_restore.get_one::<String>("ims-file");
-          let image_dir =
-            cli_migrate_vcluster_restore.get_one::<String>("image-dir");
-          let prehook =
-            cli_migrate_vcluster_restore.get_one::<String>("pre-hook");
-          let posthook =
-            cli_migrate_vcluster_restore.get_one::<String>("post-hook");
-          let overwrite = cli_migrate_vcluster_restore.get_flag("overwrite");
+          let bos_file: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("bos-file");
+          let cfs_file: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("cfs-file");
+          let hsm_file: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("hsm-file");
+          let ims_file: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("ims-file");
+          let image_dir: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("image-dir");
+          let prehook: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("pre-hook");
+          let posthook: Option<&String> =
+            cli_migrate_vcluster_restore.get_one("post-hook");
+          let overwrite: bool =
+            cli_migrate_vcluster_restore.get_flag("overwrite");
 
           commands::migrate_restore::exec(
             &backend,
             &shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            bos_file,
-            cfs_file,
-            hsm_file,
-            ims_file,
-            image_dir,
-            prehook,
-            posthook,
+            bos_file.map(String::as_str),
+            cfs_file.map(String::as_str),
+            hsm_file.map(String::as_str),
+            ims_file.map(String::as_str),
+            image_dir.map(String::as_str),
+            prehook.map(String::as_str),
+            posthook.map(String::as_str),
             overwrite,
           )
           .await;
@@ -2257,7 +2312,10 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              hsm_group_name_vec,
+              &hsm_group_name_vec
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<&str>>(),
             )
             .await;
 
@@ -2407,9 +2465,12 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          target_hsm_group_vec,
+          &target_hsm_group_vec
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
           // cfs_configuration_name_opt,
-          cfs_configuration_name_pattern,
+          cfs_configuration_name_pattern.map(String::as_str),
           since_opt,
           until_opt,
           assume_yes,

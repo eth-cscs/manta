@@ -119,10 +119,10 @@ pub async fn exec(
           shasta_token,
           &target_hsm_name,
           &parent_hsm_name,
-          xname_to_move_vec
+          &xname_to_move_vec
             .iter()
-            .map(|xname| xname.as_str())
-            .collect(),
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
         )
         .await;
 

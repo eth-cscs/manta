@@ -19,10 +19,10 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  bos_session_name_opt: Option<&String>,
+  bos_session_name_opt: Option<&str>,
   bos_sessiontemplate_name: &str,
   bos_session_operation: &str,
-  limit: &String,
+  limit: &str,
   include_disabled: bool,
   assume_yes: bool,
   dry_run: bool,
@@ -79,7 +79,13 @@ pub async fn exec(
   let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
   let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
     backend
-      .get_member_vec_from_group_name_vec(shasta_token, target_hsm_vec)
+      .get_member_vec_from_group_name_vec(
+        shasta_token,
+        &target_hsm_vec
+          .iter()
+          .map(String::as_str)
+          .collect::<Vec<&str>>(),
+      )
       .await
       .unwrap()
     /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
@@ -100,9 +106,12 @@ pub async fn exec(
   // Validate user has access to the xnames defined in `limit` argument
   //
   log::info!("Validate user has access to xnames in BOS sessiontemplate");
+
   let limit_vec: Vec<String> =
     limit.split(",").map(|value| value.to_string()).collect();
+
   let mut xnames_to_validate_access_vec = Vec::new();
+
   for limit_value in &limit_vec {
     log::info!("Check if limit value '{}', is an xname", limit_value);
     if validate_xname_format(limit_value) {
@@ -110,10 +119,7 @@ pub async fn exec(
       log::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
     } else if let Some(mut hsm_members_vec) = backend
-      .get_member_vec_from_group_name_vec(
-        shasta_token,
-        vec![limit_value.to_string()],
-      )
+      .get_member_vec_from_group_name_vec(shasta_token, &[limit_value])
       .await
       .ok()
     {
@@ -180,7 +186,7 @@ pub async fn exec(
   // Create BOS session request payload
   //
   let bos_session = BosSession {
-    name: bos_session_name_opt.cloned(),
+    name: bos_session_name_opt.map(|s| s.to_string()),
     tenant: None,
     operation: Operation::from_str(bos_session_operation).ok(),
     template_name: bos_sessiontemplate_name.to_string(),

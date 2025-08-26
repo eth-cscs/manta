@@ -249,10 +249,10 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
   let hsm_group_available_map = backend
     .get_group_map_and_filter_by_group_vec(
       auth_token,
-      hsm_name_available_vec
+      &hsm_name_available_vec
         .iter()
-        .map(|hsm_name| hsm_name.as_str())
-        .collect(),
+        .map(String::as_str)
+        .collect::<Vec<&str>>(),
     )
     .await
     .expect("ERROR - could not get HSM group summary");

@@ -5,7 +5,7 @@ use is_executable::IsExecutable;
 
 /// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
 /// returns Ok(exit_code) or Err() with the description of the error
-pub async fn run_hook(hook: Option<&String>) -> Result<i32, Box<dyn Error>> {
+pub async fn run_hook(hook: Option<&str>) -> Result<i32, Box<dyn Error>> {
   let mut command = shell(&hook.unwrap());
   // command.stdout(Stdio::piped());
   let output = command.execute_output().unwrap();
@@ -30,7 +30,7 @@ pub async fn run_hook(hook: Option<&String>) -> Result<i32, Box<dyn Error>> {
 /// Checks that the hook exists and is executable
 /// returns Ok if all good, an error message otherwise
 pub async fn check_hook_perms(
-  hook: Option<&String>,
+  hook: Option<&str>,
 ) -> Result<(), Box<dyn Error>> {
   if hook.is_some() {
     let program_name = hook.unwrap().split(" ").nth(0).unwrap();

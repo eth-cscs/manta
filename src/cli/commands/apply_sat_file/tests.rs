@@ -256,9 +256,15 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
   let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
   render_jinja2_sat_file_yaml(
-    &sat_file_content.to_string(),
-    Some(&values_file_content.to_string()),
-    Some(var_content),
+    sat_file_content,
+    Some(values_file_content),
+    Some(
+      var_content
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<&str>>()
+        .as_slice(),
+    ),
   );
 }
 

@@ -88,7 +88,7 @@ pub async fn exec(
   }
 
   let node_migration_rslt = backend
-    .add_members_to_group(shasta_token, &target_hsm_name, xnames_to_move)
+    .add_members_to_group(shasta_token, &target_hsm_name, &xnames_to_move)
     .await;
 
   match node_migration_rslt {

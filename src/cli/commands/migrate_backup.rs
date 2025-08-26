@@ -8,10 +8,10 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  bos: Option<&String>,
-  destination: Option<&String>,
-  prehook: Option<&String>,
-  posthook: Option<&String>,
+  bos: Option<&str>,
+  destination: Option<&str>,
+  prehook: Option<&str>,
+  posthook: Option<&str>,
 ) {
   println!(
         "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",

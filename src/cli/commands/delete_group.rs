@@ -60,13 +60,13 @@ async fn validation(
   // Find the list of xnames belonging only to the label to delete and if any, then stop
   // processing the request because those nodes can't get orphan
   let xname_vec = backend
-    .get_member_vec_from_group_name_vec(auth_token, vec![label.to_string()])
+    .get_member_vec_from_group_name_vec(auth_token, &[label])
     .await?;
 
-  let xname_vec = xname_vec.iter().map(|e| e.as_str()).collect();
+  let xname_vec: Vec<&str> = xname_vec.iter().map(String::as_str).collect();
 
   let mut xname_map = backend
-    .get_group_map_and_filter_by_group_vec(auth_token, xname_vec)
+    .get_group_map_and_filter_by_group_vec(auth_token, &xname_vec)
     .await?;
 
   xname_map.retain(|_xname, group_name_vec| {

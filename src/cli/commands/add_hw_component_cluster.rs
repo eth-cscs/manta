@@ -107,10 +107,7 @@ pub async fn exec(
 
   // Get parent HSM group members
   let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      vec![parent_hsm_group_name.to_string()],
-    )
+    .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
     .await
     .unwrap();
   /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -209,10 +206,7 @@ pub async fn exec(
 
   // Get target HSM group members
   let mut target_hsm_node_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      vec![target_hsm_group_name.to_string()],
-    )
+    .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
     .await
     .unwrap();
   /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -313,7 +307,7 @@ pub async fn exec(
         .unwrap();
 
       let _ = backend
-        .add_members_to_group(shasta_token, target_hsm_group_name, vec![&xname])
+        .add_members_to_group(shasta_token, target_hsm_group_name, &[&xname])
         .await
         .unwrap();
     }

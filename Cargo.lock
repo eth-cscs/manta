@@ -889,8 +889,6 @@ dependencies = [
 [[package]]
 name = "csm-rs"
 version = "0.85.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "773efe3242befd480d6649b9fd91c32154361c4d2995f902a018256fd50766a0"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -917,7 +915,7 @@ dependencies = [
  "kube",
  "log",
  "log4rs",
- "manta-backend-dispatcher 0.9.0",
+ "manta-backend-dispatcher",
  "md5",
  "regex",
  "reqwest",
@@ -2188,7 +2186,7 @@ dependencies = [
  "is_executable",
  "log",
  "log4rs",
- "manta-backend-dispatcher 0.9.0",
+ "manta-backend-dispatcher",
  "md5",
  "minijinja",
  "nodeset",
@@ -2212,30 +2210,7 @@ dependencies = [
 
 [[package]]
 name = "manta-backend-dispatcher"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f6a064e66c813a31884400917abfc933f36d2730eb4b5375f2a26bd3c2c7e30"
-dependencies = [
- "chrono",
- "futures-io",
- "log",
- "rdkafka 0.37.0",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "strum 0.27.2",
- "strum_macros 0.27.2",
- "thiserror 2.0.15",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "manta-backend-dispatcher"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73a2c768deca0b2e174b3c14154571010a61b4e76b5045906de8209ee1d7d8c4"
 dependencies = [
  "chrono",
  "futures-io",
@@ -2428,14 +2403,12 @@ dependencies = [
 
 [[package]]
 name = "ochami-rs"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b7fb16c7fd4c6ece29c9a15bedc662036249bf30eb1eb0d338097e589ce7f83"
+version = "0.4.0"
 dependencies = [
  "futures-io",
  "hostlist-parser",
  "log",
- "manta-backend-dispatcher 0.8.0",
+ "manta-backend-dispatcher",
  "regex",
  "reqwest",
  "serde",

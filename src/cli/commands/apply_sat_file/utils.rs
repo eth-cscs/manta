@@ -480,9 +480,9 @@ fn dot_notation_to_yaml(
 }
 
 pub fn render_jinja2_sat_file_yaml(
-  sat_file_content: &String,
-  values_file_content_opt: Option<&String>,
-  value_cli_vec_opt: Option<Vec<String>>,
+  sat_file_content: &str,
+  values_file_content_opt: Option<&str>,
+  value_cli_vec_opt: Option<&[&str]>,
 ) -> Value {
   let mut env = minijinja::Environment::new();
   // Set/enable debug in order to force minijinja to print debug error messages which are more

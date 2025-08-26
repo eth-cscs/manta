@@ -18,10 +18,7 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
 ) {
   let xname_vec = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      vec![hsm_group_name_arg.to_string()],
-    )
+    .get_member_vec_from_group_name_vec(shasta_token, &[hsm_group_name_arg])
     .await
     .unwrap();
 

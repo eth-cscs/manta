@@ -109,7 +109,10 @@ pub async fn validate_target_hsm_members(
   let all_xnames_user_has_access = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
-      hsm_groups_user_has_access.clone(),
+      &hsm_groups_user_has_access
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>(),
     )
     .await
     .unwrap();

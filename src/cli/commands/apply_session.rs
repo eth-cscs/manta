@@ -27,13 +27,13 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  cfs_conf_sess_name: Option<&String>,
-  playbook_yaml_file_name_opt: Option<&String>,
-  hsm_group_opt: Option<&String>,
-  repos_paths: Vec<PathBuf>,
-  ansible_limit_opt: Option<String>,
-  ansible_verbosity: Option<String>,
-  ansible_passthrough: Option<String>,
+  cfs_conf_sess_name: Option<&str>,
+  playbook_yaml_file_name_opt: Option<&str>,
+  hsm_group_opt: Option<&str>,
+  repos_paths: &[PathBuf],
+  ansible_limit_opt: Option<&str>,
+  ansible_verbosity: Option<&str>,
+  ansible_passthrough: Option<&str>,
   watch_logs: bool,
   kafka_audit_opt: Option<&Kafka>,
   k8s: &K8sDetails,
@@ -81,9 +81,15 @@ pub async fn exec(
       cfs_conf_sess_name,
       playbook_yaml_file_name_opt,
       hsm_group_opt,
-      repo_name_vec,
-      repo_last_commit_id_vec,
-      ansible_limit.clone(),
+      &repo_name_vec
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>(),
+      &repo_last_commit_id_vec
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>(),
+      ansible_limit.as_deref(),
       ansible_verbosity,
       ansible_passthrough,
     )
@@ -124,7 +130,7 @@ pub async fn exec(
 }
 
 fn check_local_repos(
-  repos: Vec<PathBuf>,
+  repos: &[PathBuf],
 ) -> Result<(Vec<String>, Vec<String>), Error> {
   let mut layers_summary = vec![];
 
@@ -223,7 +229,7 @@ fn check_local_repos(
   let mut repo_last_commit_id_vec = Vec::new();
 
   // Get layer names from local repos
-  for repo_path in &repos {
+  for repo_path in repos {
     // Get repo from path
     let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
       Ok(repo) => repo,

@@ -10,16 +10,16 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_name_vec: &[String],
-  status: Option<&String>,
+  hsm_name_vec: &[&str],
+  status: Option<&str>,
   nids_only: bool,
   xnames_only: bool,
-  output_opt: Option<&String>,
+  output_opt: Option<&str>,
   summary_status: bool,
 ) {
   // Take all nodes for all hsm_groups found and put them in a Vec
   let mut hsm_groups_node_list: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec.to_vec())
+    .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec)
     .await
     .unwrap();
 
