@@ -26,7 +26,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
 
   // Get all CFS sessions which has succeeded
   let cfs_session_vec = backend
-    .get_and_filter_sessions(
+    .get_sessions(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
@@ -38,6 +38,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       None,
       None,
       Some(true),
+      None,
     )
     .await
     .unwrap();

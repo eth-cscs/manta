@@ -28,7 +28,10 @@ use crate::{
   cli::commands::{add_node, validate_local_repo},
   common::{
     authentication::get_api_token,
-    authorization::{get_groups_available, validate_target_hsm_members},
+    authorization::{
+      get_filter_groups_available, get_groups_names_available,
+      validate_target_hsm_members,
+    },
     config::types::MantaConfiguration,
     kafka::Kafka,
   },
@@ -205,7 +208,7 @@ pub async fn process_cli(
             .get_one::<String>("CLUSTER_NAME")
             .expect("The 'cluster name' argument must have a value");
 
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             Some(hsm_group_name_arg),
@@ -272,7 +275,7 @@ pub async fn process_cli(
           let output: &str =
             cli_power_off_cluster.get_one::<String>("output").unwrap();
 
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             Some(hsm_group_name_arg),
@@ -344,7 +347,7 @@ pub async fn process_cli(
           let output: &str =
             cli_power_reset_cluster.get_one::<String>("output").unwrap();
 
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             Some(hsm_group_name_arg),
@@ -511,7 +514,7 @@ pub async fn process_cli(
         let target_hsm_group_name_arg_opt =
           cli_add_hw_configuration.get_one::<String>("target-cluster");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           target_hsm_group_name_arg_opt,
@@ -522,7 +525,7 @@ pub async fn process_cli(
         let parent_hsm_group_name_arg_opt =
           cli_add_hw_configuration.get_one::<String>("parent-cluster");
 
-        let parent_hsm_group_vec = get_groups_available(
+        let parent_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           parent_hsm_group_name_arg_opt,
@@ -619,7 +622,7 @@ pub async fn process_cli(
           cli_add_kernel_parameters.get_one("hsm-group");
 
         let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_available(
+          let hsm_group_name_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -896,7 +899,7 @@ pub async fn process_cli(
 
         let group_name_arg_opt = cli_get_groups.get_one::<String>("VALUE");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           group_name_arg_opt,
@@ -931,7 +934,7 @@ pub async fn process_cli(
           let hsm_group_name_arg_opt =
             cli_get_hardware_cluster.get_one::<String>("CLUSTER_NAME");
 
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -988,7 +991,7 @@ pub async fn process_cli(
         let hsm_group_name_arg_rslt =
           cli_get_configuration.try_get_one("hsm-group");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           hsm_group_name_arg_rslt.unwrap_or(None),
@@ -1025,12 +1028,13 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_group_name_arg_opt = cli_get_session.try_get_one("hsm-group");
+        let hsm_group_name_arg_opt: Option<&String> =
+          cli_get_session.get_one("hsm-group");
 
-        let hsm_group_available_vec: Vec<String> = get_groups_available(
+        let hsm_group_available_vec = get_filter_groups_available(
           &backend,
           &shasta_token,
-          hsm_group_name_arg_opt.unwrap_or(None),
+          hsm_group_name_arg_opt,
           settings_hsm_group_name_opt,
         )
         .await?;
@@ -1042,19 +1046,37 @@ pub async fn process_cli(
             cli_get_session.get_one::<u8>("limit")
           };
 
-        let xname_vec_opt: Option<Vec<&str>> = cli_get_session
+        let mut xname_vec: Vec<&str> = cli_get_session
           .get_one::<String>("xnames")
           .map(|xname_str| {
             xname_str.split(',').map(|xname| xname.trim()).collect()
-          });
+          })
+          .unwrap_or_default();
+
+        let member_available_vec = &mut hsm_group_available_vec
+          .iter()
+          .flat_map(|g| g.get_members())
+          .collect::<Vec<String>>();
+
+        xname_vec.append(
+          &mut member_available_vec
+            .iter()
+            .map(|member| member.as_str())
+            .collect::<Vec<&str>>(),
+        );
 
         get_session::exec(
           &backend,
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          Some(hsm_group_available_vec),
-          xname_vec_opt,
+          Some(
+            hsm_group_available_vec
+              .iter()
+              .map(|g| g.label.clone())
+              .collect::<Vec<_>>(),
+          ),
+          Some(xname_vec),
           cli_get_session.get_one::<String>("min-age"),
           cli_get_session.get_one::<String>("max-age"),
           cli_get_session.get_one::<String>("status"),
@@ -1074,7 +1096,7 @@ pub async fn process_cli(
           .get_one("output")
           .expect("ERROR - output must be a valid value");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           hsm_group_name_arg_opt.unwrap_or(None),
@@ -1118,7 +1140,7 @@ pub async fn process_cli(
         let hsm_group_name_arg_opt =
           cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           hsm_group_name_arg_opt,
@@ -1180,7 +1202,7 @@ pub async fn process_cli(
 
         let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           hsm_group_name_arg_opt.unwrap_or(None),
@@ -1207,7 +1229,7 @@ pub async fn process_cli(
           cli_get_boot_parameters.get_one::<String>("hsm-group");
 
         let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_available(
+          let hsm_group_name_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -1264,7 +1286,7 @@ pub async fn process_cli(
           cli_get_kernel_parameters.get_one("filter");
 
         let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_available(
+          let hsm_group_name_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -1360,7 +1382,7 @@ pub async fn process_cli(
           let target_hsm_group_name_arg_opt =
             cli_apply_hw_cluster.get_one::<String>("target-cluster");
 
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             target_hsm_group_name_arg_opt,
@@ -1371,7 +1393,7 @@ pub async fn process_cli(
           let parent_hsm_group_name_arg_opt =
             cli_apply_hw_cluster.get_one::<String>("parent-cluster");
 
-          let parent_hsm_group_vec = get_groups_available(
+          let parent_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             parent_hsm_group_name_arg_opt,
@@ -1445,7 +1467,7 @@ pub async fn process_cli(
         let hsm_group_members_opt =
           cli_apply_session.get_one::<String>("ansible-limit");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           hsm_group_name_arg_opt,
@@ -1689,7 +1711,7 @@ pub async fn process_cli(
           cli_apply_kernel_parameters.get_one("hsm-group");
 
         let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_available(
+          let hsm_group_name_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -1836,7 +1858,7 @@ pub async fn process_cli(
           // Validate
           //
           // Check user has provided valid HSM group name
-          let target_hsm_group_vec = get_groups_available(
+          let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             Some(hsm_group_name_arg),
@@ -1929,7 +1951,7 @@ pub async fn process_cli(
         }
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           None,
@@ -1974,7 +1996,7 @@ pub async fn process_cli(
           cli_migrate_nodes.get_one("XNAMES").unwrap();
 
         // Get target hsm group from either cli arguments or config and validate
-        let from_rslt = get_groups_available(
+        let from_rslt = get_groups_names_available(
           &backend,
           &shasta_token,
           from_opt,
@@ -1991,7 +2013,7 @@ pub async fn process_cli(
         };
 
         // Validate 'to' hsm groups
-        let to_rslt = get_groups_available(
+        let to_rslt = get_groups_names_available(
           &backend,
           &shasta_token,
           /* shasta_base_url,
@@ -2131,7 +2153,7 @@ pub async fn process_cli(
         let target_hsm_group_name_arg_opt =
           cli_delete_hw_configuration.get_one::<String>("target-cluster");
 
-        let target_hsm_group_vec = get_groups_available(
+        let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           target_hsm_group_name_arg_opt,
@@ -2145,7 +2167,7 @@ pub async fn process_cli(
         let parent_hsm_group_name_arg_opt =
           cli_delete_hw_configuration.get_one::<String>("parent-cluster");
 
-        let parent_hsm_group_vec = get_groups_available(
+        let parent_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           parent_hsm_group_name_arg_opt,
@@ -2224,7 +2246,7 @@ pub async fn process_cli(
           cli_delete_kernel_parameters.get_one("hsm-group");
 
         let node_expression: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_available(
+          let hsm_group_name_vec = get_groups_names_available(
             &backend,
             &shasta_token,
             hsm_group_name_arg_opt,
@@ -2287,7 +2309,7 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_group_available_vec = get_groups_available(
+        let hsm_group_available_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           None,
@@ -2302,7 +2324,8 @@ pub async fn process_cli(
         let assume_yes: bool = cli_delete_session.get_flag("assume-yes");
 
         let dry_run: bool = cli_delete_session.get_flag("dry-run");
-        delete_and_cancel_session::exec(
+
+        let result = delete_and_cancel_session::exec(
           backend,
           &shasta_token,
           shasta_base_url,
@@ -2311,7 +2334,13 @@ pub async fn process_cli(
           session_name,
           dry_run,
           assume_yes,
-        );
+        )
+        .await;
+
+        if let Err(e) = result {
+          eprintln!("{}", e.to_string());
+          std::process::exit(1);
+        }
       } else if let Some(cli_delete_configurations) =
         cli_delete.subcommand_matches("configurations")
       {
@@ -2343,11 +2372,11 @@ pub async fn process_cli(
           None
         };
 
-        let cfs_configuration_name_opt =
-          cli_delete_configurations.get_one::<String>("configuration-name");
+        /* let cfs_configuration_name_opt =
+        cli_delete_configurations.get_one::<String>("configuration-name"); */
 
         let cfs_configuration_name_pattern =
-          cli_delete_configurations.get_one::<String>("pattern");
+          cli_delete_configurations.get_one::<String>("configuration-name");
 
         let assume_yes = cli_delete_configurations.get_flag("assume-yes");
 
@@ -2364,7 +2393,7 @@ pub async fn process_cli(
           if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
             vec![settings_hsm_group_name.clone()]
           } else {
-            get_groups_available(
+            get_groups_names_available(
               &backend,
               &shasta_token,
               None,
@@ -2379,7 +2408,7 @@ pub async fn process_cli(
           shasta_base_url,
           shasta_root_cert,
           target_hsm_group_vec,
-          cfs_configuration_name_opt,
+          // cfs_configuration_name_opt,
           cfs_configuration_name_pattern,
           since_opt,
           until_opt,
@@ -2396,7 +2425,7 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_name_available_vec = get_groups_available(
+        let hsm_name_available_vec = get_groups_names_available(
           &backend,
           &shasta_token,
           None,

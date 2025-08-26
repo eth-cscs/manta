@@ -68,14 +68,38 @@ pub async fn exec(
       // Get most recent CFS session for node or group the node belongs to
       log::debug!("User input is a single node");
 
+      let group_name_vec = group_available_vec
+        .iter()
+        .map(|g| g.label.as_str())
+        .collect::<Vec<&str>>();
+
+      /* backend
+      .get_sessions_by_xname(
+        shasta_token,
+        shasta_base_url,
+        shasta_root_cert,
+        &[xname],
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+      )
+      .await */
+
       backend
-        .get_sessions_by_xname(
+        .get_and_filter_sessions(
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &[xname],
-          None,
-          None,
+          group_name_vec
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>(),
+          vec![xname],
           None,
           None,
           None,

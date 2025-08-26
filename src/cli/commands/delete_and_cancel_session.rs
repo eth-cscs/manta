@@ -3,8 +3,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
-    bss::BootParametersTrait, cfs::CfsTrait,
-    hsm::group::GroupTrait,
+    bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait,
   },
 };
 use std::time::Instant;
@@ -33,8 +32,8 @@ pub async fn exec(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      Some(group_available_vec),
-      None,
+      group_available_vec,
+      Vec::new(),
       None,
       None,
       None,

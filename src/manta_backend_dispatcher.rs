@@ -859,8 +859,8 @@ impl CfsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec_opt: Option<Vec<String>>,
-    xname_vec_opt: Option<Vec<&str>>,
+    hsm_group_name_vec: Vec<String>,
+    xname_vec: Vec<&str>,
     min_age_opt: Option<&String>,
     max_age_opt: Option<&String>,
     status_opt: Option<&String>,
@@ -874,8 +874,8 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          hsm_group_name_vec_opt,
-          xname_vec_opt,
+          hsm_group_name_vec,
+          xname_vec,
           min_age_opt,
           max_age_opt,
           status_opt,
@@ -890,8 +890,8 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          hsm_group_name_vec_opt,
-          xname_vec_opt,
+          hsm_group_name_vec,
+          xname_vec,
           min_age_opt,
           max_age_opt,
           status_opt,
@@ -904,7 +904,7 @@ impl CfsTrait for StaticBackendDispatcher {
     }
   }
 
-  async fn get_sessions_by_xname(
+  /* async fn get_sessions_by_xname(
     &self,
     auth_token: &str,
     base_url: &str,
@@ -955,7 +955,7 @@ impl CfsTrait for StaticBackendDispatcher {
         .await
       }
     }
-  }
+  } */
 
   async fn delete_and_cancel_session(
     &self,
@@ -1848,7 +1848,7 @@ impl CommandsTrait for StaticBackendDispatcher {
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
     hsm_name_available_vec: Vec<String>,
-    configuration_name_opt: Option<&String>,
+    // configuration_name_opt: Option<&String>,
     configuration_name_pattern: Option<&String>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
@@ -1861,7 +1861,7 @@ impl CommandsTrait for StaticBackendDispatcher {
           shasta_base_url,
           shasta_root_cert,
           hsm_name_available_vec,
-          configuration_name_opt,
+          // configuration_name_opt,
           configuration_name_pattern,
           since_opt,
           until_opt,
@@ -1875,7 +1875,7 @@ impl CommandsTrait for StaticBackendDispatcher {
           shasta_base_url,
           shasta_root_cert,
           hsm_name_available_vec,
-          configuration_name_opt,
+          // configuration_name_opt,
           configuration_name_pattern,
           since_opt,
           until_opt,

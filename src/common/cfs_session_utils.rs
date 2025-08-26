@@ -146,7 +146,7 @@ pub fn get_table_struct(
   table
 }
 
-pub async fn get_image_id_related_to_cfs_configuration(
+/* pub async fn get_image_id_related_to_cfs_configuration(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   shasta_base_url: &str,
@@ -155,7 +155,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
 ) -> Option<String> {
   // Get all CFS sessions which has succeeded
   let cfs_sessions_list = backend
-    .get_and_filter_sessions(
+    .get_sessions(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
@@ -167,6 +167,7 @@ pub async fn get_image_id_related_to_cfs_configuration(
       None,
       None,
       Some(true),
+      None,
     )
     .await
     .unwrap();
@@ -180,9 +181,9 @@ pub async fn get_image_id_related_to_cfs_configuration(
     &cfs_sessions_list,
   )
   .await
-}
+} */
 
-pub async fn get_image_id_from_cfs_session_and_cfs_configuration(
+/* pub async fn get_image_id_from_cfs_session_and_cfs_configuration(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   shasta_base_url: &str,
@@ -236,4 +237,4 @@ pub async fn get_image_id_from_cfs_session_and_cfs_configuration(
   }
 
   None
-}
+} */
