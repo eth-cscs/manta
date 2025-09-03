@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.55.4] - 2025-09-03
+
+### Bug Fixes
+
+- Manta was not validating the auth token fetched from filesystem, this patch validates the authentication token fetched from file system
+
+### Features
+
+- [**breaking**] Function to delete configuration and data related now accepts glob as configuration name input
+
+### Refactor
+
+- [**breaking**] Reduce the number of memory allocations
+
 ## [1.55.3] - 2025-08-24
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
 - Update Cargo.toml
+- Release manta version 1.55.3
 
 ## [1.55.2] - 2025-08-24
 
