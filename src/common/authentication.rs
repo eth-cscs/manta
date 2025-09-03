@@ -24,12 +24,10 @@ pub async fn get_api_token(
 
   log::info!("Authentication token not found in env var");
 
-  let shasta_token_rslt = get_token_from_local_file(site_name);
+  let shasta_token_rslt = get_token_from_local_file(site_name, backend).await;
 
   if shasta_token_rslt.is_ok() {
-    log::info!(
-      "Authentication token found in filesystem. Check if it is still valid"
-    );
+    log::info!("Authentication token found in filesystem");
     return shasta_token_rslt;
   }
 
@@ -67,7 +65,10 @@ pub async fn get_token_from_env(
   return Err(Error::Message("Authentication unsucessful".to_string()));
 }
 
-pub fn get_token_from_local_file(site_name: &str) -> Result<String, Error> {
+pub async fn get_token_from_local_file(
+  site_name: &str,
+  backend: &StaticBackendDispatcher,
+) -> Result<String, Error> {
   // Look for authentication token in fielsystem
   log::info!("Looking for authentication token in filesystem file");
 
@@ -88,7 +89,11 @@ pub fn get_token_from_local_file(site_name: &str) -> Result<String, Error> {
   let mut shasta_token = String::new();
   File::open(path)?.read_to_string(&mut shasta_token)?;
 
-  Ok(shasta_token.to_string())
+  if backend.validate_api_token(&shasta_token).await.is_ok() {
+    return Ok(shasta_token);
+  }
+
+  return Err(Error::Message("Authentication unsucessful".to_string()));
 }
 
 pub fn store_token_in_local_file(
@@ -133,8 +138,6 @@ pub async fn get_token_interactively(
   let password = Password::new().with_prompt("password").interact()?;
 
   let mut shasta_token_rslt = backend.get_api_token(&username, &password).await;
-
-  dbg!(&shasta_token_rslt);
 
   let mut attempts = 0;
 
