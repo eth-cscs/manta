@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.55.5] - 2025-09-07
+
+### Features
+
+- Sessions to configure nodes or build images may run slow, this patch tries to help sysadmins analyse the health of the system by showing the session completion time and duration also, it simplifies the values for completion and succeeded
+
 ## [1.55.4] - 2025-09-03
 
 ### Bug Fixes
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - [**breaking**] Function to delete configuration and data related now accepts glob as configuration name input
+
+### Miscellaneous Tasks
+
+- Release manta version 1.55.4
 
 ### Refactor
 
