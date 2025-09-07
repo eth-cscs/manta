@@ -142,6 +142,12 @@ pub async fn get_token_interactively(
   let mut attempts = 0;
 
   while shasta_token_rslt.is_err() && attempts < 3 {
+    log::info!(
+      "Authentication attempt {} failed. Reason: {:#?}",
+      attempts + 1,
+      shasta_token_rslt
+    );
+
     println!(
       "Please type your {}Keycloak credentials{}",
       color::Fg(color::Green),

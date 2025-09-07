@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use comfy_table::Table;
+use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
   interfaces::{cfs::CfsTrait, ims::ImsTrait},
   types::{self, cfs::session::CfsSessionGetResponse, Group},
@@ -10,41 +10,63 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub fn cfs_session_struct_to_vec(
   cfs_session: manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
 ) -> Vec<String> {
-  let start_time_utc_str = cfs_session
+  let start_time_utc = cfs_session
     .get_start_time()
-    .and_then(|date_time| Some(date_time.to_string() + "Z"))
-    .unwrap_or("".to_string());
+    .map(|date_time| {
+      let date = format!("{}Z", date_time);
+      date.parse::<DateTime<Local>>().unwrap()
+    })
+    .unwrap_or_default();
+
+  let completion_time_utc_opt =
+    cfs_session.get_completion_time().map(|date_time| {
+      let date = format!("{}Z", date_time);
+      date.parse::<DateTime<Local>>().unwrap()
+    });
+
+  let status = if cfs_session.is_success() {
+    "Succeeded".to_string()
+  } else if completion_time_utc_opt.is_some() && !cfs_session.is_success() {
+    "Failed".to_string()
+  } else {
+    cfs_session.status().unwrap_or("Unknown".to_string())
+  };
+
+  let duration_in_minutes =
+    if let Some(completion_time_utc) = completion_time_utc_opt {
+      let start_complete_diff = completion_time_utc - start_time_utc;
+      let duration = (start_complete_diff.as_seconds_f64() / 60.0) as i64;
+      duration
+    } else {
+      let now_utc: DateTime<Local> = Local::now();
+      let start_now_diff = now_utc - start_time_utc;
+      let duration = (start_now_diff.as_seconds_f64() / 60.0) as i64;
+      duration
+    };
 
   let mut result = vec![cfs_session.name.clone().unwrap()];
   result.push(cfs_session.configuration.clone().unwrap().name.unwrap());
+  result.push(start_time_utc.format("%d/%m/%Y %H:%M:%S").to_string());
   result.push(
-    start_time_utc_str
-      .parse::<DateTime<Local>>()
-      .unwrap()
-      .format("%d/%m/%Y %H:%M:%S")
-      .to_string(),
+    completion_time_utc_opt
+      .map(|completion_time| {
+        completion_time.format("%d/%m/%Y %H:%M:%S").to_string()
+      })
+      .unwrap_or_default(),
   );
+  result.push(duration_in_minutes.to_string());
 
-  result.push(
-    cfs_session
-      .status
-      .as_ref()
-      .unwrap()
-      .session
-      .as_ref()
-      .unwrap()
-      .status
-      .as_ref()
-      .unwrap_or(&"".to_string())
-      .to_string(),
-  );
-  result.push(cfs_session.is_success().to_string());
-  result.push(
-    cfs_session
-      .get_target_def()
-      .unwrap_or("".to_string())
-      .to_string(),
-  );
+  result.push(status);
+
+  let session_type = match cfs_session.get_target_def().as_deref() {
+    Some("dynamic") => "Runtime".to_string(),
+    Some("image") => "Image".to_string(),
+    Some(other) => other.to_string(),
+    None => "Unknown".to_string(),
+  };
+
+  result.push(session_type);
+
   let target = if !cfs_session
     .target
     .as_ref()
@@ -118,7 +140,8 @@ pub fn check_cfs_session_against_groups_available(
 pub fn print_table_struct(
   get_cfs_session_value_list: &Vec<types::cfs::session::CfsSessionGetResponse>,
 ) {
-  let table = get_table_struct(get_cfs_session_value_list);
+  let mut table = get_table_struct(get_cfs_session_value_list);
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   println!("{table}");
 }
@@ -132,9 +155,10 @@ pub fn get_table_struct(
     "Session Name",
     "Configuration Name",
     "Start",
+    "Completion",
+    "Duration",
     "Status",
-    "Succeeded",
-    "Target Def",
+    "Type",
     "Target",
     "Image ID",
   ]);

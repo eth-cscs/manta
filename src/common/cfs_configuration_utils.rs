@@ -1,5 +1,5 @@
 use chrono::{DateTime, Local};
-use comfy_table::Table;
+use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::{
   bos::session_template::BosSessionTemplate,
   cfs::cfs_configuration_details::ConfigurationDetails,
@@ -62,6 +62,7 @@ pub fn print_table_details_struct(
   image_vec_opt: Option<Vec<Image>>,
 ) {
   let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   table.set_header(vec![
     "Configuration Name",

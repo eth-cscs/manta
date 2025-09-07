@@ -4,6 +4,7 @@ use manta_backend_dispatcher::{
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use nodeset::NodeSet;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -64,12 +65,13 @@ pub fn print_table(group_vec: &[Group]) {
   for group in group_vec {
     let mut group_members = group.get_members();
     group_members.sort();
+    let node_group: NodeSet = group_members.join(", ").parse().unwrap();
 
     table.add_row(vec![
       group.label.clone(),
       group.description.clone().unwrap_or_default(),
       group_members.len().to_string(),
-      group_members.join("\n"),
+      node_group.to_string(),
       group.tags.clone().unwrap_or_default().join("\n"),
     ]);
   }
