@@ -1522,6 +1522,8 @@ pub async fn process_cli(
 
         let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
 
+        let timestamps: bool = cli_apply_session.get_flag("timestamps");
+
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -1565,6 +1567,7 @@ pub async fn process_cli(
           ansible_verbosity.map(String::as_str),
           ansible_passthrough.map(String::as_str),
           watch_logs,
+          timestamps,
           kafka_audit_opt,
           &site
             .k8s
@@ -1645,7 +1648,10 @@ pub async fn process_cli(
         let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
         let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
+
         let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
+        let timestamps: bool = cli_apply_sat_file.get_flag("timestamps");
+
         let assume_yes: bool = cli_apply_sat_file.get_flag("assume-yes");
 
         let dry_run: bool = cli_apply_sat_file.get_flag("dry-run");
@@ -1679,6 +1685,7 @@ pub async fn process_cli(
           &gitea_token,
           do_not_reboot,
           watch_logs,
+          timestamps,
           prehook.map(String::as_str),
           posthook.map(String::as_str),
           cli_apply_sat_file.get_flag("image-only"),
@@ -1950,6 +1957,8 @@ pub async fn process_cli(
         .get_one::<String>("VALUE")
         .expect("ERROR - value is mandatory");
 
+      let timestamps = cli_log.get_flag("timestamps");
+
       let group_available_vec =
         backend.get_group_available(&shasta_token).await?;
 
@@ -1966,6 +1975,7 @@ pub async fn process_cli(
         shasta_root_cert,
         &group_available_vec,
         user_input,
+        timestamps,
         &site
           .k8s
           .as_ref()

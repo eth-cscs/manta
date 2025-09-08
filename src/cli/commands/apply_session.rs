@@ -35,6 +35,7 @@ pub async fn exec(
   ansible_verbosity: Option<&str>,
   ansible_passthrough: Option<&str>,
   watch_logs: bool,
+  timestamps: bool,
   kafka_audit_opt: Option<&Kafka>,
   k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
@@ -101,7 +102,13 @@ pub async fn exec(
     log::info!("Fetching logs ...");
 
     let mut cfs_session_log_stream = backend
-      .get_session_logs_stream(shasta_token, site, &cfs_session_name, k8s)
+      .get_session_logs_stream(
+        shasta_token,
+        site,
+        &cfs_session_name,
+        timestamps,
+        k8s,
+      )
       .await?
       .lines();
 

@@ -21,6 +21,7 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   group_available_vec: &[Group],
   hosts_expression: &str,
+  timestamps: bool,
   k8s: &K8sDetails,
 ) {
   let node_metadata_available_vec = backend
@@ -151,6 +152,7 @@ pub async fn exec(
     shasta_token,
     site_name,
     cfs_session.name.as_ref().unwrap(),
+    timestamps,
     k8s,
   )
   .await;
@@ -166,10 +168,17 @@ pub async fn print_cfs_session_logs(
   shasta_token: &str,
   site_name: &str,
   cfs_session_name: &str,
+  timestamps: bool,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
   let logs_stream = backend
-    .get_session_logs_stream(shasta_token, site_name, cfs_session_name, k8s)
+    .get_session_logs_stream(
+      shasta_token,
+      site_name,
+      cfs_session_name,
+      timestamps,
+      k8s,
+    )
     .await?;
 
   let mut lines = logs_stream.lines();

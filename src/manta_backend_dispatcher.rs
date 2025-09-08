@@ -736,7 +736,7 @@ impl CfsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     site_name: &str,
     cfs_session_name: &str,
-    // k8s_api_url: &str,
+    timestamps: bool,
     k8s: &K8sDetails,
   ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
     match self {
@@ -745,7 +745,7 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_token,
           site_name,
           cfs_session_name,
-          // k8s_api_url,
+          timestamps,
           k8s,
         )
         .await
@@ -755,7 +755,7 @@ impl CfsTrait for StaticBackendDispatcher {
           shasta_token,
           site_name,
           cfs_session_name,
-          // k8s_api_url,
+          timestamps,
           k8s,
         )
         .await
@@ -768,16 +768,21 @@ impl CfsTrait for StaticBackendDispatcher {
     auth_token: &str,
     site_name: &str,
     xname: &str,
+    timestamps: bool,
     k8s: &K8sDetails,
   ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
     match self {
       CSM(b) => {
-        b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
-          .await
+        b.get_session_logs_stream_by_xname(
+          auth_token, site_name, xname, timestamps, k8s,
+        )
+        .await
       }
       OCHAMI(b) => {
-        b.get_session_logs_stream_by_xname(auth_token, site_name, xname, k8s)
-          .await
+        b.get_session_logs_stream_by_xname(
+          auth_token, site_name, xname, timestamps, k8s,
+        )
+        .await
       }
     }
   }
@@ -1292,6 +1297,7 @@ impl SatTrait for StaticBackendDispatcher {
     gitea_token: &str,
     do_not_reboot: bool,
     watch_logs: bool,
+    timestamps: bool,
     debug_on_failure: bool,
     overwrite: bool,
     dry_run: bool,
@@ -1314,6 +1320,7 @@ impl SatTrait for StaticBackendDispatcher {
           gitea_token,
           do_not_reboot,
           watch_logs,
+          timestamps,
           debug_on_failure,
           overwrite,
           dry_run,
@@ -1337,6 +1344,7 @@ impl SatTrait for StaticBackendDispatcher {
           gitea_token,
           do_not_reboot,
           watch_logs,
+          timestamps,
           debug_on_failure,
           overwrite,
           dry_run,

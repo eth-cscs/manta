@@ -457,7 +457,8 @@ pub fn subcommand_apply_session() -> Command {
     .arg(arg!(-p --"playbook-name" <VALUE> "Playbook YAML file name. eg (site.yml)").default_value("site.yml"))
     .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path with a git repo and an ansible-playbook to configure the CFS image").required(true)
       .value_parser(value_parser!(PathBuf)).value_hint(ValueHint::DirPath))
-    .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts"))
+    .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts").action(ArgAction::SetTrue))
+    .arg(arg!(-t --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
     .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
       .value_parser(["0", "1", "2", "3", "4"])
       .num_args(1)
@@ -531,6 +532,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session to create an image. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
     .arg(arg!(-o --"overwrite-configuration" "Overwrite configuration if already exists").action(ArgAction::SetTrue))
     .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts").action(ArgAction::SetTrue))
+    .arg(arg!(-t --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
     .arg(arg!(-i --"image-only" "Only process `configurations` and `images` sections in SAT file. The `session_templates` section will be ignored.").action(ArgAction::SetTrue))
     .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))
     .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing SAT file. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))
@@ -684,6 +686,7 @@ pub fn subcommand_log() -> Command {
   Command::new("log")
     // .visible_alias("l")
     .about("get cfs session logs")
+    .arg(arg!(-t --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
     .arg(arg!([VALUE] "Show logs related to a session name, group name, xname or nid. eg: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2a3"))
 }
 
