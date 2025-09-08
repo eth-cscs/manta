@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.55.6] - 2025-09-08
+
+### Features
+
+- Add a new argument to print timestamps to session logs
+
+### Miscellaneous Tasks
+
+- Update ochami-rs version in Cargo.toml
+
 ## [1.55.5] - 2025-09-07
 
 ### Features
 
 - Sessions to configure nodes or build images may run slow, this patch tries to help sysadmins analyse the health of the system by showing the session completion time and duration also, it simplifies the values for completion and succeeded
+
+### Miscellaneous Tasks
+
+- Release manta version 1.55.5
 
 ## [1.55.4] - 2025-09-03
 
