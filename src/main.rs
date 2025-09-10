@@ -79,15 +79,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     log::warn!("config - Auditor not defined");
   }
 
-  let audit_file_path =
+  /* let audit_file_path =
     if let Ok(audit_file) = settings.get_string("audit_file") {
       audit_file
     } else {
       "/var/log/manta/requests.log".to_string()
     };
-  log::debug!("config - audit_file_path:  {audit_file_path}");
+  log::debug!("config - audit_file_path:  {audit_file_path}"); */
 
-  log_ops::configure(log_level, audit_file_path.as_str()); // log4rs programatically configuration
+  log_ops::configure(log_level); // log4rs programatically configuration
 
   if let Some(socks_proxy) = &site_detail_value.socks5_proxy {
     let socks_proxy = socks_proxy.to_string();

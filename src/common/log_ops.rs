@@ -9,7 +9,7 @@ use log4rs::{
 };
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
-pub fn configure(log_level: String, audit_file_path: &str) {
+pub fn configure(log_level: String) {
   // let audit_file_path = audit_file_path;
   /* if env::consts::OS == "macos" {
       audit_file_path = "./manta-requests.log";
@@ -19,11 +19,11 @@ pub fn configure(log_level: String, audit_file_path: &str) {
     .encoder(Box::new(PatternEncoder::new("{h({l}):5.5} | {m}{n}")))
     .build();
 
-  let requests_rslt = FileAppender::builder()
-    .encoder(Box::new(PatternEncoder::new(
-      "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}",
-    )))
-    .build(audit_file_path);
+  /* let requests_rslt = FileAppender::builder()
+  .encoder(Box::new(PatternEncoder::new(
+    "{d(%Y-%m-%d %H:%M:%S)} | {({l}):5.5} | {f}:{L} — {m}{n}",
+  )))
+  .build(audit_file_path); */
 
   let mut config_builder = Config::builder()
     .appender(Appender::builder().build("stdout", Box::new(stdout)))
@@ -34,7 +34,7 @@ pub fn configure(log_level: String, audit_file_path: &str) {
     );
 
   // Configure logs for audit file
-  let error_configuring_audit_logs;
+  /* let error_configuring_audit_logs;
   config_builder = match requests_rslt {
     Ok(requests) => {
       config_builder = config_builder
@@ -54,7 +54,7 @@ pub fn configure(log_level: String, audit_file_path: &str) {
       error_configuring_audit_logs = Some(error);
       config_builder
     }
-  };
+  }; */
 
   let config = config_builder
     .build(
@@ -68,11 +68,11 @@ pub fn configure(log_level: String, audit_file_path: &str) {
 
   // use handle to change logger configuration at runtime
 
-  if error_configuring_audit_logs.is_some() {
+  /* if error_configuring_audit_logs.is_some() {
     log::warn!(
       "Unable to create audit file {}. Reason: {:?}. Continue",
       audit_file_path,
       error_configuring_audit_logs
     );
-  }
+  } */
 }
