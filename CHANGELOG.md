@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.0] - 2025-09-10
+
+### Bug Fixes
+
+- Authentication process fails if auth token in filesystem is expired
+- Authentication using auth token in local filesystem is not valid
+
+### Features
+
+- Improve the authentication pipeline so authentication goes 1st env var, 2nd local file system 3rd interactive credentials. Last step is only done if manta runs in an interactive terminal
+- Authentication process now goes: 1st get auth token from env var, 2nd get auth token from local filesystem, 3rd ask user for credentials and get auth token from PKI supported by the backend (eg: keycloak)
+
 ## [1.55.6] - 2025-09-08
 
 ### Features
@@ -11,6 +23,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update ochami-rs version in Cargo.toml
+- Release manta version 1.55.6
 
 ## [1.55.5] - 2025-09-07
 
