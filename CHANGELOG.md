@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.1] - 2025-09-11
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Update Cargo.lock
+
 ## [1.56.0] - 2025-09-10
 
 ### Bug Fixes
@@ -13,6 +20,10 @@ All notable changes to this project will be documented in this file.
 
 - Improve the authentication pipeline so authentication goes 1st env var, 2nd local file system 3rd interactive credentials. Last step is only done if manta runs in an interactive terminal
 - Authentication process now goes: 1st get auth token from env var, 2nd get auth token from local filesystem, 3rd ask user for credentials and get auth token from PKI supported by the backend (eg: keycloak)
+
+### Miscellaneous Tasks
+
+- Release manta version 1.56.0
 
 ## [1.55.6] - 2025-09-08
 
