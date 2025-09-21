@@ -1,11 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
-use manta_backend_dispatcher::{
-  interfaces::{cfs::CfsTrait, ims::ImsTrait},
-  types::{self, cfs::session::CfsSessionGetResponse, Group},
-};
+use manta_backend_dispatcher::types::{self, cfs::session::CfsSessionGetResponse, Group};
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub fn cfs_session_struct_to_vec(
   cfs_session: manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,

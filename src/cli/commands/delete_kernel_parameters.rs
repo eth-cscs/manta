@@ -68,7 +68,7 @@ pub async fn exec(
     xname_vec.join(", ")
   );
 
-  for mut boot_parameter in &mut current_node_boot_params_vec {
+  for boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
       "Delete '{:?}' kernel parameters to '{}'",
       kernel_params,

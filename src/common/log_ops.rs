@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use log::LevelFilter;
 use log4rs::{
-  append::{console::ConsoleAppender, file::FileAppender},
+  append::console::ConsoleAppender,
   config::{Appender, Logger, Root},
   encode::pattern::PatternEncoder,
   Config,
@@ -25,7 +25,7 @@ pub fn configure(log_level: String) {
   )))
   .build(audit_file_path); */
 
-  let mut config_builder = Config::builder()
+  let config_builder = Config::builder()
     .appender(Appender::builder().build("stdout", Box::new(stdout)))
     .logger(
       Logger::builder()

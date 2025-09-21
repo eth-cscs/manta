@@ -1,5 +1,4 @@
 use crate::{
-  cli::commands::get_images,
   common::{self, audit::Audit, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
@@ -14,7 +13,7 @@ use manta_backend_dispatcher::{
   types::{self, ims::Image},
 };
 use nodeset::NodeSet;
-use std::{collections::HashMap, thread::current};
+use std::collections::HashMap;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
@@ -72,7 +71,7 @@ pub async fn exec(
 
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
-  for mut boot_parameter in &mut current_node_boot_params_vec {
+  for boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
       "Add '{}' kernel parameters to '{}'",
       kernel_params,

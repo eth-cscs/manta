@@ -70,7 +70,7 @@ pub async fn exec(
 
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
-  for mut boot_parameter in &mut current_node_boot_params_vec {
+  for boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
       "Apply '{}' kernel parameters to '{}'",
       kernel_params,
@@ -169,7 +169,7 @@ pub async fn exec(
     log::info!("Persist changes");
 
     // Update boot parameters
-    for mut boot_parameter in current_node_boot_params_vec {
+    for boot_parameter in current_node_boot_params_vec {
       log::info!(
         "Apply '{}' kernel parameters to '{:?}'",
         kernel_params,

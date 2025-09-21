@@ -1,7 +1,6 @@
 use clap_complete::{generate, generate_to};
 use manta_backend_dispatcher::{
   interfaces::{
-    authentication::AuthenticationTrait,
     bss::BootParametersTrait,
     hsm::{
       component::ComponentTrait, group::GroupTrait,

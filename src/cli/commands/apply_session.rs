@@ -70,7 +70,7 @@ pub async fn exec(
 
   // Check local repos
   let (repo_name_vec, repo_last_commit_id_vec) =
-    check_local_repos(repos_paths.clone())?;
+    check_local_repos(repos_paths)?;
 
   let (cfs_configuration_name, cfs_session_name) = backend
     .apply_session(
