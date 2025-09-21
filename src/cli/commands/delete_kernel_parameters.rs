@@ -54,67 +54,84 @@ pub async fn exec(
     std::process::exit(1);
   });
 
-  let current_node_boot_params_vec: Vec<types::bss::BootParameters> = backend
-    .get_bootparameters(shasta_token, &xname_vec)
-    .await
-    .unwrap();
+  let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
+    backend
+      .get_bootparameters(shasta_token, &xname_vec)
+      .await
+      .unwrap();
 
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
   println!(
     "Delete kernel params:\n{:?}\nFor nodes:\n{:?}",
     kernel_params,
-    node_group.to_string()
+    xname_vec.join(", ")
   );
 
-  let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("This operation will delete the kernel parameters for the nodes below. Please confirm to proceed")
-        .interact()
-        .unwrap();
-
-  if !proceed {
-    println!("Operation canceled by the user. Exit");
-    std::process::exit(1);
-  }
-
-  log::debug!(
-    "Current boot parameters: {:#?}",
-    current_node_boot_params_vec
-  );
-
-  for mut boot_parameter in current_node_boot_params_vec {
+  for mut boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
-      "Deleting '{}' kernel parameters for nodes '{:?}'",
+      "Delete '{:?}' kernel parameters to '{}'",
       kernel_params,
-      boot_parameter.hosts,
+      node_group
     );
 
     let kernel_params_changed =
       boot_parameter.delete_kernel_params(&kernel_params);
     need_restart = kernel_params_changed || need_restart;
 
-    log::info!("need restart? {}", need_restart);
+    if kernel_params_changed {
+      need_restart = true;
+      xname_to_reboot_vec.extend(boot_parameter.hosts.iter().cloned());
+    }
+  }
 
-    if need_restart {
-      if dry_run {
-        println!("Dry-run enabled. No changes persisted into the system");
-        println!(
-          "Dry run mode. Would update kernel parameters for {}: {}",
-          boot_parameter.hosts.join(", "),
-          boot_parameter.params
-        );
-      } else {
-        backend
-          .update_bootparameters(shasta_token, &boot_parameter)
-          .await?;
-      }
+  if need_restart {
+    let proceed = if assume_yes {
+      true
+    } else {
+      println!(
+        "Delete kernel params:\n{:?}\nFor nodes:\n{:?}",
+        kernel_params,
+        node_group.to_string()
+      );
+      dialoguer::Confirm::with_theme(
+        &ColorfulTheme::default())
+        .with_prompt("This operation will delete the kernel parameters for the nodes below. Please confirm to proceed")
+        .interact()
+        .unwrap()
+    };
 
-      if need_restart {
-        xname_to_reboot_vec =
-          [xname_to_reboot_vec, boot_parameter.hosts].concat();
-        xname_to_reboot_vec.sort();
-        xname_to_reboot_vec.dedup();
-      }
+    if !proceed {
+      println!("Operation canceled by the user. Exit");
+      std::process::exit(1);
+    }
+  } else {
+    println!("No changes detected. Nothing to do. Exit");
+    std::process::exit(0);
+  }
+
+  log::info!("need restart? {}", need_restart);
+
+  if dry_run {
+    println!("Dry-run enabled. No changes persisted into the system");
+    println!(
+      "Dry run mode. Would update kernel parameters below: {}",
+      serde_json::to_string_pretty(&current_node_boot_params_vec).unwrap()
+    );
+  } else {
+    log::info!("Persist changes");
+
+    // Update boot parameters
+    for boot_parameter in current_node_boot_params_vec {
+      log::info!(
+        "Delete '{}' kernel parameters to '{:?}'",
+        kernel_params,
+        boot_parameter.hosts,
+      );
+
+      backend
+        .update_bootparameters(shasta_token, &boot_parameter)
+        .await?;
     }
   }
 
@@ -145,29 +162,19 @@ pub async fn exec(
   }
 
   // Reboot if needed
-  if do_not_reboot {
-    println!("Kernel parameters removed. Reboot canceled by user");
-    return Ok(());
-  } else {
-    if xname_to_reboot_vec.is_empty() {
-      println!("Nothing to change. Exit");
-    } else {
-      if dry_run {
-        println!("Dry-run enabled. No changes persisted into the system");
-        println!("Would reboot nodes: {}", xname_to_reboot_vec.join(", "));
-      } else {
-        crate::cli::commands::power_reset_nodes::exec(
-          &backend,
-          shasta_token,
-          &xname_to_reboot_vec.join(","),
-          true,
-          assume_yes,
-          "table",
-          kafka_audit_opt,
-        )
-        .await;
-      }
-    }
+  if !do_not_reboot && need_restart && !dry_run {
+    log::info!("Restarting nodes");
+
+    crate::cli::commands::power_reset_nodes::exec(
+      &backend,
+      shasta_token,
+      &xname_to_reboot_vec.join(","),
+      true,
+      assume_yes,
+      "table",
+      kafka_audit_opt,
+    )
+    .await;
   }
 
   Ok(())

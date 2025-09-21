@@ -69,14 +69,8 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       );
 
       // Get IMS image related to the CFS session
-      let image_vec_rslt = backend
-        .get_images(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          Some(&image_id),
-        )
-        .await;
+      let image_vec_rslt =
+        backend.get_images(shasta_token, Some(&image_id)).await;
 
       if let Ok(mut image_vec) = image_vec_rslt {
         log::info!(

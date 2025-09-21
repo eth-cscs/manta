@@ -6,6 +6,7 @@ use manta_backend_dispatcher::{
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use std::collections::HashMap;
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason
@@ -47,10 +48,10 @@ pub async fn exec(
     "Image ID",
     "Name",
     "Creation time",
-    "CFS configuration",
+    "CFS config",
     "HSM groups",
-    // "BOS sessiontemplate",
-    // "CFS session name",
+    "Tags", // "BOS sessiontemplate",
+            // "CFS session name",
   ]);
 
   for image_details in image_detail_vec {
@@ -75,6 +76,14 @@ pub async fn exec(
         .2
         .split(",")
         .map(|v| v.trim())
+        .collect::<Vec<_>>()
+        .join("\n"),
+      &image_details
+        .0
+        .metadata
+        .unwrap_or(HashMap::new())
+        .iter()
+        .map(|(key, value)| format!("{key}:{value}"))
         .collect::<Vec<_>>()
         .join("\n"),
     ]);

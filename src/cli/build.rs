@@ -370,6 +370,7 @@ pub fn subcommand_get_images() -> Command {
 pub fn subcommand_get_boot_parameters() -> Command {
   Command::new("boot-parameters")
     // .visible_aliases(["n", "node"])
+    .arg_required_else_help(true)
     .about("Get boot-parameters information")
     .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
     .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
@@ -532,7 +533,7 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
     .arg(arg!(-P --"ansible-passthrough" <VALUE> "Additional parameters that are added to all Ansible calls for the session to create an image. This field is currently limited to the following Ansible parameters: \"--extra-vars\", \"--forks\", \"--skip-tags\", \"--start-at-task\", and \"--tags\". WARNING: Parameters passed to Ansible in this way should be used with caution. State will not be recorded for components when using these flags to avoid incorrect reporting of partial playbook runs.").allow_hyphen_values(true))
     .arg(arg!(-o --"overwrite-configuration" "Overwrite configuration if already exists").action(ArgAction::SetTrue))
     .arg(arg!(-w --"watch-logs" "Watch logs. Hooks stdout to see container running ansible scripts").action(ArgAction::SetTrue))
-    .arg(arg!(-t --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
+    .arg(arg!(-T --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
     .arg(arg!(-i --"image-only" "Only process `configurations` and `images` sections in SAT file. The `session_templates` section will be ignored.").action(ArgAction::SetTrue))
     .arg(arg!(-s --"sessiontemplate-only" "Only process `configurations` and `session_templates` sections in SAT file. The `images` section will be ignored.").action(ArgAction::SetTrue))
     .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing SAT file. If need to pass a command with params. Use \" or \'.\neg: --pre-hook \"echo hello\""))

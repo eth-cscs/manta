@@ -1,4 +1,3 @@
-
 /* #[test]
 fn test_error_if_deleting_image_used_to_boot() {
   let backend = StaticBackendDispatcher::new("csm", "", &[]);

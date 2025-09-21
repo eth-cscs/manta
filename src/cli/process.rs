@@ -1860,10 +1860,9 @@ pub async fn process_cli(
           let new_kernel_parameters_opt: Option<&String> =
             cli_apply_boot_nodes.get_one::<String>("kernel-parameters");
 
-          let assume_yes: bool = cli_apply_boot_nodes.get_flag("assume-yes");
+          let assume_yes = cli_apply_boot_nodes.get_flag("assume-yes");
 
-          let do_not_reboot: bool =
-            cli_apply_boot_nodes.get_flag("do-not-reboot");
+          let do_not_reboot = cli_apply_boot_nodes.get_flag("do-not-reboot");
 
           let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
 
@@ -1872,10 +1871,10 @@ pub async fn process_cli(
             &shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            new_boot_image_id_opt,
-            new_boot_image_configuration_opt,
-            new_runtime_configuration_opt,
-            new_kernel_parameters_opt,
+            new_boot_image_id_opt.map(String::as_str),
+            new_boot_image_configuration_opt.map(String::as_str),
+            new_runtime_configuration_opt.map(String::as_str),
+            new_kernel_parameters_opt.map(String::as_str),
             hosts_string,
             assume_yes,
             do_not_reboot,
@@ -1893,8 +1892,8 @@ pub async fn process_cli(
         {
           let shasta_token = get_api_token(&backend, &site_name).await?;
 
-          let hsm_group_name_arg = cli_apply_boot_cluster
-            .get_one::<String>("CLUSTER_NAME")
+          let hsm_group_name_arg: &String = cli_apply_boot_cluster
+            .get_one("CLUSTER_NAME")
             .expect("ERROR - cluster name must be provided");
 
           let new_boot_image_id_opt: Option<&String> =
@@ -1907,12 +1906,11 @@ pub async fn process_cli(
             cli_apply_boot_cluster.get_one("runtime-configuration");
 
           let new_kernel_parameters_opt: Option<&String> =
-            cli_apply_boot_cluster.get_one::<String>("kernel-parameters");
+            cli_apply_boot_cluster.get_one("kernel-parameters");
 
           let assume_yes = cli_apply_boot_cluster.get_flag("assume-yes");
 
-          let do_not_reboot: bool =
-            cli_apply_boot_cluster.get_flag("do-not-reboot");
+          let do_not_reboot = cli_apply_boot_cluster.get_flag("do-not-reboot");
 
           let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
 
@@ -1936,10 +1934,10 @@ pub async fn process_cli(
             &shasta_token,
             shasta_base_url,
             shasta_root_cert,
-            new_boot_image_id_opt,
-            new_boot_image_configuration_opt,
-            new_runtime_configuration_opt,
-            new_kernel_parameters_opt,
+            new_boot_image_id_opt.map(String::as_str),
+            new_boot_image_configuration_opt.map(String::as_str),
+            new_runtime_configuration_opt.map(String::as_str),
+            new_kernel_parameters_opt.map(String::as_str),
             target_hsm_group_name,
             assume_yes,
             do_not_reboot,

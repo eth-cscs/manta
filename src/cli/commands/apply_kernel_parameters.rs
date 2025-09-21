@@ -8,10 +8,12 @@ use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait,
     hsm::{component::ComponentTrait, group::GroupTrait},
+    ims::ImsTrait,
   },
-  types::{self},
+  types::{self, ims::Image},
 };
 use nodeset::NodeSet;
+use std::collections::HashMap;
 
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
@@ -52,74 +54,142 @@ pub async fn exec(
   });
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
+  let mut image_map: HashMap<String, Image> = HashMap::new();
 
-  let current_node_boot_params_vec: Vec<types::bss::BootParameters> = backend
-    .get_bootparameters(
-      shasta_token,
-      &xname_vec
-        .iter()
-        .map(|xname| xname.to_string())
-        .collect::<Vec<String>>(),
-    )
-    .await
-    .unwrap();
+  let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
+    backend
+      .get_bootparameters(
+        shasta_token,
+        &xname_vec
+          .iter()
+          .map(|xname| xname.to_string())
+          .collect::<Vec<String>>(),
+      )
+      .await
+      .unwrap();
 
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
-  println!(
-    "Apply kernel parameters:\n{:?}\nTo nodes:\n{:?}",
-    kernel_params,
-    node_group.to_string()
-  );
-
-  let proceed = dialoguer::Confirm::with_theme(
-        &ColorfulTheme::default())
-        .with_prompt("This operation will replace the kernel parameters for the nodes below. Please confirm to proceed")
-        .interact()
-        .unwrap();
-
-  if !proceed {
-    println!("Operation canceled by the user. Exit");
-    std::process::exit(1);
-  }
-
-  log::debug!("new kernel params: {:#?}", current_node_boot_params_vec);
-
-  for mut boot_parameter in current_node_boot_params_vec {
+  for mut boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
-      "Add '{:?}' kernel parameters to '{}'",
-      boot_parameter.hosts,
-      kernel_params
+      "Apply '{}' kernel parameters to '{}'",
+      kernel_params,
+      node_group,
     );
 
     let kernel_params_changed =
       boot_parameter.apply_kernel_params(&kernel_params);
     need_restart = kernel_params_changed || need_restart;
 
-    if dry_run {
-      println!("Dry run mode. No changes will be made.");
-      println!("New kernel parameters:\n{}", boot_parameter.params);
-      return Ok(());
-    } else {
-      log::info!("need restart? {}", need_restart);
+    if kernel_params_changed {
+      need_restart = true;
+      xname_to_reboot_vec.extend(boot_parameter.hosts.iter().cloned());
+    }
 
-      if need_restart {
-        let boot_parametes_rslt = backend
-          .update_bootparameters(shasta_token, &boot_parameter)
-          .await;
+    // Set image metadata to sbps
+    // Check 'root' kernel parameters for sbps
+    let image_id = boot_parameter.get_boot_image_id();
 
-        if let Err(e) = boot_parametes_rslt {
-          eprintln!("{:#?}", e);
-          std::process::exit(1);
-        }
+    if !image_map.contains_key(&image_id) {
+      let mut image: Image = backend
+        .get_images(shasta_token, Some(image_id.as_str()))
+        .await?
+        .first()
+        .unwrap()
+        .clone();
 
-        if need_restart {
-          xname_to_reboot_vec =
-            [xname_to_reboot_vec, boot_parameter.hosts].concat();
-          xname_to_reboot_vec.sort();
-          xname_to_reboot_vec.dedup();
+      if boot_parameter.is_root_kernel_param_iscsi_ready() {
+        let proceed = if assume_yes {
+          true
+        } else {
+          dialoguer::Confirm::with_theme(
+        &ColorfulTheme::default())
+        .with_prompt("Kernel parameters using SBPS/iSCSI. Do you want to project the boot image through SBPS?")
+        .interact()
+        .unwrap()
+        };
+
+        if proceed {
+          log::info!(
+            "Setting 'sbps-project' metadata to 'true' for image id '{}'",
+            image_id
+          );
+
+          image.set_boot_image_iscsi_ready();
+
+          log::debug!("Image:\n{:#?}", image);
+
+          image_map.insert(image_id, image.clone());
+        } else {
+          log::info!("User chose to not project the image through SBPS");
         }
       }
+    }
+  }
+
+  if need_restart {
+    let proceed = if assume_yes {
+      true
+    } else {
+      println!(
+        "Apply kernel parameters:\n{:?}\nTo nodes:\n{:?}",
+        kernel_params,
+        node_group.to_string()
+      );
+
+      dialoguer::Confirm::with_theme(
+        &ColorfulTheme::default())
+        .with_prompt("This operation will replace the kernel parameters for the nodes below. Please confirm to proceed")
+        .interact()
+        .unwrap()
+    };
+
+    if !proceed {
+      println!("Operation canceled by the user. Exit");
+      std::process::exit(1);
+    }
+  } else {
+    println!("No changes detected. Nothing to do. Exit");
+    std::process::exit(0);
+  }
+
+  log::info!("need restart? {}", need_restart);
+
+  if dry_run {
+    println!("Dry-run enabled. No changes persisted into the system");
+    println!(
+      "Dry run mode. Would update kernel parameters below:\n{}",
+      serde_json::to_string_pretty(&current_node_boot_params_vec).unwrap()
+    );
+    println!(
+      "Dry run mode. Would update images:\n{}",
+      serde_json::to_string_pretty(&image_map).unwrap()
+    );
+  } else {
+    log::info!("Persist changes");
+
+    // Update boot parameters
+    for mut boot_parameter in current_node_boot_params_vec {
+      log::info!(
+        "Apply '{}' kernel parameters to '{:?}'",
+        kernel_params,
+        boot_parameter.hosts
+      );
+
+      backend
+        .update_bootparameters(shasta_token, &boot_parameter)
+        .await?;
+    }
+
+    // Update images projected through SBPS
+    for (_, image) in image_map {
+      backend
+        .update_image(
+          shasta_token,
+          image.id.clone().unwrap().as_str(),
+          &image.into(),
+        )
+        .await?;
     }
   }
 
@@ -150,24 +220,19 @@ pub async fn exec(
   }
 
   // Reboot if needed
-  if do_not_reboot {
-    println!("Kernel parameters applied. Reboot canceled by user");
-    return Ok(());
-  } else {
-    if xname_to_reboot_vec.is_empty() {
-      println!("Nothing to change. Exit");
-    } else {
-      crate::cli::commands::power_reset_nodes::exec(
-        &backend,
-        shasta_token,
-        &xname_to_reboot_vec.join(","),
-        true,
-        assume_yes,
-        "table",
-        kafka_audit_opt,
-      )
-      .await;
-    }
+  if !do_not_reboot && need_restart && !dry_run {
+    log::info!("Restarting nodes");
+
+    crate::cli::commands::power_reset_nodes::exec(
+      &backend,
+      shasta_token,
+      &xname_to_reboot_vec.join(","),
+      true,
+      assume_yes,
+      "table",
+      kafka_audit_opt,
+    )
+    .await;
   }
 
   Ok(())

@@ -44,7 +44,7 @@ use manta_backend_dispatcher::{
       session::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    ims::Image,
+    ims::{Image, PatchImage},
     Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
     K8sDetails, NodeMetadataArray,
   },
@@ -1405,29 +1405,11 @@ impl ImsTrait for StaticBackendDispatcher {
   async fn get_images(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     image_id_opt: Option<&str>,
   ) -> Result<Vec<Image>, Error> {
     match self {
-      CSM(b) => {
-        b.get_images(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          image_id_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_images(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          image_id_opt,
-        )
-        .await
-      }
+      CSM(b) => b.get_images(shasta_token, image_id_opt).await,
+      OCHAMI(b) => b.get_images(shasta_token, image_id_opt).await,
     }
   }
 
@@ -1453,6 +1435,18 @@ impl ImsTrait for StaticBackendDispatcher {
     match self {
       CSM(b) => b.filter_images(image_vec),
       OCHAMI(b) => b.filter_images(image_vec),
+    }
+  }
+
+  async fn update_image(
+    &self,
+    shasta_token: &str,
+    image_id: &str,
+    image: &PatchImage,
+  ) -> Result<(), Error> {
+    match self {
+      CSM(b) => b.update_image(shasta_token, image_id, image).await,
+      OCHAMI(b) => b.update_image(shasta_token, image_id, image).await,
     }
   }
 
