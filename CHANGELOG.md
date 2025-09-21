@@ -2,12 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.2] - 2025-09-21
+
+### Bug Fixes
+
+- Add new function to update an image
+- Backend struct contains, base_url and root_cert, this patch cleans the base_url and root_cert params in function get_image because those values can be fetched in backend struct which is also a param
+- We need new functionality to project images through sbps/iscsi. This patch introduces new PathImage struct to manage images metadata
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Clean code
+- Cargo fix
+
 ## [1.56.1] - 2025-09-11
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
 - Update Cargo.lock
+- Release manta version 1.56.1
 
 ## [1.56.0] - 2025-09-10
 
