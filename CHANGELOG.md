@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.3] - 2025-09-23
+
+### Miscellaneous Tasks
+
+- Update 'cargo dist'
+
 ## [1.56.2] - 2025-09-21
 
 ### Bug Fixes
@@ -13,6 +19,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta version 1.56.2
 
 ### Refactor
 
