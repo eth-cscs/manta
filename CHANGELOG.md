@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.6] - 2025-09-23
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Update Cargo.toml
+
 ## [1.56.5] - 2025-09-23
 
 ### Miscellaneous Tasks
@@ -10,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Release manta version 1.56.3
 - Release manta version 1.56.4
 - Do not publish in crate.io
+- Release manta version 1.56.5
 
 ## [1.56.2] - 2025-09-21
 
