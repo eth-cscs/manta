@@ -4,42 +4,18 @@ members = ["cargo:."]
 # Config for 'dist'
 [dist]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.28.2"
-# The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.88.0"
-# Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
+cargo-dist-version = "0.30.0"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
 installers = ["shell", "homebrew"]
-# Whether to consider the binaries in a package for distribution (defaults true)
-dist = true
-# Which actions to run on pull requests
-pr-run-mode = "plan"
-# Whether to install an updater program
-install-updater = false
-# Path that installers should place binaries in
-install-path = "CARGO_HOME"
 # A GitHub repo to push Homebrew formulas to
 tap = "eth-cscs/homebrew-tap"
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
 # Publish jobs to run in CI
 publish-jobs = ["homebrew"]
-
-[dist.github-custom-runners]
-runner = "ubuntu-22.04"
-
-# NOTE: running command `cargo dist generate` on a branch different than `main` won't make changes to GitHub workflow file
-
-# The GitHub runner to use for the CI jobs (ref: https://github.com/axodotdev/cargo-dist/issues/1760#issuecomment-2769218034)
-[dist.github-custom-runners.x86_64-unknown-linux-gnu]
-runner = "ubuntu-22.04"
-
-[dist.github-custom-runners.x86_64-unknown-linux-musl]
-runner = "ubuntu-22.04"
-# container = { image = "quay.io/pypa/manylinux_2_28_x86_64", host = "x86_64-unknown-linux-musl" }
-
-# # ref: https://github.com/axodotdev/cargo-dist/issues/1760#issuecomment-2769925701
-# [dist.github-custom-runners.x86_64-unknown-linux-musl]
-# runner = "ubuntu-22.04"
-# container = { image = "quay.io/pypa/musllinux_1_2_x86_64", host = "x86_64-unknown-linux-musl" }
+# Whether to install an updater program
+install-updater = false
