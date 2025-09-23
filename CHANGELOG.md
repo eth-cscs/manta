@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.7] - 2025-09-23
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
 ## [1.56.6] - 2025-09-23
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
 - Update Cargo.toml
+- Release manta-cli version 1.56.6
 
 ## [1.56.5] - 2025-09-23
 
