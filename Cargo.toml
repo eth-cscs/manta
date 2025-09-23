@@ -6,7 +6,7 @@
 [package]
 edition = "2021"
 authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
-name = "manta"
+name = "manta-cli"
 description = "Another CLI for ALPS"
 version = "1.56.5"
 license-file = "LICENSE"
@@ -14,7 +14,7 @@ documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
 homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
 repository = "https://github.com/eth-cscs/manta"
 keywords = ["cli", "productivity"]
-publish = false
+publish = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
