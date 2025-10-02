@@ -1,4 +1,4 @@
-use comfy_table::Table;
+use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -53,6 +53,7 @@ pub async fn exec(
 
 pub fn print_table(group_vec: &[Group]) {
   let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
 
   table.set_header(vec![
     "Group Name",

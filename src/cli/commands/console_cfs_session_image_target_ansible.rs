@@ -28,6 +28,7 @@ pub async fn exec(
       None,
       None,
       None,
+      None,
       Some(&session_name.to_string()),
       None,
       None,

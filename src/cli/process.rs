@@ -14,6 +14,7 @@ use manta_backend_dispatcher::{
   },
 };
 use std::{
+  cmp::max,
   env,
   fs::File,
   io::{self, BufReader, IsTerminal},
@@ -1078,6 +1079,28 @@ pub async fn process_cli(
             .collect::<Vec<&str>>(),
         );
 
+        let min_age_opt: Option<&String> =
+          cli_get_session.get_one::<String>("min-age");
+
+        let max_age_opt: Option<&String> =
+          cli_get_session.get_one::<String>("max-age");
+
+        let mut type_opt: Option<String> =
+          cli_get_session.get_one("type").cloned();
+
+        // Map runtime type to dynamic as runtime
+        if type_opt == Some("runtime".to_string()) {
+          type_opt = Some("dynamic".to_string())
+        }
+
+        let status_opt: Option<&String> =
+          cli_get_session.get_one::<String>("status");
+
+        let name_opt: Option<&String> =
+          cli_get_session.get_one::<String>("name");
+
+        let output_opt: Option<&String> = cli_get_session.get_one("output");
+
         get_session::exec(
           &backend,
           &shasta_token,
@@ -1090,12 +1113,13 @@ pub async fn process_cli(
               .collect::<Vec<_>>(),
           ),
           Some(xname_vec),
-          cli_get_session.get_one::<String>("min-age"),
-          cli_get_session.get_one::<String>("max-age"),
-          cli_get_session.get_one::<String>("status"),
-          cli_get_session.get_one::<String>("name"),
+          min_age_opt,
+          max_age_opt,
+          type_opt.as_ref(),
+          status_opt,
+          name_opt,
           limit,
-          cli_get_session.get_one("output"),
+          output_opt,
         )
         .await;
       } else if let Some(cli_get_template) =
