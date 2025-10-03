@@ -1,4 +1,4 @@
-use comfy_table::{ContentArrangement, Table};
+use comfy_table::{Column, ContentArrangement, Table};
 use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -76,6 +76,8 @@ pub fn print_table(group_vec: &[Group]) {
       group.tags.clone().unwrap_or_default().join("\n"),
     ]);
   }
+
+  table.column_mut(3).map(|c| c.set_delimiter(','));
 
   println!("{table}");
 }
