@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.9] - 2025-10-03
+
+### Features
+
+- Printing table with groups was breaking the line in the middle of members. This feature tries to fix this by setting ',' delimiter
+
 ## [1.56.8] - 2025-10-02
 
 ### Features
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.lock
+- Release manta-cli version 1.56.8
 
 ## [1.56.7] - 2025-09-23
 
