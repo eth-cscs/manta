@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.56.11] - 2025-10-16
+## [1.56.12] - 2025-10-16
 
 ### Miscellaneous Tasks
 
@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Remove Cargo.lock file
 - Remove Cargo.lock file
 - Release manta-cli version 1.56.10
+- Release manta-cli version 1.56.11
 
 ## [1.56.9] - 2025-10-03
 
