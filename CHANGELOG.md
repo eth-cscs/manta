@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.10] - 2025-10-16
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Remove Cargo.lock file
+- Remove Cargo.lock file
+
 ## [1.56.9] - 2025-10-03
 
 ### Features
 
 - Printing table with groups was breaking the line in the middle of members. This feature tries to fix this by setting ',' delimiter
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.56.9
 
 ## [1.56.8] - 2025-10-02
 
