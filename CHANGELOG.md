@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.56.14] - 2025-10-17
+## [1.56.15] - 2025-10-17
 
 ### Miscellaneous Tasks
 
@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Release manta-cli version 1.56.11
 - Release manta-cli version 1.56.12
 - Release manta-cli version 1.56.13
+- Release manta-cli version 1.56.14
+- Update Cargo.toml
 
 ## [1.56.9] - 2025-10-03
 
