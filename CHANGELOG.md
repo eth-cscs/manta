@@ -2,12 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.17] - 2025-10-19
+
+### Miscellaneous Tasks
+
+- Bump csm-rs and ochami-rs libraries
+- Update Cargo.lock
+
 ## [1.56.16] - 2025-10-19
 
 ### Miscellaneous Tasks
 
 - Update csm-rs with fixes to improve CFS logs management
 - Update Cargo.lock
+- Release manta-cli version 1.56.16
 
 ## [1.56.15] - 2025-10-17
 
