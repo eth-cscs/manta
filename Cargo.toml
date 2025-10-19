@@ -33,7 +33,7 @@ publish = true
 
 manta-backend-dispatcher = "0.14.0"
 ochami-rs = "0.7.0"
-csm-rs = "0.89.1"
+csm-rs = "0.89.4"
 
 # DEV - Only for development purposes
 
