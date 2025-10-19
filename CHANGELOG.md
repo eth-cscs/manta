@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.56.16] - 2025-10-19
+
+### Miscellaneous Tasks
+
+- Update csm-rs with fixes to improve CFS logs management
+- Update Cargo.lock
+
 ## [1.56.15] - 2025-10-17
 
 ### Miscellaneous Tasks
@@ -15,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Release manta-cli version 1.56.13
 - Release manta-cli version 1.56.14
 - Update Cargo.toml
+- Release manta-cli version 1.56.15
 
 ## [1.56.9] - 2025-10-03
 
