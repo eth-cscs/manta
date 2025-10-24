@@ -76,11 +76,11 @@ pub async fn exec(
       );
     std::process::exit(1);
   }
-
-  if dry_run {
-    eprintln!("Dry-run enabled. No changes persisted into the system");
-  } else {
-    for image_id in image_id_vec {
+  for image_id in image_id_vec {
+    if dry_run {
+      eprintln!("Dry-run enabled. No changes persisted into the system");
+      eprintln!("Image {} would be deleted", image_id);
+    } else {
       let del_rslt = backend
         .delete_image(shasta_token, shasta_base_url, shasta_root_cert, image_id)
         .await;
