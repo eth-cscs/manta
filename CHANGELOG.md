@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.57.0] - 2025-10-24
+
+### Features
+
+- Delete image dryrun goes through the list of images and prints image json
+
 ## [1.56.17] - 2025-10-19
 
 ### Miscellaneous Tasks
 
 - Bump csm-rs and ochami-rs libraries
 - Update Cargo.lock
+- Release manta-cli version 1.56.17
 
 ## [1.56.16] - 2025-10-19
 
