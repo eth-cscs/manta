@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.57.2] - 2025-11-01
+
+### Bug Fixes
+
+- Wrong root ca public cert for a site won't exit the application. This makes command 'manta config more resilient'
+
 ## [1.57.1] - 2025-10-29
 
 ### Bug Fixes
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.lock
+- Release manta-cli version 1.57.1
 
 ## [1.57.0] - 2025-10-24
 
