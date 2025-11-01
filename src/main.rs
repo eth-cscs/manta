@@ -112,11 +112,11 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
     shasta_root_cert
   } else {
-    eprintln!(
-      "ERROR - CA public root file '{}' not found. Exit",
+    log::warn!(
+      "CA public root file '{}' not found. Proceeding without it.",
       root_ca_cert_file
     );
-    std::process::exit(1);
+    vec![]
   };
 
   let backend = StaticBackendDispatcher::new(
