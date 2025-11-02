@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.57.3] - 2025-11-02
+
+### Bug Fixes
+
+- Command apply-sat was creating wrong bos sessiontemplate by adding field 'node_groups: []' when 'node_groups' was not used in the sat template file. This patch address this and field 'node_groups' won't be added to the bos sessiontemplate submitted to CSM if field missing in SAT template file to avoid CSM from complainning and rejecting the bos sessiontemplate creation
+- Command apply-sat was creating wrong bos sessiontemplate by adding field 'node_groups: []' when 'node_groups' was not used in the sat template file. This patch address this and field 'node_groups' won't be added to the bos sessiontemplate submitted to CSM if field missing in SAT template file to avoid CSM from complainning and rejecting the bos sessiontemplate creation
+
 ## [1.57.2] - 2025-11-01
 
 ### Bug Fixes
 
 - Wrong root ca public cert for a site won't exit the application. This makes command 'manta config more resilient'
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.57.2
 
 ## [1.57.1] - 2025-10-29
 
