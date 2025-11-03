@@ -26,11 +26,11 @@ pub async fn exec(
 
   match backend.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
-      log::debug!("The HSM group {} exists, good.", target_hsm_group_name)
+      log::debug!("The group '{}' exists, good.", target_hsm_group_name)
     }
     Err(_) => {
       if create_hsm_group {
-        log::info!("HSM group {} does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+        log::info!("Group '{}' does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
         if dryrun {
           log::error!(
             "Dryrun selected, cannot create the new group and continue."
@@ -47,10 +47,10 @@ pub async fn exec(
           backend
             .add_group(shasta_token, group)
             .await
-            .expect("Unable to create new HSM group");
+            .expect("Unable to create new group");
         }
       } else {
-        log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+        log::error!("Group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
         std::process::exit(1);
       }
     }
@@ -61,7 +61,7 @@ pub async fn exec(
   // lcm -> used to normalize and quantify memory capacity
   let mem_lcm = 16384; // 1024 * 16
 
-  // Normalize text in lowercase and separate each HSM group hw inventory pattern
+  // Normalize text in lowercase and separate each group hw inventory pattern
   let pattern_lowercase = pattern.to_lowercase();
 
   let mut pattern_element_vec: Vec<&str> =
@@ -103,9 +103,9 @@ pub async fn exec(
   user_defined_delta_hw_component_vec.sort();
 
   // *********************************************************************************************************
-  // PREPREQUISITES - GET DATA - PARENT HSM
+  // PREPREQUISITES - GET DATA - PARENT GROUP
 
-  // Get parent HSM group members
+  // Get parent group members
   let parent_hsm_group_member_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
     .await
@@ -118,7 +118,7 @@ pub async fn exec(
   )
   .await; */
 
-  // Get HSM hw component counters for target HSM
+  // Get group hw component counters for target group
   let mut parent_hsm_node_hw_component_count_vec =
     get_hsm_node_hw_component_counter(
       backend,
@@ -135,35 +135,43 @@ pub async fn exec(
   );
 
   /* log::info!(
-      "HSM '{}' hw component counters: {:?}",
+      "Group '{}' hw component counters: {:?}",
       parent_hsm_group_name,
       parent_hsm_node_hw_component_count_vec
   ); */
 
-  // Calculate hw component counters (summary) across all node within the HSM group
+  // Calculate hw component counters (summary) across all node within the group
   let parent_hsm_hw_component_summary: HashMap<String, usize> =
     calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
   log::info!(
-    "Parent HSM group '{}' hw component summary: {:?}",
+    "Parent group '{}' hw component summary: {:?}",
     parent_hsm_group_name,
     parent_hsm_hw_component_summary
   );
 
   // *********************************************************************************************************
-  // CALCULATE FINAL HSM GROUP HW COMPONENT COUNTERS (SUMMARY) AND DELTAS Calculate the hw components the target HSM group should have after applying the deltas
+  // CALCULATE FINAL GROUP HW COMPONENT COUNTERS (SUMMARY) AND DELTAS Calculate the hw components the target group should have after applying the deltas
   // (removing the hw components from the target hsm spcecified by the user)
   let mut final_parent_hsm_hw_component_summary: HashMap<String, usize> =
     HashMap::new();
 
   for (hw_component, counter) in &user_defined_delta_hw_component_count_hashmap
   {
-    dbg!(&parent_hsm_hw_component_summary);
-    dbg!(&hw_component);
-    dbg!(&counter);
-    let new_counter: usize =
-      parent_hsm_hw_component_summary.get(hw_component).unwrap()
-        - *counter as usize;
+    let current_counter: usize = *parent_hsm_hw_component_summary
+      .get(hw_component)
+      .unwrap_or(&0);
+    if *counter as isize > current_counter as isize {
+      log::error!(
+        "Error: Cannot remove more hw component '{}' ({}) than available in parent group '{}' ({})",
+        hw_component,
+        *counter,
+        parent_hsm_group_name,
+        current_counter
+      );
+      std::process::exit(1);
+    }
+    let new_counter: usize = current_counter - *counter as usize;
 
     final_parent_hsm_hw_component_summary
       .insert(hw_component.to_string(), new_counter);
@@ -171,8 +179,8 @@ pub async fn exec(
 
   //*************************************************************************************
   // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
-  // Get parent HSM group members
-  // Calculate nomarlized score for each hw component type in as much HSM groups as possible
+  // Get parent group members
+  // Calculate nomarlized score for each hw component type in as much groups as possible
   // related to the stakeholders using these nodes
   let parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
     String,
@@ -183,9 +191,9 @@ pub async fn exec(
   .await;
 
   // *********************************************************************************************************
-  // FIND NODES TO MOVE FROM PARENT TO TARGET HSM GROUP
+  // FIND NODES TO MOVE FROM PARENT TO TARGET GROUP
 
-  // Downscale parent HSM group
+  // Downscale parent group
   let hw_component_counters_to_move_out_from_parent_hsm =
         crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
             &final_parent_hsm_hw_component_summary.clone(),
@@ -207,7 +215,7 @@ pub async fn exec(
       .cloned()
       .collect::<Vec<String>>();
 
-  // Get target HSM group members
+  // Get target group members
   let mut target_hsm_node_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
     .await
@@ -224,7 +232,7 @@ pub async fn exec(
 
   target_hsm_node_vec.sort();
 
-  // Get HSM hw component counters for target HSM
+  // Get hw component counters for target group
   let target_hsm_node_hw_component_count_vec =
     get_hsm_node_hw_component_counter(
       backend,
@@ -238,7 +246,7 @@ pub async fn exec(
   let target_hsm_hw_component_summary =
     calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
 
-  // Get list of xnames in target HSM group
+  // Get list of xnames in target group
   let parent_hsm_node_vec = parent_hsm_node_hw_component_count_vec
     .iter()
     .map(|(xname, _)| xname)
@@ -250,7 +258,7 @@ pub async fn exec(
 
   log::info!("----- SOLUTION -----");
 
-  log::info!("Hw components in HSM '{}'", target_hsm_group_name);
+  log::info!("Hw components in group '{}'", target_hsm_group_name);
 
   // get hsm hw component counters for target hsm
   let mut target_hsm_node_hw_component_count_vec =
@@ -269,7 +277,7 @@ pub async fn exec(
   );
 
   log::info!(
-    "hsm '{}' hw component counters: {:?}",
+    "Group '{}' hw component counters: {:?}",
     target_hsm_group_name,
     target_hsm_node_hw_component_count_vec
   );
@@ -299,9 +307,9 @@ pub async fn exec(
   }
 
   // *********************************************************************************************************
-  // UPDATE HSM GROUP MEMBERS IN CSM
+  // UPDATE GROUP MEMBERS IN CSM
   if dryrun {
-    log::info!("Dryrun enabled, not modifying the HSM groups on the system.")
+    log::info!("Dryrun enabled, not modifying the groups on the system.")
   } else {
     for xname in nodes_moved_from_parent_hsm {
       let _ = backend
