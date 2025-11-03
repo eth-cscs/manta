@@ -561,14 +561,14 @@ pub fn print_table_f32_score(
       {
         let counter = node_pattern_hashmap.get(hw_component).unwrap();
         row.push(
-          comfy_table::Cell::new(format!("✅ ({})", counter,))
+          comfy_table::Cell::new(format!("🟢 ({})", counter,))
             .fg(Color::Green)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
       } else if node_pattern_hashmap.contains_key(hw_component) {
         let counter = node_pattern_hashmap.get(hw_component).unwrap();
         row.push(
-          comfy_table::Cell::new(format!("⚠️  ({})", counter)) // NOTE: emojis
+          comfy_table::Cell::new(format!("🟡 ({})", counter)) // NOTE: emojis
             // can also be printed using unicode like \u{26A0}
             .fg(Color::Yellow)
             .set_alignment(comfy_table::CellAlignment::Center),
@@ -576,7 +576,7 @@ pub fn print_table_f32_score(
       } else {
         // node does not contain hardware but it was requested by the user
         row.push(
-          comfy_table::Cell::new("❌".to_string())
+          comfy_table::Cell::new("🔴".to_string())
             .set_alignment(comfy_table::CellAlignment::Center),
         );
       }

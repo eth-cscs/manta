@@ -41,7 +41,7 @@ pub async fn exec(
   println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
   println!("Current site: {}", site_name);
   println!(
-    "HSM available: {}",
+    "Groups available: {}",
     hsm_group_available_opt
       .unwrap_or(vec!["Could not get list of groups available".to_string()])
       .join(", ")

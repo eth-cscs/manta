@@ -145,7 +145,7 @@ pub async fn exec(
     calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
 
   log::info!(
-    "HSM group '{}' hw component summary: {:?}",
+    "Parent HSM group '{}' hw component summary: {:?}",
     parent_hsm_group_name,
     parent_hsm_hw_component_summary
   );
