@@ -158,6 +158,9 @@ pub async fn exec(
 
   for (hw_component, counter) in &user_defined_delta_hw_component_count_hashmap
   {
+    dbg!(&parent_hsm_hw_component_summary);
+    dbg!(&hw_component);
+    dbg!(&counter);
     let new_counter: usize =
       parent_hsm_hw_component_summary.get(hw_component).unwrap()
         - *counter as usize;
