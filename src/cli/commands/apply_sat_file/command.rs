@@ -109,6 +109,28 @@ pub async fn exec(
     true
   };
 
+  // Confirm reboot if session_templates are to be applied
+  if !assume_yes
+    && sat_template_file_yaml.get("session_templates").is_some()
+    && !do_not_reboot
+  {
+    let agree_to_reboot = if !assume_yes {
+      dialoguer::Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(
+          "This operation will reboot nodes. Please confirm to proceed.",
+        )
+        .interact()
+        .unwrap()
+    } else {
+      true
+    };
+
+    if !agree_to_reboot {
+      println!("Operation canceled by user. Exit");
+      std::process::exit(0);
+    }
+  }
+
   // Run/process Pre-hook
   if prehook.is_some() {
     println!("Running the pre-hook '{}'", &prehook.unwrap());
