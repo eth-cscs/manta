@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.1] - 2025-11-21
+
+### Bug Fixes
+
+- Add domain 'https://api.cmn.alps.cscs.ch' as valid when accessing CFS configration layers urls
+- Add domain 'https://api.cmn.alps.cscs.ch' as valid when accessing CFS configration layers urls
+
 ## [1.58.0] - 2025-11-13
 
 ### Features
@@ -13,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Improve comments and messages by replacing 'HSM' with 'group'
+- Release manta-cli version 1.58.0
 
 ## [1.57.3] - 2025-11-02
 
