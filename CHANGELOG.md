@@ -2,12 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.2] - 2025-11-25
+
+### Bug Fixes
+
+- Update Cargo.toml
+- Update Cargo.toml
+
 ## [1.58.1] - 2025-11-21
 
 ### Bug Fixes
 
 - Add domain 'https://api.cmn.alps.cscs.ch' as valid when accessing CFS configration layers urls
 - Add domain 'https://api.cmn.alps.cscs.ch' as valid when accessing CFS configration layers urls
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.58.1
 
 ## [1.58.0] - 2025-11-13
 
