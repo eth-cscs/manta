@@ -71,6 +71,8 @@ pub async fn exec(
   let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
 
   for boot_parameter in &mut current_node_boot_params_vec {
+    let image_id_opt = boot_parameter.try_get_boot_image_id();
+
     log::info!(
       "Apply '{}' kernel parameters to '{}'",
       kernel_params,
@@ -88,40 +90,40 @@ pub async fn exec(
 
     // Set image metadata to sbps
     // Check 'root' kernel parameters for sbps
-    let image_id = boot_parameter.get_boot_image_id();
+    if let Some(image_id) = image_id_opt {
+      if !image_map.contains_key(&image_id) {
+        let mut image: Image = backend
+          .get_images(shasta_token, Some(&image_id))
+          .await?
+          .first()
+          .unwrap()
+          .clone();
 
-    if !image_map.contains_key(&image_id) {
-      let mut image: Image = backend
-        .get_images(shasta_token, Some(image_id.as_str()))
-        .await?
-        .first()
-        .unwrap()
-        .clone();
-
-      if boot_parameter.is_root_kernel_param_iscsi_ready() {
-        let proceed = if assume_yes {
-          true
-        } else {
-          dialoguer::Confirm::with_theme(
+        if boot_parameter.is_root_kernel_param_iscsi_ready() {
+          let proceed = if assume_yes {
+            true
+          } else {
+            dialoguer::Confirm::with_theme(
         &ColorfulTheme::default())
         .with_prompt("Kernel parameters using SBPS/iSCSI. Do you want to project the boot image through SBPS?")
         .interact()
         .unwrap()
-        };
+          };
 
-        if proceed {
-          log::info!(
-            "Setting 'sbps-project' metadata to 'true' for image id '{}'",
-            image_id
-          );
+          if proceed {
+            log::info!(
+              "Setting 'sbps-project' metadata to 'true' for image id '{}'",
+              image_id
+            );
 
-          image.set_boot_image_iscsi_ready();
+            image.set_boot_image_iscsi_ready();
 
-          log::debug!("Image:\n{:#?}", image);
+            log::debug!("Image:\n{:#?}", image);
 
-          image_map.insert(image_id, image.clone());
-        } else {
-          log::info!("User chose to not project the image through SBPS");
+            image_map.insert(image_id.to_string(), image.clone());
+          } else {
+            log::info!("User chose to not project the image through SBPS");
+          }
         }
       }
     }

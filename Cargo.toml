@@ -31,9 +31,9 @@ publish = true
 
 # PROD
 
-manta-backend-dispatcher = "0.15.0"
-ochami-rs = "0.8.0"
-csm-rs = "0.91.2"
+manta-backend-dispatcher = "0.15.1"
+ochami-rs = "0.8.1"
+csm-rs = "0.91.3"
 
 # DEV - Only for development purposes
 
