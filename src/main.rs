@@ -92,7 +92,9 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   if let Some(socks_proxy) = &site_detail_value.socks5_proxy {
     let socks_proxy = socks_proxy.to_string();
     if !socks_proxy.is_empty() {
-      std::env::set_var("SOCKS5", socks_proxy.clone());
+      unsafe {
+        std::env::set_var("SOCKS5", socks_proxy.clone());
+      }
       log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
       log::debug!("config - socks_proxy:  {socks_proxy}");
     } else {

@@ -8,9 +8,9 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
+    HWInventoryByLocationList,
     bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    HWInventoryByLocationList,
   },
 };
 use std::{
@@ -74,8 +74,8 @@ pub async fn process_cli(
     Ok(site_name) => site_name,
     Err(_) => {
       eprintln!(
-                "'site' value in configuration file is missing or does not have a value. Exit"
-            );
+        "'site' value in configuration file is missing or does not have a value. Exit"
+      );
       std::process::exit(1);
     }
   };
@@ -454,7 +454,9 @@ pub async fn process_cli(
 
         if let Err(error) = add_node_rslt {
           // Could not add xname to group. Reset operation by removing the node
-          eprintln!("ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}\nRollback operation");
+          eprintln!(
+            "ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}\nRollback operation"
+          );
           let delete_node_rslt = backend
             .delete_node(shasta_token.as_str(), id.clone().as_str())
             .await;
@@ -1045,14 +1047,6 @@ pub async fn process_cli(
         let hsm_group_name_arg_opt: Option<&String> =
           cli_get_session.get_one("hsm-group");
 
-        let hsm_group_available_vec = get_filter_groups_available(
-          &backend,
-          &shasta_token,
-          hsm_group_name_arg_opt,
-          settings_hsm_group_name_opt,
-        )
-        .await?;
-
         let limit: Option<&u8> =
           if let Some(true) = cli_get_session.get_one("most-recent") {
             Some(&1)
@@ -1060,24 +1054,125 @@ pub async fn process_cli(
             cli_get_session.get_one::<u8>("limit")
           };
 
-        let mut xname_vec: Vec<&str> = cli_get_session
+        let xname_vec_arg: Vec<&str> = cli_get_session
           .get_one::<String>("xnames")
           .map(|xname_str| {
             xname_str.split(',').map(|xname| xname.trim()).collect()
           })
           .unwrap_or_default();
 
-        let member_available_vec = &mut hsm_group_available_vec
+        /* let mut hsm_group_available_vec = get_filter_groups_available(
+          &backend,
+          &shasta_token,
+          hsm_group_name_arg_opt,
+          settings_hsm_group_name_opt,
+        )
+        .await?;
+
+        let (hsm_group_vec, xname_vec) = if let Some(hsm_group_name_arg) =
+          hsm_group_name_arg_opt
+        {
+          // Filter HSM groups based on argument
+          hsm_group_available_vec
+            .retain(|group| &group.label == hsm_group_name_arg);
+
+          if hsm_group_available_vec.is_empty() {
+            eprintln!("ERROR - None of the requested HSM groups are available");
+            std::process::exit(1);
+          };
+
+          let member_available_vec = hsm_group_available_vec
+            .iter()
+            .flat_map(|g| g.get_members())
+            .collect::<Vec<String>>();
+
+          (
+            hsm_group_available_vec
+              .into_iter()
+              .map(|group| group.label)
+              .collect::<Vec<String>>(),
+            member_available_vec,
+          )
+        } else if !xname_vec_arg.is_empty() {
+          // Filter members available in the target HSM groups
+          hsm_group_available_vec.retain(|group| {
+            group
+              .get_members()
+              .iter()
+              .any(|member| xname_vec_arg.contains(&member.as_str()))
+          });
+
+          if hsm_group_available_vec.is_empty() {
+            eprintln!(
+              "ERROR - None of the requested xnames are available in the target HSM groups"
+            );
+            std::process::exit(1);
+          }
+
+          let member_available_vec = hsm_group_available_vec
+            .iter()
+            .flat_map(|g| g.get_members())
+            .collect::<Vec<String>>();
+
+          (
+            hsm_group_available_vec
+              .into_iter()
+              .map(|group| group.label)
+              .collect(),
+            member_available_vec,
+          )
+        } else {
+          // all HSM groups available
+          // all members available
+          let member_available_vec = hsm_group_available_vec
+            .iter()
+            .flat_map(|g| g.get_members())
+            .collect::<Vec<String>>();
+
+          (
+            hsm_group_available_vec
+              .into_iter()
+              .map(|group| group.label)
+              .collect(),
+            member_available_vec,
+          )
+        }; */
+
+        /* // Filter members available in the target HSM groups
+        let member_available_vec = &mut hsm_group_vec
           .iter()
           .flat_map(|g| g.get_members())
           .collect::<Vec<String>>();
 
-        xname_vec.append(
+        let (hsm_group_vec, xname_vec) = if !xname_vec_arg.is_empty() {
+          member_available_vec
+            .retain(|member| xname_vec_arg.contains(&member.as_str()));
+
+          if member_available_vec.is_empty() {
+            eprintln!(
+              "ERROR - None of the requested xnames are available in the target HSM groups"
+            );
+            std::process::exit(1);
+          }
+
+          hsm_group_available_vec.retain(|group| {
+            group
+              .get_members()
+              .iter()
+              .any(|member| xname_vec_arg.contains(&member.as_str()))
+          });
+
+          (hsm_group_available_vec, member_available_vec)
+        } else {
+          (hsm_group_available_vec, member_available_vec)
+        }; */
+
+        /* xname_vec.append(
           &mut member_available_vec
             .iter()
             .map(|member| member.as_str())
             .collect::<Vec<&str>>(),
-        );
+        ); */
 
         let min_age_opt: Option<&String> =
           cli_get_session.get_one::<String>("min-age");
@@ -1106,13 +1201,10 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          Some(
-            hsm_group_available_vec
-              .iter()
-              .map(|g| g.label.clone())
-              .collect::<Vec<_>>(),
-          ),
-          Some(xname_vec),
+          // Some(hsm_group_vec),
+          // Some(xname_vec.iter().map(|xname| xname.as_str()).collect()),
+          hsm_group_name_arg_opt.map(|v| vec![v.clone()]),
+          Some(xname_vec_arg),
           min_age_opt,
           max_age_opt,
           type_opt.as_ref(),

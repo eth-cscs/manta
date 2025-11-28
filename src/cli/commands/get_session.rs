@@ -17,10 +17,7 @@ pub async fn exec(
   limit_number_opt: Option<&u8>,
   output_opt: Option<&String>,
 ) {
-  log::info!(
-    "Get CFS sessions for HSM groups: {:?}",
-    hsm_group_name_available_vec_opt
-  );
+  log::info!("Get CFS sessions",);
 
   let cfs_session_vec = backend
     .get_and_filter_sessions(

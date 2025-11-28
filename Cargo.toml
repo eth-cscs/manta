@@ -4,7 +4,7 @@
 # build = "build.rs"
 
 [package]
-edition = "2021"
+edition = "2024"
 authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
 name = "manta-cli"
 description = "Another CLI for ALPS"
@@ -33,7 +33,7 @@ publish = true
 
 manta-backend-dispatcher = "0.15.1"
 ochami-rs = "0.8.1"
-csm-rs = "0.91.3"
+csm-rs = "0.92.0"
 
 # DEV - Only for development purposes
 
