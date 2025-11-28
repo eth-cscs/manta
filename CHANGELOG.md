@@ -2,12 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.3] - 2025-11-28
+
+### Bug Fixes
+
+- Get sessions fails because it can neither filter by hsm group nor xname properly
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Update Cargo.lock
+
 ## [1.58.2] - 2025-11-25
 
 ### Bug Fixes
 
 - Update Cargo.toml
 - Update Cargo.toml
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.58.2
 
 ## [1.58.1] - 2025-11-21
 
