@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.4] - 2025-11-28
+
+### Miscellaneous Tasks
+
+- Update Cargo.lock
+
+### Shore
+
+- Update Cargo.toml
+
 ## [1.58.3] - 2025-11-28
 
 ### Bug Fixes
@@ -12,6 +22,7 @@ All notable changes to this project will be documented in this file.
 
 - Update Cargo.toml
 - Update Cargo.lock
+- Release manta-cli version 1.58.3
 
 ## [1.58.2] - 2025-11-25
 
