@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.8] - 2025-12-01
+
+### Miscellaneous Tasks
+
+- Update csm-rs crate to fix bugs related to From trail for CSF Component struct
+- Update Cargo.lock
+
 ## [1.58.7] - 2025-12-01
 
 ### Miscellaneous Tasks
 
 - Update help text related to apply sat-file
+- Release manta-cli version 1.58.7
 
 ## [1.58.6] - 2025-12-01
 
