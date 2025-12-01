@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.7] - 2025-12-01
+
+### Miscellaneous Tasks
+
+- Update help text related to apply sat-file
+
 ## [1.58.6] - 2025-12-01
 
 ### Bug Fixes
 
 - Command 'get templates' crashes if a templage has 'None' in field(s) .cfs.configuration
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.58.6
 
 ## [1.58.5] - 2025-12-01
 
