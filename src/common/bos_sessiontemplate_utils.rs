@@ -12,7 +12,6 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
     "Runtime Configuration",
     "Cfs Enabled",
     "Target",
-    "Compute Etag",
   ]);
 
   for bos_template in bos_sessiontemplate_vec {
@@ -49,7 +48,6 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
         bos_template.cfs.clone().unwrap().configuration.unwrap(),
         enable_cfs.clone(),
         common::node_ops::string_vec_to_multi_line_string(Some(&target), 2),
-        boot_set.1.etag.unwrap_or("".to_string()),
       ]);
     }
   }
