@@ -45,7 +45,11 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
           .trim_start_matches("s3://boot-images/")
           .trim_end_matches("/manifest.json")
           .to_string(),
-        bos_template.cfs.clone().unwrap().configuration.unwrap(),
+        bos_template
+          .cfs
+          .as_ref()
+          .and_then(|cfs| cfs.configuration.clone())
+          .unwrap_or("NA".to_string()),
         enable_cfs.clone(),
         common::node_ops::string_vec_to_multi_line_string(Some(&target), 2),
       ]);

@@ -30,16 +30,18 @@ pub async fn exec(
     )
     .await;
 
-  let bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
+  let mut bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
     Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
     Err(e) => {
       eprintln!(
-                "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
-                e
-            );
+        "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+        e
+      );
       std::process::exit(1);
     }
   };
+
+  bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 
   if bos_sessiontemplate_vec.is_empty() {
     println!("No BOS template found!");
