@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
+use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;
 
@@ -520,12 +520,12 @@ pub fn subcommand_apply_sat_file(/* hsm_group: Option<&String> */) -> Command {
   Command::new("sat-file")
     // .visible_alias("sat")
     .arg_required_else_help(true)
-    .about("Process a SAT file and creates the configurations, images, boot parameters and runtime configurations. If runtime configuration and boot parameters are defined, then, reboots the nodes to configure.\nThe ansible container for the session building the image will remain running after an Ansible failure.  The container will remain running for a number of seconds specified by the 'debug_wait_time options'")
+    .about("Process a SAT file containing configurations, images, and session_templates. The SAT file file must contain up to three types of elements: `configurations`, `images`, and `session_templates`. The `configurations` section defines CFS configurations to be created. The `images` section specifies CFS images to be built from the configurations. The `session_templates` section outlines BOS session templates to be created. Depending on the flags provided, the command can process all sections or focus on specific ones, allowing for flexible management of CFS configurations, images, and BOS session templates.\nNOTE: By default, if a `session_template` is processed, a BOS session will be created which may lead to node reboots. To prevent automatic reboots, use the `--do-not-reboot` flag.")
     // .about("Create a CFS configuration, a CFS image, a BOS sessiontemplate and a BOS session")
     .arg(arg!(-t --"sat-template-file" <VALUE> "SAT file with CFS configuration, CFS image and BOS session template details to create a cluster. The SAT file can be a jinja2 template, if this is the case, then a values file must be provided.").value_parser(value_parser!(PathBuf)).required(true).value_hint(ValueHint::FilePath))
     .arg(arg!(-f --"values-file" <VALUE> "If the SAT file is a jinja2 template, then variables values can be expanded using this values file.").value_parser(value_parser!(PathBuf)).value_hint(ValueHint::FilePath))
     .arg(arg!(-V --"values" <VALUE> ... "If the SAT file is a jinja2 template, then variables values can be expanded using these values. Overwrites values-file if both provided."))
-    .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot. This means, you will have to run 'manta apply template' command with the sessoin_template created'").action(ArgAction::SetTrue))
+    .arg(arg!(--"do-not-reboot" "Prevent nodes from rebooting even if a session_template is defined. Normally, applying a session_template triggers a node reboot so the new image and configuration can be applied. This flag suppresses that behavior, allowing the session to be processed without initiating any node restarts.").action(ArgAction::SetTrue))
     .arg(arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity. The verbose mode to use in the call to the ansible-playbook command.\n1 = -v, 2 = -vv, etc. Valid values range from 0 to 4. See the ansible-playbook help for more information.")
       .value_parser(["1", "2", "3", "4"])
       .num_args(1)
