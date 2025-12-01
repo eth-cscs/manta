@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.6] - 2025-12-01
+
+### Bug Fixes
+
+- Command 'get templates' crashes if a templage has 'None' in field(s) .cfs.configuration
+
 ## [1.58.5] - 2025-12-01
 
 ### Features
 
 - Table showing results from command 'get templates' are not showing etag information anymore
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.58.5
 
 ## [1.58.4] - 2025-11-28
 
