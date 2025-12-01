@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.58.5] - 2025-12-01
+
+### Features
+
+- Table showing results from command 'get templates' are not showing etag information anymore
+
 ## [1.58.4] - 2025-11-28
 
 ### Miscellaneous Tasks
 
 - Update Cargo.lock
+- Release manta-cli version 1.58.4
 
 ### Shore
 
