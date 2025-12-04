@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.0] - 2025-12-04
+
+### Bug Fixes
+
+- Operation apply sat file canceled if user is does not accept the rendered file file
+
 ## [1.58.10] - 2025-12-04
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
 - Update Cargo.lock
+- Release manta-cli version 1.58.10
 
 ## [1.58.9] - 2025-12-04
 
