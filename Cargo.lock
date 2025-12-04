@@ -929,9 +929,9 @@ dependencies = [
 
 [[package]]
 name = "csm-rs"
-version = "0.94.2"
+version = "0.94.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22aba44a31d27d06cba002a3b65b3308b9b0446bd9cca478e04ba87a79887c3f"
+checksum = "20ac2d516c68a4b1667f472f16baf6504bd9b9fdf19a0c3beb82c16b75fef4b8"
 dependencies = [
  "anyhow",
  "aws-config",
