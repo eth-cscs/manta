@@ -1762,7 +1762,7 @@ pub async fn process_cli(
         let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
         let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
 
-        let do_not_reboot: bool = cli_apply_sat_file.get_flag("do-not-reboot");
+        let reboot: bool = cli_apply_sat_file.get_flag("reboot");
 
         let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
         let timestamps: bool = cli_apply_sat_file.get_flag("timestamps");
@@ -1798,7 +1798,7 @@ pub async fn process_cli(
           ansible_passthrough.as_deref(),
           gitea_base_url,
           &gitea_token,
-          do_not_reboot,
+          reboot,
           watch_logs,
           timestamps,
           prehook.map(String::as_str),

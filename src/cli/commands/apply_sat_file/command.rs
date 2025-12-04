@@ -28,7 +28,7 @@ pub async fn exec(
   ansible_passthrough_opt: Option<&str>,
   gitea_base_url: &str,
   gitea_token: &str,
-  do_not_reboot: bool,
+  reboot: bool,
   watch_logs: bool,
   timestamps: bool,
   prehook: Option<&str>,
@@ -109,10 +109,15 @@ pub async fn exec(
     true
   };
 
+  if !process_sat_file {
+    println!("Operation canceled by user. Exit");
+    std::process::exit(0);
+  }
+
   // Confirm reboot if session_templates are to be applied
   if !assume_yes
     && sat_template_file_yaml.get("session_templates").is_some()
-    && !do_not_reboot
+    && reboot
   {
     let agree_to_reboot = if !assume_yes {
       dialoguer::Confirm::with_theme(&ColorfulTheme::default())
@@ -181,7 +186,7 @@ pub async fn exec(
       ansible_passthrough_opt,
       gitea_base_url,
       gitea_token,
-      do_not_reboot,
+      reboot,
       watch_logs,
       timestamps,
       debug_on_failure,
