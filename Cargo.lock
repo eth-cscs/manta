@@ -930,8 +930,6 @@ dependencies = [
 [[package]]
 name = "csm-rs"
 version = "0.94.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbcb85e19039067e84a67ca5e6fb37d7a411f4d37be54e5d113fe55f667977cf"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -2337,8 +2335,6 @@ checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 [[package]]
 name = "manta-backend-dispatcher"
 version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c6e18296a659b46f8e08b64a2cbe1a9cb86c4bb8e720e3bd5d00ccc84c133c6"
 dependencies = [
  "chrono",
  "futures-io",
@@ -2567,8 +2563,6 @@ checksum = "b8f8bdf33df195859076e54ab11ee78a1b208382d3a26ec40d142ffc1ecc49ef"
 [[package]]
 name = "ochami-rs"
 version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e809774247bd0e2d28ecdeb673663bc487998ce2d6458893bcde8e95304d2198"
 dependencies = [
  "futures-io",
  "hostlist-parser",
