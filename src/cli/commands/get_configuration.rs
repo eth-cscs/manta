@@ -1,7 +1,10 @@
 use manta_backend_dispatcher::{
+  error,
   interfaces::cfs::CfsTrait,
-  types::cfs::cfs_configuration_details::{ConfigurationDetails, LayerDetails},
-  types::cfs::cfs_configuration_response::CfsConfigurationResponse,
+  types::cfs::{
+    cfs_configuration_details::{ConfigurationDetails, LayerDetails},
+    cfs_configuration_response::CfsConfigurationResponse,
+  },
 };
 
 use crate::{
@@ -17,8 +20,8 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  configuration_name: Option<&str>,
-  configuration_name_pattern: Option<&str>,
+  configuration_name_opt: Option<&str>,
+  configuration_name_pattern_opt: Option<&str>,
   hsm_group_name_vec: &[&str],
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
@@ -31,22 +34,51 @@ pub async fn exec(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      configuration_name,
-      configuration_name_pattern,
+      configuration_name_opt,
+      configuration_name_pattern_opt,
       hsm_group_name_vec,
       since_opt,
       until_opt,
       limit,
     )
     .await
-    // .unwrap_or_else(|e| {
-    //   eprintln!("ERROR - Could not fetch configurations. Reason:\n{:#?}", e);
-    //   std::process::exit(1);
-    // });
-    .unwrap_or_else(|e| {
+    /* .unwrap_or_else(|e| {
+      eprintln!("ERROR - Could not fetch configurations. Reason:\n{:#?}", e);
+      std::process::exit(1);
+    }); */
+    /* .unwrap_or_else(|e| {
       // dbg!(&e);
       println!("{e}");
       std::process::exit(1);
+    }); */
+    .unwrap_or_else(|backend_error| {
+      // dbg!(&backend_error);
+      match backend_error {
+        error::Error::ConfigurationNotFound => {
+          if let Some(configuration_name) = configuration_name_opt {
+            println!(
+              "Configuration '{}' could not be found.",
+              configuration_name
+            );
+            std::process::exit(0);
+          } else if let Some(configuration_name_pattern) =
+            configuration_name_pattern_opt
+          {
+            println!(
+              "Configuration '{}' could not be found.",
+              configuration_name_pattern
+            );
+            std::process::exit(0);
+          } else {
+            println!("No configarion found.");
+            std::process::exit(0);
+          }
+        }
+        _ => {
+          log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
+          std::process::exit(1);
+        }
+      }
     });
 
   if cfs_configuration_vec.is_empty() {

@@ -13,7 +13,7 @@ pub async fn exec(
   max_age_opt: Option<&String>,
   type_opt: Option<&String>,
   status_opt: Option<&String>,
-  cfs_session_name_opt: Option<&String>,
+  session_name_opt: Option<&String>,
   limit_number_opt: Option<&u8>,
   output_opt: Option<&String>,
 ) {
@@ -30,7 +30,7 @@ pub async fn exec(
       max_age_opt,
       type_opt,
       status_opt,
-      cfs_session_name_opt,
+      session_name_opt,
       limit_number_opt,
       None,
     )
@@ -40,27 +40,29 @@ pub async fn exec(
       log::error!("Failed to get CFS sessions. Reason:\n{e}");
       std::process::exit(1);
     }); */
-    .unwrap_or_else(|e| {
+    /* .unwrap_or_else(|e| {
       // dbg!(&e);
       println!("{e}");
       std::process::exit(1);
+    }); */
+    .unwrap_or_else(|backend_error| {
+      // dbg!(&backend_error);
+      match backend_error {
+        error::Error::SessionNotFound => {
+          if let Some(session_name) = session_name_opt {
+            println!("Session '{}' could not be found.", session_name);
+            std::process::exit(0);
+          } else {
+            println!("No CFS sessions found.");
+            std::process::exit(0);
+          }
+        }
+        _ => {
+          log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
+          std::process::exit(1);
+        }
+      }
     });
-  /* .unwrap_or_else(|backend_error| {
-    // dbg!(&backend_error);
-    match backend_error {
-      error::Error::SessionNotFound => {
-        println!(
-          "Session '{}' could not be found.",
-          cfs_session_name_opt.unwrap()
-        );
-        std::process::exit(1);
-      }
-      _ => {
-        log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
-        std::process::exit(1);
-      }
-    }
-  }); */
 
   /* let cfs_session_vec = match cfs_session_vec_rslt {
     Ok(sessions) => sessions,
