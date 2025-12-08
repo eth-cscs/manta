@@ -39,8 +39,13 @@ pub async fn exec(
       limit,
     )
     .await
+    // .unwrap_or_else(|e| {
+    //   eprintln!("ERROR - Could not fetch configurations. Reason:\n{:#?}", e);
+    //   std::process::exit(1);
+    // });
     .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not fetch configurations. Reason:\n{:#?}", e);
+      // dbg!(&e);
+      println!("{e}");
       std::process::exit(1);
     });
 

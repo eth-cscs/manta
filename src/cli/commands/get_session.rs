@@ -1,4 +1,4 @@
-use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
+use manta_backend_dispatcher::{error, interfaces::cfs::CfsTrait};
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
@@ -35,10 +35,40 @@ pub async fn exec(
       None,
     )
     .await
-    .unwrap_or_else(|e| {
+    /* .unwrap_or_else(|e| {
+      dbg!(&e);
       log::error!("Failed to get CFS sessions. Reason:\n{e}");
       std::process::exit(1);
+    }); */
+    .unwrap_or_else(|e| {
+      // dbg!(&e);
+      println!("{e}");
+      std::process::exit(1);
     });
+  /* .unwrap_or_else(|backend_error| {
+    // dbg!(&backend_error);
+    match backend_error {
+      error::Error::SessionNotFound => {
+        println!(
+          "Session '{}' could not be found.",
+          cfs_session_name_opt.unwrap()
+        );
+        std::process::exit(1);
+      }
+      _ => {
+        log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
+        std::process::exit(1);
+      }
+    }
+  }); */
+
+  /* let cfs_session_vec = match cfs_session_vec_rslt {
+    Ok(sessions) => sessions,
+    Err(e) => {
+      log::error!("Failed to get CFS sessions. Reason:\n{e}");
+      std::process::exit(1);
+    }
+  }; */
 
   if output_opt.is_some() && output_opt.unwrap().eq("json") {
     println!(
