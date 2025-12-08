@@ -2,12 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.2] - 2025-12-08
+
+### Features
+
+- Improve error management
+
 ## [1.59.1] - 2025-12-07
 
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
 - Update .gitignore and Cargo.lock
+- Release manta-cli version 1.59.1
 
 ## [1.59.0] - 2025-12-04
 
