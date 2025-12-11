@@ -304,8 +304,8 @@ pub fn subcommand_get_cfs_session() -> Command {
         .value_parser(value_parser!(u8).range(1..)),
     )
     .arg(arg!(-o --output <FORMAT> "Output format. If missing, it will print output data in human redeable (table) format").value_parser(["json"]))
-    .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'"))
-    .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
+    .arg(arg!(-x --xnames <XNAMES> "Comma separated list of xnames. Return all CFS sessions related to the xname provided and sessions related to the HSM groups the xname belongs to"))
+    .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name. Return all CFS sessions related to the provided HSM group and all sessions related to xnames within the group"))
     .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
         "hsm-group",
         "xnames",
