@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.6] - 2025-12-11
+
+### Miscellaneous Tasks
+
+- Update cli help
+
 ## [1.59.5] - 2025-12-10
 
 ### Miscellaneous Tasks
 
 - Update cargo dist configuration and pipeline
+- Release manta-cli version 1.59.5
 
 ## [1.59.4] - 2025-12-09
 
