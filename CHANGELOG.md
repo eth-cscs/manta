@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.7] - 2026-01-06
+
+### Features
+
+- Refactor code related to configuration and data related deletion
+
 ## [1.59.6] - 2025-12-11
 
 ### Miscellaneous Tasks
 
 - Update cli help
+- Release manta-cli version 1.59.6
 
 ## [1.59.5] - 2025-12-10
 
