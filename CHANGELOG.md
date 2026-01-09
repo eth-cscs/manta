@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.8] - 2026-01-09
+
+### Bug Fixes
+
+- Exit log streaming if git-clone init container is terminated with exit code different than 0
+- Exit log streaming if git-clone init container is terminated with exit code different than 0
+
 ## [1.59.7] - 2026-01-06
 
 ### Features
 
 - Refactor code related to configuration and data related deletion
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.7
 
 ## [1.59.6] - 2025-12-11
 
