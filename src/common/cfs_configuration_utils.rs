@@ -75,21 +75,21 @@ pub fn print_table_details_struct(
 
   for layer in cfs_configuration.config_layers {
     layers = format!(
-            "{}\n\nName:     {}\nBranch:   {}\nTag:      {}\nDate:     {}\nAuthor:   {}\nCommit:   {}\nPlaybook: {}",
-            layers,
-            layer.name,
-            layer.branch,
-            /* if let true = layer.most_recent_commit {
-                "(Up to date)"
-            } else {
-                "(Outdated)"
-            }, */
-            layer.tag,
-            layer.commit_date,
-            layer.author,
-            layer.commit_id,
-            layer.playbook
-        );
+      "{}\n\nName:     {}\nBranch:   {}\nTag:      {}\nDate:     {}\nAuthor:   {}\nCommit:   {}\nPlaybook: {}",
+      layers,
+      layer.name,
+      layer.branch,
+      /* if let true = layer.most_recent_commit {
+          "(Up to date)"
+      } else {
+          "(Outdated)"
+      }, */
+      layer.tag,
+      layer.commit_date,
+      layer.author,
+      layer.commit_id,
+      layer.playbook
+    );
   }
 
   let mut derivatives: String = String::new();
@@ -97,7 +97,7 @@ pub fn print_table_details_struct(
   if let Some(cfs_session_vec) = cfs_session_vec_opt {
     derivatives = derivatives + "CFS sessions:";
     for cfs_session in cfs_session_vec {
-      derivatives = derivatives + "\n - " + &cfs_session.name.unwrap();
+      derivatives = derivatives + "\n - " + &cfs_session.name;
     }
   }
 

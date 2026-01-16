@@ -13,7 +13,7 @@ pub async fn exec(
 
   log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
-  let user_public_ssh_id_value = if let Some(user_public_ssh_value) =
+  let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
     ims::public_keys::http_client::v3::get_single(
       shasta_token,
       shasta_base_url,
@@ -24,7 +24,10 @@ pub async fn exec(
   {
     user_public_ssh_value["id"].clone()
   } else {
-    eprintln!("User '{}' does not have an SSH public key in Alps, Please contact platform sys admins. Exit", user_public_key_name);
+    eprintln!(
+      "User '{}' does not have an SSH public key in Alps, Please contact platform sys admins. Exit",
+      user_public_key_name
+    );
     std::process::exit(1);
   };
 

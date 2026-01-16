@@ -59,7 +59,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
 
   // Find image in CFS sessions
   for cfs_session in cfs_session_image_succeeded_vec {
-    let cfs_session_name = cfs_session.name.as_ref().unwrap();
+    let cfs_session_name = cfs_session.name.clone();
 
     for image_id in cfs_session.get_result_id_vec() {
       log::info!(

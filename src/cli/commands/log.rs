@@ -1,7 +1,7 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
-  types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
+  types::{Group, K8sDetails, cfs::session::CfsSessionGetResponse},
 };
 
 use crate::{
@@ -152,7 +152,7 @@ pub async fn exec(
     backend,
     shasta_token,
     site_name,
-    cfs_session.name.as_ref().unwrap(),
+    cfs_session.name.as_ref(),
     timestamps,
     k8s,
   )
