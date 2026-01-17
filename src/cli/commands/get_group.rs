@@ -1,4 +1,4 @@
-use comfy_table::{Column, ContentArrangement, Table};
+use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::group::GroupTrait, types::Group,
 };

@@ -14,7 +14,6 @@ use manta_backend_dispatcher::{
   },
 };
 use std::{
-  cmp::max,
   env,
   fs::File,
   io::{self, BufReader, IsTerminal},
@@ -29,7 +28,7 @@ use crate::{
   common::{
     authentication::get_api_token,
     authorization::{
-      get_filter_groups_available, get_groups_names_available,
+      get_groups_names_available,
       validate_target_hsm_members,
     },
     config::types::MantaConfiguration,
@@ -580,8 +579,8 @@ pub async fn process_cli(
           .get_one::<Value>("cloud-init")
           .cloned();
 
-        let dry_run = cli_add_boot_parameters.get_flag("dry-run");
-        let assume_yes: bool = cli_add_boot_parameters.get_flag("assume-yes");
+        let _dry_run = cli_add_boot_parameters.get_flag("dry-run");
+        let _assume_yes: bool = cli_add_boot_parameters.get_flag("assume-yes");
 
         let host_vec = hosts
           .split(",")
