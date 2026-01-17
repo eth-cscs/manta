@@ -152,7 +152,7 @@ pub async fn exec(
     backend,
     shasta_token,
     site_name,
-    cfs_session.name.as_ref(),
+    cfs_session.name.as_ref().unwrap(),
     timestamps,
     k8s,
   )

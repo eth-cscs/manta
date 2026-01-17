@@ -65,7 +65,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       log::info!(
         "Checking if result_id {} in CFS session {} exists",
         image_id,
-        cfs_session_name
+        cfs_session_name.as_ref().unwrap()
       );
 
       // Get IMS image related to the CFS session
@@ -76,7 +76,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
         log::info!(
           "Found the image ID '{}' related to CFS sesison '{}'",
           image_id,
-          cfs_session_name,
+          cfs_session_name.as_ref().unwrap(),
         );
 
         boot_image_id_vec.append(&mut image_vec);

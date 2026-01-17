@@ -84,7 +84,7 @@ pub async fn exec(
 
   for cfs_session in &cfs_session_to_delete_vec {
     cfs_session_table.add_row(vec![
-      cfs_session.name.clone(),
+      cfs_session.name.clone().unwrap_or_default(),
       cfs_session.get_configuration_name().unwrap_or_default(),
       cfs_session.get_first_result_id().unwrap_or_default(),
     ]);

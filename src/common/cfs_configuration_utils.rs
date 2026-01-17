@@ -97,7 +97,7 @@ pub fn print_table_details_struct(
   if let Some(cfs_session_vec) = cfs_session_vec_opt {
     derivatives = derivatives + "CFS sessions:";
     for cfs_session in cfs_session_vec {
-      derivatives = derivatives + "\n - " + &cfs_session.name;
+      derivatives = derivatives + "\n - " + &cfs_session.name.unwrap();
     }
   }
 
