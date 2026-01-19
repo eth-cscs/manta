@@ -1,4 +1,5 @@
 use chrono::DateTime;
+use serde_json::Value;
 use substring::Substring;
 
 use crate::common::local_git_repo;
@@ -77,7 +78,7 @@ pub async fn exec(
   // Get remote refs
   let remote_ref_vec: Vec<&str> = remote_ref_value_vec
     .iter()
-    .map(|ref_value| ref_value["ref"].as_str().unwrap())
+    .map(|ref_value| ref_value.get("ref").and_then(Value::as_str).unwrap())
     .collect();
 
   // Validate HEAD local branch

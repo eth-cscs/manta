@@ -2,6 +2,7 @@ use comfy_table::{Cell, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
 };
+use serde_json::Value;
 use std::string::ToString;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -31,9 +32,9 @@ pub async fn exec(
     Some(node_value) => node_value,
     None => {
       eprintln!(
-                "ERROR - json section '/Node' missing in json response API for node '{}'",
-                xname
-            );
+        "ERROR - json section '/Node' missing in json response API for node '{}'",
+        xname
+      );
       std::process::exit(1);
     }
   };
@@ -43,7 +44,7 @@ pub async fn exec(
       .as_array()
       .unwrap()
       .iter()
-      .find(|&node| node["ID"].as_str().unwrap().eq(xname))
+      .find(|&node| node.get("ID").and_then(Value::as_str).unwrap().eq(xname))
       .unwrap()[type_artifact];
   }
 

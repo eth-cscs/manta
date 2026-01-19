@@ -32,7 +32,7 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
 pub fn get_name(token: &str) -> Result<String, Error> {
   let jwt_claims = get_claims_from_jwt_token(token).unwrap();
 
-  let jwt_name = jwt_claims["name"].as_str();
+  let jwt_name = jwt_claims.get("name").and_then(Value::as_str);
 
   match jwt_name {
     Some(name) => Ok(name.to_string()),
@@ -43,7 +43,8 @@ pub fn get_name(token: &str) -> Result<String, Error> {
 pub fn get_preferred_username(token: &str) -> Result<String, Error> {
   let jwt_claims = get_claims_from_jwt_token(token).unwrap();
 
-  let jwt_preferred_username = jwt_claims["preferred_username"].as_str();
+  let jwt_preferred_username =
+    jwt_claims.get("preferred_username").and_then(Value::as_str);
 
   match jwt_preferred_username {
     Some(name) => Ok(name.to_string()),

@@ -32,7 +32,7 @@ pub fn print_table(
     // Get list of key value pairs from kernel params per node
     let kernel_params_vec: Vec<String> = kernel_params
       .split_whitespace()
-      .map(|value| value.to_string())
+      .map(str::to_string)
       .collect();
 
     // Filter kernel params

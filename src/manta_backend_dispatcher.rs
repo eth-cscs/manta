@@ -33,8 +33,7 @@ use manta_backend_dispatcher::{
     pcs::PCSTrait,
   },
   types::{
-    self, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
-    K8sDetails, NodeMetadataArray,
+    self,
     bos::{session::BosSession, session_template::BosSessionTemplate},
     bss::BootParameters,
     cfs::{
@@ -46,13 +45,15 @@ use manta_backend_dispatcher::{
     },
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
     ims::{Image, PatchImage},
+    Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+    K8sDetails, NodeMetadataArray,
   },
 };
 
-use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
 use tokio::io::{AsyncRead, AsyncWrite};
+use StaticBackendDispatcher::*;
 
 use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
@@ -1150,7 +1151,7 @@ impl CfsTrait for StaticBackendDispatcher {
     auth_token: &str,
     base_url: &str,
     root_cert: &[u8],
-    xnames: Vec<String>,
+    xnames: &[String],
     desired_configuration: &str,
     enabled: bool,
   ) -> Result<(), Error> {

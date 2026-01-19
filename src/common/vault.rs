@@ -34,7 +34,10 @@ pub mod http_client {
       Ok(resp) => {
         let resp_value = resp.json::<Value>().await?;
         return Ok(String::from(
-          resp_value["auth"]["client_token"].as_str().unwrap(),
+          resp_value["auth"]
+            .get("client_token")
+            .and_then(Value::as_str)
+            .unwrap(),
         ));
       }
       Err(e) => {
@@ -120,7 +123,10 @@ pub mod http_client {
     .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
 
     Ok(String::from(
-      vault_secret["data"]["token"].as_str().unwrap(),
+      vault_secret["data"]
+        .get("token")
+        .and_then(Value::as_str)
+        .unwrap(),
     )) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
   }
 

@@ -3,17 +3,27 @@ use serde_json::Value;
 
 pub fn print_summary_table(transition: Value, output: &str) {
   if output == "table" {
-    let tasks: Vec<Value> = transition["tasks"].as_array().unwrap().to_vec();
+    let tasks: Vec<Value> = transition
+      .get("tasks")
+      .and_then(Value::as_array)
+      .unwrap()
+      .to_vec();
 
     let mut table = Table::new();
 
     println!(
       "\nTransition ID: {}",
-      transition["transitionID"].as_str().unwrap()
+      transition
+        .get("transitionID")
+        .and_then(Value::as_str)
+        .unwrap()
     );
     println!(
       "Transition Status: {}",
-      transition["transitionStatus"].as_str().unwrap()
+      transition
+        .get("transitionStatus")
+        .and_then(Value::as_str)
+        .unwrap()
     );
 
     table
@@ -22,9 +32,12 @@ pub fn print_summary_table(transition: Value, output: &str) {
 
     for task in tasks {
       table.add_row(vec![
-        task["xname"].as_str().unwrap(),
-        task["taskStatus"].as_str().unwrap(),
-        task["taskStatusDescription"].as_str().unwrap(),
+        task.get("xname").and_then(Value::as_str).unwrap(),
+        task.get("taskStatus").and_then(Value::as_str).unwrap(),
+        task
+          .get("taskStatusDescription")
+          .and_then(Value::as_str)
+          .unwrap(),
       ]);
     }
 

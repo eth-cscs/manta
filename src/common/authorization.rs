@@ -29,14 +29,14 @@ pub async fn get_groups_names_available(
 
   // Validate the user has access to the HSM group is requested
   if let Some(target_hsm_group) = target_hsm_group_opt {
-    if !hsm_name_available_vec.contains(target_hsm_group) {
+    if !hsm_name_available_vec.contains(&target_hsm_group) {
       let mut hsm_name_available_vec = hsm_name_available_vec;
       hsm_name_available_vec.sort();
       println!(
-                "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
-                target_hsm_group,
-                hsm_name_available_vec.join(", ")
-            );
+        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
+        target_hsm_group,
+        hsm_name_available_vec.join(", ")
+      );
 
       std::process::exit(1);
     }
@@ -81,10 +81,13 @@ pub async fn get_filter_groups_available(
       let mut group_available_vec = group_available_vec;
       group_available_vec.sort_by(|a, b| a.label.cmp(&b.label));
       return Err(Error::Message(format!(
-                  "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
-                  target_group_name,
-                  group_available_vec.iter().map(|g| g.label.clone()).collect::<Vec<_>>().join(", ")
-
+        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
+        target_group_name,
+        group_available_vec
+          .iter()
+          .map(|g| g.label.clone())
+          .collect::<Vec<_>>()
+          .join(", ")
       )));
     }
   } else {
@@ -124,7 +127,11 @@ pub async fn validate_target_hsm_members(
   {
     hsm_group_members_opt.to_vec()
   } else {
-    println!("Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit", hsm_group_members_opt.join(", "), hsm_groups_user_has_access.join(", "));
+    println!(
+      "Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit",
+      hsm_group_members_opt.join(", "),
+      hsm_groups_user_has_access.join(", ")
+    );
     std::process::exit(1);
   }
 }

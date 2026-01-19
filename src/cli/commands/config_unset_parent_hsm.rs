@@ -38,18 +38,6 @@ pub async fn exec(backend: &StaticBackendDispatcher, shasta_token: &str) {
     .get_group_name_available(shasta_token)
     .await
     .unwrap_or(Vec::new());
-  /* let mut settings_hsm_available_vec =
-  jwt_ops::get_hsm_name_available(shasta_token).unwrap_or(Vec::new()); */
-
-  /* let mut settings_hsm_available_vec = jwt_ops::get_claims_from_jwt_token(shasta_token)
-  .unwrap()
-  .pointer("/realm_access/roles")
-  .unwrap_or(&serde_json::json!([]))
-  .as_array()
-  .unwrap()
-  .iter()
-  .map(|role_value| role_value.as_str().unwrap().to_string())
-  .collect::<Vec<String>>(); */
 
   settings_hsm_available_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
@@ -64,9 +52,6 @@ pub async fn exec(backend: &StaticBackendDispatcher, shasta_token: &str) {
     .truncate(true)
     .open(path_to_manta_configuration_file)
     .unwrap();
-
-  /* let mut output = File::create(path_to_manta_configuration_file).unwrap();
-  write!(output, "{}", doc.to_string()); */
 
   manta_configuration_file
     .write_all(doc.to_string().as_bytes())

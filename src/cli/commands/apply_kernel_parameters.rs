@@ -58,13 +58,7 @@ pub async fn exec(
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
-      .get_bootparameters(
-        shasta_token,
-        &xname_vec
-          .iter()
-          .map(|xname| xname.to_string())
-          .collect::<Vec<String>>(),
-      )
+      .get_bootparameters(shasta_token, &xname_vec)
       .await
       .unwrap();
 
@@ -218,7 +212,6 @@ pub async fn exec(
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
     }
-    // log::info!(target: "app::audit", "User: {} ({}) ; Operation: Add kernel parameters to {:?}", jwt_ops::get_name(shasta_token).unwrap_or("".to_string()), jwt_ops::get_preferred_username(shasta_token).unwrap_or("".to_string()), xname_vec);
   }
 
   // Reboot if needed

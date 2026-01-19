@@ -1,7 +1,7 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
-  types::{Group, K8sDetails, cfs::session::CfsSessionGetResponse},
+  types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
 };
 
 use crate::{
@@ -74,31 +74,14 @@ pub async fn exec(
         .map(|g| g.label.as_str())
         .collect::<Vec<&str>>();
 
-      /* backend
-      .get_sessions_by_xname(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        &[xname],
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-      )
-      .await */
-
       backend
         .get_and_filter_sessions(
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
           group_name_vec
-            .iter()
-            .map(|s| s.to_string())
+            .into_iter()
+            .map(str::to_string)
             .collect::<Vec<_>>(),
           vec![xname],
           None,

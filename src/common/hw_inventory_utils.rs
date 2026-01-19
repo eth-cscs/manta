@@ -3,8 +3,15 @@ use serde_json::Value;
 pub fn get_list_memory_capacity_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<u64>> {
-  hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Memory"]
-    .as_array()
+  hw_inventory
+    /* .get("Nodes")
+    .and_then(Value::as_array)
+    .unwrap()
+    .first()
+    .unwrap()
+    .get("Memory") */
+    .pointer("/Nodes/0/Memory")
+    .and_then(Value::as_array)
     .map(|memory_list| {
       memory_list
         .iter()
@@ -22,8 +29,15 @@ pub fn get_list_memory_capacity_from_hw_inventory_value(
 pub fn get_list_processor_model_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<String>> {
-  hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["Processors"]
-    .as_array()
+  hw_inventory
+    /* .get("Nodes")
+    .and_then(Value::as_array)
+    .unwrap()
+    .first()
+    .unwrap()
+    .get("Processors") */
+    .pointer("/Nodes/0/Processors")
+    .and_then(Value::as_array)
     .map(|processor_list: &Vec<Value>| {
       processor_list
         .iter()
@@ -42,8 +56,15 @@ pub fn get_list_processor_model_from_hw_inventory_value(
 pub fn get_list_accelerator_model_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<String>> {
-  hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["NodeAccels"]
-    .as_array()
+  hw_inventory
+    /* .get("Nodes")
+    .and_then(Value::as_array)
+    .unwrap()
+    .first()
+    .unwrap()
+    .get("NodeAccels") */
+    .pointer("/Nodes/0/NodeAccels")
+    .and_then(Value::as_array)
     .map(|accelerator_list| {
       accelerator_list
         .iter()
@@ -59,11 +80,18 @@ pub fn get_list_accelerator_model_from_hw_inventory_value(
     })
 }
 
-pub fn get_list_hsn_nics_model_from_hw_inventory_value(
+/* pub fn get_list_hsn_nics_model_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<String>> {
-  hw_inventory["Nodes"].as_array().unwrap().first().unwrap()["NodeHsnNics"]
-    .as_array()
+  hw_inventory
+    /* .get("Nodes")
+    .and_then(Value::as_array)
+    .unwrap()
+    .first()
+    .unwrap()
+    .get("NodeHsnNics") */
+    .pointer("/Nodes/0/NodeHsnNics")
+    .and_then(Value::as_array)
     .map(|hsn_nic_list| {
       hsn_nic_list
         .iter()
@@ -77,4 +105,4 @@ pub fn get_list_hsn_nics_model_from_hw_inventory_value(
         })
         .collect::<Vec<String>>()
     })
-}
+} */

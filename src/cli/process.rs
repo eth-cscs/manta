@@ -8,9 +8,9 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
-    HWInventoryByLocationList,
     bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
+    HWInventoryByLocationList,
   },
 };
 use std::{
@@ -27,10 +27,7 @@ use crate::{
   cli::commands::{add_node, validate_local_repo},
   common::{
     authentication::get_api_token,
-    authorization::{
-      get_groups_names_available,
-      validate_target_hsm_members,
-    },
+    authorization::{get_groups_names_available, validate_target_hsm_members},
     config::types::MantaConfiguration,
     kafka::Kafka,
   },
@@ -491,8 +488,7 @@ pub async fn process_cli(
           .get_one::<String>("label")
           .expect("ERROR - 'label' argument is mandatory");
 
-        let description = cli_add_group.get_one::<String>("description");
-
+        let description: Option<&String> = cli_add_group.get_one("description");
         let node_expression: Option<&String> =
           cli_add_group.get_one::<String>("nodes");
 
@@ -512,9 +508,8 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let target_hsm_group_name_arg_opt =
-          cli_add_hw_configuration.get_one::<String>("target-cluster");
-
+        let target_hsm_group_name_arg_opt: Option<&String> =
+          cli_add_hw_configuration.get_one("target-cluster");
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -523,9 +518,8 @@ pub async fn process_cli(
         )
         .await?;
 
-        let parent_hsm_group_name_arg_opt =
-          cli_add_hw_configuration.get_one::<String>("parent-cluster");
-
+        let parent_hsm_group_name_arg_opt: Option<&String> =
+          cli_add_hw_configuration.get_one("parent-cluster");
         let parent_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -533,8 +527,8 @@ pub async fn process_cli(
           settings_hsm_group_name_opt,
         )
         .await?;
-        let _ = cli_add_hw_configuration.get_one::<String>("target-cluster");
-
+        let _: Option<String> =
+          cli_add_hw_configuration.get_one("target-cluster").cloned();
         let dryrun = cli_add_hw_configuration.get_flag("dry-run");
 
         let create_hsm_group = *cli_add_hw_configuration
@@ -561,8 +555,10 @@ pub async fn process_cli(
         let hosts = cli_add_boot_parameters
           .get_one::<String>("hosts")
           .expect("ERROR - 'hosts' argument is mandatory");
-        let macs = cli_add_boot_parameters.get_one::<String>("macs");
-        let nids = cli_add_boot_parameters.get_one::<String>("nids");
+        let macs: Option<String> =
+          cli_add_boot_parameters.get_one("macs").cloned();
+        let nids: Option<String> =
+          cli_add_boot_parameters.get_one("nids").cloned();
         let params = cli_add_boot_parameters
           .get_one::<String>("params")
           .expect("ERROR - 'params' argument is mandatory")
@@ -695,50 +691,48 @@ pub async fn process_cli(
           .expect("ERROR - 'id' argument is mandatory")
           .to_string();
 
-        let name = cli_add_redfish_endpoint
-          .get_one::<String>("name")
-          .map(|x| x.to_string());
+        let name: Option<String> =
+          cli_add_redfish_endpoint.get_one("name").cloned();
 
-        let hostname = cli_add_redfish_endpoint
+        let hostname: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("hostname")
-          .map(|x| x.to_string());
+          .cloned();
 
-        let domain = cli_add_redfish_endpoint
+        let domain: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("domain")
-          .map(|x| x.to_string());
+          .cloned();
 
-        let fqdn = cli_add_redfish_endpoint
-          .get_one::<String>("fqdn")
-          .map(|x| x.to_string());
+        let fqdn: Option<String> =
+          cli_add_redfish_endpoint.get_one::<String>("fqdn").cloned();
 
-        let enabled = cli_add_redfish_endpoint.get_flag("enabled");
+        let enabled: bool = cli_add_redfish_endpoint.get_flag("enabled");
 
-        let user = cli_add_redfish_endpoint
-          .get_one::<String>("user")
-          .map(|x| x.to_string());
+        let user: Option<String> =
+          cli_add_redfish_endpoint.get_one::<String>("user").cloned();
 
-        let password = cli_add_redfish_endpoint
+        let password: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("password")
-          .map(|x| x.to_string());
+          .cloned();
 
-        let use_ssdp = cli_add_redfish_endpoint.get_flag("use-ssdp");
+        let use_ssdp: bool = cli_add_redfish_endpoint.get_flag("use-ssdp");
 
-        let mac_required = cli_add_redfish_endpoint.get_flag("mac-required");
+        let mac_required: bool =
+          cli_add_redfish_endpoint.get_flag("mac-required");
 
-        let mac_addr = cli_add_redfish_endpoint
+        let mac_addr: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("macaddr")
-          .map(|x| x.to_string());
+          .cloned();
 
-        let ip_address = cli_add_redfish_endpoint
+        let ip_address: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("ipaddress")
-          .map(|x| x.to_string());
+          .cloned();
 
-        let rediscover_on_update =
+        let rediscover_on_update: bool =
           cli_add_redfish_endpoint.get_flag("rediscover-on-update");
 
-        let template_id = cli_add_redfish_endpoint
+        let template_id: Option<String> = cli_add_redfish_endpoint
           .get_one::<String>("template-id")
-          .map(|x| x.to_string());
+          .cloned();
 
         let redfish_endpoint = RedfishEndpoint {
           id: id.clone(),
@@ -823,55 +817,47 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let id = cli_update_redfish_endpoint
-          .get_one::<String>("id")
-          .expect("ERROR - 'id' argument is mandatory")
-          .to_string();
+        let id: String = cli_update_redfish_endpoint
+          .get_one("id")
+          .cloned()
+          .expect("ERROR - 'id' argument is mandatory");
 
-        let name = cli_update_redfish_endpoint
-          .get_one::<String>("name")
-          .map(|x| x.to_string());
+        let name: Option<String> =
+          cli_update_redfish_endpoint.get_one("name").cloned();
 
-        let hostname = cli_update_redfish_endpoint
-          .get_one::<String>("hostname")
-          .map(|x| x.to_string());
+        let hostname: Option<String> =
+          cli_update_redfish_endpoint.get_one("hostname").cloned();
 
-        let domain = cli_update_redfish_endpoint
-          .get_one::<String>("domain")
-          .map(|x| x.to_string());
+        let domain: Option<String> =
+          cli_update_redfish_endpoint.get_one("domain").cloned();
 
-        let fqdn = cli_update_redfish_endpoint
-          .get_one::<String>("fqdn")
-          .map(|x| x.to_string());
+        let fqdn: Option<String> =
+          cli_update_redfish_endpoint.get_one("fqdn").cloned();
 
-        let enabled = cli_update_redfish_endpoint.get_flag("enabled");
+        let enabled: bool = cli_update_redfish_endpoint.get_flag("enabled");
 
-        let user = cli_update_redfish_endpoint
-          .get_one::<String>("user")
-          .map(|x| x.to_string());
+        let user: Option<String> =
+          cli_update_redfish_endpoint.get_one("user").cloned();
 
-        let password = cli_update_redfish_endpoint
-          .get_one::<String>("password")
-          .map(|x| x.to_string());
+        let password: Option<String> =
+          cli_update_redfish_endpoint.get_one("password").cloned();
 
-        let use_ssdp = cli_update_redfish_endpoint.get_flag("use-ssdp");
+        let use_ssdp: bool = cli_update_redfish_endpoint.get_flag("use-ssdp");
 
-        let mac_required = cli_update_redfish_endpoint.get_flag("mac-required");
+        let mac_required: bool =
+          cli_update_redfish_endpoint.get_flag("mac-required");
 
-        let mac_addr = cli_update_redfish_endpoint
-          .get_one::<String>("macaddr")
-          .map(|x| x.to_string());
+        let mac_addr: Option<String> =
+          cli_update_redfish_endpoint.get_one("macaddr").cloned();
 
-        let ip_address = cli_update_redfish_endpoint
-          .get_one::<String>("ipaddress")
-          .map(|x| x.to_string());
+        let ip_address: Option<String> =
+          cli_update_redfish_endpoint.get_one("ipaddress").cloned();
 
-        let rediscover_on_update =
+        let rediscover_on_update: bool =
           cli_update_redfish_endpoint.get_flag("rediscover-on-update");
 
-        let template_id = cli_update_redfish_endpoint
-          .get_one::<String>("template-id")
-          .map(|x| x.to_string());
+        let template_id: Option<String> =
+          cli_update_redfish_endpoint.get_one("template-id").cloned();
 
         let redfish_endpoint = RedfishEndpoint {
           id,
@@ -901,7 +887,8 @@ pub async fn process_cli(
       if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let group_name_arg_opt = cli_get_groups.get_one::<String>("VALUE");
+        let group_name_arg_opt: Option<&String> =
+          cli_get_groups.get_one("VALUE");
 
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
@@ -911,8 +898,9 @@ pub async fn process_cli(
         )
         .await?;
 
-        let output = cli_get_groups
-          .get_one::<String>("output")
+        let output: &str = cli_get_groups
+          .get_one("output")
+          .cloned()
           .expect("ERROR - 'output' argument is mandatory");
 
         let hsm_group_vec: Vec<&str> = target_hsm_group_vec
@@ -935,9 +923,8 @@ pub async fn process_cli(
         {
           let shasta_token = get_api_token(&backend, &site_name).await?;
 
-          let hsm_group_name_arg_opt =
-            cli_get_hardware_cluster.get_one::<String>("CLUSTER_NAME");
-
+          let hsm_group_name_arg_opt: Option<&String> =
+            cli_get_hardware_cluster.get_one("CLUSTER_NAME");
           let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
@@ -963,7 +950,7 @@ pub async fn process_cli(
             .expect("HSM group name is needed at this point");
 
           let xname_vec: Vec<String> =
-            xnames.split(',').map(|xname| xname.to_string()).collect();
+            xnames.split(',').map(str::to_string).collect();
 
           validate_target_hsm_members(&backend, &shasta_token, &xname_vec)
             .await;
@@ -1276,9 +1263,8 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_group_name_arg_opt =
-          cli_get_cluster.get_one::<String>("HSM_GROUP_NAME");
-
+        let hsm_group_name_arg_opt: Option<&String> =
+          cli_get_cluster.get_one("HSM_GROUP_NAME");
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -1321,7 +1307,7 @@ pub async fn process_cli(
         let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
         let nids_only = cli_get_nodes.get_flag("nids-only-one-line");
         let status: Option<&String> = cli_get_nodes.get_one("status");
-        let output = cli_get_nodes.get_one::<String>("output");
+        let output: Option<&String> = cli_get_nodes.get_one("output");
         let status_summary = cli_get_nodes.get_flag("summary-status");
 
         get_nodes::exec(
@@ -1374,9 +1360,8 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_group_name_arg_opt =
-          cli_get_boot_parameters.get_one::<String>("hsm-group");
-
+        let hsm_group_name_arg_opt: Option<&String> =
+          cli_get_boot_parameters.get_one("hsm-group");
         let nodes: &String = if hsm_group_name_arg_opt.is_some() {
           let hsm_group_name_vec = get_groups_names_available(
             &backend,
@@ -1431,9 +1416,8 @@ pub async fn process_cli(
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        let hsm_group_name_arg_opt =
-          cli_get_kernel_parameters.get_one::<String>("hsm-group");
-
+        let hsm_group_name_arg_opt: Option<&String> =
+          cli_get_kernel_parameters.get_one("hsm-group");
         let filter_opt: Option<&String> =
           cli_get_kernel_parameters.get_one("filter");
 
@@ -1534,9 +1518,8 @@ pub async fn process_cli(
         {
           let shasta_token = get_api_token(&backend, &site_name).await?;
 
-          let target_hsm_group_name_arg_opt =
-            cli_apply_hw_cluster.get_one::<String>("target-cluster");
-
+          let target_hsm_group_name_arg_opt: Option<&String> =
+            cli_apply_hw_cluster.get_one("target-cluster");
           let target_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
@@ -1545,9 +1528,8 @@ pub async fn process_cli(
           )
           .await?;
 
-          let parent_hsm_group_name_arg_opt =
-            cli_apply_hw_cluster.get_one::<String>("parent-cluster");
-
+          let parent_hsm_group_name_arg_opt: Option<&String> =
+            cli_apply_hw_cluster.get_one("parent-cluster");
           let parent_hsm_group_vec = get_groups_names_available(
             &backend,
             &shasta_token,
@@ -1618,16 +1600,16 @@ pub async fn process_cli(
           .collect();
 
         let hsm_group_name_arg_opt: Option<&String> =
-          cli_apply_session.try_get_one("hsm-group").unwrap_or(None);
+          cli_apply_session.get_one("hsm-group");
 
         let cfs_conf_sess_name_opt: Option<&String> =
           cli_apply_session.get_one("name");
         let playbook_file_name_opt: Option<&String> =
           cli_apply_session.get_one("playbook-name");
 
-        let hsm_group_members_opt =
-          cli_apply_session.get_one::<String>("ansible-limit");
-
+        let hsm_group_members_opt: Option<&str> = cli_apply_session
+          .get_one("ansible-limit")
+          .map(String::as_str);
         let ansible_verbosity: Option<&String> =
           cli_apply_session.get_one("ansible-verbosity");
 
@@ -1677,7 +1659,7 @@ pub async fn process_cli(
           playbook_file_name_opt.map(String::as_str),
           hsm_group_name_arg_opt.map(String::as_str),
           &repo_path_vec,
-          hsm_group_members_opt.map(String::as_str),
+          hsm_group_members_opt,
           ansible_verbosity.map(String::as_str),
           ansible_passthrough.map(String::as_str),
           watch_logs,
@@ -1758,9 +1740,8 @@ pub async fn process_cli(
         let overwrite: bool =
           cli_apply_sat_file.get_flag("overwrite-configuration");
 
-        let prehook = cli_apply_sat_file.get_one::<String>("pre-hook");
-        let posthook = cli_apply_sat_file.get_one::<String>("post-hook");
-
+        let prehook: Option<&String> = cli_apply_sat_file.get_one("pre-hook");
+        let posthook: Option<&String> = cli_apply_sat_file.get_one("post-hook");
         let reboot: bool = cli_apply_sat_file.get_flag("reboot");
 
         let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
@@ -2327,9 +2308,8 @@ pub async fn process_cli(
         let delete_hsm_group =
           cli_delete_hw_configuration.get_flag("delete-hsm-group");
 
-        let target_hsm_group_name_arg_opt =
-          cli_delete_hw_configuration.get_one::<String>("target-cluster");
-
+        let target_hsm_group_name_arg_opt: Option<&String> =
+          cli_delete_hw_configuration.get_one("target-cluster");
         let target_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -2341,9 +2321,8 @@ pub async fn process_cli(
         // let parent_hsm_group_name_arg_opt =
         //     cli_remove_hw_configuration.get_one::<String>("PARENT_CLUSTER_NAME");
 
-        let parent_hsm_group_name_arg_opt =
-          cli_delete_hw_configuration.get_one::<String>("parent-cluster");
-
+        let parent_hsm_group_name_arg_opt: Option<&String> =
+          cli_delete_hw_configuration.get_one("parent-cluster");
         let parent_hsm_group_vec = get_groups_names_available(
           &backend,
           &shasta_token,
@@ -2555,9 +2534,8 @@ pub async fn process_cli(
         /* let cfs_configuration_name_opt =
         cli_delete_configurations.get_one::<String>("configuration-name"); */
 
-        let cfs_configuration_name_pattern =
-          cli_delete_configurations.get_one::<String>("configuration-name");
-
+        let cfs_configuration_name_pattern: Option<&String> =
+          cli_delete_configurations.get_one("configuration-name");
         let assume_yes = cli_delete_configurations.get_flag("assume-yes");
 
         // INPUT VALIDATION - Check since date is prior until date
@@ -2591,7 +2569,6 @@ pub async fn process_cli(
             .iter()
             .map(String::as_str)
             .collect::<Vec<&str>>(),
-          // cfs_configuration_name_opt,
           cfs_configuration_name_pattern.map(String::as_str),
           since_opt,
           until_opt,

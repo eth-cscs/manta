@@ -59,13 +59,7 @@ pub async fn exec(
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
-      .get_bootparameters(
-        shasta_token,
-        &xname_vec
-          .iter()
-          .map(|xname| xname.to_string())
-          .collect::<Vec<String>>(),
-      )
+      .get_bootparameters(shasta_token, &xname_vec)
       .await
       .unwrap();
 

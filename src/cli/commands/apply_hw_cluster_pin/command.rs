@@ -55,7 +55,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<usize>().unwrap(),
       );
     } else {
-      log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+      log::error!(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
+      );
       std::process::exit(1);
     }
   }
@@ -82,7 +84,10 @@ pub async fn exec(
     }
     Err(_) => {
       if create_target_hsm_group {
-        log::info!("Target HSM group '{}' does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+        log::info!(
+          "Target HSM group '{}' does not exist, but the option to create the group has been selected, creating it now.",
+          target_hsm_group_name.to_string()
+        );
         if dryrun {
           log::error!(
             "Dryrun selected, cannot create the new group and continue."
@@ -103,7 +108,10 @@ pub async fn exec(
             .expect("Unable to create new target HSM group");
         }
       } else {
-        log::error!("Target HSM group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+        log::error!(
+          "Target HSM group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.",
+          target_hsm_group_name.to_string()
+        );
         std::process::exit(1);
       }
     }
@@ -303,18 +311,30 @@ pub async fn exec(
       .await;
     if parent_group_will_be_empty {
       if delete_empty_parent_hsm_group {
-        log::info!("Parent HSM group '{}' is now empty and the option to delete empty groups has been selected, removing it.",parent_hsm_group_name);
-        match backend.delete_group(shasta_token, parent_hsm_group_name).await {
-                /* match hsm::group::http_client::delete_hsm_group(shasta_token,
-                                                                      shasta_base_url,
-                                                                      shasta_root_cert,
-                                                                      &parent_hsm_group_name.to_string())
-                    .await { */
-                    Ok(_) => log::info!("HSM group removed successfully."),
-                    Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
-                };
+        log::info!(
+          "Parent HSM group '{}' is now empty and the option to delete empty groups has been selected, removing it.",
+          parent_hsm_group_name
+        );
+        match backend
+          .delete_group(shasta_token, parent_hsm_group_name)
+          .await
+        {
+          /* match hsm::group::http_client::delete_hsm_group(shasta_token,
+                                                            shasta_base_url,
+                                                            shasta_root_cert,
+                                                            &parent_hsm_group_name.to_string())
+          .await { */
+          Ok(_) => log::info!("HSM group removed successfully."),
+          Err(e2) => log::debug!(
+            "Error removing the HSM group. This always fails, ignore please. Reported: {}",
+            e2
+          ),
+        };
       } else {
-        log::debug!("Parent HSM group '{}' is now empty and the option to delete empty groups has NOT been selected, will not remove it.",parent_hsm_group_name)
+        log::debug!(
+          "Parent HSM group '{}' is now empty and the option to delete empty groups has NOT been selected, will not remove it.",
+          parent_hsm_group_name
+        )
       }
     }
   }

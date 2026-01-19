@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::{
-  self, Group, cfs::session::CfsSessionGetResponse,
+  self, cfs::session::CfsSessionGetResponse, Group,
 };
 
 pub fn cfs_session_struct_to_vec(
@@ -95,7 +95,7 @@ pub fn cfs_session_struct_to_vec(
       .cloned()
       .unwrap_or_default()
       .split(',')
-      .map(|xname| xname.to_string())
+      .map(str::to_string)
       .collect();
     target_aux.sort();
     target_aux.join("\n")

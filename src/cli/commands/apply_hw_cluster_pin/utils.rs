@@ -153,15 +153,6 @@ pub fn get_best_candidate_in_target_and_parent_hsm_pin(
   } else {
     None
   }
-
-  /* if let Some(target_best_candidate) = target_best_candidate_tuple {
-      target_best_candidate
-  } else if let Some(parent_best_candidate) = parent_best_candidate_tuple {
-      parent_best_candidate
-  } else {
-      eprintln!("ERROR - No best candidate found.");
-      std::process::exit(1);
-  } */
 }
 
 /// Generates a list of tuples with xnames and the hardware summary for each node. This method
@@ -253,31 +244,6 @@ pub fn calculate_target_hsm_pin(
     String,
     HashMap<String, usize>,
   )> = Vec::new();
-
-  /* // Get best candidate in 'target' HSM group
-  let target_best_candidate_tuple =
-      get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
-          &mut target_hsm_node_score_tuple_vec,
-          target_hsm_node_hw_component_count_vec,
-      );
-
-  // Get best candidate in 'parent' HSM group
-  let parent_best_candidate_tuple =
-      get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
-          &mut parent_hsm_node_score_tuple_vec,
-          parent_hsm_node_hw_component_count_vec,
-      );
-
-  // If best candidate exists (in 'target' HSM group), then use it. Otherwise, use the one in 'parent' HSM group
-  let (mut best_candidate, mut best_candidate_counters) =
-      if let Some(target_best_candidate) = target_best_candidate_tuple {
-          target_best_candidate
-      } else if let Some(parent_best_candidate) = parent_best_candidate_tuple {
-          parent_best_candidate
-      } else {
-          eprintln!("ERROR - No best candidate found.");
-          std::process::exit(1);
-      }; */
 
   let (mut best_candidate, mut best_candidate_counters) =
     get_best_candidate_in_target_and_parent_hsm_pin(
@@ -413,31 +379,6 @@ pub fn calculate_target_hsm_pin(
         .or_insert(vec![node.clone()]);
     }
 
-    /* // Get best candidate in 'target' HSM group
-    let target_best_candidate_tuple =
-        get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
-            &mut target_hsm_node_score_tuple_vec,
-            target_hsm_node_hw_component_count_vec,
-        );
-
-    // Get best candidate in 'parent' HSM group
-    let parent_best_candidate_tuple =
-        get_best_candidate_in_hsm_based_on_scarcity_node_score_pin(
-            &mut parent_hsm_node_score_tuple_vec,
-            parent_hsm_node_hw_component_count_vec,
-        );
-
-    // If best candidate exists (in 'target' HSM group), then use it. Otherwise, use the one in 'parent' HSM group
-    (best_candidate, best_candidate_counters) =
-        if let Some(target_best_candidate) = target_best_candidate_tuple {
-            target_best_candidate
-        } else if let Some(parent_best_candidate) = parent_best_candidate_tuple {
-            parent_best_candidate
-        } else {
-            eprintln!("ERROR - No best candidate found.");
-            std::process::exit(1);
-        }; */
-
     (best_candidate, best_candidate_counters) =
       get_best_candidate_in_target_and_parent_hsm_pin(
         &mut target_hsm_node_score_tuple_vec,
@@ -450,8 +391,6 @@ pub fn calculate_target_hsm_pin(
     // Check if we need to keep iterating
     work_to_do = keep_iterating_final_hsm(
       user_defined_hsm_hw_components_count_hashmap,
-      // &best_candidate_counters,
-      // &downscale_deltas,
       &combination_target_parent_hsm_hw_component_summary_hashmap,
     );
 
@@ -527,6 +466,7 @@ pub async fn calculate_hw_component_scarcity_scores(
 
   hw_component_scarcity_score_hashmap
 }
+
 /// Calculates a normalized score for each hw component in HSM group based on component
 /// scarcity.
 pub fn calculate_hsm_node_scores_from_final_hsm(
@@ -627,14 +567,6 @@ pub async fn get_node_hw_component_count(
     )
     .await
     .unwrap();
-  /* hsm::hw_inventory::hw_component::http_client::get_hw_inventory(
-      &shasta_token,
-      &shasta_base_url,
-      &shasta_root_cert,
-      hsm_member,
-  )
-  .await
-  .unwrap(); */
 
   let node_hw_profile = get_node_hw_properties_from_value(
     &node_hw_inventory_value,

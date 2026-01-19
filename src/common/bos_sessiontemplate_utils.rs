@@ -17,7 +17,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
   for bos_template in bos_sessiontemplate_vec {
     let enable_cfs = bos_template
       .enable_cfs
-      .map(|value| value.to_string())
+      .map(|v| v.to_string())
       .unwrap_or("N/A".to_string());
 
     for boot_set in bos_template.boot_sets.unwrap() {

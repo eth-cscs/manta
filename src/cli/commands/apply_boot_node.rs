@@ -49,13 +49,7 @@ pub async fn exec(
   .await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> = backend
-    .get_bootparameters(
-      shasta_token,
-      &xname_vec
-        .iter()
-        .map(|xname| xname.to_string())
-        .collect::<Vec<String>>(),
-    )
+    .get_bootparameters(shasta_token, &xname_vec)
     .await
     .unwrap();
 
@@ -255,7 +249,7 @@ pub async fn exec(
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          xname_vec.iter().map(|xname| xname.to_string()).collect(), // TODO: modify function signature
+          &xname_vec,
           new_runtime_configuration_name,
           true,
         )
@@ -280,10 +274,7 @@ pub async fn exec(
     if !do_not_reboot && need_restart && !dry_run {
       log::info!("Restarting nodes");
 
-      let nodes: Vec<String> = xname_vec
-        .into_iter()
-        .map(|xname| xname.to_string())
-        .collect();
+      let nodes: Vec<String> = xname_vec;
 
       power_reset_nodes::exec(
         &backend,

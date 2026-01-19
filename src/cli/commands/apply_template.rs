@@ -107,8 +107,7 @@ pub async fn exec(
   //
   log::info!("Validate user has access to xnames in BOS sessiontemplate");
 
-  let limit_vec: Vec<String> =
-    limit.split(",").map(|value| value.to_string()).collect();
+  let limit_vec: Vec<String> = limit.split(",").map(str::to_string).collect();
 
   let mut xnames_to_validate_access_vec = Vec::new();
 
@@ -186,7 +185,7 @@ pub async fn exec(
   // Create BOS session request payload
   //
   let bos_session = BosSession {
-    name: bos_session_name_opt.map(|s| s.to_string()),
+    name: bos_session_name_opt.map(str::to_string),
     tenant: None,
     operation: Operation::from_str(bos_session_operation).ok(),
     template_name: bos_sessiontemplate_name.to_string(),
