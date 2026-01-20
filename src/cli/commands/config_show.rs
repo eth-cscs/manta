@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::Error;
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -9,10 +10,8 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   shasta_token_opt: Option<String>,
-  /* _shasta_base_url: &str,
-  _shasta_root_cert: &[u8], */
   settings: &Config,
-) {
+) -> Result<(), Error> {
   // Read configuration file
   let log_level = settings.get_string("log").unwrap_or("error".to_string());
   let settings_hsm_group =
@@ -48,4 +47,6 @@ pub async fn exec(
   );
   println!("Current HSM: {}", settings_hsm_group);
   println!("Parent HSM: {}", settings_parent_hsm_group);
+
+  Ok(())
 }

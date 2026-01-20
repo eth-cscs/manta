@@ -1,4 +1,3 @@
-use clap_complete::{generate, generate_to};
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait,
@@ -8,15 +7,14 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
+    HWInventoryByLocationList,
     bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    HWInventoryByLocationList,
   },
 };
 use std::{
-  env,
   fs::File,
-  io::{self, BufReader, IsTerminal},
+  io::{BufReader, IsTerminal},
   path::PathBuf,
 };
 
@@ -24,7 +22,10 @@ use clap::Command;
 use config::Config;
 
 use crate::{
-  cli::commands::{add_node, validate_local_repo},
+  cli::{
+    commands::{add_node, validate_local_repo},
+    parsers,
+  },
   common::{
     authentication::get_api_token,
     authorization::{get_groups_names_available, validate_target_hsm_members},
@@ -36,25 +37,20 @@ use crate::{
 
 use super::commands::{
   self, add_group, add_hw_component_cluster, add_kernel_parameters,
-  add_nodes_to_hsm_groups, apply_boot_cluster, apply_boot_node,
-  apply_ephemeral_env, apply_hw_cluster_pin, apply_hw_cluster_unpin,
-  apply_kernel_parameters, apply_sat_file, apply_session, apply_template,
-  config_set_hsm, config_set_log, config_set_parent_hsm, config_set_site,
-  config_show, config_unset_auth, config_unset_hsm, config_unset_parent_hsm,
-  console_cfs_session_image_target_ansible, console_node,
-  delete_and_cancel_session, delete_configurations_and_derivatives,
-  delete_group, delete_hw_component_cluster, delete_images,
-  delete_kernel_parameters, get_boot_parameters, get_cluster,
-  get_configuration, get_hardware_node, get_images, get_kernel_parameters,
-  get_nodes, get_session, get_template, migrate_backup,
-  migrate_nodes_between_hsm_groups, power_off_cluster, power_off_nodes,
-  power_on_cluster, power_on_nodes, power_reset_cluster, power_reset_nodes,
-  remove_nodes_from_hsm_groups, update_boot_parameters,
+  add_nodes_to_hsm_groups, console_cfs_session_image_target_ansible,
+  console_node, delete_and_cancel_session,
+  delete_configurations_and_derivatives, delete_group,
+  delete_hw_component_cluster, delete_images, delete_kernel_parameters,
+  get_boot_parameters, get_cluster, get_configuration, get_hardware_node,
+  get_images, get_kernel_parameters, get_nodes, get_session, get_template,
+  migrate_backup, migrate_nodes_between_hsm_groups, power_off_cluster,
+  power_off_nodes, power_on_cluster, power_on_nodes, power_reset_cluster,
+  power_reset_nodes, remove_nodes_from_hsm_groups, update_boot_parameters,
 };
 use serde_json::Value;
 
 pub async fn process_cli(
-  mut cli: Command,
+  cli: Command,
   backend: StaticBackendDispatcher,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
@@ -80,45 +76,67 @@ pub async fn process_cli(
 
   if let Some(cli_config) = cli_root.subcommand_matches("config") {
     if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-      let shasta_token_rslt = get_api_token(&backend, &site_name).await;
+      /* let shasta_token_rslt = get_api_token(&backend, &site_name).await;
 
-      config_show::exec(&backend, shasta_token_rslt.ok(), settings).await;
+      config_show::exec(&backend, shasta_token_rslt.ok(), settings).await; */
+      parsers::config::show::process_subcommand(&backend, &site_name, settings)
+        .await?
     } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
       if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm")
       {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
+        /* let shasta_token = get_api_token(&backend, &site_name).await?;
 
         config_set_hsm::exec(
           &backend,
           &shasta_token,
           cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
         )
-        .await;
+        .await; */
+        parsers::config::set_hsm::process_subcommand(
+          cli_config_set_hsm,
+          &backend,
+          &site_name,
+        )
+        .await?
       }
       if let Some(cli_config_set_parent_hsm) =
         cli_config_set.subcommand_matches("parent-hsm")
       {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
+        /* let shasta_token = get_api_token(&backend, &site_name).await?;
 
         config_set_parent_hsm::exec(
           &backend,
           &shasta_token,
-          cli_config_set_parent_hsm.get_one::<String>("HSM_GROUP_NAME"),
+          cli_config_set_parent_hsm
+            .get_one::<String>("HSM_GROUP_NAME")
+            .unwrap(),
         )
-        .await;
+        .await; */
+        parsers::config::set_parent_hsm::process_subcommand(
+          cli_config_set_parent_hsm,
+          &backend,
+          &site_name,
+        )
+        .await?;
       }
       if let Some(cli_config_set_site) =
         cli_config_set.subcommand_matches("site")
       {
-        config_set_site::exec(
+        /* config_set_site::exec(
           cli_config_set_site.get_one::<String>("SITE_NAME"),
         )
-        .await;
+        .await; */
+        parsers::config::set_site::process_subcommand(cli_config_set_site)
+          .await?;
       }
       if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log")
       {
-        config_set_log::exec(cli_config_set_log.get_one::<String>("LOG_LEVEL"))
-          .await;
+        /* config_set_log::exec(
+          cli_config_set_log.get_one::<String>("LOG_LEVEL").unwrap(),
+        )
+        .await?; */
+        parsers::config::set_log::process_subcommand(cli_config_set_log)
+          .await?;
       }
     } else if let Some(cli_config_unset) =
       cli_config.subcommand_matches("unset")
@@ -126,24 +144,30 @@ pub async fn process_cli(
       if let Some(_cli_config_unset_hsm) =
         cli_config_unset.subcommand_matches("hsm")
       {
-        config_unset_hsm::exec().await;
+        // config_unset_hsm::exec().await;
+        parsers::config::unset_hsm::process_subcommand().await?;
       }
       if let Some(_cli_config_unset_parent_hsm) =
         cli_config_unset.subcommand_matches("parent-hsm")
       {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
+        /* let shasta_token = get_api_token(&backend, &site_name).await?;
 
-        config_unset_parent_hsm::exec(&backend, &shasta_token).await;
+        config_unset_parent_hsm::exec(&backend, &shasta_token).await; */
+        parsers::config::unset_parent_hsm::process_subcommand(
+          &backend, &site_name,
+        )
+        .await?;
       }
       if let Some(_cli_config_unset_auth) =
         cli_config_unset.subcommand_matches("auth")
       {
-        config_unset_auth::exec().await;
+        // config_unset_auth::exec().await;
+        parsers::config::unset_auth::process_subcommand().await?;
       }
     } else if let Some(cli_config_generate_autocomplete) =
       cli_config.subcommand_matches("gen-autocomplete")
     {
-      let shell_opt: Option<String> =
+      /* let shell_opt: Option<String> =
         cli_config_generate_autocomplete.get_one("shell").cloned();
 
       let path_opt: Option<PathBuf> =
@@ -190,7 +214,15 @@ pub async fn process_cli(
           env!("CARGO_PKG_NAME"),
           &mut io::stdout(),
         );
-      }
+      } */
+
+      parsers::config::generate_shell_autocomplete::process_subcommand(
+        cli,
+        cli_config_generate_autocomplete,
+        &backend,
+        &site_name,
+      )
+      .await?;
     }
   } else {
     if let Some(cli_power) = cli_root.subcommand_matches("power") {
@@ -1499,12 +1531,10 @@ pub async fn process_cli(
             &shasta_token,
             id,
             fqdn,
-            // r#type,
             None,
             uuid,
             macaddr,
             ipaddress,
-            // last_status,
             None,
           )
           .await?;
@@ -1512,536 +1542,21 @@ pub async fn process_cli(
         println!("{}", serde_json::to_string_pretty(&redfish_endpoints)?);
       }
     } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-      if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
-        if let Some(cli_apply_hw_cluster) =
-          cli_apply_hw.subcommand_matches("cluster")
-        {
-          let shasta_token = get_api_token(&backend, &site_name).await?;
-
-          let target_hsm_group_name_arg_opt: Option<&String> =
-            cli_apply_hw_cluster.get_one("target-cluster");
-          let target_hsm_group_vec = get_groups_names_available(
-            &backend,
-            &shasta_token,
-            target_hsm_group_name_arg_opt,
-            settings_hsm_group_name_opt,
-          )
-          .await?;
-
-          let parent_hsm_group_name_arg_opt: Option<&String> =
-            cli_apply_hw_cluster.get_one("parent-cluster");
-          let parent_hsm_group_vec = get_groups_names_available(
-            &backend,
-            &shasta_token,
-            parent_hsm_group_name_arg_opt,
-            settings_hsm_group_name_opt,
-          )
-          .await?;
-
-          let dryrun = cli_apply_hw_cluster.get_flag("dry-run");
-
-          let create_target_hsm_group = *cli_apply_hw_cluster
-            .get_one::<bool>("create-target-hsm-group")
-            .unwrap_or(&true);
-
-          let delete_empty_parent_hsm_group = *cli_apply_hw_cluster
-            .get_one::<bool>("delete-empty-parent-hsm-group")
-            .unwrap_or(&true);
-
-          let is_unpin = cli_apply_hw_cluster
-            .get_one::<bool>("unpin-nodes")
-            .unwrap_or(&false);
-
-          if *is_unpin {
-            apply_hw_cluster_unpin::command::exec(
-              &backend,
-              &shasta_token,
-              target_hsm_group_vec.first().unwrap(),
-              parent_hsm_group_vec.first().unwrap(),
-              cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
-              dryrun,
-              create_target_hsm_group,
-              delete_empty_parent_hsm_group,
-            )
-            .await;
-          } else {
-            apply_hw_cluster_pin::command::exec(
-              &backend,
-              &shasta_token,
-              target_hsm_group_vec.first().unwrap(),
-              parent_hsm_group_vec.first().unwrap(),
-              cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
-              dryrun,
-              create_target_hsm_group,
-              delete_empty_parent_hsm_group,
-            )
-            .await;
-          }
-        }
-      } else if let Some(cli_apply_session) =
-        cli_apply.subcommand_matches("session")
-      {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        // FIXME: gitea auth token should be calculated before colling this function
-        let gitea_token =
-          crate::common::vault::http_client::fetch_shasta_vcs_token(
-            &shasta_token,
-            vault_base_url.expect("ERROR - vault base url is mandatory"),
-            &site_name,
-          )
-          .await
-          .unwrap();
-
-        let repo_path_vec: Vec<PathBuf> = cli_apply_session
-          .get_many("repo-path")
-          .unwrap()
-          .cloned()
-          .collect();
-
-        let hsm_group_name_arg_opt: Option<&String> =
-          cli_apply_session.get_one("hsm-group");
-
-        let cfs_conf_sess_name_opt: Option<&String> =
-          cli_apply_session.get_one("name");
-        let playbook_file_name_opt: Option<&String> =
-          cli_apply_session.get_one("playbook-name");
-
-        let hsm_group_members_opt: Option<&str> = cli_apply_session
-          .get_one("ansible-limit")
-          .map(String::as_str);
-        let ansible_verbosity: Option<&String> =
-          cli_apply_session.get_one("ansible-verbosity");
-
-        let ansible_passthrough: Option<&String> =
-          cli_apply_session.get_one("ansible-passthrough");
-
-        let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
-
-        let timestamps: bool = cli_apply_session.get_flag("timestamps");
-
-        let target_hsm_group_vec = get_groups_names_available(
-          &backend,
-          &shasta_token,
-          hsm_group_name_arg_opt,
-          settings_hsm_group_name_opt,
-        )
-        .await?;
-
-        target_hsm_group_vec.first().unwrap();
-
-        if let Some(ansible_limit) = hsm_group_members_opt {
-          validate_target_hsm_members(
-            &backend,
-            &shasta_token,
-            &ansible_limit
-              .split(',')
-              .map(|xname| xname.trim().to_string())
-              .collect::<Vec<String>>(),
-          )
-          .await;
-        }
-
-        let site = configuration
-          .sites
-          .get(&configuration.site.clone())
-          .unwrap();
-
-        let apply_session_rslt = apply_session::exec(
-          backend,
-          &site_name,
-          &gitea_token,
-          gitea_base_url,
-          &shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          cfs_conf_sess_name_opt.map(String::as_str),
-          playbook_file_name_opt.map(String::as_str),
-          hsm_group_name_arg_opt.map(String::as_str),
-          &repo_path_vec,
-          hsm_group_members_opt,
-          ansible_verbosity.map(String::as_str),
-          ansible_passthrough.map(String::as_str),
-          watch_logs,
-          timestamps,
-          kafka_audit_opt,
-          &site
-            .k8s
-            .as_ref()
-            .expect("ERROR - k8s section not found in configuration"), // FIXME:
-                                                                       // refactor this, we can't check configuration here and should be done ealier
-        )
-        .await;
-
-        if let Err(e) = apply_session_rslt {
-          eprintln!("ERROR - Could not apply session. Reason:\n{:#?}", e);
-          std::process::exit(1);
-        }
-      } else if let Some(cli_apply_sat_file) =
-        cli_apply.subcommand_matches("sat-file")
-      {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        let gitea_token =
-          crate::common::vault::http_client::fetch_shasta_vcs_token(
-            &shasta_token,
-            vault_base_url.expect("ERROR - vault base url is mandatory"),
-            &site_name,
-          )
-          .await
-          .unwrap();
-
-        // IMPORTANT: FOR SAT FILE, THERE IS NO POINT TO CONSIDER LOCKED HSM GROUP NAME IN
-        // CONFIG FILE SINCE SAT FILES MAY USE MULTIPLE HSM GROUPS. THEREFORE HSM GROUP
-        // VALIDATION CAN'T BE DONE AGAINST CONFIG FILE OR CLI HSM GROUP ARGUMENT AGAINST
-        // HSM GROUPS AVAILABLE ACCORDING TO KEYCLOAK ROLES BUT HSM GROUPS IN SAT FILE VS
-        // KEYCLOAK ROLES. BECAUASE OF THIS, THERE IS NO VALUE IN CALLING
-        // 'get_target_hsm_group_vec_or_all' FUNCTION
-        let target_hsm_group_vec =
-          backend.get_group_name_available(&shasta_token).await?;
-
-        let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
-
-        let cli_value_vec_opt: Option<Vec<String>> =
-          cli_apply_sat_file.get_many("values").map(|value_vec| {
-            value_vec
-              .map(|value: &String| value.replace("__DATE__", &timestamp))
-              .collect()
-          });
-
-        let cli_values_file_content_opt: Option<String> = cli_apply_sat_file
-          .get_one("values-file")
-          .and_then(|values_file_path: &PathBuf| {
-            std::fs::read_to_string(values_file_path).ok().map(
-              |cli_value_file: String| {
-                cli_value_file.replace("__DATE__", &timestamp)
-              },
-            )
-          });
-
-        let sat_file_content: String = std::fs::read_to_string(
-          cli_apply_sat_file
-            .get_one::<PathBuf>("sat-template-file")
-            .expect("ERROR: SAT file not found. Exit"),
-        )
-        .expect("ERROR: reading SAT file template. Exit");
-
-        let ansible_passthrough_env =
-          settings.get::<String>("ansible-passthrough").ok();
-        let ansible_passthrough_cli_arg = cli_apply_sat_file
-          .get_one::<String>("ansible-passthrough")
-          .cloned();
-        let ansible_passthrough =
-          ansible_passthrough_env.or(ansible_passthrough_cli_arg);
-        let ansible_verbosity: Option<u8> = cli_apply_sat_file
-          .get_one::<String>("ansible-verbosity")
-          .map(|ansible_verbosity| ansible_verbosity.parse::<u8>().unwrap());
-
-        let overwrite: bool =
-          cli_apply_sat_file.get_flag("overwrite-configuration");
-
-        let prehook: Option<&String> = cli_apply_sat_file.get_one("pre-hook");
-        let posthook: Option<&String> = cli_apply_sat_file.get_one("post-hook");
-        let reboot: bool = cli_apply_sat_file.get_flag("reboot");
-
-        let watch_logs: bool = cli_apply_sat_file.get_flag("watch-logs");
-        let timestamps: bool = cli_apply_sat_file.get_flag("timestamps");
-
-        let assume_yes: bool = cli_apply_sat_file.get_flag("assume-yes");
-
-        let dry_run: bool = cli_apply_sat_file.get_flag("dry-run");
-
-        let site = configuration
-          .sites
-          .get(&configuration.site.clone())
-          .unwrap();
-
-        apply_sat_file::command::exec(
-          &backend,
-          &site_name,
-          &shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          vault_base_url.expect("ERROR - vault_base_url is mandatory"),
-          k8s_api_url.expect("ERROR - k8s_api_url is mandatory"),
-          sat_file_content.as_str(),
-          cli_values_file_content_opt.as_deref(),
-          cli_value_vec_opt
-            .as_ref()
-            .map(|vec| vec.iter().map(String::as_str).collect::<Vec<&str>>())
-            .as_deref(),
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
-          ansible_verbosity,
-          ansible_passthrough.as_deref(),
-          gitea_base_url,
-          &gitea_token,
-          reboot,
-          watch_logs,
-          timestamps,
-          prehook.map(String::as_str),
-          posthook.map(String::as_str),
-          cli_apply_sat_file.get_flag("image-only"),
-          cli_apply_sat_file.get_flag("sessiontemplate-only"),
-          true,
-          overwrite,
-          dry_run,
-          assume_yes,
-          &site
-            .k8s
-            .as_ref()
-            .expect("ERROR - k8s section not found in configuration"), // FIXME:
-        )
-        .await;
-      } else if let Some(cli_apply_template) =
-        cli_apply.subcommand_matches("template")
-      {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        let bos_session_name_opt: Option<&String> =
-          cli_apply_template.get_one("name");
-        let bos_sessiontemplate_name: &String = cli_apply_template
-          .get_one("template")
-          .expect("ERROR - template name is mandatory");
-        let limit: &String = cli_apply_template
-          .get_one("limit")
-          .expect("ERROR - limit is mandatory");
-        let bos_session_operation: &String = cli_apply_template
-          .get_one("operation")
-          .expect("ERROR - operation is mandatory");
-
-        let include_disabled: bool = *cli_apply_template
-          .get_one("include-disabled")
-          .expect("ERROR - include disabled must have a value");
-
-        let assume_yes: bool = cli_apply_template.get_flag("assume-yes");
-        let dry_run: bool = cli_apply_template.get_flag("dry-run");
-
-        apply_template::exec(
-          &backend,
-          &shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos_session_name_opt.map(String::as_str),
-          &bos_sessiontemplate_name,
-          &bos_session_operation,
-          limit,
-          include_disabled,
-          assume_yes,
-          dry_run,
-        )
-        .await;
-      } else if let Some(cli_apply_ephemeral_environment) =
-        cli_apply.subcommand_matches("ephemeral-environment")
-      {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        if !std::io::stdout().is_terminal() {
-          eprintln!("This command needs to run in interactive mode. Exit");
-          std::process::exit(1);
-        }
-
-        apply_ephemeral_env::exec(
-          &shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          // cli_apply_ephemeral_environment
-          //     .get_one::<bool>("block")
-          //     .copied(),
-          cli_apply_ephemeral_environment
-            .get_one::<String>("image-id")
-            .unwrap(),
-        )
-        .await;
-      } else if let Some(cli_apply_kernel_parameters) =
-        cli_apply.subcommand_matches("kernel-parameters")
-      {
-        let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        let hsm_group_name_arg_opt =
-          cli_apply_kernel_parameters.get_one("hsm-group");
-
-        let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-          let hsm_group_name_vec = get_groups_names_available(
-            &backend,
-            &shasta_token,
-            hsm_group_name_arg_opt,
-            settings_hsm_group_name_opt,
-          )
-          .await?;
-
-          let hsm_members_rslt = backend
-            .get_member_vec_from_group_name_vec(
-              &shasta_token,
-              &hsm_group_name_vec
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<&str>>(),
-            )
-            .await;
-
-          match hsm_members_rslt {
-            Ok(hsm_members) => &hsm_members.join(","),
-            Err(e) => {
-              eprintln!(
-                "ERROR - could not fetch HSM groups members. Reason:\n{}",
-                e.to_string()
-              );
-              std::process::exit(1);
-            }
-          }
-        } else {
-          cli_apply_kernel_parameters
-            .get_one::<String>("nodes")
-            .expect("Neither HSM group nor nodes defined")
-        };
-
-        let dryrun = cli_apply_kernel_parameters.get_flag("dry-run");
-
-        let kernel_parameters = cli_apply_kernel_parameters
-          .get_one::<String>("VALUE")
-          .unwrap(); // clap should validate the argument
-
-        let assume_yes: bool =
-          cli_apply_kernel_parameters.get_flag("assume-yes");
-        let do_not_reboot: bool =
-          cli_apply_kernel_parameters.get_flag("do-not-reboot");
-
-        let result = apply_kernel_parameters::exec(
-          backend,
-          &shasta_token,
-          kernel_parameters,
-          nodes,
-          assume_yes,
-          do_not_reboot,
-          kafka_audit_opt,
-          dryrun,
-        )
-        .await;
-
-        match result {
-          Ok(_) => {}
-          Err(error) => eprintln!("{}", error),
-        }
-      } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot")
-      {
-        if let Some(cli_apply_boot_nodes) =
-          cli_apply_boot.subcommand_matches("nodes")
-        {
-          let shasta_token = get_api_token(&backend, &site_name).await?;
-
-          let hosts_string: &str = cli_apply_boot_nodes
-            .get_one::<String>("VALUE")
-            .expect("The 'xnames' argument must have values");
-
-          let new_boot_image_id_opt: Option<&String> =
-            cli_apply_boot_nodes.get_one("boot-image");
-
-          if let Some(new_boot_image_id) = new_boot_image_id_opt {
-            if uuid::Uuid::parse_str(new_boot_image_id).is_err() {
-              eprintln!("ERROR - image id is not an UUID");
-              std::process::exit(1);
-            }
-          }
-
-          let new_boot_image_configuration_opt: Option<&String> =
-            cli_apply_boot_nodes.get_one("boot-image-configuration");
-
-          let new_runtime_configuration_opt: Option<&String> =
-            cli_apply_boot_nodes.get_one("runtime-configuration");
-
-          let new_kernel_parameters_opt: Option<&String> =
-            cli_apply_boot_nodes.get_one::<String>("kernel-parameters");
-
-          let assume_yes = cli_apply_boot_nodes.get_flag("assume-yes");
-
-          let do_not_reboot = cli_apply_boot_nodes.get_flag("do-not-reboot");
-
-          let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
-
-          let result = apply_boot_node::exec(
-            &backend,
-            &shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            new_boot_image_id_opt.map(String::as_str),
-            new_boot_image_configuration_opt.map(String::as_str),
-            new_runtime_configuration_opt.map(String::as_str),
-            new_kernel_parameters_opt.map(String::as_str),
-            hosts_string,
-            assume_yes,
-            do_not_reboot,
-            dry_run,
-            kafka_audit_opt,
-          )
-          .await;
-
-          match result {
-            Ok(_) => {}
-            Err(error) => eprintln!("{}", error),
-          }
-        } else if let Some(cli_apply_boot_cluster) =
-          cli_apply_boot.subcommand_matches("cluster")
-        {
-          let shasta_token = get_api_token(&backend, &site_name).await?;
-
-          let hsm_group_name_arg: &String = cli_apply_boot_cluster
-            .get_one("CLUSTER_NAME")
-            .expect("ERROR - cluster name must be provided");
-
-          let new_boot_image_id_opt: Option<&String> =
-            cli_apply_boot_cluster.get_one("boot-image");
-
-          let new_boot_image_configuration_opt: Option<&String> =
-            cli_apply_boot_cluster.get_one("boot-image-configuration");
-
-          let new_runtime_configuration_opt: Option<&String> =
-            cli_apply_boot_cluster.get_one("runtime-configuration");
-
-          let new_kernel_parameters_opt: Option<&String> =
-            cli_apply_boot_cluster.get_one("kernel-parameters");
-
-          let assume_yes = cli_apply_boot_cluster.get_flag("assume-yes");
-
-          let do_not_reboot = cli_apply_boot_cluster.get_flag("do-not-reboot");
-
-          let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
-
-          // Validate
-          //
-          // Check user has provided valid HSM group name
-          let target_hsm_group_vec = get_groups_names_available(
-            &backend,
-            &shasta_token,
-            Some(hsm_group_name_arg),
-            settings_hsm_group_name_opt,
-          )
-          .await?;
-
-          let target_hsm_group_name = target_hsm_group_vec
-            .first()
-            .expect("ERROR - Could not find valid HSM group name");
-
-          apply_boot_cluster::exec(
-            &backend,
-            &shasta_token,
-            shasta_base_url,
-            shasta_root_cert,
-            new_boot_image_id_opt.map(String::as_str),
-            new_boot_image_configuration_opt.map(String::as_str),
-            new_runtime_configuration_opt.map(String::as_str),
-            new_kernel_parameters_opt.map(String::as_str),
-            target_hsm_group_name,
-            assume_yes,
-            do_not_reboot,
-            dry_run,
-            kafka_audit_opt,
-          )
-          .await;
-        }
-      }
+      crate::cli::parsers::apply::parse_subcommand(
+        cli_apply,
+        backend,
+        &site_name,
+        shasta_base_url,
+        shasta_root_cert,
+        &vault_base_url.unwrap(),
+        gitea_base_url,
+        settings_hsm_group_name_opt,
+        &k8s_api_url.unwrap(),
+        kafka_audit_opt,
+        settings,
+        configuration,
+      )
+      .await?
     } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
       let shasta_token = get_api_token(&backend, &site_name).await?;
 

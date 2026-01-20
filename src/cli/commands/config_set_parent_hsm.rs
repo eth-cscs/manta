@@ -1,17 +1,18 @@
 use std::{fs, io::Write, path::PathBuf};
 
+use anyhow::Error;
 use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{value, DocumentMut};
+use toml_edit::{DocumentMut, value};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
-  new_hsm_opt: Option<&String>,
+  new_hsm: &String,
   // all_hsm_available_vec: &[String],
-) {
+) -> Result<(), Error> {
   // Read configuration file
 
   // XDG Base Directory Specification
@@ -48,6 +49,10 @@ pub async fn exec(
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
   // VALIDATION
+  // Validate user has access to new HSM group
+  // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
+  // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
+  // asking to put a valid HSM group in the configuration file
   let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
     backend
       .get_all_groups(shasta_token)
@@ -61,49 +66,17 @@ pub async fn exec(
   };
 
   validate_hsm_group_and_hsm_available_config_params(
-    new_hsm_opt.unwrap(),
+    new_hsm,
     &hsm_available_vec,
-  );
+  )?;
 
-  // All goot, we are safe to update 'hsm_group' config param
-  log::info!(
-    "Changing configuration to use HSM GROUP {}",
-    new_hsm_opt.unwrap()
-  );
+  // All good, we are safe to update 'hsm_group' config param
+  log::info!("Changing configuration to use HSM GROUP {}", new_hsm);
 
-  doc["parent_hsm_group"] = value(new_hsm_opt.unwrap());
+  // Update parent hsm in config file
+  doc["parent_hsm_group"] = value(new_hsm);
 
-  if let Some(new_hsm) = new_hsm_opt {
-    // 'hsm_available' config param is empty or does not exists (an admin user is running manta)
-    // and 'hsm_group' has a value, then we fetch all HSM groups from CSM and check the user is
-    // asking to put a valid HSM group in the configuration file
-    let all_hsm_available_vec = backend
-      .get_all_groups(shasta_token)
-      .await
-      .unwrap()
-      .into_iter()
-      .map(|hsm_group_value| hsm_group_value.label)
-      .collect::<Vec<String>>();
-
-    validate_hsm_group_and_hsm_available_config_params(
-      new_hsm_opt.unwrap(),
-      &all_hsm_available_vec,
-    );
-
-    // All goot, we are safe to update 'hsm_group' config param
-    log::info!(
-      "Changing configuration to use HSM GROUP {}",
-      new_hsm_opt.unwrap()
-    );
-
-    doc["parent_hsm_group"] = value(new_hsm);
-  } else {
-    // 'hsm_available' config param is empty or does not exists, then an admin user is running
-    // manta and 'hsm_group' config param is empty or does not exists, then it is safe to remove
-    // this param from the config file
-    //
-    // NOTHING TO DO
-  };
+  log::info!("New HSM group set successfully");
 
   // Update configuration file content
   let mut manta_configuration_file = std::fs::OpenOptions::new()
@@ -121,17 +94,20 @@ pub async fn exec(
     Some(hsm_value) => println!("Parent HSM group set to {hsm_value}"),
     None => println!("Parent HSM group unset"),
   }
+
+  Ok(())
 }
 
 pub fn validate_hsm_group_and_hsm_available_config_params(
   hsm_group: &String,
   hsm_available_vec: &[String],
-) {
+) -> Result<(), Error> {
   if !hsm_available_vec.contains(hsm_group) {
-    eprintln!(
-            "HSM group provided ({}) not valid, please choose one of the following options: {:?}",
-            hsm_group, hsm_available_vec
-        );
-    std::process::exit(1);
+    Err(Error::msg(format!(
+      "HSM group provided ({}) not valid, please choose one of the following options: {:?}",
+      hsm_group, hsm_available_vec
+    )))
+  } else {
+    Ok(())
   }
 }
