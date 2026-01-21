@@ -1,3 +1,4 @@
+mod backend_dispatcher;
 mod cli;
 mod common;
 mod manta_backend_dispatcher;

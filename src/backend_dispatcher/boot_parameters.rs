@@ -1,14 +1,5 @@
 use std::{collections::HashMap, pin::Pin};
 
-/// This is the static backend dispatcher
-/// To add a new backend:
-/// # Add new backend to the StaticBackendDispatcher enum
-/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
-/// # Add new backend to existing methods in BackendTrait implementation
-///
-/// To add new functionalities:
-/// # Implement new functionalities to BackendTrait implementation
-/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -58,24 +49,60 @@ use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
-#[derive(Clone)]
-pub enum StaticBackendDispatcher {
-  CSM(Csm),
-  OCHAMI(Ochami),
-}
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-impl StaticBackendDispatcher {
-  pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
+impl BootParametersTrait for StaticBackendDispatcher {
+  async fn get_all_bootparameters(
+    &self,
+    auth_token: &str,
+  ) -> Result<Vec<BootParameters>, Error> {
+    match self {
+      CSM(b) => b.get_all_bootparameters(auth_token).await,
+      OCHAMI(b) => b.get_all_bootparameters(auth_token).await,
+    }
+  }
 
-    match backend_type {
-      "csm" => Self::CSM(csm).into(),
-      "ochami" => Self::OCHAMI(ochami).into(),
-      _ => {
-        eprintln!("ERROR - Backend '{}' not supported", backend_type);
-        std::process::exit(1);
-      }
+  async fn get_bootparameters(
+    &self,
+    auth_token: &str,
+    nodes: &[String],
+  ) -> Result<Vec<BootParameters>, Error> {
+    match self {
+      CSM(b) => b.get_bootparameters(auth_token, nodes).await,
+      OCHAMI(b) => b.get_bootparameters(auth_token, nodes).await,
+    }
+  }
+
+  async fn add_bootparameters(
+    &self,
+    auth_token: &str,
+    boot_parameters: &BootParameters,
+  ) -> Result<(), Error> {
+    match self {
+      CSM(b) => b.add_bootparameters(auth_token, boot_parameters).await,
+      OCHAMI(b) => b.add_bootparameters(auth_token, boot_parameters).await,
+    }
+  }
+
+  async fn update_bootparameters(
+    &self,
+    auth_token: &str,
+    boot_parameters: &BootParameters,
+  ) -> Result<(), Error> {
+    match self {
+      CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+      OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
+    }
+  }
+
+  async fn delete_bootparameters(
+    &self,
+    auth_token: &str,
+    boot_parameters: &BootParameters,
+  ) -> Result<String, Error> {
+    match self {
+      CSM(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
+      OCHAMI(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
     }
   }
 }

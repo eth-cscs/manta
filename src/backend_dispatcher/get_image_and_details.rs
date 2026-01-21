@@ -1,14 +1,5 @@
 use std::{collections::HashMap, pin::Pin};
 
-/// This is the static backend dispatcher
-/// To add a new backend:
-/// # Add new backend to the StaticBackendDispatcher enum
-/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
-/// # Add new backend to existing methods in BackendTrait implementation
-///
-/// To add new functionalities:
-/// # Implement new functionalities to BackendTrait implementation
-/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -58,23 +49,40 @@ use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
-#[derive(Clone)]
-pub enum StaticBackendDispatcher {
-  CSM(Csm),
-  OCHAMI(Ochami),
-}
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-impl StaticBackendDispatcher {
-  pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
-
-    match backend_type {
-      "csm" => Self::CSM(csm).into(),
-      "ochami" => Self::OCHAMI(ochami).into(),
-      _ => {
-        eprintln!("ERROR - Backend '{}' not supported", backend_type);
-        std::process::exit(1);
+impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
+  async fn get_images_and_details(
+    &self,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    hsm_group_name_vec: &[String],
+    id_opt: Option<&str>,
+    limit_number: Option<&u8>,
+  ) -> Result<Vec<(Image, String, String, bool)>, Error> {
+    match self {
+      CSM(b) => {
+        b.get_images_and_details(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          hsm_group_name_vec,
+          id_opt,
+          limit_number,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.get_images_and_details(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          hsm_group_name_vec,
+          id_opt,
+          limit_number,
+        )
+        .await
       }
     }
   }

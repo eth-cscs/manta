@@ -1,14 +1,5 @@
 use std::{collections::HashMap, pin::Pin};
 
-/// This is the static backend dispatcher
-/// To add a new backend:
-/// # Add new backend to the StaticBackendDispatcher enum
-/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
-/// # Add new backend to existing methods in BackendTrait implementation
-///
-/// To add new functionalities:
-/// # Implement new functionalities to BackendTrait implementation
-/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -58,23 +49,80 @@ use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
-#[derive(Clone)]
-pub enum StaticBackendDispatcher {
-  CSM(Csm),
-  OCHAMI(Ochami),
-}
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-impl StaticBackendDispatcher {
-  pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
+impl ConsoleTrait for StaticBackendDispatcher {
+  type T = Box<dyn AsyncWrite + Unpin>;
+  type U = Box<dyn AsyncRead + Unpin>;
 
-    match backend_type {
-      "csm" => Self::CSM(csm).into(),
-      "ochami" => Self::OCHAMI(ochami).into(),
-      _ => {
-        eprintln!("ERROR - Backend '{}' not supported", backend_type);
-        std::process::exit(1);
+  async fn attach_to_node_console(
+    &self,
+    shasta_token: &str,
+    site_name: &str,
+    xname: &str,
+    width: u16,
+    height: u16,
+    k8s: &K8sDetails,
+  ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error>
+  {
+    match self {
+      CSM(b) => {
+        b.attach_to_node_console(
+          shasta_token,
+          site_name,
+          xname,
+          width,
+          height,
+          k8s,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.attach_to_node_console(
+          shasta_token,
+          site_name,
+          xname,
+          width,
+          height,
+          k8s,
+        )
+        .await
+      }
+    }
+  }
+
+  async fn attach_to_session_console(
+    &self,
+    shasta_token: &str,
+    site_name: &str,
+    session_name: &str,
+    width: u16,
+    height: u16,
+    k8s: &K8sDetails,
+  ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error>
+  {
+    match self {
+      CSM(b) => {
+        b.attach_to_session_console(
+          shasta_token,
+          site_name,
+          session_name,
+          width,
+          height,
+          k8s,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.attach_to_session_console(
+          shasta_token,
+          site_name,
+          session_name,
+          width,
+          height,
+          k8s,
+        )
+        .await
       }
     }
   }

@@ -1,14 +1,5 @@
 use std::{collections::HashMap, pin::Pin};
 
-/// This is the static backend dispatcher
-/// To add a new backend:
-/// # Add new backend to the StaticBackendDispatcher enum
-/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
-/// # Add new backend to existing methods in BackendTrait implementation
-///
-/// To add new functionalities:
-/// # Implement new functionalities to BackendTrait implementation
-/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -58,23 +49,61 @@ use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
-#[derive(Clone)]
-pub enum StaticBackendDispatcher {
-  CSM(Csm),
-  OCHAMI(Ochami),
-}
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-impl StaticBackendDispatcher {
-  pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
-
-    match backend_type {
-      "csm" => Self::CSM(csm).into(),
-      "ochami" => Self::OCHAMI(ochami).into(),
-      _ => {
-        eprintln!("ERROR - Backend '{}' not supported", backend_type);
-        std::process::exit(1);
+impl ApplySessionTrait for StaticBackendDispatcher {
+  async fn apply_session(
+    &self,
+    gitea_token: &str,
+    gitea_base_url: &str,
+    shasta_token: &str,
+    shasta_base_url: &str,
+    shasta_root_cert: &[u8],
+    cfs_conf_sess_name: Option<&str>,
+    playbook_yaml_file_name_opt: Option<&str>,
+    hsm_group: Option<&str>,
+    repos_name_vec: &[&str],
+    repos_last_commit_id_vec: &[&str],
+    ansible_limit: Option<&str>,
+    ansible_verbosity: Option<&str>,
+    ansible_passthrough: Option<&str>,
+  ) -> Result<(String, String), Error> {
+    match self {
+      CSM(b) => {
+        b.apply_session(
+          gitea_token,
+          gitea_base_url,
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          cfs_conf_sess_name,
+          playbook_yaml_file_name_opt,
+          hsm_group,
+          repos_name_vec,
+          repos_last_commit_id_vec,
+          ansible_limit,
+          ansible_verbosity,
+          ansible_passthrough,
+        )
+        .await
+      }
+      OCHAMI(b) => {
+        b.apply_session(
+          gitea_token,
+          gitea_base_url,
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          cfs_conf_sess_name,
+          playbook_yaml_file_name_opt,
+          hsm_group,
+          repos_name_vec,
+          repos_last_commit_id_vec,
+          ansible_limit,
+          ansible_verbosity,
+          ansible_passthrough,
+        )
+        .await
       }
     }
   }

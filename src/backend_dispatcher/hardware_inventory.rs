@@ -1,14 +1,5 @@
 use std::{collections::HashMap, pin::Pin};
 
-/// This is the static backend dispatcher
-/// To add a new backend:
-/// # Add new backend to the StaticBackendDispatcher enum
-/// # Add new backend_type to the StaticBackendDispatcher (new) constructor
-/// # Add new backend to existing methods in BackendTrait implementation
-///
-/// To add new functionalities:
-/// # Implement new functionalities to BackendTrait implementation
-/// NOTE: we assume functionalities are already added to the BackendTrait in 'backend' crate
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -58,24 +49,54 @@ use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 use serde_json::Value;
 
-#[derive(Clone)]
-pub enum StaticBackendDispatcher {
-  CSM(Csm),
-  OCHAMI(Ochami),
-}
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-impl StaticBackendDispatcher {
-  pub fn new(backend_type: &str, base_url: &str, root_cert: &[u8]) -> Self {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
+impl HardwareInventory for StaticBackendDispatcher {
+  async fn get_inventory_hardware(
+    &self,
+    auth_token: &str,
+    xname: &str,
+  ) -> Result<Value, Error> {
+    match self {
+      CSM(b) => b.get_inventory_hardware(auth_token, xname).await,
+      OCHAMI(b) => b.get_inventory_hardware(auth_token, xname).await,
+    }
+  }
 
-    match backend_type {
-      "csm" => Self::CSM(csm).into(),
-      "ochami" => Self::OCHAMI(ochami).into(),
-      _ => {
-        eprintln!("ERROR - Backend '{}' not supported", backend_type);
-        std::process::exit(1);
+  async fn get_inventory_hardware_query(
+    &self,
+    auth_token: &str,
+    xname: &str,
+    r#type: Option<&str>,
+    children: Option<bool>,
+    parents: Option<bool>,
+    partition: Option<&str>,
+    format: Option<&str>,
+  ) -> Result<Value, Error> {
+    match self {
+      CSM(b) => {
+        b.get_inventory_hardware_query(
+          auth_token, xname, r#type, children, parents, partition, format,
+        )
+        .await
       }
+      OCHAMI(b) => {
+        b.get_inventory_hardware_query(
+          auth_token, xname, r#type, children, parents, partition, format,
+        )
+        .await
+      }
+    }
+  }
+
+  async fn post_inventory_hardware(
+    &self,
+    auth_token: &str,
+    hardware: HWInventoryByLocationList,
+  ) -> Result<Value, Error> {
+    match self {
+      CSM(b) => b.post_inventory_hardware(auth_token, hardware).await,
+      OCHAMI(b) => b.post_inventory_hardware(auth_token, hardware).await,
     }
   }
 }
