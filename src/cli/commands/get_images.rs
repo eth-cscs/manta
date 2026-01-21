@@ -1,8 +1,7 @@
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
-  error::Error, interfaces::get_images_and_details::GetImagesAndDetailsTrait,
-  types::ims::Image,
+  error::Error, interfaces::ims::GetImagesAndDetailsTrait, types::ims::Image,
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
