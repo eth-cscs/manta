@@ -1,4 +1,4 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::{
   hsm::group::GroupTrait, pcs::PCSTrait,
 };
@@ -19,7 +19,10 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
 ) {
   let xname_vec = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[hsm_group_name_arg])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[hsm_group_name_arg.to_string()],
+    )
     .await
     .unwrap();
 

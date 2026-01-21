@@ -16,7 +16,7 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_group_name_vec: &[&str],
+  hsm_group_name_vec: &[String],
   id_opt: Option<&str>,
   limit_number: Option<&u8>,
 ) {

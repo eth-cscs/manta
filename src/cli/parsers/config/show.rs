@@ -13,7 +13,5 @@ pub async fn process_subcommand(
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(&backend, &site_name).await?;
 
-  config_show::exec(backend, Some(shasta_token), settings).await?;
-
-  Ok(())
+  config_show::exec(backend, Some(shasta_token), settings).await
 }

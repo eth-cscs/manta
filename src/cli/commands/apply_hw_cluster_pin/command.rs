@@ -119,7 +119,10 @@ pub async fn exec(
 
   // Get target HSM group members
   let target_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[target_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
 
@@ -156,7 +159,10 @@ pub async fn exec(
 
   // Get target HSM group members
   let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[parent_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
   /* let parent_hsm_group_member_vec: Vec<String> =

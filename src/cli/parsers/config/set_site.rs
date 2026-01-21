@@ -8,7 +8,5 @@ pub async fn process_subcommand(
 ) -> Result<(), Error> {
   let new_site_opt: Option<&String> = cli_config_set_site.get_one("SITE_NAME");
 
-  config_set_site::exec(new_site_opt).await?;
-
-  Ok(())
+  config_set_site::exec(new_site_opt).await
 }

@@ -482,7 +482,7 @@ fn dot_notation_to_yaml(
 pub fn render_jinja2_sat_file_yaml(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,
-  value_cli_vec_opt: Option<&[&str]>,
+  value_cli_vec_opt: Option<&[String]>,
 ) -> Value {
   let mut env = minijinja::Environment::new();
   // Set/enable debug in order to force minijinja to print debug error messages which are more
@@ -503,7 +503,9 @@ pub fn render_jinja2_sat_file_yaml(
   let mut values_file_yaml: Value = if let Some(values_file_content) =
     values_file_content_opt
   {
-    log::info!("'Session vars' file provided. Going to process SAT file as a jinja template.");
+    log::info!(
+      "'Session vars' file provided. Going to process SAT file as a jinja template."
+    );
     log::info!("Expand variables in 'session vars' file");
     // Read sesson vars file and parse it to YAML
     let values_file_yaml: Value =
@@ -519,7 +521,9 @@ pub fn render_jinja2_sat_file_yaml(
   };
 
   // Convert variable values sent by cli argument from dot notation to yaml format
-  log::debug!("Convert variable values sent by cli argument from dot notation to yaml format");
+  log::debug!(
+    "Convert variable values sent by cli argument from dot notation to yaml format"
+  );
   if let Some(value_option_vec) = value_cli_vec_opt {
     for value_option in value_option_vec {
       let cli_var_context_yaml_rslt = dot_notation_to_yaml(&value_option);

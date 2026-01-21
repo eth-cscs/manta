@@ -60,7 +60,7 @@ async fn validation(
   // Find the list of xnames belonging only to the label to delete and if any, then stop
   // processing the request because those nodes can't get orphan
   let xname_vec = backend
-    .get_member_vec_from_group_name_vec(auth_token, &[label])
+    .get_member_vec_from_group_name_vec(auth_token, &[label.to_string()])
     .await?;
 
   let xname_vec: Vec<&str> = xname_vec.iter().map(String::as_str).collect();
@@ -82,9 +82,9 @@ async fn validation(
 
   if !members_orphan_if_group_deleted.is_empty() {
     return Err(Error::Message(format!(
-            "ERROR - The hosts below will become orphan if group '{}' gets deleted.\n{:?}\n",
-            label, members_orphan_if_group_deleted
-        )));
+      "ERROR - The hosts below will become orphan if group '{}' gets deleted.\n{:?}\n",
+      label, members_orphan_if_group_deleted
+    )));
   }
 
   Ok(())

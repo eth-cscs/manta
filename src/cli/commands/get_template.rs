@@ -1,4 +1,7 @@
-use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
+use manta_backend_dispatcher::{
+  interfaces::bos::ClusterTemplateTrait,
+  types::bos::session_template::BosSessionTemplate,
+};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -7,8 +10,8 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_group_name_vec: &[&str],
-  hsm_member_vec: &[&str],
+  hsm_group_name_vec: &[String],
+  hsm_member_vec: &[String],
   bos_sessiontemplate_name_opt: Option<&str>,
   limit_number_opt: Option<&u8>,
   output: &str,
@@ -30,16 +33,17 @@ pub async fn exec(
     )
     .await;
 
-  let mut bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
-    Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
-    Err(e) => {
-      eprintln!(
-        "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
-        e
-      );
-      std::process::exit(1);
-    }
-  };
+  let mut bos_sessiontemplate_vec: Vec<BosSessionTemplate> =
+    match bos_sessiontemplate_vec_rslt {
+      Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
+      Err(e) => {
+        eprintln!(
+          "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+          e
+        );
+        std::process::exit(1);
+      }
+    };
 
   bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 

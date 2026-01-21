@@ -69,13 +69,7 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
   render_jinja2_sat_file_yaml(
     sat_file_content,
     Some(values_file_content),
-    Some(
-      var_content
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<&str>>()
-        .as_slice(),
-    ),
+    Some(&var_content),
   );
 }
 

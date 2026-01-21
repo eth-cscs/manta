@@ -33,7 +33,8 @@ use manta_backend_dispatcher::{
     pcs::PCSTrait,
   },
   types::{
-    self,
+    self, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+    K8sDetails, NodeMetadataArray,
     bos::{session::BosSession, session_template::BosSessionTemplate},
     bss::BootParameters,
     cfs::{
@@ -45,15 +46,13 @@ use manta_backend_dispatcher::{
     },
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
     ims::{Image, PatchImage},
-    Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
-    K8sDetails, NodeMetadataArray,
   },
 };
 
+use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
 use tokio::io::{AsyncRead, AsyncWrite};
-use StaticBackendDispatcher::*;
 
 use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
@@ -117,7 +116,7 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_member_vec_from_group_name_vec(
     &self,
     auth_token: &str,
-    hsm_group_name_vec: &[&str],
+    hsm_group_name_vec: &[String],
   ) -> Result<Vec<String>, Error> {
     match self {
       CSM(b) => {
@@ -1077,7 +1076,7 @@ impl CfsTrait for StaticBackendDispatcher {
     root_cert: &[u8],
     configuration_name: Option<&str>,
     configuration_name_pattern: Option<&str>,
-    hsm_group_name_vec: &[&str],
+    hsm_group_name_vec: &[String],
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
     limit_number_opt: Option<&u8>,
@@ -1293,7 +1292,7 @@ impl SatTrait for StaticBackendDispatcher {
     k8s_api_url: &str,
     shasta_k8s_secrets: serde_json::Value,
     sat_template_file_yaml: serde_yaml::Value,
-    hsm_group_available_vec: &[&str],
+    hsm_group_available_vec: &[String],
     ansible_verbosity_opt: Option<u8>,
     ansible_passthrough_opt: Option<&str>,
     gitea_base_url: &str,
@@ -1636,7 +1635,7 @@ impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &[&str],
+    hsm_group_name_vec: &[String],
     id_opt: Option<&str>,
     limit_number: Option<&u8>,
   ) -> Result<Vec<(Image, String, String, bool)>, Error> {
@@ -1733,8 +1732,8 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_group_name_vec: &[&str],
-    hsm_member_vec: &[&str],
+    hsm_group_name_vec: &[String],
+    hsm_member_vec: &[String],
     bos_sessiontemplate_name_opt: Option<&str>,
     limit_number_opt: Option<&u8>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
@@ -1847,56 +1846,12 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
 }
 
 impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
-  /* async fn delete_data_related_to_cfs_configuration(
-    &self,
-    shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
-    hsm_name_available_vec: &[&str],
-    // configuration_name_opt: Option<&String>,
-    configuration_name_pattern: Option<&str>,
-    since_opt: Option<NaiveDateTime>,
-    until_opt: Option<NaiveDateTime>,
-    assume_yes: bool,
-  ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.i_delete_data_related_to_cfs_configuration(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_name_available_vec,
-          // configuration_name_opt,
-          configuration_name_pattern,
-          since_opt,
-          until_opt,
-          assume_yes,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.i_delete_data_related_to_cfs_configuration(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_name_available_vec,
-          // configuration_name_opt,
-          configuration_name_pattern,
-          since_opt,
-          until_opt,
-          assume_yes,
-        )
-        .await
-      }
-    }
-  } */
-
   async fn get_data_to_delete(
     &self,
     shasta_token: &str,
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
-    hsm_name_available_vec: &[&str],
+    hsm_name_available_vec: &[String],
     configuration_name_pattern_opt: Option<&str>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,

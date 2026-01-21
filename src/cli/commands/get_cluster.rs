@@ -10,7 +10,7 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_name_vec: &[&str],
+  hsm_name_vec: &[String],
   status: Option<&str>,
   nids_only: bool,
   xnames_only: bool,

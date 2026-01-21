@@ -12,6 +12,7 @@ pub mod apply_kernel_parameters;
 pub mod apply_sat_file;
 pub mod apply_session;
 pub mod apply_template;
+pub mod config_gen_autocomplete;
 pub mod config_set_hsm;
 pub mod config_set_log;
 pub mod config_set_parent_hsm;

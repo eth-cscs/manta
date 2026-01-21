@@ -12,7 +12,5 @@ pub async fn process_subcommand(
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(&backend, &site_name).await?;
 
-  config_unset_parent_hsm::exec(backend, &shasta_token).await?;
-
-  Ok(())
+  config_unset_parent_hsm::exec(backend, &shasta_token).await
 }

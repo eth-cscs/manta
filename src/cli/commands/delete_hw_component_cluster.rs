@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::hsm::{
   group::GroupTrait, hardware_inventory::HardwareInventory,
 };
@@ -39,9 +39,9 @@ pub async fn exec(
     }
     Err(_) => {
       log::error!(
-                "HSM group {} does not exist, cannot remove hw from it and cannot continue.",
-                target_hsm_group_name.to_string()
-            );
+        "HSM group {} does not exist, cannot remove hw from it and cannot continue.",
+        target_hsm_group_name.to_string()
+      );
       std::process::exit(1);
     }
   }
@@ -75,7 +75,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+      log::error!(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
+      );
       std::process::exit(1);
     }
   }
@@ -98,16 +100,12 @@ pub async fn exec(
 
   // Get target HSM group members
   let target_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[target_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
-  /* hsm::group::utils::get_member_vec_from_hsm_group_name(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      target_hsm_group_name,
-  )
-  .await; */
 
   // Get HSM hw component counters for target HSM
   let mut target_hsm_node_hw_component_count_vec =
@@ -121,30 +119,34 @@ pub async fn exec(
     .await;
   if target_hsm_node_hw_component_count_vec.is_empty() {
     log::info!(
-            "The target HSM group {} is already empty, cannot remove hardware from it.",
-            target_hsm_group_name
-        );
+      "The target HSM group {} is already empty, cannot remove hardware from it.",
+      target_hsm_group_name
+    );
 
     if dryrun && delete_hsm_group {
-      log::info!("The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action.");
+      log::info!(
+        "The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action."
+      );
       return;
     } else {
       log::info!(
         "The option to delete empty groups has been selected, removing it."
       );
       match backend
-                .delete_group(shasta_token, &target_hsm_group_name.to_string())
-                .await
-            {
-                Ok(_) => {
-                    log::info!("HSM group removed successfully, we are done with this action.");
-                    return;
-                }
-                Err(e2) => log::debug!(
-                    "Error removing the HSM group. This always fails, ignore please. Reported: {}",
-                    e2
-                ),
-            };
+        .delete_group(shasta_token, &target_hsm_group_name.to_string())
+        .await
+      {
+        Ok(_) => {
+          log::info!(
+            "HSM group removed successfully, we are done with this action."
+          );
+          return;
+        }
+        Err(e2) => log::debug!(
+          "Error removing the HSM group. This always fails, ignore please. Reported: {}",
+          e2
+        ),
+      };
     }
   }
   // sort nodes hw counters by node name
@@ -167,7 +169,10 @@ pub async fn exec(
 
   // Get target HSM group members
   let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[parent_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
   /* hsm::group::utils::get_member_vec_from_hsm_group_name(
@@ -357,19 +362,30 @@ pub async fn exec(
     }
     if target_group_will_be_empty {
       if delete_hsm_group {
-        log::info!("HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",target_hsm_group_name);
-        match backend.delete_group(shasta_token,
-                                            &target_hsm_group_name.to_string()).await {
-                /* match hsm::group::http_client::delete_hsm_group(shasta_token,
-                                                                      shasta_base_url,
-                                                                      shasta_root_cert,
-                                                                      &target_hsm_group_name.to_string())
-                    .await { */
-                    Ok(_) => log::info!("HSM group removed successfully."),
-                    Err(e2) => log::debug!("Error removing the HSM group. This always fails, ignore please. Reported: {}", e2)
-                };
+        log::info!(
+          "HSM group {} is now empty and the option to delete empty groups has been selected, removing it.",
+          target_hsm_group_name
+        );
+        match backend
+          .delete_group(shasta_token, &target_hsm_group_name.to_string())
+          .await
+        {
+          /* match hsm::group::http_client::delete_hsm_group(shasta_token,
+                                                            shasta_base_url,
+                                                            shasta_root_cert,
+                                                            &target_hsm_group_name.to_string())
+          .await { */
+          Ok(_) => log::info!("HSM group removed successfully."),
+          Err(e2) => log::debug!(
+            "Error removing the HSM group. This always fails, ignore please. Reported: {}",
+            e2
+          ),
+        };
       } else {
-        log::debug!("HSM group {} is now empty and the option to delete empty groups has NOT been selected, will not remove it.",target_hsm_group_name)
+        log::debug!(
+          "HSM group {} is now empty and the option to delete empty groups has NOT been selected, will not remove it.",
+          target_hsm_group_name
+        )
       }
     }
   }

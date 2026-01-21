@@ -73,8 +73,7 @@ pub async fn parse_subcommand(
         vault_base_url,
         &site_name,
       )
-      .await
-      .unwrap();
+      .await?;
 
     // IMPORTANT: FOR SAT FILE, THERE IS NO POINT TO CONSIDER LOCKED HSM GROUP NAME IN
     // CONFIG FILE SINCE SAT FILES MAY USE MULTIPLE HSM GROUPS. THEREFORE HSM GROUP
@@ -111,8 +110,8 @@ pub async fn parse_subcommand(
     )
     .expect("ERROR: reading SAT file template. Exit");
 
-    let ansible_passthrough_env =
-      settings.get::<String>("ansible-passthrough").ok();
+    let ansible_passthrough_env: Option<String> =
+      settings.get("ansible-passthrough").ok();
     let ansible_passthrough_cli_arg = cli_apply_sat_file
       .get_one::<String>("ansible-passthrough")
       .cloned();
@@ -136,10 +135,16 @@ pub async fn parse_subcommand(
 
     let dry_run: bool = cli_apply_sat_file.get_flag("dry-run");
 
+    let values_file_content_opt = cli_values_file_content_opt.as_deref();
+
+    let values_cli_opt: Option<&[String]> = cli_value_vec_opt.as_deref();
+    // .map(|vec| vec.into_iter().map(|v| v.as_str()).collect::<Vec<&str>>());
+    // .collect();
+
     let site = configuration
       .sites
       .get(&configuration.site.clone())
-      .unwrap();
+      .ok_or_else(|| Error::msg("Site not valid"))?;
 
     apply_sat_file::command::exec(
       &backend,
@@ -150,15 +155,9 @@ pub async fn parse_subcommand(
       vault_base_url,
       k8s_api_url,
       sat_file_content.as_str(),
-      cli_values_file_content_opt.as_deref(),
-      cli_value_vec_opt
-        .as_ref()
-        .map(|vec| vec.iter().map(String::as_str).collect::<Vec<&str>>())
-        .as_deref(),
-      &target_hsm_group_vec
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<&str>>(),
+      values_file_content_opt,
+      values_cli_opt,
+      &target_hsm_group_vec,
       ansible_verbosity,
       ansible_passthrough.as_deref(),
       gitea_base_url,
@@ -255,13 +254,7 @@ pub async fn parse_subcommand(
       .await?;
 
       let hsm_members_rslt = backend
-        .get_member_vec_from_group_name_vec(
-          &shasta_token,
-          &hsm_group_name_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
-        )
+        .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
         .await;
 
       match hsm_members_rslt {

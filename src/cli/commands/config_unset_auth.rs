@@ -1,9 +1,10 @@
 use std::{fs, path::PathBuf};
 
+use anyhow::Error;
 use dialoguer::Select;
 use directories::ProjectDirs;
 
-pub async fn exec() {
+pub async fn exec() -> Result<(), Error> {
   let mut auth_token_list: Vec<PathBuf> = vec![];
 
   // XDG Base Directory Specification
@@ -41,15 +42,7 @@ pub async fn exec() {
       .unwrap()
   );
 
-  fs::remove_file(auth_token_list[selection].clone()).unwrap();
+  fs::remove_file(auth_token_list[selection].clone())?;
 
-  /* for auth_token in auth_token_list {
-      log::debug!(
-          "Deleting manta authentication file {}",
-          &auth_token.to_string_lossy()
-      );
-      fs::remove_file(auth_token).unwrap();
-  }
-
-  println!("Athentication token file deleted"); */
+  Ok(())
 }

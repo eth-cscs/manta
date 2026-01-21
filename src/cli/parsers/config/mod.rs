@@ -1,4 +1,4 @@
-pub mod generate_shell_autocomplete;
+pub mod generate_shell_autocompletion;
 pub mod set_hsm;
 pub mod set_log;
 pub mod set_parent_hsm;

@@ -22,7 +22,7 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   configuration_name_opt: Option<&str>,
   configuration_name_pattern_opt: Option<&str>,
-  hsm_group_name_vec: &[&str],
+  hsm_group_name_vec: &[String],
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   limit: Option<&u8>,
@@ -42,15 +42,6 @@ pub async fn exec(
       limit,
     )
     .await
-    /* .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not fetch configurations. Reason:\n{:#?}", e);
-      std::process::exit(1);
-    }); */
-    /* .unwrap_or_else(|e| {
-      // dbg!(&e);
-      println!("{e}");
-      std::process::exit(1);
-    }); */
     .unwrap_or_else(|backend_error| {
       // dbg!(&backend_error);
       match backend_error {

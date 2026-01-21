@@ -76,22 +76,11 @@ pub async fn process_cli(
 
   if let Some(cli_config) = cli_root.subcommand_matches("config") {
     if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-      /* let shasta_token_rslt = get_api_token(&backend, &site_name).await;
-
-      config_show::exec(&backend, shasta_token_rslt.ok(), settings).await; */
       parsers::config::show::process_subcommand(&backend, &site_name, settings)
         .await?
     } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
       if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm")
       {
-        /* let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        config_set_hsm::exec(
-          &backend,
-          &shasta_token,
-          cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
-        )
-        .await; */
         parsers::config::set_hsm::process_subcommand(
           cli_config_set_hsm,
           &backend,
@@ -102,16 +91,6 @@ pub async fn process_cli(
       if let Some(cli_config_set_parent_hsm) =
         cli_config_set.subcommand_matches("parent-hsm")
       {
-        /* let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        config_set_parent_hsm::exec(
-          &backend,
-          &shasta_token,
-          cli_config_set_parent_hsm
-            .get_one::<String>("HSM_GROUP_NAME")
-            .unwrap(),
-        )
-        .await; */
         parsers::config::set_parent_hsm::process_subcommand(
           cli_config_set_parent_hsm,
           &backend,
@@ -122,19 +101,11 @@ pub async fn process_cli(
       if let Some(cli_config_set_site) =
         cli_config_set.subcommand_matches("site")
       {
-        /* config_set_site::exec(
-          cli_config_set_site.get_one::<String>("SITE_NAME"),
-        )
-        .await; */
         parsers::config::set_site::process_subcommand(cli_config_set_site)
           .await?;
       }
       if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log")
       {
-        /* config_set_log::exec(
-          cli_config_set_log.get_one::<String>("LOG_LEVEL").unwrap(),
-        )
-        .await?; */
         parsers::config::set_log::process_subcommand(cli_config_set_log)
           .await?;
       }
@@ -150,9 +121,6 @@ pub async fn process_cli(
       if let Some(_cli_config_unset_parent_hsm) =
         cli_config_unset.subcommand_matches("parent-hsm")
       {
-        /* let shasta_token = get_api_token(&backend, &site_name).await?;
-
-        config_unset_parent_hsm::exec(&backend, &shasta_token).await; */
         parsers::config::unset_parent_hsm::process_subcommand(
           &backend, &site_name,
         )
@@ -167,60 +135,9 @@ pub async fn process_cli(
     } else if let Some(cli_config_generate_autocomplete) =
       cli_config.subcommand_matches("gen-autocomplete")
     {
-      /* let shell_opt: Option<String> =
-        cli_config_generate_autocomplete.get_one("shell").cloned();
-
-      let path_opt: Option<PathBuf> =
-        cli_config_generate_autocomplete.get_one("path").cloned();
-
-      let shell = if let Some(shell) = shell_opt {
-        shell.to_ascii_uppercase()
-      } else {
-        let shell_ostring =
-          PathBuf::from(env::var_os("SHELL").expect("$SHELL env missing"))
-            .file_name()
-            .unwrap()
-            .to_ascii_uppercase();
-
-        shell_ostring
-          .into_string()
-          .expect("Could not convert shell name to string")
-      };
-
-      let shell_gen = match shell.as_str() {
-        "BASH" => clap_complete::Shell::Bash,
-        "ZSH" => clap_complete::Shell::Zsh,
-        "FISH" => clap_complete::Shell::Fish,
-        _ => {
-          eprintln!("ERROR - Shell '{shell}' not supported",);
-          std::process::exit(1);
-        }
-      };
-
-      if let Some(path) = path_opt {
-        // Destination path defined
-        log::info!(
-          "Generating shell autocomplete for '{}' to '{}'",
-          shell,
-          path.display()
-        );
-        generate_to(shell_gen, &mut cli, env!("CARGO_PKG_NAME"), path)?;
-      } else {
-        // Destination path not defined - print to stdout
-        log::info!("Generating shell autocomplete for '{}'", shell);
-        generate(
-          shell_gen,
-          &mut cli,
-          env!("CARGO_PKG_NAME"),
-          &mut io::stdout(),
-        );
-      } */
-
-      parsers::config::generate_shell_autocomplete::process_subcommand(
+      parsers::config::generate_shell_autocompletion::process_subcommand(
         cli,
         cli_config_generate_autocomplete,
-        &backend,
-        &site_name,
       )
       .await?;
     }
@@ -662,10 +579,7 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              &hsm_group_name_vec
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<&str>>(),
+              &hsm_group_name_vec,
             )
             .await;
 
@@ -1046,10 +960,7 @@ pub async fn process_cli(
           shasta_root_cert,
           name.map(String::as_str),
           pattern.map(String::as_str),
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
+          &target_hsm_group_vec,
           None,
           None,
           limit,
@@ -1079,119 +990,6 @@ pub async fn process_cli(
           })
           .unwrap_or_default();
 
-        /* let mut hsm_group_available_vec = get_filter_groups_available(
-          &backend,
-          &shasta_token,
-          hsm_group_name_arg_opt,
-          settings_hsm_group_name_opt,
-        )
-        .await?;
-
-        let (hsm_group_vec, xname_vec) = if let Some(hsm_group_name_arg) =
-          hsm_group_name_arg_opt
-        {
-          // Filter HSM groups based on argument
-          hsm_group_available_vec
-            .retain(|group| &group.label == hsm_group_name_arg);
-
-          if hsm_group_available_vec.is_empty() {
-            eprintln!("ERROR - None of the requested HSM groups are available");
-            std::process::exit(1);
-          };
-
-          let member_available_vec = hsm_group_available_vec
-            .iter()
-            .flat_map(|g| g.get_members())
-            .collect::<Vec<String>>();
-
-          (
-            hsm_group_available_vec
-              .into_iter()
-              .map(|group| group.label)
-              .collect::<Vec<String>>(),
-            member_available_vec,
-          )
-        } else if !xname_vec_arg.is_empty() {
-          // Filter members available in the target HSM groups
-          hsm_group_available_vec.retain(|group| {
-            group
-              .get_members()
-              .iter()
-              .any(|member| xname_vec_arg.contains(&member.as_str()))
-          });
-
-          if hsm_group_available_vec.is_empty() {
-            eprintln!(
-              "ERROR - None of the requested xnames are available in the target HSM groups"
-            );
-            std::process::exit(1);
-          }
-
-          let member_available_vec = hsm_group_available_vec
-            .iter()
-            .flat_map(|g| g.get_members())
-            .collect::<Vec<String>>();
-
-          (
-            hsm_group_available_vec
-              .into_iter()
-              .map(|group| group.label)
-              .collect(),
-            member_available_vec,
-          )
-        } else {
-          // all HSM groups available
-          // all members available
-          let member_available_vec = hsm_group_available_vec
-            .iter()
-            .flat_map(|g| g.get_members())
-            .collect::<Vec<String>>();
-
-          (
-            hsm_group_available_vec
-              .into_iter()
-              .map(|group| group.label)
-              .collect(),
-            member_available_vec,
-          )
-        }; */
-
-        /* // Filter members available in the target HSM groups
-        let member_available_vec = &mut hsm_group_vec
-          .iter()
-          .flat_map(|g| g.get_members())
-          .collect::<Vec<String>>();
-
-        let (hsm_group_vec, xname_vec) = if !xname_vec_arg.is_empty() {
-          member_available_vec
-            .retain(|member| xname_vec_arg.contains(&member.as_str()));
-
-          if member_available_vec.is_empty() {
-            eprintln!(
-              "ERROR - None of the requested xnames are available in the target HSM groups"
-            );
-            std::process::exit(1);
-          }
-
-          hsm_group_available_vec.retain(|group| {
-            group
-              .get_members()
-              .iter()
-              .any(|member| xname_vec_arg.contains(&member.as_str()))
-          });
-
-          (hsm_group_available_vec, member_available_vec)
-        } else {
-          (hsm_group_available_vec, member_available_vec)
-        }; */
-
-        /* xname_vec.append(
-          &mut member_available_vec
-            .iter()
-            .map(|member| member.as_str())
-            .collect::<Vec<&str>>(),
-        ); */
-
         let min_age_opt: Option<&String> =
           cli_get_session.get_one::<String>("min-age");
 
@@ -1219,8 +1017,6 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          // Some(hsm_group_vec),
-          // Some(xname_vec.iter().map(|xname| xname.as_str()).collect()),
           hsm_group_name_arg_opt.map(|v| vec![v.clone()]),
           Some(xname_vec_arg),
           min_age_opt,
@@ -1256,10 +1052,7 @@ pub async fn process_cli(
         let hsm_member_vec = backend
           .get_member_vec_from_group_name_vec(
             &shasta_token,
-            &target_hsm_group_vec
-              .iter()
-              .map(String::as_str)
-              .collect::<Vec<&str>>(),
+            &target_hsm_group_vec,
           )
           .await?;
 
@@ -1277,14 +1070,8 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
-          &hsm_member_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
+          &target_hsm_group_vec,
+          &hsm_member_vec,
           name.map(String::as_str),
           limit_number_opt,
           output,
@@ -1317,10 +1104,7 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
+          &target_hsm_group_vec,
           status.map(String::as_str),
           nids_only,
           xnames_only,
@@ -1379,10 +1163,7 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
+          &target_hsm_group_vec,
           id.map(String::as_str),
           limit,
         )
@@ -1406,10 +1187,7 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              &hsm_group_name_vec
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<&str>>(),
+              &hsm_group_name_vec,
             )
             .await;
 
@@ -1465,10 +1243,7 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              &hsm_group_name_vec
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<&str>>(),
+              &hsm_group_name_vec,
             )
             .await;
 
@@ -1928,10 +1703,7 @@ pub async fn process_cli(
           let hsm_members_rslt = backend
             .get_member_vec_from_group_name_vec(
               &shasta_token,
-              &hsm_group_name_vec
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<&str>>(),
+              &hsm_group_name_vec,
             )
             .await;
 
@@ -2080,10 +1852,7 @@ pub async fn process_cli(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          &target_hsm_group_vec
-            .iter()
-            .map(String::as_str)
-            .collect::<Vec<&str>>(),
+          &target_hsm_group_vec,
           cfs_configuration_name_pattern.map(String::as_str),
           since_opt,
           until_opt,

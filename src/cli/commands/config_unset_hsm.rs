@@ -1,9 +1,10 @@
 use std::{fs, io::Write, path::PathBuf};
 
+use anyhow::Error;
 use directories::ProjectDirs;
 use toml_edit::DocumentMut;
 
-pub async fn exec() {
+pub async fn exec() -> Result<(), Error> {
   // Read configuration file
 
   // XDG Base Directory Specification
@@ -48,4 +49,6 @@ pub async fn exec() {
   manta_configuration_file.flush().unwrap();
 
   println!("Target HSM group unset");
+
+  Ok(())
 }

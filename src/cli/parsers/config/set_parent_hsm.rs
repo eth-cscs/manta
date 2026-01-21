@@ -17,7 +17,5 @@ pub async fn process_subcommand(
     .get_one("HSM_GROUP_NAME")
     .ok_or_else(|| Error::msg("new parent hsm group not defined"))?;
 
-  config_set_parent_hsm::exec(backend, &shasta_token, new_parent_hsm).await?;
-
-  Ok(())
+  config_set_parent_hsm::exec(backend, &shasta_token, new_parent_hsm).await
 }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -30,7 +30,10 @@ pub async fn exec(
     }
     Err(_) => {
       if create_hsm_group {
-        log::info!("Group '{}' does not exist, but the option to create the group has been selected, creating it now.", target_hsm_group_name.to_string());
+        log::info!(
+          "Group '{}' does not exist, but the option to create the group has been selected, creating it now.",
+          target_hsm_group_name.to_string()
+        );
         if dryrun {
           log::error!(
             "Dryrun selected, cannot create the new group and continue."
@@ -50,7 +53,10 @@ pub async fn exec(
             .expect("Unable to create new group");
         }
       } else {
-        log::error!("Group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_group_name.to_string());
+        log::error!(
+          "Group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.",
+          target_hsm_group_name.to_string()
+        );
         std::process::exit(1);
       }
     }
@@ -84,7 +90,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      log::error!("Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8");
+      log::error!(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
+      );
       std::process::exit(1);
     }
   }
@@ -107,16 +115,12 @@ pub async fn exec(
 
   // Get parent group members
   let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[parent_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[parent_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
-  /* hsm::group::utils::get_member_vec_from_hsm_group_name(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      parent_hsm_group_name,
-  )
-  .await; */
 
   // Get group hw component counters for target group
   let mut parent_hsm_node_hw_component_count_vec =
@@ -217,16 +221,12 @@ pub async fn exec(
 
   // Get target group members
   let mut target_hsm_node_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[target_hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[target_hsm_group_name.to_string()],
+    )
     .await
     .unwrap();
-  /* hsm::group::utils::get_member_vec_from_hsm_group_name(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      target_hsm_group_name,
-  )
-  .await; */
 
   target_hsm_node_vec.extend(nodes_moved_from_parent_hsm.clone());
 

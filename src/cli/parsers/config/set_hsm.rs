@@ -13,12 +13,9 @@ pub async fn process_subcommand(
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(&backend, &site_name).await?;
 
-  config_set_hsm::exec(
-    &backend,
-    &shasta_token,
-    cli_config_set_hsm.get_one::<String>("HSM_GROUP_NAME"),
-  )
-  .await;
+  let new_hsm: &String = cli_config_set_hsm
+    .get_one("HSM_GROUP_NAME")
+    .ok_or_else(|| Error::msg("new hsm group not defined"))?;
 
-  Ok(())
+  config_set_hsm::exec(&backend, &shasta_token, new_hsm).await
 }

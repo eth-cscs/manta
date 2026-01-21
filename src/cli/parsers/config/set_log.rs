@@ -10,7 +10,5 @@ pub async fn process_subcommand(
     .get_one("LOG_LEVEL")
     .ok_or_else(|| Error::msg("Error"))?;
 
-  config_set_log::exec(log_level).await?;
-
-  Ok(())
+  config_set_log::exec(log_level).await
 }

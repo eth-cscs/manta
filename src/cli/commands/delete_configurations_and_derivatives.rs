@@ -1,45 +1,18 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,
 };
-
-/* pub async fn exec(
-  backend: StaticBackendDispatcher,
-  shasta_token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  target_hsm_group_vec: &[&str],
-  // configuration_name_opt: Option<&String>,
-  configuration_name_pattern: Option<&str>,
-  since_opt: Option<NaiveDateTime>,
-  until_opt: Option<NaiveDateTime>,
-  assume_yes: bool,
-) -> Result<(), Error> {
-  backend
-    .i_delete_data_related_to_cfs_configuration(
-      &shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      target_hsm_group_vec,
-      // configuration_name_opt,
-      configuration_name_pattern,
-      since_opt,
-      until_opt,
-      assume_yes,
-    )
-    .await
-} */
 
 pub async fn exec(
   backend: StaticBackendDispatcher,
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  target_hsm_group_vec: &[&str],
+  target_hsm_group_vec: &[String],
   configuration_name_pattern_opt: Option<&str>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
@@ -47,14 +20,6 @@ pub async fn exec(
 ) -> Result<(), Error> {
   // COLLECT SITE WIDE DATA FOR VALIDATION
   //
-  /* let (
-    cfs_session_to_delete_vec,
-    bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec,
-    image_id_vec,
-    cfs_configuration_name_vec,
-    cfs_session_cfs_configuration_image_id_tuple_filtered_vec,
-    cfs_configuration_vec,
-  ) = get_data_to_delete( */
   let (
     cfs_session_to_delete_vec,
     bos_sessiontemplate_cfs_configuration_image_id_tuple_filtered_vec,

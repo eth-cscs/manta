@@ -23,7 +23,10 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
 ) {
   let xname_vec_rslt = backend
-    .get_member_vec_from_group_name_vec(shasta_token, &[hsm_group_name])
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[hsm_group_name.to_string()],
+    )
     .await;
 
   let xname_vec = match xname_vec_rslt {

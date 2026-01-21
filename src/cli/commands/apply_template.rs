@@ -3,7 +3,10 @@ use manta_backend_dispatcher::{
     bos::{ClusterSessionTrait, ClusterTemplateTrait},
     hsm::group::GroupTrait,
   },
-  types::bos::session::{BosSession, Operation},
+  types::bos::{
+    session::{BosSession, Operation},
+    session_template::BosSessionTemplate,
+  },
 };
 
 use crate::{
@@ -12,7 +15,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -44,16 +47,17 @@ pub async fn exec(
     )
     .await;
 
-  let bos_sessiontemplate_vec = match bos_sessiontemplate_vec_rslt {
-    Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
-    Err(e) => {
-      eprintln!(
-                "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
-                e
-            );
-      std::process::exit(1);
-    }
-  };
+  let bos_sessiontemplate_vec: Vec<BosSessionTemplate> =
+    match bos_sessiontemplate_vec_rslt {
+      Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
+      Err(e) => {
+        eprintln!(
+          "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+          e
+        );
+        std::process::exit(1);
+      }
+    };
 
   let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
     eprintln!(
@@ -79,22 +83,9 @@ pub async fn exec(
   let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
   let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
     backend
-      .get_member_vec_from_group_name_vec(
-        shasta_token,
-        &target_hsm_vec
-          .iter()
-          .map(String::as_str)
-          .collect::<Vec<&str>>(),
-      )
+      .get_member_vec_from_group_name_vec(shasta_token, &target_hsm_vec)
       .await
       .unwrap()
-    /* hsm::group::utils::get_member_vec_from_hsm_name_vec(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        target_hsm_vec,
-    )
-    .await */
   } else {
     bos_sessiontemplate.get_target_xname()
   };
@@ -118,7 +109,7 @@ pub async fn exec(
       log::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
     } else if let Some(mut hsm_members_vec) = backend
-      .get_member_vec_from_group_name_vec(shasta_token, &[limit_value])
+      .get_member_vec_from_group_name_vec(shasta_token, &[limit_value.clone()])
       .await
       .ok()
     {
@@ -132,9 +123,9 @@ pub async fn exec(
     } else {
       // limit_value neither is an xname nor an HSM group
       panic!(
-          "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
-          limit_value
-        );
+        "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
+        limit_value
+      );
     }
   }
 
@@ -210,13 +201,16 @@ pub async fn exec(
       .await;
 
     match create_bos_session_rslt {
-             Ok(bos_session) => println!(
-                 "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
-                 bos_session.name.unwrap(), bos_sessiontemplate_name
-             ),
-             Err(e) => eprintln!(
-                 "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit", e),
-         }
+      Ok(bos_session) => println!(
+        "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
+        bos_session.name.unwrap(),
+        bos_sessiontemplate_name
+      ),
+      Err(e) => eprintln!(
+        "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit",
+        e
+      ),
+    }
   }
   // END CREATE BOS SESSION
   //***********************************************************
