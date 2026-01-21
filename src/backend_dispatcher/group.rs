@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::hsm::group::GroupTrait,
-  types::Group,
+  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
 };
 
 use StaticBackendDispatcher::*;
@@ -120,7 +118,7 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_groups(
     &self,
     auth_token: &str,
-    hsm_name_vec: Option<&[&str]>,
+    hsm_name_vec: Option<&[String]>,
   ) -> Result<Vec<Group>, Error> {
     match self {
       CSM(b) => b.get_groups(auth_token, hsm_name_vec).await,

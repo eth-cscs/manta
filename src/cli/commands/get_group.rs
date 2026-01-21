@@ -9,31 +9,13 @@ use nodeset::NodeSet;
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
-  /* base_url: &str,
-  root_cert: &[u8], */
-  group_name_vec_opt: Option<&[&str]>,
+  group_name_vec_opt: Option<&[String]>,
   output: &str,
 ) -> Result<(), Error> {
-  /* let group_backend: hsm::group::r#struct::HsmGroup = hsm::group::http_client::get(
-      auth_token,
-      base_url,
-      root_cert,
-      Some(&group_name.to_string()),
-  )
-  .await
-  .unwrap()
-  .first()
-  .unwrap()
-  .clone();
-
-  let group: HsmGroup = group_backend.into(); */
-
   let group_vec: Vec<Group> = backend
     .get_groups(auth_token, group_name_vec_opt)
     .await
     .map_err(|e| Error::Message(e.to_string()))?;
-
-  // let group_vec = backend.get_group(auth_token, group_name).await.unwrap();
 
   match output {
     "table" => print_table(&group_vec),

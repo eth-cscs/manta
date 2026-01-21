@@ -844,21 +844,18 @@ pub async fn process_cli(
         )
         .await?;
 
-        let output: &str = cli_get_groups
+        let output: String = cli_get_groups
           .get_one("output")
           .cloned()
           .expect("ERROR - 'output' argument is mandatory");
 
-        let hsm_group_vec: Vec<&str> = target_hsm_group_vec
-          .iter()
-          .map(|x| &**x)
-          .collect::<Vec<&str>>();
+        let hsm_group_vec: Vec<String> = target_hsm_group_vec;
 
         commands::get_group::exec(
           &backend,
           &shasta_token,
-          Some(hsm_group_vec.as_slice()),
-          output,
+          Some(&hsm_group_vec),
+          &output,
         )
         .await?;
       } else if let Some(cli_get_hardware) =
