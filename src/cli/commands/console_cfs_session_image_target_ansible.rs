@@ -57,7 +57,7 @@ pub async fn exec(
   {
     eprintln!(
       "CFS session found {} is type dynamic. Exit",
-      cfs_session_details.name.as_ref().unwrap()
+      cfs_session_details.name
     );
     std::process::exit(1);
   }
@@ -74,7 +74,7 @@ pub async fn exec(
   {
     eprintln!(
       "CFS session found {} state is not 'running'. Exit",
-      cfs_session_details.name.as_ref().unwrap()
+      cfs_session_details.name
     );
     std::process::exit(1);
   }
@@ -91,8 +91,7 @@ pub async fn exec(
   {
     eprintln!(
       "CFS session found {} is not related to any availble HSM groups {:?}",
-      cfs_session_details.name.as_ref().unwrap(),
-      hsm_group_name_vec
+      cfs_session_details.name, hsm_group_name_vec
     );
     std::process::exit(1);
   }

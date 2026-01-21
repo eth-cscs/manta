@@ -1,5 +1,5 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{
@@ -70,7 +70,7 @@ pub async fn exec(
   // Check CFS session to delete exists (filter sessions by name)
   let cfs_session = cfs_session_vec
     .iter()
-    .find(|cfs_session| cfs_session.name.eq(&Some(session_name.to_string())))
+    .find(|cfs_session| cfs_session.name.eq(&session_name.to_string()))
     .ok_or_else(|| {
       Error::Message(format!("CFS session '{}' not found. Exit", session_name))
     })?;

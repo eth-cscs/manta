@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::{
-  self, cfs::session::CfsSessionGetResponse, Group,
+  self, Group, cfs::session::CfsSessionGetResponse,
 };
 
 pub fn cfs_session_struct_to_vec(
@@ -41,7 +41,7 @@ pub fn cfs_session_struct_to_vec(
       duration
     };
 
-  let mut result: Vec<String> = vec![cfs_session.name.clone().unwrap()];
+  let mut result: Vec<String> = vec![cfs_session.name.clone()];
   result.push(cfs_session.configuration.clone().unwrap().name.unwrap());
   result.push(start_time_utc.format("%d/%m/%Y %H:%M:%S").to_string());
   result.push(
