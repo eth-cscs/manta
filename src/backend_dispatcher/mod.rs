@@ -8,7 +8,6 @@ mod cluster_template;
 mod component;
 mod console;
 mod delete_configurations_and_related;
-mod get_image_and_details;
 mod group;
 mod hardware_inventory;
 mod ims;
