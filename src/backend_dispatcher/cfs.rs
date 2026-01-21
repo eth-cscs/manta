@@ -1,32 +1,12 @@
-use std::{collections::HashMap, pin::Pin};
+use std::pin::Pin;
 
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{
-    apply_hw_cluster_pin::ApplyHwClusterPin,
-    apply_sat_file::SatTrait,
-    apply_session::ApplySessionTrait,
-    authentication::AuthenticationTrait,
-    bos::{ClusterSessionTrait, ClusterTemplateTrait},
-    bss::BootParametersTrait,
-    cfs::CfsTrait,
-    console::ConsoleTrait,
-    delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,
-    get_images_and_details::GetImagesAndDetailsTrait,
-    hsm::{
-      component::ComponentTrait, group::GroupTrait,
-      hardware_inventory::HardwareInventory,
-      redfish_endpoint::RedfishEndpointTrait,
-    },
-    ims::ImsTrait,
-    migrate_backup::MigrateBackupTrait,
-    migrate_restore::MigrateRestoreTrait,
-    pcs::PCSTrait,
-  },
+  interfaces::cfs::CfsTrait,
   types::{
-    self, Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
-    K8sDetails, NodeMetadataArray,
-    bos::{session::BosSession, session_template::BosSessionTemplate},
+    Group,
+    K8sDetails,
+    bos::session_template::BosSessionTemplate,
     bss::BootParameters,
     cfs::{
       cfs_configuration_details::LayerDetails,
@@ -35,19 +15,14 @@ use manta_backend_dispatcher::{
       component::Component as CfsComponent,
       session::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
-    hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    ims::{Image, PatchImage},
+    ims::Image,
   },
 };
 
 use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
-use tokio::io::{AsyncRead, AsyncWrite};
 
-use csm_rs::backend_connector::Csm;
-use ochami_rs::backend_connector::Ochami;
-use serde_json::Value;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

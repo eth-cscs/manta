@@ -1,8 +1,7 @@
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
 use anyhow::Error;
 use clap::ArgMatches;
-use config::Config;
 
 use crate::{
   cli::commands::apply_session,
