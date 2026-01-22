@@ -2,12 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.1] - 2026-01-22
+
+### Bug Fixes
+
+- Command 'manta delete' not filtering the data to delete
+- Command to get the list of hsm groups available not filtering the system wide hsm groups
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+
+### Refactor
+
+- Adapt code to csm-rs clean-code branch
+- Clean code
+- Cargo fix
+- Update .gitignore
+- Clean code
+- Update cargo-dist
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Manta no longer process host expressions
+
+### Regactor
+
+- Clean code
+
 ## [1.59.8] - 2026-01-09
 
 ### Bug Fixes
 
 - Exit log streaming if git-clone init container is terminated with exit code different than 0
 - Exit log streaming if git-clone init container is terminated with exit code different than 0
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.8
 
 ## [1.59.7] - 2026-01-06
 
