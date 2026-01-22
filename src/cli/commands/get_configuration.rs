@@ -42,33 +42,30 @@ pub async fn exec(
       limit,
     )
     .await
-    .unwrap_or_else(|backend_error| {
-      // dbg!(&backend_error);
-      match backend_error {
-        error::Error::ConfigurationNotFound => {
-          if let Some(configuration_name) = configuration_name_opt {
-            println!(
-              "Configuration '{}' could not be found.",
-              configuration_name
-            );
-            std::process::exit(0);
-          } else if let Some(configuration_name_pattern) =
-            configuration_name_pattern_opt
-          {
-            println!(
-              "Configuration '{}' could not be found.",
-              configuration_name_pattern
-            );
-            std::process::exit(0);
-          } else {
-            println!("No configarion found.");
-            std::process::exit(0);
-          }
+    .unwrap_or_else(|backend_error| match backend_error {
+      error::Error::ConfigurationNotFound => {
+        if let Some(configuration_name) = configuration_name_opt {
+          println!(
+            "Configuration '{}' could not be found.",
+            configuration_name
+          );
+          std::process::exit(0);
+        } else if let Some(configuration_name_pattern) =
+          configuration_name_pattern_opt
+        {
+          println!(
+            "Configuration '{}' could not be found.",
+            configuration_name_pattern
+          );
+          std::process::exit(0);
+        } else {
+          println!("No configarion found.");
+          std::process::exit(0);
         }
-        _ => {
-          log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
-          std::process::exit(1);
-        }
+      }
+      _ => {
+        log::error!("Failed to get CFS sessions. Reason:\n{backend_error}");
+        std::process::exit(1);
       }
     });
 
