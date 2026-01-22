@@ -1,4 +1,4 @@
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
+use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;
 
@@ -196,7 +196,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
     // .visible_alias("kp")
     .arg_required_else_help(true)
     .about("Delete kernel parameters")
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlists.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set runtime configuration"))
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Don't reboot nodes").action(ArgAction::SetTrue))
@@ -354,7 +354,7 @@ pub fn subcommand_get_node_details() -> Command {
     .arg(arg!(-S --"include-siblings" "Output includes extra nodes related to the ones requested by used. 2 nodes are siblings if they share the same power supply.").action(ArgAction::SetTrue))
     .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human readable (table) format").value_parser(["table", "table-wide", "json", "summary"]).default_value("table"))
     .arg_required_else_help(true)
-    .arg(arg!(<VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(<VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlists.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
 }
 
 pub fn subcommand_get_images() -> Command {
@@ -375,7 +375,7 @@ pub fn subcommand_get_boot_parameters() -> Command {
     .arg_required_else_help(true)
     .about("Get boot-parameters information")
     .arg(arg!(-H --"hsm-group" <VALUE> "hsm group name"))
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
 
   // FIXME: Ignoring nids and macs to avoid checking if tenant has access to the nodes
   // using the nids or macs
@@ -393,7 +393,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     // .visible_aliases(["k", "kp", "kernel-params"])
     .about("Get kernel-parameters information")
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-H --"hsm-group" <VALUE> "List kernel parameters for all nodes in a HSM group name"))
     .arg(arg!(-f --filter <VALUE> "Comma separated list of kernel parameters to filter.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"))
     .arg(arg!(-o --output <VALUE> "Output format.").value_parser(["table", "json"]).default_value("table"))
@@ -557,7 +557,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot. This means, you will have to run 'manta apply template' command with the sessoin_template created'").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
     .group(ArgGroup::new("boot-image_or_boot-config").args(["boot-image", "boot-image-configuration"]))
-    .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
 }
 
 pub fn subcommand_apply_boot_cluster() -> Command {
@@ -628,7 +628,7 @@ pub fn subcommand_power() -> Command {
             .about("Command to power on a group of nodes.\neg: 'x1001c1s0b0n1,x1001c1s0b1n0'")
             .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
             .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'")),
+            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'")),
         ),
     )
     .subcommand(
@@ -654,7 +654,7 @@ pub fn subcommand_power() -> Command {
             .arg(arg!(-g --graceful "graceful shutdown").action(ArgAction::SetFalse))
             .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
             .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'")),
+            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'")),
         ),
     )
     .subcommand(
@@ -680,7 +680,7 @@ pub fn subcommand_power() -> Command {
             .arg(arg!(-g --graceful "graceful power reset").action(ArgAction::SetFalse))
             .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
             .arg(arg!(-o --output <FORMAT> "Output format.").value_parser(["table", "json"]).default_value("table"))
-            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'")),
+            .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'")),
         ),
     )
 }
@@ -707,7 +707,7 @@ pub fn subcommand_add_group() -> Command {
     .arg_required_else_help(true)
     .arg(arg!(-l --label <VALUE> "Group name").required(true))
     .arg(arg!(-d --description <VALUE> "Group description"))
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
   // .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
   // .arg(arg!(-D --"dry-run" "No changes applied to the system.").action(ArgAction::SetTrue))
 }
@@ -799,7 +799,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     // .visible_alias("kp")
     .arg_required_else_help(true)
     .about("Add kernel parameters")
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
     .arg(arg!(-O --"overwrite" "If kernel parameter exists, then overwrite its value.").action(ArgAction::SetTrue))
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
@@ -818,7 +818,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
     // .visible_alias("kp")
     .arg_required_else_help(true)
     .about("Apply kernel parameters")
-    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "List of group members. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-H --"hsm-group" <HSM_GROUP> "Cluster to set kernel parameters"))
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Don't reboot nodes").action(ArgAction::SetTrue))
@@ -968,7 +968,7 @@ pub fn subcommand_add_nodes_to_groups() -> Command {
     // .visible_aliases(["ag"])
     .about("Add nodes to a list of groups")
     .arg(arg!(-g --group <VALUE> "HSM group to assign the nodes to"))
-    .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
 
@@ -977,18 +977,6 @@ pub fn subcommand_remove_nodes_from_groups() -> Command {
     // .visible_aliases(["rg"])
     .about("Remove nodes from groups")
     .arg(arg!(-g --group <VALUE> "HSM group to remove the nodes from"))
-    .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist or regex.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]' or 'nid00131.*'"))
+    .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
-}
-
-pub fn subcommand_download_boot_image() -> Command {
-  Command::new("download-boot-image")
-    .about("Downloads a boot image")
-    .arg(arg!(<IMAGE_ID> "Image id to download"))
-}
-
-pub fn subcommand_upload_boot_image() -> Command {
-  Command::new("upload-boot-image")
-    .about("Uploads a boot image")
-    .arg(arg!(<IMAGE_ID> "Image id to upload"))
 }
