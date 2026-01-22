@@ -939,6 +939,8 @@ pub async fn process_cli(
         )
         .await?;
 
+        dbg!(&target_hsm_group_vec);
+
         let limit: Option<&u8> =
           if let Some(true) = cli_get_configuration.get_one("most-recent") {
             Some(&1)

@@ -1,6 +1,4 @@
-use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
-};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -44,54 +42,6 @@ pub async fn get_groups_names_available(
     Ok(vec![target_hsm_group.to_string()])
   } else {
     Ok(hsm_name_available_vec)
-  }
-}
-
-/// Returns a curated list of 'groups' the user has access to.
-/// This function validates the list of groups and returns an error if user tries to access a
-/// group he does not have access to
-/// If the user did not request any HSM group, then it will return all groups available
-pub async fn get_filter_groups_available(
-  backend: &StaticBackendDispatcher,
-  auth_token: &str,
-  group_cli_arg_opt: Option<&String>,
-  group_env_or_config_file_opt: Option<&String>,
-) -> Result<Vec<Group>, Error> {
-  // Get list of groups the user has access to
-  let group_available_vec = backend.get_group_available(auth_token).await?;
-
-  // Get the group name the user is trying to work with, this value can be in 2 different places:
-  //  - command argument
-  //  - configuration (environment variable or config file)
-  let target_group_name_opt = if group_cli_arg_opt.is_some() {
-    group_cli_arg_opt
-  } else {
-    group_env_or_config_file_opt
-  };
-
-  // Validate the user has access to the HSM group is requested
-  if let Some(target_group_name) = target_group_name_opt {
-    let group_opt = group_available_vec
-      .iter()
-      .find(|group| group.label.eq(target_group_name));
-
-    if let Some(group) = group_opt {
-      return Ok(vec![group.clone()]);
-    } else {
-      let mut group_available_vec = group_available_vec;
-      group_available_vec.sort_by(|a, b| a.label.cmp(&b.label));
-      return Err(Error::Message(format!(
-        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
-        target_group_name,
-        group_available_vec
-          .iter()
-          .map(|g| g.label.clone())
-          .collect::<Vec<_>>()
-          .join(", ")
-      )));
-    }
-  } else {
-    Ok(group_available_vec)
   }
 }
 
