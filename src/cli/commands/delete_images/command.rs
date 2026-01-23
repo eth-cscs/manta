@@ -1,8 +1,9 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, hsm::group::GroupTrait, ims::ImsTrait,
   },
-  types::{bss::BootParameters, Group},
+  types::{Group, bss::BootParameters},
 };
 
 use crate::{
@@ -18,27 +19,15 @@ pub async fn exec(
   _hsm_name_available_vec: Vec<String>,
   image_id_vec: &[&str],
   dry_run: bool,
-) {
+) -> Result<(), Error> {
   log::info!(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );
 
-  let group_available_vec_rslt =
-    backend.get_group_available(shasta_token).await;
+  let group_available_vec = backend.get_group_available(shasta_token).await?;
 
-  let group_available_vec = group_available_vec_rslt.unwrap_or_else(|e| {
-    eprintln!("ERROR - {}", e);
-    std::process::exit(1);
-  });
-
-  let boot_parameter_vec_rslt =
-    backend.get_all_bootparameters(shasta_token).await;
-
-  let boot_parameter_vec = boot_parameter_vec_rslt.unwrap_or_else(|e| {
-    eprintln!("ERROR - {}", e);
-    std::process::exit(1);
-  });
+  let boot_parameter_vec = backend.get_all_bootparameters(shasta_token).await?;
 
   // Get list of image ids that are used to boot nodes (Node of these images can be deleted)
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
@@ -57,11 +46,10 @@ pub async fn exec(
 
   // Exit if any image id user wants to delete is used to boot nodes
   if !image_xnames_boot_map.is_empty() {
-    eprintln!(
-        "ERROR - The following images could not be deleted since they boot nodes.\n{:#?}",
-        image_xnames_boot_map
-      );
-    std::process::exit(1);
+    return Err(Error::msg(format!(
+      "ERROR - The following images could not be deleted since they boot nodes.\n{:#?}",
+      image_xnames_boot_map
+    )));
   }
 
   // Get list of boot parameters that user can't delete because it's host is not a member of
@@ -70,12 +58,12 @@ pub async fn exec(
     get_restricted_image_ids(&group_available_vec, &boot_parameter_vec);
 
   if !image_restricted_vec.is_empty() {
-    eprintln!(
-        "ERROR - The following image ids are not deletable because they are used by hosts that are not part of the groups available to the user:\n{:#?}",
-        image_restricted_vec
-      );
-    std::process::exit(1);
+    return Err(Error::msg(format!(
+      "ERROR - The following image ids are not deletable because they are used by hosts that are not part of the groups available to the user:\n{:#?}",
+      image_restricted_vec
+    )));
   }
+
   for image_id in image_id_vec {
     if dry_run {
       eprintln!("Dry-run enabled. No changes persisted into the system");
@@ -100,6 +88,8 @@ pub async fn exec(
   }
 
   println!("Images deleted:\n{:?}", image_id_vec);
+
+  Ok(())
 }
 
 pub fn get_restricted_image_ids(

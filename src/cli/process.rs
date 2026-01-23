@@ -1347,7 +1347,12 @@ pub async fn process_cli(
         .get(&configuration.site.clone())
         .unwrap();
 
-      commands::log::exec(
+      let k8s_details = site
+        .k8s
+        .as_ref()
+        .expect("ERROR - k8s section not found in configuration");
+
+      match commands::log::exec(
         &backend,
         &site_name,
         &shasta_token,
@@ -1356,12 +1361,18 @@ pub async fn process_cli(
         &group_available_vec,
         user_input,
         timestamps,
-        &site
-          .k8s
-          .as_ref()
-          .expect("ERROR - k8s section not found in configuration"), // FIXME:
+        k8s_details,
       )
-      .await;
+      .await
+      {
+        Ok(_) => {
+          println!("Log streaming ended");
+        }
+        Err(e) => {
+          eprintln!("{}", e);
+          std::process::exit(1);
+        }
+      };
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
       if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
         if !std::io::stdout().is_terminal() {
@@ -1883,7 +1894,7 @@ pub async fn process_cli(
 
         let dry_run: bool = cli_delete_images.get_flag("dry-run");
 
-        delete_images::command::exec(
+        match delete_images::command::exec(
           &backend,
           &shasta_token,
           shasta_base_url,
@@ -1892,7 +1903,16 @@ pub async fn process_cli(
           image_id_vec.as_slice(),
           dry_run,
         )
-        .await;
+        .await
+        {
+          Ok(_) => {
+            println!("Images deleted successfully");
+          }
+          Err(e) => {
+            eprintln!("{}", e.to_string());
+            std::process::exit(1);
+          }
+        }
       }
     } else if let Some(cli_validate_local_repo) =
       cli_root.subcommand_matches("validate-local-repo")

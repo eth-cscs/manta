@@ -483,7 +483,7 @@ pub fn render_jinja2_sat_file_yaml(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,
   value_cli_vec_opt: Option<&[String]>,
-) -> Value {
+) -> Result<Value, anyhow::Error> {
   let mut env = minijinja::Environment::new();
   // Set/enable debug in order to force minijinja to print debug error messages which are more
   // descriptive. Eg https://github.com/mitsuhiko/minijinja/blob/main/examples/error/src/main.rs#L4-L5
@@ -492,8 +492,7 @@ pub fn render_jinja2_sat_file_yaml(
   env.set_syntax(
     minijinja::syntax::SyntaxConfig::builder()
       .line_comment_prefix("#")
-      .build()
-      .unwrap(),
+      .build()?,
   );
   // Set 'String' as undefined behaviour meaning, missing values won't pass the template
   // rendering
@@ -508,16 +507,17 @@ pub fn render_jinja2_sat_file_yaml(
     );
     log::info!("Expand variables in 'session vars' file");
     // Read sesson vars file and parse it to YAML
-    let values_file_yaml: Value =
-      serde_yaml::from_str(values_file_content).unwrap();
+    let values_file_yaml: Value = serde_yaml::from_str(values_file_content)?;
     // Render session vars file with itself (copying ansible behaviour where the ansible vars
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .expect("ERROR - Error parsing values file to YAML. Exit");
-    serde_yaml::from_str(&values_file_rendered).unwrap()
+      .map_err(|e| {
+        Error::Message("Error parsing values file to YAML".to_string())
+      })?;
+    serde_yaml::from_str(&values_file_rendered)?
   } else {
-    serde_yaml::from_str(sat_file_content).unwrap()
+    serde_yaml::from_str(sat_file_content)?
   };
 
   // Convert variable values sent by cli argument from dot notation to yaml format
@@ -526,14 +526,8 @@ pub fn render_jinja2_sat_file_yaml(
   );
   if let Some(value_option_vec) = value_cli_vec_opt {
     for value_option in value_option_vec {
-      let cli_var_context_yaml_rslt = dot_notation_to_yaml(&value_option);
-      let cli_var_context_yaml = match cli_var_context_yaml_rslt {
-        Ok(value) => value,
-        Err(e) => {
-          eprintln!("ERROR - {:#?}", e);
-          panic!();
-        }
-      };
+      let cli_var_context_yaml = dot_notation_to_yaml(&value_option)?;
+
       values_file_yaml =
         merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
     }
@@ -541,29 +535,12 @@ pub fn render_jinja2_sat_file_yaml(
 
   // render sat template file
   log::info!("Expand variables in 'SAT file'");
-  let sat_file_rendered_rslt =
-    env.render_str(sat_file_content, values_file_yaml);
-
-  let sat_file_rendered = match sat_file_rendered_rslt {
-    Ok(sat_file_rendered) => sat_file_rendered,
-    Err(err) => {
-      eprintln!("ERROR - Could not render template: {:#}", err);
-      // render causes as well
-      let mut err = &err as &dyn std::error::Error;
-      while let Some(next_err) = err.source() {
-        eprintln!();
-        eprintln!("caused by: {:#}", next_err);
-        err = next_err;
-      }
-
-      std::process::exit(1);
-    }
-  };
+  let sat_file_rendered = env.render_str(sat_file_content, values_file_yaml)?;
 
   // Disable debug
   env.set_debug(false);
 
-  let sat_file_yaml: Value = serde_yaml::from_str(&sat_file_rendered).unwrap();
+  let sat_file_yaml: Value = serde_yaml::from_str(&sat_file_rendered)?;
 
-  sat_file_yaml
+  Ok(sat_file_yaml)
 }

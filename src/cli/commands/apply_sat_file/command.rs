@@ -1,3 +1,4 @@
+use anyhow::Error;
 use dialoguer::theme::ColorfulTheme;
 use manta_backend_dispatcher::{
   interfaces::apply_sat_file::SatTrait,
@@ -31,8 +32,8 @@ pub async fn exec(
   reboot: bool,
   watch_logs: bool,
   timestamps: bool,
-  prehook: Option<&str>,
-  posthook: Option<&str>,
+  prehook_opt: Option<&str>,
+  posthook_opt: Option<&str>,
   image_only: bool,
   session_template_only: bool,
   debug_on_failure: bool,
@@ -40,33 +41,40 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
   k8s: &K8sDetails,
-) {
+) -> Result<(), Error> {
   // Validate Pre-hook
   log::info!("Validating pre-hook script");
-  if prehook.is_some() {
-    match crate::common::hooks::check_hook_perms(prehook).await {
+  if prehook_opt.is_some() {
+    match crate::common::hooks::check_hook_perms(prehook_opt).await {
       Ok(_r) => println!(
         "Pre-hook script '{}' exists and is executable.",
-        prehook.unwrap()
+        prehook_opt.unwrap()
       ),
       Err(e) => {
-        log::error!("{}. File: {}", e, &prehook.unwrap());
-        std::process::exit(2);
+        log::error!("{}. File: {}", e, &prehook_opt.unwrap());
+        return Err(Error::msg(format!(
+          "{}. File: {}",
+          e,
+          &prehook_opt.unwrap()
+        )));
       }
     };
   }
 
   // Validate Post-hook
   log::info!("Validating post-hook script");
-  if posthook.is_some() {
-    match crate::common::hooks::check_hook_perms(posthook).await {
+  if posthook_opt.is_some() {
+    match crate::common::hooks::check_hook_perms(posthook_opt).await {
       Ok(_) => println!(
         "Post-hook script '{}' exists and is executable.",
-        posthook.unwrap()
+        posthook_opt.unwrap()
       ),
       Err(e) => {
-        log::error!("{}. File: {}", e, &posthook.unwrap());
-        std::process::exit(2);
+        return Err(Error::msg(format!(
+          "{}. File: {}",
+          e,
+          &posthook_opt.unwrap()
+        )));
       }
     };
   }
@@ -76,15 +84,14 @@ pub async fn exec(
     &sat_file_content,
     values_file_content_opt,
     values_cli_opt,
-  )
-  .clone();
+  )?;
 
   let sat_template_file_string =
     serde_yaml::to_string(&sat_template_file_yaml).unwrap();
 
   let mut sat_template: utils::SatFile =
     serde_yaml::from_str(&sat_template_file_string)
-      .expect("Could not parse SAT template yaml file");
+      .map_err(|e| Error::msg("Could not parse SAT template yaml file"))?;
 
   // Filter either images or session_templates section according to user request
   //
@@ -103,15 +110,13 @@ pub async fn exec(
   let process_sat_file = if !assume_yes {
     dialoguer::Confirm::with_theme(&ColorfulTheme::default())
       .with_prompt("Please check the template above and confirm to proceed.")
-      .interact()
-      .unwrap()
+      .interact()?
   } else {
     true
   };
 
   if !process_sat_file {
-    println!("Operation canceled by user. Exit");
-    std::process::exit(0);
+    return Err(Error::msg("Operation canceled by user. Exit"));
   }
 
   // Confirm reboot if session_templates are to be applied
@@ -132,27 +137,23 @@ pub async fn exec(
 
     if !agree_to_reboot {
       println!("Operation canceled by user. Exit");
-      std::process::exit(0);
+      return Ok(());
     }
   }
 
   // Run/process Pre-hook
-  if prehook.is_some() {
-    println!("Running the pre-hook '{}'", &prehook.unwrap());
-    match crate::common::hooks::run_hook(prehook).await {
-      Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
-      Err(_error) => {
-        log::error!("{}", _error);
-        std::process::exit(2);
-      }
-    };
+  if prehook_opt.is_some() {
+    println!("Running the pre-hook '{}'", &prehook_opt.unwrap());
+    let code = crate::common::hooks::run_hook(prehook_opt).await?;
+
+    log::debug!("Pre-hook script completed ok. RT={}", code);
   }
 
   if process_sat_file {
     println!("Proceed and process SAT file");
   } else {
     println!("Operation canceled by user. Exit");
-    std::process::exit(0);
+    return Ok(());
   }
 
   // Get K8s secrets
@@ -193,21 +194,15 @@ pub async fn exec(
       overwrite,
       dry_run,
     )
-    .await
-    .unwrap_or_else(|e| {
-      eprintln!("{}", e);
-      std::process::exit(1);
-    });
+    .await?;
 
   // Run/process Post-hook
-  if posthook.is_some() {
-    println!("Running the post-hook '{}'", &posthook.unwrap());
-    match crate::common::hooks::run_hook(posthook).await {
-      Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
-      Err(_error) => {
-        log::error!("{}", _error);
-        std::process::exit(2);
-      }
-    };
+  if posthook_opt.is_some() {
+    println!("Running the post-hook '{}'", &posthook_opt.unwrap());
+    let code = crate::common::hooks::run_hook(posthook_opt).await?;
+
+    log::debug!("Post-hook script completed ok. RT={}", code);
   }
+
+  Ok(())
 }

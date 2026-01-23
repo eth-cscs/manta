@@ -178,7 +178,7 @@ pub async fn parse_subcommand(
         .as_ref()
         .expect("ERROR - k8s section not found in configuration"), // FIXME:
     )
-    .await;
+    .await?;
   } else if let Some(cli_apply_template) =
     cli_apply.subcommand_matches("template")
   {
