@@ -115,7 +115,6 @@ pub async fn process_cli(
       if let Some(_cli_config_unset_hsm) =
         cli_config_unset.subcommand_matches("hsm")
       {
-        // config_unset_hsm::exec().await;
         parsers::config::unset_hsm::process_subcommand().await?;
       }
       if let Some(_cli_config_unset_parent_hsm) =
@@ -129,7 +128,6 @@ pub async fn process_cli(
       if let Some(_cli_config_unset_auth) =
         cli_config_unset.subcommand_matches("auth")
       {
-        // config_unset_auth::exec().await;
         parsers::config::unset_auth::process_subcommand().await?;
       }
     } else if let Some(cli_config_generate_autocomplete) =
