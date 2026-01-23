@@ -23,14 +23,15 @@ pub async fn exec(
   hosts_expression: &str,
   timestamps: bool,
   k8s: &K8sDetails,
-) {
+) -> Result<(), Error> {
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
-      std::process::exit(1);
-    });
+    .map_err(|e| {
+      Error::Message(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let xname_vec_rslt = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -41,7 +42,7 @@ pub async fn exec(
 
   // NOTE: fancy pattern matching. Maybe not a good use case for this. Ask in the future if this
   // is redeable or not
-  let cfs_sessions_vec_rslt = match xname_vec_rslt.as_deref() {
+  let cfs_sessions_vec = match xname_vec_rslt.as_deref() {
     Ok([]) | Err(_) => {
       // Failed to convert user input to xname, try user input is either a group name or CFS session name
       log::debug!(
@@ -100,24 +101,25 @@ pub async fn exec(
       eprintln!("ERROR - Can only operate a single node. Exit");
       std::process::exit(1);
     }
-  };
-
-  let cfs_sessions_vec = cfs_sessions_vec_rslt.unwrap_or_else(|e| {
-    eprintln!("ERROR - Could not get CFS sessions. Reason:\n{e}\nExit");
-    std::process::exit(1);
-  });
-
-  if cfs_sessions_vec.is_empty() {
-    println!("No CFS session found");
-    std::process::exit(0);
   }
+  .map_err(|e| {
+    Error::Message(format!(
+      "ERROR - Could not get CFS sessions. Reason:\n{e}\nExit"
+    ))
+  })?;
+
+  let cfs_session = cfs_sessions_vec.first().ok_or_else(|| {
+    return {
+      Error::Message(
+        "No CFS session found for the given input. Exit".to_string(),
+      )
+    };
+  })?;
 
   log::info!(
     "Get logs for CFS session:\n{}",
     common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
   );
-
-  let cfs_session = cfs_sessions_vec.first().unwrap();
 
   let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
 
@@ -131,7 +133,7 @@ pub async fn exec(
     group_available_vec,
   );
 
-  let log_rslt = print_cfs_session_logs(
+  let _ = print_cfs_session_logs(
     backend,
     shasta_token,
     site_name,
@@ -139,12 +141,9 @@ pub async fn exec(
     timestamps,
     k8s,
   )
-  .await;
+  .await?;
 
-  if let Err(e) = log_rslt {
-    eprintln!("ERROR - {e}. Exit");
-    std::process::exit(1);
-  }
+  Ok(())
 }
 
 pub async fn print_cfs_session_logs(
