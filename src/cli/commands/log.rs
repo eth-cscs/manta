@@ -98,8 +98,9 @@ pub async fn exec(
     Ok([_, ..]) => {
       // User input is an expression that expands to multiple nodes
       log::debug!("User input is a list of nodes");
-      eprintln!("ERROR - Can only operate a single node. Exit");
-      std::process::exit(1);
+      return Err(Error::Message(
+        "ERROR - Can only operate a single node. Exit".to_string(),
+      ));
     }
   }
   .map_err(|e| {
@@ -126,7 +127,7 @@ pub async fn exec(
   let group_available_vec: Vec<Group> = group_available_vec
     .into_iter()
     .map(|group| group.clone().into())
-    .collect::<Vec<_>>();
+    .collect();
 
   check_cfs_session_against_groups_available(
     &cfs_session_backend,
