@@ -146,6 +146,11 @@ pub async fn parse_subcommand(
       .get(&configuration.site.clone())
       .ok_or_else(|| Error::msg("Site not valid"))?;
 
+    let k8s_details = site
+      .k8s
+      .as_ref()
+      .ok_or_else(|| Error::msg("K8s details not found in configuration"))?;
+
     apply_sat_file::command::exec(
       &backend,
       &site_name,
@@ -173,10 +178,7 @@ pub async fn parse_subcommand(
       overwrite,
       dry_run,
       assume_yes,
-      &site
-        .k8s
-        .as_ref()
-        .expect("ERROR - k8s section not found in configuration"), // FIXME:
+      k8s_details,
     )
     .await?;
   } else if let Some(cli_apply_template) =
