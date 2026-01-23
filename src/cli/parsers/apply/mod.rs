@@ -223,8 +223,9 @@ pub async fn parse_subcommand(
     let shasta_token = get_api_token(&backend, &site_name).await?;
 
     if !std::io::stdout().is_terminal() {
-      eprintln!("This command needs to run in interactive mode. Exit");
-      std::process::exit(1);
+      return Err(Error::msg(
+        "This command needs to run in interactive mode. Exit",
+      ));
     }
 
     apply_ephemeral_env::exec(
@@ -253,20 +254,17 @@ pub async fn parse_subcommand(
       )
       .await?;
 
-      let hsm_members_rslt = backend
+      let hsm_members = backend
         .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
-        .await;
-
-      match hsm_members_rslt {
-        Ok(hsm_members) => &hsm_members.join(","),
-        Err(e) => {
-          eprintln!(
-            "ERROR - could not fetch HSM groups members. Reason:\n{}",
+        .await
+        .map_err(|e| {
+          Error::msg(format!(
+            "Could not fetch HSM group members. Reason:\n{}",
             e.to_string()
-          );
-          std::process::exit(1);
-        }
-      }
+          ))
+        })?;
+
+      &hsm_members.join(",")
     } else {
       cli_apply_kernel_parameters
         .get_one::<String>("nodes")
@@ -314,8 +312,7 @@ pub async fn parse_subcommand(
 
       if let Some(new_boot_image_id) = new_boot_image_id_opt {
         if uuid::Uuid::parse_str(new_boot_image_id).is_err() {
-          eprintln!("ERROR - image id is not an UUID");
-          std::process::exit(1);
+          return Err(Error::msg("ERROR - image id is not an UUID"));
         }
       }
 

@@ -114,7 +114,7 @@ pub async fn get_config_file_path() -> PathBuf {
 
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
-pub async fn get_configuration() -> Config {
+pub async fn get_configuration() -> Result<Config, Error> {
   // Get config file path
   let config_file_path = get_config_file_path().await;
 
@@ -138,26 +138,20 @@ pub async fn get_configuration() -> Config {
   );
 
   // Process config file
-  let config_rslt = ::config::Config::builder()
+  ::config::Config::builder()
     .add_source(config_file)
     .add_source(
       ::config::Environment::with_prefix("MANTA")
         .try_parsing(true)
         .prefix_separator("_"),
     )
-    .build();
-
-  match config_rslt {
-    Ok(config) => config,
-    Err(error) => {
-      eprintln!(
-        "Error processing manta configuration file. Reason:\n{}",
-        error
-      );
-
-      std::process::exit(1);
-    }
-  }
+    .build()
+    .map_err(|e| {
+      Error::Message(format!(
+        "Could not process manta configuration file. Reason:\n{}",
+        e
+      ))
+    })
 }
 
 pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {

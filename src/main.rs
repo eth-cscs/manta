@@ -21,7 +21,15 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // #[cfg(feature = "dhat-heap")]
   // let _profiler = dhat::Profiler::new_heap();
 
-  let settings = common::config::get_configuration().await;
+  let settings_rslt = common::config::get_configuration().await;
+
+  let settings = match settings_rslt {
+    Ok(settings) => settings,
+    Err(e) => {
+      eprintln!("ERROR - Could not read configuration file: {}", e);
+      std::process::exit(1);
+    }
+  };
 
   let configuration: MantaConfiguration =
     settings.clone().try_deserialize().unwrap_or_else(|e| {
@@ -79,14 +87,6 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   if audit_kafka_opt.is_none() {
     log::warn!("config - Auditor not defined");
   }
-
-  /* let audit_file_path =
-    if let Ok(audit_file) = settings.get_string("audit_file") {
-      audit_file
-    } else {
-      "/var/log/manta/requests.log".to_string()
-    };
-  log::debug!("config - audit_file_path:  {audit_file_path}"); */
 
   log_ops::configure(log_level); // log4rs programatically configuration
 
