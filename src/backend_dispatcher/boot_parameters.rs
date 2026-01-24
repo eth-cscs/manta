@@ -1,12 +1,9 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::bss::BootParametersTrait,
+  error::Error, interfaces::bss::BootParametersTrait,
   types::bss::BootParameters,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

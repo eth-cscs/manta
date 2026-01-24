@@ -7,9 +7,9 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
-    HWInventoryByLocationList,
     bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
+    HWInventoryByLocationList,
   },
 };
 use std::{

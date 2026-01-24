@@ -1,10 +1,7 @@
-
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::hsm::component::ComponentTrait,
-  types::{
-    Component, ComponentArrayPostArray, NodeMetadataArray,
-  },
+  types::{Component, ComponentArrayPostArray, NodeMetadataArray},
 };
 
 use StaticBackendDispatcher::*;

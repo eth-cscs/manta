@@ -3,7 +3,7 @@ use std::{fs, io::Write, path::PathBuf};
 use anyhow::Error;
 use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{DocumentMut, value};
+use toml_edit::{value, DocumentMut};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

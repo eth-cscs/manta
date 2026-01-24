@@ -15,7 +15,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,

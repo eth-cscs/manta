@@ -2,7 +2,7 @@ use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
 use directories::ProjectDirs;
-use toml_edit::{DocumentMut, Table, value};
+use toml_edit::{value, DocumentMut, Table};
 
 pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
   // XDG Base Directory Specification

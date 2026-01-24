@@ -1,4 +1,3 @@
-
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::hsm::redfish_endpoint::RedfishEndpointTrait,

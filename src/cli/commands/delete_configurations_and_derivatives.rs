@@ -1,7 +1,7 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,

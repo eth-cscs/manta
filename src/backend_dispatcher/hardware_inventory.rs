@@ -1,7 +1,5 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::hsm::hardware_inventory::HardwareInventory,
+  error::Error, interfaces::hsm::hardware_inventory::HardwareInventory,
   types::HWInventoryByLocationList,
 };
 

@@ -1,13 +1,9 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::console::ConsoleTrait,
-  types::K8sDetails,
+  error::Error, interfaces::console::ConsoleTrait, types::K8sDetails,
 };
 
-use StaticBackendDispatcher::*;
 use tokio::io::{AsyncRead, AsyncWrite};
-
+use StaticBackendDispatcher::*;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

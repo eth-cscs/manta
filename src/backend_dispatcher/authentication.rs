@@ -1,11 +1,8 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::authentication::AuthenticationTrait,
+  error::Error, interfaces::authentication::AuthenticationTrait,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

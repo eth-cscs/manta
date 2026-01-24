@@ -1,15 +1,10 @@
-
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::bos::ClusterSessionTrait,
-  types::{
-    self,
-    bos::session::BosSession,
-  },
+  types::{self, bos::session::BosSession},
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

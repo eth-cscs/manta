@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Error;
-use execute::{Execute, shell};
+use execute::{shell, Execute};
 use is_executable::IsExecutable;
 
 /// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout

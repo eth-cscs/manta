@@ -1,16 +1,14 @@
-
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,
   types::cfs::{
-      cfs_configuration_response::CfsConfigurationResponse,
-      session::CfsSessionGetResponse,
-    },
+    cfs_configuration_response::CfsConfigurationResponse,
+    session::CfsSessionGetResponse,
+  },
 };
 
-use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
-
+use StaticBackendDispatcher::*;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

@@ -1,4 +1,4 @@
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::interfaces::{
   hsm::group::GroupTrait, pcs::PCSTrait,
 };

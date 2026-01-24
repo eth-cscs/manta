@@ -1,11 +1,8 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::migrate_backup::MigrateBackupTrait,
+  error::Error, interfaces::migrate_backup::MigrateBackupTrait,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

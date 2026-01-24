@@ -1,8 +1,4 @@
-
-use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::pcs::PCSTrait,
-};
+use manta_backend_dispatcher::{error::Error, interfaces::pcs::PCSTrait};
 
 use StaticBackendDispatcher::*;
 

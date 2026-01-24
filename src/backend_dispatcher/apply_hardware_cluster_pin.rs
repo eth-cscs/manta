@@ -1,11 +1,8 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::apply_hw_cluster_pin::ApplyHwClusterPin,
+  error::Error, interfaces::apply_hw_cluster_pin::ApplyHwClusterPin,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

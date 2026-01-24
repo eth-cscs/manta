@@ -1,11 +1,8 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::apply_sat_file::SatTrait,
+  error::Error, interfaces::apply_sat_file::SatTrait,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

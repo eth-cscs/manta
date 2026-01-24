@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::interfaces::hsm::{
   group::GroupTrait, hardware_inventory::HardwareInventory,
 };
@@ -75,9 +75,7 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      log::error!(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
-      );
+      eprintln ! ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" );
       std::process::exit(1);
     }
   }

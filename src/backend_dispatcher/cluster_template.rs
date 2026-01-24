@@ -1,12 +1,9 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::bos::ClusterTemplateTrait,
+  error::Error, interfaces::bos::ClusterTemplateTrait,
   types::bos::session_template::BosSessionTemplate,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

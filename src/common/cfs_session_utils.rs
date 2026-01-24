@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::{
-  self, Group, cfs::session::CfsSessionGetResponse,
+  self, cfs::session::CfsSessionGetResponse, Group,
 };
 
 pub fn cfs_session_struct_to_vec(

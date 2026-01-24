@@ -1,5 +1,5 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{

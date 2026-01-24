@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use dialoguer::{theme::ColorfulTheme, Confirm};
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -35,7 +35,7 @@ pub async fn exec(
           target_hsm_group_name.to_string()
         );
         if dryrun {
-          log::error!(
+          eprintln!(
             "Dryrun selected, cannot create the new group and continue."
           );
           std::process::exit(1);
@@ -90,9 +90,7 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      log::error!(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
-      );
+      eprintln ! ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" );
       std::process::exit(1);
     }
   }

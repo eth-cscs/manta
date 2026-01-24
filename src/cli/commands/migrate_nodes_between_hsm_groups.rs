@@ -101,9 +101,7 @@ pub async fn exec(
         );
         if nodryrun {
         } else {
-          log::error!(
-            "Dry-run selected, cannot create the new group continue."
-          );
+          eprintln!("Dry-run selected, cannot create the new group continue.");
           std::process::exit(1);
         }
       } else {

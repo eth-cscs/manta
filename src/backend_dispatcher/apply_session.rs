@@ -1,11 +1,8 @@
-
 use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::apply_session::ApplySessionTrait,
+  error::Error, interfaces::apply_session::ApplySessionTrait,
 };
 
 use StaticBackendDispatcher::*;
-
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

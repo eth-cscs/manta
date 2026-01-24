@@ -4,8 +4,6 @@ use manta_backend_dispatcher::{
   error::Error,
   interfaces::cfs::CfsTrait,
   types::{
-    Group,
-    K8sDetails,
     bos::session_template::BosSessionTemplate,
     bss::BootParameters,
     cfs::{
@@ -16,13 +14,13 @@ use manta_backend_dispatcher::{
       session::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     ims::Image,
+    Group, K8sDetails,
   },
 };
 
-use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
-
+use StaticBackendDispatcher::*;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

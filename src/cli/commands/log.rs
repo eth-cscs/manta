@@ -1,7 +1,7 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{cfs::CfsTrait, hsm::component::ComponentTrait},
-  types::{Group, K8sDetails, cfs::session::CfsSessionGetResponse},
+  types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
 };
 
 use crate::{
