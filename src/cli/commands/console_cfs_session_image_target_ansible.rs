@@ -35,8 +35,7 @@ pub async fn exec(
     )
     .await
     .unwrap_or_else(|e| {
-      eprintln!("Failed to get CFS sessions. Reason:\n{e}");
-      std::process::exit(1);
+      return Err(Error::msg("Failed to get CFS sessions. Reason:\n{e}"));
     });
 
   if cfs_session_vec.is_empty() {

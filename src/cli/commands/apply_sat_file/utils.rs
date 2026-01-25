@@ -32,8 +32,9 @@ impl SatFile {
           })
           .collect(),
         None => {
-          eprintln!("ERROR - 'images' section missing in SAT file");
-          std::process::exit(1);
+          return Err(Error::msg(
+            "ERROR - 'images' section missing in SAT file")
+          );
         }
       };
 
@@ -93,10 +94,9 @@ impl SatFile {
             })
             .collect(),
           None => {
-            eprintln!(
-              "ERROR - 'session_templates' section not defined in SAT file"
+            return Err(Error::msg(
+              "ERROR - 'session_templates' section not defined in SAT file")
             );
-            std::process::exit(1);
           }
         };
 

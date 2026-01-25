@@ -34,8 +34,7 @@ pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
 
   // VALIDATION
   if site_available_table.is_empty() {
-    eprintln!("No 'sites' in config file");
-    std::process::exit(1);
+    return Err(Error::msg("No 'sites' in config file"));
   }
 
   validate_site_and_site_available_config_params(

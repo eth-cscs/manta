@@ -22,8 +22,9 @@ pub async fn exec(
     .get_node_metadata_available(shasta_token)
     .await
     .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
-      std::process::exit(1);
+      return Err(Error::msg(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
+      );
     });
 
   let mut xname_to_move_vec =

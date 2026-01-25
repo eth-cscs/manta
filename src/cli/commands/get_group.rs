@@ -25,8 +25,7 @@ pub async fn exec(
         .unwrap()
     ),
     _ => {
-      eprintln!("ERROR - output not valid");
-      std::process::exit(1);
+      return Err(Error::msg("ERROR - output not valid"));
     }
   }
 

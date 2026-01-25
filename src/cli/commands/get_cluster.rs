@@ -36,8 +36,7 @@ pub async fn exec(
   let mut node_details_list = match node_details_list_rslt {
     Ok(value) => value,
     Err(e) => {
-      eprintln!("{}", e);
-      std::process::exit(1);
+      return Err(Error::msg(e));
     }
   };
 
@@ -120,7 +119,8 @@ pub async fn exec(
   } else if output_opt.is_some() && output_opt.unwrap().eq("table") {
     node_ops::print_table(node_details_list);
   } else {
-    eprintln!("ERROR - output value not recognized or missing. Exit");
-    std::process::exit(1);
+    return Err(Error::msg(
+      "ERROR - output value not recognized or missing. Exit")
+    );
   }
 }

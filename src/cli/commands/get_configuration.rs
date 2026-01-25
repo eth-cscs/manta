@@ -64,8 +64,9 @@ pub async fn exec(
         }
       }
       _ => {
-        eprintln!("Failed to get CFS sessions. Reason:\n{backend_error}");
-        std::process::exit(1);
+        return Err(Error::msg(
+          "Failed to get CFS sessions. Reason:\n{backend_error}")
+        );
       }
     });
 

@@ -34,8 +34,7 @@ pub async fn exec(
   let image_detail_vec = match image_detail_vec_rslt {
     Ok(image_detail_vec) => image_detail_vec,
     Err(e) => {
-      eprintln!("Error: {e}");
-      std::process::exit(1);
+      return Err(Error::msg("Error: {e}"));
     }
   };
 

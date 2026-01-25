@@ -68,10 +68,7 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      eprintln!(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
-      );
-      std::process::exit(1);
+      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
     }
   }
 

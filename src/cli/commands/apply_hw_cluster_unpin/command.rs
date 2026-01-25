@@ -57,10 +57,7 @@ pub async fn exec(
         hw_component_counter[1].parse::<usize>().unwrap(),
       );
     } else {
-      eprintln!(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
-      );
-      std::process::exit(1);
+      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
     }
   }
 
@@ -216,10 +213,9 @@ pub async fn exec(
       // We are ok, user has access to enough resources to fullfill its request
     } else {
       // There are not enough resources to fulfill the user request
-      eprintln!(
-        "ERROR - there are not enough resources to fulfill user request."
+      return Err(Error::msg(
+        "ERROR - there are not enough resources to fulfill user request.")
       );
-      std::process::exit(1);
     }
   }
 

@@ -1362,15 +1362,15 @@ pub async fn process_cli(
           println!("Log streaming ended");
         }
         Err(e) => {
-          eprintln!("{}", e);
-          std::process::exit(1);
+          return Err(Error::msg(e));
         }
       };
     } else if let Some(cli_console) = cli_root.subcommand_matches("console") {
       if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
         if !std::io::stdout().is_terminal() {
-          eprintln!("This command needs to run in interactive mode. Exit");
-          std::process::exit(1);
+          return Err(Error::msg(
+            "This command needs to run in interactive mode. Exit")
+          );
         }
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
@@ -1394,8 +1394,9 @@ pub async fn process_cli(
         cli_console.subcommand_matches("target-ansible")
       {
         if !std::io::stdout().is_terminal() {
-          eprintln!("This command needs to run in interactive mode. Exit");
-          std::process::exit(1);
+          return Err(Error::msg(
+            "This command needs to run in interactive mode. Exit")
+          );
         }
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
@@ -1455,8 +1456,7 @@ pub async fn process_cli(
         let from = match from_rslt {
           Ok(from) => from,
           Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
+            return Err(Error::msg(e));
           }
         };
 
@@ -1474,8 +1474,7 @@ pub async fn process_cli(
         let to = match to_rslt {
           Ok(to) => to,
           Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
+            return Err(Error::msg(e));
           }
         };
 
@@ -1831,8 +1830,9 @@ pub async fn process_cli(
           && until_opt.is_some()
           && since_opt.unwrap() > until_opt.unwrap()
         {
-          eprintln!("ERROR - 'since' date can't be after 'until' date. Exit");
-          std::process::exit(1);
+          return Err(Error::msg(
+            "ERROR - 'since' date can't be after 'until' date. Exit")
+          );
         }
 
         let target_hsm_group_vec =

@@ -36,10 +36,9 @@ pub async fn exec(
           target_hsm_group_name.to_string()
         );
         if dryrun {
-          eprintln!(
-            "Dryrun selected, cannot create the new group and continue."
+          return Err(Error::msg(
+            "Dryrun selected, cannot create the new group and continue.")
           );
-          std::process::exit(1);
         } else {
           let group = Group {
             label: target_hsm_group_name.to_string(),
@@ -91,10 +90,7 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      eprintln!(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
-      );
-      std::process::exit(1);
+      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
     }
   }
 

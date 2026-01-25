@@ -53,8 +53,7 @@ pub async fn exec(
 
   let mut node_details_list = match node_details_list_rslt {
     Err(e) => {
-      eprintln!("{}", e);
-      std::process::exit(1);
+      return Err(Error::msg(e));
     }
     Ok(node_details_list) => node_details_list,
   };

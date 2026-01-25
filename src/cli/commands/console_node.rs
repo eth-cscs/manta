@@ -23,8 +23,9 @@ pub async fn exec(
     .get_node_metadata_available(shasta_token)
     .await
     .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
-      std::process::exit(1);
+      return Err(Error::msg(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
+      );
     });
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
@@ -42,8 +43,9 @@ pub async fn exec(
   });
 
   if xname_vec.len() != 1 {
-    eprintln!("ERROR - The node to operate is not valid. Nothing to do. Exit");
-    std::process::exit(0);
+    return Err(Error::msg(
+      "ERROR - The node to operate is not valid. Nothing to do. Exit")
+    );
   }
 
   let xname = xname_vec.first().unwrap();
