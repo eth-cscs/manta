@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
@@ -15,15 +16,10 @@ pub async fn exec(
   silent_xname: bool,
   output_opt: Option<&String>,
   status_summary: bool,
-) {
+) -> Result<(), Error> {
   // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
-    .await
-    .unwrap_or_else(|e| {
-      eprintln!("ERROR - Could not get node metadata. Reason:\n{e}\nExit");
-      std::process::exit(1);
-    });
+  let node_metadata_available_vec =
+    backend.get_node_metadata_available(shasta_token).await?;
 
   let mut node_list = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -31,17 +27,17 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
+  .map_err(|e| {
+    Error::msg(format!(
       "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
       e
-    );
-    std::process::exit(1);
-  });
+    ))
+  })?;
 
   if node_list.is_empty() {
-    eprintln!("The list of nodes to operate is empty. Nothing to do. Exit");
-    std::process::exit(0);
+    return Err(Error::msg(
+      "The list of nodes to operate is empty. Nothing to do. Exit",
+    ));
   }
 
   node_list.sort();
@@ -142,7 +138,10 @@ pub async fn exec(
   } else if output_opt.is_some() && output_opt.unwrap().eq("table") {
     common::node_ops::print_table(node_details_list);
   } else {
-    eprintln!("ERROR - output value not recognized or missing. Exit");
-    std::process::exit(1);
+    return Err(Error::msg(format!(
+      "ERROR - output value not recognized or missing. Exit"
+    )));
   }
+
+  Ok(())
 }

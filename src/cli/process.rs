@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait,
@@ -61,16 +62,8 @@ pub async fn process_cli(
   kafka_audit_opt: Option<&Kafka>,
   settings: &Config,
   configuration: &MantaConfiguration,
-) -> Result<(), Box<dyn std::error::Error>> {
-  let site_name: String = match settings.get("site") {
-    Ok(site_name) => site_name,
-    Err(_) => {
-      eprintln!(
-        "'site' value in configuration file is missing or does not have a value. Exit"
-      );
-      std::process::exit(1);
-    }
-  };
+) -> Result<(), Error> {
+  let site_name: String = settings.get("site").map_err(|_| Error::msg("'site' value in configuration file is missing or does not have a value. Exit"))?;
 
   let cli_root = cli.clone().get_matches();
 
