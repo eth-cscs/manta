@@ -7,7 +7,7 @@ use crate::{
 };
 
 use anyhow::Error;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait,
@@ -285,7 +285,7 @@ pub async fn exec(
         "table",
         kafka_audit_opt,
       )
-      .await;
+      .await?;
     }
 
     Ok(())

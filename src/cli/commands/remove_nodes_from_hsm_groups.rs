@@ -1,4 +1,5 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use anyhow::Error;
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
@@ -16,16 +17,16 @@ pub async fn exec(
   hosts_expression: &str,
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   // Convert user input to xname
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let mut xname_to_move_vec =
     common::node_ops::from_hosts_expression_to_xname_vec(
@@ -104,4 +105,6 @@ pub async fn exec(
       log::warn!("Failed producing messages: {}", e);
     }
   }
+
+  Ok(())
 }

@@ -1,6 +1,7 @@
+use anyhow::Error;
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
+  interfaces::hsm::group::GroupTrait, types::Group,
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -12,10 +13,8 @@ pub async fn exec(
   group_name_vec_opt: Option<&[String]>,
   output: &str,
 ) -> Result<(), Error> {
-  let group_vec: Vec<Group> = backend
-    .get_groups(auth_token, group_name_vec_opt)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+  let group_vec: Vec<Group> =
+    backend.get_groups(auth_token, group_name_vec_opt).await?;
 
   match output {
     "table" => print_table(&group_vec),

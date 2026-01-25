@@ -3,6 +3,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
   types::K8sDetails,
@@ -17,16 +18,16 @@ pub async fn exec(
   shasta_token: &str,
   xname: &str,
   k8s: &K8sDetails,
-) {
+) -> Result<(), Error> {
   // Convert user input to xname
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     xname,
@@ -34,18 +35,17 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
+  .map_err(|e| {
+    Error::msg(format!(
       "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
       e
-    );
-    std::process::exit(1);
-  });
+    ))
+  })?;
 
   if xname_vec.len() != 1 {
     return Err(Error::msg(
-      "ERROR - The node to operate is not valid. Nothing to do. Exit")
-    );
+      "ERROR - The node to operate is not valid. Nothing to do. Exit",
+    ));
   }
 
   let xname = xname_vec.first().unwrap();
@@ -69,6 +69,8 @@ pub async fn exec(
       log::error!("{:?}", error);
     }
   }
+
+  Ok(())
 }
 
 pub async fn connect_to_console(

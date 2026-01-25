@@ -90,12 +90,15 @@ pub async fn exec(
     serde_yaml::to_string(&sat_template_file_yaml).unwrap();
 
   let mut sat_template: utils::SatFile =
-    serde_yaml::from_str(&sat_template_file_string)
-      .map_err(|e| Error::msg("Could not parse SAT template yaml file"))?;
+    serde_yaml::from_str(&sat_template_file_string).map_err(|e| {
+      Error::msg(format!(
+        "Could not parse SAT template yaml file. Error:\n{e}"
+      ))
+    })?;
 
   // Filter either images or session_templates section according to user request
   //
-  sat_template.filter(image_only, session_template_only);
+  sat_template.filter(image_only, session_template_only)?;
 
   let sat_template_file_yaml: Value =
     serde_yaml::to_value(sat_template).unwrap();

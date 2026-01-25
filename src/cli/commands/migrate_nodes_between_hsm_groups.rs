@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
@@ -18,18 +19,18 @@ pub async fn exec(
   nodryrun: bool,
   create_hsm_group: bool,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   // Filter xnames to the ones members to HSM groups the user has access to
   //
   // Convert user input to xname
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let mut xname_to_move_vec =
     common::node_ops::from_hosts_expression_to_xname_vec(
@@ -48,8 +49,8 @@ pub async fn exec(
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::msg(
-      "The list of nodes to operate is empty. Nothing to do. Exit")
-    );
+      "The list of nodes to operate is empty. Nothing to do. Exit",
+    ));
   }
 
   xname_to_move_vec.sort();
@@ -104,11 +105,14 @@ pub async fn exec(
         if nodryrun {
         } else {
           return Err(Error::msg(
-            "Dry-run selected, cannot create the new group continue.")
-          );
+            "Dry-run selected, cannot create the new group continue.",
+          ));
         }
       } else {
-        log::error!("HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.", target_hsm_name);
+        log::error!(
+          "HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.",
+          target_hsm_name
+        );
         std::process::exit(1);
       }
     }
@@ -163,4 +167,6 @@ pub async fn exec(
       log::warn!("Failed producing messages: {}", e);
     }
   }
+
+  Ok(())
 }

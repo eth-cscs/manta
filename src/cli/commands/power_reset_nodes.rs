@@ -1,4 +1,5 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use anyhow::Error;
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::{
   hsm::{component::ComponentTrait, group::GroupTrait},
   pcs::PCSTrait,
@@ -18,18 +19,12 @@ pub async fn exec(
   assume_yes: bool,
   output: &str,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   // Filter xnames to the ones members to HSM groups the user has access to
   //
   // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
-    .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+  let node_metadata_available_vec =
+    backend.get_node_metadata_available(shasta_token).await?;
 
   let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -47,8 +42,8 @@ pub async fn exec(
 
   if xname_vec.is_empty() {
     return Err(Error::msg(
-      "The list of nodes to operate is empty. Nothing to do. Exit")
-    );
+      "The list of nodes to operate is empty. Nothing to do. Exit",
+    ));
   }
 
   xname_vec.sort();
@@ -123,4 +118,6 @@ pub async fn exec(
       log::warn!("Failed producing messages: {}", e);
     }
   }
+
+  Ok(())
 }

@@ -22,11 +22,11 @@ pub async fn exec(
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::Message(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,

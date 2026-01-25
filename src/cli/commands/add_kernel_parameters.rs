@@ -2,9 +2,9 @@ use crate::{
   common::{self, audit::Audit, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use anyhow::Error;
 use dialoguer::theme::ColorfulTheme;
 use manta_backend_dispatcher::{
-  error::Error,
   interfaces::{
     bss::BootParametersTrait,
     hsm::{component::ComponentTrait, group::GroupTrait},
@@ -35,11 +35,9 @@ pub async fn exec(
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::msg(format!("Could not get node metadata. Reason:\n{e}\nExit"))
+    })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -225,7 +223,7 @@ pub async fn exec(
       "table",
       kafka_audit_opt,
     )
-    .await;
+    .await?;
   }
 
   Ok(())

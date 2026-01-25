@@ -17,7 +17,11 @@ pub struct SatFile {
 
 impl SatFile {
   /// Filter either images or session_templates section according to user request
-  pub fn filter(&mut self, image_only: bool, session_template_only: bool) {
+  pub fn filter(
+    &mut self,
+    image_only: bool,
+    session_template_only: bool,
+  ) -> Result<(), Error> {
     // Clean SAT template file if user only wan'ts to process the 'images' section. In this case,
     // we will remove 'session_templates' section from SAT fiel and also the entries in
     // 'configurations' section not used
@@ -32,9 +36,9 @@ impl SatFile {
           })
           .collect(),
         None => {
-          return Err(Error::msg(
-            "ERROR - 'images' section missing in SAT file")
-          );
+          return Err(Error::Message(
+            "ERROR - 'images' section missing in SAT file".to_string(),
+          ));
         }
       };
 
@@ -94,9 +98,10 @@ impl SatFile {
             })
             .collect(),
           None => {
-            return Err(Error::msg(
-              "ERROR - 'session_templates' section not defined in SAT file")
-            );
+            return Err(Error::Message(
+              "ERROR - 'session_templates' section not defined in SAT file"
+                .to_string(),
+            ));
           }
         };
 
@@ -131,6 +136,8 @@ impl SatFile {
         self.configurations = None;
       }
     }
+
+    Ok(())
   }
 }
 
@@ -512,7 +519,7 @@ pub fn render_jinja2_sat_file_yaml(
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .map_err(|e| {
+      .map_err(|_| {
         Error::Message("Error parsing values file to YAML".to_string())
       })?;
     serde_yaml::from_str(&values_file_rendered)?

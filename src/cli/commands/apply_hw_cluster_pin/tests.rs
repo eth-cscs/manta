@@ -234,7 +234,7 @@ pub async fn test_hsm_hw_management_1() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await;
+    .await?;
 
   println!(
     "DEBUG - target HSM group:\n{:#?}",
@@ -255,7 +255,10 @@ pub async fn test_hsm_hw_management_1() {
     if target_hsm_hw_summary.get(&hw_component).is_none()
       || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
     {
-      println!("DEBUG - hw component '{}' with quantity '{}' in user request does not comply with solution {:#?}", hw_component, qty, target_hsm_hw_summary);
+      println!(
+        "DEBUG - hw component '{}' with quantity '{}' in user request does not comply with solution {:#?}",
+        hw_component, qty, target_hsm_hw_summary
+      );
       success = false;
     }
   }
@@ -444,7 +447,10 @@ pub async fn test_hsm_hw_management_2() {
     if target_hsm_hw_summary.get(&hw_component).is_none()
       || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
     {
-      println!("DEBUG - hw component '{}' with quantity '{}' in user request does not comply with solution {:#?}", hw_component, qty, target_hsm_hw_summary);
+      println!(
+        "DEBUG - hw component '{}' with quantity '{}' in user request does not comply with solution {:#?}",
+        hw_component, qty, target_hsm_hw_summary
+      );
       success = false;
     }
   }

@@ -18,25 +18,17 @@ pub async fn exec(
   hsm_group_name_vec: &[String],
   id_opt: Option<&str>,
   limit_number: Option<&u8>,
-) {
-  let image_detail_vec_rslt: Result<Vec<(Image, String, String, bool)>, Error> =
-    backend
-      .get_images_and_details(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        hsm_group_name_vec,
-        id_opt,
-        limit_number,
-      )
-      .await;
-
-  let image_detail_vec = match image_detail_vec_rslt {
-    Ok(image_detail_vec) => image_detail_vec,
-    Err(e) => {
-      return Err(Error::msg("Error: {e}"));
-    }
-  };
+) -> Result<(), Error> {
+  let image_detail_vec: Vec<(Image, String, String, bool)> = backend
+    .get_images_and_details(
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      hsm_group_name_vec,
+      id_opt,
+      limit_number,
+    )
+    .await?;
 
   // Print data
   let mut table = Table::new();
@@ -88,4 +80,6 @@ pub async fn exec(
   }
 
   println!("{table}");
+
+  Ok(())
 }

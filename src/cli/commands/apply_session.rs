@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
+use anyhow::Error;
 use futures::{AsyncBufReadExt, TryStreamExt};
 use manta_backend_dispatcher::{
-  error::Error,
   interfaces::{
     apply_session::ApplySessionTrait, cfs::CfsTrait,
     hsm::component::ComponentTrait,
@@ -14,7 +14,7 @@ use crate::{
   common::{self, audit::Audit, jwt_ops, kafka::Kafka, local_git_repo},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use substring::Substring;
 
 /// Creates a CFS session target dynamic
@@ -44,11 +44,11 @@ pub async fn exec(
     let node_metadata_available_vec = backend
       .get_node_metadata_available(shasta_token)
       .await
-      .unwrap_or_else(|e| {
-        return Err(Error::msg(
-          "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-        );
-      });
+      .map_err(|e| {
+        Error::msg(format!(
+          "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+        ))
+      })?;
 
     let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
       &ansible_limit,
@@ -200,7 +200,13 @@ fn check_local_repos(
     let timestamp = local_last_commit.time().seconds();
     let tm = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
 
-    log::debug!("\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n", local_last_commit.id(), local_last_commit.author(), tm, local_last_commit.message().unwrap_or("no commit message"));
+    log::debug!(
+      "\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n",
+      local_last_commit.id(),
+      local_last_commit.author(),
+      tm,
+      local_last_commit.message().unwrap_or("no commit message")
+    );
 
     let layer_summary = vec![
       i.to_string(),

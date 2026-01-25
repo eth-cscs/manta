@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
@@ -16,7 +17,7 @@ pub async fn exec(
   xnames_only: bool,
   output_opt: Option<&str>,
   summary_status: bool,
-) {
+) -> Result<(), Error> {
   // Take all nodes for all hsm_groups found and put them in a Vec
   let mut hsm_groups_node_list: Vec<String> = backend
     .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec)
@@ -33,12 +34,7 @@ pub async fn exec(
   )
   .await;
 
-  let mut node_details_list = match node_details_list_rslt {
-    Ok(value) => value,
-    Err(e) => {
-      return Err(Error::msg(e));
-    }
-  };
+  let mut node_details_list = node_details_list_rslt?;
 
   node_details_list.retain(|node_details| {
     if let Some(status) = status {
@@ -120,7 +116,9 @@ pub async fn exec(
     node_ops::print_table(node_details_list);
   } else {
     return Err(Error::msg(
-      "ERROR - output value not recognized or missing. Exit")
-    );
+      "ERROR - output value not recognized or missing. Exit",
+    ));
   }
+
+  Ok(())
 }

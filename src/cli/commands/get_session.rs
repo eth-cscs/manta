@@ -1,4 +1,5 @@
-use manta_backend_dispatcher::{error, interfaces::cfs::CfsTrait};
+use anyhow::Error;
+use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
@@ -16,7 +17,7 @@ pub async fn exec(
   session_name_opt: Option<&String>,
   limit_number_opt: Option<&u8>,
   output_opt: Option<&String>,
-) {
+) -> Result<(), Error> {
   log::info!("Get CFS sessions",);
 
   let cfs_session_vec = backend
@@ -34,23 +35,7 @@ pub async fn exec(
       limit_number_opt,
       None,
     )
-    .await
-    .unwrap_or_else(|backend_error| match backend_error {
-      error::Error::SessionNotFound => {
-        if let Some(session_name) = session_name_opt {
-          println!("Session '{}' could not be found.", session_name);
-          std::process::exit(0);
-        } else {
-          println!("No CFS sessions found.");
-          std::process::exit(0);
-        }
-      }
-      _ => {
-        return Err(Error::msg(
-          "Failed to get CFS sessions. Reason:\n{backend_error}")
-        );
-      }
-    });
+    .await?;
 
   if output_opt.is_some() && output_opt.unwrap().eq("json") {
     println!(
@@ -60,4 +45,6 @@ pub async fn exec(
   } else {
     common::cfs_session_utils::print_table_struct(&cfs_session_vec);
   }
+
+  Ok(())
 }

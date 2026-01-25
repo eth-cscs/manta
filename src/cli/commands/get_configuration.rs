@@ -1,5 +1,5 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
-  error,
   interfaces::cfs::CfsTrait,
   types::cfs::{
     cfs_configuration_details::{ConfigurationDetails, LayerDetails},
@@ -28,7 +28,7 @@ pub async fn exec(
   limit: Option<&u8>,
   output_opt: Option<&str>,
   site_name: &str,
-) {
+) -> Result<(), Error> {
   let cfs_configuration_vec: Vec<CfsConfigurationResponse> = backend
     .get_and_filter_configuration(
       shasta_token,
@@ -41,34 +41,7 @@ pub async fn exec(
       until_opt,
       limit,
     )
-    .await
-    .unwrap_or_else(|backend_error| match backend_error {
-      error::Error::ConfigurationNotFound => {
-        if let Some(configuration_name) = configuration_name_opt {
-          println!(
-            "Configuration '{}' could not be found.",
-            configuration_name
-          );
-          std::process::exit(0);
-        } else if let Some(configuration_name_pattern) =
-          configuration_name_pattern_opt
-        {
-          println!(
-            "Configuration '{}' could not be found.",
-            configuration_name_pattern
-          );
-          std::process::exit(0);
-        } else {
-          println!("No configarion found.");
-          std::process::exit(0);
-        }
-      }
-      _ => {
-        return Err(Error::msg(
-          "Failed to get CFS sessions. Reason:\n{backend_error}")
-        );
-      }
-    });
+    .await?;
 
   if cfs_configuration_vec.is_empty() {
     println!("No CFS configuration found!");
@@ -139,4 +112,6 @@ pub async fn exec(
       print_table_struct(&cfs_configuration_vec);
     }
   }
+
+  Ok(())
 }

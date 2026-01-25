@@ -1,6 +1,6 @@
+use anyhow::Error;
 use dialoguer::theme::ColorfulTheme;
 use manta_backend_dispatcher::{
-  error::Error,
   interfaces::{
     bss::BootParametersTrait,
     hsm::{component::ComponentTrait, group::GroupTrait},
@@ -35,11 +35,11 @@ pub async fn exec(
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-      );
-    });
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+      ))
+    })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -148,8 +148,7 @@ pub async fn exec(
 
     let group_map_vec = backend
       .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
-      .await
-      .map_err(|e| Error::Message(e.to_string()))?;
+      .await?;
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<&String>>(), "message": format!("Delete kernel parameters: {}", kernel_params)});
@@ -175,7 +174,7 @@ pub async fn exec(
       "table",
       kafka_audit_opt,
     )
-    .await;
+    .await?;
   }
 
   Ok(())

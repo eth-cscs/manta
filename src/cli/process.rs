@@ -192,7 +192,7 @@ pub async fn process_cli(
             output,
             kafka_audit_opt,
           )
-          .await;
+          .await?;
         }
       } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
         if let Some(cli_power_off_cluster) =
@@ -262,7 +262,7 @@ pub async fn process_cli(
             output,
             kafka_audit_opt,
           )
-          .await;
+          .await?;
         }
       } else if let Some(cli_power_reset) =
         cli_power.subcommand_matches("reset")
@@ -306,7 +306,7 @@ pub async fn process_cli(
             output,
             kafka_audit_opt,
           )
-          .await;
+          .await?;
         } else if let Some(cli_power_reset_node) =
           cli_power_reset.subcommand_matches("nodes")
         {
@@ -334,7 +334,7 @@ pub async fn process_cli(
             output,
             kafka_audit_opt,
           )
-          .await;
+          .await?;
         }
       }
     } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
@@ -442,7 +442,7 @@ pub async fn process_cli(
           false,
           kafka_audit_opt,
         )
-        .await;
+        .await?;
       } else if let Some(cli_add_hw_configuration) =
         cli_add.subcommand_matches("hardware")
       {
@@ -957,7 +957,7 @@ pub async fn process_cli(
           output.map(String::as_str),
           &site_name,
         )
-        .await;
+        .await?;
       } else if let Some(cli_get_session) =
         cli_get.subcommand_matches("sessions")
       {
@@ -1017,7 +1017,7 @@ pub async fn process_cli(
           limit,
           output_opt,
         )
-        .await;
+        .await?;
       } else if let Some(cli_get_template) =
         cli_get.subcommand_matches("templates")
       {
@@ -1101,7 +1101,7 @@ pub async fn process_cli(
           output.map(String::as_str),
           summary_status,
         )
-        .await;
+        .await?;
       } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
         // Get list of nodes from cli argument
         let shasta_token = get_api_token(&backend, &site_name).await?;
@@ -1129,7 +1129,7 @@ pub async fn process_cli(
           output,
           status_summary,
         )
-        .await;
+        .await?;
       } else if let Some(cli_get_images) = cli_get.subcommand_matches("images")
       {
         let shasta_token = get_api_token(&backend, &site_name).await?;
@@ -1157,7 +1157,7 @@ pub async fn process_cli(
           id.map(String::as_str),
           limit,
         )
-        .await;
+        .await?;
       } else if let Some(cli_get_boot_parameters) =
         cli_get.subcommand_matches("boot-parameters")
       {
@@ -1369,8 +1369,8 @@ pub async fn process_cli(
       if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
         if !std::io::stdout().is_terminal() {
           return Err(Error::msg(
-            "This command needs to run in interactive mode. Exit")
-          );
+            "This command needs to run in interactive mode. Exit",
+          ));
         }
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
@@ -1389,14 +1389,14 @@ pub async fn process_cli(
             .as_ref()
             .expect("ERROR - k8s section not found in configuration"), // FIXME:
         )
-        .await;
+        .await?;
       } else if let Some(cli_console_target_ansible) =
         cli_console.subcommand_matches("target-ansible")
       {
         if !std::io::stdout().is_terminal() {
           return Err(Error::msg(
-            "This command needs to run in interactive mode. Exit")
-          );
+            "This command needs to run in interactive mode. Exit",
+          ));
         }
         let shasta_token = get_api_token(&backend, &site_name).await?;
 
@@ -1428,7 +1428,7 @@ pub async fn process_cli(
             .as_ref()
             .expect("ERROR - k8s section not found in configuration"), // FIXME:
         )
-        .await;
+        .await?;
       }
     } else if let Some(cli_migrate) = cli_root.subcommand_matches("migrate") {
       if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
@@ -1489,7 +1489,7 @@ pub async fn process_cli(
           false,
           kafka_audit_opt,
         )
-        .await;
+        .await?;
       } else if let Some(_cli_migrate_vcluster) =
         cli_migrate.subcommand_matches("vCluster")
       {
@@ -1831,8 +1831,8 @@ pub async fn process_cli(
           && since_opt.unwrap() > until_opt.unwrap()
         {
           return Err(Error::msg(
-            "ERROR - 'since' date can't be after 'until' date. Exit")
-          );
+            "ERROR - 'since' date can't be after 'until' date. Exit",
+          ));
         }
 
         let target_hsm_group_vec =
@@ -1954,7 +1954,7 @@ pub async fn process_cli(
         dryrun,
         kafka_audit_opt,
       )
-      .await;
+      .await?;
     } else if let Some(cli_remove_nodes) =
       cli_root.subcommand_matches("remove-nodes-from-groups")
     {
@@ -1976,7 +1976,7 @@ pub async fn process_cli(
         dryrun,
         kafka_audit_opt,
       )
-      .await;
+      .await?;
     } else if let Some(_) = cli_root.subcommand_matches("download-boot-image") {
       println!("Download boot image");
     } else if let Some(_) = cli_root.subcommand_matches("upload-boot-image") {

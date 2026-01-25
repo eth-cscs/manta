@@ -5,6 +5,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use anyhow::Error;
 use dialoguer::theme::ColorfulTheme;
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::{
@@ -21,18 +22,18 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
     Some(hosts_expression) => {
       // Convert user input to xname
       let node_metadata_available_vec = backend
         .get_node_metadata_available(auth_token)
         .await
-        .unwrap_or_else(|e| {
-          return Err(Error::msg(
-            "ERROR - Could not get node metadata. Reason:\n{e}\nExit")
-          );
-        });
+        .map_err(|e| {
+          Error::msg(format!(
+            "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+          ))
+        })?;
 
       let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
         hosts_expression,
@@ -52,26 +53,6 @@ pub async fn exec(
     }
     None => None,
   };
-
-  /* let xname_vec_opt: Option<Vec<String>> = match node_expression {
-      Some(node_expression) => {
-          let xname_vec: Vec<String> = resolve_node_list_user_input_to_xname(
-              // let xname_vec: Vec<String> = resolve_node_list_user_input_to_xname_2(
-              &backend,
-              auth_token,
-              node_expression,
-              false,
-              is_regex,
-          )
-          .await
-          .unwrap_or_else(|e| {
-              eprintln!("ERROR - Could not resolve node list. Reason:\n{e}\nExit");
-              std::process::exit(1);
-          });
-          Some(xname_vec)
-      }
-      None => None,
-  }; */
 
   // Validate user has access to the list of xnames requested
   if let Some(xname_vec) = &xname_vec_opt {
@@ -107,7 +88,7 @@ pub async fn exec(
       "Dryrun mode: The group below would be created:\n{}",
       serde_json::to_string_pretty(&group).unwrap()
     );
-    return;
+    return Ok(());
   }
 
   // Call backend to create group
@@ -139,4 +120,6 @@ pub async fn exec(
       log::warn!("Failed producing messages: {}", e);
     }
   }
+
+  Ok(())
 }

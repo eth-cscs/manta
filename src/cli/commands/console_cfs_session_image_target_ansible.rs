@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::{cfs::CfsTrait, console::ConsoleTrait},
   types::K8sDetails,
@@ -17,7 +18,7 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   session_name: &str,
   k8s: &K8sDetails,
-) {
+) -> Result<(), Error> {
   let cfs_session_vec = backend
     .get_and_filter_sessions(
       shasta_token,
@@ -34,9 +35,9 @@ pub async fn exec(
       None,
     )
     .await
-    .unwrap_or_else(|e| {
-      return Err(Error::msg("Failed to get CFS sessions. Reason:\n{e}"));
-    });
+    .map_err(|e| {
+      Error::msg(format!("Failed to get CFS sessions. Reason:\n{e}"))
+    })?;
 
   if cfs_session_vec.is_empty() {
     eprintln!("No CFS session found. Exit",);
@@ -114,6 +115,8 @@ pub async fn exec(
       log::error!("{:?}", error);
     }
   }
+
+  Ok(())
 }
 
 pub async fn connect_to_console(
