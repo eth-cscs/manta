@@ -7,6 +7,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -20,7 +21,7 @@ pub async fn exec(
   dryrun: bool,
   create_target_hsm_group: bool,
   delete_empty_parent_hsm_group: bool,
-) {
+) -> Result<(), Error> {
   // *********************************************************************************************************
   // PREPREQUISITES - FORMAT USER INPUT
 
@@ -55,7 +56,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<usize>().unwrap(),
       );
     } else {
-      eprintln ! ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" );
+      eprintln!(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
+      );
       std::process::exit(1);
     }
   }
@@ -239,7 +242,7 @@ pub async fn exec(
     parent_hsm_node_hw_component_count_vec,
     user_defined_target_hsm_hw_component_count_hashmap,
   )
-  .await;
+  .await?;
 
   // Calculate hw component counters (summary) across all node within the HSM group
   let target_hsm_hw_component_summary_hashmap =
@@ -385,4 +388,6 @@ pub async fn exec(
     "{}",
     serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
   );
+
+  Ok(())
 }

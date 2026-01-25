@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use anyhow::Error;
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::hsm::{
   group::GroupTrait, hardware_inventory::HardwareInventory,
 };
@@ -24,16 +25,8 @@ pub async fn exec(
   pattern: &str,
   dryrun: bool,
   delete_hsm_group: bool,
-) {
+) -> Result<(), Error> {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
-    /* match hsm::group::http_client::get(
-        shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        Some(&target_hsm_group_name.to_string()),
-    )
-    .await
-    { */
     Ok(_) => {
       log::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
@@ -75,7 +68,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      eprintln ! ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" );
+      eprintln!(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8"
+      );
       std::process::exit(1);
     }
   }
@@ -125,7 +120,7 @@ pub async fn exec(
       log::info!(
         "The option to delete empty groups has NOT been selected, or the dryrun has been enabled. We are done with this action."
       );
-      return;
+      return Ok(());
     } else {
       log::info!(
         "The option to delete empty groups has been selected, removing it."
@@ -138,7 +133,7 @@ pub async fn exec(
           log::info!(
             "HSM group removed successfully, we are done with this action."
           );
-          return;
+          return Ok(());
         }
         Err(e2) => log::debug!(
           "Error removing the HSM group. This always fails, ignore please. Reported: {}",
@@ -173,13 +168,6 @@ pub async fn exec(
     )
     .await
     .unwrap();
-  /* hsm::group::utils::get_member_vec_from_hsm_group_name(
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      parent_hsm_group_name,
-  )
-  .await; */
 
   // Get HSM hw component counters for parent HSM
   let mut parent_hsm_node_hw_component_count_vec =
@@ -258,7 +246,7 @@ pub async fn exec(
                 .collect::<Vec<String>>(),
             &mut target_hsm_node_hw_component_count_vec,
             &combined_target_parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
-        );
+        )?;
 
   // *********************************************************************************************************
   // PREPARE INFORMATION TO SHOW
@@ -344,15 +332,7 @@ pub async fn exec(
           target_hsm_group_name,
           xname.as_str(),
         )
-        .await;
-      /* let _ = hsm::group::http_client::delete_member(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          target_hsm_group_name,
-          xname.as_str(),
-      )
-      .await; */
+        .await?;
 
       let _ = backend
         .add_members_to_group(shasta_token, parent_hsm_group_name, &[&xname])
@@ -368,11 +348,6 @@ pub async fn exec(
           .delete_group(shasta_token, &target_hsm_group_name.to_string())
           .await
         {
-          /* match hsm::group::http_client::delete_hsm_group(shasta_token,
-                                                            shasta_base_url,
-                                                            shasta_root_cert,
-                                                            &target_hsm_group_name.to_string())
-          .await { */
           Ok(_) => log::info!("HSM group removed successfully."),
           Err(e2) => log::debug!(
             "Error removing the HSM group. This always fails, ignore please. Reported: {}",
@@ -411,6 +386,8 @@ pub async fn exec(
     "{}",
     serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
   );
+
+  Ok(())
 }
 
 pub async fn get_hsm_hw_node_component_counter(

@@ -62,7 +62,7 @@ pub async fn process_subcommand(
       create_target_hsm_group,
       delete_empty_parent_hsm_group,
     )
-    .await;
+    .await?;
   } else {
     apply_hw_cluster_pin::command::exec(
       &backend,
@@ -74,7 +74,7 @@ pub async fn process_subcommand(
       create_target_hsm_group,
       delete_empty_parent_hsm_group,
     )
-    .await;
+    .await?;
   }
 
   Ok(())

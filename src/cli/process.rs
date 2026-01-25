@@ -7,9 +7,9 @@ use manta_backend_dispatcher::{
     },
   },
   types::{
+    HWInventoryByLocationList,
     bss::BootParameters,
     hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-    HWInventoryByLocationList,
   },
 };
 use std::{
@@ -493,7 +493,7 @@ pub async fn process_cli(
           dryrun,
           create_hsm_group,
         )
-        .await;
+        .await?;
       } else if let Some(cli_add_boot_parameters) =
         cli_add.subcommand_matches("boot-parameters")
       {
@@ -1640,7 +1640,7 @@ pub async fn process_cli(
           dryrun,
           delete_hsm_group,
         )
-        .await;
+        .await?;
       } else if let Some(cli_delete_boot_parameters) =
         cli_delete.subcommand_matches("boot-parameters")
       {

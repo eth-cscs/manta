@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
+use anyhow::Error;
 use comfy_table::Color;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use serde_json::Value;
@@ -19,10 +20,13 @@ pub async fn resolve_hw_description_to_xnames(
     HashMap<String, usize>,
   )>,
   user_defined_target_hsm_hw_component_count_hashmap: HashMap<String, usize>,
-) -> (
-  Vec<(String, HashMap<String, usize>)>,
-  Vec<(String, HashMap<String, usize>)>,
-) {
+) -> Result<
+  (
+    Vec<(String, HashMap<String, usize>)>,
+    Vec<(String, HashMap<String, usize>)>,
+  ),
+  Error,
+> {
   // *********************************************************************************************************
   // CALCULATE 'COMBINED HSM' WITH TARGET HSM AND PARENT HSM ELEMENTS COMBINED
   // NOTE: PARENT HSM may contain elements in TARGET HSM, we need to only add those xnames
@@ -82,14 +86,15 @@ pub async fn resolve_hw_description_to_xnames(
       &mut target_hsm_node_hw_component_count_vec,
       &mut parent_hsm_node_hw_component_count_vec,
       &hw_component_scarcity_scores_hashmap,
-    );
+    )?;
 
   let new_target_hsm_node_hw_component_count_vec =
     hw_component_counters_to_move_out_from_combined_hsm;
-  (
+
+  Ok((
     new_target_hsm_node_hw_component_count_vec,
     combined_target_parent_hsm_node_hw_component_count_vec,
-  )
+  ))
 }
 
 /// Pin means this function should be used when the user wants to keep as much nodes in
@@ -184,7 +189,7 @@ pub fn calculate_target_hsm_pin(
   hw_component_scarcity_scores_hashmap: &HashMap<String, f32>, // hw
                                                                // component type score for as much hsm groups related to the stakeholders using these
                                                                // nodes
-) -> Vec<(String, HashMap<String, usize>)> {
+) -> Result<Vec<(String, HashMap<String, usize>)>, Error> {
   ////////////////////////////////
   // Initialize
 
@@ -252,10 +257,7 @@ pub fn calculate_target_hsm_pin(
       target_hsm_node_hw_component_count_vec,
       parent_hsm_node_hw_component_count_vec,
     )
-    .unwrap_or_else(|| {
-      eprintln!("ERROR - No best candidate found.");
-      std::process::exit(1);
-    });
+    .ok_or_else(|| Error::msg("ERROR - No best candidate found."))?;
 
   // Check if we need to keep iterating
   let mut work_to_do = keep_iterating_final_hsm(
@@ -415,7 +417,7 @@ pub fn calculate_target_hsm_pin(
     &parent_hsm_node_score_tuple_vec,
   );
 
-  nodes_migrated_from_combination_target_parent_hsm
+  Ok(nodes_migrated_from_combination_target_parent_hsm)
 }
 
 pub async fn calculate_hw_component_scarcity_scores(
@@ -746,7 +748,7 @@ pub async fn get_hsm_node_hw_component_counter(
   let mut tasks = tokio::task::JoinSet::new();
 
   let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher
-                                         // number of concurrent tasks won't make it faster
+  // number of concurrent tasks won't make it faster
 
   // Calculate HSM group hw component counters
   // List of node hw component counters belonging to target hsm group
