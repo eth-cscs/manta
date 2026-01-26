@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::bos::ClusterTemplateTrait,
   types::bos::session_template::BosSessionTemplate,
@@ -15,13 +16,13 @@ pub async fn exec(
   bos_sessiontemplate_name_opt: Option<&str>,
   limit_number_opt: Option<&u8>,
   output: &str,
-) {
+) -> Result<(), Error> {
   log::info!(
     "Get BOS sessiontemplates for HSM groups: {:?}",
     hsm_group_name_vec
   );
 
-  let bos_sessiontemplate_vec_rslt = backend
+  let mut bos_sessiontemplate_vec = backend
     .get_and_filter_templates(
       shasta_token,
       shasta_base_url,
@@ -31,25 +32,18 @@ pub async fn exec(
       bos_sessiontemplate_name_opt,
       limit_number_opt,
     )
-    .await;
-
-  let mut bos_sessiontemplate_vec: Vec<BosSessionTemplate> =
-    match bos_sessiontemplate_vec_rslt {
-      Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
-      Err(e) => {
-        eprintln!(
-          "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
-          e
-        );
-        std::process::exit(1);
-      }
-    };
+    .await
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not get BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+        e
+      ))
+    })?;
 
   bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 
   if bos_sessiontemplate_vec.is_empty() {
     println!("No BOS template found!");
-    std::process::exit(0);
   } else {
     if output == "table" {
       crate::common::bos_sessiontemplate_utils::print_table_struct(
@@ -62,4 +56,6 @@ pub async fn exec(
       );
     }
   }
+
+  Ok(())
 }

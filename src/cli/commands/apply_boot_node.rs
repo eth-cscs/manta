@@ -195,12 +195,10 @@ pub async fn exec(
     if proceed {
       log::info!("Continue",);
     } else {
-      println!("Cancelled by user. Aborting.");
-      std::process::exit(0);
+      return Err(Error::msg("Operation cancelled by user"));
     }
   } else {
-    println!("No changes detected. Nothing to do. Exit");
-    std::process::exit(0);
+    return Err(Error::msg("No changes detected. Nothing to do. Exit"));
   }
 
   if dry_run {
@@ -221,12 +219,7 @@ pub async fn exec(
     for boot_parameter in current_node_boot_param_vec {
       log::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
       let component_patch_rep = backend
-        .update_bootparameters(
-          // shasta_base_url,
-          shasta_token,
-          // shasta_root_cert,
-          &boot_parameter,
-        )
+        .update_bootparameters(shasta_token, &boot_parameter)
         .await;
 
       log::debug!(
@@ -254,10 +247,9 @@ pub async fn exec(
           true,
         )
         .await
-        .inspect_err(|e| {
-          eprintln!("Error updating runtime configuration: {}", e);
-          std::process::exit(1);
-        });
+        .map_err(|e| {
+          Error::msg(format!("Error updating runtime configuration: {}", e))
+        })?;
 
       // Update images
       for (_, image) in image_vec {
@@ -317,11 +309,10 @@ pub async fn get_new_boot_image(
     .await?;
 
     if image_vec.is_empty() {
-      eprintln!(
-        "ERROR - Could not find boot image related to configuration '{}'",
+      return Err(Error::msg(format!(
+        "Could not find boot image related to configuration '{}'",
         new_boot_image_configuration
-      );
-      std::process::exit(1);
+      )));
     }
 
     backend.filter_images(&mut image_vec)?;
@@ -336,25 +327,6 @@ pub async fn get_new_boot_image(
       most_recent_image_related_to_cfs_configuration
     );
 
-    /* let image_id = most_recent_image_related_to_cfs_configuration.id.clone();
-
-    let etag_opt = most_recent_image_related_to_cfs_configuration
-      .link
-      .as_ref()
-      .and_then(|link| link.clone().etag);
-
-    println!(
-      "Boot image id related to configuration '{}' found:\n{:#?}",
-      new_boot_image_configuration, image_id
-    );
-
-    println!(
-      "Boot image etag related to configuration '{}' found:\n{:#?}",
-      new_boot_image_configuration, etag_opt
-    );
-
-    (image_id, etag_opt) */
-
     Some(most_recent_image_related_to_cfs_configuration.clone())
   } else if let Some(boot_image_id) = new_boot_image_id_opt {
     log::info!("Boot image id '{}' provided", boot_image_id);
@@ -364,26 +336,13 @@ pub async fn get_new_boot_image(
       .await?;
 
     if image_in_csm_vec.is_empty() {
-      eprintln!("ERROR - boot image id '{}' not found", boot_image_id);
-      std::process::exit(1);
+      return Err(Error::msg(format!(
+        "boot image id '{}' not found",
+        boot_image_id
+      )));
     }
 
     image_in_csm_vec.first().cloned()
-
-    /* let etag_opt = image_in_csm_vec
-      .first()
-      .unwrap()
-      .link
-      .as_ref()
-      .and_then(|link| link.clone().etag);
-
-    let etag = etag_opt.unwrap_or_else(|| "Not found".to_string());
-
-    log::info!("Boot image id:\n{:#?}", boot_image_id);
-
-    log::info!("Boot image etag:\n{}", etag);
-
-    (Some(boot_image_id.to_string()), Some(etag)) */
   } else {
     None
   };

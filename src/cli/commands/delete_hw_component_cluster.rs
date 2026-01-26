@@ -31,11 +31,10 @@ pub async fn exec(
       log::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
     Err(_) => {
-      log::error!(
+      return Err(Error::msg(format!(
         "HSM group {} does not exist, cannot remove hw from it and cannot continue.",
         target_hsm_group_name.to_string()
-      );
-      std::process::exit(1);
+      )));
     }
   }
   let pattern = format!("{}:{}", target_hsm_group_name, pattern);
@@ -68,7 +67,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
+      return Err(Error::msg(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8",
+      ));
     }
   }
 
@@ -308,8 +309,7 @@ pub async fn exec(
   {
     println!("Continue.");
   } else {
-    println!("Cancelled by user. Aborting.");
-    std::process::exit(0);
+    return Err(Error::msg("Operation cancelled by user."));
   }
 
   // *********************************************************************************************************

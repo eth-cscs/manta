@@ -1,4 +1,5 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use anyhow::Error;
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::{
   hsm::group::GroupTrait, pcs::PCSTrait,
 };
@@ -16,7 +17,7 @@ pub async fn exec(
   assume_yes: bool,
   output: &str,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   let xname_vec = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
@@ -43,8 +44,7 @@ pub async fn exec(
     {
       log::info!("Continue",);
     } else {
-      println!("Cancelled by user. Aborting.");
-      std::process::exit(0);
+      return Err(Error::msg("Cancelled by user. Aborting."));
     }
   }
 
@@ -54,13 +54,11 @@ pub async fn exec(
   let power_mgmt_summary = match power_mgmt_summary_rslt {
     Ok(value) => value,
     Err(e) => {
-      eprintln!(
-        "ERROR - Could not power on node/s '{:?}'. Reason:\n{}",
+      return Err(Error::msg(format!(
+        "Could not power on node/s '{:?}'. Reason:\n{}",
         xname_vec,
         e.to_string()
-      );
-
-      std::process::exit(1);
+      )));
     }
   };
 
@@ -78,7 +76,12 @@ pub async fn exec(
       .expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
+      return Err(Error::msg(format!(
+        "Failed producing audit messages: {}",
+        e.to_string()
+      )));
     }
   }
+
+  Ok(())
 }

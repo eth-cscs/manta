@@ -234,7 +234,8 @@ pub async fn test_hsm_hw_management_1() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await?;
+    .await
+    .unwrap();
 
   println!(
     "DEBUG - target HSM group:\n{:#?}",
@@ -425,7 +426,8 @@ pub async fn test_hsm_hw_management_2() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await;
+    .await
+    .unwrap();
 
   println!(
     "DEBUG - target HSM group:\n{:#?}",

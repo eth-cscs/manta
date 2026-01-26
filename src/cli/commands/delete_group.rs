@@ -12,7 +12,7 @@ pub async fn exec(
   label: &str,
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
-) {
+) -> Result<(), Error> {
   if !force {
     // Validate if group can be deleted
     validation(backend, auth_token, label).await.unwrap();
@@ -26,8 +26,10 @@ pub async fn exec(
       eprintln!("Group '{}' deleted", label);
     }
     Err(error) => {
-      eprintln!("{}", error);
-      std::process::exit(1);
+      return Err(Error::Message(format!(
+        "ERROR - Could not delete group '{}'. Reason:\n{:#?}\nExit",
+        label, error
+      )));
     }
   }
 
@@ -47,6 +49,8 @@ pub async fn exec(
       log::warn!("Failed producing messages: {}", e);
     }
   }
+
+  Ok(())
 }
 
 // Checks if a group can be deleted.

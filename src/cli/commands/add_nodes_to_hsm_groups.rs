@@ -29,36 +29,37 @@ pub async fn exec(
       node_metadata_available_vec,
     )
     .await
-    .unwrap_or_else(|e| {
-      eprintln!(
+    .map_err(|e| {
+      Error::msg(format!(
         "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
         e
-      );
-      std::process::exit(1);
-    });
+      ))
+    })?;
 
   xname_to_move_vec.sort();
   xname_to_move_vec.dedup();
 
   // Check if there are any xname to migrate/move and exit otherwise
   if xname_to_move_vec.is_empty() {
-    println!("No hosts to move. Exit");
-    std::process::exit(0);
+    return Err(Error::msg(
+      "The list of nodes to move is empty. Nothing to do. Exit",
+    ));
   }
 
   if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!(
-            "{:?}\nThe nodes above will be added to HSM group '{}'. Do you want to proceed?",
-            xname_to_move_vec, target_hsm_name
-        ))
-        .interact()
-        .unwrap()
-    {
-        log::info!("Continue",);
-    } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
-    }
+      .with_prompt(format!(
+          "{:?}\nThe nodes above will be added to HSM group '{}'. Do you want to proceed?",
+          xname_to_move_vec, target_hsm_name
+      ))
+      .interact()
+      .unwrap()
+  {
+      log::info!("Continue",);
+  } else {
+    return Err(Error::msg(
+      "Cancelled by user. Aborting.",
+    ));
+  }
 
   let target_hsm_group =
     backend.get_group(shasta_token, &target_hsm_name).await;
@@ -80,23 +81,25 @@ pub async fn exec(
       "dryrun - Add nodes {:?} to {}",
       xnames_to_move, target_hsm_name
     );
-    std::process::exit(0);
+
+    return Ok(());
   }
 
-  let node_migration_rslt = backend
+  let mut target_hsm_group_member_vec = backend
     .add_members_to_group(shasta_token, &target_hsm_name, &xnames_to_move)
-    .await;
+    .await
+    .map_err(|e| {
+      Error::msg(format!(
+        "Could not add nodes {:?} to HSM group '{}'. Reason:\n{}",
+        xnames_to_move, target_hsm_name, e
+      ))
+    })?;
 
-  match node_migration_rslt {
-    Ok(mut target_hsm_group_member_vec) => {
-      target_hsm_group_member_vec.sort();
-      println!(
-        "HSM '{}' members: {:?}",
-        target_hsm_name, target_hsm_group_member_vec
-      );
-    }
-    Err(e) => eprintln!("{}", e),
-  }
+  target_hsm_group_member_vec.sort();
+  println!(
+    "HSM '{}' members: {:?}",
+    target_hsm_name, target_hsm_group_member_vec
+  );
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {

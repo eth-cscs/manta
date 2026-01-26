@@ -1,7 +1,7 @@
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,
@@ -116,8 +116,9 @@ pub async fn exec(
     {
       println!("Continue");
     } else {
-      println!("Cancelled by user. Aborting.");
-      std::process::exit(0);
+      return Err(Error::Message(
+        "Operation canceled by the user.".to_string(),
+      ));
     }
   }
 

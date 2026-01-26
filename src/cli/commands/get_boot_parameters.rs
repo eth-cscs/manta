@@ -33,13 +33,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    );
-    std::process::exit(1);
-  });
+  .map_err(|e| {
+    Error::Message(format!(
+      "Could not convert user input to list of xnames. Reason:\n{e}"
+    ))
+  })?;
 
   backend.get_bootparameters(shasta_token, &xname_vec).await
 }

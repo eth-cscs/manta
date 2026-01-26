@@ -56,7 +56,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<usize>().unwrap(),
       );
     } else {
-      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
+      return Err(Error::msg(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8",
+      ));
     }
   }
 
@@ -88,8 +90,8 @@ pub async fn exec(
         );
         if dryrun {
           return Err(Error::msg(
-            "Dryrun selected, cannot create the new group and continue.")
-          );
+            "Dryrun selected, cannot create the new group and continue.",
+          ));
         } else {
           let group = Group {
             label: target_hsm_group_name.to_string(),
@@ -105,11 +107,10 @@ pub async fn exec(
             .expect("Unable to create new target HSM group");
         }
       } else {
-        log::error!(
+        return Err(Error::msg(format!(
           "Target HSM group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.",
-          target_hsm_group_name.to_string()
-        );
-        std::process::exit(1);
+          target_hsm_group_name.to_string(),
+        )));
       }
     }
   };
@@ -221,8 +222,8 @@ pub async fn exec(
     } else {
       // There are not enough resources to fulfill the user request
       return Err(Error::msg(
-        "ERROR - there are not enough resources to fulfill user request.")
-      );
+        "ERROR - there are not enough resources to fulfill user request.",
+      ));
     }
   }
 

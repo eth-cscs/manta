@@ -44,8 +44,7 @@ pub async fn exec(
     .await?;
 
   if cfs_configuration_vec.is_empty() {
-    println!("No CFS configuration found!");
-    std::process::exit(0);
+    return Err(Error::msg("No CFS configuration found!"));
   }
 
   if output_opt.is_some() && output_opt.unwrap().eq("json") {
@@ -63,40 +62,38 @@ pub async fn exec(
 
       for layer in &most_recent_cfs_configuration.layers {
         let layer_details: LayerDetails = backend
-                    .get_configuration_layer_details(
-                        shasta_root_cert,
-                        gitea_base_url,
-                        gitea_token,
-                        layer.clone(),
-                        site_name,
-                    )
-                    .await
-                    .unwrap_or_else(|e| {
-                        eprintln!(
-                            "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
-                            e
-                        );
-                        std::process::exit(1);
-                    });
+        .get_configuration_layer_details(
+            shasta_root_cert,
+            gitea_base_url,
+            gitea_token,
+            layer.clone(),
+            site_name,
+        )
+        .await
+        .map_err(|e| {
+           Error::msg(format!(
+             "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
+             e
+           ))
+        })?;
 
         layer_details_vec.push(layer_details);
       }
 
       let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) = backend
-                .get_derivatives(
-                    shasta_token,
-                    shasta_base_url,
-                    shasta_root_cert,
-                    &most_recent_cfs_configuration.name,
-                )
-                .await
-                .unwrap_or_else(|e| {
-                    eprintln!(
-                        "ERROR - Could not fetch configuration derivatives. Reason:\n{:#?}",
-                        e
-                    );
-                    std::process::exit(1);
-                });
+      .get_derivatives(
+          shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          &most_recent_cfs_configuration.name,
+      )
+      .await
+      .map_err(|e| {
+          Error::msg(format!(
+             "ERROR - Could not fetch configuration derivatives. Reason:\n{:#?}",
+             e
+          ))
+      })?;
 
       crate::common::cfs_configuration_utils::print_table_details_struct(
         ConfigurationDetails::new(

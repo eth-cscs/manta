@@ -38,13 +38,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    );
-    std::process::exit(1);
-  });
+  .map_err(|e| {
+    Error::msg(format!(
+      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+    ))
+  })?;
 
   if xname_vec.is_empty() {
     return Err(Error::msg(
@@ -77,8 +75,7 @@ pub async fn exec(
   if proceed {
     log::info!("Continue",);
   } else {
-    println!("Cancelled by user. Aborting.");
-    std::process::exit(0);
+    return Err(Error::msg("Operation cancelled by user"));
   }
 
   let power_mgmt_summary_rslt = backend
@@ -88,13 +85,11 @@ pub async fn exec(
   let power_mgmt_summary = match power_mgmt_summary_rslt {
     Ok(value) => value,
     Err(e) => {
-      eprintln!(
-        "ERROR - Could not power off node/s '{:?}'. Reason:\n{}",
+      return Err(Error::msg(format!(
+        "Could not power off node/s '{:?}'. Reason:\n{}",
         xname_vec,
         e.to_string()
-      );
-
-      std::process::exit(1);
+      )));
     }
   };
 

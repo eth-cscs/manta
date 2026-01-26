@@ -35,21 +35,21 @@ pub async fn exec(
       node_metadata_available_vec,
     )
     .await
-    .unwrap_or_else(|e| {
-      eprintln!(
+    .map_err(|e| {
+      Error::msg(format!(
         "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
         e
-      );
-      std::process::exit(1);
-    });
+      ))
+    })?;
 
   xname_to_move_vec.sort();
   xname_to_move_vec.dedup();
 
   // Check if there are any xname to migrate/move and exit otherwise
   if xname_to_move_vec.is_empty() {
-    println!("No hosts to move. Exit");
-    std::process::exit(0);
+    return Err(Error::msg(
+      "The list of nodes to move is empty. Nothing to do. Exit",
+    ));
   }
 
   if Confirm::with_theme(&ColorfulTheme::default())
@@ -62,8 +62,9 @@ pub async fn exec(
     {
         log::info!("Continue",);
     } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
+      return Err(Error::msg(
+        "Cancelled by user. Aborting.",
+      ));
     }
 
   if backend
@@ -79,7 +80,8 @@ pub async fn exec(
       "dryrun - Delete nodes {:?} in {}",
       xname_to_move_vec, target_hsm_name
     );
-    std::process::exit(0);
+
+    return Ok(());
   }
 
   // Remove xnames from HSM group

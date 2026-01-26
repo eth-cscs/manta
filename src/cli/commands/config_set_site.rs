@@ -2,7 +2,7 @@ use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
 use directories::ProjectDirs;
-use toml_edit::{value, DocumentMut, Table};
+use toml_edit::{DocumentMut, Table, value};
 
 pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
   // XDG Base Directory Specification
@@ -73,9 +73,18 @@ pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
 pub fn validate_site_and_site_available_config_params(
   site: &String,
   site_available_table: &Table,
-) {
+) -> Result<(), Error> {
   if !site_available_table.contains_key(site) {
-    eprintln!("Site provided ({}) not valid.", site);
-    std::process::exit(1);
+    return Err(Error::msg(format!(
+      "Site provided ({}) not valid. Please choose one from the list below:\n{}",
+      site,
+      site_available_table
+        .iter()
+        .map(|(key, _value)| key.to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
+    )));
   }
+
+  Ok(())
 }

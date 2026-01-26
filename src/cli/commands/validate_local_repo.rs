@@ -1,3 +1,4 @@
+use anyhow::Error;
 use chrono::DateTime;
 use serde_json::Value;
 use substring::Substring;
@@ -9,18 +10,17 @@ pub async fn exec(
   gitea_base_url: &str,
   gitea_token: &str,
   repo_path: &str,
-) {
+) -> Result<(), Error> {
   let mut exit_code = 0;
 
   println!("Validate local repo {}", repo_path);
 
-  let repo = match local_git_repo::get_repo(&repo_path) {
-    Ok(repo) => repo,
-    Err(_) => {
-      eprintln!("Could not find a git repo in {}", repo_path);
-      std::process::exit(1);
-    }
-  };
+  let repo = local_git_repo::get_repo(&repo_path).map_err(|e| {
+    Error::msg(format!(
+      "Could not open git repo in {}. Reason: {}",
+      repo_path, e
+    ))
+  })?;
 
   log::info!("Repo '{}' found", repo_path);
 
@@ -140,6 +140,10 @@ pub async fn exec(
   println!("Repo synced? {}", exit_code == 0);
 
   if exit_code != 0 {
-    std::process::exit(exit_code);
+    return Err(Error::msg(
+      "Local repository is not in sync with remote repository",
+    ));
   }
+
+  Ok(())
 }

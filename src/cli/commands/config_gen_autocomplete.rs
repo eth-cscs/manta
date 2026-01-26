@@ -29,8 +29,7 @@ pub fn exec(
     "ZSH" => clap_complete::Shell::Zsh,
     "FISH" => clap_complete::Shell::Fish,
     _ => {
-      eprintln!("ERROR - Shell '{shell}' not supported",);
-      std::process::exit(1);
+      return Err(Error::msg(format!("Shell '{}' not supported", shell)));
     }
   };
 

@@ -42,8 +42,7 @@ pub async fn exec(
     {
       log::info!("Continue",);
     } else {
-      println!("Cancelled by user. Aborting.");
-      std::process::exit(0);
+      return Err(Error::msg("Cancelled by user. Aborting."));
     }
   }
 
@@ -54,13 +53,11 @@ pub async fn exec(
   let power_mgmt_summary = match power_mgmt_summary_rslt {
     Ok(value) => value,
     Err(e) => {
-      eprintln!(
-        "ERROR - Could not restart node/s '{:?}'. Reason:\n{}",
+      return Err(Error::msg(format!(
+        "Could not restart node/s '{:?}'. Reason:\n{}",
         xname_vec,
         e.to_string()
-      );
-
-      std::process::exit(1);
+      )));
     }
   };
 
@@ -78,7 +75,10 @@ pub async fn exec(
       .expect("Could not serialize audit message data");
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
+      return Err(Error::msg(format!(
+        "Could not send audit message to Kafka. Reason:\n{}",
+        e.to_string()
+      )));
     }
   }
 

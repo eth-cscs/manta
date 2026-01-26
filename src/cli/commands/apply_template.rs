@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::{
     bos::{ClusterSessionTrait, ClusterTemplateTrait},
@@ -15,7 +16,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -29,7 +30,7 @@ pub async fn exec(
   include_disabled: bool,
   assume_yes: bool,
   dry_run: bool,
-) {
+) -> Result<(), Error> {
   //***********************************************************
   // GET DATA
   //
@@ -51,20 +52,18 @@ pub async fn exec(
     match bos_sessiontemplate_vec_rslt {
       Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
       Err(e) => {
-        eprintln!(
+        return Err(Error::msg(format!(
           "ERROR - Could not fetch BOS sessiontemplate list. Reason:\n{:#?}\nExit",
           e
-        );
-        std::process::exit(1);
+        )));
       }
     };
 
   let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
-    eprintln!(
+    return Err(Error::msg(format!(
       "ERROR - No BOS sessiontemplate '{}' found\nExit",
       bos_sessiontemplate_name
-    );
-    std::process::exit(1);
+    )));
   } else {
     bos_sessiontemplate_vec.first().unwrap()
   };
@@ -122,10 +121,10 @@ pub async fn exec(
       xnames_to_validate_access_vec.append(&mut hsm_members_vec);
     } else {
       // limit_value neither is an xname nor an HSM group
-      panic!(
+      return Err(Error::msg(format!(
         "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
         limit_value
-      );
+      )));
     }
   }
 
@@ -165,8 +164,7 @@ pub async fn exec(
     {
       log::info!("Continue",);
     } else {
-      println!("Cancelled by user. Aborting.");
-      std::process::exit(0);
+      return Err(Error::msg("Operation cancelled by user"));
     }
   }
 
@@ -190,6 +188,8 @@ pub async fn exec(
   if dry_run {
     println!("Dry-run enabled. No changes persisted into the system");
     println!("BOS session info:\n{:#?}", bos_session);
+
+    Ok(())
   } else {
     let create_bos_session_rslt = backend
       .post_template_session(
@@ -201,17 +201,20 @@ pub async fn exec(
       .await;
 
     match create_bos_session_rslt {
-      Ok(bos_session) => println!(
-        "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
-        bos_session.name.unwrap(),
-        bos_sessiontemplate_name
-      ),
-      Err(e) => eprintln!(
-        "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit",
-        e
-      ),
+      Ok(bos_session) => {
+        println!(
+          "BOS session '{}' for BOS sessiontemplate '{}' created.\nPlease wait a few minutes for BOS session to start.",
+          bos_session.name.unwrap(),
+          bos_sessiontemplate_name
+        );
+        Ok(())
+      }
+      Err(e) => {
+        return Err(Error::msg(format!(
+          "ERROR - could not create BOS session. Reason:\n{:#?}.\nExit",
+          e
+        )));
+      }
     }
   }
-  // END CREATE BOS SESSION
-  //***********************************************************
 }

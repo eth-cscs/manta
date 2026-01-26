@@ -41,13 +41,11 @@ pub async fn exec(
         node_metadata_available_vec,
       )
       .await
-      .unwrap_or_else(|e| {
-        eprintln!(
-          "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-          e
-        );
-        std::process::exit(1);
-      });
+      .map_err(|e| {
+        Error::msg(format!(
+          "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+        ))
+      })?;
 
       Some(xname_vec)
     }
@@ -78,8 +76,7 @@ pub async fn exec(
             .unwrap();
 
     if !proceed {
-      println!("Operation canceled by the user. Exit");
-      std::process::exit(1);
+      return Err(Error::msg("Operation canceled by the user."));
     }
   }
 
@@ -92,17 +89,9 @@ pub async fn exec(
   }
 
   // Call backend to create group
-  let result = backend.add_group(&auth_token, group).await;
+  let _ = backend.add_group(&auth_token, group).await?;
 
-  match result {
-    Ok(_) => {
-      eprintln!("Group '{}' created", label);
-    }
-    Err(error) => {
-      eprintln!("{}", error);
-      std::process::exit(1);
-    }
-  }
+  eprintln!("Group '{}' created", label);
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {

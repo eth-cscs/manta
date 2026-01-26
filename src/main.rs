@@ -126,7 +126,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     &backend_tech,
     &shasta_api_url,
     &shasta_root_cert,
-  );
+  )?;
 
   // Process input params
   let cli = crate::cli::build::build_cli();

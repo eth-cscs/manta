@@ -46,13 +46,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    );
-    std::process::exit(1);
-  });
+  .map_err(|e| {
+    Error::msg(format!(
+      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+    ))
+  })?;
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
   let mut image_map: HashMap<String, Image> = HashMap::new();
@@ -142,12 +140,10 @@ pub async fn exec(
     };
 
     if !proceed {
-      println!("Operation canceled by the user. Exit");
-      std::process::exit(1);
+      return Err(Error::msg("Operation canceled by the user."));
     }
   } else {
-    println!("No changes detected. Nothing to do. Exit");
-    std::process::exit(0);
+    return Err(Error::msg("No changes detected. Nothing to do. Exit"));
   }
 
   log::info!("need restart? {}", need_restart);

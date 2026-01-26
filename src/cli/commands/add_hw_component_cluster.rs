@@ -37,8 +37,8 @@ pub async fn exec(
         );
         if dryrun {
           return Err(Error::msg(
-            "Dryrun selected, cannot create the new group and continue.")
-          );
+            "Dryrun selected, cannot create the new group and continue.",
+          ));
         } else {
           let group = Group {
             label: target_hsm_group_name.to_string(),
@@ -53,11 +53,10 @@ pub async fn exec(
             .expect("Unable to create new group");
         }
       } else {
-        log::error!(
+        return Err(Error::msg(format!(
           "Group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.",
           target_hsm_group_name.to_string()
-        );
-        std::process::exit(1);
+        )));
       }
     }
   };
@@ -90,7 +89,9 @@ pub async fn exec(
         hw_component_counter[1].parse::<isize>().unwrap(),
       );
     } else {
-      return Err ( Error :: msg ( "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8" ) ) ;
+      return Err(Error::msg(
+        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8",
+      ));
     }
   }
 
@@ -135,12 +136,6 @@ pub async fn exec(
     |target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone(),
   );
 
-  /* log::info!(
-      "Group '{}' hw component counters: {:?}",
-      parent_hsm_group_name,
-      parent_hsm_node_hw_component_count_vec
-  ); */
-
   // Calculate hw component counters (summary) across all node within the group
   let parent_hsm_hw_component_summary: HashMap<String, usize> =
     calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
@@ -163,14 +158,10 @@ pub async fn exec(
       .get(hw_component)
       .unwrap_or(&0);
     if *counter as isize > current_counter as isize {
-      log::error!(
-        "Error: Cannot remove more hw component '{}' ({}) than available in parent group '{}' ({})",
-        hw_component,
-        *counter,
-        parent_hsm_group_name,
-        current_counter
-      );
-      std::process::exit(1);
+      return Err(Error::msg(format!(
+        "Cannot remove more hw component '{}' ({}) than available in parent group '{}' ({})",
+        hw_component, *counter, parent_hsm_group_name, current_counter
+      )));
     }
     let new_counter: usize = current_counter - *counter as usize;
 
@@ -299,8 +290,7 @@ pub async fn exec(
   {
     println!("Continue.");
   } else {
-    println!("Cancelled by user. Aborting.");
-    std::process::exit(0);
+    return Err(Error::msg("Operation cancelled by user."));
   }
 
   // *********************************************************************************************************

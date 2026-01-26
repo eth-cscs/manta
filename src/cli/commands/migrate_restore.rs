@@ -1,5 +1,5 @@
+use anyhow::Error;
 use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
-use std::process::exit;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -16,22 +16,21 @@ pub async fn exec(
   prehook: Option<&str>,
   posthook: Option<&str>,
   overwrite: bool,
-) {
+) -> Result<(), Error> {
   println!(
-        "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
-        &prehook.unwrap_or(&"none".to_string()),
-        &posthook.unwrap_or(&"none".to_string()),
-        bos_file.unwrap(),
-        cfs_file.unwrap(),
-        ims_file.unwrap(),
-        hsm_file.unwrap()
-    );
+    "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
+    &prehook.unwrap_or(&"none".to_string()),
+    &posthook.unwrap_or(&"none".to_string()),
+    bos_file.unwrap(),
+    cfs_file.unwrap(),
+    ims_file.unwrap(),
+    hsm_file.unwrap()
+  );
   if prehook.is_some() {
     match crate::common::hooks::check_hook_perms(prehook).await {
       Ok(_) => log::debug!("Pre-hook script exists and is executable."),
       Err(e) => {
-        log::error!("{}. File: {}", e, &prehook.unwrap());
-        exit(2);
+        return Err(Error::msg(format!("{}. File: {}", e, &prehook.unwrap())));
       }
     };
   }
@@ -39,8 +38,7 @@ pub async fn exec(
     match crate::common::hooks::check_hook_perms(posthook).await {
       Ok(_) => log::debug!("Post-hook script exists and is executable."),
       Err(e) => {
-        log::error!("{}. File: {}", e, &posthook.unwrap());
-        exit(2);
+        return Err(Error::msg(format!("{}. File: {}", e, &posthook.unwrap())));
       }
     };
   }
@@ -51,8 +49,10 @@ pub async fn exec(
     match crate::common::hooks::run_hook(prehook).await {
       Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
       Err(_error) => {
-        log::error!("{}", _error);
-        exit(2);
+        return Err(Error::msg(format!(
+          "Pre-hook script failed. Error: {}",
+          _error
+        )));
       }
     };
   }
@@ -75,8 +75,10 @@ pub async fn exec(
     .await;
 
   if migrate_restore_rslt.is_err() {
-    eprintln!("Error: {}", migrate_restore_rslt.err().unwrap());
-    exit(2);
+    return Err(Error::msg(format!(
+      "Migrate restore failed. Error: {}",
+      migrate_restore_rslt.err().unwrap()
+    )));
   }
 
   if posthook.is_some() {
@@ -84,12 +86,17 @@ pub async fn exec(
     match crate::common::hooks::run_hook(posthook).await {
       Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
       Err(_error) => {
-        log::error!("{}", _error);
-        exit(2);
+        return Err(Error::msg(format!(
+          "Post-hook script failed. Error: {}",
+          _error
+        )));
       }
     };
   }
-  println!("\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.");
 
-  // ========================================================================================================
+  println!(
+    "\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored."
+  );
+
+  Ok(())
 }

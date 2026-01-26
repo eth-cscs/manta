@@ -56,13 +56,11 @@ pub async fn exec(
       node_metadata_available_vec,
     )
     .await
-    .unwrap_or_else(|e| {
-      eprintln!(
-        "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-        e
-      );
-      std::process::exit(1);
-    });
+    .map_err(|e| {
+      Error::msg(format!(
+        "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+      ))
+    })?;
 
     Some(xname_vec.join(","))
   } else {
@@ -153,11 +151,10 @@ fn check_local_repos(
     let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
       Ok(repo) => repo,
       Err(_) => {
-        eprintln!(
+        return Err(Error::msg(format!(
           "Could not find a git repo in {}",
-          repos[i].to_string_lossy()
-        );
-        std::process::exit(1);
+          repo_path.to_string_lossy()
+        )));
       }
     };
 
@@ -180,8 +177,7 @@ fn check_local_repos(
           local_last_commit.id()
         );
       } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
+        return Err(Error::msg("Cancelled by user. Aborting."));
       }
     }
 
@@ -235,8 +231,7 @@ fn check_local_repos(
     {
         println!("Continue. Creating new CFS configuration and layer(s)");
     } else {
-        println!("Cancelled by user. Aborting.");
-        std::process::exit(0);
+        return Err(Error::msg("Cancelled by user. Aborting."));
     }
 
   let mut repo_name_vec = Vec::new();
@@ -248,11 +243,10 @@ fn check_local_repos(
     let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
       Ok(repo) => repo,
       Err(_) => {
-        eprintln!(
+        return Err(Error::msg(format!(
           "Could not find a git repo in {}",
           repo_path.to_string_lossy()
-        );
-        std::process::exit(1);
+        )));
       }
     };
 

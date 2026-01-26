@@ -39,13 +39,12 @@ pub async fn exec(
       node_metadata_available_vec,
     )
     .await
-    .unwrap_or_else(|e| {
-      eprintln!(
+    .map_err(|e| {
+      Error::msg(format!(
         "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
         e
-      );
-      std::process::exit(1);
-    });
+      ))
+    })?;
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::msg(
@@ -72,21 +71,6 @@ pub async fn exec(
   hsm_group_summary
     .retain(|hsm_name, _xname_vec| parent_hsm_name_vec.contains(hsm_name));
 
-  /* // Get list of xnames available
-  let mut xname_to_move_vec: Vec<&String> = hsm_group_summary
-      .iter()
-      .flat_map(|(_hsm_group_name, hsm_group_members)| hsm_group_members)
-      .collect();
-
-  xname_to_move_vec.sort();
-  xname_to_move_vec.dedup();
-
-  // Check if there are any xname to migrate/move and exit otherwise
-  if xname_to_move_vec.is_empty() {
-      println!("No hosts to move. Exit");
-      std::process::exit(0);
-  } */
-
   log::debug!("xnames to move: {:?}", xname_to_move_vec);
 
   for target_hsm_name in target_hsm_name_vec {
@@ -109,11 +93,10 @@ pub async fn exec(
           ));
         }
       } else {
-        log::error!(
+        return Err(Error::msg(format!(
           "HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.",
           target_hsm_name
-        );
-        std::process::exit(1);
+        )));
       }
     }
 

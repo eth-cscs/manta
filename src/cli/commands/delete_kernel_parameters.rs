@@ -47,13 +47,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    );
-    std::process::exit(1);
-  });
+  .map_err(|e| {
+    Error::msg(format!(
+      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+    ))
+  })?;
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
@@ -103,12 +101,10 @@ pub async fn exec(
     };
 
     if !proceed {
-      println!("Operation canceled by the user. Exit");
-      std::process::exit(1);
+      return Err(Error::msg("Operation canceled by the user."));
     }
   } else {
-    println!("No changes detected. Nothing to do. Exit");
-    std::process::exit(0);
+    return Err(Error::msg("No changes detected. Nothing to do. Exit"));
   }
 
   log::info!("need restart? {}", need_restart);

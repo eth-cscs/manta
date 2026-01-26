@@ -3,7 +3,7 @@ use std::{fs, io::Write, path::PathBuf};
 use anyhow::Error;
 use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{value, DocumentMut};
+use toml_edit::{DocumentMut, value};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -94,12 +94,13 @@ pub async fn exec(
 pub fn validate_hsm_group_and_hsm_available_config_params(
   hsm_group: &String,
   hsm_available_vec: &[String],
-) {
+) -> Result<(), Error> {
   if !hsm_available_vec.contains(hsm_group) {
-    eprintln!(
+    return Err(Error::msg(format!(
       "HSM group provided ({}) not valid, please choose one of the following options: {:?}",
       hsm_group, hsm_available_vec
-    );
-    std::process::exit(1);
+    )));
   }
+
+  Ok(())
 }

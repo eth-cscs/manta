@@ -1,3 +1,4 @@
+use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -11,7 +12,7 @@ pub async fn get_groups_names_available(
   auth_token: &str,
   group_cli_arg_opt: Option<&String>,
   group_env_or_config_file_opt: Option<&String>,
-) -> Result<Vec<String>, manta_backend_dispatcher::error::Error> {
+) -> Result<Vec<String>, Error> {
   // Get list of groups the user has access to
   let hsm_name_available_vec =
     backend.get_group_name_available(auth_token).await?;
@@ -30,13 +31,11 @@ pub async fn get_groups_names_available(
     if !hsm_name_available_vec.contains(&target_hsm_group) {
       let mut hsm_name_available_vec = hsm_name_available_vec;
       hsm_name_available_vec.sort();
-      println!(
-        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}\nExit",
+      return Err(Error::msg(format!(
+        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
         target_hsm_group,
         hsm_name_available_vec.join(", ")
-      );
-
-      std::process::exit(1);
+      )));
     }
 
     Ok(vec![target_hsm_group.to_string()])
@@ -53,32 +52,28 @@ pub async fn validate_target_hsm_members(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   hsm_group_members_opt: &Vec<String>,
-) -> Vec<String> {
-  let hsm_groups_user_has_access = backend
-    .get_group_name_available(shasta_token)
-    .await
-    .unwrap();
+) -> Result<Vec<String>, Error> {
+  let hsm_groups_user_has_access =
+    backend.get_group_name_available(shasta_token).await?;
 
   let all_xnames_user_has_access = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
       &hsm_groups_user_has_access,
     )
-    .await
-    .unwrap();
+    .await?;
 
   // Check user has access to all xnames he is requesting
   if hsm_group_members_opt
     .iter()
     .all(|hsm_member| all_xnames_user_has_access.contains(hsm_member))
   {
-    hsm_group_members_opt.to_vec()
+    Ok(hsm_group_members_opt.to_vec())
   } else {
-    println!(
-      "Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}\nExit",
+    Err(Error::msg(format!(
+      "Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}",
       hsm_group_members_opt.join(", "),
       hsm_groups_user_has_access.join(", ")
-    );
-    std::process::exit(1);
+    )))
   }
 }

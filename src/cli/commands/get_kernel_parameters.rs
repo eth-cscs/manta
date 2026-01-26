@@ -34,13 +34,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .unwrap_or_else(|e| {
-    eprintln!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    );
-    std::process::exit(1);
-  });
+  .map_err(|e| {
+    Error::Message(format!(
+      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+    ))
+  })?;
 
   let boot_parameter_vec: Vec<BootParameters> = backend
     .get_bootparameters(shasta_token, &xname_vec)
@@ -55,7 +53,11 @@ pub async fn exec(
     "table" => {
       common::kernel_parameters_ops::print_table(boot_parameter_vec, filter)
     }
-    _ => panic!("ERROR - 'output' argument value missing or not supported"),
+    _ => {
+      return Err(Error::Message(
+        "ERROR - 'output' argument value missing or not supported".to_string(),
+      ));
+    }
   }
 
   Ok(())

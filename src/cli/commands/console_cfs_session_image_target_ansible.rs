@@ -40,8 +40,7 @@ pub async fn exec(
     })?;
 
   if cfs_session_vec.is_empty() {
-    eprintln!("No CFS session found. Exit",);
-    std::process::exit(1);
+    return Err(Error::msg("No CFS session found. Exit"));
   }
 
   let cfs_session_details = cfs_session_vec.first().unwrap();
@@ -55,11 +54,10 @@ pub async fn exec(
     .unwrap()
     .ne("image")
   {
-    eprintln!(
-      "CFS session found {} is type dynamic. Exit",
+    return Err(Error::msg(format!(
+      "CFS session found {} is type not 'image'. Exit",
       cfs_session_details.name
-    );
-    std::process::exit(1);
+    )));
   }
 
   if cfs_session_details
@@ -72,11 +70,10 @@ pub async fn exec(
     .status
     .ne(&Some("running".to_string()))
   {
-    eprintln!(
+    return Err(Error::msg(format!(
       "CFS session found {} state is not 'running'. Exit",
       cfs_session_details.name
-    );
-    std::process::exit(1);
+    )));
   }
 
   if !cfs_session_details
@@ -89,11 +86,10 @@ pub async fn exec(
     .iter()
     .any(|group| hsm_group_name_vec.contains(&group.name.to_string()))
   {
-    eprintln!(
-      "CFS session found {} is not related to any availble HSM groups {:?}",
+    return Err(Error::msg(format!(
+      "CFS session found {} is not related to any availble HSM groups {:?}. Exit",
       cfs_session_details.name, hsm_group_name_vec
-    );
-    std::process::exit(1);
+    )));
   }
 
   let console_rslt = connect_to_console(

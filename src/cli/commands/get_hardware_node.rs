@@ -1,3 +1,4 @@
+use anyhow::Error;
 use comfy_table::{Cell, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
@@ -14,7 +15,7 @@ pub async fn exec(
   xname: &str,
   type_artifact_opt: Option<&String>,
   output_opt: Option<&String>,
-) {
+) -> Result<(), Error> {
   let mut node_hw_inventory = &backend
     .get_inventory_hardware_query(
       shasta_token,
@@ -28,16 +29,12 @@ pub async fn exec(
     .await
     .unwrap();
 
-  node_hw_inventory = match node_hw_inventory.pointer("/Nodes/0") {
-    Some(node_value) => node_value,
-    None => {
-      eprintln!(
-        "ERROR - json section '/Node' missing in json response API for node '{}'",
+  node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
+      Error::msg(format!(
+        "ERROR - json section '/Nodes' missing in json response API for node '{}'",
         xname
-      );
-      std::process::exit(1);
-    }
-  };
+      ))
+    })?;
 
   if let Some(type_artifact) = type_artifact_opt {
     node_hw_inventory = &node_hw_inventory
@@ -55,6 +52,8 @@ pub async fn exec(
   } else {
     print_table(&[node_summary].to_vec());
   }
+
+  Ok(())
 }
 
 pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
