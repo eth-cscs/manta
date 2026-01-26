@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.2] - 2026-01-26
+
+### Features
+
+- Add wiki badge
+
+### Miscellaneous Tasks
+
+- Clean code
+- Refactor code
+- Refactor code
+- Refactor code
+
+### Refactor
+
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+- Clean code
+
 ## [1.59.9-beta.1] - 2026-01-22
 
 ### Bug Fixes
@@ -12,6 +36,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Update Cargo.toml
+- Release manta-cli version 1.59.9-beta.1
 
 ### Refactor
 
