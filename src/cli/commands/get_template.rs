@@ -1,8 +1,5 @@
 use anyhow::Error;
-use manta_backend_dispatcher::{
-  interfaces::bos::ClusterTemplateTrait,
-  types::bos::session_template::BosSessionTemplate,
-};
+use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

@@ -19,7 +19,7 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  group_available_vec: &[Group],
+  group_available_vec: &[String],
   hosts_expression: &str,
   timestamps: bool,
   k8s: &K8sDetails,
@@ -70,20 +70,12 @@ pub async fn exec(
       // Get most recent CFS session for node or group the node belongs to
       log::debug!("User input is a single node");
 
-      let group_name_vec = group_available_vec
-        .iter()
-        .map(|g| g.label.as_str())
-        .collect::<Vec<&str>>();
-
       backend
         .get_and_filter_sessions(
           shasta_token,
           shasta_base_url,
           shasta_root_cert,
-          group_name_vec
-            .into_iter()
-            .map(str::to_string)
-            .collect::<Vec<_>>(),
+          group_available_vec.to_vec(),
           vec![xname],
           None,
           None,
@@ -124,14 +116,20 @@ pub async fn exec(
 
   let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
 
-  let group_available_vec: Vec<Group> = group_available_vec
-    .into_iter()
-    .map(|group| group.clone().into())
+  let group_available_vec_group = group_available_vec
+    .iter()
+    .map(|g| Group {
+      label: g.clone(),
+      description: None,
+      tags: None,
+      members: None,
+      exclusive_group: None,
+    })
     .collect();
 
   check_cfs_session_against_groups_available(
     &cfs_session_backend,
-    group_available_vec,
+    group_available_vec_group,
   );
 
   let _ = print_cfs_session_logs(
