@@ -218,7 +218,7 @@ pub async fn parse_subcommand(
       assume_yes,
       dry_run,
     )
-    .await;
+    .await?;
   } else if let Some(cli_apply_ephemeral_environment) =
     cli_apply.subcommand_matches("ephemeral-environment")
   {
@@ -238,7 +238,7 @@ pub async fn parse_subcommand(
         .get_one::<String>("image-id")
         .unwrap(),
     )
-    .await;
+    .await?;
   } else if let Some(cli_apply_kernel_parameters) =
     cli_apply.subcommand_matches("kernel-parameters")
   {

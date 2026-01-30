@@ -83,7 +83,7 @@ pub async fn process_subcommand(
         .map(|xname| xname.trim().to_string())
         .collect::<Vec<String>>(),
     )
-    .await;
+    .await?;
   }
 
   let site = configuration

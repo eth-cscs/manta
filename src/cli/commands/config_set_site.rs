@@ -40,7 +40,7 @@ pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
   validate_site_and_site_available_config_params(
     new_site_opt.unwrap(),
     site_available_table,
-  );
+  )?;
 
   // All goot, we are safe to update 'site' config param
   log::info!(

@@ -54,7 +54,7 @@ pub async fn exec(
 
   // Validate user has access to the list of xnames requested
   if let Some(xname_vec) = &xname_vec_opt {
-    validate_target_hsm_members(&backend, &auth_token, xname_vec).await;
+    validate_target_hsm_members(&backend, &auth_token, xname_vec).await?;
   }
 
   // Create Group instance for http payload

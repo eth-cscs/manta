@@ -66,7 +66,7 @@ pub async fn exec(
   validate_hsm_group_and_hsm_available_config_params(
     new_hsm,
     &hsm_available_vec,
-  );
+  )?;
 
   // All good, we are safe to update 'hsm_group' config param
   log::info!("Changing configuration to use HSM GROUP {}", new_hsm);
