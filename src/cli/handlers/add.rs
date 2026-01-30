@@ -2,12 +2,12 @@ use anyhow::Error;
 use clap::ArgMatches;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use manta_backend_dispatcher::interfaces::hsm::{
-    component::ComponentTrait, group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
+    group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
 };
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use crate::common::{authorization::get_groups_names_available, authentication::get_api_token, kafka::Kafka};
-use std::{fs::File, io::BufReader, path::PathBuf};
-use manta_backend_dispatcher::types::{HWInventoryByLocationList, hsm::inventory::{RedfishEndpoint, RedfishEndpointArray}, bss::BootParameters};
+use std::path::PathBuf;
+use manta_backend_dispatcher::types::{hsm::inventory::{RedfishEndpoint, RedfishEndpointArray}, bss::BootParameters};
 use serde_json::Value;
 use crate::cli::commands::{add_node, add_group, add_hw_component_cluster, add_kernel_parameters};
 
@@ -27,57 +27,24 @@ pub async fn handle_add(
             .get_one::<String>("group")
             .expect("ERROR - 'group' argument is mandatory");
         let hardware_file_opt = cli_add_node.get_one::<PathBuf>("hardware");
-        let hw_inventory_opt: Option<HWInventoryByLocationList> =
-            if let Some(hardware_file) = hardware_file_opt {
-                let file = File::open(hardware_file)?;
-                let reader = BufReader::new(file);
-                let hw_inventory_value: serde_json::Value =
-                    serde_json::from_reader(reader).unwrap();
-                Some(
-                    serde_json::from_value::<HWInventoryByLocationList>(hw_inventory_value)
-                        .expect("ERROR - Could not parse hardware inventory file"),
-                )
-            } else {
-                None
-            };
+        
         let arch_opt = cli_add_node.get_one::<String>("arch").cloned();
         let enabled = cli_add_node
             .get_one::<bool>("disabled")
             .cloned()
             .unwrap_or(true);
-        let add_node_rslt = add_node::exec(
+        
+        add_node::exec(
             backend,
             &shasta_token,
             id,
             group,
             enabled,
             arch_opt,
-            hw_inventory_opt,
+            hardware_file_opt,
             kafka_audit_opt,
         )
-        .await;
-
-        if let Err(error) = add_node_rslt {
-            eprintln!(
-                "ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}\nRollback operation"
-            );
-            let delete_node_rslt = backend
-                .delete_node(shasta_token.as_str(), id.clone().as_str())
-                .await;
-            eprintln!("Try to delete node '{}'", id);
-            if delete_node_rslt.is_ok() {
-                eprintln!("Node '{}' deleted", id);
-            }
-            std::process::exit(1);
-        }
-        log::info!("Node '{}' created", id);
-        let new_group_members_rslt = backend
-            .add_members_to_group(&shasta_token, group, &[id])
-            .await;
-        if let Err(error) = &new_group_members_rslt {
-            eprintln!("ERROR - Could not add node to group. Reason:\n{:#?}", error);
-        }
-        println!("Node '{}' created and added to group '{}'", id, group,);
+        .await?;
     } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
         let shasta_token = get_api_token(backend, site_name).await?;
         let label = cli_add_group
