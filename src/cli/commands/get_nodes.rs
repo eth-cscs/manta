@@ -9,20 +9,23 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hosts_expression: &str,
-  status: Option<&String>,
-  is_include_siblings: bool,
-  silent_nid: bool,
-  silent_xname: bool,
-  output_opt: Option<&String>,
-  status_summary: bool,
+  cli_get_nodes: &clap::ArgMatches,
 ) -> Result<(), Error> {
+  let xname_requested: &str = cli_get_nodes
+    .get_one::<String>("VALUE")
+    .expect("The 'xnames' argument must have values");
+  let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
+  let nids_only = cli_get_nodes.get_flag("nids-only-one-line");
+  let status: Option<&String> = cli_get_nodes.get_one("status");
+  let output_opt: Option<&String> = cli_get_nodes.get_one("output");
+  let status_summary = cli_get_nodes.get_flag("summary-status");
+
   // Convert user input to xname
   let node_metadata_available_vec =
     backend.get_node_metadata_available(shasta_token).await?;
 
   let mut node_list = common::node_ops::from_hosts_expression_to_xname_vec(
-    hosts_expression,
+    xname_requested,
     is_include_siblings,
     node_metadata_available_vec,
   )
@@ -103,7 +106,7 @@ pub async fn exec(
     };
 
     println!("{}", status_output);
-  } else if silent_nid {
+  } else if nids_only {
     let node_nid_list = node_details_list
       .iter()
       .map(|node_details| node_details.nid.clone())
@@ -114,7 +117,7 @@ pub async fn exec(
     } else {
       println!("{}", node_nid_list.join(","));
     }
-  } else if silent_xname {
+  } else if false {
     let node_xname_list = node_details_list
       .iter()
       .map(|node_details| node_details.xname.clone())

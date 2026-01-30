@@ -1,3 +1,6 @@
+use crate::common::{
+  authentication::get_api_token, authorization::get_groups_names_available,
+};
 use anyhow::Error;
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
@@ -9,12 +12,24 @@ use nodeset::NodeSet;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  auth_token: &str,
-  group_name_vec_opt: Option<&[String]>,
+  site_name: &str,
+  group_name_arg_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&String>,
   output: &str,
 ) -> Result<(), Error> {
-  let group_vec: Vec<Group> =
-    backend.get_groups(auth_token, group_name_vec_opt).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
+  let group_vec: Vec<Group> = backend
+    .get_groups(&shasta_token, Some(&target_hsm_group_vec))
+    .await?;
 
   match output {
     "table" => print_table(&group_vec),

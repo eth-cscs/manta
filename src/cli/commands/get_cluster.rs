@@ -1,3 +1,5 @@
+use crate::common::authentication::get_api_token;
+use crate::common::authorization::get_groups_names_available;
 use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -8,26 +10,39 @@ use crate::{
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_name_vec: &[String],
-  status: Option<&str>,
-  nids_only: bool,
-  xnames_only: bool,
-  output_opt: Option<&str>,
-  summary_status: bool,
+  cli_get_cluster: &clap::ArgMatches,
+  settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+  let hsm_group_name_arg_opt: Option<&String> =
+    cli_get_cluster.get_one("HSM_GROUP_NAME");
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
+  let status: Option<&String> = cli_get_cluster.get_one("status");
+  let nids_only = cli_get_cluster.get_flag("nids-only-one-line");
+  let xnames_only = cli_get_cluster.get_flag("xnames-only-one-line");
+  let output_opt: Option<&String> = cli_get_cluster.get_one("output");
+  let summary_status = cli_get_cluster.get_flag("summary-status");
+
   // Take all nodes for all hsm_groups found and put them in a Vec
   let mut hsm_groups_node_list: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(shasta_token, hsm_name_vec)
+    .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_group_vec)
     .await
     .unwrap();
 
   hsm_groups_node_list.sort();
 
   let node_details_list_rslt = csm_rs::node::utils::get_node_details(
-    shasta_token,
+    &shasta_token,
     shasta_base_url,
     shasta_root_cert,
     hsm_groups_node_list,

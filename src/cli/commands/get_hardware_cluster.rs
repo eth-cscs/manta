@@ -4,6 +4,9 @@ use std::{
   time::Instant,
 };
 
+use crate::common::{
+  authentication::get_api_token, authorization::get_groups_names_available,
+};
 use comfy_table::{Color, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::{group::GroupTrait, hardware_inventory::HardwareInventory},
@@ -15,15 +18,29 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
   backend: StaticBackendDispatcher,
-  shasta_token: &str,
-  hsm_group_name: &str,
+  site_name: &str,
+  hsm_group_name_arg_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&String>,
   output_opt: Option<&String>,
 ) {
+  let shasta_token = get_api_token(&backend, site_name).await.unwrap();
+
+  let target_hsm_group_vec = get_groups_names_available(
+    &backend,
+    &shasta_token,
+    hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await
+  .unwrap();
+
+  let hsm_group_name = target_hsm_group_vec.first().unwrap();
+
   let pipe_size = 15;
 
   // Target HSM group
   let hsm_group = backend
-    .get_group(shasta_token, hsm_group_name)
+    .get_group(&shasta_token, hsm_group_name)
     .await
     .unwrap();
 

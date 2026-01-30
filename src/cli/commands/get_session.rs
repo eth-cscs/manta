@@ -8,16 +8,31 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_group_name_available_vec_opt: Option<Vec<String>>,
-  xname_vec_opt: Option<Vec<&str>>,
-  min_age_opt: Option<&String>,
-  max_age_opt: Option<&String>,
-  type_opt: Option<&String>,
-  status_opt: Option<&String>,
-  session_name_opt: Option<&String>,
-  limit_number_opt: Option<&u8>,
-  output_opt: Option<&String>,
+  cli_get_session: &clap::ArgMatches,
 ) -> Result<(), Error> {
+  let hsm_group_name_arg_opt: Option<&String> =
+    cli_get_session.get_one("hsm-group");
+  let limit_number_opt: Option<&u8> =
+    if let Some(true) = cli_get_session.get_one("most-recent") {
+      Some(&1)
+    } else {
+      cli_get_session.get_one::<u8>("limit")
+    };
+  let xname_vec_arg: Vec<&str> = cli_get_session
+    .get_one::<String>("xnames")
+    .map(|xname_str| xname_str.split(',').map(|xname| xname.trim()).collect())
+    .unwrap_or_default();
+  let min_age_opt: Option<&String> = cli_get_session.get_one::<String>("min-age");
+  let max_age_opt: Option<&String> = cli_get_session.get_one::<String>("max-age");
+  let mut type_opt: Option<String> = cli_get_session.get_one("type").cloned();
+  if type_opt == Some("runtime".to_string()) {
+    type_opt = Some("dynamic".to_string())
+  }
+  let status_opt: Option<&String> = cli_get_session.get_one::<String>("status");
+  let session_name_opt: Option<&String> =
+    cli_get_session.get_one::<String>("name");
+  let output_opt: Option<&String> = cli_get_session.get_one("output");
+
   log::info!("Get CFS sessions",);
 
   let cfs_session_vec = backend
@@ -25,11 +40,11 @@ pub async fn exec(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      hsm_group_name_available_vec_opt.unwrap_or_default(),
-      xname_vec_opt.unwrap_or_default(),
+      hsm_group_name_arg_opt.map(|v| vec![v.clone()]).unwrap_or_default(),
+      xname_vec_arg,
       min_age_opt,
       max_age_opt,
-      type_opt,
+      type_opt.as_ref(),
       status_opt,
       session_name_opt,
       limit_number_opt,

@@ -8,35 +8,56 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
-  common::cfs_configuration_utils::print_table_struct,
+  common::{
+    authentication::get_api_token, authorization::get_groups_names_available,
+    cfs_configuration_utils::print_table_struct,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use chrono::NaiveDateTime;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  gitea_base_url: &str,
-  gitea_token: &str,
-  shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
+  vault_base_url: Option<&String>,
+  gitea_base_url: &str,
   configuration_name_opt: Option<&str>,
   configuration_name_pattern_opt: Option<&str>,
-  hsm_group_name_vec: &[String],
+  hsm_group_name_arg_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&String>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   limit: Option<&u8>,
   output_opt: Option<&str>,
   site_name: &str,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    &shasta_token,
+    vault_base_url.expect("ERROR - vault base url is mandatory"),
+    site_name,
+  )
+  .await
+  .unwrap();
+
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
   let cfs_configuration_vec: Vec<CfsConfigurationResponse> = backend
     .get_and_filter_configuration(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       configuration_name_opt,
       configuration_name_pattern_opt,
-      hsm_group_name_vec,
+      &target_hsm_group_vec,
       since_opt,
       until_opt,
       limit,
@@ -56,37 +77,38 @@ pub async fn exec(
     if cfs_configuration_vec.len() == 1 {
       // Get CFS configuration details with data from VCS/Gitea
       let most_recent_cfs_configuration: &CfsConfigurationResponse =
-        &cfs_configuration_vec.first().unwrap();
+        cfs_configuration_vec.first().unwrap();
 
       let mut layer_details_vec: Vec<LayerDetails> = vec![];
 
       for layer in &most_recent_cfs_configuration.layers {
         let layer_details: LayerDetails = backend
-        .get_configuration_layer_details(
+          .get_configuration_layer_details(
             shasta_root_cert,
             gitea_base_url,
-            gitea_token,
+            &gitea_token,
             layer.clone(),
             site_name,
-        )
-        .await
-        .map_err(|e| {
-           Error::msg(format!(
-             "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
-             e
-           ))
-        })?;
+          )
+          .await
+          .map_err(|e| {
+            Error::msg(format!(
+              "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
+              e
+            ))
+          })?;
 
         layer_details_vec.push(layer_details);
       }
 
       let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) = backend
       .get_derivatives(
-          shasta_token,
+          &shasta_token,
           shasta_base_url,
           shasta_root_cert,
           &most_recent_cfs_configuration.name,
       )
+
       .await
       .map_err(|e| {
           Error::msg(format!(

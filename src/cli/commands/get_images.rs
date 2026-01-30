@@ -1,3 +1,4 @@
+use crate::common::authorization::get_groups_names_available;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
@@ -15,18 +16,29 @@ pub async fn exec(
   shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  hsm_group_name_vec: &[String],
-  id_opt: Option<&str>,
-  limit_number: Option<&u8>,
+  cli_get_images: &clap::ArgMatches,
+  settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<(), Error> {
+  let id: Option<&String> = cli_get_images.get_one::<String>("id");
+  let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
+  let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    shasta_token,
+    hsm_group_name_arg_opt.unwrap_or(None),
+    settings_hsm_group_name_opt,
+  )
+  .await
+  .map_err(|e| Error::Message(e.to_string()))?;
+
   let image_detail_vec: Vec<(Image, String, String, bool)> = backend
     .get_images_and_details(
       shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      hsm_group_name_vec,
-      id_opt,
-      limit_number,
+      &target_hsm_group_vec,
+      id.map(String::as_str),
+      limit,
     )
     .await?;
 

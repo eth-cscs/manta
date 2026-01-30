@@ -1,3 +1,6 @@
+use crate::common::{
+  authentication::get_api_token, authorization::validate_target_hsm_members,
+};
 use anyhow::Error;
 use comfy_table::{Cell, Table};
 use manta_backend_dispatcher::{
@@ -11,15 +14,21 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
-  xname: &str,
+  site_name: &str,
+  xnames: &str,
   type_artifact_opt: Option<&String>,
   output_opt: Option<&String>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let xname_vec: Vec<String> = xnames.split(',').map(str::to_string).collect();
+
+  validate_target_hsm_members(backend, &shasta_token, &xname_vec).await?;
+
   let mut node_hw_inventory = &backend
     .get_inventory_hardware_query(
-      shasta_token,
-      xname,
+      &shasta_token,
+      xnames,
       None,
       None,
       None,
@@ -32,7 +41,7 @@ pub async fn exec(
   node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
       Error::msg(format!(
         "ERROR - json section '/Nodes' missing in json response API for node '{}'",
-        xname
+        xnames
       ))
     })?;
 
@@ -41,7 +50,7 @@ pub async fn exec(
       .as_array()
       .unwrap()
       .iter()
-      .find(|&node| node.get("ID").and_then(Value::as_str).unwrap().eq(xname))
+      .find(|&node| node.get("ID").and_then(Value::as_str).unwrap().eq(xnames))
       .unwrap()[type_artifact];
   }
 

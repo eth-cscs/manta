@@ -40,6 +40,7 @@ pub mod get_hardware_node;
 pub mod get_images;
 pub mod get_kernel_parameters;
 pub mod get_nodes;
+pub mod get_redfish_endpoints;
 pub mod get_session;
 pub mod get_template;
 pub mod log;
