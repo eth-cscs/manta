@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.3] - 2026-01-30
+
+### Refactor
+
+- Add cli handlers to clean code
+
 ## [1.59.9-beta.2] - 2026-01-26
 
 ### Features
@@ -14,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Refactor code
 - Refactor code
 - Refactor code
+- Release manta-cli version 1.59.9-beta.2
 
 ### Refactor
 
