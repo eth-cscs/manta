@@ -1,10 +1,19 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
+use clap::ArgMatches;
 use directories::ProjectDirs;
 use toml_edit::{DocumentMut, Table, value};
 
-pub async fn exec(new_site_opt: Option<&String>) -> Result<(), Error> {
+pub async fn exec(
+  cli_config_set_site: &ArgMatches,
+) -> Result<(), Error> {
+  let new_site_opt: Option<&String> = cli_config_set_site.get_one("SITE_NAME");
+
+  set_site(new_site_opt).await
+}
+
+pub async fn set_site(new_site_opt: Option<&String>) -> Result<(), Error> {
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/

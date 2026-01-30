@@ -1,10 +1,21 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
+use clap::ArgMatches;
 use directories::ProjectDirs;
 use toml_edit::{value, DocumentMut};
 
-pub async fn exec(new_log_level_opt: &str) -> Result<(), Error> {
+pub async fn exec(
+  cli_config_set_log: &ArgMatches,
+) -> Result<(), Error> {
+  let log_level: &String = cli_config_set_log
+    .get_one("LOG_LEVEL")
+    .ok_or_else(|| Error::msg("Error"))?;
+
+  set_log(log_level).await
+}
+
+pub async fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/

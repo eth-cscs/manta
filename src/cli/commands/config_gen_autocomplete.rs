@@ -1,10 +1,24 @@
+use clap::{ArgMatches, Command};
 use clap_complete::{generate, generate_to};
 
 use std::{env, io, path::PathBuf};
 
 use anyhow::Error;
 
-pub fn exec(
+pub async fn exec(
+  cli: Command,
+  cli_config_generate_autocomplete: &ArgMatches,
+) -> Result<(), Error> {
+  let shell_opt: Option<String> =
+    cli_config_generate_autocomplete.get_one("shell").cloned();
+
+  let path_opt: Option<PathBuf> =
+    cli_config_generate_autocomplete.get_one("path").cloned();
+
+  gen_autocomplete(cli, shell_opt, path_opt)
+}
+
+pub fn gen_autocomplete(
   mut cli: clap::Command,
   shell_opt: Option<String>,
   path_opt: Option<PathBuf>,

@@ -5,9 +5,18 @@ use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::DocumentMut;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{common::authentication::get_api_token, manta_backend_dispatcher::StaticBackendDispatcher};
 
 pub async fn exec(
+  backend: &StaticBackendDispatcher,
+  site_name: &str,
+) -> Result<(), Error> {
+  let shasta_token = get_api_token(&backend, &site_name).await?;
+
+  unset_parent_hsm(backend, &shasta_token).await
+}
+
+pub async fn unset_parent_hsm(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
 ) -> Result<(), Error> {

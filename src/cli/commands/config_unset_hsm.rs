@@ -5,6 +5,10 @@ use directories::ProjectDirs;
 use toml_edit::DocumentMut;
 
 pub async fn exec() -> Result<(), Error> {
+  unset_hsm().await
+}
+
+pub async fn unset_hsm() -> Result<(), Error> {
   // Read configuration file
 
   // XDG Base Directory Specification

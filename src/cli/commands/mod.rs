@@ -6,6 +6,7 @@ pub mod add_nodes_to_hsm_groups;
 pub mod apply_boot_cluster;
 pub mod apply_boot_node;
 pub mod apply_ephemeral_env;
+pub mod apply_hw_cluster;
 pub mod apply_hw_cluster_pin;
 pub mod apply_hw_cluster_unpin;
 pub mod apply_kernel_parameters;

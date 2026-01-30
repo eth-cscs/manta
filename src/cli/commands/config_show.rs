@@ -4,10 +4,20 @@ use anyhow::Error;
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{common::authentication::get_api_token, manta_backend_dispatcher::StaticBackendDispatcher};
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
+  backend: &StaticBackendDispatcher,
+  site_name: &str,
+  settings: &Config,
+) -> Result<(), Error> {
+  let shasta_token = get_api_token(&backend, &site_name).await?;
+
+  show(backend, Some(shasta_token), settings).await
+}
+
+pub async fn show(
   backend: &StaticBackendDispatcher,
   shasta_token_opt: Option<String>,
   settings: &Config,

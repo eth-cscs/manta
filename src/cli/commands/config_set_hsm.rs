@@ -1,13 +1,28 @@
 use std::{fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
+use clap::ArgMatches;
 use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{DocumentMut, value};
+use toml_edit::{value, DocumentMut};
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{common::authentication::get_api_token, manta_backend_dispatcher::StaticBackendDispatcher};
 
 pub async fn exec(
+  cli_config_set_hsm: &ArgMatches,
+  backend: &StaticBackendDispatcher,
+  site_name: &str,
+) -> Result<(), Error> {
+  let shasta_token = get_api_token(&backend, &site_name).await?;
+
+  let new_hsm: &String = cli_config_set_hsm
+    .get_one("HSM_GROUP_NAME")
+    .ok_or_else(|| Error::msg("new hsm group not defined"))?;
+
+  set_target_hsm(&backend, &shasta_token, new_hsm).await
+}
+
+pub async fn set_target_hsm(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   new_hsm: &String,

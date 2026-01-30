@@ -5,6 +5,10 @@ use dialoguer::Select;
 use directories::ProjectDirs;
 
 pub async fn exec() -> Result<(), Error> {
+  unset_auth().await
+}
+
+pub async fn unset_auth() -> Result<(), Error> {
   let mut auth_token_list: Vec<PathBuf> = vec![];
 
   // XDG Base Directory Specification

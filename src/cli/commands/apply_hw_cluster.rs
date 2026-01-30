@@ -9,7 +9,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
-pub async fn process_subcommand(
+pub async fn exec(
   cli_apply_hw_cluster: &ArgMatches,
   backend: StaticBackendDispatcher,
   site_name: &str,
