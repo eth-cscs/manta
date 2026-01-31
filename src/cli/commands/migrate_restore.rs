@@ -1,11 +1,11 @@
 use anyhow::Error;
 use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::authentication::get_api_token};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   bos_file: Option<&str>,
@@ -17,6 +17,8 @@ pub async fn exec(
   posthook: Option<&str>,
   overwrite: bool,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   println!(
     "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
     &prehook.unwrap_or(&"none".to_string()),
@@ -59,7 +61,7 @@ pub async fn exec(
 
   let migrate_restore_rslt = backend
     .migrate_restore(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       bos_file,

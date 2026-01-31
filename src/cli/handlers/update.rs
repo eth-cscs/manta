@@ -1,13 +1,8 @@
-use crate::cli::commands::update_boot_parameters;
-use crate::common::{
-  authentication::get_api_token, authorization::validate_target_hsm_members,
-  kafka::Kafka,
-};
+use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
+use crate::common::kafka::Kafka;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use anyhow::Error;
 use clap::ArgMatches;
-use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
-use manta_backend_dispatcher::types::hsm::inventory::RedfishEndpoint;
 
 pub async fn handle_update(
   cli_update: &ArgMatches,
@@ -18,21 +13,16 @@ pub async fn handle_update(
   if let Some(cli_update_boot_parameters) =
     cli_update.subcommand_matches("boot-parameters")
   {
-    let shasta_token = get_api_token(backend, site_name).await?;
     let hosts: &String = cli_update_boot_parameters
       .get_one("hosts")
       .expect("ERROR - 'hosts' argument is mandatory");
     let params: Option<&String> = cli_update_boot_parameters.get_one("params");
     let kernel: Option<&String> = cli_update_boot_parameters.get_one("kernel");
     let initrd: Option<&String> = cli_update_boot_parameters.get_one("initrd");
-    let xname_vec = hosts
-      .split(",")
-      .map(|value| value.trim().to_string())
-      .collect();
-    validate_target_hsm_members(backend, &shasta_token, &xname_vec).await?;
-    let result = update_boot_parameters::exec(
+
+    update_boot_parameters::exec(
       backend,
-      &shasta_token,
+      site_name,
       hosts,
       None,
       None,
@@ -41,15 +31,10 @@ pub async fn handle_update(
       initrd,
       kafka_audit_opt,
     )
-    .await;
-    match result {
-      Ok(_) => {}
-      Err(error) => eprintln!("{}", error),
-    }
+    .await?;
   } else if let Some(cli_update_redfish_endpoint) =
     cli_update.subcommand_matches("redfish-endpoint")
   {
-    let shasta_token = get_api_token(backend, site_name).await?;
     let id: String = cli_update_redfish_endpoint
       .get_one("id")
       .cloned()
@@ -78,28 +63,26 @@ pub async fn handle_update(
       cli_update_redfish_endpoint.get_flag("rediscover-on-update");
     let template_id: Option<String> =
       cli_update_redfish_endpoint.get_one("template-id").cloned();
-    let redfish_endpoint = RedfishEndpoint {
+
+    update_redfish_endpoint::exec(
+      backend,
+      site_name,
       id,
       name,
       hostname,
       domain,
       fqdn,
-      enabled: Some(enabled),
+      enabled,
       user,
       password,
-      use_ssdp: Some(use_ssdp),
-      mac_required: Some(mac_required),
+      use_ssdp,
+      mac_required,
       mac_addr,
       ip_address,
-      rediscover_on_update: Some(rediscover_on_update),
+      rediscover_on_update,
       template_id,
-      r#type: None,
-      uuid: None,
-      discovery_info: None,
-    };
-    backend
-      .update_redfish_endpoint(&shasta_token, &redfish_endpoint)
-      .await?;
+    )
+    .await?;
   }
   Ok(())
 }

@@ -57,4 +57,5 @@ pub mod power_reset_cluster;
 pub mod power_reset_nodes;
 pub mod remove_nodes_from_hsm_groups;
 pub mod update_boot_parameters;
+pub mod update_redfish_endpoint;
 pub mod validate_local_repo;

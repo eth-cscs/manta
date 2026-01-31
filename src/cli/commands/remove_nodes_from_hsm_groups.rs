@@ -5,22 +5,24 @@ use manta_backend_dispatcher::interfaces::hsm::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   target_hsm_name: &String,
   hosts_expression: &str,
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::msg(format!(
@@ -68,7 +70,7 @@ pub async fn exec(
     }
 
   if backend
-    .get_group(shasta_token, target_hsm_name)
+    .get_group(&shasta_token, target_hsm_name)
     .await
     .is_ok()
   {
@@ -87,15 +89,15 @@ pub async fn exec(
   // Remove xnames from HSM group
   for xname in &xname_to_move_vec {
     let _ = backend
-      .delete_member_from_group(shasta_token, &target_hsm_name, &xname)
+      .delete_member_from_group(&shasta_token, &target_hsm_name, &xname)
       .await
       .unwrap();
   }
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![target_hsm_name], "message": format!("Remove nodes from group '{}'", target_hsm_name)});

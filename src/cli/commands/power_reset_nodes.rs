@@ -6,25 +6,27 @@ use manta_backend_dispatcher::interfaces::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use nodeset::NodeSet;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   hosts_expression: &str,
   force: bool,
   assume_yes: bool,
   output: &str,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   // Filter xnames to the ones members to HSM groups the user has access to
   //
   // Convert user input to xname
   let node_metadata_available_vec =
-    backend.get_node_metadata_available(shasta_token).await?;
+    backend.get_node_metadata_available(&shasta_token).await?;
 
   let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -71,7 +73,7 @@ pub async fn exec(
   }
 
   let power_mgmt_summary_rslt = backend
-    .power_reset_sync(shasta_token, &xname_vec, force)
+    .power_reset_sync(&shasta_token, &xname_vec, force)
     .await;
 
   let power_mgmt_summary = match power_mgmt_summary_rslt {
@@ -89,12 +91,12 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     let group_map = backend
       .get_group_map_and_filter_by_member_vec(
-        shasta_token,
+        &shasta_token,
         &xname_vec
           .iter()
           .map(|member| member.as_str())

@@ -5,24 +5,39 @@ use manta_backend_dispatcher::interfaces::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token, authorization::get_groups_names_available},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use nodeset::NodeSet;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   hsm_group_name_arg: &str,
+  settings_hsm_group_name_opt: Option<&String>,
   force: bool,
   assume_yes: bool,
   output: &str,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    Some(&hsm_group_name_arg.to_string()),
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
+  let target_hsm_group = target_hsm_group_vec
+    .first()
+    .expect("The 'cluster name' argument must have a value");
+
   let xname_vec = backend
     .get_member_vec_from_group_name_vec(
-      shasta_token,
-      &[hsm_group_name_arg.to_string()],
+      &shasta_token,
+      &[target_hsm_group.to_string()],
     )
     .await
     .unwrap();
@@ -50,7 +65,7 @@ pub async fn exec(
   }
 
   let power_mgmt_summary_rslt = backend
-    .power_off_sync(shasta_token, &xname_vec, force)
+    .power_off_sync(&shasta_token, &xname_vec, force)
     .await;
 
   let power_mgmt_summary = match power_mgmt_summary_rslt {
@@ -68,8 +83,8 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "group": hsm_group_name_arg, "message": "power off"});

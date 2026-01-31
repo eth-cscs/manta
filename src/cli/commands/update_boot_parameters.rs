@@ -1,16 +1,18 @@
-use manta_backend_dispatcher::{
-  error::Error, interfaces::bss::BootParametersTrait,
-  types::bss::BootParameters,
-};
-
 use crate::{
-  common::{audit::Audit, jwt_ops, kafka::Kafka},
+  common::{
+    audit::Audit, authentication::get_api_token,
+    authorization::validate_target_hsm_members, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
+};
+use anyhow::Error;
+use manta_backend_dispatcher::{
+  interfaces::bss::BootParametersTrait, types::bss::BootParameters,
 };
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   xnames: &String,
   nids: Option<&String>,
   macs: Option<&String>,
@@ -20,6 +22,8 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
   println!("Update boot parameters");
+
+  let shasta_token = get_api_token(backend, site_name).await?;
 
   let hosts: Vec<String> = xnames.split(',').map(String::from).collect();
   let macs: Option<Vec<String>> =
@@ -32,6 +36,8 @@ pub async fn exec(
   let params: String = params.cloned().unwrap_or_default().to_string();
   let kernel: String = kernel.cloned().unwrap_or_default().to_string();
   let initrd: String = initrd.cloned().unwrap_or_default().to_string();
+
+  validate_target_hsm_members(backend, &shasta_token, &hosts).await?;
 
   let boot_parameters = BootParameters {
     hosts: hosts.clone(),
@@ -46,14 +52,14 @@ pub async fn exec(
   log::debug!("new boot params: {:#?}", boot_parameters);
 
   backend
-    .update_bootparameters(shasta_token, &boot_parameters)
+    .update_bootparameters(&shasta_token, &boot_parameters)
     .await?;
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap_or_default();
+    let username = jwt_ops::get_name(&shasta_token).unwrap_or_default();
     let user_id =
-      jwt_ops::get_preferred_username(shasta_token).unwrap_or_default();
+      jwt_ops::get_preferred_username(&shasta_token).unwrap_or_default();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": hosts}, "message": format!("Update boot parameters")});

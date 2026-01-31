@@ -1,5 +1,5 @@
 use crate::{
-  common::{self},
+  common::{self, authentication::get_api_token},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -15,13 +15,14 @@ use tokio::{io::AsyncWriteExt, select};
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  shasta_token: &str,
   xname: &str,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::msg(format!(
@@ -52,7 +53,7 @@ pub async fn exec(
 
   let console_rslt = connect_to_console(
     backend,
-    shasta_token,
+    &shasta_token,
     site_name,
     &xname.to_string(),
     k8s,

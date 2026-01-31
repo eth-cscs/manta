@@ -6,13 +6,13 @@ use manta_backend_dispatcher::interfaces::hsm::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   target_hsm_name_vec: &Vec<String>,
   parent_hsm_name_vec: &Vec<String>,
   hosts_expression: &str,
@@ -20,11 +20,13 @@ pub async fn exec(
   create_hsm_group: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   // Filter xnames to the ones members to HSM groups the user has access to
   //
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::msg(format!(
@@ -62,7 +64,7 @@ pub async fn exec(
   let mut hsm_group_summary: HashMap<String, Vec<String>> =
     common::node_ops::get_curated_hsm_group_from_xname_hostlist(
       backend,
-      shasta_token,
+      &shasta_token,
       &xname_to_move_vec,
     )
     .await;
@@ -75,7 +77,7 @@ pub async fn exec(
 
   for target_hsm_name in target_hsm_name_vec {
     if backend
-      .get_group(shasta_token, &target_hsm_name)
+      .get_group(&shasta_token, &target_hsm_name)
       .await
       .is_ok()
     {
@@ -104,7 +106,7 @@ pub async fn exec(
     for (parent_hsm_name, xname_to_move_vec) in &hsm_group_summary {
       let node_migration_rslt = backend
         .migrate_group_members(
-          shasta_token,
+          &shasta_token,
           &target_hsm_name,
           &parent_hsm_name,
           &xname_to_move_vec
@@ -137,8 +139,8 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![parent_hsm_name_vec, target_hsm_name_vec], "message": format!("Migrate nodes from {:?} to {:?}", parent_hsm_name_vec, target_hsm_name_vec)});

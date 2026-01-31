@@ -54,7 +54,7 @@ pub async fn handle_migrate(
     };
     migrate_nodes_between_hsm_groups::exec(
       backend,
-      &shasta_token,
+      site_name,
       &to,
       &from,
       xnames_string,
@@ -69,7 +69,6 @@ pub async fn handle_migrate(
     if let Some(cli_migrate_vcluster_backup) =
       cli_migrate.subcommand_matches("backup")
     {
-      let shasta_token = get_api_token(backend, site_name).await?;
       let bos: Option<&String> = cli_migrate_vcluster_backup.get_one("bos");
       let destination: Option<&String> =
         cli_migrate_vcluster_backup.get_one("destination");
@@ -79,7 +78,7 @@ pub async fn handle_migrate(
         cli_migrate_vcluster_backup.get_one("post-hook");
       migrate_backup::exec(
         backend,
-        &shasta_token,
+        site_name,
         shasta_base_url,
         shasta_root_cert,
         bos.map(String::as_str),
@@ -91,7 +90,6 @@ pub async fn handle_migrate(
     } else if let Some(cli_migrate_vcluster_restore) =
       cli_migrate.subcommand_matches("restore")
     {
-      let shasta_token = get_api_token(backend, site_name).await?;
       let bos_file: Option<&String> =
         cli_migrate_vcluster_restore.get_one("bos-file");
       let cfs_file: Option<&String> =
@@ -109,7 +107,7 @@ pub async fn handle_migrate(
       let overwrite: bool = cli_migrate_vcluster_restore.get_flag("overwrite");
       migrate_restore::exec(
         backend,
-        &shasta_token,
+        site_name,
         shasta_base_url,
         shasta_root_cert,
         bos_file.map(String::as_str),

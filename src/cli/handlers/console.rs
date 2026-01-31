@@ -1,7 +1,7 @@
 use anyhow::Error;
 use clap::ArgMatches;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use crate::common::{config::types::MantaConfiguration, authentication::get_api_token, authorization::get_groups_names_available};
+use crate::common::{config::types::MantaConfiguration};
 use std::io::IsTerminal;
 use crate::cli::commands::{console_node, console_cfs_session_image_target_ansible};
 
@@ -20,7 +20,6 @@ pub async fn handle_console(
                 "This command needs to run in interactive mode. Exit",
             ));
         }
-        let shasta_token = get_api_token(backend, site_name).await?;
         let site = configuration
             .sites
             .get(&configuration.site.clone())
@@ -28,7 +27,6 @@ pub async fn handle_console(
         console_node::exec(
             backend,
             site_name,
-            &shasta_token,
             cli_console_node.get_one::<String>("XNAME").unwrap(),
             site.k8s
                 .as_ref()
@@ -41,14 +39,6 @@ pub async fn handle_console(
                 "This command needs to run in interactive mode. Exit",
             ));
         }
-        let shasta_token = get_api_token(backend, site_name).await?;
-        let target_hsm_group_vec = get_groups_names_available(
-            backend,
-            &shasta_token,
-            None,
-            settings_hsm_group_name_opt,
-        )
-        .await?;
         let site = configuration
             .sites
             .get(&configuration.site.clone())
@@ -56,8 +46,7 @@ pub async fn handle_console(
         console_cfs_session_image_target_ansible::exec(
             backend,
             site_name,
-            &target_hsm_group_vec,
-            &shasta_token,
+            settings_hsm_group_name_opt,
             shasta_base_url,
             shasta_root_cert,
             cli_console_target_ansible

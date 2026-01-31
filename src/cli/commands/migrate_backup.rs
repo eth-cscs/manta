@@ -1,11 +1,11 @@
 use anyhow::Error;
 use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::authentication::get_api_token};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   bos: Option<&str>,
@@ -13,6 +13,8 @@ pub async fn exec(
   prehook: Option<&str>,
   posthook: Option<&str>,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   println!(
     "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",
     bos.unwrap(),
@@ -50,7 +52,7 @@ pub async fn exec(
 
   let migrate_backup_rslt = backend
     .migrate_backup(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       bos,

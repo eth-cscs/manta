@@ -3,14 +3,27 @@ use chrono::DateTime;
 use serde_json::Value;
 use substring::Substring;
 
-use crate::common::local_git_repo;
+use crate::common::{local_git_repo, authentication::get_api_token, vault::http_client::fetch_shasta_vcs_token};
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
+  backend: &StaticBackendDispatcher,
+  site_name: &str,
   shasta_root_cert: &[u8],
+  vault_base_url: Option<&String>,
   gitea_base_url: &str,
-  gitea_token: &str,
   repo_path: &str,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let gitea_token = fetch_shasta_vcs_token(
+    &shasta_token,
+    vault_base_url.expect("ERROR - vault base url is mandatory"),
+    site_name,
+  )
+  .await
+  .unwrap();
+
   let mut exit_code = 0;
 
   println!("Validate local repo {}", repo_path);
@@ -68,7 +81,7 @@ pub async fn exec(
 
   let remote_ref_value_vec = csm_rs::common::gitea::http_client::get_all_refs(
     gitea_base_url,
-    gitea_token,
+    &gitea_token,
     repo_name,
     shasta_root_cert,
   )
@@ -109,7 +122,7 @@ pub async fn exec(
       gitea_base_url,
       repo_name,
       &head_commit_id.to_string(),
-      gitea_token,
+      &gitea_token,
       shasta_root_cert,
     )
     .await;

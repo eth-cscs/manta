@@ -4,7 +4,7 @@ use manta_backend_dispatcher::{
   types::K8sDetails,
 };
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::{authentication::get_api_token, authorization::get_groups_names_available}};
 
 use futures::StreamExt;
 use tokio::{io::AsyncWriteExt, select};
@@ -12,16 +12,25 @@ use tokio::{io::AsyncWriteExt, select};
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  hsm_group_name_vec: &Vec<String>,
-  shasta_token: &str,
+  settings_hsm_group_name_opt: Option<&String>,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   session_name: &str,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(backend, site_name).await?;
+
+  let hsm_group_name_vec = get_groups_names_available(
+      backend,
+      &shasta_token,
+      None,
+      settings_hsm_group_name_opt,
+  )
+  .await?;
+
   let cfs_session_vec = backend
     .get_and_filter_sessions(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       Vec::new(),
@@ -94,7 +103,7 @@ pub async fn exec(
 
   let console_rslt = connect_to_console(
     backend,
-    shasta_token,
+    &shasta_token,
     site_name,
     &session_name.to_string(),
     k8s,
