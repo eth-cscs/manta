@@ -4,7 +4,6 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use config::Config;
 use crate::common::{config::types::MantaConfiguration, kafka::Kafka};
 use crate::cli::commands;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 pub async fn handle_apply(
     cli_apply: &ArgMatches,
