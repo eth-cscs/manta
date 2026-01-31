@@ -5,11 +5,13 @@ use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_session: &clap::ArgMatches,
 ) -> Result<(), Error> {
+  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+
   let hsm_group_name_arg_opt: Option<&String> =
     cli_get_session.get_one("hsm-group");
   let limit_number_opt: Option<&u8> =
@@ -37,7 +39,7 @@ pub async fn exec(
 
   let cfs_session_vec = backend
     .get_and_filter_sessions(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       hsm_group_name_arg_opt.map(|v| vec![v.clone()]).unwrap_or_default(),

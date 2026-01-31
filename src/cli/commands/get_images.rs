@@ -13,18 +13,21 @@ use std::collections::HashMap;
 /// for this is because CSCS staff deletes all CFS sessions every now and then...
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_images: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<(), Error> {
+  let shasta_token =
+    crate::common::authentication::get_api_token(backend, site_name).await?;
+
   let id: Option<&String> = cli_get_images.get_one::<String>("id");
   let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
   let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
   let target_hsm_group_vec = get_groups_names_available(
     backend,
-    shasta_token,
+    &shasta_token,
     hsm_group_name_arg_opt.unwrap_or(None),
     settings_hsm_group_name_opt,
   )
@@ -33,7 +36,7 @@ pub async fn exec(
 
   let image_detail_vec: Vec<(Image, String, String, bool)> = backend
     .get_images_and_details(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       &target_hsm_group_vec,

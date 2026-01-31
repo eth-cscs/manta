@@ -12,23 +12,25 @@ use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   cli_get_boot_parameters: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<Vec<BootParameters>, Error> {
+  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+
   let hsm_group_name_arg_opt: Option<&String> =
     cli_get_boot_parameters.get_one("hsm-group");
   let nodes: String = if hsm_group_name_arg_opt.is_some() {
     let hsm_group_name_vec = get_groups_names_available(
       backend,
-      shasta_token,
+      &shasta_token,
       hsm_group_name_arg_opt,
       settings_hsm_group_name_opt,
     )
     .await
     .map_err(|e| Error::Message(e.to_string()))?;
     let hsm_members_rslt = backend
-      .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
+      .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
       .await;
     match hsm_members_rslt {
       Ok(hsm_members) => hsm_members.join(","),
@@ -52,7 +54,7 @@ pub async fn exec(
 
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::Message(format!("Could not get node metadata. Reason:\n{e}\nExit"))
@@ -70,5 +72,5 @@ pub async fn exec(
     ))
   })?;
 
-  backend.get_bootparameters(shasta_token, &xname_vec).await
+  backend.get_bootparameters(&shasta_token, &xname_vec).await
 }

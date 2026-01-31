@@ -6,11 +6,13 @@ use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 /// Get nodes status/configuration for some nodes filtered by a HSM group.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_nodes: &clap::ArgMatches,
 ) -> Result<(), Error> {
+  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+
   let xname_requested: &str = cli_get_nodes
     .get_one::<String>("VALUE")
     .expect("The 'xnames' argument must have values");
@@ -22,7 +24,7 @@ pub async fn exec(
 
   // Convert user input to xname
   let node_metadata_available_vec =
-    backend.get_node_metadata_available(shasta_token).await?;
+    backend.get_node_metadata_available(&shasta_token).await?;
 
   let mut node_list = common::node_ops::from_hosts_expression_to_xname_vec(
     xname_requested,
@@ -47,7 +49,7 @@ pub async fn exec(
   node_list.dedup();
 
   let node_details_list_rslt = csm_rs::node::utils::get_node_details(
-    shasta_token,
+    &shasta_token,
     shasta_base_url,
     shasta_root_cert,
     node_list.to_vec(),

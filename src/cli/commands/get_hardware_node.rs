@@ -1,6 +1,7 @@
 use crate::common::{
-  authentication::get_api_token, authorization::validate_target_hsm_members,
+  authorization::validate_target_hsm_members,
 };
+use crate::common;
 use anyhow::Error;
 use comfy_table::{Cell, Table};
 use manta_backend_dispatcher::{
@@ -19,7 +20,7 @@ pub async fn exec(
   type_artifact_opt: Option<&String>,
   output_opt: Option<&String>,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
+  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
 
   let xname_vec: Vec<String> = xnames.split(',').map(str::to_string).collect();
 

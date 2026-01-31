@@ -3,7 +3,6 @@ use crate::cli::commands::{
   get_hardware_cluster, get_hardware_node, get_images, get_kernel_parameters,
   get_nodes, get_session, get_template,
 };
-use crate::common::authentication::get_api_token;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use anyhow::Error;
 use clap::ArgMatches;
@@ -95,10 +94,9 @@ pub async fn handle_get(
     )
     .await?;
   } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
-    let shasta_token = get_api_token(backend, site_name).await?;
     get_session::exec(
       backend,
-      &shasta_token,
+      site_name,
       shasta_base_url,
       shasta_root_cert,
       cli_get_session,
@@ -126,20 +124,18 @@ pub async fn handle_get(
     )
     .await?;
   } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
-    let shasta_token = get_api_token(backend, site_name).await?;
     get_nodes::exec(
       backend,
-      &shasta_token,
+      site_name,
       shasta_base_url,
       shasta_root_cert,
       cli_get_nodes,
     )
     .await?;
   } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
-    let shasta_token = get_api_token(backend, site_name).await?;
     get_images::exec(
       backend,
-      &shasta_token,
+      site_name,
       shasta_base_url,
       shasta_root_cert,
       cli_get_images,
@@ -149,10 +145,9 @@ pub async fn handle_get(
   } else if let Some(cli_get_boot_parameters) =
     cli_get.subcommand_matches("boot-parameters")
   {
-    let shasta_token = get_api_token(backend, site_name).await?;
     let boot_parameters_vec: Vec<BootParameters> = get_boot_parameters::exec(
       backend,
-      &shasta_token,
+      site_name,
       cli_get_boot_parameters,
       settings_hsm_group_name_opt,
     )
@@ -161,10 +156,9 @@ pub async fn handle_get(
   } else if let Some(cli_get_kernel_parameters) =
     cli_get.subcommand_matches("kernel-parameters")
   {
-    let shasta_token = get_api_token(backend, site_name).await?;
     let _ = get_kernel_parameters::exec(
       backend,
-      &shasta_token,
+      site_name,
       cli_get_kernel_parameters,
       settings_hsm_group_name_opt,
     )
