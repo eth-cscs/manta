@@ -24,7 +24,6 @@ pub async fn exec(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,
   values_cli_opt: Option<&[String]>,
-  settings_hsm_group_name_opt: Option<&String>,
   ansible_verbosity_opt: Option<u8>,
   ansible_passthrough_opt: Option<&str>,
   gitea_base_url: &str,
@@ -41,7 +40,8 @@ pub async fn exec(
   assume_yes: bool,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
-  let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    crate::common::authentication::get_api_token(backend, site_name).await?;
 
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
     &shasta_token,
@@ -50,7 +50,8 @@ pub async fn exec(
   )
   .await?;
 
-  let hsm_group_available_vec = backend.get_group_name_available(&shasta_token).await?;
+  let hsm_group_available_vec =
+    backend.get_group_name_available(&shasta_token).await?;
 
   // Validate Pre-hook
   log::info!("Validating pre-hook script");

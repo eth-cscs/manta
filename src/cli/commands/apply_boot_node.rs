@@ -35,7 +35,8 @@ pub async fn exec(
   dry_run: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let mut need_restart = false;
 
@@ -74,34 +75,38 @@ pub async fn exec(
   // THE BOOT IMAGE LATER WILL MAKE SURE WE PUT IN PLACE THE RIGHT BOOT IMAGE
   // Update kernel parameters
   if let Some(new_kernel_parameters) = new_kernel_parameters_opt {
-    current_node_boot_param_vec
-      .iter_mut()
-      .for_each(|boot_parameter| {
-        log::info!(
-          "Updating '{:?}' kernel parameters to '{}'",
-          boot_parameter.hosts,
-          new_kernel_parameters
-        );
+    for boot_parameter in current_node_boot_param_vec.iter_mut() {
+      log::info!(
+        "Updating '{:?}' kernel parameters to '{}'",
+        boot_parameter.hosts,
+        new_kernel_parameters
+      );
 
-        // First. update the kernel parameters in the current boot params struct
-        // Update boot params
-        let kernel_params_changed =
-          boot_parameter.apply_kernel_params(&new_kernel_parameters);
+      // First. update the kernel parameters in the current boot params struct
+      // Update boot params
+      let kernel_params_changed =
+        boot_parameter.apply_kernel_params(&new_kernel_parameters);
 
-        need_restart = kernel_params_changed || need_restart;
+      need_restart = kernel_params_changed || need_restart;
 
-        log::info!("need restart? {}", need_restart);
+      log::info!("need restart? {}", need_restart);
 
-        // Second. update the boot image in the current boot params struct to make sure it is in
-        // sync with the kernel params
-        // with the latest boot image id and etag
-        // This is important because kernel params update might have changed the boot image
-        // associated with the kernel params
-        let _ = boot_parameter.update_boot_image(
-          &boot_parameter.get_boot_image_id(),
-          &boot_parameter.get_boot_image_etag(),
-        );
-      });
+      let image_id =
+        boot_parameter.try_get_boot_image_id().ok_or_else(|| {
+          Error::msg(format!(
+            "Could not get boot image id from boot parameters for hosts: {:?}",
+            boot_parameter.hosts
+          ))
+        })?;
+
+      // Second. update the boot image in the current boot params struct to make sure it is in
+      // sync with the kernel params
+      // with the latest boot image id and etag
+      // This is important because kernel params update might have changed the boot image
+      // associated with the kernel params
+      let _ = boot_parameter
+        .update_boot_image(&image_id, &boot_parameter.get_boot_image_etag())?;
+    }
   }
 
   // IMPORTANT: ALWAYS SET KERNEL PARAMS BEFORE BOOT IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT
@@ -127,7 +132,7 @@ pub async fn exec(
       current_node_boot_param_vec
         .iter()
         .filter(|&boot_param| {
-          boot_param.get_boot_image_id() != new_boot_image_id
+          boot_param.try_get_boot_image_id().unwrap() != new_boot_image_id
         })
         .collect();
 
@@ -152,7 +157,7 @@ pub async fn exec(
     // User did not provide new image but we might need to update images if "root" kernel param use
     // "sbps"
     for boot_parameter in &current_node_boot_param_vec {
-      let boot_image_id = boot_parameter.get_boot_image_id();
+      let boot_image_id = boot_parameter.try_get_boot_image_id().unwrap();
 
       let boot_image = backend
         .get_images(&shasta_token, Some(boot_image_id.as_str()))

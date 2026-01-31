@@ -1,5 +1,7 @@
 use crate::{
-  common::{self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
+  common::{
+    self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use anyhow::Error;
@@ -81,7 +83,12 @@ pub async fn exec(
 
     // Set image metadata to sbps
     // Check 'root' kernel parameters for sbps
-    let image_id = boot_parameter.get_boot_image_id();
+    let image_id = boot_parameter.try_get_boot_image_id().ok_or_else(|| {
+      Error::msg(format!(
+        "Could not get boot image id from boot parameters for hosts: {:?}",
+        boot_parameter.hosts
+      ))
+    })?;
 
     if !image_map.contains_key(&image_id) {
       let mut image: Image = backend

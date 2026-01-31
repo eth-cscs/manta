@@ -360,22 +360,7 @@ pub mod configuration {
   }
 }
 
-pub mod sat_file_image_old {
-  use serde::{Deserialize, Serialize};
-
-  #[derive(Deserialize, Serialize, Debug)]
-  pub struct Ims {
-    is_recipe: bool,
-    id: String,
-  }
-
-  #[derive(Deserialize, Serialize, Debug)]
-  pub struct Product {
-    name: String,
-    version: String,
-    r#type: String,
-  }
-}
+// Removed unused module sat_file_image_old which contained Ims and Product structs
 
 /// Merge 2 yamls, 'b' values will overwrite 'a' values
 /// eg:

@@ -73,37 +73,9 @@ pub async fn get_xname_from_xname_hostlist(
   Ok(xname_vec)
 }
 
-pub async fn get_xname_from_nid_regex(
-  regex: &Regex,
-  node_metadata_available_vec: &Vec<Component>,
-) -> Result<Vec<String>, Error> {
-  let xname_vec: Vec<String> = node_metadata_available_vec
-    .clone()
-    .into_iter()
-    .filter(|node_metadata_available: &Component| {
-      regex.is_match(&format!("nid{:06}", node_metadata_available.nid.unwrap()))
-    })
-    .map(|node_metadata_available| node_metadata_available.id.unwrap())
-    .collect();
+// Unused get_xname_from_nid_regex removed
 
-  Ok(xname_vec)
-}
-
-pub async fn get_xname_from_xname_regex(
-  regex: &Regex,
-  node_metadata_available_vec: &Vec<Component>,
-) -> Result<Vec<String>, Error> {
-  let xname_vec = node_metadata_available_vec
-    .clone()
-    .into_iter()
-    .filter(|node_metadata_available: &Component| {
-      regex.is_match(&node_metadata_available.id.as_ref().unwrap())
-    })
-    .map(|node_metadata_available| node_metadata_available.id.unwrap())
-    .collect();
-
-  Ok(xname_vec)
-}
+// Unused get_xname_from_xname_regex removed
 
 /// Translates and filters a 'host expression' into a list of xnames.
 /// a host expression is a comma separated list of NIDs or XNAMEs, a regex or a hostlist
