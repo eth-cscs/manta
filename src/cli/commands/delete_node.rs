@@ -2,15 +2,19 @@ use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::component::ComponentTrait,
 };
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+  common::authentication::get_api_token,
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  auth_token: &str,
+  site_name: &str,
   id: &str,
 ) -> Result<(), Error> {
+  let auth_token = get_api_token(backend, site_name).await.unwrap();
   // Delete node
-  backend.delete_node(auth_token, id).await?;
+  backend.delete_node(&auth_token, id).await?;
 
   // Delete hsm hardware inventory related to a node
   //

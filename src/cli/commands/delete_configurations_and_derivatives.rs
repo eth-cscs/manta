@@ -1,23 +1,45 @@
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+  common::{authentication::get_api_token, authorization::get_groups_names_available},
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 use dialoguer::{Confirm, theme::ColorfulTheme};
-use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,
-};
+use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 
 pub async fn exec(
   backend: StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  target_hsm_group_vec: &[String],
+  settings_hsm_group_name_opt: Option<&String>,
   configuration_name_pattern_opt: Option<&str>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   assume_yes: bool,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
+  if since_opt.is_some()
+    && until_opt.is_some()
+    && since_opt.unwrap() > until_opt.unwrap()
+  {
+    return Err(anyhow::Error::msg(
+      "ERROR - 'since' date can't be after 'until' date. Exit".to_string(),
+    ));
+  }
+  let shasta_token = get_api_token(&backend, site_name).await?;
+  let target_hsm_group_vec =
+    if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
+      vec![settings_hsm_group_name.clone()]
+    } else {
+      get_groups_names_available(
+        &backend,
+        &shasta_token,
+        None,
+        settings_hsm_group_name_opt,
+      )
+      .await?
+    };
+
   // COLLECT SITE WIDE DATA FOR VALIDATION
   //
   let (
@@ -29,10 +51,10 @@ pub async fn exec(
     cfs_configuration_vec,
   ) = backend
     .get_data_to_delete(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      target_hsm_group_vec,
+      &target_hsm_group_vec,
       configuration_name_pattern_opt,
       since_opt,
       until_opt,
@@ -116,7 +138,7 @@ pub async fn exec(
     {
       println!("Continue");
     } else {
-      return Err(Error::Message(
+      return Err(anyhow::Error::msg(
         "Operation canceled by the user.".to_string(),
       ));
     }
@@ -138,7 +160,7 @@ pub async fn exec(
 
   backend
     .delete(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       &cfs_configuration_name_vec,
@@ -146,5 +168,7 @@ pub async fn exec(
       &cfs_session_name_vec,
       &bos_sessiontemplate_name_vec,
     )
-    .await
+    .await?;
+
+  Ok(())
 }

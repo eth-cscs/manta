@@ -7,16 +7,19 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
-  common::boot_parameters::get_restricted_boot_parameters,
+  common::{
+    authentication::get_api_token, authorization::get_groups_names_available,
+    boot_parameters::get_restricted_boot_parameters,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  _hsm_name_available_vec: Vec<String>,
+  settings_hsm_group_name_opt: Option<&String>,
   image_id_vec: &[&str],
   dry_run: bool,
 ) -> Result<(), Error> {
@@ -24,10 +27,19 @@ pub async fn exec(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );
+  let shasta_token = get_api_token(backend, site_name).await?;
+  let _hsm_name_available_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    None,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
 
-  let group_available_vec = backend.get_group_available(shasta_token).await?;
+  let group_available_vec = backend.get_group_available(&shasta_token).await?;
 
-  let boot_parameter_vec = backend.get_all_bootparameters(shasta_token).await?;
+  let boot_parameter_vec =
+    backend.get_all_bootparameters(&shasta_token).await?;
 
   // Get list of image ids that are used to boot nodes (Node of these images can be deleted)
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
@@ -70,7 +82,7 @@ pub async fn exec(
       eprintln!("Image {} would be deleted", image_id);
     } else {
       let del_rslt = backend
-        .delete_image(shasta_token, shasta_base_url, shasta_root_cert, image_id)
+        .delete_image(&shasta_token, shasta_base_url, shasta_root_cert, image_id)
         .await;
 
       match del_rslt {

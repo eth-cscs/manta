@@ -1,5 +1,5 @@
 use crate::{
-  common::{audit::Audit, jwt_ops, kafka::Kafka},
+  common::{audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use manta_backend_dispatcher::{
@@ -8,18 +8,19 @@ use manta_backend_dispatcher::{
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  auth_token: &str,
+  site_name: &str,
   label: &str,
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let auth_token = get_api_token(backend, site_name).await.unwrap();
   if !force {
     // Validate if group can be deleted
-    validation(backend, auth_token, label).await.unwrap();
+    validation(backend, &auth_token, label).await.unwrap();
   }
 
   // Delete group
-  let result = backend.delete_group(auth_token, label).await;
+  let result = backend.delete_group(&auth_token, label).await;
 
   match result {
     Ok(_) => {
@@ -35,9 +36,9 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(auth_token).unwrap_or_default();
+    let username = jwt_ops::get_name(&auth_token).unwrap_or_default();
     let user_id =
-      jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
+      jwt_ops::get_preferred_username(&auth_token).unwrap_or_default();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "group": label, "message": format!("Delete Group '{}'", label)});

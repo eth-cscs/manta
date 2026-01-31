@@ -9,7 +9,10 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{
+    self, audit::Audit, authentication::get_api_token,
+    authorization::get_groups_names_available, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use nodeset::NodeSet;
@@ -18,14 +21,45 @@ use nodeset::NodeSet;
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
   backend: StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
+  settings_hsm_group_name_opt: Option<&String>,
+  hsm_group_name_arg_opt: Option<&String>,
+  nodes: Option<&String>,
   kernel_params: &str,
-  hosts_expression: &str,
   assume_yes: bool,
   do_not_reboot: bool,
   kafka_audit_opt: Option<&Kafka>,
   dry_run: bool,
 ) -> Result<(), Error> {
+  let shasta_token = get_api_token(&backend, site_name).await?;
+
+  let hosts_expression: String = if hsm_group_name_arg_opt.is_some() {
+    let hsm_group_name_vec = get_groups_names_available(
+      &backend,
+      &shasta_token,
+      hsm_group_name_arg_opt,
+      settings_hsm_group_name_opt,
+    )
+    .await?;
+    let hsm_members_rslt: Result<Vec<String>, _> = backend
+      .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
+      .await;
+    match hsm_members_rslt {
+      Ok(hsm_members) => hsm_members.join(","),
+      Err(e) => {
+        eprintln!(
+          "ERROR - could not fetch HSM groups members. Reason:\n{}",
+          e.to_string()
+        );
+        std::process::exit(1);
+      }
+    }
+  } else {
+    nodes
+      .cloned()
+      .expect("Neither HSM group nor nodes defined")
+  };
+
   let mut need_restart = false;
   println!("Delete kernel parameters");
 
@@ -33,7 +67,7 @@ pub async fn exec(
 
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::msg(format!(
@@ -42,7 +76,7 @@ pub async fn exec(
     })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
-    hosts_expression,
+    &hosts_expression,
     false,
     node_metadata_available_vec,
   )
@@ -55,7 +89,7 @@ pub async fn exec(
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
-      .get_bootparameters(shasta_token, &xname_vec)
+      .get_bootparameters(&shasta_token, &xname_vec)
       .await
       .unwrap();
 
@@ -127,15 +161,15 @@ pub async fn exec(
       );
 
       backend
-        .update_bootparameters(shasta_token, &boot_parameter)
+        .update_bootparameters(&shasta_token, &boot_parameter)
         .await?;
     }
   }
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     // FIXME: We should not need to make this call here but at the beginning of the method as a
     // prerequisite
@@ -143,7 +177,7 @@ pub async fn exec(
       xname_vec.iter().map(|xname| xname.as_str()).collect();
 
     let group_map_vec = backend
-      .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
+      .get_group_map_and_filter_by_member_vec(&shasta_token, &xnames)
       .await?;
 
     let msg_json = serde_json::json!(
@@ -163,7 +197,7 @@ pub async fn exec(
 
     crate::cli::commands::power_reset_nodes::exec(
       &backend,
-      shasta_token,
+      &shasta_token,
       &xname_to_reboot_vec.join(","),
       true,
       assume_yes,

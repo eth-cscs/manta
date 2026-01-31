@@ -1,23 +1,32 @@
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::{
+  common::{authentication::get_api_token, authorization::get_groups_names_available},
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 use dialoguer::{theme::ColorfulTheme, Confirm};
-use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::{
-    bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait,
-  },
+use manta_backend_dispatcher::interfaces::{
+  bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait,
 };
 use std::time::Instant;
 
 pub async fn exec(
   backend: StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
-  group_available_vec: Vec<String>,
+  settings_hsm_group_name_opt: Option<&String>,
   session_name: &str,
   dry_run: bool,
   assume_yes: bool,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
+  let shasta_token = get_api_token(&backend, site_name).await?;
+  let group_available_vec = get_groups_names_available(
+    &backend,
+    &shasta_token,
+    None,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
   // Get collectives (CFS configuration, CFS session, BOS session template, IMS image and CFS component)
   let start = Instant::now();
   log::info!("Fetching data from the backend...");
@@ -27,9 +36,9 @@ pub async fn exec(
     cfs_component_vec,
     bss_bootparameters_vec,
   ) = tokio::try_join!(
-    backend.get_group_available(shasta_token),
+    backend.get_group_available(&shasta_token),
     backend.get_and_filter_sessions(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       group_available_vec,
@@ -43,14 +52,14 @@ pub async fn exec(
       None,
     ),
     backend.get_cfs_components(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       None,
       None,
       None,
     ),
-    backend.get_all_bootparameters(shasta_token,),
+    backend.get_all_bootparameters(&shasta_token,),
   )?;
 
   let duration = start.elapsed();
@@ -72,7 +81,7 @@ pub async fn exec(
     .iter()
     .find(|cfs_session| cfs_session.name.eq(&session_name.to_string()))
     .ok_or_else(|| {
-      Error::Message(format!("CFS session '{}' not found. Exit", session_name))
+      anyhow::Error::msg(format!("CFS session '{}' not found. Exit", session_name))
     })?;
 
   if !assume_yes {
@@ -125,5 +134,7 @@ pub async fn exec(
       &bss_bootparameters_vec,
       dry_run,
     )
-    .await
+    .await?;
+
+  Ok(())
 }

@@ -13,20 +13,40 @@ use crate::{
     calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
     get_hsm_node_hw_component_counter,
   },
-  common,
+  common::{self, authentication::get_api_token, authorization::get_groups_names_available},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
-  target_hsm_group_name: &str,
-  parent_hsm_group_name: &str,
+  site_name: &str,
+  target_hsm_group_name_arg_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&String>,
+  parent_hsm_group_name_arg_opt: Option<&String>,
   pattern: &str,
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  match backend.get_group(shasta_token, target_hsm_group_name).await {
+  let shasta_token = get_api_token(backend, site_name).await?;
+  let target_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    target_hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+  let parent_hsm_group_vec = get_groups_names_available(
+    backend,
+    &shasta_token,
+    parent_hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
+
+  let target_hsm_group_name = target_hsm_group_vec.first().unwrap();
+  let parent_hsm_group_name = parent_hsm_group_vec.first().unwrap();
+
+  match backend.get_group(&shasta_token, target_hsm_group_name).await {
     Ok(_) => {
       log::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
@@ -92,7 +112,7 @@ pub async fn exec(
   // Get target HSM group members
   let target_hsm_group_member_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(
-      shasta_token,
+      &shasta_token,
       &[target_hsm_group_name.to_string()],
     )
     .await
@@ -102,7 +122,7 @@ pub async fn exec(
   let mut target_hsm_node_hw_component_count_vec =
     get_hsm_hw_node_component_counter(
       backend,
-      shasta_token,
+      &shasta_token,
       &user_defined_delta_hw_component_vec,
       &target_hsm_group_member_vec,
       mem_lcm,
@@ -124,7 +144,7 @@ pub async fn exec(
         "The option to delete empty groups has been selected, removing it."
       );
       match backend
-        .delete_group(shasta_token, &target_hsm_group_name.to_string())
+        .delete_group(&shasta_token, &target_hsm_group_name.to_string())
         .await
       {
         Ok(_) => {
@@ -161,7 +181,7 @@ pub async fn exec(
   // Get target HSM group members
   let parent_hsm_group_member_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(
-      shasta_token,
+      &shasta_token,
       &[parent_hsm_group_name.to_string()],
     )
     .await
@@ -171,7 +191,7 @@ pub async fn exec(
   let mut parent_hsm_node_hw_component_count_vec =
     get_hsm_node_hw_component_counter(
       backend,
-      shasta_token,
+      &shasta_token,
       &user_defined_delta_hw_component_vec,
       &parent_hsm_group_member_vec,
       mem_lcm,
@@ -325,14 +345,14 @@ pub async fn exec(
 
       let _ = backend
         .delete_member_from_group(
-          shasta_token,
+          &shasta_token,
           target_hsm_group_name,
           xname.as_str(),
         )
         .await?;
 
       let _ = backend
-        .add_members_to_group(shasta_token, parent_hsm_group_name, &[&xname])
+        .add_members_to_group(&shasta_token, parent_hsm_group_name, &[&xname])
         .await;
     }
     if target_group_will_be_empty {
@@ -342,7 +362,7 @@ pub async fn exec(
           target_hsm_group_name
         );
         match backend
-          .delete_group(shasta_token, &target_hsm_group_name.to_string())
+          .delete_group(&shasta_token, &target_hsm_group_name.to_string())
           .await
         {
           Ok(_) => log::info!("HSM group removed successfully."),
