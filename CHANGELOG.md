@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.8] - 2026-01-31
+
+### Refactor
+
+- Clean code
+- Clean code
+
 ## [1.59.9-beta.7] - 2026-01-30
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.9-beta.7
 
 ### Refactor
 
