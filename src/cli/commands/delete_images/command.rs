@@ -3,7 +3,7 @@ use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, hsm::group::GroupTrait, ims::ImsTrait,
   },
-  types::{bss::BootParameters, Group},
+  types::{Group, bss::BootParameters},
 };
 
 use crate::{
@@ -42,10 +42,15 @@ pub async fn exec(
     backend.get_all_bootparameters(&shasta_token).await?;
 
   // Get list of image ids that are used to boot nodes (Node of these images can be deleted)
-  let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
+  let image_used_to_boot_nodes_opt: Option<Vec<String>> = boot_parameter_vec
     .iter()
-    .map(|boot_param| boot_param.try_get_boot_image_id().unwrap())
+    .map(|boot_param| boot_param.try_get_boot_image_id())
     .collect();
+
+  let image_used_to_boot_nodes: Vec<String> = image_used_to_boot_nodes_opt
+    .ok_or_else(|| {
+      Error::msg("ERROR - Could not get image ids used to boot nodes")
+    })?;
 
   // Get list of image ids requested to delete that are used to boot nodes (these images cannot
   // be deleted and will trigger the command to fail)
@@ -67,7 +72,12 @@ pub async fn exec(
   // Get list of boot parameters that user can't delete because it's host is not a member of
   // the groups available
   let image_restricted_vec: Vec<String> =
-    get_restricted_image_ids(&group_available_vec, &boot_parameter_vec);
+    get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
+      .ok_or_else(|| {
+        Error::msg(
+          "ERROR - Could not get restricted image ids used by boot parameters",
+        )
+      })?;
 
   if !image_restricted_vec.is_empty() {
     return Err(Error::msg(format!(
@@ -82,7 +92,12 @@ pub async fn exec(
       eprintln!("Image {} would be deleted", image_id);
     } else {
       let del_rslt = backend
-        .delete_image(&shasta_token, shasta_base_url, shasta_root_cert, image_id)
+        .delete_image(
+          &shasta_token,
+          shasta_base_url,
+          shasta_root_cert,
+          image_id,
+        )
         .await;
 
       match del_rslt {
@@ -107,9 +122,9 @@ pub async fn exec(
 pub fn get_restricted_image_ids(
   group_available_vec: &[Group],
   boot_parameter_vec: &[BootParameters],
-) -> Vec<String> {
+) -> Option<Vec<String>> {
   get_restricted_boot_parameters(group_available_vec, boot_parameter_vec)
     .iter()
-    .map(|boot_param| boot_param.try_get_boot_image_id().unwrap())
+    .map(|boot_param| boot_param.try_get_boot_image_id())
     .collect()
 }

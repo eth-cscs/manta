@@ -132,7 +132,7 @@ pub async fn exec(
       current_node_boot_param_vec
         .iter()
         .filter(|&boot_param| {
-          boot_param.try_get_boot_image_id().unwrap() != new_boot_image_id
+          boot_param.try_get_boot_image_id() != Some(new_boot_image_id.clone())
         })
         .collect();
 
@@ -157,7 +157,13 @@ pub async fn exec(
     // User did not provide new image but we might need to update images if "root" kernel param use
     // "sbps"
     for boot_parameter in &current_node_boot_param_vec {
-      let boot_image_id = boot_parameter.try_get_boot_image_id().unwrap();
+      let boot_image_id =
+        boot_parameter.try_get_boot_image_id().ok_or_else(|| {
+          Error::msg(format!(
+            "Could not get boot image id from boot parameters for hosts: {:?}",
+            boot_parameter.hosts
+          ))
+        })?;
 
       let boot_image = backend
         .get_images(&shasta_token, Some(boot_image_id.as_str()))
