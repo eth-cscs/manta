@@ -8,7 +8,7 @@ use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 
 pub async fn exec(
-  backend: StaticBackendDispatcher,
+  backend: &StaticBackendDispatcher,
   site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
@@ -26,13 +26,13 @@ pub async fn exec(
       "ERROR - 'since' date can't be after 'until' date. Exit".to_string(),
     ));
   }
-  let shasta_token = get_api_token(&backend, site_name).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
   let target_hsm_group_vec =
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
       vec![settings_hsm_group_name.clone()]
     } else {
       get_groups_names_available(
-        &backend,
+        backend,
         &shasta_token,
         None,
         settings_hsm_group_name_opt,

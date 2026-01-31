@@ -12,11 +12,11 @@ use crate::{
   common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  shasta_token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   vault_base_url: &str,
@@ -24,11 +24,10 @@ pub async fn exec(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,
   values_cli_opt: Option<&[String]>,
-  hsm_group_available_vec: &[String],
+  settings_hsm_group_name_opt: Option<&String>,
   ansible_verbosity_opt: Option<u8>,
   ansible_passthrough_opt: Option<&str>,
   gitea_base_url: &str,
-  gitea_token: &str,
   reboot: bool,
   watch_logs: bool,
   timestamps: bool,
@@ -42,6 +41,17 @@ pub async fn exec(
   assume_yes: bool,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
+  let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
+
+  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    &shasta_token,
+    vault_base_url,
+    &site_name,
+  )
+  .await?;
+
+  let hsm_group_available_vec = backend.get_group_name_available(&shasta_token).await?;
+
   // Validate Pre-hook
   log::info!("Validating pre-hook script");
   if prehook_opt.is_some() {
@@ -169,7 +179,7 @@ pub async fn exec(
       serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
     }
     K8sAuth::Vault { base_url } => {
-      fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, shasta_token)
+      fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, &shasta_token)
         .await
         .unwrap()
     }
@@ -177,7 +187,7 @@ pub async fn exec(
 
   backend
     .apply_sat_file(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       vault_base_url,
@@ -185,11 +195,11 @@ pub async fn exec(
       k8s_api_url,
       shasta_k8s_secrets,
       sat_template_file_yaml,
-      hsm_group_available_vec,
+      &hsm_group_available_vec,
       ansible_verbosity_opt,
       ansible_passthrough_opt,
       gitea_base_url,
-      gitea_token,
+      &gitea_token,
       reboot,
       watch_logs,
       timestamps,

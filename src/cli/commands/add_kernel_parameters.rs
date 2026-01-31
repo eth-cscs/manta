@@ -1,5 +1,5 @@
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
+  common::{self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use anyhow::Error;
@@ -18,8 +18,8 @@ use std::collections::HashMap;
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
-  backend: StaticBackendDispatcher,
-  shasta_token: &str,
+  backend: &StaticBackendDispatcher,
+  site_name: &str,
   kernel_params: &str,
   hosts_expression: &str,
   overwrite: bool,
@@ -31,9 +31,11 @@ pub async fn exec(
   let mut need_restart = false;
   log::info!("Add kernel parameters");
 
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   // Convert user input to xname
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+    .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
       Error::msg(format!("Could not get node metadata. Reason:\n{e}\nExit"))
@@ -56,7 +58,7 @@ pub async fn exec(
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
-      .get_bootparameters(shasta_token, &xname_vec)
+      .get_bootparameters(&shasta_token, &xname_vec)
       .await
       .unwrap();
 
@@ -83,7 +85,7 @@ pub async fn exec(
 
     if !image_map.contains_key(&image_id) {
       let mut image: Image = backend
-        .get_images(shasta_token, Some(image_id.as_str()))
+        .get_images(&shasta_token, Some(image_id.as_str()))
         .await?
         .first()
         .unwrap()
@@ -165,7 +167,7 @@ pub async fn exec(
       );
 
       backend
-        .update_bootparameters(shasta_token, &boot_parameter)
+        .update_bootparameters(&shasta_token, &boot_parameter)
         .await?;
     }
 
@@ -173,7 +175,7 @@ pub async fn exec(
     for (_, image) in image_map {
       backend
         .update_image(
-          shasta_token,
+          &shasta_token,
           image.id.clone().unwrap().as_str(),
           &image.into(),
         )
@@ -183,8 +185,8 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     // FIXME: We should not need to make this call here but at the beginning of the method as a
     // prerequisite
@@ -192,7 +194,7 @@ pub async fn exec(
       xname_vec.iter().map(|xname| xname.as_str()).collect();
 
     let group_map_vec = backend
-      .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
+      .get_group_map_and_filter_by_member_vec(&shasta_token, &xnames)
       .await?;
 
     let msg_json = serde_json::json!(
@@ -211,8 +213,8 @@ pub async fn exec(
     log::info!("Restarting nodes");
 
     crate::cli::commands::power_reset_nodes::exec(
-      &backend,
-      shasta_token,
+      backend,
+      site_name,
       &xname_to_reboot_vec.join(","),
       true,
       assume_yes,

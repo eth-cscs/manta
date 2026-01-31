@@ -22,7 +22,7 @@ use std::collections::HashMap;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   new_boot_image_id_opt: Option<&str>,
@@ -35,11 +35,13 @@ pub async fn exec(
   dry_run: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+
   let mut need_restart = false;
 
   // Convert user input to xname
   let node_metadata_available_vec =
-    backend.get_node_metadata_available(shasta_token).await?;
+    backend.get_node_metadata_available(&shasta_token).await?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -49,14 +51,14 @@ pub async fn exec(
   .await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> = backend
-    .get_bootparameters(shasta_token, &xname_vec)
+    .get_bootparameters(&shasta_token, &xname_vec)
     .await
     .unwrap();
 
   // Get new boot image
   let new_boot_image_opt = get_new_boot_image(
     backend,
-    shasta_token,
+    &shasta_token,
     shasta_base_url,
     shasta_root_cert,
     new_boot_image_configuration_opt,
@@ -153,7 +155,7 @@ pub async fn exec(
       let boot_image_id = boot_parameter.get_boot_image_id();
 
       let boot_image = backend
-        .get_images(shasta_token, Some(boot_image_id.as_str()))
+        .get_images(&shasta_token, Some(boot_image_id.as_str()))
         .await?
         .first()
         .unwrap()
@@ -219,7 +221,7 @@ pub async fn exec(
     for boot_parameter in current_node_boot_param_vec {
       log::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
       let component_patch_rep = backend
-        .update_bootparameters(shasta_token, &boot_parameter)
+        .update_bootparameters(&shasta_token, &boot_parameter)
         .await;
 
       log::debug!(
@@ -239,7 +241,7 @@ pub async fn exec(
 
       let _ = backend
         .update_runtime_configuration(
-          shasta_token,
+          &shasta_token,
           shasta_base_url,
           shasta_root_cert,
           &xname_vec,
@@ -256,7 +258,7 @@ pub async fn exec(
         let image_id = image.id.clone().unwrap();
         let patch_image: PatchImage = image.into();
         backend
-          .update_image(shasta_token, &image_id, &patch_image)
+          .update_image(&shasta_token, &image_id, &patch_image)
           .await?;
       }
     } else {
@@ -270,7 +272,7 @@ pub async fn exec(
 
       power_reset_nodes::exec(
         &backend,
-        shasta_token,
+        &shasta_token,
         &nodes.join(","),
         true,
         assume_yes,
@@ -301,7 +303,7 @@ pub async fn get_new_boot_image(
     );
     let mut image_vec = get_image_vec_related_cfs_configuration_name(
       backend,
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       new_boot_image_configuration.to_string(),
@@ -332,7 +334,7 @@ pub async fn get_new_boot_image(
     log::info!("Boot image id '{}' provided", boot_image_id);
     // Check image id exists
     let image_in_csm_vec = backend
-      .get_images(shasta_token, new_boot_image_id_opt)
+      .get_images(&shasta_token, new_boot_image_id_opt)
       .await?;
 
     if image_in_csm_vec.is_empty() {

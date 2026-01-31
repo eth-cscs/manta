@@ -45,17 +45,6 @@ pub async fn handle_apply(
         )
         .await?
     } else if let Some(cli_apply_sat_file) = cli_apply.subcommand_matches("sat-file") {
-        let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
-
-        let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-            &shasta_token,
-            vault_base_url,
-            &site_name,
-        )
-        .await?;
-
-        let target_hsm_group_vec = backend.get_group_name_available(&shasta_token).await?;
-
         let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
         let cli_value_vec_opt: Option<Vec<String>> =
@@ -119,7 +108,6 @@ pub async fn handle_apply(
         commands::apply_sat_file::command::exec(
             &backend,
             &site_name,
-            &shasta_token,
             shasta_base_url,
             shasta_root_cert,
             vault_base_url,
@@ -127,11 +115,10 @@ pub async fn handle_apply(
             sat_file_content.as_str(),
             values_file_content_opt,
             values_cli_opt,
-            &target_hsm_group_vec,
+            settings_hsm_group_name_opt,
             ansible_verbosity,
             ansible_passthrough.as_deref(),
             gitea_base_url,
-            &gitea_token,
             reboot,
             watch_logs,
             timestamps,
@@ -147,8 +134,6 @@ pub async fn handle_apply(
         )
         .await?;
     } else if let Some(cli_apply_template) = cli_apply.subcommand_matches("template") {
-        let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
-
         let bos_session_name_opt: Option<&String> = cli_apply_template.get_one("name");
         let bos_sessiontemplate_name: &String = cli_apply_template
             .get_one("template")
@@ -169,7 +154,7 @@ pub async fn handle_apply(
 
         commands::apply_template::exec(
             &backend,
-            &shasta_token,
+            site_name,
             shasta_base_url,
             shasta_root_cert,
             bos_session_name_opt.map(String::as_str),
@@ -184,8 +169,6 @@ pub async fn handle_apply(
     } else if let Some(cli_apply_ephemeral_environment) =
         cli_apply.subcommand_matches("ephemeral-environment")
     {
-        let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
-
         if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
             return Err(Error::msg(
                 "This command needs to run in interactive mode. Exit",
@@ -193,7 +176,8 @@ pub async fn handle_apply(
         }
 
         commands::apply_ephemeral_env::exec(
-            &shasta_token,
+            &backend,
+            site_name,
             shasta_base_url,
             shasta_root_cert,
             cli_apply_ephemeral_environment
@@ -204,35 +188,13 @@ pub async fn handle_apply(
     } else if let Some(cli_apply_kernel_parameters) =
         cli_apply.subcommand_matches("kernel-parameters")
     {
-        let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
+        let hsm_group_name_arg_opt = cli_apply_kernel_parameters.get_one::<String>("hsm-group");
 
-        let hsm_group_name_arg_opt = cli_apply_kernel_parameters.get_one("hsm-group");
-
-        let nodes: &String = if hsm_group_name_arg_opt.is_some() {
-            let hsm_group_name_vec =
-                crate::common::authorization::get_groups_names_available(
-                    &backend,
-                    &shasta_token,
-                    hsm_group_name_arg_opt,
-                    settings_hsm_group_name_opt,
-                )
-                .await?;
-
-            let hsm_members = backend
-                .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
-                .await
-                .map_err(|e| {
-                    Error::msg(format!(
-                        "Could not fetch HSM group members. Reason:\n{}",
-                        e.to_string()
-                    ))
-                })?;
-
-            &hsm_members.join(",")
+        // Logic for nodes fetching moved to command
+        let nodes_opt: Option<&String> = if hsm_group_name_arg_opt.is_none() {
+             cli_apply_kernel_parameters.get_one::<String>("nodes")
         } else {
-            cli_apply_kernel_parameters
-                .get_one::<String>("nodes")
-                .expect("Neither HSM group nor nodes defined")
+             None
         };
 
         let dryrun = cli_apply_kernel_parameters.get_flag("dry-run");
@@ -246,9 +208,11 @@ pub async fn handle_apply(
 
         let result = commands::apply_kernel_parameters::exec(
             backend.clone(),
-            &shasta_token,
+            site_name,
             kernel_parameters,
-            nodes,
+            nodes_opt.map(|x| x.as_str()),
+            hsm_group_name_arg_opt.map(|x| x.as_str()),
+            settings_hsm_group_name_opt,
             assume_yes,
             do_not_reboot,
             kafka_audit_opt,
@@ -262,8 +226,6 @@ pub async fn handle_apply(
         }
     } else if let Some(cli_apply_boot) = cli_apply.subcommand_matches("boot") {
         if let Some(cli_apply_boot_nodes) = cli_apply_boot.subcommand_matches("nodes") {
-            let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
-
             let hosts_string: &str = cli_apply_boot_nodes
                 .get_one::<String>("VALUE")
                 .expect("The 'xnames' argument must have values");
@@ -293,7 +255,7 @@ pub async fn handle_apply(
 
             let result = commands::apply_boot_node::exec(
                 &backend,
-                &shasta_token,
+                site_name,
                 shasta_base_url,
                 shasta_root_cert,
                 new_boot_image_id_opt.map(String::as_str),
@@ -313,8 +275,6 @@ pub async fn handle_apply(
                 Err(error) => eprintln!("{}", error),
             }
         } else if let Some(cli_apply_boot_cluster) = cli_apply_boot.subcommand_matches("cluster") {
-            let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
-
             let hsm_group_name_arg: &String = cli_apply_boot_cluster
                 .get_one("CLUSTER_NAME")
                 .expect("ERROR - cluster name must be provided");
@@ -337,32 +297,16 @@ pub async fn handle_apply(
 
             let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
 
-            // Validate
-            //
-            // Check user has provided valid HSM group name
-            let target_hsm_group_vec =
-                crate::common::authorization::get_groups_names_available(
-                    &backend,
-                    &shasta_token,
-                    Some(hsm_group_name_arg),
-                    settings_hsm_group_name_opt,
-                )
-                .await?;
-
-            let target_hsm_group_name = target_hsm_group_vec
-                .first()
-                .expect("ERROR - Could not find valid HSM group name");
-
             commands::apply_boot_cluster::exec(
                 &backend,
-                &shasta_token,
+                site_name,
                 shasta_base_url,
                 shasta_root_cert,
                 new_boot_image_id_opt.map(String::as_str),
                 new_boot_image_configuration_opt.map(String::as_str),
                 new_runtime_configuration_opt.map(String::as_str),
                 new_kernel_parameters_opt.map(String::as_str),
-                target_hsm_group_name,
+                hsm_group_name_arg,
                 assume_yes,
                 do_not_reboot,
                 dry_run,

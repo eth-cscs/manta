@@ -20,7 +20,7 @@ use dialoguer::{Confirm, theme::ColorfulTheme};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   bos_session_name_opt: Option<&str>,
@@ -31,14 +31,17 @@ pub async fn exec(
   assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
+  let shasta_token = crate::common::authentication::get_api_token(backend, site_name).await?;
+
   //***********************************************************
   // GET DATA
   //
   // Get BOS sessiontemplate
   //
+  //
   let bos_sessiontemplate_vec_rslt = backend
     .get_and_filter_templates(
-      shasta_token,
+      &shasta_token,
       shasta_base_url,
       shasta_root_cert,
       &vec![],
@@ -82,7 +85,7 @@ pub async fn exec(
   let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
   let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
     backend
-      .get_member_vec_from_group_name_vec(shasta_token, &target_hsm_vec)
+      .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_vec)
       .await
       .unwrap()
   } else {
@@ -90,10 +93,11 @@ pub async fn exec(
   };
 
   let _ =
-    validate_target_hsm_members(&backend, shasta_token, &target_xname_vec)
+    validate_target_hsm_members(&backend, &shasta_token, &target_xname_vec)
       .await;
 
   // Validate user has access to the xnames defined in `limit` argument
+  //
   //
   log::info!("Validate user has access to xnames in BOS sessiontemplate");
 
@@ -108,7 +112,7 @@ pub async fn exec(
       log::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
     } else if let Some(mut hsm_members_vec) = backend
-      .get_member_vec_from_group_name_vec(shasta_token, &[limit_value.clone()])
+      .get_member_vec_from_group_name_vec(&shasta_token, &[limit_value.clone()])
       .await
       .ok()
     {
@@ -132,7 +136,51 @@ pub async fn exec(
 
   let _ = validate_target_hsm_members(
     &backend,
-    shasta_token,
+    &shasta_token,
+    &xnames_to_validate_access_vec,
+  )
+  .await;
+
+  // Validate user has access to the xnames defined in `limit` argument
+  //
+  log::info!("Validate user has access to xnames in BOS sessiontemplate");
+
+  let limit_vec: Vec<String> = limit.split(",").map(str::to_string).collect();
+
+  let mut xnames_to_validate_access_vec = Vec::new();
+
+  for limit_value in &limit_vec {
+    log::info!("Check if limit value '{}', is an xname", limit_value);
+    if validate_xname_format(limit_value) {
+      // limit_value is an xname
+      log::info!("limit value '{}' is an xname", limit_value);
+      xnames_to_validate_access_vec.push(limit_value.to_string());
+    } else if let Some(mut hsm_members_vec) = backend
+      .get_member_vec_from_group_name_vec(&shasta_token, &[limit_value.clone()])
+      .await
+      .ok()
+    {
+      // limit_value is an HSM group
+      log::info!(
+        "Check if limit value '{}', is an HSM group name",
+        limit_value
+      );
+
+      xnames_to_validate_access_vec.append(&mut hsm_members_vec);
+    } else {
+      // limit_value neither is an xname nor an HSM group
+      return Err(Error::msg(format!(
+        "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
+        limit_value
+      )));
+    }
+  }
+
+  log::info!("Validate list of xnames translated from 'limit argument'");
+
+  let _ = validate_target_hsm_members(
+    &backend,
+    &shasta_token,
     &xnames_to_validate_access_vec,
   )
   .await;
@@ -193,7 +241,7 @@ pub async fn exec(
   } else {
     let create_bos_session_rslt = backend
       .post_template_session(
-        shasta_token,
+        &shasta_token,
         shasta_base_url,
         shasta_root_cert,
         bos_session.into(),

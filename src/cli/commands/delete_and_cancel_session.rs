@@ -9,7 +9,7 @@ use manta_backend_dispatcher::interfaces::{
 use std::time::Instant;
 
 pub async fn exec(
-  backend: StaticBackendDispatcher,
+  backend: &StaticBackendDispatcher,
   site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
@@ -18,9 +18,9 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let shasta_token = get_api_token(&backend, site_name).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
   let group_available_vec = get_groups_names_available(
-    &backend,
+    backend,
     &shasta_token,
     None,
     settings_hsm_group_name_opt,

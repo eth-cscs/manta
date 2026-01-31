@@ -9,7 +9,7 @@ use crate::{
 /// If boot params defined, then nodes in HSM group will be rebooted
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   new_boot_image_id_opt: Option<&str>,
@@ -22,9 +22,13 @@ pub async fn exec(
   dry_run: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) {
+  let shasta_token = crate::common::authentication::get_api_token(backend, site_name)
+    .await
+    .unwrap();
+
   let xname_vec_rslt = backend
     .get_member_vec_from_group_name_vec(
-      shasta_token,
+      &shasta_token,
       &[hsm_group_name.to_string()],
     )
     .await;
@@ -39,7 +43,7 @@ pub async fn exec(
 
   let result = apply_boot_node::exec(
     &backend,
-    shasta_token,
+    site_name,
     shasta_base_url,
     shasta_root_cert,
     new_boot_image_id_opt,

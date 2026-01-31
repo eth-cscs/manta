@@ -183,8 +183,8 @@ pub async fn handle_add(
         let do_not_reboot: bool = cli_add_kernel_parameters.get_flag("do-not-reboot");
         let dryrun = cli_add_kernel_parameters.get_flag("dry-run");
         let result = add_kernel_parameters::exec(
-            backend.clone(),
-            &shasta_token,
+            backend,
+            site_name,
             kernel_parameters,
             nodes,
             overwrite,

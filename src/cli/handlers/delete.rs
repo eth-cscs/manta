@@ -93,7 +93,7 @@ pub async fn handle_delete(
         let dryrun = cli_delete_kernel_parameters.get_flag("dry-run");
 
         delete_kernel_parameters::exec(
-            backend.clone(),
+            backend,
             site_name,
             settings_hsm_group_name_opt,
             hsm_group_name_arg_opt,
@@ -115,7 +115,7 @@ pub async fn handle_delete(
         let dry_run: bool = cli_delete_session.get_flag("dry-run");
 
         let result = delete_and_cancel_session::exec(
-            backend.clone(),
+            backend,
             site_name,
             shasta_base_url,
             shasta_root_cert,
@@ -162,7 +162,7 @@ pub async fn handle_delete(
         let assume_yes = cli_delete_configurations.get_flag("assume-yes");
 
         let result = delete_configurations_and_derivatives::exec(
-            backend.clone(),
+            backend,
             site_name,
             shasta_base_url,
             shasta_root_cert,

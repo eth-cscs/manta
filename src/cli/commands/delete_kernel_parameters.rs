@@ -20,7 +20,7 @@ use nodeset::NodeSet;
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
-  backend: StaticBackendDispatcher,
+  backend: &StaticBackendDispatcher,
   site_name: &str,
   settings_hsm_group_name_opt: Option<&String>,
   hsm_group_name_arg_opt: Option<&String>,
@@ -31,11 +31,11 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, site_name).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
 
   let hosts_expression: String = if hsm_group_name_arg_opt.is_some() {
     let hsm_group_name_vec = get_groups_names_available(
-      &backend,
+      backend,
       &shasta_token,
       hsm_group_name_arg_opt,
       settings_hsm_group_name_opt,

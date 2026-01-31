@@ -15,7 +15,7 @@ pub async fn exec(
   site_name: &str,
   settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, &site_name).await?;
+  let shasta_token = get_api_token(&backend, site_name).await?;
 
   let target_hsm_group_name_arg_opt: Option<&String> =
     cli_apply_hw_cluster.get_one("target-cluster");

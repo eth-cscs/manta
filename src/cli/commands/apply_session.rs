@@ -32,7 +32,7 @@ pub async fn exec(
   kafka_audit_opt: Option<&Kafka>,
   configuration: &MantaConfiguration,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, &site_name).await?;
+  let shasta_token = get_api_token(&backend, site_name).await?;
 
   // FIXME: gitea auth token should be calculated before colling this function
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(

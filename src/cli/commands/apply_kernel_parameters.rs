@@ -19,45 +19,78 @@ use std::collections::HashMap;
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
   backend: StaticBackendDispatcher,
-  shasta_token: &str,
+  site_name: &str,
   kernel_params: &str,
-  hosts_expression: &str,
+  hosts_expression: Option<&str>,
+  hsm_group_name_arg_opt: Option<&str>,
+  settings_hsm_group_name_opt: Option<&String>,
   assume_yes: bool,
   do_not_reboot: bool,
   kafka_audit_opt: Option<&Kafka>,
   dry_run: bool,
 ) -> Result<(), Error> {
+  let shasta_token = common::authentication::get_api_token(&backend, site_name).await?;
+
   let mut need_restart = false;
   log::info!("Apply kernel parameters");
 
-  // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
+  // Get nodes from either hosts_expression or hsm_group_name
+  let xname_vec: Vec<String> = if let Some(hosts_expr) = hosts_expression {
+    // Case 1: Nodes provided explicitly
+    let node_metadata_available_vec = backend
+      .get_node_metadata_available(&shasta_token)
+      .await
+      .map_err(|e| {
+        Error::msg(format!(
+          "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+        ))
+      })?;
+
+    common::node_ops::from_hosts_expression_to_xname_vec(
+      hosts_expr,
+      false,
+      node_metadata_available_vec,
+    )
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+        "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
       ))
-    })?;
-
-  let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
-    hosts_expression,
-    false,
-    node_metadata_available_vec,
-  )
-  .await
-  .map_err(|e| {
-    Error::msg(format!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
-    ))
-  })?;
+    })?
+  } else if let Some(hsm_group) = hsm_group_name_arg_opt {
+    // Case 2: Nodes from HSM group
+    backend
+      .get_member_vec_from_group_name_vec(&shasta_token, &[hsm_group.to_string()])
+      .await
+      .map_err(|e| {
+        Error::msg(format!(
+          "ERROR - Could not get members for HSM group {}. Reason:\n{e}",
+          hsm_group
+        ))
+      })?
+  } else if let Some(settings_hsm_group) = settings_hsm_group_name_opt {
+      // Case 3: Nodes from settings HSM group
+    backend
+      .get_member_vec_from_group_name_vec(&shasta_token, &[settings_hsm_group.to_string()])
+      .await
+      .map_err(|e| {
+        Error::msg(format!(
+          "ERROR - Could not get members for settings HSM group {}. Reason:\n{e}",
+          settings_hsm_group
+        ))
+      })?
+  } else {
+    return Err(Error::msg(
+      "ERROR - No nodes provided. Please provide either a list of nodes via --nodes or an HSM group via --hsm-group",
+    ));
+  };
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
   let mut image_map: HashMap<String, Image> = HashMap::new();
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend
-      .get_bootparameters(shasta_token, &xname_vec)
+      .get_bootparameters(&shasta_token, &xname_vec)
       .await
       .unwrap();
 
@@ -86,7 +119,7 @@ pub async fn exec(
     if let Some(image_id) = image_id_opt {
       if !image_map.contains_key(&image_id) {
         let mut image: Image = backend
-          .get_images(shasta_token, Some(&image_id))
+          .get_images(&shasta_token, Some(&image_id))
           .await?
           .first()
           .unwrap()
@@ -170,7 +203,7 @@ pub async fn exec(
       );
 
       backend
-        .update_bootparameters(shasta_token, &boot_parameter)
+        .update_bootparameters(&shasta_token, &boot_parameter)
         .await?;
     }
 
@@ -178,7 +211,7 @@ pub async fn exec(
     for (_, image) in image_map {
       backend
         .update_image(
-          shasta_token,
+          &shasta_token,
           image.id.clone().unwrap().as_str(),
           &image.into(),
         )
@@ -188,8 +221,8 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap();
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
 
     // FIXME: We should not need to make this call here but at the beginning of the method as a
     // prerequisite
@@ -197,7 +230,7 @@ pub async fn exec(
       xname_vec.iter().map(|xname| xname.as_str()).collect();
 
     let group_map_vec = backend
-      .get_group_map_and_filter_by_member_vec(shasta_token, &xnames)
+      .get_group_map_and_filter_by_member_vec(&shasta_token, &xnames)
       .await?;
 
     let msg_json = serde_json::json!(
@@ -217,7 +250,7 @@ pub async fn exec(
 
     crate::cli::commands::power_reset_nodes::exec(
       &backend,
-      shasta_token,
+      &shasta_token,
       &xname_to_reboot_vec.join(","),
       true,
       assume_yes,
