@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.15] - 2026-02-01
+
+### Refactor
+
+- Assume_yes user interaction code cleaned
+- Assume_yes user interaction code cleaned
+
 ## [1.59.9-beta.14] - 2026-01-31
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.9-beta.14
 
 ### Refactor
 
