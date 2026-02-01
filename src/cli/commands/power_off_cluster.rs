@@ -1,5 +1,5 @@
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+// use dialoguer::{Confirm, theme::ColorfulTheme};
 use manta_backend_dispatcher::interfaces::{
   hsm::group::GroupTrait, pcs::PCSTrait,
 };
@@ -50,18 +50,13 @@ pub async fn exec(
     node_group.to_string()
   );
 
-  if !assume_yes {
-    if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(
-        "The nodes above will be powered off. Please confirm to proceed?",
-      )
-      .interact()
-      .unwrap()
-    {
-      log::info!("Continue",);
-    } else {
-      return Err(Error::msg("Cancelled by user. Aborting."));
-    }
+  if common::user_interaction::confirm(
+    "The nodes above will be powered off. Please confirm to proceed?",
+    assume_yes,
+  ) {
+    log::info!("Continue",);
+  } else {
+    return Err(Error::msg("Cancelled by user. Aborting."));
   }
 
   let power_mgmt_summary_rslt = backend

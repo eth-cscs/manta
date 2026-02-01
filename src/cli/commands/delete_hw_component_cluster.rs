@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
 use manta_backend_dispatcher::interfaces::hsm::{
   group::GroupTrait, hardware_inventory::HardwareInventory,
 };
@@ -322,13 +322,12 @@ pub async fn exec(
     target_hsm_group_name, target_hsm_hw_component_summary
   );
 
-  if Confirm::with_theme(&ColorfulTheme::default())
-    .with_prompt(confirm_message)
-    .interact()
-    .unwrap()
-  {
-    println!("Continue.");
-  } else {
+  if !common::user_interaction::confirm(
+    &confirm_message,
+    false, // Note: The original code didn't use an assume_yes variable inside exec, it likely wasn't passed or used.
+           // However, looking at the surrounding code, there is no `assume_yes` parameter in `exec`.
+           // So we default to false (interactive) as the original code did not have a path to skip confirmation.
+  ) {
     return Err(Error::msg("Operation cancelled by user."));
   }
 

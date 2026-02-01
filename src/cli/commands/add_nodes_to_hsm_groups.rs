@@ -1,5 +1,5 @@
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
@@ -48,19 +48,16 @@ pub async fn exec(
     ));
   }
 
-  if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(format!(
-          "{:?}\nThe nodes above will be added to HSM group '{}'. Do you want to proceed?",
-          xname_to_move_vec, target_hsm_name
-      ))
-      .interact()
-      .unwrap()
-  {
-      log::info!("Continue",);
+  if common::user_interaction::confirm(
+    &format!(
+      "{:?}\nThe nodes above will be added to HSM group '{}'. Do you want to proceed?",
+      xname_to_move_vec, target_hsm_name
+    ),
+    false,
+  ) {
+    log::info!("Continue",);
   } else {
-    return Err(Error::msg(
-      "Cancelled by user. Aborting.",
-    ));
+    return Err(Error::msg("Cancelled by user. Aborting."));
   }
 
   let target_hsm_group =

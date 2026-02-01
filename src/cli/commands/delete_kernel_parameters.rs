@@ -1,5 +1,5 @@
 use anyhow::Error;
-use dialoguer::theme::ColorfulTheme;
+
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait,
@@ -119,22 +119,15 @@ pub async fn exec(
   }
 
   if need_restart {
-    let proceed = if assume_yes {
-      true
-    } else {
-      println!(
-        "Delete kernel params:\n{:?}\nFor nodes:\n{:?}",
-        kernel_params,
-        node_group.to_string()
-      );
-      dialoguer::Confirm::with_theme(
-        &ColorfulTheme::default())
-        .with_prompt("This operation will delete the kernel parameters for the nodes below. Please confirm to proceed")
-        .interact()
-        .unwrap()
-    };
-
-    if !proceed {
+    println!(
+      "Delete kernel params:\n{:?}\nFor nodes:\n{:?}",
+      kernel_params,
+      node_group.to_string()
+    );
+    if !common::user_interaction::confirm(
+      "This operation will delete the kernel parameters for the nodes below. Please confirm to proceed",
+      assume_yes,
+    ) {
       return Err(Error::msg("Operation canceled by the user."));
     }
   } else {

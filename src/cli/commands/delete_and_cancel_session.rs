@@ -1,8 +1,8 @@
-use crate::{
-  common::{authentication::get_api_token, authorization::get_groups_names_available},
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  self, authentication::get_api_token, authorization::get_groups_names_available,
 };
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+
 use manta_backend_dispatcher::interfaces::{
   bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait,
 };
@@ -84,42 +84,28 @@ pub async fn exec(
       anyhow::Error::msg(format!("CFS session '{}' not found. Exit", session_name))
     })?;
 
-  if !assume_yes {
-    // Ask user for confirmation
-    let user_msg = format!(
+  if !common::user_interaction::confirm(
+    &format!(
       "Session '{}' will get canceled:\nDo you want to continue?",
       session_name,
-    );
-    if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(user_msg)
-      .interact()
-      .unwrap()
-    {
-      log::info!("Continue",);
-    } else {
-      println!("Cancelled by user. Aborting.");
-      return Ok(());
-    }
+    ),
+    assume_yes,
+  ) {
+    println!("Cancelled by user. Aborting.");
+    return Ok(());
   }
 
   let image_created_by_cfs_session_vec = cfs_session.get_result_id_vec();
   if !image_created_by_cfs_session_vec.is_empty() {
-    if !assume_yes {
-      // Ask user for confirmation
-      let user_msg = format!(
+    if !common::user_interaction::confirm(
+      &format!(
         "Images listed below which will get deleted:\n{}\nDo you want to continue?",
         image_created_by_cfs_session_vec.join("\n"),
-      );
-      if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(user_msg)
-        .interact()
-        .unwrap()
-      {
-        log::info!("Continue",);
-      } else {
-        println!("Cancelled by user. Aborting.");
-        return Ok(());
-      }
+      ),
+      assume_yes,
+    ) {
+      println!("Cancelled by user. Aborting.");
+      return Ok(());
     }
   }
 

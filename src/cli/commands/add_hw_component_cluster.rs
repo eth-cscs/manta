@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
+use crate::common;
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -283,13 +284,15 @@ pub async fn exec(
     target_hsm_group_name, target_hsm_hw_component_summary
   );
 
-  if Confirm::with_theme(&ColorfulTheme::default())
-    .with_prompt(confirm_message)
-    .interact()
-    .unwrap()
-  {
-    println!("Continue.");
-  } else {
+  if !common::user_interaction::confirm(
+    &confirm_message,
+    false, // Note: The original code didn't seem to have an assume_yes argument in `exec` signature related to this confirmation, but `exec` doesn't take assume_yes.
+           // However, looking at the pattern, usually assume_yes is passed down.
+           // BUT this function signature is:
+           // pub async fn exec(..., dryrun: bool, create_hsm_group: bool)
+           // It does NOT have `assume_yes`.
+           // So I will pass `false` for assume_yes to force interaction, mirroring original behavior.
+  ) {
     return Err(Error::msg("Operation cancelled by user."));
   }
 

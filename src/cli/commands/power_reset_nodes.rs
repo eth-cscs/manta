@@ -1,5 +1,5 @@
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
 use manta_backend_dispatcher::interfaces::{
   hsm::{component::ComponentTrait, group::GroupTrait},
   pcs::PCSTrait,
@@ -57,18 +57,10 @@ pub async fn exec(
     node_group.to_string()
   );
 
-  let proceed = if assume_yes {
-    true
-  } else {
-    Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt("The nodes above will restart. Please confirm to proceed?")
-      .interact()
-      .unwrap()
-  };
-
-  if proceed {
-    log::info!("Continue",);
-  } else {
+  if !common::user_interaction::confirm(
+    "The nodes above will restart. Please confirm to proceed?",
+    assume_yes,
+  ) {
     return Err(Error::msg("Cancelled by user. Aborting."));
   }
 

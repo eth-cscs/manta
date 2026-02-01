@@ -7,7 +7,7 @@ use crate::{
 };
 
 use anyhow::Error;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait,
@@ -193,19 +193,13 @@ pub async fn exec(
   }
 
   if need_restart {
-    let proceed = if assume_yes {
-      true
-    } else {
-      Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!(
-          "This operation will modify the nodes below:\n{:?}\nDo you want to continue?",
-          xname_vec
-        ))
-        .interact()
-        .unwrap()
-    };
-
-    if proceed {
+    if common::user_interaction::confirm(
+      &format!(
+        "This operation will modify the nodes below:\n{:?}\nDo you want to continue?",
+        xname_vec
+      ),
+      assume_yes,
+    ) {
       log::info!("Continue",);
     } else {
       return Err(Error::msg("Operation cancelled by user"));

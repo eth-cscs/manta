@@ -18,4 +18,5 @@ pub mod log_ops;
 pub mod node_ops;
 pub mod pcs_utils;
 pub mod terminal_ops;
+pub mod user_interaction;
 pub mod vault;

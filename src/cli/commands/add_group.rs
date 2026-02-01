@@ -6,7 +6,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use anyhow::Error;
-use dialoguer::theme::ColorfulTheme;
+
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
@@ -66,18 +66,14 @@ pub async fn exec(
     None,
   );
 
-  if !assume_yes {
-    let proceed = dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(format!(
-                "This operation will create the group below:\n{}\nPlease confirm to proceed",
-                serde_json::to_string_pretty(&group).unwrap()
-            ))
-            .interact()
-            .unwrap();
-
-    if !proceed {
-      return Err(Error::msg("Operation canceled by the user."));
-    }
+  if !common::user_interaction::confirm(
+    &format!(
+      "This operation will create the group below:\n{}\nPlease confirm to proceed",
+      serde_json::to_string_pretty(&group).unwrap()
+    ),
+    assume_yes,
+  ) {
+    return Err(Error::msg("Operation canceled by the user."));
   }
 
   if dryrun {

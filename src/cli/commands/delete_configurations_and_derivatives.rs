@@ -4,7 +4,8 @@ use crate::{
 };
 use chrono::NaiveDateTime;
 use comfy_table::Table;
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
+use crate::common;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 
 pub async fn exec(
@@ -130,18 +131,13 @@ pub async fn exec(
 
   // ASK USER FOR CONFIRMATION
   //
-  if !assume_yes {
-    if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt("Please revew the data above and confirm to delete:")
-      .interact()
-      .unwrap()
-    {
-      println!("Continue");
-    } else {
-      return Err(anyhow::Error::msg(
-        "Operation canceled by the user.".to_string(),
-      ));
-    }
+  if !common::user_interaction::confirm(
+    "Please revew the data above and confirm to delete:",
+    assume_yes,
+  ) {
+    return Err(anyhow::Error::msg(
+      "Operation canceled by the user.".to_string(),
+    ));
   }
 
   // DELETE DATA

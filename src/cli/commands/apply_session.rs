@@ -17,7 +17,7 @@ use crate::{
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use dialoguer::{Confirm, theme::ColorfulTheme};
+
 use substring::Substring;
 
 pub async fn exec(
@@ -274,13 +274,10 @@ fn check_local_repos(
 
     // Check if all changes in local repo has been commited locally
     if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
-      if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(
-          "Your local repo has uncommitted changes. Do you want to continue?",
-        )
-        .interact()
-        .unwrap()
-      {
+      if common::user_interaction::confirm(
+        "Your local repo has uncommitted changes. Do you want to continue?",
+        false, // assuming this check should always prompt if there are uncommitted changes
+      ) {
         println!(
           "Continue. Checking commit id {} against remote",
           local_last_commit.id()
@@ -333,15 +330,14 @@ fn check_local_repos(
     );
   }
 
-  if Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt("Please review the layers and its order and confirm if proceed. Do you want to continue?")
-        .interact()
-        .unwrap()
-    {
-        println!("Continue. Creating new CFS configuration and layer(s)");
-    } else {
-        return Err(Error::msg("Cancelled by user. Aborting."));
-    }
+  if common::user_interaction::confirm(
+    "Please review the layers and its order and confirm if proceed. Do you want to continue?",
+    false, // No assume_yes arg found in check_local_repos signature or passed down. It seems to be a strict check.
+  ) {
+    println!("Continue. Creating new CFS configuration and layer(s)");
+  } else {
+    return Err(Error::msg("Cancelled by user. Aborting."));
+  }
 
   let mut repo_name_vec = Vec::new();
   let mut repo_last_commit_id_vec = Vec::new();

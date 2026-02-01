@@ -1,5 +1,5 @@
 use anyhow::Error;
-use dialoguer::theme::ColorfulTheme;
+
 use manta_backend_dispatcher::{
   interfaces::apply_sat_file::SatTrait,
   types::{K8sAuth, K8sDetails},
@@ -121,35 +121,19 @@ pub async fn exec(
     serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
   );
 
-  let process_sat_file = if !assume_yes {
-    dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt("Please check the template above and confirm to proceed.")
-      .interact()?
-  } else {
-    true
-  };
-
-  if !process_sat_file {
+  if !common::user_interaction::confirm(
+    "Please check the template above and confirm to proceed.",
+    assume_yes,
+  ) {
     return Err(Error::msg("Operation canceled by user. Exit"));
   }
 
   // Confirm reboot if session_templates are to be applied
-  if !assume_yes
-    && sat_template_file_yaml.get("session_templates").is_some()
-    && reboot
-  {
-    let agree_to_reboot = if !assume_yes {
-      dialoguer::Confirm::with_theme(&ColorfulTheme::default())
-        .with_prompt(
-          "This operation will reboot nodes. Please confirm to proceed.",
-        )
-        .interact()
-        .unwrap()
-    } else {
-      true
-    };
-
-    if !agree_to_reboot {
+  if sat_template_file_yaml.get("session_templates").is_some() && reboot {
+    if !common::user_interaction::confirm(
+      "This operation will reboot nodes. Please confirm to proceed.",
+      assume_yes,
+    ) {
       println!("Operation canceled by user. Exit");
       return Ok(());
     }
@@ -163,12 +147,8 @@ pub async fn exec(
     log::debug!("Pre-hook script completed ok. RT={}", code);
   }
 
-  if process_sat_file {
-    println!("Proceed and process SAT file");
-  } else {
-    println!("Operation canceled by user. Exit");
-    return Ok(());
-  }
+
+use crate::common;
 
   // Get K8s secrets
   let shasta_k8s_secrets = match &k8s.authentication {

@@ -9,14 +9,13 @@ use manta_backend_dispatcher::{
     session_template::BosSessionTemplate,
   },
 };
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-use crate::{
-  common::{
-    authorization::validate_target_hsm_members, node_ops::validate_xname_format,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
-use dialoguer::{Confirm, theme::ColorfulTheme};
+use crate::common::{self, authorization::validate_target_hsm_members, node_ops::validate_xname_format};
+
+
+
+
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -87,7 +86,7 @@ pub async fn exec(
     backend
       .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_vec)
       .await
-      .unwrap()
+      .unwrap_or_default()
   } else {
     bos_sessiontemplate.get_target_xname()
   };
@@ -111,68 +110,26 @@ pub async fn exec(
       // limit_value is an xname
       log::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
-    } else if let Some(mut hsm_members_vec) = backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &[limit_value.clone()])
-      .await
-      .ok()
-    {
-      // limit_value is an HSM group
-      log::info!(
-        "Check if limit value '{}', is an HSM group name",
-        limit_value
-      );
-
-      xnames_to_validate_access_vec.append(&mut hsm_members_vec);
     } else {
-      // limit_value neither is an xname nor an HSM group
-      return Err(Error::msg(format!(
-        "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
-        limit_value
-      )));
-    }
-  }
+      let hsm_members_vec_rslt = backend
+        .get_member_vec_from_group_name_vec(&shasta_token, &[limit_value.clone()])
+        .await;
 
-  log::info!("Validate list of xnames translated from 'limit argument'");
+      if let Ok(mut hsm_members_vec) = hsm_members_vec_rslt {
+        // limit_value is an HSM group
+        log::info!(
+          "Check if limit value '{}', is an HSM group name",
+          limit_value
+        );
 
-  let _ = validate_target_hsm_members(
-    &backend,
-    &shasta_token,
-    &xnames_to_validate_access_vec,
-  )
-  .await;
-
-  // Validate user has access to the xnames defined in `limit` argument
-  //
-  log::info!("Validate user has access to xnames in BOS sessiontemplate");
-
-  let limit_vec: Vec<String> = limit.split(",").map(str::to_string).collect();
-
-  let mut xnames_to_validate_access_vec = Vec::new();
-
-  for limit_value in &limit_vec {
-    log::info!("Check if limit value '{}', is an xname", limit_value);
-    if validate_xname_format(limit_value) {
-      // limit_value is an xname
-      log::info!("limit value '{}' is an xname", limit_value);
-      xnames_to_validate_access_vec.push(limit_value.to_string());
-    } else if let Some(mut hsm_members_vec) = backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &[limit_value.clone()])
-      .await
-      .ok()
-    {
-      // limit_value is an HSM group
-      log::info!(
-        "Check if limit value '{}', is an HSM group name",
-        limit_value
-      );
-
-      xnames_to_validate_access_vec.append(&mut hsm_members_vec);
-    } else {
-      // limit_value neither is an xname nor an HSM group
-      return Err(Error::msg(format!(
-        "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
-        limit_value
-      )));
+        xnames_to_validate_access_vec.append(&mut hsm_members_vec);
+      } else {
+        // limit_value neither is an xname nor an HSM group
+        return Err(Error::msg(format!(
+          "Value '{}' in 'limit' argument does not match an xname or a HSM group name.",
+          limit_value
+        )));
+      }
     }
   }
 
@@ -194,26 +151,21 @@ pub async fn exec(
   // ASK USER FOR CONFIRMATION
   //
 
-  if !assume_yes {
-    let operation = if bos_session_operation.to_lowercase() == "boot" {
-      "reboot (if necessary)"
-    } else {
-      bos_session_operation
-    };
+  let operation = if bos_session_operation.to_lowercase() == "boot" {
+    "reboot (if necessary)"
+  } else {
+    bos_session_operation
+  };
 
-    if Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(format!(
-        "{:?}\nThe nodes above will {}. Please confirm to proceed?",
-        limit_vec.clone().join(","),
-        operation
-      ))
-      .interact()
-      .unwrap()
-    {
-      log::info!("Continue",);
-    } else {
-      return Err(Error::msg("Operation cancelled by user"));
-    }
+  if !common::user_interaction::confirm(
+    &format!(
+      "{:?}\nThe nodes above will {}. Please confirm to proceed?",
+      limit_vec.clone().join(","),
+      operation
+    ),
+    assume_yes,
+  ) {
+    return Err(Error::msg("Operation cancelled by user"));
   }
 
   //***********************************************************
