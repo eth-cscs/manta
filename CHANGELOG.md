@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.59.9-beta.16] - 2026-02-01
+
+### Bug Fixes
+
+- Power operations now operates on a struct instead of a serde json value
+
 ## [1.59.9-beta.15] - 2026-02-01
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.9-beta.15
 
 ### Refactor
 
