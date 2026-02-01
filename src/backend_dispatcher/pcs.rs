@@ -1,4 +1,7 @@
-use manta_backend_dispatcher::{error::Error, interfaces::pcs::PCSTrait};
+use manta_backend_dispatcher::{
+  error::Error, interfaces::pcs::PCSTrait,
+  types::pcs::transitions::types::TransitionResponse,
+};
 
 use StaticBackendDispatcher::*;
 
@@ -11,7 +14,7 @@ impl PCSTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     nodes: &[String],
-  ) -> Result<Value, Error> {
+  ) -> Result<TransitionResponse, Error> {
     match self {
       CSM(b) => b.power_on_sync(auth_token, nodes).await,
       OCHAMI(b) => b.power_on_sync(auth_token, nodes).await,
@@ -23,7 +26,7 @@ impl PCSTrait for StaticBackendDispatcher {
     auth_token: &str,
     nodes: &[String],
     force: bool,
-  ) -> Result<Value, Error> {
+  ) -> Result<TransitionResponse, Error> {
     match self {
       CSM(b) => b.power_off_sync(auth_token, nodes, force).await,
       OCHAMI(b) => b.power_off_sync(auth_token, nodes, force).await,
@@ -35,7 +38,7 @@ impl PCSTrait for StaticBackendDispatcher {
     auth_token: &str,
     nodes: &[String],
     force: bool,
-  ) -> Result<Value, Error> {
+  ) -> Result<TransitionResponse, Error> {
     match self {
       CSM(b) => b.power_reset_sync(auth_token, nodes, force).await,
       OCHAMI(b) => b.power_reset_sync(auth_token, nodes, force).await,
