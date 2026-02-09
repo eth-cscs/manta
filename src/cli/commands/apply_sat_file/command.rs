@@ -1,5 +1,7 @@
 use anyhow::Error;
 
+use crate::common;
+
 use manta_backend_dispatcher::{
   interfaces::apply_sat_file::SatTrait,
   types::{K8sAuth, K8sDetails},
@@ -146,9 +148,6 @@ pub async fn exec(
 
     log::debug!("Pre-hook script completed ok. RT={}", code);
   }
-
-
-use crate::common;
 
   // Get K8s secrets
   let shasta_k8s_secrets = match &k8s.authentication {

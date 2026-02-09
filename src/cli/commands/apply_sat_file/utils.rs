@@ -328,6 +328,60 @@ pub mod configuration {
     pub layer_type: LayerType,
   }
 
+  impl
+    Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer>
+    for Layer
+  {
+    fn into(
+      self,
+    ) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer
+    {
+      let playbook = self.playbook;
+      let layer= match self.layer_type {
+        LayerType::Git { git } => match git {
+          Git::GitCommit { url, commit } => {
+            manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: None,
+                clone_url: Some(url),
+                source: None,
+                playbook,
+                commit: Some(commit),
+                branch: None,
+                special_parameters: None,
+            }
+          }
+          Git::GitBranch { url, branch } => {
+            manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: None,
+                clone_url: Some(url),
+                source: None,
+                playbook,
+                commit: None,
+                branch: Some(branch),
+                special_parameters: None,
+            }
+          }
+          Git::GitTag { url, tag } => {
+            todo!()
+          }
+        },
+        LayerType::Product { product } => match product {
+          Product::ProductVersionBranch { name, version, branch } => {
+            todo!()
+          }
+          Product::ProductVersionCommit { name, version, commit } => {
+            todo!()
+          }
+          Product::ProductVersion { name, version } => {
+            todo!()
+          }
+        },
+      };
+
+      layer
+    }
+  }
+
   fn default_playbook() -> String {
     "site.yml".to_string()
   }
@@ -358,6 +412,24 @@ pub mod configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub additional_inventory: Option<Inventory>,
   }
+
+  /* impl Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest>
+    for Configuration
+  {
+    fn into(self) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest {
+      let layers = self
+        .layers
+        .into_iter()
+        .map(|layer| layer.into())
+        .collect();
+
+      manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest {
+        description: self.description,
+        layers,
+        additional_inventory: self.additional_inventory.map(|inventory| inventory.into()),
+      }
+    }
+  } */
 }
 
 // Removed unused module sat_file_image_old which contained Ims and Product structs
