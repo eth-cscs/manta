@@ -4,7 +4,10 @@ use anyhow::Error;
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::{common::authentication::get_api_token, manta_backend_dispatcher::StaticBackendDispatcher};
+use crate::{
+  common::{authentication::get_api_token, config::get_config_file_path},
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 
 /// Prints Manta's configuration on screen
 pub async fn exec(
@@ -46,6 +49,10 @@ pub async fn show(
   // println!("\n\nsite:\n{:#?}", site);
 
   // Print configuration file content to stdout
+  println!(
+    "Configuration file: {}",
+    get_config_file_path().await.to_string_lossy()
+  );
   println!("Log level: {}", log_level);
   println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
   println!("Current site: {}", site_name);
