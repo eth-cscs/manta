@@ -21,8 +21,10 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // #[cfg(feature = "dhat-heap")]
   // let _profiler = dhat::Profiler::new_heap();
 
+  // Load configuration file
   let settings_rslt = common::config::get_configuration().await;
 
+  // Handle configuration loading result
   let settings = match settings_rslt {
     Ok(settings) => settings,
     Err(e) => {
@@ -31,17 +33,25 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     }
   };
 
+  // Deserialize configuration into MantaConfiguration struct
   let configuration: MantaConfiguration =
     settings.clone().try_deserialize().unwrap_or_else(|e| {
       eprintln!("ERROR - Configuration file is not valid: {}", e);
       std::process::exit(1);
     });
 
-  let site_name: String = configuration.site.clone();
-  let site_detail_value = configuration.sites.get(&site_name).unwrap();
+  // Configure logging
+  let log_level = settings.get_string("log").unwrap_or("error".to_string());
 
-  let backend_tech = &site_detail_value.backend;
-  let shasta_base_url = &site_detail_value.shasta_base_url;
+  log_ops::configure(log_level); // log4rs programatically configuration
+
+  // Extract site details from configuration
+  let site_name: String = configuration.site.clone();
+  let site_details_value = configuration.sites.get(&site_name).unwrap();
+
+  // Extract backend technology and URLs
+  let backend_tech = &site_details_value.backend;
+  let shasta_base_url = &site_details_value.shasta_base_url;
   let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
     // old configuration file. TODO: remove this when needed in the future and all users are
     // using the right configuration file
@@ -55,49 +65,37 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
       std::process::exit(1);
     }
   };
-  log::debug!("config - shasta_api_url:  {shasta_api_url}");
   let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
-  log::debug!("config - gitea_base_url:  {gitea_base_url}");
-  let k8s_api_url: Option<&String> = site_detail_value
+  let k8s_api_url: Option<&String> = site_details_value
     .k8s
     .as_ref()
     .map(|k8s_details| &k8s_details.api_url);
-  log::debug!("config - k8s_api_url:  {k8s_api_url:?}");
   let vault_base_url =
-    site_detail_value
+    site_details_value
       .k8s
       .as_ref()
       .and_then(|k8s| match &k8s.authentication {
         K8sAuth::Vault { base_url, .. } => Some(base_url),
         K8sAuth::Native { .. } => None,
       });
-  log::debug!("config - vault_base_url:  {vault_base_url:?}");
 
   // let audit_detail = settings.get_table("audit").unwrap();
   let audit_detail = configuration.auditor.clone();
+
   let audit_kafka_opt: Option<Kafka> = if audit_detail.is_some() {
     Some(audit_detail.unwrap().kafka)
   } else {
+    log::warn!("config - Auditor not defined");
     None
   };
 
-  let log_level = settings.get_string("log").unwrap_or("error".to_string());
-  log::debug!("config - log_level:  {log_level}");
-
-  if audit_kafka_opt.is_none() {
-    log::warn!("config - Auditor not defined");
-  }
-
-  log_ops::configure(log_level); // log4rs programatically configuration
-
-  if let Some(socks_proxy) = &site_detail_value.socks5_proxy {
+  if let Some(socks_proxy) = &site_details_value.socks5_proxy {
     let socks_proxy = socks_proxy.to_string();
     if !socks_proxy.is_empty() {
       unsafe {
         std::env::set_var("SOCKS5", socks_proxy.clone());
       }
       log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
-      log::debug!("config - socks_proxy:  {socks_proxy}");
     } else {
       log::debug!("config - socks_proxy:  Not defined");
     }
@@ -105,9 +103,7 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
   let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
 
-  let root_ca_cert_file = &site_detail_value.root_ca_cert_file;
-
-  log::debug!("config - root_ca_cert_file:  {root_ca_cert_file}");
+  let root_ca_cert_file = &site_details_value.root_ca_cert_file;
 
   let shasta_root_cert_rslt =
     common::config::get_csm_root_cert_content(&root_ca_cert_file);

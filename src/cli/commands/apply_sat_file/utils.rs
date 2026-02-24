@@ -312,6 +312,30 @@ pub mod configuration {
   }
 
   #[derive(Deserialize, Serialize, Debug)]
+  pub struct SpecialParameters {
+    pub ims_require_dkms: bool,
+  }
+
+  #[derive(Deserialize, Serialize, Debug)]
+  pub struct LayerGit {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub playbook: Option<String>, // This field is optional but with default value. Therefore we won't
+    pub git: Git,
+    pub special_parameters: Option<SpecialParameters>,
+  }
+
+  #[derive(Deserialize, Serialize, Debug)]
+  pub struct LayerProduct {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub playbook: Option<String>, // This field is optional but with default value. Therefore we won't
+    pub product: Product,
+  }
+
+  /* #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum LayerType {
     Git { git: Git },
@@ -326,9 +350,16 @@ pub mod configuration {
     pub playbook: String, // This field is optional but with default value. Therefore we won't
     #[serde(flatten)]
     pub layer_type: LayerType,
+  } */
+
+  #[derive(Deserialize, Serialize, Debug)]
+  #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+  pub enum Layer {
+    LayerGit(LayerGit),
+    LayerProduct(LayerProduct),
   }
 
-  impl
+  /* impl
     Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer>
     for Layer
   {
@@ -380,11 +411,101 @@ pub mod configuration {
 
       layer
     }
-  }
+  } */
 
-  fn default_playbook() -> String {
+  /* impl
+    Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer>
+    for Layer
+  {
+    fn into(
+      self,
+    ) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer
+    {
+      match self {
+        Layer::LayerGit(git_layer) => {
+          let playbook =
+            git_layer.playbook.unwrap_or_else(|| default_playbook());
+          match git_layer.git {
+            Git::GitCommit { url, commit } => {
+              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: git_layer.name,
+                clone_url: Some(url),
+                source: None,
+                playbook,
+                commit: Some(commit),
+                branch: None,
+                special_parameters: git_layer.special_parameters.map(|sp| {
+                  vec![manta_backend_dispatcher::types::cfs::cfs_configuration_request::SpecialParameter {
+                    ims_required_dkms: Some(sp.ims_require_dkms),
+                  }]
+                }),
+              }
+            }
+            Git::GitBranch { url, branch } => {
+              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: git_layer.name,
+                clone_url: Some(url),
+                source: None,
+                playbook,
+                commit: None,
+                branch: Some(branch),
+                special_parameters: git_layer.special_parameters.map(|sp| {
+                  vec![manta_backend_dispatcher::types::cfs::cfs_configuration_request::SpecialParameter {
+                    ims_required_dkms: Some(sp.ims_require_dkms),
+                  }]
+                }),
+              }
+            }
+            Git::GitTag { url, tag } => {
+              todo!()
+            }
+          }
+        }
+        Layer::LayerProduct(product_layer) => {
+          let playbook =
+            product_layer.playbook.unwrap_or_else(|| default_playbook());
+          match product_layer.product {
+            Product::ProductVersionBranch { name, version, branch } => {
+              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: name,
+                clone_url: None,
+                source: None,
+                playbook,
+                commit: None,
+                branch: None,
+                special_parameters: None,
+              }
+            }
+            Product::ProductVersionCommit { name, version, commit } => {
+              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: product_layer.name,
+                clone_url: None,
+                source: None,
+                playbook,
+                commit: None,
+                branch: None,
+                special_parameters: None,
+              }
+            }
+            Product::ProductVersion { name, version } => {
+              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
+                name: product_layer.name,
+                clone_url: None,
+                source: None,
+                playbook,
+                commit: None,
+                branch: None,
+                special_parameters: None,
+              }
+            }
+          }
+      }
+    }
+  } */
+
+  /* fn default_playbook() -> String {
     "site.yml".to_string()
-  }
+  } */
 
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
