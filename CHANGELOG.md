@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 - Command 'confg show' now shows the path of the configuration file
 
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.60.0
+
 ### Refactor
 
 - Clean code related to command apply sat-file
