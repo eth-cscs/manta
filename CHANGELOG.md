@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.60.2] - 2026-02-24
+
+### Bug Fixes
+
+- Rollback rdkafka to overcome error compiling librdfafka
+
+## [1.60.1] - 2026-02-24
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.60.1
+
 ## [1.60.0] - 2026-02-24
 
 ### Bug Fixes
