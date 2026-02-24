@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.60.0] - 2026-02-24
+
+### Bug Fixes
+
+- SAT files validation should fail it only contains 'configuration' data with neither images not session_template
+- Improve sat file eschema parsing
+
+### Features
+
+- Command 'confg show' now shows the path of the configuration file
+
+### Refactor
+
+- Clean code related to command apply sat-file
+- Update Cargo.toml
+
 ## [1.59.9-beta.16] - 2026-02-01
 
 ### Bug Fixes
 
 - Power operations now operates on a struct instead of a serde json value
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.59.9-beta.16
 
 ## [1.59.9-beta.15] - 2026-02-01
 
