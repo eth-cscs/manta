@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.60.4] - 2026-02-27
+
+### Bug Fixes
+
+- Power management operations not able to deserialize struct response when creating a transition
+
+### Refactor
+
+- Update Cargo.lock
+
 ## [1.60.3] - 2026-02-24
 
 ### Bug Fixes
 
 - Rollback rdkafka to overcome error compiling librdfafka
 - Rollback rdkafka to overcome error compiling librdfafka
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.60.3
 
 ## [1.60.2] - 2026-02-24
 
