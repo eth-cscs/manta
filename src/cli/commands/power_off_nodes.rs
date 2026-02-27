@@ -6,7 +6,9 @@ use manta_backend_dispatcher::interfaces::{
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
+  common::{
+    self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use nodeset::NodeSet;
