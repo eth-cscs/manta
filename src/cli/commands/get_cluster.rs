@@ -151,10 +151,7 @@ pub async fn exec(
   {
     node_ops::print_table(node_details_list);
   } else {
-    bail!(
-      "ERROR - output value not recognized or missing. \
-       Exit",
-    );
+    bail!("Output value not recognized or missing",);
   }
 
   Ok(())

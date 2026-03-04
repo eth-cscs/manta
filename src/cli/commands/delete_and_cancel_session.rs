@@ -80,10 +80,7 @@ pub async fn exec(
     .iter()
     .find(|cfs_session| cfs_session.name.eq(&session_name.to_string()))
     .ok_or_else(|| {
-      anyhow::Error::msg(format!(
-        "CFS session '{}' not found. Exit",
-        session_name
-      ))
+      anyhow::Error::msg(format!("CFS session '{}' not found", session_name))
     })?;
 
   if !common::user_interaction::confirm(

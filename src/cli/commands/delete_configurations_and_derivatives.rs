@@ -25,8 +25,8 @@ pub async fn exec(
     && since > until
   {
     bail!(
-      "ERROR - 'since' date can't be after \
-       'until' date. Exit"
+      "'since' date can't be after \
+       'until' date"
     );
   }
   let shasta_token = get_api_token(backend, site_name).await?;

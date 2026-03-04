@@ -35,7 +35,7 @@ pub async fn exec(
   .await
   .map_err(|e| {
     Error::msg(format!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+      "Could not convert user input to list of xnames. Reason:\n{}",
       e
     ))
   })?;
@@ -43,7 +43,7 @@ pub async fn exec(
   if node_list.is_empty() {
     bail!(
       "The list of nodes to operate is empty. \
-       Nothing to do. Exit",
+       Nothing to do",
     );
   }
 
@@ -154,8 +154,8 @@ pub async fn exec(
       }
       _ => {
         bail!(
-          "ERROR - output value not recognized \
-           or missing. Exit",
+          "Output value not recognized \
+           or missing",
         );
       }
     }

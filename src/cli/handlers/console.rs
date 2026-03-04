@@ -12,7 +12,7 @@ pub async fn handle_console(
 ) -> Result<(), Error> {
   if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
     if !std::io::stdout().is_terminal() {
-      bail!("This command needs to run in interactive mode. Exit");
+      bail!("This command needs to run in interactive mode");
     }
     let site = ctx
       .configuration
@@ -31,7 +31,7 @@ pub async fn handle_console(
     cli_console.subcommand_matches("target-ansible")
   {
     if !std::io::stdout().is_terminal() {
-      bail!("This command needs to run in interactive mode. Exit");
+      bail!("This command needs to run in interactive mode");
     }
     let site = ctx
       .configuration

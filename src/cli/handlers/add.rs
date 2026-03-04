@@ -26,10 +26,10 @@ pub async fn handle_add(
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let id = cli_add_node
       .get_one::<String>("id")
-      .context("ERROR - 'id' argument is mandatory")?;
+      .context("'id' argument is mandatory")?;
     let group = cli_add_node
       .get_one::<String>("group")
-      .context("ERROR - 'group' argument is mandatory")?;
+      .context("'group' argument is mandatory")?;
     let hardware_file_opt = cli_add_node.get_one::<PathBuf>("hardware");
 
     let arch_opt = cli_add_node.get_one::<String>("arch").cloned();
@@ -52,7 +52,7 @@ pub async fn handle_add(
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let label = cli_add_group
       .get_one::<String>("label")
-      .context("ERROR - 'label' argument is mandatory")?;
+      .context("'label' argument is mandatory")?;
     let description: Option<&String> = cli_add_group.get_one("description");
     let node_expression: Option<&String> =
       cli_add_group.get_one::<String>("nodes");
@@ -97,13 +97,13 @@ pub async fn handle_add(
       &shasta_token,
       target_hsm_group_vec
         .first()
-        .context("ERROR - no target HSM groups available")?,
+        .context("No target HSM groups available")?,
       parent_hsm_group_vec
         .first()
-        .context("ERROR - no parent HSM groups available")?,
+        .context("No parent HSM groups available")?,
       cli_add_hw_configuration
         .get_one::<String>("pattern")
-        .context("ERROR - 'pattern' argument is mandatory")?,
+        .context("'pattern' argument is mandatory")?,
       dryrun,
       create_hsm_group,
     )
@@ -114,20 +114,20 @@ pub async fn handle_add(
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let hosts = cli_add_boot_parameters
       .get_one::<String>("hosts")
-      .context("ERROR - 'hosts' argument is mandatory")?;
+      .context("'hosts' argument is mandatory")?;
     let macs: Option<String> = cli_add_boot_parameters.get_one("macs").cloned();
     let nids: Option<String> = cli_add_boot_parameters.get_one("nids").cloned();
     let params = cli_add_boot_parameters
       .get_one::<String>("params")
-      .context("ERROR - 'params' argument is mandatory")?
+      .context("'params' argument is mandatory")?
       .clone();
     let kernel = cli_add_boot_parameters
       .get_one::<String>("kernel")
-      .context("ERROR - 'kernel' argument is mandatory")?
+      .context("'kernel' argument is mandatory")?
       .clone();
     let initrd = cli_add_boot_parameters
       .get_one::<String>("initrd")
-      .context("ERROR - 'initrd' argument is mandatory")?
+      .context("'initrd' argument is mandatory")?
       .clone();
     let cloud_init = cli_add_boot_parameters
       .get_one::<Value>("cloud-init")
@@ -195,11 +195,11 @@ pub async fn handle_add(
     } else {
       cli_add_kernel_parameters
         .get_one::<String>("nodes")
-        .context("ERROR - neither HSM group nor nodes defined")?
+        .context("Neither HSM group nor nodes defined")?
     };
     let kernel_parameters = cli_add_kernel_parameters
       .get_one::<String>("VALUE")
-      .context("ERROR - 'VALUE' argument is mandatory")?;
+      .context("'VALUE' argument is mandatory")?;
     let overwrite: bool = cli_add_kernel_parameters.get_flag("overwrite");
     let assume_yes: bool = cli_add_kernel_parameters.get_flag("assume-yes");
     let do_not_reboot: bool =
@@ -221,7 +221,7 @@ pub async fn handle_add(
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let id = cli_add_redfish_endpoint
       .get_one::<String>("id")
-      .context("ERROR - 'id' argument is mandatory")?
+      .context("'id' argument is mandatory")?
       .to_string();
     let name: Option<String> =
       cli_add_redfish_endpoint.get_one("name").cloned();

@@ -5,14 +5,12 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
+  cli::commands::console_common,
   common::{
     authentication::get_api_token, authorization::get_groups_names_available,
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-
-use futures::StreamExt;
-use tokio::{io::AsyncWriteExt, select};
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -54,7 +52,7 @@ pub async fn exec(
     })?;
 
   if cfs_session_vec.is_empty() {
-    bail!("No CFS session found. Exit");
+    bail!("No CFS session found");
   }
 
   let cfs_session_details =
@@ -71,7 +69,7 @@ pub async fn exec(
   {
     bail!(
       "CFS session found {} is type not \
-       'image'. Exit",
+       'image'",
       cfs_session_details.name
     );
   }
@@ -88,7 +86,7 @@ pub async fn exec(
   {
     bail!(
       "CFS session found {} state is not \
-       'running'. Exit",
+       'running'",
       cfs_session_details.name
     );
   }
@@ -105,49 +103,19 @@ pub async fn exec(
   {
     bail!(
       "CFS session found {} is not related \
-       to any availble HSM groups {:?}. Exit",
+       to any available HSM groups {:?}",
       cfs_session_details.name,
       hsm_group_name_vec
     );
   }
 
-  let console_rslt = connect_to_console(
-    backend,
-    &shasta_token,
-    site_name,
-    &session_name.to_string(),
-    k8s,
-  )
-  .await;
-
-  match console_rslt {
-    Ok(_) => {
-      let _ = crossterm::terminal::disable_raw_mode();
-      log::info!("Console closed");
-    }
-    Err(error) => {
-      let _ = crossterm::terminal::disable_raw_mode();
-      log::error!("{:?}", error);
-    }
-  }
-
-  Ok(())
-}
-
-async fn connect_to_console(
-  backend: &StaticBackendDispatcher,
-  shasta_token: &str,
-  site_name: &str,
-  session_name: &String,
-  k8s: &K8sDetails,
-) -> Result<(), anyhow::Error> {
   log::info!("session: {}", session_name);
 
   let (width, height) = crossterm::terminal::size()?;
 
   let (a_input, a_output) = backend
     .attach_to_session_console(
-      shasta_token,
+      &shasta_token,
       site_name,
       session_name,
       width,
@@ -156,56 +124,9 @@ async fn connect_to_console(
     )
     .await?;
 
-  let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());
-  let mut stdout = tokio::io::stdout();
+  let result = console_common::run_console_loop(a_input, a_output).await;
 
-  let mut output = tokio_util::io::ReaderStream::new(a_output);
-  let mut input = a_input;
-
-  crossterm::terminal::enable_raw_mode()?;
-
-  loop {
-    select! {
-        message = stdin.next() => {
-            match message {
-                Some(Ok(message)) => {
-                    input.write_all(&message).await?;
-                },
-                Some(Err(message)) => {
-                   crossterm::terminal::disable_raw_mode()?;
-                   log::error!("ERROR: Console stdin {:?}", &message);
-                   break
-                },
-                None => {
-                    crossterm::terminal::disable_raw_mode()?;
-                    log::info!("NONE (No input): Console stdin");
-                    break
-                },
-            }
-        },
-
-        message = output.next() => {
-            match message {
-                Some(Ok(message)) => {
-                    stdout.write_all(&message).await?;
-                    stdout.flush().await?;
-                },
-                Some(Err(message)) => {
-                   crossterm::terminal::disable_raw_mode()?;
-                   log::error!("ERROR: Console stdout: {:?}", &message);
-                   break
-                },
-                None => {
-                    crossterm::terminal::disable_raw_mode()?;
-                    log::info!("Exit console");
-                    break
-                },
-            }
-        },
-    };
-  }
-
-  crossterm::terminal::disable_raw_mode()?;
+  console_common::handle_console_result(result);
 
   Ok(())
 }

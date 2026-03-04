@@ -47,9 +47,7 @@ pub async fn exec(
     .collect();
 
   let image_used_to_boot_nodes: Vec<String> = image_used_to_boot_nodes_opt
-    .ok_or_else(|| {
-      Error::msg("ERROR - Could not get image ids used to boot nodes")
-    })?;
+    .ok_or_else(|| Error::msg("Could not get image ids used to boot nodes"))?;
 
   // Get list of image ids requested to delete that are used to boot nodes (these images cannot
   // be deleted and will trigger the command to fail)
@@ -63,7 +61,7 @@ pub async fn exec(
   // Exit if any image id user wants to delete is used to boot nodes
   if !image_xnames_boot_map.is_empty() {
     bail!(
-      "ERROR - The following images could not be deleted \
+      "The following images could not be deleted \
        since they boot nodes.\n{:#?}",
       image_xnames_boot_map
     );
@@ -74,14 +72,12 @@ pub async fn exec(
   let image_restricted_vec: Vec<String> =
     get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
       .ok_or_else(|| {
-        Error::msg(
-          "ERROR - Could not get restricted image ids used by boot parameters",
-        )
+        Error::msg("Could not get restricted image ids used by boot parameters")
       })?;
 
   if !image_restricted_vec.is_empty() {
     bail!(
-      "ERROR - The following image ids are not deletable \
+      "The following image ids are not deletable \
        because they are used by hosts that are not part \
        of the groups available to the user:\n{:#?}",
       image_restricted_vec

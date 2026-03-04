@@ -222,7 +222,7 @@ pub async fn exec(
       bail!("Operation cancelled by user");
     }
   } else {
-    bail!("No changes detected. Nothing to do. Exit");
+    bail!("No changes detected. Nothing to do");
   }
 
   if dry_run {

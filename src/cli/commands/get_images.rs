@@ -1,8 +1,11 @@
-use crate::common::authorization::get_groups_names_available;
+use crate::common::{
+  DATETIME_FORMAT, authorization::get_groups_names_available,
+};
+use anyhow::Context;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
-  error::Error, interfaces::ims::GetImagesAndDetailsTrait, types::ims::Image,
+  interfaces::ims::GetImagesAndDetailsTrait, types::ims::Image,
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -17,7 +20,7 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   cli_get_images: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name).await?;
 
@@ -31,7 +34,7 @@ pub async fn exec(
     settings_hsm_group_name_opt,
   )
   .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .context("Failed to get available HSM group names")?;
 
   let image_detail_vec: Vec<(Image, String, String, bool)> = backend
     .get_images_and_details(
@@ -65,9 +68,9 @@ pub async fn exec(
     // NOTE: CSM can have different date formats, so we need to try to parse it in different
     // ways
     let creation_date = if let Ok(v) = creation_date.parse::<NaiveDateTime>() {
-      v.format("%d/%m/%Y %H:%M:%S").to_string()
+      v.format(DATETIME_FORMAT).to_string()
     } else if let Ok(v) = creation_date.parse::<DateTime<Local>>() {
-      v.naive_local().format("%d/%m/%Y %H:%M:%S").to_string()
+      v.naive_local().format(DATETIME_FORMAT).to_string()
     } else {
       creation_date.to_string()
     };

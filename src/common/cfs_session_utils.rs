@@ -4,6 +4,8 @@ use manta_backend_dispatcher::types::{
   self, Group, cfs::session::CfsSessionGetResponse,
 };
 
+use super::DATETIME_FORMAT;
+
 fn cfs_session_struct_to_vec(
   cfs_session: manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
 ) -> Vec<String> {
@@ -49,11 +51,11 @@ fn cfs_session_struct_to_vec(
       .and_then(|c| c.name.clone())
       .unwrap_or_default(),
   );
-  result.push(start_time_utc.format("%d/%m/%Y %H:%M:%S").to_string());
+  result.push(start_time_utc.format(DATETIME_FORMAT).to_string());
   result.push(
     completion_time_utc_opt
       .map(|completion_time| {
-        completion_time.format("%d/%m/%Y %H:%M:%S").to_string()
+        completion_time.format(DATETIME_FORMAT).to_string()
       })
       .unwrap_or_default(),
   );

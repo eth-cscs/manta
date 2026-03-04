@@ -1,5 +1,5 @@
+use anyhow::{Context, bail};
 use manta_backend_dispatcher::{
-  error::Error,
   interfaces::{
     cfs::CfsTrait,
     hsm::{component::ComponentTrait, group::GroupTrait},
@@ -25,7 +25,7 @@ pub async fn exec(
   hosts_expression: &str,
   timestamps: bool,
   k8s: &K8sDetails,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
   let shasta_token = get_api_token(backend, site_name).await?;
   let group_available_vec =
     backend.get_group_name_available(&shasta_token).await?;
@@ -33,11 +33,7 @@ pub async fn exec(
   let node_metadata_available_vec = backend
     .get_node_metadata_available(&shasta_token)
     .await
-    .map_err(|e| {
-      Error::Message(format!(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
-      ))
-    })?;
+    .context("Could not get node metadata")?;
 
   let xname_vec_rslt = common::node_ops::from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -96,23 +92,13 @@ pub async fn exec(
     Ok([_, ..]) => {
       // User input is an expression that expands to multiple nodes
       log::debug!("User input is a list of nodes");
-      return Err(Error::Message(
-        "ERROR - Can only operate a single node. Exit".to_string(),
-      ));
+      bail!("Can only operate a single node");
     }
   }
-  .map_err(|e| {
-    Error::Message(format!(
-      "ERROR - Could not get CFS sessions. Reason:\n{e}\nExit"
-    ))
-  })?;
+  .context("Could not get CFS sessions")?;
 
   let cfs_session = cfs_sessions_vec.first().ok_or_else(|| {
-    {
-      Error::Message(
-        "No CFS session found for the given input. Exit".to_string(),
-      )
-    }
+    anyhow::anyhow!("No CFS session found for the given input")
   })?;
 
   log::info!(
@@ -158,7 +144,7 @@ pub async fn print_cfs_session_logs(
   cfs_session_name: &str,
   timestamps: bool,
   k8s: &K8sDetails,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
   let logs_stream = backend
     .get_session_logs_stream(
       shasta_token,
@@ -171,10 +157,8 @@ pub async fn print_cfs_session_logs(
 
   let mut lines = logs_stream.lines();
 
-  while let Some(line) = lines
-    .try_next()
-    .await
-    .map_err(|e| Error::Message(format!("Error reading log stream: {e}")))?
+  while let Some(line) =
+    lines.try_next().await.context("Error reading log stream")?
   {
     println!("{}", line);
   }

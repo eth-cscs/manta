@@ -1,6 +1,4 @@
-use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::component::ComponentTrait,
-};
+use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 
 use crate::{
   common::authentication::get_api_token,
@@ -11,10 +9,8 @@ pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
   id: &str,
-) -> Result<(), Error> {
-  let auth_token = get_api_token(backend, site_name)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+) -> Result<(), anyhow::Error> {
+  let auth_token = get_api_token(backend, site_name).await?;
   // Delete node
   backend.delete_node(&auth_token, id).await?;
 

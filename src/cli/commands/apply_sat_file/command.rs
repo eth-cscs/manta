@@ -67,7 +67,6 @@ pub async fn exec(
         prehook
       ),
       Err(e) => {
-        log::error!("{}. File: {}", e, &prehook);
         bail!("{}. File: {}", e, &prehook);
       }
     };
@@ -134,7 +133,7 @@ pub async fn exec(
      confirm to proceed.",
     assume_yes,
   ) {
-    bail!("Operation canceled by user. Exit");
+    bail!("Operation canceled by user");
   }
 
   // Confirm reboot if session_templates are to be
@@ -147,7 +146,7 @@ pub async fn exec(
       assume_yes,
     )
   {
-    println!("Operation canceled by user. Exit");
+    println!("Operation canceled by user");
     return Ok(());
   }
 

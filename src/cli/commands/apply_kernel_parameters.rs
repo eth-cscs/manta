@@ -1,4 +1,4 @@
-use crate::common::{self, app_context::AppContext, audit::Audit, jwt_ops};
+use crate::common::{self, app_context::AppContext, audit, jwt_ops};
 use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
@@ -43,8 +43,8 @@ pub async fn exec(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get node metadata. \
-             Reason:\n{e}\nExit"
+          "Could not get node metadata. \
+             Reason:\n{e}"
         ))
       })?;
 
@@ -56,7 +56,7 @@ pub async fn exec(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input to \
+        "Could not convert user input to \
            list of xnames. Reason:\n{e}"
       ))
     })?
@@ -70,7 +70,7 @@ pub async fn exec(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get members for \
+          "Could not get members for \
              HSM group {}. Reason:\n{e}",
           hsm_group
         ))
@@ -85,14 +85,14 @@ pub async fn exec(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get members for \
+          "Could not get members for \
              settings HSM group {}. Reason:\n{e}",
           settings_hsm_group
         ))
       })?
   } else {
     bail!(
-      "ERROR - No nodes provided. Please provide \
+      "No nodes provided. Please provide \
          either a list of nodes via --nodes or an \
          HSM group via --hsm-group",
     );
@@ -187,7 +187,7 @@ pub async fn exec(
       bail!("Operation canceled by the user.");
     }
   } else {
-    bail!("No changes detected. Nothing to do. Exit");
+    bail!("No changes detected. Nothing to do");
   }
 
   log::info!("need restart? {}", need_restart);
@@ -274,12 +274,7 @@ pub async fn exec(
       }
     );
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   // Reboot if needed

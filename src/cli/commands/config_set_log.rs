@@ -1,9 +1,10 @@
-use std::{fs, io::Write, path::PathBuf};
+use std::{fs, io::Write};
 
 use anyhow::{Context, Error};
 use clap::ArgMatches;
-use directories::ProjectDirs;
 use toml_edit::{DocumentMut, value};
+
+use crate::common::config::get_default_manta_config_file_path;
 
 pub async fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
   let log_level: &String = cli_config_set_log
@@ -14,23 +15,7 @@ pub async fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
 }
 
 async fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  );
-
-  let mut path_to_manta_configuration_file = PathBuf::from(
-    project_dirs
-      .context(
-        "Could not determine config directory \
-           (home directory may not be set)",
-      )?
-      .config_dir(),
-  );
-
-  path_to_manta_configuration_file.push("config.toml"); // ~/.config/manta/config is the file
+  let path_to_manta_configuration_file = get_default_manta_config_file_path()?;
 
   log::debug!(
     "Reading manta configuration from {}",

@@ -14,7 +14,7 @@ use manta_backend_dispatcher::{
 use crate::common::{
   self,
   app_context::AppContext,
-  audit::Audit,
+  audit,
   authentication::get_api_token,
   authorization::{get_groups_names_available, validate_target_hsm_members},
   jwt_ops, local_git_repo,
@@ -43,7 +43,7 @@ pub async fn exec(
 
   let repo_path_vec: Vec<PathBuf> = cli_apply_session
     .get_many("repo-path")
-    .context("ERROR - 'repo-path' argument not provided")?
+    .context("'repo-path' argument not provided")?
     .cloned()
     .collect();
 
@@ -78,7 +78,7 @@ pub async fn exec(
 
   if target_hsm_group_vec.is_empty() {
     bail!(
-      "ERROR - No HSM groups available for \
+      "No HSM groups available for \
        this session",
     );
   }
@@ -99,14 +99,14 @@ pub async fn exec(
     .sites
     .get(&configuration.site)
     .context(format!(
-      "ERROR - site '{}' not found in configuration",
+      "Site '{}' not found in configuration",
       &configuration.site
     ))?;
 
   let k8s_details = site
     .k8s
     .as_ref()
-    .context("ERROR - k8s section not found in configuration")?;
+    .context("k8s section not found in configuration")?;
 
   let _ = apply_session(
     ctx,
@@ -160,8 +160,8 @@ pub async fn apply_session(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get node metadata. \
-             Reason:\n{e}\nExit"
+          "Could not get node metadata. \
+             Reason:\n{e}"
         ))
       })?;
 
@@ -173,7 +173,7 @@ pub async fn apply_session(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input \
+        "Could not convert user input \
              to list of xnames. Reason:\n{e}"
       ))
     })?;
@@ -229,7 +229,7 @@ pub async fn apply_session(
       .lines();
 
     while let Some(line) = cfs_session_log_stream.try_next().await.context(
-      "ERROR - Failed to read CFS session \
+      "Failed to read CFS session \
          log stream",
     )? {
       println!("{}", line);
@@ -239,11 +239,11 @@ pub async fn apply_session(
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
     let username = jwt_ops::get_name(shasta_token).context(
-      "ERROR - Could not extract name \
+      "Could not extract name \
          from JWT token",
     )?;
     let user_id = jwt_ops::get_preferred_username(shasta_token).context(
-      "ERROR - Could not extract username \
+      "Could not extract username \
            from JWT token",
     )?;
 
@@ -261,14 +261,7 @@ pub async fn apply_session(
       }
     );
 
-    let msg_data = serde_json::to_string(&msg_json).context(
-      "ERROR - Could not serialize audit \
-         message data",
-    )?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok((cfs_configuration_name, cfs_session_name))
@@ -278,6 +271,8 @@ fn check_local_repos(
   repos: &[PathBuf],
 ) -> Result<(Vec<String>, Vec<String>), Error> {
   let mut layers_summary = vec![];
+  let mut repo_name_vec = Vec::new();
+  let mut repo_last_commit_id_vec = Vec::new();
 
   for (i, repo_path) in repos.iter().enumerate() {
     // Get repo from path
@@ -303,18 +298,21 @@ fn check_local_repos(
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
-    // Check if all changes in local repo has been
-    // commited locally
-    if !local_git_repo::untracked_changed_local_files(&repo).map_err(|e| {
-      Error::msg(format!(
-        "Could not check local repo status \
-         at {}: {e}",
-        repo_path.display()
-      ))
-    })? {
+    // Check if all changes in local repo have been
+    // committed locally
+    let all_committed = local_git_repo::untracked_changed_local_files(&repo)
+      .map_err(|e| {
+        Error::msg(format!(
+          "Could not check local repo status \
+             at {}: {e}",
+          repo_path.display()
+        ))
+      })?;
+
+    if !all_committed {
       if common::user_interaction::confirm(
-        "Your local repo has uncommitted changes. \
-         Do you want to continue?",
+        "Your local repo has uncommitted \
+         changes. Do you want to continue?",
         false,
       ) {
         println!(
@@ -327,7 +325,7 @@ fn check_local_repos(
       }
     }
 
-    // Get repo name
+    // Get repo name from 'origin' remote URL
     let repo_ref_origin = repo.find_remote("origin").with_context(|| {
       format!(
         "Could not find 'origin' remote in \
@@ -346,11 +344,11 @@ fn check_local_repos(
 
     log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
 
-    let repo_name = repo_ref_origin_url.substring(
+    let repo_name_raw = repo_ref_origin_url.substring(
       repo_ref_origin_url.rfind('/').with_context(|| {
         format!(
           "Remote URL '{}' has unexpected \
-             format (no '/' found)",
+           format (no '/' found)",
           repo_ref_origin_url
         )
       })?
@@ -372,21 +370,17 @@ fn check_local_repos(
       local_last_commit.message().unwrap_or("no commit message")
     );
 
-    let layer_summary = vec![
+    layers_summary.push(vec![
       i.to_string(),
-      repo_name.to_string(),
-      local_git_repo::untracked_changed_local_files(&repo)
-        .map_err(|e| {
-          Error::msg(format!(
-            "Could not check local repo status \
-           at {}: {e}",
-            repo_path.display()
-          ))
-        })?
-        .to_string(),
-    ];
+      repo_name_raw.to_string(),
+      all_committed.to_string(),
+    ]);
 
-    layers_summary.push(layer_summary);
+    // Collect data for CFS configuration creation
+    repo_last_commit_id_vec.push(local_last_commit.id().to_string());
+
+    let repo_name = "cray/".to_owned() + repo_name_raw.trim_end_matches(".git");
+    repo_name_vec.push(repo_name);
   }
 
   // Print CFS session/configuration layers summary
@@ -419,72 +413,6 @@ fn check_local_repos(
     );
   } else {
     bail!("Cancelled by user. Aborting.");
-  }
-
-  let mut repo_name_vec = Vec::new();
-  let mut repo_last_commit_id_vec = Vec::new();
-
-  // Get layer names from local repos
-  for repo_path in repos {
-    // Get repo from path
-    let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
-      Ok(repo) => repo,
-      Err(_) => {
-        bail!(
-          "Could not find a git repo in {}",
-          repo_path.to_string_lossy()
-        );
-      }
-    };
-
-    // Get last (most recent) commit
-    let local_last_commit = local_git_repo::get_last_commit(&repo)
-      .with_context(|| {
-        format!(
-          "Could not get last commit from \
-             repo at {}",
-          repo_path.display()
-        )
-      })?;
-
-    repo_last_commit_id_vec.push(local_last_commit.id().to_string());
-
-    // Get repo name
-    let repo_ref_origin = repo.find_remote("origin").with_context(|| {
-      format!(
-        "Could not find 'origin' remote in \
-           repo at {}",
-        repo_path.display()
-      )
-    })?;
-
-    let repo_ref_origin_url = repo_ref_origin.url().with_context(|| {
-      format!(
-        "Remote 'origin' URL is not valid \
-           UTF-8 in repo at {}",
-        repo_path.display()
-      )
-    })?;
-
-    log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
-
-    let repo_name = repo_ref_origin_url
-      .substring(
-        repo_ref_origin_url.rfind('/').with_context(|| {
-          format!(
-            "Remote URL '{}' has unexpected \
-               format (no '/' found)",
-            repo_ref_origin_url
-          )
-        })?
-          + 1,
-        repo_ref_origin_url.len(),
-      )
-      .trim_end_matches(".git");
-
-    let repo_name = "cray/".to_owned() + repo_name;
-
-    repo_name_vec.push(repo_name);
   }
 
   Ok((repo_name_vec, repo_last_commit_id_vec))

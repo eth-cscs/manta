@@ -51,14 +51,14 @@ pub async fn handle_apply(
     let sat_template_file = cli_apply_sat_file
       .get_one::<std::path::PathBuf>("sat-template-file")
       .context(
-        "ERROR - SAT template file argument \
+        "SAT template file argument \
          not provided",
       )?;
 
     let sat_file_content: String = std::fs::read_to_string(sat_template_file)
       .with_context(|| {
       format!(
-        "ERROR - could not read SAT file \
+        "Could not read SAT file \
              template '{}'",
         sat_template_file.display()
       )
@@ -143,17 +143,17 @@ pub async fn handle_apply(
       cli_apply_template.get_one("name");
     let bos_sessiontemplate_name: &String = cli_apply_template
       .get_one("template")
-      .context("ERROR - template name is mandatory")?;
+      .context("Template name is mandatory")?;
     let limit: &String = cli_apply_template
       .get_one("limit")
-      .context("ERROR - limit is mandatory")?;
+      .context("Limit is mandatory")?;
     let bos_session_operation: &String = cli_apply_template
       .get_one("operation")
-      .context("ERROR - operation is mandatory")?;
+      .context("Operation is mandatory")?;
 
     let include_disabled: bool =
       *cli_apply_template.get_one("include-disabled").context(
-        "ERROR - 'include-disabled' must \
+        "'include-disabled' must \
          have a value",
       )?;
 
@@ -177,7 +177,7 @@ pub async fn handle_apply(
     if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
       bail!(
         "This command needs to run in \
-         interactive mode. Exit"
+         interactive mode"
       );
     }
 
@@ -188,7 +188,7 @@ pub async fn handle_apply(
       ctx.shasta_root_cert,
       cli_apply_ephemeral_environment
         .get_one::<String>("image-id")
-        .context("ERROR - 'image-id' argument is mandatory")?,
+        .context("'image-id' argument is mandatory")?,
     )
     .await?;
   } else if let Some(cli_apply_kernel_parameters) =
@@ -208,7 +208,7 @@ pub async fn handle_apply(
 
     let kernel_parameters = cli_apply_kernel_parameters
       .get_one::<String>("VALUE")
-      .context("ERROR - 'VALUE' argument is mandatory")?;
+      .context("'VALUE' argument is mandatory")?;
 
     let assume_yes: bool = cli_apply_kernel_parameters.get_flag("assume-yes");
     let do_not_reboot: bool =
@@ -230,7 +230,7 @@ pub async fn handle_apply(
     {
       let hosts_string: &str =
         cli_apply_boot_nodes.get_one::<String>("VALUE").context(
-          "ERROR - 'xnames' argument must \
+          "'xnames' argument must \
            have values",
         )?;
 
@@ -240,7 +240,7 @@ pub async fn handle_apply(
       if let Some(new_boot_image_id) = new_boot_image_id_opt
         && uuid::Uuid::parse_str(new_boot_image_id).is_err()
       {
-        bail!("ERROR - image id is not an UUID");
+        bail!("Image id is not a UUID");
       }
 
       let new_boot_image_configuration_opt: Option<&String> =
@@ -275,7 +275,7 @@ pub async fn handle_apply(
     {
       let hsm_group_name_arg: &String = cli_apply_boot_cluster
         .get_one("CLUSTER_NAME")
-        .context("ERROR - cluster name must be provided")?;
+        .context("Cluster name must be provided")?;
 
       let new_boot_image_id_opt: Option<&String> =
         cli_apply_boot_cluster.get_one("boot-image");

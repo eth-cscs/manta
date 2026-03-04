@@ -1,13 +1,13 @@
 pub mod http_client {
 
-  use manta_backend_dispatcher::error::Error;
+  use anyhow::Context;
   use serde_json::{Value, json};
 
   pub async fn auth_oidc_jwt(
     vault_base_url: &str,
     shasta_token: &str,
     site_name: &str,
-  ) -> Result<String, Error> {
+  ) -> Result<String, anyhow::Error> {
     // NOTE: role is hardcoded to manta, this is the role that is created in vault for the
     // jwt-manta auth method. This role is created by the vault admin and is used to
     // authenticate
@@ -28,30 +28,24 @@ pub mod http_client {
       .header("X-Vault-Request", "true")
       .json(&request_payload)
       .send()
-      .await?;
+      .await?
+      .error_for_status()?;
 
-    match resp.error_for_status() {
-      Ok(resp) => {
-        let resp_value = resp.json::<Value>().await?;
-        let client_token = resp_value["auth"]
-          .get("client_token")
-          .and_then(Value::as_str)
-          .ok_or_else(|| {
-            Error::Message(
-              "Vault auth response missing 'client_token' field".to_string(),
-            )
-          })?;
-        Ok(client_token.to_string())
-      }
-      Err(e) => Err(Error::NetError(e)),
-    }
+    let resp_value = resp.json::<Value>().await?;
+    let client_token = resp_value["auth"]
+      .get("client_token")
+      .and_then(Value::as_str)
+      .ok_or_else(|| {
+        anyhow::anyhow!("Vault auth response missing 'client_token' field")
+      })?;
+    Ok(client_token.to_string())
   }
 
   pub async fn fetch_secret(
     vault_auth_token: &str,
     vault_base_url: &str,
     secret_path: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<Value, anyhow::Error> {
     // rest client create new cfs sessions
     let client = reqwest::Client::builder().build()?;
 
@@ -63,24 +57,18 @@ pub mod http_client {
       .get(api_url)
       .header("X-Vault-Token", vault_auth_token)
       .send()
-      .await?;
+      .await?
+      .error_for_status()?;
 
-    match resp.error_for_status() {
-      Ok(resp) => {
-        let secret_value: Value = resp.json().await?;
-        Ok(secret_value["data"].clone())
-      }
-      Err(e) => Err(Error::NetError(e)),
-    }
+    let secret_value: Value = resp.json().await?;
+    Ok(secret_value["data"].clone())
   }
 
   pub async fn fetch_shasta_vcs_token(
     shasta_token: &str,
     vault_base_url: &str,
     site_name: &str,
-    // vault_role_id: &str,
-    // secret_path: &str,
-  ) -> Result<String, Error> {
+  ) -> Result<String, anyhow::Error> {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
@@ -91,34 +79,37 @@ pub mod http_client {
       vault_base_url,
       &format!("/v1/{}/vcs", vault_secret_path),
     )
-    .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
+    .await
+    .context("Failed to fetch VCS secret from Vault")?;
 
     let vcs_token = vault_secret["data"]
       .get("token")
       .and_then(Value::as_str)
       .ok_or_else(|| {
-      Error::Message("Vault secret response missing 'token' field".to_string())
+      anyhow::anyhow!("Vault secret response missing 'token' field")
     })?;
 
-    Ok(vcs_token.to_string()) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
+    Ok(vcs_token.to_string())
   }
 
   pub async fn fetch_shasta_k8s_secrets_from_vault(
     vault_base_url: &str,
     site_name: &str,
     shasta_token: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<Value, anyhow::Error> {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
     let vault_secret_path = format!("manta/data/{}", site_name);
 
-    fetch_secret(
+    let secret = fetch_secret(
       &vault_token,
       vault_base_url,
       &format!("/v1/{}/k8s", vault_secret_path),
     )
     .await
-    .map(|secret| secret["data"].clone())
+    .context("Failed to fetch k8s secrets from Vault")?;
+
+    Ok(secret["data"].clone())
   }
 }

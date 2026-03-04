@@ -1,8 +1,8 @@
 use crate::common::{
-  app_context::AppContext, audit::Audit, authentication::get_api_token,
+  app_context::AppContext, audit, authentication::get_api_token,
   authorization::validate_target_hsm_members, jwt_ops,
 };
-use anyhow::{Context, Error};
+use anyhow::Error;
 use manta_backend_dispatcher::{
   interfaces::bss::BootParametersTrait, types::bss::BootParameters,
 };
@@ -60,15 +60,13 @@ pub async fn exec(
     let user_id =
       jwt_ops::get_preferred_username(&shasta_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": hosts}, "message": format!("Update boot parameters")});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {"hostname": hosts},
+      "message": "Update boot parameters",
+    });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())

@@ -57,9 +57,9 @@ pub async fn exec(
       Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
       Err(e) => {
         bail!(
-          "ERROR - Could not fetch BOS \
+          "Could not fetch BOS \
            sessiontemplate list. \
-           Reason:\n{:#?}\nExit",
+           Reason:\n{:#?}",
           e
         );
       }
@@ -67,8 +67,8 @@ pub async fn exec(
 
   let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
     bail!(
-      "ERROR - No BOS sessiontemplate '{}' \
-         found\nExit",
+      "No BOS sessiontemplate '{}' \
+         found",
       bos_sessiontemplate_name
     );
   } else {
@@ -239,8 +239,8 @@ pub async fn exec(
         Ok(())
       }
       Err(e) => bail!(
-        "ERROR - could not create BOS session. \
-         Reason:\n{:#?}.\nExit",
+        "Could not create BOS session. \
+         Reason:\n{:#?}",
         e
       ),
     }

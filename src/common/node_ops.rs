@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use anyhow::Context;
 use comfy_table::{Cell, ContentArrangement, Table};
 use csm_rs::node::types::NodeDetails;
 use hostlist_parser::parse;
 use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Component,
+  interfaces::hsm::group::GroupTrait, types::Component,
 };
 use regex::Regex;
 
@@ -19,32 +20,41 @@ static XNAME_RE: LazyLock<Regex> = LazyLock::new(|| {
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 // Validate and get short nid
-fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
+fn get_short_nid(long_nid: &str) -> Result<usize, anyhow::Error> {
   // Validate nid has the right length
   if long_nid.len() != 9 {
-    return Err(Error::Message(format!(
+    anyhow::bail!(
       "Nid '{}' not valid, Nid does not have 9 characters",
       long_nid
-    )));
+    );
   }
 
-  long_nid.strip_prefix("nid")
-        .ok_or_else(|| Error::Message(format!("Nid '{}' not valid, 'nid' prefix missing", long_nid)))
-        .and_then(|nid_number| nid_number.to_string().parse::<usize>()
-                            .map_err(|e| Error::Message(format!("Intermediate operation to convert Nid {} from long to short format. Reason:\n{}", nid_number, e)))
+  long_nid
+    .strip_prefix("nid")
+    .ok_or_else(|| {
+      anyhow::anyhow!("Nid '{}' not valid, 'nid' prefix missing", long_nid)
+    })
+    .and_then(|nid_number| {
+      nid_number.to_string().parse::<usize>().with_context(|| {
+        format!(
+          "Could not convert Nid '{}' from long to \
+             short format",
+          nid_number
         )
+      })
+    })
 }
 
 pub async fn get_xname_from_nid_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, anyhow::Error> {
   // Convert long nids to short nids
   // Get xnames from short nids
   let short_nid_vec: Vec<usize> = node_vec
     .iter()
     .map(|nid_long| get_short_nid(nid_long))
-    .collect::<Result<Vec<_>, Error>>()?;
+    .collect::<Result<Vec<_>, _>>()?;
 
   log::debug!("short Nid list expanded: {:?}", short_nid_vec);
 
@@ -66,7 +76,7 @@ pub async fn get_xname_from_nid_hostlist(
 pub async fn get_xname_from_xname_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, anyhow::Error> {
   // If hostlist of XNAMEs, return hostlist expanded xnames
   // Validate XNAMEs
   log::debug!("XNAME format are valid");
@@ -98,11 +108,11 @@ pub async fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,
   node_metadata_available_vec: Vec<Component>,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, anyhow::Error> {
   // Check if hostlist
   // Expand user input to list of nids
   let hostlist_expanded_vec_rslt =
-    parse(user_input).map_err(|e| Error::Message(e.to_string()));
+    parse(user_input).map_err(|e| anyhow::anyhow!(e.to_string()));
 
   let xname_vec = if let Ok(node_vec) = hostlist_expanded_vec_rslt {
     log::debug!("Hostlist format is valid");
@@ -126,16 +136,22 @@ pub async fn from_hosts_expression_to_xname_vec(
       get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)
         .await?
     } else {
-      return Err(Error::Message("Could not parse user input as a list of nodes from a hostlist expression.".to_string()));
+      anyhow::bail!(
+        "Could not parse user input as a list of nodes from a hostlist expression."
+      );
     };
 
     xname_vec
   } else {
-    return Err(Error::Message("Could not parse user input as a list of nodes from a hostlist or regex expression.".to_string()));
+    anyhow::bail!(
+      "Could not parse user input as a list of nodes from a hostlist or regex expression."
+    );
   };
 
   if xname_vec.is_empty() {
-    return Err(Error::Message("Could not parse user input as a list of nodes from a hostlist or regex expression.".to_string()));
+    anyhow::bail!(
+      "Could not parse user input as a list of nodes from a hostlist or regex expression."
+    );
   }
 
   // Include siblings if requested
@@ -174,7 +190,7 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
   xname_vec: &[String],
-) -> Result<HashMap<String, Vec<String>>, Error> {
+) -> Result<HashMap<String, Vec<String>>, anyhow::Error> {
   // Create a summary of HSM groups and the list of members filtered by the list of nodes the
   // user is targeting
   let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
@@ -182,9 +198,7 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
   let hsm_name_available_vec = backend
     .get_group_name_available(auth_token)
     .await
-    .map_err(|e| {
-      Error::Message(format!("Failed to get available HSM group names: {}", e))
-    })?;
+    .context("Failed to get available HSM group names")?;
 
   // Get HSM group user has access to
   let hsm_group_available_map = backend
@@ -196,9 +210,7 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
         .collect::<Vec<&str>>(),
     )
     .await
-    .map_err(|e| {
-      Error::Message(format!("Failed to get HSM group summary: {}", e))
-    })?;
+    .context("Failed to get HSM group summary")?;
 
   // Filter hsm group members
   for (hsm_name, hsm_members) in hsm_group_available_map {
@@ -266,7 +278,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>) {
     table.add_row(vec![
       Cell::new(node_status.xname),
       Cell::new(node_status.nid),
-      Cell::new(nodes_to_string_format_discrete_columns(Some(&node_vec), 1)),
+      Cell::new(string_vec_to_multi_line_string(Some(&node_vec), 1)),
       Cell::new(node_status.power_status),
       Cell::new(node_status.desired_configuration),
       Cell::new(node_status.configuration_status),
@@ -334,7 +346,7 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
     table.add_row(vec![
       Cell::new(node_status.xname),
       Cell::new(node_status.nid),
-      Cell::new(nodes_to_string_format_discrete_columns(Some(&node_vec), 1)),
+      Cell::new(string_vec_to_multi_line_string(Some(&node_vec), 1)),
       Cell::new(node_status.power_status),
       Cell::new(node_status.desired_configuration),
       Cell::new(node_status.configuration_status),
@@ -439,36 +451,6 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
   }
 
   println!("{table}");
-}
-
-fn nodes_to_string_format_discrete_columns(
-  nodes: Option<&[String]>,
-  num_columns: usize,
-) -> String {
-  let mut members: String;
-
-  match nodes {
-    Some(nodes) if !nodes.is_empty() => {
-      // Safe: guarded by !is_empty()
-      members = nodes[0].clone();
-
-      for (i, node) in nodes.iter().enumerate().skip(1) {
-        // iterate for the rest of the list
-        if i % num_columns == 0 {
-          // breaking the cell content into multiple lines (only 2 xnames per line)
-
-          members.push_str(",\n");
-        } else {
-          members.push(',');
-        }
-
-        members.push_str(node);
-      }
-    }
-    _ => members = String::new(),
-  }
-
-  members
 }
 
 pub fn string_vec_to_multi_line_string(

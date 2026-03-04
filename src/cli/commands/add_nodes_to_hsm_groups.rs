@@ -1,13 +1,11 @@
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
 
 use crate::{
-  common::{
-    self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
-  },
+  common::{self, audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -35,7 +33,7 @@ pub async fn exec(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+        "Could not convert user input to list of xnames. Reason:\n{}",
         e
       ))
     })?;
@@ -47,7 +45,7 @@ pub async fn exec(
   if xname_to_move_vec.is_empty() {
     bail!(
       "The list of nodes to move is empty. \
-       Nothing to do. Exit",
+       Nothing to do",
     );
   }
 
@@ -110,15 +108,17 @@ pub async fn exec(
     let user_id =
       jwt_ops::get_preferred_username(&shasta_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![target_hsm_name], "message": format!("add nodes to group: {}", target_hsm_name)});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {"hostname": xname_to_move_vec},
+      "group": vec![target_hsm_name],
+      "message": format!(
+        "add nodes to group: {}",
+        target_hsm_name
+      ),
+    });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())

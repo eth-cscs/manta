@@ -6,8 +6,7 @@ use manta_backend_dispatcher::interfaces::hsm::{
 };
 
 use crate::common::{
-  self, app_context::AppContext, audit::Audit, authentication::get_api_token,
-  jwt_ops,
+  self, app_context::AppContext, audit, authentication::get_api_token, jwt_ops,
 };
 
 pub async fn exec(
@@ -31,9 +30,7 @@ pub async fn exec(
     .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
-      Error::msg(format!(
-        "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
-      ))
+      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
     })?;
 
   let mut xname_to_move_vec =
@@ -45,7 +42,7 @@ pub async fn exec(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input to list of xnames. Reason:\n{}",
+        "Could not convert user input to list of xnames. Reason:\n{}",
         e
       ))
     })?;
@@ -53,7 +50,7 @@ pub async fn exec(
   if xname_to_move_vec.is_empty() {
     bail!(
       "The list of nodes to operate is empty. \
-       Nothing to do. Exit",
+       Nothing to do",
     );
   }
 
@@ -148,15 +145,21 @@ pub async fn exec(
     let user_id = jwt_ops::get_preferred_username(&shasta_token)
       .context("Failed to get user ID from JWT token")?;
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![parent_hsm_name_vec, target_hsm_name_vec], "message": format!("Migrate nodes from {:?} to {:?}", parent_hsm_name_vec, target_hsm_name_vec)});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {"hostname": xname_to_move_vec},
+      "group": vec![
+        parent_hsm_name_vec,
+        target_hsm_name_vec
+      ],
+      "message": format!(
+        "Migrate nodes from {:?} to {:?}",
+        parent_hsm_name_vec,
+        target_hsm_name_vec
+      ),
+    });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())

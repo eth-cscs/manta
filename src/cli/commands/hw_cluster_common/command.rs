@@ -43,7 +43,7 @@ pub async fn exec(
   log::info!("pattern: {}", pattern);
 
   // lcm -> used to normalize and quantify memory capacity
-  let mem_lcm = 16384; // 1024 * 16
+  let mem_lcm = super::MEMORY_CAPACITY_LCM;
 
   // Normalize text in lowercase and separate each HSM group
   // hw inventory pattern
@@ -241,7 +241,7 @@ pub async fn exec(
       // User has access to enough resources
     } else {
       bail!(
-        "ERROR - there are not enough resources \
+        "There are not enough resources \
          to fulfill user request.",
       );
     }

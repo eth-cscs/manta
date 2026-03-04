@@ -96,7 +96,7 @@ pub async fn exec(
         .await
         .map_err(|e| {
           Error::msg(format!(
-            "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
+            "Could not fetch configuration layer details. Reason:\n{:#?}",
             e
           ))
         })?;
@@ -115,7 +115,7 @@ pub async fn exec(
         .await
         .map_err(|e| {
           Error::msg(format!(
-            "ERROR - Could not fetch configuration derivatives. Reason:\n{:#?}",
+            "Could not fetch configuration derivatives. Reason:\n{:#?}",
             e
           ))
         })?;

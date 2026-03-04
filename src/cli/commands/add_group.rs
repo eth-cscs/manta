@@ -1,7 +1,6 @@
-use crate::common::{self, jwt_ops};
+use crate::common::{self, audit, jwt_ops};
 use crate::common::{
-  app_context::AppContext, audit::Audit,
-  authorization::validate_target_hsm_members,
+  app_context::AppContext, authorization::validate_target_hsm_members,
 };
 use anyhow::{Context, Error, bail};
 
@@ -29,9 +28,7 @@ pub async fn exec(
         .get_node_metadata_available(auth_token)
         .await
         .map_err(|e| {
-          Error::msg(format!(
-            "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
-          ))
+          Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
         })?;
 
       let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
@@ -42,7 +39,7 @@ pub async fn exec(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+          "Could not convert user input to list of xnames. Reason:\n{e}"
         ))
       })?;
 
@@ -96,15 +93,16 @@ pub async fn exec(
     let user_id =
       jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "group": label, "message": format!("Create Group '{}'", label)});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {
+        "hostname": xname_vec_opt.unwrap_or_default()
+      },
+      "group": label,
+      "message": format!("Create Group '{}'", label),
+    });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())

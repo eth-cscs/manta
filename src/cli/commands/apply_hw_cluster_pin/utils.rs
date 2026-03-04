@@ -90,7 +90,7 @@ pub fn calculate_target_hsm_pin(
       target_hsm_node_hw_component_count_vec,
       parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::msg("ERROR - No best candidate found."))?;
+    .ok_or_else(|| Error::msg("No best candidate found."))?;
 
   // Check if we need to keep iterating
   let mut work_to_do = keep_iterating_final_hsm(
@@ -222,7 +222,7 @@ pub fn calculate_target_hsm_pin(
         target_hsm_node_hw_component_count_vec,
         parent_hsm_node_hw_component_count_vec,
       )
-      .ok_or_else(|| Error::msg("ERROR - No best candidate found."))?;
+      .ok_or_else(|| Error::msg("No best candidate found."))?;
 
     // Check if we need to keep iterating
     work_to_do = keep_iterating_final_hsm(

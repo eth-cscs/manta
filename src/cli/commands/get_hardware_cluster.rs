@@ -176,7 +176,7 @@ pub async fn exec(
   Ok(())
 }
 
-pub fn calculate_hsm_hw_component_summary(
+fn calculate_hsm_hw_component_summary(
   node_summary_vec: &[NodeSummary],
 ) -> HashMap<String, usize> {
   let mut node_hw_component_summary: HashMap<String, usize> = HashMap::new();
@@ -230,7 +230,7 @@ pub fn calculate_hsm_hw_component_summary(
   node_hw_component_summary
 }
 
-pub fn get_cluster_hw_pattern(
+fn get_cluster_hw_pattern(
   hsm_summary: Vec<NodeSummary>,
 ) -> HashMap<String, usize> {
   let mut hsm_node_hw_component_count_hashmap: HashMap<String, usize> =
@@ -278,7 +278,7 @@ pub fn get_cluster_hw_pattern(
   hsm_node_hw_component_count_hashmap
 }
 
-pub fn print_to_terminal_cluster_hw_pattern(
+fn print_to_terminal_cluster_hw_pattern(
   hsm_group_name: &str,
   hsm_node_hw_component_count_hashmap: HashMap<String, usize>,
 ) {
@@ -293,9 +293,7 @@ pub fn print_to_terminal_cluster_hw_pattern(
   );
 }
 
-pub fn print_table_summary(
-  hsm_hw_component_summary_vec: &HashMap<String, usize>,
-) {
+fn print_table_summary(hsm_hw_component_summary_vec: &HashMap<String, usize>) {
   let headers = ["HW Component", "Quantity"];
 
   let mut table = comfy_table::Table::new();
@@ -309,7 +307,7 @@ pub fn print_table_summary(
   println!("{table}");
 }
 
-pub fn print_table_details(node_summary_vec: &[NodeSummary]) {
+fn print_table_details(node_summary_vec: &[NodeSummary]) {
   let mut hsm_node_hw_component_count_hashmap_vec: Vec<(
     String,
     HashMap<String, usize>,

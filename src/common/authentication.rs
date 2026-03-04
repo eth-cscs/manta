@@ -1,20 +1,20 @@
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use dialoguer::{Input, Password};
-use directories::ProjectDirs;
-use manta_backend_dispatcher::{
-  error::Error, interfaces::authentication::AuthenticationTrait,
+use crate::{
+  common::config::get_default_cache_path,
+  manta_backend_dispatcher::StaticBackendDispatcher,
 };
+use anyhow::Context;
+use dialoguer::{Input, Password};
+use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
-  path::PathBuf,
 };
 use termion::color;
 
 pub async fn get_api_token(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-) -> Result<String, Error> {
+) -> Result<String, anyhow::Error> {
   let auth_token_rslt = get_token_from_env(backend).await;
 
   match auth_token_rslt {
@@ -64,7 +64,7 @@ pub async fn get_api_token(
 
 async fn get_token_from_env(
   backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
+) -> Result<String, anyhow::Error> {
   let auth_token_env_name = "MANTA_CSM_TOKEN";
 
   // Look for authentication token in env vars
@@ -84,20 +84,10 @@ async fn get_token_from_env(
     backend.validate_api_token(&shasta_token).await?;
 
     Ok(shasta_token)
-
-    /* match backend.validate_api_token(&shasta_token).await {
-      Ok(_) => {
-        log::info!("Authentication token in env var is valid");
-        return Ok(shasta_token);
-      }
-      Err(e) => log::warn!(
-        "Authentication token in env var is not valid. Reason: {:#?}",
-        e
-      ),
-    } */
   } else {
-    Err(Error::AuthenticationTokenNotFound(
-      auth_token_env_name.to_string(),
+    Err(anyhow::anyhow!(
+      "Authentication token not found in env var '{}'",
+      auth_token_env_name
     ))
   }
 }
@@ -105,25 +95,9 @@ async fn get_token_from_env(
 async fn get_token_from_local_file(
   site_name: &str,
   backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
-  // Look for authentication token in fielsystem
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  );
-
-  let mut path = PathBuf::from(
-    project_dirs
-      .ok_or_else(|| {
-        Error::Message(
-          "Could not determine cache directory \
-           (home directory may not be set)"
-            .to_string(),
-        )
-      })?
-      .cache_dir(),
-  );
+) -> Result<String, anyhow::Error> {
+  // Look for authentication token in filesystem
+  let mut path = get_default_cache_path()?;
 
   path.push(site_name.to_string() + "_auth"); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
 
@@ -136,7 +110,7 @@ async fn get_token_from_local_file(
   File::open(&path)
     .map_err(|e| {
       log::debug!("Could not open token file '{}': {}", path.display(), e);
-      Error::AuthenticationTokenNotFound(path.display().to_string())
+      anyhow::anyhow!("Authentication token not found in '{}'", path.display())
     })?
     .read_to_string(&mut shasta_token)?;
 
@@ -152,27 +126,11 @@ async fn get_token_from_local_file(
 fn store_token_in_local_file(
   site_name: &str,
   shasta_token: &str,
-) -> Result<(), Error> {
-  // Look for authentication token in fielsystem
+) -> Result<(), anyhow::Error> {
+  // Store authentication token in filesystem
   log::info!("Store authentication token in filesystem file");
 
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  );
-
-  let mut path = PathBuf::from(
-    project_dirs
-      .ok_or_else(|| {
-        Error::Message(
-          "Could not determine cache directory \
-           (home directory may not be set)"
-            .to_string(),
-        )
-      })?
-      .cache_dir(),
-  );
+  let mut path = get_default_cache_path()?;
 
   create_dir_all(&path)?;
 
@@ -188,17 +146,22 @@ fn store_token_in_local_file(
 
 async fn get_token_interactively(
   backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
+) -> Result<String, anyhow::Error> {
   println!(
     "Please type your {}Keycloak credentials{}",
     color::Fg(color::Green),
     color::Fg(color::Reset)
   );
 
-  let username: String =
-    Input::new().with_prompt("username").interact_text()?;
+  let username: String = Input::new()
+    .with_prompt("username")
+    .interact_text()
+    .context("Failed to read username")?;
 
-  let password = Password::new().with_prompt("password").interact()?;
+  let password = Password::new()
+    .with_prompt("password")
+    .interact()
+    .context("Failed to read password")?;
 
   let mut shasta_token_rslt = backend.get_api_token(&username, &password).await;
 
@@ -218,14 +181,19 @@ async fn get_token_interactively(
       color::Fg(color::Green),
       color::Fg(color::Reset)
     );
-    let username: String =
-      Input::new().with_prompt("username").interact_text()?;
-    let password = Password::new().with_prompt("password").interact()?;
+    let username: String = Input::new()
+      .with_prompt("username")
+      .interact_text()
+      .context("Failed to read username")?;
+    let password = Password::new()
+      .with_prompt("password")
+      .interact()
+      .context("Failed to read password")?;
 
     shasta_token_rslt = backend.get_api_token(&username, &password).await;
 
     attempts += 1;
   }
 
-  shasta_token_rslt
+  Ok(shasta_token_rslt?)
 }

@@ -1,6 +1,5 @@
 use crate::common::{
-  self, app_context::AppContext, audit::Audit, authentication::get_api_token,
-  jwt_ops,
+  self, app_context::AppContext, audit, authentication::get_api_token, jwt_ops,
 };
 use anyhow::{Context, Error, bail};
 
@@ -39,7 +38,7 @@ pub async fn exec(
     .get_node_metadata_available(&shasta_token)
     .await
     .map_err(|e| {
-      Error::msg(format!("Could not get node metadata. Reason:\n{e}\nExit"))
+      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
     })?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
@@ -50,7 +49,7 @@ pub async fn exec(
   .await
   .map_err(|e| {
     Error::msg(format!(
-      "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+      "Could not convert user input to list of xnames. Reason:\n{e}"
     ))
   })?;
 
@@ -136,7 +135,7 @@ pub async fn exec(
       bail!("Operation canceled by the user.");
     }
   } else {
-    bail!("No changes detected. Nothing to do. Exit");
+    bail!("No changes detected. Nothing to do");
   }
 
   log::info!("need restart? {}", need_restart);
@@ -197,15 +196,19 @@ pub async fn exec(
       .get_group_map_and_filter_by_member_vec(&shasta_token, &xnames)
       .await?;
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<_>>(), "message": format!("Add kernel parameters: {}", kernel_params)});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {"hostname": xname_vec},
+      "group": group_map_vec
+        .keys()
+        .collect::<Vec<_>>(),
+      "message": format!(
+        "Add kernel parameters: {}",
+        kernel_params
+      ),
+    });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   // Reboot if needed

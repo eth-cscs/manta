@@ -1,12 +1,10 @@
+use anyhow::{Context, bail};
+
 use crate::{
-  common::{
-    audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
-  },
+  common::{audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
-use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait,
-};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -14,29 +12,20 @@ pub async fn exec(
   label: &str,
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
-) -> Result<(), Error> {
-  let auth_token = get_api_token(backend, site_name)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+) -> Result<(), anyhow::Error> {
+  let auth_token = get_api_token(backend, site_name).await?;
   if !force {
     // Validate if group can be deleted
     validation(backend, &auth_token, label).await?;
   }
 
   // Delete group
-  let result = backend.delete_group(&auth_token, label).await;
+  backend
+    .delete_group(&auth_token, label)
+    .await
+    .with_context(|| format!("Could not delete group '{}'", label))?;
 
-  match result {
-    Ok(_) => {
-      println!("Group '{}' deleted", label);
-    }
-    Err(error) => {
-      return Err(Error::Message(format!(
-        "ERROR - Could not delete group '{}'. Reason:\n{:#?}\nExit",
-        label, error
-      )));
-    }
-  }
+  println!("Group '{}' deleted", label);
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
@@ -44,16 +33,16 @@ pub async fn exec(
     let user_id =
       jwt_ops::get_preferred_username(&auth_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "group": label, "message": format!("Delete Group '{}'", label)});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "group": label,
+      "message": format!(
+        "Delete Group '{}'",
+        label
+      ),
+    });
 
-    let msg_data = serde_json::to_string(&msg_json).map_err(|e| {
-      Error::Message(format!("Could not serialize audit message data: {e}"))
-    })?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())
@@ -66,7 +55,7 @@ async fn validation(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
   label: &str,
-) -> Result<(), Error> {
+) -> Result<(), anyhow::Error> {
   // Find the list of xnames belonging only to the label to delete and if any, then stop
   // processing the request because those nodes can't get orphan
   let xname_vec = backend
@@ -90,10 +79,12 @@ async fn validation(
   members_orphan_if_group_deleted.sort();
 
   if !members_orphan_if_group_deleted.is_empty() {
-    return Err(Error::Message(format!(
-      "ERROR - The hosts below will become orphan if group '{}' gets deleted.\n{:?}\n",
-      label, members_orphan_if_group_deleted
-    )));
+    bail!(
+      "The hosts below will become orphan if group '{}' \
+       gets deleted.\n{:?}",
+      label,
+      members_orphan_if_group_deleted
+    );
   }
 
   Ok(())

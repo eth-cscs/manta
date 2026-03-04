@@ -1,6 +1,7 @@
+use anyhow::Context;
+
 use crate::common::authorization::get_groups_names_available;
 use manta_backend_dispatcher::{
-  error::Error,
   interfaces::{
     bss::BootParametersTrait, hsm::component::ComponentTrait,
     hsm::group::GroupTrait,
@@ -15,7 +16,7 @@ pub async fn exec(
   site_name: &str,
   cli_get_boot_parameters: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
-) -> Result<Vec<BootParameters>, Error> {
+) -> Result<Vec<BootParameters>, anyhow::Error> {
   let shasta_token =
     common::authentication::get_api_token(backend, site_name).await?;
 
@@ -29,25 +30,16 @@ pub async fn exec(
       settings_hsm_group_name_opt,
     )
     .await
-    .map_err(|e| Error::Message(e.to_string()))?;
-    let hsm_members_rslt = backend
+    .context("Failed to get available HSM group names")?;
+    backend
       .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
-      .await;
-    match hsm_members_rslt {
-      Ok(hsm_members) => hsm_members.join(","),
-      Err(e) => {
-        return Err(Error::Message(format!(
-          "Could not fetch HSM groups members: {}",
-          e
-        )));
-      }
-    }
+      .await
+      .context("Could not fetch HSM groups members")?
+      .join(",")
   } else {
     cli_get_boot_parameters
       .get_one::<String>("nodes")
-      .ok_or_else(|| {
-        Error::Message("Neither HSM group nor nodes defined".to_string())
-      })?
+      .ok_or_else(|| anyhow::anyhow!("Neither HSM group nor nodes defined"))?
       .clone()
   };
 
@@ -58,9 +50,7 @@ pub async fn exec(
   let node_metadata_available_vec = backend
     .get_node_metadata_available(&shasta_token)
     .await
-    .map_err(|e| {
-      Error::Message(format!("Could not get node metadata. Reason:\n{e}\nExit"))
-    })?;
+    .context("Could not get node metadata")?;
 
   let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
     &nodes,
@@ -68,11 +58,11 @@ pub async fn exec(
     node_metadata_available_vec,
   )
   .await
-  .map_err(|e| {
-    Error::Message(format!(
-      "Could not convert user input to list of xnames. Reason:\n{e}"
-    ))
-  })?;
+  .context("Could not convert user input to list of xnames")?;
 
-  backend.get_bootparameters(&shasta_token, &xname_vec).await
+  Ok(
+    backend
+      .get_bootparameters(&shasta_token, &xname_vec)
+      .await?,
+  )
 }

@@ -1,12 +1,13 @@
-use std::{fs, io::Write, path::PathBuf};
+use std::{fs, io::Write};
 
 use anyhow::{Context, Error};
-use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::DocumentMut;
 
 use crate::{
-  common::authentication::get_api_token,
+  common::{
+    authentication::get_api_token, config::get_default_manta_config_file_path,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -24,24 +25,7 @@ pub async fn unset_parent_hsm(
   shasta_token: &str,
 ) -> Result<(), Error> {
   // Read configuration file
-
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  );
-
-  let mut path_to_manta_configuration_file = PathBuf::from(
-    project_dirs
-      .context(
-        "Could not determine config directory \
-           (home directory may not be set)",
-      )?
-      .config_dir(),
-  );
-
-  path_to_manta_configuration_file.push("config.toml"); // ~/.config/manta/config is the file
+  let path_to_manta_configuration_file = get_default_manta_config_file_path()?;
 
   log::debug!(
     "Reading manta configuration from {}",

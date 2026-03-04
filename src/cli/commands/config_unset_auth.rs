@@ -1,28 +1,18 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use anyhow::{Context, Error};
 use dialoguer::Select;
-use directories::ProjectDirs;
+
+use crate::common::config::get_default_cache_path;
 
 pub async fn exec() -> Result<(), Error> {
   unset_auth().await
 }
 
 async fn unset_auth() -> Result<(), Error> {
-  let mut auth_token_list: Vec<PathBuf> = vec![];
+  let mut auth_token_list: Vec<std::path::PathBuf> = vec![];
 
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  );
-
-  let path_to_manta_authentication_token_file = PathBuf::from(
-    project_dirs
-      .context("Failed to resolve project directories")?
-      .cache_dir(),
-  );
+  let path_to_manta_authentication_token_file = get_default_cache_path()?;
 
   for entry in fs::read_dir(&path_to_manta_authentication_token_file)
     .context("Failed to read authentication token directory")?

@@ -11,7 +11,7 @@ use manta_backend_dispatcher::{
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::{
-  common::{app_context::AppContext, audit::Audit, jwt_ops},
+  common::{app_context::AppContext, audit, jwt_ops},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -49,9 +49,6 @@ pub async fn exec(
 
   // Add node to backend
   if let Err(error) = backend.post_nodes(shasta_token, components).await {
-    log::error!(
-      "Operation to add node '{id}' to group '{group}' failed: {error}"
-    );
     return Err(error.into());
   }
 
@@ -62,7 +59,6 @@ pub async fn exec(
       let file = match File::open(hardware_file) {
         Ok(f) => f,
         Err(e) => {
-          log::error!("Could not open hardware inventory file: {}", e);
           rollback(backend, shasta_token, id).await;
           return Err(e.into());
         }
@@ -72,7 +68,6 @@ pub async fn exec(
         match serde_json::from_reader(reader) {
           Ok(v) => v,
           Err(e) => {
-            log::error!("Could not parse hardware inventory file: {}", e);
             rollback(backend, shasta_token, id).await;
             return Err(e.into());
           }
@@ -83,10 +78,6 @@ pub async fn exec(
         ) {
           Ok(v) => v,
           Err(e) => {
-            log::error!(
-              "Could not parse hardware inventory file content: {}",
-              e
-            );
             rollback(backend, shasta_token, id).await;
             return Err(e.into());
           }
@@ -103,9 +94,6 @@ pub async fn exec(
       .post_inventory_hardware(shasta_token, hw_inventory)
       .await
     {
-      log::error!(
-        "Operation to add hardware inventory for node '{id}' failed: {error}. Rolling back"
-      );
       rollback(backend, shasta_token, id).await;
       return Err(error.into());
     }
@@ -113,9 +101,6 @@ pub async fn exec(
 
   // Add node to group
   if let Err(error) = backend.post_member(shasta_token, group, id).await {
-    log::error!(
-      "Operation to add node '{id}' to group '{group}' failed: {error}. Rolling back"
-    );
     rollback(backend, shasta_token, id).await;
     return Err(error.into());
   }
@@ -126,16 +111,14 @@ pub async fn exec(
     let user_id =
       jwt_ops::get_preferred_username(shasta_token).unwrap_or_default();
 
-    let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": id}, "group": [], "message": "add node"});
+    let msg_json = serde_json::json!({
+      "user": {"id": user_id, "name": username},
+      "host": {"hostname": id},
+      "group": [],
+      "message": "add node",
+    });
 
-    let msg_data = serde_json::to_string(&msg_json).map_err(|e| {
-      anyhow::anyhow!("Could not serialize audit message data: {e}")
-    })?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   println!("Node '{}' created and added to group '{}'", id, group);

@@ -8,7 +8,7 @@ use manta_backend_dispatcher::interfaces::{
 use nodeset::NodeSet;
 
 use crate::common::{
-  self, app_context::AppContext, audit::Audit, authentication::get_api_token,
+  self, app_context::AppContext, audit, authentication::get_api_token,
   authorization::get_groups_names_available, jwt_ops,
 };
 
@@ -122,13 +122,8 @@ pub async fn exec_nodes(
   let power_mgmt_summary =
     call_backend(backend, &shasta_token, &xname_vec, action, force)
       .await
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not {} node/s '{:?}'. Reason:\n{}",
-          action.error_verb(),
-          xname_vec,
-          e
-        ))
+      .with_context(|| {
+        format!("Could not {} node/s '{:?}'", action.error_verb(), xname_vec,)
       })?;
 
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);
@@ -151,16 +146,13 @@ pub async fn exec_nodes(
     let msg_json = serde_json::json!({
       "user": {"id": user_id, "name": username},
       "host": {"hostname": xname_vec},
-      "group": group_map.keys().collect::<Vec<_>>(),
+      "group": group_map
+        .keys()
+        .collect::<Vec<_>>(),
       "message": action.to_string(),
     });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing audit messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())
@@ -218,13 +210,8 @@ pub async fn exec_cluster(
   let power_mgmt_summary =
     call_backend(backend, &shasta_token, &xname_vec, action, force)
       .await
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not {} node/s '{:?}'. Reason:\n{}",
-          action.error_verb(),
-          xname_vec,
-          e
-        ))
+      .with_context(|| {
+        format!("Could not {} node/s '{:?}'", action.error_verb(), xname_vec,)
       })?;
 
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);
@@ -242,12 +229,7 @@ pub async fn exec_cluster(
       "message": action.to_string(),
     });
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .context("Could not serialize audit message data")?;
-
-    if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
-      log::warn!("Failed producing audit messages: {}", e);
-    }
+    audit::send_audit_message(kafka_audit, msg_json).await;
   }
 
   Ok(())
@@ -263,9 +245,9 @@ async fn call_backend(
   force: bool,
 ) -> Result<
   manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse,
-  manta_backend_dispatcher::error::Error,
+  anyhow::Error,
 > {
-  match action {
+  Ok(match action {
     PowerAction::On => backend.power_on_sync(shasta_token, xname_vec).await,
     PowerAction::Off => {
       backend.power_off_sync(shasta_token, xname_vec, force).await
@@ -275,5 +257,5 @@ async fn call_backend(
         .power_reset_sync(shasta_token, xname_vec, force)
         .await
     }
-  }
+  }?)
 }

@@ -57,7 +57,7 @@ pub async fn exec(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not get BOS sessiontemplate list. Reason:\n{:#?}\nExit",
+        "Could not get BOS sessiontemplate list. Reason:\n{:#?}",
         e
       ))
     })?;

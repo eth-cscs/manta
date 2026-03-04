@@ -42,7 +42,7 @@ pub async fn exec(
       .context("Failed to serialize groups to JSON")?
     ),
     _ => {
-      bail!("ERROR - output not valid");
+      bail!("Output format not valid");
     }
   }
 

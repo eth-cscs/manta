@@ -15,10 +15,10 @@ pub async fn handle_delete(
   if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
     let label: &String = cli_delete_group
       .get_one("VALUE")
-      .context("ERROR - group name argument is mandatory")?;
+      .context("Group name argument is mandatory")?;
     let force: bool = *cli_delete_group
       .get_one("force")
-      .context("ERROR - 'force' argument must have a value")?;
+      .context("'force' argument must have a value")?;
     delete_group::exec(
       ctx.backend,
       ctx.site_name,
@@ -30,7 +30,7 @@ pub async fn handle_delete(
   } else if let Some(cli_delete_node) = cli_delete.subcommand_matches("node") {
     let id: &String = cli_delete_node
       .get_one("VALUE")
-      .context("ERROR - group name argument is mandatory")?;
+      .context("Group name argument is mandatory")?;
     delete_node::exec(ctx.backend, ctx.site_name, id).await?;
   } else if let Some(cli_delete_hw_configuration) =
     cli_delete.subcommand_matches("hardware")
@@ -44,7 +44,7 @@ pub async fn handle_delete(
       cli_delete_hw_configuration.get_one("parent-cluster");
     let pattern = cli_delete_hw_configuration
       .get_one::<String>("pattern")
-      .context("ERROR - 'pattern' argument is mandatory")?;
+      .context("'pattern' argument is mandatory")?;
 
     delete_hw_component_cluster::exec(
       ctx,
@@ -70,7 +70,7 @@ pub async fn handle_delete(
     cli_delete.subcommand_matches("redfish-endpoint")
   {
     let id: &String = cli_delete_redfish_endpoint.get_one("id").context(
-      "ERROR - host argument is mandatory. \
+      "Host argument is mandatory. \
          Please provide the host to delete",
     )?;
     delete_redfish_endpoint::exec(ctx.backend, ctx.site_name, id).await?;
@@ -82,7 +82,7 @@ pub async fn handle_delete(
     let nodes = cli_delete_kernel_parameters.get_one::<String>("nodes");
     let kernel_parameters = cli_delete_kernel_parameters
       .get_one::<String>("VALUE")
-      .context("ERROR - 'VALUE' argument is mandatory")?;
+      .context("'VALUE' argument is mandatory")?;
     let assume_yes: bool = cli_delete_kernel_parameters.get_flag("assume-yes");
     let do_not_reboot: bool =
       cli_delete_kernel_parameters.get_flag("do-not-reboot");
@@ -104,7 +104,7 @@ pub async fn handle_delete(
     let session_name = cli_delete_session
       .get_one::<String>("SESSION_NAME")
       .context(
-        "ERROR - 'session-name' argument \
+        "'session-name' argument \
          must be provided",
       )?;
     let assume_yes: bool = cli_delete_session.get_flag("assume-yes");
@@ -128,7 +128,7 @@ pub async fn handle_delete(
         "%Y-%m-%dT%H:%M:%S",
       )
       .context(format!(
-        "ERROR - could not parse 'since' \
+        "Could not parse 'since' \
              date '{}'. Expected format: YYYY-MM-DD",
         since
       ))?;
@@ -144,7 +144,7 @@ pub async fn handle_delete(
         "%Y-%m-%dT%H:%M:%S",
       )
       .context(format!(
-        "ERROR - could not parse 'until' \
+        "Could not parse 'until' \
              date '{}'. Expected format: YYYY-MM-DD",
         until
       ))?;
@@ -173,7 +173,7 @@ pub async fn handle_delete(
     let image_id_vec: Vec<&str> = cli_delete_images
       .get_one::<String>("IMAGE_LIST")
       .context(
-        "ERROR - 'IMAGE_LIST' argument \
+        "'IMAGE_LIST' argument \
          must be provided",
       )?
       .split(',')

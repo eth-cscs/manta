@@ -1,5 +1,5 @@
+use anyhow::{Context, bail};
 use image::Image;
-use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
@@ -21,7 +21,7 @@ impl SatFile {
     &mut self,
     image_only: bool,
     session_template_only: bool,
-  ) -> Result<(), Error> {
+  ) -> Result<(), anyhow::Error> {
     // Clean SAT template file if user only wan'ts to process the 'images' section. In this case,
     // we will remove 'session_templates' section from SAT fiel and also the entries in
     // 'configurations' section not used
@@ -36,9 +36,7 @@ impl SatFile {
           })
           .collect(),
         None => {
-          return Err(Error::Message(
-            "ERROR - 'images' section missing in SAT file".to_string(),
-          ));
+          bail!("'images' section missing in SAT file");
         }
       };
 
@@ -95,10 +93,10 @@ impl SatFile {
             })
             .collect(),
           None => {
-            return Err(Error::Message(
-              "ERROR - 'session_templates' section not defined in SAT file"
-                .to_string(),
-            ));
+            bail!(
+              "'session_templates' section not defined \
+               in SAT file"
+            );
           }
         };
 
@@ -431,10 +429,10 @@ fn merge_yaml(base: Value, merge: Value) -> Option<Value> {
 /// ```
 fn dot_notation_to_yaml(
   dot_notation: &str,
-) -> Result<serde_yaml::Value, Error> {
+) -> Result<serde_yaml::Value, anyhow::Error> {
   let parts: Vec<&str> = dot_notation.split('=').collect();
   if parts.len() != 2 {
-    return Err(Error::Message("Invalid format".to_string()));
+    bail!("Invalid format");
   }
 
   let keys: Vec<&str> = parts[0].trim().split('.').collect();
@@ -456,10 +454,9 @@ fn dot_notation_to_yaml(
         if map.contains_key(Value::String(key.to_string())) {
           // Use existing map
           map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::Message(
+            anyhow::anyhow!(
               "Failed to get mutable reference to \
-                 existing YAML map entry"
-                .to_string(),
+                   existing YAML map entry"
             )
           })?
         } else {
@@ -469,18 +466,15 @@ fn dot_notation_to_yaml(
             Value::Mapping(Mapping::new()),
           );
           map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::Message(
+            anyhow::anyhow!(
               "Failed to get mutable reference to \
-                 newly inserted YAML map entry"
-                .to_string(),
+                   newly inserted YAML map entry"
             )
           })?
         }
       } else {
         // In case the structure is not as expected; should not happen in this logic
-        return Err(Error::Message(
-          "Unexpected structure encountered".to_string(),
-        ));
+        return Err(anyhow::anyhow!("Unexpected structure encountered"));
       };
       current_level = next_level;
     }
@@ -522,9 +516,7 @@ pub fn render_jinja2_sat_file_yaml(
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .map_err(|e| {
-        Error::Message(format!("Error parsing values file to YAML: {}", e))
-      })?;
+      .context("Error parsing values file to YAML")?;
     serde_yaml::from_str(&values_file_rendered)?
   } else {
     serde_yaml::from_str(sat_file_content)?

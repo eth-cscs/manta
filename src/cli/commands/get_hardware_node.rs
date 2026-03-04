@@ -38,9 +38,10 @@ pub async fn exec(
     .await
     .context("Failed to query hardware inventory")?;
 
-  node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
+  node_hw_inventory =
+    node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
       Error::msg(format!(
-        "ERROR - json section '/Nodes' missing in json response API for node '{}'",
+        "JSON section '/Nodes' missing in json response API for node '{}'",
         xnames
       ))
     })?;

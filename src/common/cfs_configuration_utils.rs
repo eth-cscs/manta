@@ -7,6 +7,8 @@ use manta_backend_dispatcher::types::{
   cfs::session::CfsSessionGetResponse, ims::Image,
 };
 
+use super::DATETIME_FORMAT;
+
 pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
   let mut table = Table::new();
 
@@ -42,7 +44,7 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
         .last_updated
         .clone()
         .parse::<DateTime<Local>>()
-        .map(|dt| dt.format("%d/%m/%Y %H:%M:%S").to_string())
+        .map(|dt| dt.format(DATETIME_FORMAT).to_string())
         .unwrap_or_else(|_| cfs_configuration.last_updated.clone()),
       layers,
     ]);
@@ -114,7 +116,7 @@ pub fn print_table_details_struct(
     cfs_configuration
       .last_updated
       .parse::<DateTime<Local>>()
-      .map(|dt| dt.format("%d/%m/%Y %H:%M:%S").to_string())
+      .map(|dt| dt.format(DATETIME_FORMAT).to_string())
       .unwrap_or(cfs_configuration.last_updated),
     layers,
     derivatives,

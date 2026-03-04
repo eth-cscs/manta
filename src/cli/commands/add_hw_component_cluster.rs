@@ -8,9 +8,13 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
-  cli::commands::hw_cluster_common::utils::{
-    calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
-    get_hsm_node_hw_component_counter,
+  cli::commands::hw_cluster_common::{
+    MEMORY_CAPACITY_LCM,
+    utils::{
+      calculate_hsm_hw_component_summary,
+      calculate_hw_component_scarcity_scores,
+      get_hsm_node_hw_component_counter,
+    },
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
@@ -68,7 +72,7 @@ pub async fn exec(
   log::info!("pattern: {}", pattern);
 
   // lcm -> used to normalize and quantify memory capacity
-  let mem_lcm = 16384; // 1024 * 16
+  let mem_lcm = MEMORY_CAPACITY_LCM;
 
   // Normalize text in lowercase and separate each group hw inventory pattern
   let pattern_lowercase = pattern.to_lowercase();

@@ -11,10 +11,7 @@ use anyhow::Context;
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use manta_backend_dispatcher::{
-  error::Error,
-  types::{K8sAuth, K8sDetails},
-};
+use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use types::{MantaConfiguration, Site};
 
 use crate::common::{
@@ -23,45 +20,52 @@ use crate::common::{
   kafka::Kafka,
 };
 
-fn get_default_config_path() -> Result<PathBuf, anyhow::Error> {
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
+/// Returns the XDG-compliant `ProjectDirs` for manta.
+///
+/// All path helpers in this module delegate to this function
+/// so the qualifier/organization/application triple is defined
+/// in exactly one place.
+fn get_project_dirs() -> Result<ProjectDirs, anyhow::Error> {
+  ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
   )
   .context(
-    "Could not determine config directory \
+    "Could not determine project directories \
      (home directory may not be set)",
-  )?;
-
-  Ok(PathBuf::from(project_dirs.config_dir()))
-}
-
-fn get_default_manta_config_file_path() -> Result<PathBuf, anyhow::Error> {
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
   )
-  .context(
-    "Could not determine config directory \
-     (home directory may not be set)",
-  )?;
-
-  let mut config_file_path = PathBuf::from(project_dirs.config_dir());
-  config_file_path.push("config.toml");
-  Ok(config_file_path)
 }
 
-pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
+/// Returns the default manta config directory path
+/// (e.g. `~/.config/manta/`).
+pub(crate) fn get_default_config_path() -> Result<PathBuf, anyhow::Error> {
+  Ok(PathBuf::from(get_project_dirs()?.config_dir()))
+}
+
+/// Returns the default manta config file path
+/// (e.g. `~/.config/manta/config.toml`).
+pub(crate) fn get_default_manta_config_file_path()
+-> Result<PathBuf, anyhow::Error> {
+  let mut path = get_default_config_path()?;
+  path.push("config.toml");
+  Ok(path)
+}
+
+/// Returns the default manta cache directory path
+/// (e.g. `~/.cache/manta/`).
+pub(crate) fn get_default_cache_path() -> Result<PathBuf, anyhow::Error> {
+  Ok(PathBuf::from(get_project_dirs()?.cache_dir()))
+}
+
+pub fn get_csm_root_cert_content(
+  file_path: &str,
+) -> Result<Vec<u8>, anyhow::Error> {
   let mut buf = Vec::new();
   let root_cert_file_rslt = File::open(file_path);
 
   let file_rslt = if root_cert_file_rslt.is_err() {
-    let mut config_path =
-      get_default_config_path().map_err(|e| Error::Message(e.to_string()))?;
+    let mut config_path = get_default_config_path()?;
     config_path.push(file_path);
     File::open(config_path)
   } else {
@@ -74,46 +78,20 @@ pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
 
       Ok(buf)
     }
-    Err(_) => Err(Error::Message(
-      "CA public root file cound not be found.".to_string(),
-    )),
+    Err(_) => Err(anyhow::anyhow!("CA public root file could not be found")),
   }
 }
 
 fn get_default_manta_audit_file_path() -> Result<PathBuf, anyhow::Error> {
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  )
-  .context(
-    "Could not determine data directory \
-     (home directory may not be set)",
-  )?;
-
-  let mut log_file_path = PathBuf::from(project_dirs.data_dir());
+  let mut log_file_path = PathBuf::from(get_project_dirs()?.data_dir());
   log_file_path.push("manta.log");
-
   Ok(log_file_path)
 }
 
 fn get_default_mgmt_plane_ca_cert_file_path() -> Result<PathBuf, anyhow::Error>
 {
-  // XDG Base Directory Specification
-  let project_dirs = ProjectDirs::from(
-    "local", /*qualifier*/
-    "cscs",  /*organization*/
-    "manta", /*application*/
-  )
-  .context(
-    "Could not determine config directory \
-     (home directory may not be set)",
-  )?;
-
-  let mut ca_cert_file_path = PathBuf::from(project_dirs.config_dir());
+  let mut ca_cert_file_path = get_default_config_path()?;
   ca_cert_file_path.push("alps_root_cert.pem");
-
   Ok(ca_cert_file_path)
 }
 
@@ -133,11 +111,9 @@ pub async fn get_config_file_path() -> Result<PathBuf, anyhow::Error> {
 
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
-pub async fn get_configuration() -> Result<Config, Error> {
+pub async fn get_configuration() -> Result<Config, anyhow::Error> {
   // Get config file path
-  let config_file_path = get_config_file_path()
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+  let config_file_path = get_config_file_path().await?;
 
   // If config file does not exists, then use config file generator to create a default config
   // file
@@ -147,14 +123,12 @@ pub async fn get_configuration() -> Result<Config, Error> {
       "Configuration file '{}' not found. Creating a new one.",
       config_file_path.to_string_lossy()
     );
-    create_new_config_file(Some(&config_file_path))
-      .await
-      .map_err(|e| Error::Message(e.to_string()))?;
+    create_new_config_file(Some(&config_file_path)).await?;
   };
 
   // Process config file and check format (toml) is correct
   let config_file_path_str = config_file_path.to_str().ok_or_else(|| {
-    Error::Message("Configuration file path contains invalid UTF-8".to_string())
+    anyhow::anyhow!("Configuration file path contains invalid UTF-8")
   })?;
 
   let config_file =
@@ -169,12 +143,7 @@ pub async fn get_configuration() -> Result<Config, Error> {
         .prefix_separator("_"),
     )
     .build()
-    .map_err(|e| {
-      Error::Message(format!(
-        "Could not process manta configuration file. Reason:\n{}",
-        e
-      ))
-    })
+    .context("Could not process manta configuration file")
 }
 
 async fn create_new_config_file(
