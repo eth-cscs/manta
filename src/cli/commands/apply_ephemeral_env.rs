@@ -1,6 +1,6 @@
 use crate::common::authentication;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use csm_rs::ims;
 
 pub async fn exec(
@@ -15,7 +15,7 @@ pub async fn exec(
   // Take user name and check if there is an SSH public key with that name already in Alps
   let user_public_key_name =
     csm_rs::common::jwt_ops::get_preferred_username(&shasta_token)
-      .expect("ERROR - claim 'preferred_user' not found in JWT token");
+      .context("claim 'preferred_user' not found in JWT token")?;
 
   log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
@@ -30,10 +30,12 @@ pub async fn exec(
   {
     user_public_ssh_value["id"].clone()
   } else {
-    return Err(Error::msg(format!(
-      "User '{}' does not have an SSH public key in Alps, Please contact platform sys admins.",
+    bail!(
+      "User '{}' does not have an SSH public \
+       key in Alps, Please contact platform \
+       sys admins.",
       user_public_key_name
-    )));
+    );
   };
 
   log::info!("SSH key found with ID {}", user_public_ssh_id_value);
@@ -52,26 +54,32 @@ pub async fn exec(
     shasta_root_cert,
     "__ephemeral_image",
     image_id,
-    user_public_ssh_id_value.as_str().unwrap(),
+    user_public_ssh_id_value
+      .as_str()
+      .context("SSH key ID is not a string")?,
   )
   .await.map_err(|e| {
     Error::msg(format!(
       "Could not create ephemeral environment based on image ID {}. Reason:\n{}",
       image_id,
-      e.to_string()
+      e
     ))
   })?;
 
   let hostname_value = resp_json
     .pointer("/ssh_containers/0/connection_info/customer_access/host")
     .cloned()
-    .unwrap();
+    .context(
+      "Failed to get SSH container hostname \
+       from ephemeral env response",
+    )?;
 
   log::info!(
-    "Ephemeral environment successfully created! hostname with ssh enabled: {}",
-    hostname_value.as_str().unwrap()
+    "Ephemeral environment successfully created! \
+     hostname with ssh enabled: {}",
+    hostname_value.as_str().unwrap_or("unknown")
   );
-  println!("{}", hostname_value.as_str().unwrap());
+  println!("{}", hostname_value.as_str().unwrap_or("unknown"));
 
   Ok(())
 }

@@ -1,3 +1,4 @@
+pub mod app_context;
 pub mod audit;
 pub mod authentication;
 pub mod authorization;
@@ -17,6 +18,5 @@ pub mod local_git_repo;
 pub mod log_ops;
 pub mod node_ops;
 pub mod pcs_utils;
-pub mod terminal_ops;
 pub mod user_interaction;
 pub mod vault;

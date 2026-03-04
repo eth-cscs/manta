@@ -2,65 +2,59 @@ use crate::cli::commands::{
   migrate_backup, migrate_nodes_between_hsm_groups, migrate_restore,
 };
 use crate::common::{
-  authentication::get_api_token, authorization::get_groups_names_available,
-  kafka::Kafka,
+  app_context::AppContext, authentication::get_api_token,
+  authorization::get_groups_names_available,
 };
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 pub async fn handle_migrate(
   cli_migrate: &ArgMatches,
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  settings_hsm_group_name_opt: Option<&String>,
-  kafka_audit_opt: Option<&Kafka>,
+  ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
-    let shasta_token = get_api_token(backend, site_name).await?;
+    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let dry_run: bool = cli_migrate_nodes.get_flag("dry-run");
     let from_opt: Option<&String> = cli_migrate_nodes.get_one("from");
     let to: &String = cli_migrate_nodes
       .get_one("to")
-      .expect("to value is mandatory");
-    let xnames_string: &String = cli_migrate_nodes.get_one("XNAMES").unwrap();
+      .context("The 'to' argument is mandatory")?;
+    let xnames_string: &String = cli_migrate_nodes
+      .get_one("XNAMES")
+      .context("The 'XNAMES' argument must have a value")?;
     let from_rslt = get_groups_names_available(
-      backend,
+      ctx.backend,
       &shasta_token,
       from_opt,
-      settings_hsm_group_name_opt,
+      ctx.settings_hsm_group_name_opt,
     )
     .await;
     let from = match from_rslt {
       Ok(from) => from,
       Err(e) => {
-        return Err(Error::msg(e));
+        return Err(e);
       }
     };
     let to_rslt = get_groups_names_available(
-      backend,
+      ctx.backend,
       &shasta_token,
       Some(to),
-      settings_hsm_group_name_opt,
+      ctx.settings_hsm_group_name_opt,
     )
     .await;
     let to = match to_rslt {
       Ok(to) => to,
       Err(e) => {
-        return Err(Error::msg(e));
+        return Err(e);
       }
     };
     migrate_nodes_between_hsm_groups::exec(
-      backend,
-      site_name,
+      ctx,
       &to,
       &from,
       xnames_string,
       !dry_run,
       false,
-      kafka_audit_opt,
     )
     .await?;
   } else if let Some(_cli_migrate_vcluster) =
@@ -77,10 +71,7 @@ pub async fn handle_migrate(
       let posthook: Option<&String> =
         cli_migrate_vcluster_backup.get_one("post-hook");
       migrate_backup::exec(
-        backend,
-        site_name,
-        shasta_base_url,
-        shasta_root_cert,
+        ctx,
         bos.map(String::as_str),
         destination.map(String::as_str),
         prehook.map(String::as_str),
@@ -106,10 +97,7 @@ pub async fn handle_migrate(
         cli_migrate_vcluster_restore.get_one("post-hook");
       let overwrite: bool = cli_migrate_vcluster_restore.get_flag("overwrite");
       migrate_restore::exec(
-        backend,
-        site_name,
-        shasta_base_url,
-        shasta_root_cert,
+        ctx,
         bos_file.map(String::as_str),
         cfs_file.map(String::as_str),
         hsm_file.map(String::as_str),

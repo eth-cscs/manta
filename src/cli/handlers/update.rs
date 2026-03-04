@@ -1,35 +1,24 @@
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
-use crate::common::kafka::Kafka;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use anyhow::Error;
+use crate::common::app_context::AppContext;
+use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 pub async fn handle_update(
   cli_update: &ArgMatches,
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  kafka_audit_opt: Option<&Kafka>,
+  ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_update_boot_parameters) =
     cli_update.subcommand_matches("boot-parameters")
   {
     let hosts: &String = cli_update_boot_parameters
       .get_one("hosts")
-      .expect("ERROR - 'hosts' argument is mandatory");
+      .context("The 'hosts' argument is mandatory")?;
     let params: Option<&String> = cli_update_boot_parameters.get_one("params");
     let kernel: Option<&String> = cli_update_boot_parameters.get_one("kernel");
     let initrd: Option<&String> = cli_update_boot_parameters.get_one("initrd");
 
     update_boot_parameters::exec(
-      backend,
-      site_name,
-      hosts,
-      None,
-      None,
-      params,
-      kernel,
-      initrd,
-      kafka_audit_opt,
+      ctx, hosts, None, None, params, kernel, initrd,
     )
     .await?;
   } else if let Some(cli_update_redfish_endpoint) =
@@ -38,7 +27,7 @@ pub async fn handle_update(
     let id: String = cli_update_redfish_endpoint
       .get_one("id")
       .cloned()
-      .expect("ERROR - 'id' argument is mandatory");
+      .context("The 'id' argument is mandatory")?;
     let name: Option<String> =
       cli_update_redfish_endpoint.get_one("name").cloned();
     let hostname: Option<String> =
@@ -65,8 +54,7 @@ pub async fn handle_update(
       cli_update_redfish_endpoint.get_one("template-id").cloned();
 
     update_redfish_endpoint::exec(
-      backend,
-      site_name,
+      ctx,
       id,
       name,
       hostname,

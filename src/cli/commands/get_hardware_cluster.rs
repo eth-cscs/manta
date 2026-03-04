@@ -7,6 +7,7 @@ use std::{
 use crate::common::{
   authentication::get_api_token, authorization::get_groups_names_available,
 };
+use anyhow::{Context, Error, bail};
 use comfy_table::{Color, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::{group::GroupTrait, hardware_inventory::HardwareInventory},
@@ -22,8 +23,8 @@ pub async fn exec(
   hsm_group_name_arg_opt: Option<&String>,
   settings_hsm_group_name_opt: Option<&String>,
   output_opt: Option<&String>,
-) {
-  let shasta_token = get_api_token(&backend, site_name).await.unwrap();
+) -> Result<(), Error> {
+  let shasta_token = get_api_token(&backend, site_name).await?;
 
   let target_hsm_group_vec = get_groups_names_available(
     &backend,
@@ -31,10 +32,11 @@ pub async fn exec(
     hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
-  .await
-  .unwrap();
+  .await?;
 
-  let hsm_group_name = target_hsm_group_vec.first().unwrap();
+  let hsm_group_name = target_hsm_group_vec
+    .first()
+    .context("No HSM groups available for this user")?;
 
   let pipe_size = 15;
 
@@ -42,11 +44,14 @@ pub async fn exec(
   let hsm_group = backend
     .get_group(&shasta_token, hsm_group_name)
     .await
-    .unwrap();
+    .context("Failed to get HSM group")?;
 
   // Get target HSM group members
-  let hsm_group_target_members =
-    hsm_group.members.unwrap().ids.unwrap_or_default();
+  let hsm_group_target_members = hsm_group
+    .members
+    .unwrap_or_default()
+    .ids
+    .unwrap_or_default();
 
   log::debug!(
     "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
@@ -73,14 +78,14 @@ pub async fn exec(
   // Get HW inventory details for target HSM group
   for hsm_member in hsm_group_target_members.iter() {
     log::info!(
-            "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
-            i + 1
-        );
+      "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
+      i + 1
+    );
 
     let backend_cp = backend.clone();
     let shasta_token_string = shasta_token.to_string(); // TODO: make it static
     let hsm_member_string = hsm_member.to_string(); // TODO: make it static
-                                                    //
+    //
     let permit = Arc::clone(&sem).acquire_owned().await;
 
     // log::debug!("Getting HW inventory details for node '{}'", hsm_member);
@@ -99,21 +104,27 @@ pub async fn exec(
         )
         .await;
 
-      let node_hw_inventory_value_opt =
-        hw_inventory_value.unwrap().pointer("/Nodes/0").cloned();
-
-      let node_hw_inventory = match node_hw_inventory_value_opt {
-        Some(node_hw_inventory) => {
-          NodeSummary::from_csm_value(node_hw_inventory.clone())
-        }
-        None => {
-          let mut node_summary_default = NodeSummary::default();
-          node_summary_default.xname = hsm_member_string;
-          node_summary_default
+      let node_hw_inventory_value_opt = match hw_inventory_value {
+        Ok(value) => value.pointer("/Nodes/0").cloned(),
+        Err(e) => {
+          log::error!(
+            "Failed to get HW inventory for '{}': {}",
+            hsm_member_string,
+            e
+          );
+          None
         }
       };
 
-      node_hw_inventory
+      match node_hw_inventory_value_opt {
+        Some(node_hw_inventory) => {
+          NodeSummary::from_csm_value(node_hw_inventory.clone())
+        }
+        None => NodeSummary {
+          xname: hsm_member_string,
+          ..Default::default()
+        },
+      }
     });
 
     i += 1;
@@ -126,11 +137,6 @@ pub async fn exec(
       }
       Err(e) => log::error!("Failed fetching node hardware information: {}", e),
     }
-    /* if let Ok(node_hw_inventory) = message {
-        hsm_summary.push(node_hw_inventory);
-    } else {
-        log::error!("Failed fetching node hw information");
-    } */
   }
 
   let duration = start_total.elapsed();
@@ -143,7 +149,11 @@ pub async fn exec(
 
   if output_opt.is_some_and(|output| output.eq("json")) {
     for node_summary in &hsm_summary {
-      println!("{}", serde_json::to_string_pretty(&node_summary).unwrap());
+      println!(
+        "{}",
+        serde_json::to_string_pretty(&node_summary)
+          .context("Failed to serialize node summary",)?
+      );
     }
   } else if output_opt.is_some_and(|output| output.eq("pattern")) {
     let hsm_node_hw_component_count_hashmap =
@@ -160,37 +170,44 @@ pub async fn exec(
 
     print_table_summary(&hsm_node_hw_component_summary);
   } else {
-    eprintln!("'output' value not valid. Exit");
+    bail!("'output' value not valid");
   }
+
+  Ok(())
 }
 
 pub fn calculate_hsm_hw_component_summary(
-  node_summary_vec: &Vec<NodeSummary>,
+  node_summary_vec: &[NodeSummary],
 ) -> HashMap<String, usize> {
   let mut node_hw_component_summary: HashMap<String, usize> = HashMap::new();
 
   for node_summary in node_summary_vec {
     for artifact_summary in &node_summary.processors {
-      node_hw_component_summary
-        .entry(artifact_summary.info.as_ref().unwrap().to_string())
-        .and_modify(|summary_quantity| *summary_quantity += 1)
-        .or_insert(1);
+      if let Some(info) = artifact_summary.info.as_ref() {
+        node_hw_component_summary
+          .entry(info.to_string())
+          .and_modify(|summary_quantity| *summary_quantity += 1)
+          .or_insert(1);
+      }
     }
     for artifact_summary in &node_summary.node_accels {
-      node_hw_component_summary
-        .entry(artifact_summary.info.as_ref().unwrap().to_string())
-        .and_modify(|summary_quantity| *summary_quantity += 1)
-        .or_insert(1);
+      if let Some(info) = artifact_summary.info.as_ref() {
+        node_hw_component_summary
+          .entry(info.to_string())
+          .and_modify(|summary_quantity| *summary_quantity += 1)
+          .or_insert(1);
+      }
     }
     for artifact_summary in &node_summary.memory {
       let memory_capacity = artifact_summary
         .info
-        .as_ref()
-        .unwrap_or(&"ERROR NA".to_string())
+        .as_deref()
+        .unwrap_or("ERROR NA")
         .split(' ')
         .collect::<Vec<_>>()
         .first()
-        .unwrap()
+        .copied()
+        .unwrap_or("0")
         .parse::<usize>()
         .unwrap_or(0);
       node_hw_component_summary
@@ -201,10 +218,12 @@ pub fn calculate_hsm_hw_component_summary(
         .or_insert(memory_capacity / 1024);
     }
     for artifact_summary in &node_summary.node_hsn_nics {
-      node_hw_component_summary
-        .entry(artifact_summary.info.as_ref().unwrap().to_string())
-        .and_modify(|summary_quantity| *summary_quantity += 1)
-        .or_insert(1);
+      if let Some(info) = artifact_summary.info.as_ref() {
+        node_hw_component_summary
+          .entry(info.to_string())
+          .and_modify(|summary_quantity| *summary_quantity += 1)
+          .or_insert(1);
+      }
     }
   }
 
@@ -219,45 +238,33 @@ pub fn get_cluster_hw_pattern(
 
   for node_summary in hsm_summary {
     for processor in node_summary.processors {
-      hsm_node_hw_component_count_hashmap
-        .entry(
-          processor
-            .info
-            .unwrap()
-            .chars()
-            .filter(|c| !c.is_whitespace())
-            .collect(),
-        )
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
+      if let Some(info) = processor.info {
+        hsm_node_hw_component_count_hashmap
+          .entry(info.chars().filter(|c| !c.is_whitespace()).collect())
+          .and_modify(|qty| *qty += 1)
+          .or_insert(1);
+      }
     }
 
     for node_accel in node_summary.node_accels {
-      hsm_node_hw_component_count_hashmap
-        .entry(
-          node_accel
-            .info
-            .unwrap()
-            .chars()
-            .filter(|c| !c.is_whitespace())
-            .collect(),
-        )
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
+      if let Some(info) = node_accel.info {
+        hsm_node_hw_component_count_hashmap
+          .entry(info.chars().filter(|c| !c.is_whitespace()).collect())
+          .and_modify(|qty| *qty += 1)
+          .or_insert(1);
+      }
     }
 
     for memory_dimm in node_summary.memory {
       let memory_capacity = memory_dimm
-        .clone()
         .info
-        .unwrap_or("0".to_string())
+        .unwrap_or_else(|| "0".to_string())
         .split(' ')
-        .collect::<Vec<_>>()
-        .first()
-        .unwrap()
+        .next()
+        .unwrap_or("0")
         .to_string()
         .parse::<usize>()
-        .unwrap();
+        .unwrap_or(0);
 
       hsm_node_hw_component_count_hashmap
         .entry("memory".to_string())
@@ -289,17 +296,6 @@ pub fn print_to_terminal_cluster_hw_pattern(
 pub fn print_table_summary(
   hsm_hw_component_summary_vec: &HashMap<String, usize>,
 ) {
-  /* let headers = hsm_hw_component_summary_vec.keys();
-
-  let mut table = comfy_table::Table::new();
-
-  table.set_header(headers);
-  table.add_row(comfy_table::Row::from(
-      hsm_hw_component_summary_vec.values(),
-  ));
-
-  println!("{table}"); */
-
   let headers = ["HW Component", "Quantity"];
 
   let mut table = comfy_table::Table::new();
@@ -313,7 +309,7 @@ pub fn print_table_summary(
   println!("{table}");
 }
 
-pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
+pub fn print_table_details(node_summary_vec: &[NodeSummary]) {
   let mut hsm_node_hw_component_count_hashmap_vec: Vec<(
     String,
     HashMap<String, usize>,
@@ -331,7 +327,7 @@ pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
     let processor_info_vec: Vec<String> = node_summary
       .processors
       .iter()
-      .map(|processor| processor.info.as_ref().unwrap().clone())
+      .filter_map(|processor| processor.info.as_ref().cloned())
       .collect();
 
     let mut processor_count_hashmap: HashMap<String, usize> = HashMap::new();
@@ -345,12 +341,12 @@ pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
     let hw_component_set: HashSet<String> =
       processor_count_hashmap.keys().cloned().collect();
     processor_set.extend(hw_component_set);
-    node_hw_component_count_hashmap.extend(processor_count_hashmap.clone());
+    node_hw_component_count_hashmap.extend(processor_count_hashmap);
 
     let accelerator_info_vec: Vec<String> = node_summary
       .node_accels
       .iter()
-      .map(|node_accel| node_accel.info.as_ref().unwrap().clone())
+      .filter_map(|node_accel| node_accel.info.as_ref().cloned())
       .collect();
 
     let mut accelerator_count_hashmap: HashMap<String, usize> = HashMap::new();
@@ -369,7 +365,7 @@ pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
     let memory_info_vec: Vec<String> = node_summary
       .memory
       .iter()
-      .map(|mem| mem.info.as_ref().unwrap_or(&"ERROR".to_string()).clone())
+      .map(|mem| mem.info.clone().unwrap_or_else(|| "ERROR".to_string()))
       .collect();
 
     let mut memory_count_hashmap: HashMap<String, usize> = HashMap::new();
@@ -388,7 +384,7 @@ pub fn print_table_details(node_summary_vec: &Vec<NodeSummary>) {
     let hsn_nic_info_vec: Vec<String> = node_summary
       .node_hsn_nics
       .iter()
-      .map(|hsn_nic| hsn_nic.info.as_ref().unwrap().clone())
+      .filter_map(|hsn_nic| hsn_nic.info.as_ref().cloned())
       .collect();
 
     let mut hsn_nic_count_hashmap: HashMap<String, usize> = HashMap::new();
@@ -450,8 +446,6 @@ pub fn get_table(
   );
 
   for (xname, node_pattern_hashmap) in hsm_node_hw_pattern_vec {
-    // println!("node_pattern_hashmap: {:?}", node_pattern_hashmap);
-
     let mut row: Vec<comfy_table::Cell> = Vec::new();
     // Node xname table cell
     row.push(
@@ -465,7 +459,8 @@ pub fn get_table(
           .get(hw_component)
           .is_some_and(|counter| *counter > 0)
       {
-        let counter = node_pattern_hashmap.get(hw_component).unwrap();
+        let counter =
+          node_pattern_hashmap.get(hw_component).copied().unwrap_or(0);
         row.push(
           comfy_table::Cell::new(format!("⚠️  ({})", counter))
             .fg(Color::Yellow)
@@ -474,7 +469,8 @@ pub fn get_table(
       } else if user_defined_hw_componet_vec.contains(hw_component)
         && node_pattern_hashmap.contains_key(hw_component)
       {
-        let counter = node_pattern_hashmap.get(hw_component).unwrap();
+        let counter =
+          node_pattern_hashmap.get(hw_component).copied().unwrap_or(0);
         row.push(
           comfy_table::Cell::new(format!("✅ ({})", counter,))
             .fg(Color::Green)
@@ -488,21 +484,6 @@ pub fn get_table(
         );
       }
     }
-    /* for user_defined_hw_component in user_defined_hw_componet_vec {
-        if node_pattern_hashmap.contains_key(user_defined_hw_component) {
-            let counter = node_pattern_hashmap.get(user_defined_hw_component).unwrap();
-            row.push(
-                comfy_table::Cell::new(format!("✅ ({})", counter,))
-                    .fg(Color::Green)
-                    .set_alignment(comfy_table::CellAlignment::Center),
-            );
-        } else {
-            row.push(
-                comfy_table::Cell::new("❌".to_string())
-                    .set_alignment(comfy_table::CellAlignment::Center),
-            );
-        }
-    } */
     table.add_row(row);
   }
 

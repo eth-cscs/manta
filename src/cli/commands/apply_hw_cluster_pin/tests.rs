@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::cli::commands::apply_hw_cluster_pin::utils::{
-  calculate_hsm_hw_component_summary, resolve_hw_description_to_xnames,
+use crate::cli::commands::hw_cluster_common::{
+  command::HwClusterMode,
+  utils::{
+    calculate_hsm_hw_component_summary, resolve_hw_description_to_xnames,
+  },
 };
 
 #[tokio::test]
@@ -230,6 +233,7 @@ pub async fn test_hsm_hw_management_1() {
 
   let (target_hsm_node_hw_component_count_vec, _) =
     resolve_hw_description_to_xnames(
+      HwClusterMode::Pin,
       hsm_zinal_hw_counters,
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
@@ -422,6 +426,7 @@ pub async fn test_hsm_hw_management_2() {
 
   let (target_hsm_node_hw_component_count_vec, _) =
     resolve_hw_description_to_xnames(
+      HwClusterMode::Pin,
       hsm_zinal_hw_counters.clone(),
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),

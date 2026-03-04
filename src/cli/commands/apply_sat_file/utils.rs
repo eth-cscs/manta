@@ -43,13 +43,11 @@ impl SatFile {
       };
 
       // Remove configurations not used by any image
-      self
-        .configurations
-        .as_mut()
-        .unwrap_or(&mut Vec::new())
-        .retain(|configuration| {
+      if let Some(configurations) = self.configurations.as_mut() {
+        configurations.retain(|configuration| {
           configuration_name_image_vec.contains(&configuration.name)
         });
+      }
 
       // Remove section "session_templates"
       self.session_templates = None;
@@ -64,8 +62,8 @@ impl SatFile {
 
       let image_name_sessiontemplate_vec: Vec<String> = self
         .session_templates
-        .as_ref()
-        .unwrap_or(&Vec::new())
+        .as_deref()
+        .unwrap_or_default()
         .iter()
         .filter_map(|sessiontemplate| match &sessiontemplate.image {
           sessiontemplate::Image::ImageRef { image_ref: name } => Some(name),
@@ -78,11 +76,10 @@ impl SatFile {
         .collect();
 
       // Remove images not used by any sessiontemplate
-      self
-        .images
-        .as_mut()
-        .unwrap_or(&mut Vec::new())
-        .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
+      if let Some(images) = self.images.as_mut() {
+        images
+          .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
+      }
 
       if self.images.as_ref().is_some_and(|images| images.is_empty()) {
         self.images = None;
@@ -108,10 +105,10 @@ impl SatFile {
       // Get configuration names from images used by the session templates
       let configuration_name_image_vec: Vec<String> = self
         .images
-        .as_ref()
-        .unwrap_or(&Vec::new())
+        .as_deref()
+        .unwrap_or_default()
         .iter()
-        .map(|image| image.configuration.as_ref().unwrap().clone())
+        .filter_map(|image| image.configuration.as_ref().cloned())
         .collect();
 
       // Merge configuration names from images and session templates
@@ -124,16 +121,10 @@ impl SatFile {
       // Remove configurations not used by any sessiontemplate or image used by the
       // sessiontemplate
 
-      if self.configurations.is_some() {
-        self
-          .configurations
-          .as_mut()
-          .unwrap_or(&mut Vec::new())
-          .retain(|configuration| {
-            configuration_to_keep_vec.contains(&configuration.name)
-          })
-      } else {
-        self.configurations = None;
+      if let Some(configurations) = self.configurations.as_mut() {
+        configurations.retain(|configuration| {
+          configuration_to_keep_vec.contains(&configuration.name)
+        });
       }
     }
 
@@ -196,6 +187,7 @@ pub mod sessiontemplate {
   }
 
   #[derive(Deserialize, Serialize, Debug, Display)]
+  #[allow(clippy::upper_case_acronyms)]
   pub enum Arch {
     X86,
     ARM,
@@ -285,7 +277,9 @@ pub mod configuration {
   use serde::{Deserialize, Serialize};
 
   #[derive(Deserialize, Serialize, Debug)]
-  #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+  #[serde(untagged)]
+  // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+  #[allow(clippy::enum_variant_names)]
   pub enum Product {
     ProductVersionBranch {
       name: String,
@@ -304,7 +298,9 @@ pub mod configuration {
   }
 
   #[derive(Deserialize, Serialize, Debug)]
-  #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+  #[serde(untagged)]
+  // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
+  #[allow(clippy::enum_variant_names)]
   pub enum Git {
     GitCommit { url: String, commit: String },
     GitBranch { url: String, branch: String },
@@ -335,177 +331,12 @@ pub mod configuration {
     pub product: Product,
   }
 
-  /* #[derive(Deserialize, Serialize, Debug)]
-  #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
-  pub enum LayerType {
-    Git { git: Git },
-    Product { product: Product },
-  }
-
-  #[derive(Deserialize, Serialize, Debug)]
-  pub struct Layer {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(default = "default_playbook")]
-    pub playbook: String, // This field is optional but with default value. Therefore we won't
-    #[serde(flatten)]
-    pub layer_type: LayerType,
-  } */
-
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Layer {
     LayerGit(LayerGit),
     LayerProduct(LayerProduct),
   }
-
-  /* impl
-    Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer>
-    for Layer
-  {
-    fn into(
-      self,
-    ) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer
-    {
-      let playbook = self.playbook;
-      let layer= match self.layer_type {
-        LayerType::Git { git } => match git {
-          Git::GitCommit { url, commit } => {
-            manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: None,
-                clone_url: Some(url),
-                source: None,
-                playbook,
-                commit: Some(commit),
-                branch: None,
-                special_parameters: None,
-            }
-          }
-          Git::GitBranch { url, branch } => {
-            manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: None,
-                clone_url: Some(url),
-                source: None,
-                playbook,
-                commit: None,
-                branch: Some(branch),
-                special_parameters: None,
-            }
-          }
-          Git::GitTag { url, tag } => {
-            todo!()
-          }
-        },
-        LayerType::Product { product } => match product {
-          Product::ProductVersionBranch { name, version, branch } => {
-            todo!()
-          }
-          Product::ProductVersionCommit { name, version, commit } => {
-            todo!()
-          }
-          Product::ProductVersion { name, version } => {
-            todo!()
-          }
-        },
-      };
-
-      layer
-    }
-  } */
-
-  /* impl
-    Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer>
-    for Layer
-  {
-    fn into(
-      self,
-    ) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer
-    {
-      match self {
-        Layer::LayerGit(git_layer) => {
-          let playbook =
-            git_layer.playbook.unwrap_or_else(|| default_playbook());
-          match git_layer.git {
-            Git::GitCommit { url, commit } => {
-              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: git_layer.name,
-                clone_url: Some(url),
-                source: None,
-                playbook,
-                commit: Some(commit),
-                branch: None,
-                special_parameters: git_layer.special_parameters.map(|sp| {
-                  vec![manta_backend_dispatcher::types::cfs::cfs_configuration_request::SpecialParameter {
-                    ims_required_dkms: Some(sp.ims_require_dkms),
-                  }]
-                }),
-              }
-            }
-            Git::GitBranch { url, branch } => {
-              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: git_layer.name,
-                clone_url: Some(url),
-                source: None,
-                playbook,
-                commit: None,
-                branch: Some(branch),
-                special_parameters: git_layer.special_parameters.map(|sp| {
-                  vec![manta_backend_dispatcher::types::cfs::cfs_configuration_request::SpecialParameter {
-                    ims_required_dkms: Some(sp.ims_require_dkms),
-                  }]
-                }),
-              }
-            }
-            Git::GitTag { url, tag } => {
-              todo!()
-            }
-          }
-        }
-        Layer::LayerProduct(product_layer) => {
-          let playbook =
-            product_layer.playbook.unwrap_or_else(|| default_playbook());
-          match product_layer.product {
-            Product::ProductVersionBranch { name, version, branch } => {
-              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: name,
-                clone_url: None,
-                source: None,
-                playbook,
-                commit: None,
-                branch: None,
-                special_parameters: None,
-              }
-            }
-            Product::ProductVersionCommit { name, version, commit } => {
-              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: product_layer.name,
-                clone_url: None,
-                source: None,
-                playbook,
-                commit: None,
-                branch: None,
-                special_parameters: None,
-              }
-            }
-            Product::ProductVersion { name, version } => {
-              manta_backend_dispatcher::types::cfs::cfs_configuration_request::Layer {
-                name: product_layer.name,
-                clone_url: None,
-                source: None,
-                playbook,
-                commit: None,
-                branch: None,
-                special_parameters: None,
-              }
-            }
-          }
-      }
-    }
-  } */
-
-  /* fn default_playbook() -> String {
-    "site.yml".to_string()
-  } */
 
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
@@ -533,24 +364,6 @@ pub mod configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub additional_inventory: Option<Inventory>,
   }
-
-  /* impl Into<manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest>
-    for Configuration
-  {
-    fn into(self) -> manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest {
-      let layers = self
-        .layers
-        .into_iter()
-        .map(|layer| layer.into())
-        .collect();
-
-      manta_backend_dispatcher::types::cfs::cfs_configuration_request::CfsConfigurationRequest {
-        description: self.description,
-        layers,
-        additional_inventory: self.additional_inventory.map(|inventory| inventory.into()),
-      }
-    }
-  } */
 }
 
 // Removed unused module sat_file_image_old which contained Ims and Product structs
@@ -640,16 +453,28 @@ fn dot_notation_to_yaml(
     } else {
       // Not the last key, create or use existing map
       let next_level = if let Value::Mapping(map) = current_level {
-        if map.contains_key(&Value::String(key.to_string())) {
+        if map.contains_key(Value::String(key.to_string())) {
           // Use existing map
-          map.get_mut(&Value::String(key.to_string())).unwrap()
+          map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
+            Error::Message(
+              "Failed to get mutable reference to \
+                 existing YAML map entry"
+                .to_string(),
+            )
+          })?
         } else {
           // Create new map and insert
           map.insert(
             Value::String(key.to_string()),
             Value::Mapping(Mapping::new()),
           );
-          map.get_mut(&Value::String(key.to_string())).unwrap()
+          map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
+            Error::Message(
+              "Failed to get mutable reference to \
+                 newly inserted YAML map entry"
+                .to_string(),
+            )
+          })?
         }
       } else {
         // In case the structure is not as expected; should not happen in this logic
@@ -697,8 +522,8 @@ pub fn render_jinja2_sat_file_yaml(
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .map_err(|_| {
-        Error::Message("Error parsing values file to YAML".to_string())
+      .map_err(|e| {
+        Error::Message(format!("Error parsing values file to YAML: {}", e))
       })?;
     serde_yaml::from_str(&values_file_rendered)?
   } else {
@@ -711,10 +536,17 @@ pub fn render_jinja2_sat_file_yaml(
   );
   if let Some(value_option_vec) = value_cli_vec_opt {
     for value_option in value_option_vec {
-      let cli_var_context_yaml = dot_notation_to_yaml(&value_option)?;
+      let cli_var_context_yaml = dot_notation_to_yaml(value_option)?;
 
       values_file_yaml =
-        merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).unwrap();
+        merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).ok_or_else(
+          || {
+            anyhow::Error::msg(
+              "Failed to merge CLI variable values into \
+               SAT file YAML",
+            )
+          },
+        )?;
     }
   }
 

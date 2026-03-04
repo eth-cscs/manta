@@ -1,6 +1,6 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 
-use crate::common;
+use crate::common::{self, app_context::AppContext};
 
 use manta_backend_dispatcher::{
   interfaces::apply_sat_file::SatTrait,
@@ -12,15 +12,12 @@ use termion::color;
 use crate::{
   cli::commands::apply_sat_file::utils,
   common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-  manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
+  ctx: &AppContext<'_>,
   vault_base_url: &str,
   k8s_api_url: &str,
   sat_file_content: &str,
@@ -28,7 +25,6 @@ pub async fn exec(
   values_cli_opt: Option<&[String]>,
   ansible_verbosity_opt: Option<u8>,
   ansible_passthrough_opt: Option<&str>,
-  gitea_base_url: &str,
   reboot: bool,
   watch_logs: bool,
   timestamps: bool,
@@ -42,13 +38,19 @@ pub async fn exec(
   assume_yes: bool,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let gitea_base_url = ctx.gitea_base_url;
+
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name).await?;
 
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
     &shasta_token,
     vault_base_url,
-    &site_name,
+    site_name,
   )
   .await?;
 
@@ -57,93 +59,101 @@ pub async fn exec(
 
   // Validate Pre-hook
   log::info!("Validating pre-hook script");
-  if prehook_opt.is_some() {
+  if let Some(prehook) = prehook_opt {
     match crate::common::hooks::check_hook_perms(prehook_opt).await {
       Ok(_r) => println!(
-        "Pre-hook script '{}' exists and is executable.",
-        prehook_opt.unwrap()
+        "Pre-hook script '{}' exists \
+         and is executable.",
+        prehook
       ),
       Err(e) => {
-        log::error!("{}. File: {}", e, &prehook_opt.unwrap());
-        return Err(Error::msg(format!(
-          "{}. File: {}",
-          e,
-          &prehook_opt.unwrap()
-        )));
+        log::error!("{}. File: {}", e, &prehook);
+        bail!("{}. File: {}", e, &prehook);
       }
     };
   }
 
   // Validate Post-hook
   log::info!("Validating post-hook script");
-  if posthook_opt.is_some() {
+  if let Some(posthook) = posthook_opt {
     match crate::common::hooks::check_hook_perms(posthook_opt).await {
       Ok(_) => println!(
-        "Post-hook script '{}' exists and is executable.",
-        posthook_opt.unwrap()
+        "Post-hook script '{}' exists \
+         and is executable.",
+        posthook
       ),
       Err(e) => {
-        return Err(Error::msg(format!(
-          "{}. File: {}",
-          e,
-          &posthook_opt.unwrap()
-        )));
+        bail!("{}. File: {}", e, &posthook);
       }
     };
   }
 
   log::info!("Render SAT template file");
   let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
-    &sat_file_content,
+    sat_file_content,
     values_file_content_opt,
     values_cli_opt,
   )?;
 
-  let sat_template_file_string =
-    serde_yaml::to_string(&sat_template_file_yaml).unwrap();
+  let sat_template_file_string = serde_yaml::to_string(&sat_template_file_yaml)
+    .context(
+      "Failed to serialize SAT template file \
+         to YAML string",
+    )?;
 
   let mut sat_template: utils::SatFile =
     serde_yaml::from_str(&sat_template_file_string).map_err(|e| {
       Error::msg(format!(
-        "Could not parse SAT template yaml file. Error:\n{e}"
+        "Could not parse SAT template yaml \
+           file. Error:\n{e}"
       ))
     })?;
 
-  // Filter either images or session_templates section according to user request
-  //
+  // Filter either images or session_templates
+  // section according to user request
   sat_template.filter(image_only, session_template_only)?;
 
-  let sat_template_file_yaml: Value =
-    serde_yaml::to_value(sat_template).unwrap();
+  let sat_template_file_yaml: Value = serde_yaml::to_value(sat_template)
+    .context(
+      "Failed to convert SAT template to \
+       YAML value",
+    )?;
 
   println!(
     "{}#### SAT file content ####{}\n{}",
     color::Fg(color::Blue),
     color::Fg(color::Reset),
-    serde_yaml::to_string(&sat_template_file_yaml).unwrap(),
+    serde_yaml::to_string(&sat_template_file_yaml).context(
+      "Failed to serialize SAT template to \
+         YAML for display",
+    )?,
   );
 
   if !common::user_interaction::confirm(
-    "Please check the template above and confirm to proceed.",
+    "Please check the template above and \
+     confirm to proceed.",
     assume_yes,
   ) {
-    return Err(Error::msg("Operation canceled by user. Exit"));
+    bail!("Operation canceled by user. Exit");
   }
 
-  // Confirm reboot if session_templates are to be applied
-  if sat_template_file_yaml.get("session_templates").is_some() && reboot {
-    if !common::user_interaction::confirm(
-      "This operation will reboot nodes. Please confirm to proceed.",
+  // Confirm reboot if session_templates are to be
+  // applied
+  if sat_template_file_yaml.get("session_templates").is_some()
+    && reboot
+    && !common::user_interaction::confirm(
+      "This operation will reboot nodes. \
+       Please confirm to proceed.",
       assume_yes,
-    ) {
-      println!("Operation canceled by user. Exit");
-      return Ok(());
-    }
+    )
+  {
+    println!("Operation canceled by user. Exit");
+    return Ok(());
   }
 
   // Run/process Pre-hook
-  if prehook_opt.is_some() {
-    println!("Running the pre-hook '{}'", &prehook_opt.unwrap());
+  if let Some(prehook) = prehook_opt {
+    println!("Running the pre-hook '{}'", &prehook);
     let code = crate::common::hooks::run_hook(prehook_opt).await?;
 
     log::debug!("Pre-hook script completed ok. RT={}", code);
@@ -156,12 +166,19 @@ pub async fn exec(
       client_certificate_data,
       client_key_data,
     } => {
-      serde_json::json!({ "certificate-authority-data": certificate_authority_data, "client-certificate-data": client_certificate_data, "client-key-data": client_key_data })
+      serde_json::json!({
+        "certificate-authority-data":
+          certificate_authority_data,
+        "client-certificate-data":
+          client_certificate_data,
+        "client-key-data":
+          client_key_data
+      })
     }
     K8sAuth::Vault { base_url } => {
-      fetch_shasta_k8s_secrets_from_vault(&base_url, site_name, &shasta_token)
+      fetch_shasta_k8s_secrets_from_vault(base_url, site_name, &shasta_token)
         .await
-        .unwrap()
+        .context("Failed to fetch K8s secrets from Vault")?
     }
   };
 
@@ -190,8 +207,8 @@ pub async fn exec(
     .await?;
 
   // Run/process Post-hook
-  if posthook_opt.is_some() {
-    println!("Running the post-hook '{}'", &posthook_opt.unwrap());
+  if let Some(posthook) = posthook_opt {
+    println!("Running the post-hook '{}'", &posthook);
     let code = crate::common::hooks::run_hook(posthook_opt).await?;
 
     log::debug!("Post-hook script completed ok. RT={}", code);

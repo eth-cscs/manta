@@ -1,8 +1,6 @@
-use crate::common::{
-  authorization::validate_target_hsm_members,
-};
 use crate::common;
-use anyhow::Error;
+use crate::common::authorization::validate_target_hsm_members;
+use anyhow::{Context, Error};
 use comfy_table::{Cell, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
@@ -20,7 +18,8 @@ pub async fn exec(
   type_artifact_opt: Option<&String>,
   output_opt: Option<&String>,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let xname_vec: Vec<String> = xnames.split(',').map(str::to_string).collect();
 
@@ -37,7 +36,7 @@ pub async fn exec(
       None,
     )
     .await
-    .unwrap();
+    .context("Failed to query hardware inventory")?;
 
   node_hw_inventory = node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
       Error::msg(format!(
@@ -47,26 +46,39 @@ pub async fn exec(
     })?;
 
   if let Some(type_artifact) = type_artifact_opt {
-    node_hw_inventory = &node_hw_inventory
+    let nodes_array = node_hw_inventory
       .as_array()
-      .unwrap()
+      .context("Expected Nodes to be a JSON array")?;
+    let matching_node = nodes_array
       .iter()
-      .find(|&node| node.get("ID").and_then(Value::as_str).unwrap().eq(xnames))
-      .unwrap()[type_artifact];
+      .find(|&node| {
+        node
+          .get("ID")
+          .and_then(Value::as_str)
+          .is_some_and(|id| id.eq(xnames))
+      })
+      .ok_or_else(|| {
+        Error::msg(format!("Node '{}' not found in hardware inventory", xnames))
+      })?;
+    node_hw_inventory = &matching_node[type_artifact];
   }
 
   let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
 
-  if output_opt.is_some() && output_opt.unwrap().eq("json") {
-    println!("{}", serde_json::to_string_pretty(&node_summary).unwrap());
+  if output_opt.is_some_and(|o| o.eq("json")) {
+    println!(
+      "{}",
+      serde_json::to_string_pretty(&node_summary)
+        .context("Failed to serialize node summary")?
+    );
   } else {
-    print_table(&[node_summary].to_vec());
+    print_table(&[node_summary]);
   }
 
   Ok(())
 }
 
-pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
+fn print_table(node_summary_vec: &[NodeSummary]) {
   let mut table = Table::new();
 
   table.set_header(vec![
@@ -86,7 +98,7 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
           processor
             .info
             .clone()
-            .unwrap_or("*** Missing info".to_string()),
+            .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);
     }
@@ -100,7 +112,7 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
           memory
             .info
             .clone()
-            .unwrap_or("*** Missing info".to_string()),
+            .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);
     }
@@ -114,7 +126,7 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
           node_accel
             .clone()
             .info
-            .unwrap_or("*** Missing info".to_string()),
+            .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);
     }
@@ -128,7 +140,7 @@ pub fn print_table(node_summary_vec: &Vec<NodeSummary>) {
           node_hsn_nic
             .clone()
             .info
-            .unwrap_or("*** Missing info".to_string()),
+            .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);
     }

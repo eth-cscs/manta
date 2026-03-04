@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Error, bail};
 use manta_backend_dispatcher::{
   interfaces::{
     bss::BootParametersTrait, hsm::group::GroupTrait, ims::ImsTrait,
@@ -6,20 +6,14 @@ use manta_backend_dispatcher::{
   types::{Group, bss::BootParameters},
 };
 
-use crate::{
-  common::{
-    authentication::get_api_token, authorization::get_groups_names_available,
-    boot_parameters::get_restricted_boot_parameters,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  app_context::AppContext, authentication::get_api_token,
+  authorization::get_groups_names_available,
+  boot_parameters::get_restricted_boot_parameters,
 };
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  settings_hsm_group_name_opt: Option<&String>,
+  ctx: &AppContext<'_>,
   image_id_vec: &[&str],
   dry_run: bool,
 ) -> Result<(), Error> {
@@ -27,6 +21,11 @@ pub async fn exec(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
   let shasta_token = get_api_token(backend, site_name).await?;
   let _hsm_name_available_vec = get_groups_names_available(
     backend,
@@ -63,10 +62,11 @@ pub async fn exec(
 
   // Exit if any image id user wants to delete is used to boot nodes
   if !image_xnames_boot_map.is_empty() {
-    return Err(Error::msg(format!(
-      "ERROR - The following images could not be deleted since they boot nodes.\n{:#?}",
+    bail!(
+      "ERROR - The following images could not be deleted \
+       since they boot nodes.\n{:#?}",
       image_xnames_boot_map
-    )));
+    );
   }
 
   // Get list of boot parameters that user can't delete because it's host is not a member of
@@ -80,10 +80,12 @@ pub async fn exec(
       })?;
 
   if !image_restricted_vec.is_empty() {
-    return Err(Error::msg(format!(
-      "ERROR - The following image ids are not deletable because they are used by hosts that are not part of the groups available to the user:\n{:#?}",
+    bail!(
+      "ERROR - The following image ids are not deletable \
+       because they are used by hosts that are not part \
+       of the groups available to the user:\n{:#?}",
       image_restricted_vec
-    )));
+    );
   }
 
   for image_id in image_id_vec {
@@ -105,10 +107,7 @@ pub async fn exec(
           log::info!("Image {} deleted successfully", image_id);
         }
         Err(e) => {
-          eprintln!(
-            "ERROR - Failed to delete image {}:\n{}\nContinue",
-            image_id, e
-          );
+          log::error!("Failed to delete image {}: {}. Continuing", image_id, e);
         }
       }
     }
@@ -119,7 +118,7 @@ pub async fn exec(
   Ok(())
 }
 
-pub fn get_restricted_image_ids(
+fn get_restricted_image_ids(
   group_available_vec: &[Group],
   boot_parameter_vec: &[BootParameters],
 ) -> Option<Vec<String>> {

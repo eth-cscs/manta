@@ -1,26 +1,28 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 use crate::{
-  cli::commands::{apply_hw_cluster_pin, apply_hw_cluster_unpin},
+  cli::commands::hw_cluster_common::command::{self, HwClusterMode},
   common::{
-    authentication::get_api_token, authorization::get_groups_names_available,
+    app_context::AppContext, authentication::get_api_token,
+    authorization::get_groups_names_available,
   },
-  manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(
   cli_apply_hw_cluster: &ArgMatches,
-  backend: StaticBackendDispatcher,
-  site_name: &str,
-  settings_hsm_group_name_opt: Option<&String>,
+  ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, site_name).await?;
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+
+  let shasta_token = get_api_token(backend, site_name).await?;
 
   let target_hsm_group_name_arg_opt: Option<&String> =
     cli_apply_hw_cluster.get_one("target-cluster");
   let target_hsm_group_vec = get_groups_names_available(
-    &backend,
+    backend,
     &shasta_token,
     target_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
@@ -30,7 +32,7 @@ pub async fn exec(
   let parent_hsm_group_name_arg_opt: Option<&String> =
     cli_apply_hw_cluster.get_one("parent-cluster");
   let parent_hsm_group_vec = get_groups_names_available(
-    &backend,
+    backend,
     &shasta_token,
     parent_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
@@ -51,31 +53,30 @@ pub async fn exec(
     .get_one::<bool>("unpin-nodes")
     .unwrap_or(&false);
 
-  if *is_unpin {
-    apply_hw_cluster_unpin::command::exec(
-      &backend,
-      &shasta_token,
-      target_hsm_group_vec.first().unwrap(),
-      parent_hsm_group_vec.first().unwrap(),
-      cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
-      dryrun,
-      create_target_hsm_group,
-      delete_empty_parent_hsm_group,
-    )
-    .await?;
+  let mode = if *is_unpin {
+    HwClusterMode::Unpin
   } else {
-    apply_hw_cluster_pin::command::exec(
-      &backend,
-      &shasta_token,
-      target_hsm_group_vec.first().unwrap(),
-      parent_hsm_group_vec.first().unwrap(),
-      cli_apply_hw_cluster.get_one::<String>("pattern").unwrap(),
-      dryrun,
-      create_target_hsm_group,
-      delete_empty_parent_hsm_group,
-    )
-    .await?;
-  }
+    HwClusterMode::Pin
+  };
+
+  command::exec(
+    mode,
+    ctx,
+    &shasta_token,
+    target_hsm_group_vec
+      .first()
+      .context("No target HSM group found")?,
+    parent_hsm_group_vec
+      .first()
+      .context("No parent HSM group found")?,
+    cli_apply_hw_cluster
+      .get_one::<String>("pattern")
+      .context("pattern argument is required")?,
+    dryrun,
+    create_target_hsm_group,
+    delete_empty_parent_hsm_group,
+  )
+  .await?;
 
   Ok(())
 }

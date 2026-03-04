@@ -22,6 +22,11 @@ pub fn print_summary_table(transition: TransitionResponse, output: &str) {
 
     println!("{table}");
   } else if output.to_lowercase() == "json" {
-    println!("{}", serde_json::to_string_pretty(&transition).unwrap());
+    match serde_json::to_string_pretty(&transition) {
+      Ok(json) => println!("{}", json),
+      Err(e) => {
+        log::error!("Failed to serialize transition to JSON: {}", e);
+      }
+    }
   }
 }

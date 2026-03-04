@@ -18,19 +18,23 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
     ))
   })?;
 
-  let claims_str = std::str::from_utf8(&claims_u8).map_err(|_| {
-    Error::Message("ERROR - could not convert JWT claims to string".to_string())
+  let claims_str = std::str::from_utf8(&claims_u8).map_err(|e| {
+    Error::Message(format!(
+      "ERROR - could not convert JWT claims to string: {}",
+      e
+    ))
   })?;
 
-  serde_json::from_str::<Value>(claims_str).map_err(|_| {
-    Error::Message(
-      "ERROR - could not convert JWT claims to a JSON object".to_string(),
-    )
+  serde_json::from_str::<Value>(claims_str).map_err(|e| {
+    Error::Message(format!(
+      "ERROR - could not convert JWT claims to a JSON object: {}",
+      e
+    ))
   })
 }
 
 pub fn get_name(token: &str) -> Result<String, Error> {
-  let jwt_claims = get_claims_from_jwt_token(token).unwrap();
+  let jwt_claims = get_claims_from_jwt_token(token)?;
 
   let jwt_name = jwt_claims.get("name").and_then(Value::as_str);
 
@@ -41,7 +45,7 @@ pub fn get_name(token: &str) -> Result<String, Error> {
 }
 
 pub fn get_preferred_username(token: &str) -> Result<String, Error> {
-  let jwt_claims = get_claims_from_jwt_token(token).unwrap();
+  let jwt_claims = get_claims_from_jwt_token(token)?;
 
   let jwt_preferred_username =
     jwt_claims.get("preferred_username").and_then(Value::as_str);

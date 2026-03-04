@@ -1,18 +1,11 @@
-use crate::cli::commands::{
-  power_off_cluster, power_off_nodes, power_on_cluster, power_on_nodes,
-  power_reset_cluster, power_reset_nodes,
-};
-use crate::common::kafka::Kafka;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use anyhow::Error;
+use crate::cli::commands::power_common::{self, PowerAction};
+use crate::common::app_context::AppContext;
+use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 pub async fn handle_power(
   cli_power: &ArgMatches,
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  settings_hsm_group_name_opt: Option<&String>,
-  kafka_audit_opt: Option<&Kafka>,
+  ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
     if let Some(cli_power_on_cluster) =
@@ -20,18 +13,18 @@ pub async fn handle_power(
     {
       let hsm_group_name_arg = cli_power_on_cluster
         .get_one::<String>("CLUSTER_NAME")
-        .expect("The 'cluster name' argument must have a value");
+        .context("The 'cluster name' argument must have a value")?;
       let assume_yes: bool = cli_power_on_cluster.get_flag("assume-yes");
-      let output: &str =
-        cli_power_on_cluster.get_one::<String>("output").unwrap();
-      power_on_cluster::exec(
-        backend.clone(), // StaticBackendDispatcher is usually cheap to clone or ref check
-        site_name,
+      let output: &str = cli_power_on_cluster
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
+      power_common::exec_cluster(
+        ctx,
+        PowerAction::On,
         hsm_group_name_arg,
-        settings_hsm_group_name_opt,
+        false,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     } else if let Some(cli_power_on_node) =
@@ -39,16 +32,18 @@ pub async fn handle_power(
     {
       let xname_requested: &str = cli_power_on_node
         .get_one::<String>("VALUE")
-        .expect("The 'xnames' argument must have values");
+        .context("The 'xnames' argument must have values")?;
       let assume_yes: bool = cli_power_on_node.get_flag("assume-yes");
-      let output: &str = cli_power_on_node.get_one::<String>("output").unwrap();
-      power_on_nodes::exec(
-        backend,
-        site_name,
+      let output: &str = cli_power_on_node
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
+      power_common::exec_nodes(
+        ctx,
+        PowerAction::On,
         xname_requested,
+        false,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     }
@@ -58,22 +53,21 @@ pub async fn handle_power(
     {
       let hsm_group_name_arg = cli_power_off_cluster
         .get_one::<String>("CLUSTER_NAME")
-        .expect("The 'cluster name' argument must have a value");
+        .context("The 'cluster name' argument must have a value")?;
       let force = cli_power_off_cluster
         .get_one::<bool>("graceful")
-        .expect("The 'graceful' argument must have a value");
-      let output: &str =
-        cli_power_off_cluster.get_one::<String>("output").unwrap();
+        .context("The 'graceful' argument must have a value")?;
+      let output: &str = cli_power_off_cluster
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
       let assume_yes: bool = cli_power_off_cluster.get_flag("assume-yes");
-      power_off_cluster::exec(
-        backend,
-        site_name,
+      power_common::exec_cluster(
+        ctx,
+        PowerAction::Off,
         hsm_group_name_arg,
-        settings_hsm_group_name_opt,
         *force,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     } else if let Some(cli_power_off_node) =
@@ -81,21 +75,21 @@ pub async fn handle_power(
     {
       let xname_requested: &str = cli_power_off_node
         .get_one::<String>("VALUE")
-        .expect("The 'xnames' argument must have values");
+        .context("The 'xnames' argument must have values")?;
       let force = cli_power_off_node
         .get_one::<bool>("graceful")
-        .expect("The 'graceful' argument must have a value");
+        .context("The 'graceful' argument must have a value")?;
       let assume_yes: bool = cli_power_off_node.get_flag("assume-yes");
-      let output: &str =
-        cli_power_off_node.get_one::<String>("output").unwrap();
-      power_off_nodes::exec(
-        backend,
-        site_name,
+      let output: &str = cli_power_off_node
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
+      power_common::exec_nodes(
+        ctx,
+        PowerAction::Off,
         xname_requested,
         *force,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     }
@@ -105,22 +99,24 @@ pub async fn handle_power(
     {
       let hsm_group_name_arg = cli_power_reset_cluster
         .get_one::<String>("CLUSTER_NAME")
-        .expect("The 'cluster name' argument must have a value");
+        .context(
+          "The 'cluster name' argument must have \
+             a value",
+        )?;
       let force = cli_power_reset_cluster
         .get_one::<bool>("graceful")
-        .expect("The 'graceful' argument must have a value");
-      let output: &str =
-        cli_power_reset_cluster.get_one::<String>("output").unwrap();
+        .context("The 'graceful' argument must have a value")?;
+      let output: &str = cli_power_reset_cluster
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
       let assume_yes: bool = cli_power_reset_cluster.get_flag("assume-yes");
-      power_reset_cluster::exec(
-        backend.clone(),
-        site_name,
+      power_common::exec_cluster(
+        ctx,
+        PowerAction::Reset,
         hsm_group_name_arg,
-        settings_hsm_group_name_opt,
         *force,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     } else if let Some(cli_power_reset_node) =
@@ -128,21 +124,21 @@ pub async fn handle_power(
     {
       let xname_requested: &str = cli_power_reset_node
         .get_one::<String>("VALUE")
-        .expect("The 'xnames' argument must have values");
+        .context("The 'xnames' argument must have values")?;
       let force = cli_power_reset_node
         .get_one::<bool>("graceful")
-        .expect("The 'graceful' argument must have a value");
+        .context("The 'graceful' argument must have a value")?;
       let assume_yes: bool = cli_power_reset_node.get_flag("assume-yes");
-      let output: &str =
-        cli_power_reset_node.get_one::<String>("output").unwrap();
-      power_reset_nodes::exec(
-        backend,
-        site_name,
+      let output: &str = cli_power_reset_node
+        .get_one::<String>("output")
+        .context("'output' argument is required")?;
+      power_common::exec_nodes(
+        ctx,
+        PowerAction::Reset,
         xname_requested,
         *force,
         assume_yes,
         output,
-        kafka_audit_opt,
       )
       .await?;
     }

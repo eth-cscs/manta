@@ -1,7 +1,7 @@
 use crate::common::{
-  self, authentication::get_api_token, authorization::get_groups_names_available,
+  self, app_context::AppContext, authentication::get_api_token,
+  authorization::get_groups_names_available,
 };
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 use manta_backend_dispatcher::interfaces::{
   bss::BootParametersTrait, cfs::CfsTrait, hsm::group::GroupTrait,
@@ -9,15 +9,16 @@ use manta_backend_dispatcher::interfaces::{
 use std::time::Instant;
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  settings_hsm_group_name_opt: Option<&String>,
+  ctx: &AppContext<'_>,
   session_name: &str,
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
   let shasta_token = get_api_token(backend, site_name).await?;
   let group_available_vec = get_groups_names_available(
     backend,
@@ -74,14 +75,15 @@ pub async fn exec(
   // - CFS configuration related to CFS session is not a desired configuration
   //
   // Get CFS session to delete
-  // let mut cfs_session_vec = cfs_session_vec_opt.unwrap_or_default();
-
   // Check CFS session to delete exists (filter sessions by name)
   let cfs_session = cfs_session_vec
     .iter()
     .find(|cfs_session| cfs_session.name.eq(&session_name.to_string()))
     .ok_or_else(|| {
-      anyhow::Error::msg(format!("CFS session '{}' not found. Exit", session_name))
+      anyhow::Error::msg(format!(
+        "CFS session '{}' not found. Exit",
+        session_name
+      ))
     })?;
 
   if !common::user_interaction::confirm(
@@ -96,17 +98,17 @@ pub async fn exec(
   }
 
   let image_created_by_cfs_session_vec = cfs_session.get_result_id_vec();
-  if !image_created_by_cfs_session_vec.is_empty() {
-    if !common::user_interaction::confirm(
+  if !image_created_by_cfs_session_vec.is_empty()
+    && !common::user_interaction::confirm(
       &format!(
         "Images listed below which will get deleted:\n{}\nDo you want to continue?",
         image_created_by_cfs_session_vec.join("\n"),
       ),
       assume_yes,
-    ) {
-      println!("Cancelled by user. Aborting.");
-      return Ok(());
-    }
+    )
+  {
+    println!("Cancelled by user. Aborting.");
+    return Ok(());
   }
 
   backend

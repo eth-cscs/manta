@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -15,43 +15,45 @@ pub async fn exec(
   site_name: &str,
   settings: &Config,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, &site_name).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
 
   show(backend, Some(shasta_token), settings).await
 }
 
-pub async fn show(
+async fn show(
   backend: &StaticBackendDispatcher,
   shasta_token_opt: Option<String>,
   settings: &Config,
 ) -> Result<(), Error> {
   // Read configuration file
-  let log_level = settings.get_string("log").unwrap_or("error".to_string());
-  let settings_hsm_group =
-    settings.get_string("hsm_group").unwrap_or("".to_string());
-  let settings_parent_hsm_group = settings
-    .get_string("parent_hsm_group")
-    .unwrap_or("".to_string());
+  let log_level = settings
+    .get_string("log")
+    .unwrap_or_else(|_| "error".to_string());
+  let settings_hsm_group = settings.get_string("hsm_group").unwrap_or_default();
+  let settings_parent_hsm_group =
+    settings.get_string("parent_hsm_group").unwrap_or_default();
 
-  // let hsm_group_available: Vec<String> = get_hsm_name_available_from_jwt(shasta_token).await;
   let hsm_group_available_opt = if let Some(shasta_token) = shasta_token_opt {
     backend.get_group_name_available(&shasta_token).await.ok()
   } else {
     None
   };
 
-  let site_table: HashMap<String, Value> = settings.get_table("sites").unwrap();
+  let site_table: HashMap<String, Value> = settings
+    .get_table("sites")
+    .context("'sites' table not found in config")?;
 
-  // println!("\n\nSites: {:#?}", site_table);
-
-  let site_name = settings.get_string("site").unwrap();
-
-  // println!("\n\nsite:\n{:#?}", site);
+  let site_name = settings
+    .get_string("site")
+    .context("'site' key not found in config")?;
 
   // Print configuration file content to stdout
   println!(
     "Configuration file: {}",
-    get_config_file_path().await.to_string_lossy()
+    get_config_file_path()
+      .await
+      .map(|p| p.to_string_lossy().to_string())
+      .unwrap_or_else(|_| "<unknown>".to_string())
   );
   println!("Log level: {}", log_level);
   println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
@@ -59,7 +61,9 @@ pub async fn show(
   println!(
     "Groups available: {}",
     hsm_group_available_opt
-      .unwrap_or(vec!["Could not get list of groups available".to_string()])
+      .unwrap_or_else(|| vec![
+        "Could not get list of groups available".to_string()
+      ])
       .join(", ")
   );
   println!("Current HSM: {}", settings_hsm_group);

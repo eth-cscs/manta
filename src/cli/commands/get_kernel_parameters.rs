@@ -19,14 +19,15 @@ pub async fn exec(
   cli_get_kernel_parameters: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let hsm_group_name_arg_opt: Option<&String> =
     cli_get_kernel_parameters.get_one("hsm-group");
   let filter_opt: Option<&String> = cli_get_kernel_parameters.get_one("filter");
   let output: &String = cli_get_kernel_parameters
     .get_one("output")
-    .expect("ERROR - output value missing");
+    .ok_or_else(|| Error::Message("output value missing".to_string()))?;
 
   let nodes: String = if hsm_group_name_arg_opt.is_some() {
     let hsm_group_name_vec = get_groups_names_available(
@@ -43,17 +44,18 @@ pub async fn exec(
     match hsm_members_rslt {
       Ok(hsm_members) => hsm_members.join(","),
       Err(e) => {
-        eprintln!(
-          "ERROR - could not fetch HSM groups members. Reason:\n{}",
-          e.to_string()
-        );
-        std::process::exit(1);
+        return Err(Error::Message(format!(
+          "Could not fetch HSM groups members: {}",
+          e
+        )));
       }
     }
   } else {
     cli_get_kernel_parameters
       .get_one::<String>("nodes")
-      .expect("Neither HSM group nor nodes defined")
+      .ok_or_else(|| {
+        Error::Message("Neither HSM group nor nodes defined".to_string())
+      })?
       .clone()
   };
 
@@ -84,12 +86,18 @@ pub async fn exec(
   let boot_parameter_vec: Vec<BootParameters> = backend
     .get_bootparameters(&shasta_token, &xname_vec)
     .await
-    .unwrap();
+    .map_err(|e| {
+      Error::Message(format!("Could not get boot parameters. Reason:\n{e}"))
+    })?;
 
   match output.as_str() {
     "json" => println!(
       "{}",
-      serde_json::to_string_pretty(&boot_parameter_vec).unwrap()
+      serde_json::to_string_pretty(&boot_parameter_vec).map_err(|e| {
+        Error::Message(format!(
+          "Failed to serialize boot parameters to JSON: {e}"
+        ))
+      })?
     ),
     "table" => {
       common::kernel_parameters_ops::print_table(boot_parameter_vec, filter_opt)

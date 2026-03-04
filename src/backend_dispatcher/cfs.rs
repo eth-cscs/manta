@@ -4,6 +4,7 @@ use manta_backend_dispatcher::{
   error::Error,
   interfaces::cfs::CfsTrait,
   types::{
+    Group, K8sDetails,
     bos::session_template::BosSessionTemplate,
     bss::BootParameters,
     cfs::{
@@ -14,13 +15,12 @@ use manta_backend_dispatcher::{
       session::{CfsSessionGetResponse, CfsSessionPostRequest},
     },
     ims::Image,
-    Group, K8sDetails,
   },
 };
 
+use StaticBackendDispatcher::*;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
-use StaticBackendDispatcher::*;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -207,59 +207,6 @@ impl CfsTrait for StaticBackendDispatcher {
       }
     }
   }
-
-  /* async fn get_sessions_by_xname(
-    &self,
-    auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
-    xname_vec: &[&str],
-    limit_opt: Option<u8>,
-    after_id_opt: Option<String>,
-    min_age_opt: Option<String>,
-    max_age_opt: Option<String>,
-    status_opt: Option<String>,
-    name_contains_opt: Option<String>,
-    is_succeded_opt: Option<bool>,
-    tags_opt: Option<String>,
-  ) -> Result<Vec<CfsSessionGetResponse>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_sessions_by_xname(
-          auth_token,
-          base_url,
-          root_cert,
-          xname_vec,
-          limit_opt,
-          after_id_opt,
-          min_age_opt,
-          max_age_opt,
-          status_opt,
-          name_contains_opt,
-          is_succeded_opt,
-          tags_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_sessions_by_xname(
-          auth_token,
-          base_url,
-          root_cert,
-          xname_vec,
-          limit_opt,
-          after_id_opt,
-          min_age_opt,
-          max_age_opt,
-          status_opt,
-          name_contains_opt,
-          is_succeded_opt,
-          tags_opt,
-        )
-        .await
-      }
-    }
-  } */
 
   async fn delete_and_cancel_session(
     &self,

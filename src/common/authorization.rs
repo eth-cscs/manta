@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -28,14 +28,15 @@ pub async fn get_groups_names_available(
 
   // Validate the user has access to the HSM group is requested
   if let Some(target_hsm_group) = target_hsm_group_opt {
-    if !hsm_name_available_vec.contains(&target_hsm_group) {
+    if !hsm_name_available_vec.contains(target_hsm_group) {
       let mut hsm_name_available_vec = hsm_name_available_vec;
       hsm_name_available_vec.sort();
-      return Err(Error::msg(format!(
-        "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
+      bail!(
+        "Can't access HSM group '{}'.\nPlease choose one \
+         from the list below:\n{}",
         target_hsm_group,
         hsm_name_available_vec.join(", ")
-      )));
+      );
     }
 
     Ok(vec![target_hsm_group.to_string()])
@@ -51,7 +52,7 @@ pub async fn get_groups_names_available(
 pub async fn validate_target_hsm_members(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
-  hsm_group_members_opt: &Vec<String>,
+  hsm_group_members_opt: &[String],
 ) -> Result<Vec<String>, Error> {
   let hsm_groups_user_has_access =
     backend.get_group_name_available(shasta_token).await?;
@@ -70,10 +71,12 @@ pub async fn validate_target_hsm_members(
   {
     Ok(hsm_group_members_opt.to_vec())
   } else {
-    Err(Error::msg(format!(
-      "Can't access all or any of the HSM members '{}'.\nPlease choose members form the list of HSM groups below:\n{}",
+    bail!(
+      "Can't access all or any of the HSM members \
+       '{}'.\nPlease choose members form the list \
+       of HSM groups below:\n{}",
       hsm_group_members_opt.join(", "),
       hsm_groups_user_has_access.join(", ")
-    )))
+    );
   }
 }

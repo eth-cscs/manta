@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use futures::{AsyncBufReadExt, TryStreamExt};
 use manta_backend_dispatcher::{
@@ -11,41 +11,39 @@ use manta_backend_dispatcher::{
   types::K8sDetails,
 };
 
-use crate::{
-  common::{
-    self, audit::Audit, authorization::{get_groups_names_available, validate_target_hsm_members}, config::types::MantaConfiguration, jwt_ops, kafka::Kafka, local_git_repo, authentication::get_api_token
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  self,
+  app_context::AppContext,
+  audit::Audit,
+  authentication::get_api_token,
+  authorization::{get_groups_names_available, validate_target_hsm_members},
+  jwt_ops, local_git_repo,
 };
 
 use substring::Substring;
 
 pub async fn exec(
   cli_apply_session: &ArgMatches,
-  backend: StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
+  ctx: &AppContext<'_>,
   vault_base_url: &str,
-  gitea_base_url: &str,
-  settings_hsm_group_name_opt: Option<&String>,
-  kafka_audit_opt: Option<&Kafka>,
-  configuration: &MantaConfiguration,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, site_name).await?;
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let configuration = ctx.configuration;
 
-  // FIXME: gitea auth token should be calculated before colling this function
+  let shasta_token = get_api_token(backend, site_name).await?;
+
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
     &shasta_token,
     vault_base_url,
-    &site_name,
+    site_name,
   )
-  .await
-  .unwrap();
+  .await?;
 
   let repo_path_vec: Vec<PathBuf> = cli_apply_session
     .get_many("repo-path")
-    .unwrap()
+    .context("ERROR - 'repo-path' argument not provided")?
     .cloned()
     .collect();
 
@@ -71,18 +69,23 @@ pub async fn exec(
   let timestamps: bool = cli_apply_session.get_flag("timestamps");
 
   let target_hsm_group_vec = get_groups_names_available(
-    &backend,
+    backend,
     &shasta_token,
     hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
   .await?;
 
-  target_hsm_group_vec.first().unwrap();
+  if target_hsm_group_vec.is_empty() {
+    bail!(
+      "ERROR - No HSM groups available for \
+       this session",
+    );
+  }
 
   if let Some(ansible_limit) = hsm_group_members_opt {
     validate_target_hsm_members(
-      &backend,
+      backend,
       &shasta_token,
       &ansible_limit
         .split(',')
@@ -94,17 +97,21 @@ pub async fn exec(
 
   let site = configuration
     .sites
-    .get(&configuration.site.clone())
-    .unwrap();
+    .get(&configuration.site)
+    .context(format!(
+      "ERROR - site '{}' not found in configuration",
+      &configuration.site
+    ))?;
+
+  let k8s_details = site
+    .k8s
+    .as_ref()
+    .context("ERROR - k8s section not found in configuration")?;
 
   let _ = apply_session(
-    backend,
-    &site_name,
+    ctx,
     &gitea_token,
-    gitea_base_url,
     &shasta_token,
-    shasta_base_url,
-    shasta_root_cert,
     cfs_conf_sess_name_opt.map(String::as_str),
     playbook_file_name_opt.map(String::as_str),
     hsm_group_name_arg_opt.map(String::as_str),
@@ -114,12 +121,7 @@ pub async fn exec(
     ansible_passthrough.map(String::as_str),
     watch_logs,
     timestamps,
-    kafka_audit_opt,
-    &site
-      .k8s
-      .as_ref()
-      .expect("ERROR - k8s section not found in configuration"), // FIXME:
-                                                                 // refactor this, we can't check configuration here and should be done ealier
+    k8s_details,
   )
   .await?;
 
@@ -127,15 +129,13 @@ pub async fn exec(
 }
 
 /// Creates a CFS session target dynamic
-/// Returns a tuple like (<cfs configuration name>, <cfs session name>)
+/// Returns a tuple like
+/// (<cfs configuration name>, <cfs session name>)
+#[allow(clippy::too_many_arguments)]
 pub async fn apply_session(
-  backend: StaticBackendDispatcher,
-  site: &str,
+  ctx: &AppContext<'_>,
   gitea_token: &str,
-  gitea_base_url: &str,
   shasta_token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   cfs_conf_sess_name: Option<&str>,
   playbook_yaml_file_name_opt: Option<&str>,
   hsm_group_opt: Option<&str>,
@@ -145,9 +145,14 @@ pub async fn apply_session(
   ansible_passthrough: Option<&str>,
   watch_logs: bool,
   timestamps: bool,
-  kafka_audit_opt: Option<&Kafka>,
   k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
+  let backend = ctx.backend.clone();
+  let site = ctx.site_name;
+  let gitea_base_url = ctx.gitea_base_url;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
     // Convert user input to xname
     let node_metadata_available_vec = backend
@@ -155,19 +160,21 @@ pub async fn apply_session(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+          "ERROR - Could not get node metadata. \
+             Reason:\n{e}\nExit"
         ))
       })?;
 
     let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
-      &ansible_limit,
+      ansible_limit,
       false,
       node_metadata_available_vec,
     )
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+        "ERROR - Could not convert user input \
+             to list of xnames. Reason:\n{e}"
       ))
     })?;
 
@@ -204,7 +211,8 @@ pub async fn apply_session(
     )
     .await?;
 
-  // FIXME: refactor becase this code is duplicated in command `manta apply sat-file` and also in
+  // FIXME: refactor because this code is duplicated
+  // in command `manta apply sat-file` and also in
   // `manta logs`
   if watch_logs {
     log::info!("Fetching logs ...");
@@ -220,21 +228,43 @@ pub async fn apply_session(
       .await?
       .lines();
 
-    while let Some(line) = cfs_session_log_stream.try_next().await.unwrap() {
+    while let Some(line) = cfs_session_log_stream.try_next().await.context(
+      "ERROR - Failed to read CFS session \
+         log stream",
+    )? {
       println!("{}", line);
     }
   }
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(shasta_token).unwrap();
+    let username = jwt_ops::get_name(shasta_token).context(
+      "ERROR - Could not extract name \
+         from JWT token",
+    )?;
+    let user_id = jwt_ops::get_preferred_username(shasta_token).context(
+      "ERROR - Could not extract username \
+           from JWT token",
+    )?;
 
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": ansible_limit}, "group": vec![hsm_group_opt], "message": "Apply session"});
+      {
+        "user": {
+          "id": user_id,
+          "name": username
+        },
+        "host": {
+          "hostname": ansible_limit
+        },
+        "group": vec![hsm_group_opt],
+        "message": "Apply session"
+      }
+    );
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+    let msg_data = serde_json::to_string(&msg_json).context(
+      "ERROR - Could not serialize audit \
+         message data",
+    )?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
@@ -250,60 +280,92 @@ fn check_local_repos(
   let mut layers_summary = vec![];
 
   for (i, repo_path) in repos.iter().enumerate() {
-    // log::debug!("Local repo: {} state: {:?}", repo.path().display(), repo.state());
-    // TODO: check each folder has a real git repo
-    // TODO: check each folder has expected file name manta/shasta expects to find the main ansible playbook
-    // TODO: a repo could param value could be a repo name, a filesystem path pointing to a repo or an url pointing to a git repo???
-    // TODO: format logging on screen so it is more readable
-
     // Get repo from path
     let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
       Ok(repo) => repo,
       Err(_) => {
-        return Err(Error::msg(format!(
+        bail!(
           "Could not find a git repo in {}",
           repo_path.to_string_lossy()
-        )));
+        );
       }
     };
 
     // Get last (most recent) commit
-    let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
+    let local_last_commit = local_git_repo::get_last_commit(&repo)
+      .with_context(|| {
+        format!(
+          "Could not get last commit from \
+             repo at {}",
+          repo_path.display()
+        )
+      })?;
 
     log::info!("Checking local repo status ({})", &repo.path().display());
 
-    // Check if all changes in local repo has been commited locally
-    if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
+    // Check if all changes in local repo has been
+    // commited locally
+    if !local_git_repo::untracked_changed_local_files(&repo).map_err(|e| {
+      Error::msg(format!(
+        "Could not check local repo status \
+         at {}: {e}",
+        repo_path.display()
+      ))
+    })? {
       if common::user_interaction::confirm(
-        "Your local repo has uncommitted changes. Do you want to continue?",
-        false, // assuming this check should always prompt if there are uncommitted changes
+        "Your local repo has uncommitted changes. \
+         Do you want to continue?",
+        false,
       ) {
         println!(
-          "Continue. Checking commit id {} against remote",
+          "Continue. Checking commit id {} \
+           against remote",
           local_last_commit.id()
         );
       } else {
-        return Err(Error::msg("Cancelled by user. Aborting."));
+        bail!("Cancelled by user. Aborting.");
       }
     }
 
     // Get repo name
-    let repo_ref_origin = repo.find_remote("origin").unwrap();
+    let repo_ref_origin = repo.find_remote("origin").with_context(|| {
+      format!(
+        "Could not find 'origin' remote in \
+           repo at {}",
+        repo_path.display()
+      )
+    })?;
 
-    log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+    let repo_ref_origin_url = repo_ref_origin.url().with_context(|| {
+      format!(
+        "Remote 'origin' URL is not valid \
+           UTF-8 in repo at {}",
+        repo_path.display()
+      )
+    })?;
 
-    let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+    log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
 
     let repo_name = repo_ref_origin_url.substring(
-      repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-      repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+      repo_ref_origin_url.rfind('/').with_context(|| {
+        format!(
+          "Remote URL '{}' has unexpected \
+             format (no '/' found)",
+          repo_ref_origin_url
+        )
+      })?
+        + 1,
+      repo_ref_origin_url.len(),
     );
 
     let timestamp = local_last_commit.time().seconds();
-    let tm = chrono::DateTime::from_timestamp(timestamp, 0).unwrap();
+    let tm = chrono::DateTime::from_timestamp(timestamp, 0)
+      .context("Could not parse commit timestamp")?;
 
     log::debug!(
-      "\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n",
+      "\n\nCommit details to apply to CFS \
+       layer:\nCommit  {}\nAuthor: {}\n\
+       Date:   {}\n\n    {}\n",
       local_last_commit.id(),
       local_last_commit.author(),
       tm,
@@ -314,29 +376,49 @@ fn check_local_repos(
       i.to_string(),
       repo_name.to_string(),
       local_git_repo::untracked_changed_local_files(&repo)
-        .unwrap()
+        .map_err(|e| {
+          Error::msg(format!(
+            "Could not check local repo status \
+           at {}: {e}",
+            repo_path.display()
+          ))
+        })?
         .to_string(),
     ];
 
     layers_summary.push(layer_summary);
   }
 
-  // Print CFS session/configuration layers summary on screen
+  // Print CFS session/configuration layers summary
   println!("Please review the following CFS layers:",);
   for layer_summary in layers_summary {
+    let layer_num = layer_summary.first().map(|s| s.as_str()).unwrap_or("?");
+    let repo_name = layer_summary
+      .get(1)
+      .map(|s| s.as_str())
+      .unwrap_or("unknown");
+    let committed = layer_summary
+      .get(2)
+      .map(|s| s.as_str())
+      .unwrap_or("unknown");
     println!(
-      " - Layer-{}; repo name: {}; local changes committed: {}",
-      layer_summary[0], layer_summary[1], layer_summary[2]
+      " - Layer-{}; repo name: {}; \
+       local changes committed: {}",
+      layer_num, repo_name, committed
     );
   }
 
   if common::user_interaction::confirm(
-    "Please review the layers and its order and confirm if proceed. Do you want to continue?",
-    false, // No assume_yes arg found in check_local_repos signature or passed down. It seems to be a strict check.
+    "Please review the layers and its order and \
+     confirm if proceed. Do you want to continue?",
+    false,
   ) {
-    println!("Continue. Creating new CFS configuration and layer(s)");
+    println!(
+      "Continue. Creating new CFS configuration \
+       and layer(s)"
+    );
   } else {
-    return Err(Error::msg("Cancelled by user. Aborting."));
+    bail!("Cancelled by user. Aborting.");
   }
 
   let mut repo_name_vec = Vec::new();
@@ -348,29 +430,55 @@ fn check_local_repos(
     let repo = match local_git_repo::get_repo(&repo_path.to_string_lossy()) {
       Ok(repo) => repo,
       Err(_) => {
-        return Err(Error::msg(format!(
+        bail!(
           "Could not find a git repo in {}",
           repo_path.to_string_lossy()
-        )));
+        );
       }
     };
 
     // Get last (most recent) commit
-    let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
+    let local_last_commit = local_git_repo::get_last_commit(&repo)
+      .with_context(|| {
+        format!(
+          "Could not get last commit from \
+             repo at {}",
+          repo_path.display()
+        )
+      })?;
 
     repo_last_commit_id_vec.push(local_last_commit.id().to_string());
 
     // Get repo name
-    let repo_ref_origin = repo.find_remote("origin").unwrap();
+    let repo_ref_origin = repo.find_remote("origin").with_context(|| {
+      format!(
+        "Could not find 'origin' remote in \
+           repo at {}",
+        repo_path.display()
+      )
+    })?;
 
-    log::info!("Repo ref origin URL: {}", repo_ref_origin.url().unwrap());
+    let repo_ref_origin_url = repo_ref_origin.url().with_context(|| {
+      format!(
+        "Remote 'origin' URL is not valid \
+           UTF-8 in repo at {}",
+        repo_path.display()
+      )
+    })?;
 
-    let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+    log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
 
     let repo_name = repo_ref_origin_url
       .substring(
-        repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
-        repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
+        repo_ref_origin_url.rfind('/').with_context(|| {
+          format!(
+            "Remote URL '{}' has unexpected \
+               format (no '/' found)",
+            repo_ref_origin_url
+          )
+        })?
+          + 1,
+        repo_ref_origin_url.len(),
       )
       .trim_end_matches(".git");
 

@@ -6,7 +6,6 @@ use super::kafka::Kafka;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Auditor {
   pub kafka: Kafka,
-  // pub syslog: Option<Syslog>,
 }
 
 pub trait Audit {

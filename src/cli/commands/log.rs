@@ -1,12 +1,16 @@
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{cfs::CfsTrait, hsm::{component::ComponentTrait, group::GroupTrait}},
-  types::{cfs::session::CfsSessionGetResponse, Group, K8sDetails},
+  interfaces::{
+    cfs::CfsTrait,
+    hsm::{component::ComponentTrait, group::GroupTrait},
+  },
+  types::{Group, K8sDetails, cfs::session::CfsSessionGetResponse},
 };
 
 use crate::{
   common::{
-    self, authentication::get_api_token, cfs_session_utils::check_cfs_session_against_groups_available,
+    self, authentication::get_api_token,
+    cfs_session_utils::check_cfs_session_against_groups_available,
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
@@ -23,7 +27,8 @@ pub async fn exec(
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(backend, site_name).await?;
-  let group_available_vec = backend.get_group_name_available(&shasta_token).await?;
+  let group_available_vec =
+    backend.get_group_name_available(&shasta_token).await?;
 
   let node_metadata_available_vec = backend
     .get_node_metadata_available(&shasta_token)
@@ -103,11 +108,11 @@ pub async fn exec(
   })?;
 
   let cfs_session = cfs_sessions_vec.first().ok_or_else(|| {
-    return {
+    {
       Error::Message(
         "No CFS session found for the given input. Exit".to_string(),
       )
-    };
+    }
   })?;
 
   log::info!(
@@ -115,7 +120,7 @@ pub async fn exec(
     common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
   );
 
-  let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone().into();
+  let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone();
 
   let group_available_vec_group = group_available_vec
     .iter()
@@ -133,7 +138,7 @@ pub async fn exec(
     group_available_vec_group,
   );
 
-  let _ = print_cfs_session_logs(
+  print_cfs_session_logs(
     backend,
     &shasta_token,
     site_name,
@@ -166,7 +171,11 @@ pub async fn print_cfs_session_logs(
 
   let mut lines = logs_stream.lines();
 
-  while let Some(line) = lines.try_next().await.unwrap() {
+  while let Some(line) = lines
+    .try_next()
+    .await
+    .map_err(|e| Error::Message(format!("Error reading log stream: {e}")))?
+  {
     println!("{}", line);
   }
 

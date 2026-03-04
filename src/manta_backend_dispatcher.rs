@@ -1,8 +1,9 @@
-use anyhow::Error;
+use anyhow::{Error, bail};
 use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 
 #[derive(Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum StaticBackendDispatcher {
   CSM(Csm),
   OCHAMI(Ochami),
@@ -18,12 +19,9 @@ impl StaticBackendDispatcher {
     let ochami = Ochami::new(base_url, root_cert);
 
     match backend_type {
-      "csm" => Ok(Self::CSM(csm).into()),
-      "ochami" => Ok(Self::OCHAMI(ochami).into()),
-      _ => Err(Error::msg(format!(
-        "Backend '{}' not supported",
-        backend_type
-      ))),
+      "csm" => Ok(Self::CSM(csm)),
+      "ochami" => Ok(Self::OCHAMI(ochami)),
+      _ => bail!("Backend '{}' not supported", backend_type),
     }
   }
 }

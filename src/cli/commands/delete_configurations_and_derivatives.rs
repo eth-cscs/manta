@@ -1,31 +1,33 @@
-use crate::{
-  common::{authentication::get_api_token, authorization::get_groups_names_available},
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  self, app_context::AppContext, authentication::get_api_token,
+  authorization::get_groups_names_available,
 };
+use anyhow::bail;
 use chrono::NaiveDateTime;
 use comfy_table::Table;
 
-use crate::common;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  settings_hsm_group_name_opt: Option<&String>,
+  ctx: &AppContext<'_>,
   configuration_name_pattern_opt: Option<&str>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  if since_opt.is_some()
-    && until_opt.is_some()
-    && since_opt.unwrap() > until_opt.unwrap()
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+
+  if let (Some(since), Some(until)) = (since_opt, until_opt)
+    && since > until
   {
-    return Err(anyhow::Error::msg(
-      "ERROR - 'since' date can't be after 'until' date. Exit".to_string(),
-    ));
+    bail!(
+      "ERROR - 'since' date can't be after \
+       'until' date. Exit"
+    );
   }
   let shasta_token = get_api_token(backend, site_name).await?;
   let target_hsm_group_vec =
@@ -135,9 +137,7 @@ pub async fn exec(
     "Please revew the data above and confirm to delete:",
     assume_yes,
   ) {
-    return Err(anyhow::Error::msg(
-      "Operation canceled by the user.".to_string(),
-    ));
+    bail!("Operation canceled by the user.");
   }
 
   // DELETE DATA

@@ -11,20 +11,21 @@ use manta_backend_dispatcher::{
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::{
-  common::{audit::Audit, jwt_ops, kafka::Kafka},
+  common::{app_context::AppContext, audit::Audit, jwt_ops},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
+  ctx: &AppContext<'_>,
   shasta_token: &str,
   id: &str,
   group: &str,
   enabled: bool,
   arch_opt: Option<String>,
   hardware_file_path: Option<&PathBuf>,
-  kafka_audit_opt: Option<&Kafka>,
 ) -> Result<()> {
+  let backend = ctx.backend;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
   // Create node api payload
   let component: ComponentCreate = ComponentCreate {
     id: id.to_string(),
@@ -48,8 +49,8 @@ pub async fn exec(
 
   // Add node to backend
   if let Err(error) = backend.post_nodes(shasta_token, components).await {
-    eprintln!(
-      "ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}"
+    log::error!(
+      "Operation to add node '{id}' to group '{group}' failed: {error}"
     );
     return Err(error.into());
   }
@@ -61,7 +62,7 @@ pub async fn exec(
       let file = match File::open(hardware_file) {
         Ok(f) => f,
         Err(e) => {
-          eprintln!("ERROR - Could not open hardware inventory file. Reason:\n{}", e);
+          log::error!("Could not open hardware inventory file: {}", e);
           rollback(backend, shasta_token, id).await;
           return Err(e.into());
         }
@@ -71,20 +72,25 @@ pub async fn exec(
         match serde_json::from_reader(reader) {
           Ok(v) => v,
           Err(e) => {
-            eprintln!("ERROR - Could not parse hardware inventory file. Reason:\n{}", e);
+            log::error!("Could not parse hardware inventory file: {}", e);
             rollback(backend, shasta_token, id).await;
             return Err(e.into());
           }
         };
       Some(
-        match serde_json::from_value::<HWInventoryByLocationList>(hw_inventory_value) {
-            Ok(v) => v,
-            Err(e) => {
-                eprintln!("ERROR - Could not parse hardware inventory file content. Reason:\n{}", e);
-                rollback(backend, shasta_token, id).await;
-                return Err(e.into());
-            }
-        }
+        match serde_json::from_value::<HWInventoryByLocationList>(
+          hw_inventory_value,
+        ) {
+          Ok(v) => v,
+          Err(e) => {
+            log::error!(
+              "Could not parse hardware inventory file content: {}",
+              e
+            );
+            rollback(backend, shasta_token, id).await;
+            return Err(e.into());
+          }
+        },
       )
     } else {
       None
@@ -94,24 +100,24 @@ pub async fn exec(
   if let Some(hw_inventory) = hw_inventory_opt {
     log::info!("Adding hardware inventory for '{}'", id);
     if let Err(error) = backend
-      .post_inventory_hardware(&shasta_token, hw_inventory)
+      .post_inventory_hardware(shasta_token, hw_inventory)
       .await
     {
-        eprintln!(
-            "ERROR - operation to add hardware inventory for node '{id}' failed. Reason:\n{error}\nRollback operation"
-        );
-        rollback(backend, shasta_token, id).await;
-        return Err(error.into());
+      log::error!(
+        "Operation to add hardware inventory for node '{id}' failed: {error}. Rolling back"
+      );
+      rollback(backend, shasta_token, id).await;
+      return Err(error.into());
     }
   }
 
   // Add node to group
   if let Err(error) = backend.post_member(shasta_token, group, id).await {
-      eprintln!(
-          "ERROR - operation to add node '{id}' to group '{group}' failed. Reason:\n{error}\nRollback operation"
-      );
-      rollback(backend, shasta_token, id).await;
-      return Err(error.into());
+    log::error!(
+      "Operation to add node '{id}' to group '{group}' failed: {error}. Rolling back"
+    );
+    rollback(backend, shasta_token, id).await;
+    return Err(error.into());
   }
 
   // Audit
@@ -123,8 +129,9 @@ pub async fn exec(
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": id}, "group": [], "message": "add node"});
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+    let msg_data = serde_json::to_string(&msg_json).map_err(|e| {
+      anyhow::anyhow!("Could not serialize audit message data: {e}")
+    })?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
@@ -136,12 +143,14 @@ pub async fn exec(
   Ok(())
 }
 
-async fn rollback(backend: &StaticBackendDispatcher, shasta_token: &str, id: &str) {
-    let delete_node_rslt = backend
-        .delete_node(shasta_token, id)
-        .await;
-    eprintln!("Try to delete node '{}'", id);
-    if delete_node_rslt.is_ok() {
-        eprintln!("Node '{}' deleted", id);
-    }
+async fn rollback(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  id: &str,
+) {
+  let delete_node_rslt = backend.delete_node(shasta_token, id).await;
+  log::warn!("Rolling back: attempting to delete node '{}'", id);
+  if delete_node_rslt.is_ok() {
+    log::info!("Rollback: node '{}' deleted", id);
+  }
 }

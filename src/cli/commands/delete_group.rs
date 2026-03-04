@@ -1,5 +1,7 @@
 use crate::{
-  common::{audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
+  common::{
+    audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use manta_backend_dispatcher::{
@@ -13,10 +15,12 @@ pub async fn exec(
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let auth_token = get_api_token(backend, site_name).await.unwrap();
+  let auth_token = get_api_token(backend, site_name)
+    .await
+    .map_err(|e| Error::Message(e.to_string()))?;
   if !force {
     // Validate if group can be deleted
-    validation(backend, &auth_token, label).await.unwrap();
+    validation(backend, &auth_token, label).await?;
   }
 
   // Delete group
@@ -24,7 +28,7 @@ pub async fn exec(
 
   match result {
     Ok(_) => {
-      eprintln!("Group '{}' deleted", label);
+      println!("Group '{}' deleted", label);
     }
     Err(error) => {
       return Err(Error::Message(format!(
@@ -43,8 +47,9 @@ pub async fn exec(
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "group": label, "message": format!("Delete Group '{}'", label)});
 
-    let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+    let msg_data = serde_json::to_string(&msg_json).map_err(|e| {
+      Error::Message(format!("Could not serialize audit message data: {e}"))
+    })?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
@@ -75,13 +80,12 @@ async fn validation(
     .await?;
 
   xname_map.retain(|_xname, group_name_vec| {
-    group_name_vec.len() == 1 && group_name_vec.first().unwrap() == label
+    group_name_vec.len() == 1
+      && group_name_vec.first().is_some_and(|name| name == label)
   });
 
-  let mut members_orphan_if_group_deleted: Vec<String> = xname_map
-    .into_iter()
-    .map(|(xname, _)| xname.clone())
-    .collect();
+  let mut members_orphan_if_group_deleted: Vec<String> =
+    xname_map.into_keys().collect();
 
   members_orphan_if_group_deleted.sort();
 

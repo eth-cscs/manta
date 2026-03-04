@@ -3,7 +3,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
   interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
   types::K8sDetails,
@@ -44,12 +44,13 @@ pub async fn exec(
   })?;
 
   if xname_vec.len() != 1 {
-    return Err(Error::msg(
-      "ERROR - The node to operate is not valid. Nothing to do. Exit",
-    ));
+    bail!(
+      "ERROR - The node to operate is not \
+       valid. Nothing to do. Exit",
+    );
   }
 
-  let xname = xname_vec.first().unwrap();
+  let xname = xname_vec.first().context("xname list unexpectedly empty")?;
 
   let console_rslt = connect_to_console(
     backend,
@@ -62,11 +63,11 @@ pub async fn exec(
 
   match console_rslt {
     Ok(_) => {
-      crossterm::terminal::disable_raw_mode().unwrap();
+      let _ = crossterm::terminal::disable_raw_mode();
       log::info!("Console closed");
     }
     Err(error) => {
-      crossterm::terminal::disable_raw_mode().unwrap();
+      let _ = crossterm::terminal::disable_raw_mode();
       log::error!("{:?}", error);
     }
   }
@@ -74,7 +75,7 @@ pub async fn exec(
   Ok(())
 }
 
-pub async fn connect_to_console(
+async fn connect_to_console(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   site_name: &str,
@@ -86,7 +87,7 @@ pub async fn connect_to_console(
   let (width, height) = crossterm::terminal::size()?;
 
   let (a_input, a_output) = backend
-    .attach_to_node_console(shasta_token, site_name, xname, width, height, &k8s)
+    .attach_to_node_console(shasta_token, site_name, xname, width, height, k8s)
     .await?;
 
   let mut stdin = tokio_util::io::ReaderStream::new(tokio::io::stdin());

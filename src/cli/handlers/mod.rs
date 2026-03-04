@@ -1,11 +1,11 @@
-pub mod config;
-pub mod power;
 pub mod add;
-pub mod update;
-pub mod get;
 pub mod apply;
-pub mod log;
+pub mod config;
 pub mod console;
-pub mod migrate;
 pub mod delete;
+pub mod get;
+pub mod log;
+pub mod migrate;
 pub mod misc;
+pub mod power;
+pub mod update;

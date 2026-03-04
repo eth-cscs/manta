@@ -1,4 +1,4 @@
-use dialoguer::{theme::ColorfulTheme, Confirm};
+use dialoguer::{Confirm, theme::ColorfulTheme};
 
 /// Prompts the user for confirmation unless `assume_yes` is true.
 ///

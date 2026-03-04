@@ -1,17 +1,15 @@
+use anyhow::Context;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::{
-  cli::commands::apply_boot_node, common::kafka::Kafka,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::{cli::commands::apply_boot_node, common::app_context::AppContext};
 
-/// Updates boot params and desired configuration for all nodes that belongs to a HSM group
-/// If boot params defined, then nodes in HSM group will be rebooted
+/// Updates boot params and desired configuration
+/// for all nodes that belongs to a HSM group.
+/// If boot params defined, then nodes in HSM group
+/// will be rebooted.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
+  ctx: &AppContext<'_>,
   new_boot_image_id_opt: Option<&str>,
   new_boot_image_configuration_opt: Option<&str>,
   new_runtime_configuration_opt: Option<&str>,
@@ -20,32 +18,25 @@ pub async fn exec(
   assume_yes: bool,
   do_not_reboot: bool,
   dry_run: bool,
-  kafka_audit_opt: Option<&Kafka>,
-) {
-  let shasta_token = crate::common::authentication::get_api_token(backend, site_name)
-    .await
-    .unwrap();
+) -> Result<(), anyhow::Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
 
-  let xname_vec_rslt = backend
+  let shasta_token =
+    crate::common::authentication::get_api_token(backend, site_name)
+      .await
+      .context("Failed to get API token")?;
+
+  let xname_vec = backend
     .get_member_vec_from_group_name_vec(
       &shasta_token,
       &[hsm_group_name.to_string()],
     )
-    .await;
+    .await
+    .context("Failed to get xnames from HSM group")?;
 
-  let xname_vec = match xname_vec_rslt {
-    Ok(xname_vec) => xname_vec,
-    Err(e) => {
-      eprintln!("Failed to get xnames from HSM group: {:?}", e);
-      return;
-    }
-  };
-
-  let result = apply_boot_node::exec(
-    &backend,
-    site_name,
-    shasta_base_url,
-    shasta_root_cert,
+  apply_boot_node::exec(
+    ctx,
     new_boot_image_id_opt,
     new_boot_image_configuration_opt,
     new_runtime_configuration_opt,
@@ -54,12 +45,9 @@ pub async fn exec(
     assume_yes,
     do_not_reboot,
     dry_run,
-    kafka_audit_opt,
   )
-  .await;
+  .await
+  .context("Failed to apply boot configuration to cluster")?;
 
-  if result.is_err() {
-    eprintln!("Failed to apply boot node: {:?}", result);
-    return;
-  }
+  Ok(())
 }

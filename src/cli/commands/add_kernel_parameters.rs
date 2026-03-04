@@ -1,10 +1,8 @@
-use crate::{
-  common::{
-    self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  self, app_context::AppContext, audit::Audit, authentication::get_api_token,
+  jwt_ops,
 };
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
   interfaces::{
@@ -20,16 +18,17 @@ use std::collections::HashMap;
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
+  ctx: &AppContext<'_>,
   kernel_params: &str,
   hosts_expression: &str,
   overwrite: bool,
   assume_yes: bool,
   do_not_reboot: bool,
-  kafka_audit_opt: Option<&Kafka>,
   dry_run: bool,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
   let mut need_restart = false;
   log::info!("Add kernel parameters");
 
@@ -62,9 +61,12 @@ pub async fn exec(
     backend
       .get_bootparameters(&shasta_token, &xname_vec)
       .await
-      .unwrap();
+      .context("Failed to get boot parameters")?;
 
-  let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
+  let node_group: NodeSet = xname_vec
+    .join(", ")
+    .parse()
+    .context("Failed to parse node list")?;
 
   for boot_parameter in &mut current_node_boot_params_vec {
     log::info!(
@@ -74,7 +76,7 @@ pub async fn exec(
     );
 
     let kernel_params_changed =
-      boot_parameter.add_kernel_params(&kernel_params, overwrite);
+      boot_parameter.add_kernel_params(kernel_params, overwrite);
 
     if kernel_params_changed {
       need_restart = true;
@@ -90,12 +92,13 @@ pub async fn exec(
       ))
     })?;
 
+    #[allow(clippy::map_entry)]
     if !image_map.contains_key(&image_id) {
       let mut image: Image = backend
         .get_images(&shasta_token, Some(image_id.as_str()))
         .await?
         .first()
-        .unwrap()
+        .context("No image found for the given image id")?
         .clone();
 
       if boot_parameter.is_root_kernel_param_iscsi_ready() {
@@ -130,10 +133,10 @@ pub async fn exec(
       "This operation will add the kernel parameters for the nodes below. Please confirm to proceed",
       assume_yes,
     ) {
-      return Err(Error::msg("Operation canceled by the user."));
+      bail!("Operation canceled by the user.");
     }
   } else {
-    return Err(Error::msg("No changes detected. Nothing to do. Exit"));
+    bail!("No changes detected. Nothing to do. Exit");
   }
 
   log::info!("need restart? {}", need_restart);
@@ -142,11 +145,13 @@ pub async fn exec(
     println!("Dry-run enabled. No changes persisted into the system");
     println!(
       "Dry run mode. Would update kernel parameters below: {}",
-      serde_json::to_string_pretty(&current_node_boot_params_vec).unwrap()
+      serde_json::to_string_pretty(&current_node_boot_params_vec)
+        .context("Failed to serialize boot parameters")?
     );
     println!(
       "Dry run mode. Would update images:\n{}",
-      serde_json::to_string_pretty(&image_map).unwrap()
+      serde_json::to_string_pretty(&image_map)
+        .context("Failed to serialize image map")?
     );
   } else {
     log::info!("Persist changes");
@@ -169,7 +174,7 @@ pub async fn exec(
       backend
         .update_image(
           &shasta_token,
-          image.id.clone().unwrap().as_str(),
+          image.id.clone().context("Image has no id")?.as_str(),
           &image.into(),
         )
         .await?;
@@ -178,8 +183,10 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token)
+      .context("Failed to get username from token")?;
+    let user_id = jwt_ops::get_preferred_username(&shasta_token)
+      .context("Failed to get preferred username from token")?;
 
     // FIXME: We should not need to make this call here but at the beginning of the method as a
     // prerequisite
@@ -194,7 +201,7 @@ pub async fn exec(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<_>>(), "message": format!("Add kernel parameters: {}", kernel_params)});
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
@@ -205,14 +212,13 @@ pub async fn exec(
   if !do_not_reboot && need_restart && !dry_run {
     log::info!("Restarting nodes");
 
-    crate::cli::commands::power_reset_nodes::exec(
-      backend,
-      site_name,
+    crate::cli::commands::power_common::exec_nodes(
+      ctx,
+      crate::cli::commands::power_common::PowerAction::Reset,
       &xname_to_reboot_vec.join(","),
       true,
       assume_yes,
       "table",
-      kafka_audit_opt,
     )
     .await?;
   }

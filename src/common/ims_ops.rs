@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::{
   interfaces::{cfs::CfsTrait, ims::ImsTrait},
   types::ims::Image,
@@ -41,7 +41,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       None,
     )
     .await
-    .unwrap();
+    .context("Failed to get CFS sessions from backend")?;
 
   // Filter CFS sessions to the ones related to CFS configuration and built an image (target
   // definition is 'image' and it actually has at least one artifact)
@@ -49,9 +49,10 @@ pub async fn get_image_vec_related_cfs_configuration_name(
     cfs_session_vec.iter().filter(|cfs_session| {
       cfs_session
         .get_configuration_name()
-        .unwrap()
-        .eq(&cfs_configuration_name)
-        && cfs_session.get_target_def().unwrap().eq("image")
+        .is_some_and(|name| name.eq(&cfs_configuration_name))
+        && cfs_session
+          .get_target_def()
+          .is_some_and(|def| def.eq("image"))
         && cfs_session.get_first_result_id().is_some()
     });
 

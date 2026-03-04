@@ -1,25 +1,27 @@
 use std::collections::HashMap;
 
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
 
-use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  self, app_context::AppContext, audit::Audit, authentication::get_api_token,
+  jwt_ops,
 };
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  target_hsm_name_vec: &Vec<String>,
-  parent_hsm_name_vec: &Vec<String>,
+  ctx: &AppContext<'_>,
+  target_hsm_name_vec: &[String],
+  parent_hsm_name_vec: &[String],
   hosts_expression: &str,
   nodryrun: bool,
   create_hsm_group: bool,
-  kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
+
   let shasta_token = get_api_token(backend, site_name).await?;
 
   // Filter xnames to the ones members to HSM groups the user has access to
@@ -49,9 +51,10 @@ pub async fn exec(
     })?;
 
   if xname_to_move_vec.is_empty() {
-    return Err(Error::msg(
-      "The list of nodes to operate is empty. Nothing to do. Exit",
-    ));
+    bail!(
+      "The list of nodes to operate is empty. \
+       Nothing to do. Exit",
+    );
   }
 
   xname_to_move_vec.sort();
@@ -67,7 +70,7 @@ pub async fn exec(
       &shasta_token,
       &xname_to_move_vec,
     )
-    .await;
+    .await?;
 
   // Keep HSM groups based on list of parent HSM groups provided
   hsm_group_summary
@@ -77,29 +80,30 @@ pub async fn exec(
 
   for target_hsm_name in target_hsm_name_vec {
     if backend
-      .get_group(&shasta_token, &target_hsm_name)
+      .get_group(&shasta_token, target_hsm_name)
       .await
       .is_ok()
     {
       log::debug!("The HSM group {} exists, good.", target_hsm_name);
-    } else {
-      if create_hsm_group {
-        log::info!(
-          "HSM group {} does not exist, it will be created",
-          target_hsm_name
-        );
-        if nodryrun {
-        } else {
-          return Err(Error::msg(
-            "Dry-run selected, cannot create the new group continue.",
-          ));
-        }
+    } else if create_hsm_group {
+      log::info!(
+        "HSM group {} does not exist, it will be created",
+        target_hsm_name
+      );
+      if nodryrun {
       } else {
-        return Err(Error::msg(format!(
-          "HSM group {} does not exist, but the option to create the group was NOT specificied, cannot continue.",
-          target_hsm_name
-        )));
+        bail!(
+          "Dry-run selected, cannot create the \
+           new group continue.",
+        );
       }
+    } else {
+      bail!(
+        "HSM group {} does not exist, but the option \
+         to create the group was NOT specificied, \
+         cannot continue.",
+        target_hsm_name
+      );
     }
 
     // Migrate nodes
@@ -107,8 +111,8 @@ pub async fn exec(
       let node_migration_rslt = backend
         .migrate_group_members(
           &shasta_token,
-          &target_hsm_name,
-          &parent_hsm_name,
+          target_hsm_name,
+          parent_hsm_name,
           &xname_to_move_vec
             .iter()
             .map(String::as_str)
@@ -132,21 +136,23 @@ pub async fn exec(
             parent_hsm_name, parent_hsm_group_member_vec
           );
         }
-        Err(e) => eprintln!("{}", e),
+        Err(e) => return Err(e.into()),
       }
     }
   }
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token)
+      .context("Failed to get username from JWT token")?;
+    let user_id = jwt_ops::get_preferred_username(&shasta_token)
+      .context("Failed to get user ID from JWT token")?;
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![parent_hsm_name_vec, target_hsm_name_vec], "message": format!("Migrate nodes from {:?} to {:?}", parent_hsm_name_vec, target_hsm_name_vec)});
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);

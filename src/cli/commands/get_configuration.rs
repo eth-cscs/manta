@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
   interfaces::cfs::CfsTrait,
   types::cfs::{
@@ -7,40 +7,41 @@ use manta_backend_dispatcher::{
   },
 };
 
-use crate::{
-  common::{
-    authentication::get_api_token, authorization::get_groups_names_available,
-    cfs_configuration_utils::print_table_struct,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  app_context::AppContext, authentication::get_api_token,
+  authorization::get_groups_names_available,
+  cfs_configuration_utils::print_table_struct,
 };
 use chrono::NaiveDateTime;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  vault_base_url: Option<&String>,
-  gitea_base_url: &str,
+  ctx: &AppContext<'_>,
   configuration_name_opt: Option<&str>,
   configuration_name_pattern_opt: Option<&str>,
   hsm_group_name_arg_opt: Option<&String>,
-  settings_hsm_group_name_opt: Option<&String>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   limit: Option<&u8>,
   output_opt: Option<&str>,
-  site_name: &str,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+  let vault_base_url = ctx.vault_base_url;
+  let gitea_base_url = ctx.gitea_base_url;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+
   let shasta_token = get_api_token(backend, site_name).await?;
 
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
     &shasta_token,
-    vault_base_url.expect("ERROR - vault base url is mandatory"),
+    vault_base_url.context("vault base url is mandatory")?,
     site_name,
   )
   .await
-  .unwrap();
+  .context("Failed to fetch VCS token from vault")?;
 
   let target_hsm_group_vec = get_groups_names_available(
     backend,
@@ -65,71 +66,72 @@ pub async fn exec(
     .await?;
 
   if cfs_configuration_vec.is_empty() {
-    return Err(Error::msg("No CFS configuration found!"));
+    bail!("No CFS configuration found!");
   }
 
-  if output_opt.is_some() && output_opt.unwrap().eq("json") {
+  if output_opt.is_some_and(|o| o.eq("json")) {
     println!(
       "{}",
-      serde_json::to_string_pretty(&cfs_configuration_vec).unwrap()
+      serde_json::to_string_pretty(&cfs_configuration_vec)
+        .context("Failed to serialize CFS configurations to JSON")?
     );
-  } else {
-    if cfs_configuration_vec.len() == 1 {
-      // Get CFS configuration details with data from VCS/Gitea
-      let most_recent_cfs_configuration: &CfsConfigurationResponse =
-        cfs_configuration_vec.first().unwrap();
+  } else if cfs_configuration_vec.len() == 1 {
+    // Get CFS configuration details with data from VCS/Gitea
+    let most_recent_cfs_configuration: &CfsConfigurationResponse =
+      cfs_configuration_vec
+        .first()
+        .context("CFS configuration list unexpectedly empty")?;
 
-      let mut layer_details_vec: Vec<LayerDetails> = vec![];
+    let mut layer_details_vec: Vec<LayerDetails> = vec![];
 
-      for layer in &most_recent_cfs_configuration.layers {
-        let layer_details: LayerDetails = backend
-          .get_configuration_layer_details(
-            shasta_root_cert,
-            gitea_base_url,
-            &gitea_token,
-            layer.clone(),
-            site_name,
-          )
-          .await
-          .map_err(|e| {
-            Error::msg(format!(
-              "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
-              e
-            ))
-          })?;
+    for layer in &most_recent_cfs_configuration.layers {
+      let layer_details: LayerDetails = backend
+        .get_configuration_layer_details(
+          shasta_root_cert,
+          gitea_base_url,
+          &gitea_token,
+          layer.clone(),
+          site_name,
+        )
+        .await
+        .map_err(|e| {
+          Error::msg(format!(
+            "ERROR - Could not fetch configuration layer details. Reason:\n{:#?}",
+            e
+          ))
+        })?;
 
-        layer_details_vec.push(layer_details);
-      }
+      layer_details_vec.push(layer_details);
+    }
 
-      let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) = backend
-      .get_derivatives(
+    let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
+      backend
+        .get_derivatives(
           &shasta_token,
           shasta_base_url,
           shasta_root_cert,
           &most_recent_cfs_configuration.name,
-      )
-
-      .await
-      .map_err(|e| {
+        )
+        .await
+        .map_err(|e| {
           Error::msg(format!(
-             "ERROR - Could not fetch configuration derivatives. Reason:\n{:#?}",
-             e
+            "ERROR - Could not fetch configuration derivatives. Reason:\n{:#?}",
+            e
           ))
-      })?;
+        })?;
 
-      crate::common::cfs_configuration_utils::print_table_details_struct(
-        ConfigurationDetails::new(
-          &most_recent_cfs_configuration.name,
-          &most_recent_cfs_configuration.last_updated,
-          layer_details_vec,
-        ),
-        cfs_session_vec_opt,
-        bos_sessiontemplate_vec_opt,
-        image_vec_opt,
-      );
-    } else {
-      print_table_struct(&cfs_configuration_vec);
-    }
+    crate::common::cfs_configuration_utils::print_table_details_struct(
+      ConfigurationDetails::new(
+        &most_recent_cfs_configuration.name,
+        &most_recent_cfs_configuration.last_updated,
+        layer_details_vec,
+      ),
+      cfs_session_vec_opt,
+      bos_sessiontemplate_vec_opt,
+      image_vec_opt,
+    );
+  } else {
+    print_table_struct(&cfs_configuration_vec);
   }
 
   Ok(())

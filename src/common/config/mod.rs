@@ -7,6 +7,7 @@ use std::{
   path::PathBuf,
 };
 
+use anyhow::Context;
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
@@ -22,28 +23,36 @@ use crate::common::{
   kafka::Kafka,
 };
 
-pub fn get_default_config_path() -> PathBuf {
+fn get_default_config_path() -> Result<PathBuf, anyhow::Error> {
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
-  );
+  )
+  .context(
+    "Could not determine config directory \
+     (home directory may not be set)",
+  )?;
 
-  PathBuf::from(project_dirs.unwrap().config_dir())
+  Ok(PathBuf::from(project_dirs.config_dir()))
 }
 
-pub fn get_default_manta_config_file_path() -> PathBuf {
+fn get_default_manta_config_file_path() -> Result<PathBuf, anyhow::Error> {
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
-  );
+  )
+  .context(
+    "Could not determine config directory \
+     (home directory may not be set)",
+  )?;
 
-  let mut config_file_path = PathBuf::from(project_dirs.unwrap().config_dir());
+  let mut config_file_path = PathBuf::from(project_dirs.config_dir());
   config_file_path.push("config.toml");
-  config_file_path
+  Ok(config_file_path)
 }
 
 pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
@@ -51,7 +60,8 @@ pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
   let root_cert_file_rslt = File::open(file_path);
 
   let file_rslt = if root_cert_file_rslt.is_err() {
-    let mut config_path = get_default_config_path();
+    let mut config_path =
+      get_default_config_path().map_err(|e| Error::Message(e.to_string()))?;
     config_path.push(file_path);
     File::open(config_path)
   } else {
@@ -70,42 +80,51 @@ pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
   }
 }
 
-pub fn get_default_manta_audit_file_path() -> PathBuf {
+fn get_default_manta_audit_file_path() -> Result<PathBuf, anyhow::Error> {
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
-  );
+  )
+  .context(
+    "Could not determine data directory \
+     (home directory may not be set)",
+  )?;
 
-  let mut log_file_path = PathBuf::from(project_dirs.unwrap().data_dir());
+  let mut log_file_path = PathBuf::from(project_dirs.data_dir());
   log_file_path.push("manta.log");
 
-  log_file_path
+  Ok(log_file_path)
 }
 
-pub fn get_default_mgmt_plane_ca_cert_file_path() -> PathBuf {
+fn get_default_mgmt_plane_ca_cert_file_path() -> Result<PathBuf, anyhow::Error>
+{
   // XDG Base Directory Specification
   let project_dirs = ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
-  );
+  )
+  .context(
+    "Could not determine config directory \
+     (home directory may not be set)",
+  )?;
 
-  let mut ca_cert_file_path = PathBuf::from(project_dirs.unwrap().config_dir());
+  let mut ca_cert_file_path = PathBuf::from(project_dirs.config_dir());
   ca_cert_file_path.push("alps_root_cert.pem");
 
-  ca_cert_file_path
+  Ok(ca_cert_file_path)
 }
 
 /// Get Manta configuration full path. Configuration may be the default one or specified by user.
 /// This function also validates if the config file is TOML format
-pub async fn get_config_file_path() -> PathBuf {
+pub async fn get_config_file_path() -> Result<PathBuf, anyhow::Error> {
   // Get config file path from ENV var
   if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
     let mut env_config_file = std::path::PathBuf::new();
     env_config_file.push(env_config_file_name);
-    env_config_file
+    Ok(env_config_file)
   } else {
     // Get default config file path ($XDG_CONFIG/manta/config.toml
     get_default_manta_config_file_path()
@@ -116,26 +135,30 @@ pub async fn get_config_file_path() -> PathBuf {
 /// defiend, then environment variables takes preference
 pub async fn get_configuration() -> Result<Config, Error> {
   // Get config file path
-  let config_file_path = get_config_file_path().await;
+  let config_file_path = get_config_file_path()
+    .await
+    .map_err(|e| Error::Message(e.to_string()))?;
 
   // If config file does not exists, then use config file generator to create a default config
   // file
   if !config_file_path.exists() {
     // Configuration file does not exists --> create a new configuration file
-    eprintln!(
+    log::info!(
       "Configuration file '{}' not found. Creating a new one.",
       config_file_path.to_string_lossy()
     );
-    create_new_config_file(Some(&config_file_path)).await;
+    create_new_config_file(Some(&config_file_path))
+      .await
+      .map_err(|e| Error::Message(e.to_string()))?;
   };
 
   // Process config file and check format (toml) is correct
-  let config_file = config::File::new(
-    config_file_path
-      .to_str()
-      .expect("Configuration file name not defined"),
-    config::FileFormat::Toml,
-  );
+  let config_file_path_str = config_file_path.to_str().ok_or_else(|| {
+    Error::Message("Configuration file path contains invalid UTF-8".to_string())
+  })?;
+
+  let config_file =
+    config::File::new(config_file_path_str, config::FileFormat::Toml);
 
   // Process config file
   ::config::Config::builder()
@@ -154,8 +177,10 @@ pub async fn get_configuration() -> Result<Config, Error> {
     })
 }
 
-pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
-  eprintln!("Confguration file not found. Please introduce values below:");
+async fn create_new_config_file(
+  config_file_path_opt: Option<&PathBuf>,
+) -> Result<(), anyhow::Error> {
+  eprintln!("Configuration file not found. Please introduce values below:");
 
   let log_level_values = vec!["error", "info", "warning", "debug", "trace"];
 
@@ -164,76 +189,69 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     .items(&log_level_values)
     .default(0)
     .interact()
-    .unwrap();
+    .context("Failed to read log level selection")?;
 
   let log = log_level_values[log_selection].to_string();
 
-  let parent_hsm_group = "".to_string();
+  let parent_hsm_group = String::new();
 
   let audit_file: String = Input::new()
     .with_prompt("Please type full path for the audit file")
     .default(
-      get_default_manta_audit_file_path()
+      get_default_manta_audit_file_path()?
         .to_string_lossy()
         .to_string(),
     )
     .show_default(true)
     .allow_empty(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read audit file path")?;
 
   let site: String = Input::new()
     .with_prompt("Please type site name")
     .default("alps".to_string())
     .show_default(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read site name")?;
 
   let shasta_base_url: String = Input::new()
     .with_prompt("Please type site management plane URL")
     .default("https://api.cmn.alps.cscs.ch".to_string())
     .show_default(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read management plane URL")?;
 
   let k8s_api_url: String = Input::new()
     .with_prompt("Please type kubernetes api URL")
     .default("https://10.252.1.12:6442".to_string())
     .show_default(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read kubernetes API URL")?;
 
   let vault_base_url: String = Input::new()
     .with_prompt("Please type Hashicorp Vault URL")
     .default("https://hashicorp-vault.cscs.ch:8200".to_string())
     .show_default(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read Vault URL")?;
 
   let vault_secret_path: String = Input::new()
     .with_prompt("Please type Hashicorp Vault secret path")
     .default("shasta".to_string())
     .show_default(true)
     .interact_text()
-    .unwrap();
-
-  /* let vault_role_id: String = Input::new()
-  .with_prompt("Please type Hashicorp Vault role id")
-  .default("b15517de-cabb-06ba-af98-633d216c6d99".to_string())
-  .show_default(true)
-  .interact_text()
-  .unwrap(); */
+    .context("Failed to read Vault secret path")?;
 
   let root_ca_cert_file: String = Input::new()
     .with_prompt("Please type full path for the CA public certificate file")
     .default(
-      get_default_mgmt_plane_ca_cert_file_path()
+      get_default_mgmt_plane_ca_cert_file_path()?
         .to_string_lossy()
         .to_string(),
     )
     .show_default(true)
     .interact_text()
-    .unwrap();
+    .context("Failed to read CA certificate file path")?;
 
   let backend_options = vec!["csm", "ochami"];
 
@@ -242,7 +260,7 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     .items(&backend_options)
     .default(0)
     .interact()
-    .unwrap();
+    .context("Failed to read backend selection")?;
 
   let backend = backend_options[backend_selection].to_string();
 
@@ -262,7 +280,7 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
       .interact_text()
       .unwrap_or_default()
   } else {
-    "".to_string()
+    String::new()
   };
 
   // If both kafka broker and topic are empty, then auditor is None
@@ -296,14 +314,14 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
         .default("socks5h://127.0.0.1:1080".to_string())
         .allow_empty(true)
         .interact_text()
-        .unwrap(),
+        .context("Failed to read SOCKS5 proxy URL")?,
     )
   };
 
   let k8s_auth = K8sAuth::Native {
-    certificate_authority_data: "".to_string(),
-    client_certificate_data: "".to_string(),
-    client_key_data: "".to_string(),
+    certificate_authority_data: String::new(),
+    client_certificate_data: String::new(),
+    client_key_data: String::new(),
   };
 
   let k8s_details = K8sDetails {
@@ -335,7 +353,8 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
     auditor,
   };
 
-  let config_file_content = toml::to_string(&config_toml).unwrap();
+  let config_file_content = toml::to_string(&config_toml)
+    .context("Failed to serialize configuration to TOML")?;
 
   // Create configuration file on user's location, otherwise use default path
   //
@@ -343,20 +362,40 @@ pub async fn create_new_config_file(config_file_path_opt: Option<&PathBuf>) {
   let config_file_path = if let Some(config_file_path) = config_file_path_opt {
     PathBuf::from(config_file_path)
   } else {
-    get_default_manta_config_file_path()
+    get_default_manta_config_file_path()?
   };
 
   // Create directories if needed
-  let _ = std::fs::create_dir_all(config_file_path.parent().unwrap());
+  let parent_dir = config_file_path
+    .parent()
+    .context("Configuration file path has no parent directory")?;
+  std::fs::create_dir_all(parent_dir).with_context(|| {
+    format!(
+      "Failed to create config directory '{}'",
+      parent_dir.display()
+    )
+  })?;
 
   // Create manta config file
-  let mut config_file = File::create(config_file_path.clone()).unwrap();
+  let mut config_file = File::create(&config_file_path).with_context(|| {
+    format!(
+      "Failed to create config file '{}'",
+      config_file_path.display()
+    )
+  })?;
   config_file
     .write_all(config_file_content.as_bytes())
-    .unwrap();
+    .with_context(|| {
+      format!(
+        "Failed to write config file '{}'",
+        config_file_path.display()
+      )
+    })?;
 
-  eprintln!(
+  log::info!(
     "Configuration file '{}' created",
     config_file_path.to_string_lossy()
-  )
+  );
+
+  Ok(())
 }

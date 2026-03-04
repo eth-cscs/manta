@@ -16,7 +16,8 @@ pub async fn exec(
   cli_get_boot_parameters: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&String>,
 ) -> Result<Vec<BootParameters>, Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let hsm_group_name_arg_opt: Option<&String> =
     cli_get_boot_parameters.get_one("hsm-group");
@@ -35,17 +36,18 @@ pub async fn exec(
     match hsm_members_rslt {
       Ok(hsm_members) => hsm_members.join(","),
       Err(e) => {
-        eprintln!(
-          "ERROR - could not fetch HSM groups members. Reason:\n{}",
-          e.to_string()
-        );
-        std::process::exit(1);
+        return Err(Error::Message(format!(
+          "Could not fetch HSM groups members: {}",
+          e
+        )));
       }
     }
   } else {
     cli_get_boot_parameters
       .get_one::<String>("nodes")
-      .expect("Neither HSM group nor nodes defined")
+      .ok_or_else(|| {
+        Error::Message("Neither HSM group nor nodes defined".to_string())
+      })?
       .clone()
   };
 

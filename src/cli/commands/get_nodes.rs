@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
@@ -11,11 +11,12 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   cli_get_nodes: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let xname_requested: &str = cli_get_nodes
     .get_one::<String>("VALUE")
-    .expect("The 'xnames' argument must have values");
+    .context("The 'xnames' argument must have values")?;
   let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
   let nids_only = cli_get_nodes.get_flag("nids-only-one-line");
   let status: Option<&String> = cli_get_nodes.get_one("status");
@@ -40,9 +41,10 @@ pub async fn exec(
   })?;
 
   if node_list.is_empty() {
-    return Err(Error::msg(
-      "The list of nodes to operate is empty. Nothing to do. Exit",
-    ));
+    bail!(
+      "The list of nodes to operate is empty. \
+       Nothing to do. Exit",
+    );
   }
 
   node_list.sort();
@@ -58,7 +60,7 @@ pub async fn exec(
 
   let mut node_details_list = match node_details_list_rslt {
     Err(e) => {
-      return Err(Error::msg(e));
+      bail!("{e}");
     }
     Ok(node_details_list) => node_details_list,
   };
@@ -74,7 +76,7 @@ pub async fn exec(
     }
   });
 
-  node_details_list.sort_by_key(|node_details| node_details.xname.clone());
+  node_details_list.sort_by(|a, b| a.xname.cmp(&b.xname));
 
   if status_summary {
     let status_output = if node_details_list.iter().any(|node_details| {
@@ -114,8 +116,10 @@ pub async fn exec(
       .map(|node_details| node_details.nid.clone())
       .collect::<Vec<String>>();
 
-    if output_opt.is_some() && output_opt.unwrap().eq("json") {
-      println!("{}", serde_json::to_string(&node_nid_list).unwrap());
+    if output_opt.is_some_and(|v| v == "json") {
+      let json = serde_json::to_string(&node_nid_list)
+        .context("Failed to serialize node NID list")?;
+      println!("{}", json);
     } else {
       println!("{}", node_nid_list.join(","));
     }
@@ -125,26 +129,36 @@ pub async fn exec(
       .map(|node_details| node_details.xname.clone())
       .collect::<Vec<String>>();
 
-    if output_opt.is_some() && output_opt.unwrap().eq("json") {
-      println!("{}", serde_json::to_string(&node_xname_list).unwrap());
+    if output_opt.is_some_and(|v| v == "json") {
+      let json = serde_json::to_string(&node_xname_list)
+        .context("Failed to serialize node xname list")?;
+      println!("{}", json);
     } else {
       println!("{}", node_xname_list.join(","));
     }
-  } else if output_opt.is_some() && output_opt.unwrap().eq("json") {
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&node_details_list).unwrap()
-    );
-  } else if output_opt.is_some() && output_opt.unwrap().eq("summary") {
-    common::node_ops::print_summary(node_details_list);
-  } else if output_opt.is_some() && output_opt.unwrap().eq("table-wide") {
-    common::node_ops::print_table_wide(node_details_list);
-  } else if output_opt.is_some() && output_opt.unwrap().eq("table") {
-    common::node_ops::print_table(node_details_list);
   } else {
-    return Err(Error::msg(format!(
-      "ERROR - output value not recognized or missing. Exit"
-    )));
+    match output_opt.map(String::as_str) {
+      Some("json") => {
+        let json = serde_json::to_string_pretty(&node_details_list)
+          .context("Failed to serialize node details list")?;
+        println!("{}", json);
+      }
+      Some("summary") => {
+        common::node_ops::print_summary(node_details_list);
+      }
+      Some("table-wide") => {
+        common::node_ops::print_table_wide(node_details_list);
+      }
+      Some("table") => {
+        common::node_ops::print_table(node_details_list);
+      }
+      _ => {
+        bail!(
+          "ERROR - output value not recognized \
+           or missing. Exit",
+        );
+      }
+    }
   }
 
   Ok(())

@@ -1,9 +1,12 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use chrono::DateTime;
 use serde_json::Value;
 use substring::Substring;
 
-use crate::common::{local_git_repo, authentication::get_api_token, vault::http_client::fetch_shasta_vcs_token};
+use crate::common::{
+  authentication::get_api_token, local_git_repo,
+  vault::http_client::fetch_shasta_vcs_token,
+};
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 pub async fn exec(
@@ -18,17 +21,17 @@ pub async fn exec(
 
   let gitea_token = fetch_shasta_vcs_token(
     &shasta_token,
-    vault_base_url.expect("ERROR - vault base url is mandatory"),
+    vault_base_url.context("vault base url is mandatory")?,
     site_name,
   )
   .await
-  .unwrap();
+  .context("Failed to fetch VCS token from vault")?;
 
   let mut exit_code = 0;
 
   println!("Validate local repo {}", repo_path);
 
-  let repo = local_git_repo::get_repo(&repo_path).map_err(|e| {
+  let repo = local_git_repo::get_repo(repo_path).map_err(|e| {
     Error::msg(format!(
       "Could not open git repo in {}. Reason: {}",
       repo_path, e
@@ -38,19 +41,27 @@ pub async fn exec(
   log::info!("Repo '{}' found", repo_path);
 
   // Get last (most recent) commit
-  let local_last_commit = local_git_repo::get_last_commit(&repo).unwrap();
+  let local_last_commit = local_git_repo::get_last_commit(&repo)
+    .context("Failed to get last commit")?;
 
   log::info!("Checking local repo status ({})", &repo.path().display());
 
   // Get repo name
-  let repo_ref_origin = repo.find_remote("origin").unwrap();
+  let repo_ref_origin = repo
+    .find_remote("origin")
+    .context("Failed to find remote 'origin'")?;
 
-  let repo_ref_origin_url = repo_ref_origin.url().unwrap();
+  let repo_ref_origin_url = repo_ref_origin
+    .url()
+    .context("Remote 'origin' URL is not valid UTF-8")?;
 
   // TODO: do we still need the 'substring' crate? try to get rid of it
   let repo_name = repo_ref_origin_url
     .substring(
-      repo_ref_origin_url.rfind(|c| c == '/').unwrap() + 1, // repo name should not include URI '/' separator
+      repo_ref_origin_url
+        .rfind('/')
+        .context("Remote URL has no '/' separator")?
+        + 1, // repo name should not include URI '/' separator
       repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
     )
     .trim_end_matches(".git");
@@ -60,7 +71,6 @@ pub async fn exec(
   let head_commit_id = local_last_commit.id();
   let head_commit_summary = local_last_commit.summary();
 
-  // println!("HEAD commit id: {}", head_commit_id);
   println!(
     "HEAD commit summary: {}",
     head_commit_summary.unwrap_or_default()
@@ -68,11 +78,17 @@ pub async fn exec(
 
   println!(
     "HEAD commit time: {}",
-    DateTime::from_timestamp(local_last_commit.time().seconds(), 0).unwrap()
+    DateTime::from_timestamp(local_last_commit.time().seconds(), 0,)
+      .context("Failed to parse commit timestamp")?
   );
 
   // Check if all changes in local repo has been commited locally
-  if !local_git_repo::untracked_changed_local_files(&repo).unwrap() {
+  if !local_git_repo::untracked_changed_local_files(&repo).map_err(|e| {
+    Error::msg(format!(
+      "Failed to check for untracked/changed files: {}",
+      e
+    ))
+  })? {
     println!("Local changes committed: ❌");
     exit_code = 1;
   } else {
@@ -91,19 +107,31 @@ pub async fn exec(
   // Get remote refs
   let remote_ref_vec: Vec<&str> = remote_ref_value_vec
     .iter()
-    .map(|ref_value| ref_value.get("ref").and_then(Value::as_str).unwrap())
+    .filter_map(|ref_value| ref_value.get("ref").and_then(Value::as_str))
     .collect();
 
   // Validate HEAD local branch
   let branches = repo
     .branches(Some(git2::BranchType::Local))
-    .expect("Something wrong while looking for local branches");
+    .context("Failed to list local branches")?;
 
   for branch_rslt in branches.into_iter() {
-    let (branch, _) = branch_rslt.unwrap();
+    let (branch, _) = match branch_rslt {
+      Ok(b) => b,
+      Err(e) => {
+        log::warn!("Failed to read branch: {}", e);
+        continue;
+      }
+    };
 
     if branch.is_head() {
-      let branch_name = branch.name().unwrap().unwrap();
+      let branch_name = match branch.name() {
+        Ok(Some(name)) => name,
+        _ => {
+          log::warn!("Failed to read branch name");
+          continue;
+        }
+      };
       if remote_ref_vec
         .iter()
         .any(|remote_ref| remote_ref.contains(branch_name))
@@ -135,13 +163,19 @@ pub async fn exec(
   }
 
   // Validate tags
-  let local_tags = repo.tag_names(None).unwrap();
+  let local_tags = repo.tag_names(None).context("Failed to list local tags")?;
 
-  for local_tag_rslt in &local_tags {
-    let tag = local_tag_rslt.unwrap();
+  for local_tag_rslt in local_tags.iter() {
+    let tag = match local_tag_rslt {
+      Some(t) => t,
+      None => {
+        log::warn!("Failed to read tag name");
+        continue;
+      }
+    };
     if remote_ref_vec
       .iter()
-      .any(|remote_tag| remote_tag.contains(&tag))
+      .any(|remote_tag| remote_tag.contains(tag))
     {
       println!("tag {}: ✅", tag);
     } else {
@@ -153,9 +187,10 @@ pub async fn exec(
   println!("Repo synced? {}", exit_code == 0);
 
   if exit_code != 0 {
-    return Err(Error::msg(
-      "Local repository is not in sync with remote repository",
-    ));
+    bail!(
+      "Local repository is not in sync with \
+       remote repository",
+    );
   }
 
   Ok(())

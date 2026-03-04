@@ -1,6 +1,6 @@
 use crate::common::authentication::get_api_token;
 use crate::common::authorization::get_groups_names_available;
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
@@ -37,7 +37,7 @@ pub async fn exec(
   let mut hsm_groups_node_list: Vec<String> = backend
     .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_group_vec)
     .await
-    .unwrap();
+    .context("Failed to get HSM group members")?;
 
   hsm_groups_node_list.sort();
 
@@ -62,7 +62,7 @@ pub async fn exec(
     }
   });
 
-  node_details_list.sort_by_key(|node_details| node_details.xname.clone());
+  node_details_list.sort_by(|a, b| a.xname.cmp(&b.xname));
 
   if summary_status {
     let status_output = if node_details_list.iter().any(|node_details| {
@@ -102,8 +102,14 @@ pub async fn exec(
       .map(|node_details| node_details.nid.clone())
       .collect::<Vec<String>>();
 
-    if output_opt.is_some() && output_opt.unwrap().eq("json") {
-      println!("{}", serde_json::to_string(&node_nid_list).unwrap());
+    if let Some(output) = output_opt
+      && output.eq("json")
+    {
+      println!(
+        "{}",
+        serde_json::to_string(&node_nid_list)
+          .context("Failed to serialize node NID list")?
+      );
     } else {
       println!("{}", node_nid_list.join(","));
     }
@@ -113,26 +119,42 @@ pub async fn exec(
       .map(|node_details| node_details.xname.clone())
       .collect::<Vec<String>>();
 
-    if output_opt.is_some() && output_opt.unwrap().eq("json") {
-      println!("{}", serde_json::to_string(&node_xname_list).unwrap());
+    if let Some(output) = output_opt
+      && output.eq("json")
+    {
+      println!(
+        "{}",
+        serde_json::to_string(&node_xname_list)
+          .context("Failed to serialize node xname list")?
+      );
     } else {
       println!("{}", node_xname_list.join(","));
     }
-  } else if output_opt.is_some() && output_opt.unwrap().eq("json") {
+  } else if let Some(output) = output_opt
+    && output.eq("json")
+  {
     println!(
       "{}",
-      serde_json::to_string_pretty(&node_details_list).unwrap()
+      serde_json::to_string_pretty(&node_details_list)
+        .context("Failed to serialize node details")?
     );
-  } else if output_opt.is_some() && output_opt.unwrap().eq("summary") {
+  } else if let Some(output) = output_opt
+    && output.eq("summary")
+  {
     node_ops::print_summary(node_details_list);
-  } else if output_opt.is_some() && output_opt.unwrap().eq("table-wide") {
+  } else if let Some(output) = output_opt
+    && output.eq("table-wide")
+  {
     node_ops::print_table_wide(node_details_list);
-  } else if output_opt.is_some() && output_opt.unwrap().eq("table") {
+  } else if let Some(output) = output_opt
+    && output.eq("table")
+  {
     node_ops::print_table(node_details_list);
   } else {
-    return Err(Error::msg(
-      "ERROR - output value not recognized or missing. Exit",
-    ));
+    bail!(
+      "ERROR - output value not recognized or missing. \
+       Exit",
+    );
   }
 
   Ok(())

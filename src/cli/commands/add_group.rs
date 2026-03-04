@@ -1,11 +1,9 @@
 use crate::common::{self, jwt_ops};
-use crate::{
-  common::{
-    audit::Audit, authorization::validate_target_hsm_members, kafka::Kafka,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  app_context::AppContext, audit::Audit,
+  authorization::validate_target_hsm_members,
 };
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::{
@@ -14,15 +12,16 @@ use manta_backend_dispatcher::{
 
 /// Creates a group of nodes. It is allowed to create a group with no nodes.
 pub async fn exec(
-  backend: StaticBackendDispatcher,
+  ctx: &AppContext<'_>,
   auth_token: &str,
   label: &str,
   description: Option<&String>,
   hosts_expression_opt: Option<&String>,
   assume_yes: bool,
   dryrun: bool,
-  kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let backend = ctx.backend.clone();
+  let kafka_audit_opt = ctx.kafka_audit_opt;
   let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
     Some(hosts_expression) => {
       // Convert user input to xname
@@ -54,7 +53,7 @@ pub async fn exec(
 
   // Validate user has access to the list of xnames requested
   if let Some(xname_vec) = &xname_vec_opt {
-    validate_target_hsm_members(&backend, &auth_token, xname_vec).await?;
+    validate_target_hsm_members(&backend, auth_token, xname_vec).await?;
   }
 
   // Create Group instance for http payload
@@ -69,25 +68,27 @@ pub async fn exec(
   if !common::user_interaction::confirm(
     &format!(
       "This operation will create the group below:\n{}\nPlease confirm to proceed",
-      serde_json::to_string_pretty(&group).unwrap()
+      serde_json::to_string_pretty(&group)
+        .context("Failed to serialize group")?
     ),
     assume_yes,
   ) {
-    return Err(Error::msg("Operation canceled by the user."));
+    bail!("Operation canceled by the user.");
   }
 
   if dryrun {
     println!(
       "Dryrun mode: The group below would be created:\n{}",
-      serde_json::to_string_pretty(&group).unwrap()
+      serde_json::to_string_pretty(&group)
+        .context("Failed to serialize group")?
     );
     return Ok(());
   }
 
   // Call backend to create group
-  let _ = backend.add_group(&auth_token, group).await?;
+  let _ = backend.add_group(auth_token, group).await?;
 
-  eprintln!("Group '{}' created", label);
+  println!("Group '{}' created", label);
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
@@ -99,7 +100,7 @@ pub async fn exec(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec_opt.unwrap_or_default()}, "group": label, "message": format!("Create Group '{}'", label)});
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);

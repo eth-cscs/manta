@@ -1,13 +1,11 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
-use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::authentication::get_api_token};
+use crate::common::{app_context::AppContext, authentication::get_api_token};
 
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
+  ctx: &AppContext<'_>,
   bos_file: Option<&str>,
   cfs_file: Option<&str>,
   hsm_file: Option<&str>,
@@ -17,44 +15,55 @@ pub async fn exec(
   posthook: Option<&str>,
   overwrite: bool,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+
   let shasta_token = get_api_token(backend, site_name).await?;
+
+  let bos_file_value = bos_file.context("BOS file is required")?;
+  let cfs_file_value = cfs_file.context("CFS file is required")?;
+  let ims_file_value = ims_file.context("IMS file is required")?;
+  let hsm_file_value = hsm_file.context("HSM file is required")?;
 
   println!(
     "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
-    &prehook.unwrap_or(&"none".to_string()),
-    &posthook.unwrap_or(&"none".to_string()),
-    bos_file.unwrap(),
-    cfs_file.unwrap(),
-    ims_file.unwrap(),
-    hsm_file.unwrap()
+    prehook.unwrap_or("none"),
+    posthook.unwrap_or("none"),
+    bos_file_value,
+    cfs_file_value,
+    ims_file_value,
+    hsm_file_value
   );
-  if prehook.is_some() {
-    match crate::common::hooks::check_hook_perms(prehook).await {
-      Ok(_) => log::debug!("Pre-hook script exists and is executable."),
+  if let Some(prehook_path) = prehook {
+    match crate::common::hooks::check_hook_perms(Some(prehook_path)).await {
+      Ok(_) => {
+        log::debug!("Pre-hook script exists and is executable.")
+      }
       Err(e) => {
-        return Err(Error::msg(format!("{}. File: {}", e, &prehook.unwrap())));
+        bail!("{}. File: {}", e, prehook_path);
       }
     };
   }
-  if posthook.is_some() {
-    match crate::common::hooks::check_hook_perms(posthook).await {
-      Ok(_) => log::debug!("Post-hook script exists and is executable."),
+  if let Some(posthook_path) = posthook {
+    match crate::common::hooks::check_hook_perms(Some(posthook_path)).await {
+      Ok(_) => {
+        log::debug!("Post-hook script exists and is executable.")
+      }
       Err(e) => {
-        return Err(Error::msg(format!("{}. File: {}", e, &posthook.unwrap())));
+        bail!("{}. File: {}", e, posthook_path);
       }
     };
   }
 
   println!();
-  if prehook.is_some() {
-    println!("Running the pre-hook {}", &prehook.unwrap());
+  if let Some(prehook_path) = prehook {
+    println!("Running the pre-hook {}", prehook_path);
     match crate::common::hooks::run_hook(prehook).await {
       Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
       Err(_error) => {
-        return Err(Error::msg(format!(
-          "Pre-hook script failed. Error: {}",
-          _error
-        )));
+        bail!("Pre-hook script failed. Error: {}", _error);
       }
     };
   }
@@ -76,22 +85,14 @@ pub async fn exec(
     )
     .await;
 
-  if migrate_restore_rslt.is_err() {
-    return Err(Error::msg(format!(
-      "Migrate restore failed. Error: {}",
-      migrate_restore_rslt.err().unwrap()
-    )));
-  }
+  migrate_restore_rslt.context("Migrate restore failed")?;
 
-  if posthook.is_some() {
-    println!("Running the post-hook {}", &posthook.unwrap());
+  if let Some(posthook_path) = posthook {
+    println!("Running the post-hook {}", posthook_path);
     match crate::common::hooks::run_hook(posthook).await {
       Ok(_code) => log::debug!("Post-hook script completed ok. RT={}", _code),
       Err(_error) => {
-        return Err(Error::msg(format!(
-          "Post-hook script failed. Error: {}",
-          _error
-        )));
+        bail!("Post-hook script failed. Error: {}", _error);
       }
     };
   }

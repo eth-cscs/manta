@@ -1,6 +1,6 @@
 use crate::common::authentication::get_api_token;
 use crate::common::authorization::get_groups_names_available;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -19,7 +19,7 @@ pub async fn exec(
   let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
   let output: &String = cli_get_template
     .get_one("output")
-    .expect("ERROR - output must be a valid value");
+    .context("output must be a valid value")?;
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
@@ -30,7 +30,8 @@ pub async fn exec(
   let hsm_member_vec = backend
     .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_group_vec)
     .await?;
-  let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit") {
+  let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit")
+  {
     Some(limit)
   } else if let Some(true) = cli_get_template.get_one("most-recent") {
     Some(&1)
@@ -65,17 +66,16 @@ pub async fn exec(
 
   if bos_sessiontemplate_vec.is_empty() {
     println!("No BOS template found!");
-  } else {
-    if output == "table" {
-      crate::common::bos_sessiontemplate_utils::print_table_struct(
-        bos_sessiontemplate_vec,
-      );
-    } else if output == "json" {
-      println!(
-        "{}",
-        serde_json::to_string_pretty(&bos_sessiontemplate_vec).unwrap()
-      );
-    }
+  } else if output == "table" {
+    crate::common::bos_sessiontemplate_utils::print_table_struct(
+      bos_sessiontemplate_vec,
+    );
+  } else if output == "json" {
+    println!(
+      "{}",
+      serde_json::to_string_pretty(&bos_sessiontemplate_vec)
+        .context("Failed to serialize BOS sessiontemplates")?
+    );
   }
 
   Ok(())

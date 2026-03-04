@@ -1,10 +1,15 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
   interfaces::{cfs::CfsTrait, console::ConsoleTrait},
   types::K8sDetails,
 };
 
-use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::{authentication::get_api_token, authorization::get_groups_names_available}};
+use crate::{
+  common::{
+    authentication::get_api_token, authorization::get_groups_names_available,
+  },
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 
 use futures::StreamExt;
 use tokio::{io::AsyncWriteExt, select};
@@ -21,10 +26,10 @@ pub async fn exec(
   let shasta_token = get_api_token(backend, site_name).await?;
 
   let hsm_group_name_vec = get_groups_names_available(
-      backend,
-      &shasta_token,
-      None,
-      settings_hsm_group_name_opt,
+    backend,
+    &shasta_token,
+    None,
+    settings_hsm_group_name_opt,
   )
   .await?;
 
@@ -49,56 +54,61 @@ pub async fn exec(
     })?;
 
   if cfs_session_vec.is_empty() {
-    return Err(Error::msg("No CFS session found. Exit"));
+    bail!("No CFS session found. Exit");
   }
 
-  let cfs_session_details = cfs_session_vec.first().unwrap();
+  let cfs_session_details =
+    cfs_session_vec.first().context("No CFS session found")?;
 
   if cfs_session_details
     .target
     .as_ref()
-    .unwrap()
+    .context("CFS session target is missing")?
     .definition
     .as_ref()
-    .unwrap()
+    .context("CFS session target definition is missing")?
     .ne("image")
   {
-    return Err(Error::msg(format!(
-      "CFS session found {} is type not 'image'. Exit",
+    bail!(
+      "CFS session found {} is type not \
+       'image'. Exit",
       cfs_session_details.name
-    )));
+    );
   }
 
   if cfs_session_details
     .status
     .as_ref()
-    .unwrap()
+    .context("CFS session status is missing")?
     .session
     .as_ref()
-    .unwrap()
+    .context("CFS session status session is missing")?
     .status
     .ne(&Some("running".to_string()))
   {
-    return Err(Error::msg(format!(
-      "CFS session found {} state is not 'running'. Exit",
+    bail!(
+      "CFS session found {} state is not \
+       'running'. Exit",
       cfs_session_details.name
-    )));
+    );
   }
 
   if !cfs_session_details
     .target
     .as_ref()
-    .unwrap()
+    .context("CFS session target is missing")?
     .groups
     .as_ref()
-    .unwrap()
+    .context("CFS session target groups is missing")?
     .iter()
     .any(|group| hsm_group_name_vec.contains(&group.name.to_string()))
   {
-    return Err(Error::msg(format!(
-      "CFS session found {} is not related to any availble HSM groups {:?}. Exit",
-      cfs_session_details.name, hsm_group_name_vec
-    )));
+    bail!(
+      "CFS session found {} is not related \
+       to any availble HSM groups {:?}. Exit",
+      cfs_session_details.name,
+      hsm_group_name_vec
+    );
   }
 
   let console_rslt = connect_to_console(
@@ -112,11 +122,11 @@ pub async fn exec(
 
   match console_rslt {
     Ok(_) => {
-      crossterm::terminal::disable_raw_mode().unwrap();
+      let _ = crossterm::terminal::disable_raw_mode();
       log::info!("Console closed");
     }
     Err(error) => {
-      crossterm::terminal::disable_raw_mode().unwrap();
+      let _ = crossterm::terminal::disable_raw_mode();
       log::error!("{:?}", error);
     }
   }
@@ -124,7 +134,7 @@ pub async fn exec(
   Ok(())
 }
 
-pub async fn connect_to_console(
+async fn connect_to_console(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   site_name: &str,
@@ -139,10 +149,10 @@ pub async fn connect_to_console(
     .attach_to_session_console(
       shasta_token,
       site_name,
-      &session_name,
+      session_name,
       width,
       height,
-      &k8s,
+      k8s,
     )
     .await?;
 

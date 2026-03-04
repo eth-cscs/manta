@@ -3,7 +3,7 @@ use clap_complete::{generate, generate_to};
 
 use std::{env, io, path::PathBuf};
 
-use anyhow::Error;
+use anyhow::{Error, bail};
 
 pub async fn exec(
   cli: Command,
@@ -33,9 +33,12 @@ pub fn gen_autocomplete(
     .map(|v| v.to_ascii_uppercase())
     .ok_or_else(|| Error::msg("Could not determine shell from $SHELL env"))?;
 
-    shell_ostring
-      .into_string()
-      .expect("Could not convert shell name to string")
+    shell_ostring.into_string().map_err(|os_str| {
+      Error::msg(format!(
+        "Could not convert shell name to string: '{}'",
+        os_str.to_string_lossy()
+      ))
+    })?
   };
 
   let shell_gen = match shell.as_str() {
@@ -43,7 +46,7 @@ pub fn gen_autocomplete(
     "ZSH" => clap_complete::Shell::Zsh,
     "FISH" => clap_complete::Shell::Fish,
     _ => {
-      return Err(Error::msg(format!("Shell '{}' not supported", shell)));
+      bail!("Shell '{}' not supported", shell);
     }
   };
 

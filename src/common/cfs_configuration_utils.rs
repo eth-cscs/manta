@@ -7,7 +7,7 @@ use manta_backend_dispatcher::types::{
   cfs::session::CfsSessionGetResponse, ims::Image,
 };
 
-pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
+pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
   let mut table = Table::new();
 
   table.set_header(vec!["Config Name", "Last updated", "Layers"]);
@@ -15,17 +15,14 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
   for cfs_configuration in cfs_configurations {
     let mut layers: String = String::new();
 
-    if !cfs_configuration.layers.is_empty() {
+    if let Some(first_layer) = cfs_configuration.layers.first() {
       let layers_json = &cfs_configuration.layers;
 
       layers = format!(
         "Name:     {}\nPlaybook: {}\nCommit:   {}",
-        layers_json[0].name,
-        layers_json[0].playbook,
-        layers_json[0]
-          .commit
-          .as_ref()
-          .unwrap_or(&"Not defined".to_string()),
+        first_layer.name,
+        first_layer.playbook,
+        first_layer.commit.as_deref().unwrap_or("Not defined"),
       );
 
       for layer in layers_json.iter().skip(1) {
@@ -34,7 +31,7 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
           layers,
           layer.name,
           layer.playbook,
-          layer.commit.as_ref().unwrap_or(&"Not defined".to_string()),
+          layer.commit.as_deref().unwrap_or("Not defined"),
         );
       }
     }
@@ -45,9 +42,8 @@ pub fn print_table_struct(cfs_configurations: &Vec<CfsConfigurationResponse>) {
         .last_updated
         .clone()
         .parse::<DateTime<Local>>()
-        .unwrap()
-        .format("%d/%m/%Y %H:%M:%S")
-        .to_string(),
+        .map(|dt| dt.format("%d/%m/%Y %H:%M:%S").to_string())
+        .unwrap_or_else(|_| cfs_configuration.last_updated.clone()),
       layers,
     ]);
   }
@@ -79,11 +75,6 @@ pub fn print_table_details_struct(
       layers,
       layer.name,
       layer.branch,
-      /* if let true = layer.most_recent_commit {
-          "(Up to date)"
-      } else {
-          "(Outdated)"
-      }, */
       layer.tag,
       layer.commit_date,
       layer.author,
@@ -95,21 +86,22 @@ pub fn print_table_details_struct(
   let mut derivatives: String = String::new();
 
   if let Some(cfs_session_vec) = cfs_session_vec_opt {
-    derivatives = derivatives + "CFS sessions:";
+    derivatives += "CFS sessions:";
     for cfs_session in cfs_session_vec {
       derivatives = derivatives + "\n - " + &cfs_session.name;
     }
   }
 
   if let Some(bos_sessiontemplate_vec) = bos_sessiontemplate_vec_opt {
-    derivatives = derivatives + "\n\nBOS sessiontemplates:";
+    derivatives += "\n\nBOS sessiontemplates:";
     for bos_sessiontemplate in bos_sessiontemplate_vec {
-      derivatives = derivatives + "\n - " + &bos_sessiontemplate.name.unwrap();
+      derivatives =
+        derivatives + "\n - " + &bos_sessiontemplate.name.unwrap_or_default();
     }
   }
 
   if let Some(image_vec) = image_vec_opt {
-    derivatives = derivatives + "\n\nIMS images:";
+    derivatives += "\n\nIMS images:";
     for image in image_vec {
       derivatives = derivatives + "\n - " + &image.name;
     }
@@ -122,9 +114,8 @@ pub fn print_table_details_struct(
     cfs_configuration
       .last_updated
       .parse::<DateTime<Local>>()
-      .unwrap()
-      .format("%d/%m/%Y %H:%M:%S")
-      .to_string(),
+      .map(|dt| dt.format("%d/%m/%Y %H:%M:%S").to_string())
+      .unwrap_or(cfs_configuration.last_updated),
     layers,
     derivatives,
   ]);

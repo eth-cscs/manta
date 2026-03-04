@@ -1,26 +1,25 @@
-use crate::{
-  common::{
-    audit::Audit, authentication::get_api_token,
-    authorization::validate_target_hsm_members, jwt_ops, kafka::Kafka,
-  },
-  manta_backend_dispatcher::StaticBackendDispatcher,
+use crate::common::{
+  app_context::AppContext, audit::Audit, authentication::get_api_token,
+  authorization::validate_target_hsm_members, jwt_ops,
 };
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::{
   interfaces::bss::BootParametersTrait, types::bss::BootParameters,
 };
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  xnames: &String,
+  ctx: &AppContext<'_>,
+  xnames: &str,
   nids: Option<&String>,
   macs: Option<&String>,
   params: Option<&String>,
   kernel: Option<&String>,
   initrd: Option<&String>,
-  kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
+
   println!("Update boot parameters");
 
   let shasta_token = get_api_token(backend, site_name).await?;
@@ -65,7 +64,7 @@ pub async fn exec(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": hosts}, "message": format!("Update boot parameters")});
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);

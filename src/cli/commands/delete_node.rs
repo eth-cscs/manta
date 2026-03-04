@@ -12,7 +12,9 @@ pub async fn exec(
   site_name: &str,
   id: &str,
 ) -> Result<(), Error> {
-  let auth_token = get_api_token(backend, site_name).await.unwrap();
+  let auth_token = get_api_token(backend, site_name)
+    .await
+    .map_err(|e| Error::Message(e.to_string()))?;
   // Delete node
   backend.delete_node(&auth_token, id).await?;
 

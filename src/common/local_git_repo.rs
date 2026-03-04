@@ -21,7 +21,7 @@ pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
 pub fn untracked_changed_local_files(
   repo: &Repository,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-  let mut index = repo.index().unwrap();
+  let mut index = repo.index()?;
 
   log::debug!("Checking git index...");
 
@@ -29,7 +29,10 @@ pub fn untracked_changed_local_files(
         ["."],
         git2::IndexAddOption::DEFAULT,
         Some(&mut |path: &Path, _matched_spec: &[u8]| -> i32 {
-            let status = repo.status_file(path).unwrap();
+            let status = match repo.status_file(path) {
+                Ok(s) => s,
+                Err(_) => return -1,
+            };
 
             if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
                 log::debug!(

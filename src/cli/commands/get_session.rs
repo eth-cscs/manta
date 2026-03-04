@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
@@ -10,7 +10,8 @@ pub async fn exec(
   shasta_root_cert: &[u8],
   cli_get_session: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(backend, site_name).await?;
+  let shasta_token =
+    common::authentication::get_api_token(backend, site_name).await?;
 
   let hsm_group_name_arg_opt: Option<&String> =
     cli_get_session.get_one("hsm-group");
@@ -24,8 +25,10 @@ pub async fn exec(
     .get_one::<String>("xnames")
     .map(|xname_str| xname_str.split(',').map(|xname| xname.trim()).collect())
     .unwrap_or_default();
-  let min_age_opt: Option<&String> = cli_get_session.get_one::<String>("min-age");
-  let max_age_opt: Option<&String> = cli_get_session.get_one::<String>("max-age");
+  let min_age_opt: Option<&String> =
+    cli_get_session.get_one::<String>("min-age");
+  let max_age_opt: Option<&String> =
+    cli_get_session.get_one::<String>("max-age");
   let mut type_opt: Option<String> = cli_get_session.get_one("type").cloned();
   if type_opt == Some("runtime".to_string()) {
     type_opt = Some("dynamic".to_string())
@@ -42,7 +45,9 @@ pub async fn exec(
       &shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      hsm_group_name_arg_opt.map(|v| vec![v.clone()]).unwrap_or_default(),
+      hsm_group_name_arg_opt
+        .map(|v| vec![v.clone()])
+        .unwrap_or_default(),
       xname_vec_arg,
       min_age_opt,
       max_age_opt,
@@ -54,10 +59,11 @@ pub async fn exec(
     )
     .await?;
 
-  if output_opt.is_some() && output_opt.unwrap().eq("json") {
+  if output_opt.is_some_and(|o| o.eq("json")) {
     println!(
       "{}",
-      serde_json::to_string_pretty(&cfs_session_vec).unwrap()
+      serde_json::to_string_pretty(&cfs_session_vec)
+        .context("Failed to serialize CFS sessions")?
     );
   } else {
     common::cfs_session_utils::print_table_struct(&cfs_session_vec);

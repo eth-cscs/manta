@@ -1,28 +1,31 @@
 use std::{fs, io::Write, path::PathBuf};
 
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use directories::ProjectDirs;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{value, DocumentMut};
+use toml_edit::{DocumentMut, value};
 
-use crate::{common::authentication::get_api_token, manta_backend_dispatcher::StaticBackendDispatcher};
+use crate::{
+  common::authentication::get_api_token,
+  manta_backend_dispatcher::StaticBackendDispatcher,
+};
 
 pub async fn exec(
   cli_config_set_hsm: &ArgMatches,
   backend: &StaticBackendDispatcher,
   site_name: &str,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(&backend, &site_name).await?;
+  let shasta_token = get_api_token(backend, site_name).await?;
 
   let new_hsm: &String = cli_config_set_hsm
     .get_one("HSM_GROUP_NAME")
     .ok_or_else(|| Error::msg("new hsm group not defined"))?;
 
-  set_target_hsm(&backend, &shasta_token, new_hsm).await
+  set_target_hsm(backend, &shasta_token, new_hsm).await
 }
 
-pub async fn set_target_hsm(
+async fn set_target_hsm(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
   new_hsm: &String,
@@ -36,8 +39,14 @@ pub async fn set_target_hsm(
     "manta", /*application*/
   );
 
-  let mut path_to_manta_configuration_file =
-    PathBuf::from(project_dirs.unwrap().config_dir());
+  let mut path_to_manta_configuration_file = PathBuf::from(
+    project_dirs
+      .context(
+        "Could not determine config directory \
+           (home directory may not be set)",
+      )?
+      .config_dir(),
+  );
 
   path_to_manta_configuration_file.push("config.toml"); // ~/.config/manta/config is the file
 
@@ -48,11 +57,11 @@ pub async fn set_target_hsm(
 
   let config_file_content =
     fs::read_to_string(path_to_manta_configuration_file.clone())
-      .expect("Error reading configuration file");
+      .context("Error reading configuration file")?;
 
   let mut doc = config_file_content
     .parse::<DocumentMut>()
-    .expect("ERROR: could not parse configuration file to TOML");
+    .context("Could not parse configuration file as TOML")?;
 
   let mut settings_hsm_available_vec = backend
     .get_group_name_available(shasta_token)
@@ -70,7 +79,7 @@ pub async fn set_target_hsm(
     backend
       .get_all_groups(shasta_token)
       .await
-      .unwrap()
+      .context("Failed to fetch HSM groups")?
       .into_iter()
       .map(|hsm_group| hsm_group.label)
       .collect::<Vec<String>>()
@@ -92,29 +101,34 @@ pub async fn set_target_hsm(
   let mut manta_configuration_file = std::fs::OpenOptions::new()
     .write(true)
     .truncate(true)
-    .open(path_to_manta_configuration_file)
-    .unwrap();
+    .open(&path_to_manta_configuration_file)
+    .context("Failed to open configuration file for writing")?;
 
   // Write updated content to configuration file
   manta_configuration_file
     .write_all(doc.to_string().as_bytes())
-    .unwrap();
-  manta_configuration_file.flush().unwrap();
+    .context("Failed to write configuration file")?;
+  manta_configuration_file
+    .flush()
+    .context("Failed to flush configuration file")?;
 
   println!("Target HSM group set to '{new_hsm}'");
 
   Ok(())
 }
 
-pub fn validate_hsm_group_and_hsm_available_config_params(
+fn validate_hsm_group_and_hsm_available_config_params(
   hsm_group: &String,
   hsm_available_vec: &[String],
 ) -> Result<(), Error> {
   if !hsm_available_vec.contains(hsm_group) {
-    return Err(Error::msg(format!(
-      "HSM group provided ({}) not valid, please choose one of the following options: {:?}",
-      hsm_group, hsm_available_vec
-    )));
+    bail!(
+      "HSM group provided ({}) not valid, \
+       please choose one of the following \
+       options: {:?}",
+      hsm_group,
+      hsm_available_vec
+    );
   }
 
   Ok(())

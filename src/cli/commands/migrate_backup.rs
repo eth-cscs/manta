@@ -1,52 +1,59 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
 
-use crate::{manta_backend_dispatcher::StaticBackendDispatcher, common::authentication::get_api_token};
+use crate::common::{app_context::AppContext, authentication::get_api_token};
 
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
+  ctx: &AppContext<'_>,
   bos: Option<&str>,
   destination: Option<&str>,
   prehook: Option<&str>,
   posthook: Option<&str>,
 ) -> Result<(), Error> {
+  let backend = ctx.backend;
+  let site_name = ctx.site_name;
+  let shasta_base_url = ctx.shasta_base_url;
+  let shasta_root_cert = ctx.shasta_root_cert;
+
   let shasta_token = get_api_token(backend, site_name).await?;
+
+  let bos_value = bos.context("BOS template is required")?;
+  let destination_value =
+    destination.context("Destination folder is required")?;
 
   println!(
     "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",
-    bos.unwrap(),
-    destination.unwrap(),
-    &prehook.unwrap_or(&"none".to_string()),
-    &posthook.unwrap_or(&"none".to_string()),
+    bos_value,
+    destination_value,
+    prehook.unwrap_or("none"),
+    posthook.unwrap_or("none"),
   );
-  if prehook.is_some() {
-    match crate::common::hooks::check_hook_perms(prehook).await {
-      Ok(_r) => log::debug!("Pre-hook script exists and is executable."),
+  if let Some(prehook_path) = prehook {
+    match crate::common::hooks::check_hook_perms(Some(prehook_path)).await {
+      Ok(_r) => {
+        log::debug!("Pre-hook script exists and is executable.")
+      }
       Err(e) => {
-        return Err(Error::msg(format!("{}. File: {}", e, &prehook.unwrap())));
+        bail!("{}. File: {}", e, prehook_path);
       }
     };
   }
-  if posthook.is_some() {
-    match crate::common::hooks::check_hook_perms(posthook).await {
-      Ok(_) => log::debug!("Post-hook script exists and is executable."),
+  if let Some(posthook_path) = posthook {
+    match crate::common::hooks::check_hook_perms(Some(posthook_path)).await {
+      Ok(_) => {
+        log::debug!("Post-hook script exists and is executable.")
+      }
       Err(e) => {
-        return Err(Error::msg(format!("{}. File: {}", e, &posthook.unwrap())));
+        bail!("{}. File: {}", e, posthook_path);
       }
     };
   }
 
-  println!("Running the pre-hook {}", &prehook.unwrap());
+  println!("Running the pre-hook {}", prehook.unwrap_or("none"));
   match crate::common::hooks::run_hook(prehook).await {
     Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
     Err(_error) => {
-      return Err(Error::msg(format!(
-        "Pre-hook script failed. Error: {}",
-        _error
-      )));
+      bail!("Pre-hook script failed. Error: {}", _error);
     }
   };
 
@@ -65,21 +72,18 @@ pub async fn exec(
       log::debug!("Migrate backup completed successfully.");
     }
     Err(e) => {
-      return Err(Error::msg(format!("Migrate backup failed. Error: {}", e)));
+      bail!("Migrate backup failed. Error: {}", e);
     }
   }
 
-  if posthook.is_some() {
-    println!("Running the post-hook {}", &posthook.unwrap());
+  if let Some(posthook_path) = posthook {
+    println!("Running the post-hook {}", posthook_path);
     match crate::common::hooks::run_hook(posthook).await {
       Ok(_code) => {
         log::debug!("Post-hook script completed ok. RT={}", _code);
       }
       Err(_error) => {
-        return Err(Error::msg(format!(
-          "Post-hook script failed. Error: {}",
-          _error
-        )));
+        bail!("Post-hook script failed. Error: {}", _error);
       }
     };
   }

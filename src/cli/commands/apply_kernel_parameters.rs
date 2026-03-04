@@ -1,8 +1,5 @@
-use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka},
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
-use anyhow::Error;
+use crate::common::{self, app_context::AppContext, audit::Audit, jwt_ops};
+use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
   interfaces::{
@@ -18,23 +15,27 @@ use std::collections::HashMap;
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
-  backend: StaticBackendDispatcher,
-  site_name: &str,
+  ctx: &AppContext<'_>,
   kernel_params: &str,
   hosts_expression: Option<&str>,
   hsm_group_name_arg_opt: Option<&str>,
-  settings_hsm_group_name_opt: Option<&String>,
   assume_yes: bool,
   do_not_reboot: bool,
-  kafka_audit_opt: Option<&Kafka>,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let shasta_token = common::authentication::get_api_token(&backend, site_name).await?;
+  let backend = ctx.backend.clone();
+  let site_name = ctx.site_name;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
+
+  let shasta_token =
+    common::authentication::get_api_token(&backend, site_name).await?;
 
   let mut need_restart = false;
   log::info!("Apply kernel parameters");
 
-  // Get nodes from either hosts_expression or hsm_group_name
+  // Get nodes from either hosts_expression or
+  // hsm_group_name
   let xname_vec: Vec<String> = if let Some(hosts_expr) = hosts_expression {
     // Case 1: Nodes provided explicitly
     let node_metadata_available_vec = backend
@@ -42,7 +43,8 @@ pub async fn exec(
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get node metadata. Reason:\n{e}\nExit"
+          "ERROR - Could not get node metadata. \
+             Reason:\n{e}\nExit"
         ))
       })?;
 
@@ -54,35 +56,46 @@ pub async fn exec(
     .await
     .map_err(|e| {
       Error::msg(format!(
-        "ERROR - Could not convert user input to list of xnames. Reason:\n{e}"
+        "ERROR - Could not convert user input to \
+           list of xnames. Reason:\n{e}"
       ))
     })?
   } else if let Some(hsm_group) = hsm_group_name_arg_opt {
     // Case 2: Nodes from HSM group
     backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &[hsm_group.to_string()])
+      .get_member_vec_from_group_name_vec(
+        &shasta_token,
+        &[hsm_group.to_string()],
+      )
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get members for HSM group {}. Reason:\n{e}",
+          "ERROR - Could not get members for \
+             HSM group {}. Reason:\n{e}",
           hsm_group
         ))
       })?
   } else if let Some(settings_hsm_group) = settings_hsm_group_name_opt {
-      // Case 3: Nodes from settings HSM group
+    // Case 3: Nodes from settings HSM group
     backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &[settings_hsm_group.to_string()])
+      .get_member_vec_from_group_name_vec(
+        &shasta_token,
+        &[settings_hsm_group.to_string()],
+      )
       .await
       .map_err(|e| {
         Error::msg(format!(
-          "ERROR - Could not get members for settings HSM group {}. Reason:\n{e}",
+          "ERROR - Could not get members for \
+             settings HSM group {}. Reason:\n{e}",
           settings_hsm_group
         ))
       })?
   } else {
-    return Err(Error::msg(
-      "ERROR - No nodes provided. Please provide either a list of nodes via --nodes or an HSM group via --hsm-group",
-    ));
+    bail!(
+      "ERROR - No nodes provided. Please provide \
+         either a list of nodes via --nodes or an \
+         HSM group via --hsm-group",
+    );
   };
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
@@ -92,9 +105,12 @@ pub async fn exec(
     backend
       .get_bootparameters(&shasta_token, &xname_vec)
       .await
-      .unwrap();
+      .context("Failed to get boot parameters")?;
 
-  let node_group: NodeSet = xname_vec.join(", ").parse().unwrap();
+  let node_group: NodeSet = xname_vec
+    .join(", ")
+    .parse()
+    .context("Failed to parse node list")?;
 
   for boot_parameter in &mut current_node_boot_params_vec {
     let image_id_opt = boot_parameter.try_get_boot_image_id();
@@ -106,7 +122,7 @@ pub async fn exec(
     );
 
     let kernel_params_changed =
-      boot_parameter.apply_kernel_params(&kernel_params);
+      boot_parameter.apply_kernel_params(kernel_params);
     need_restart = kernel_params_changed || need_restart;
 
     if kernel_params_changed {
@@ -116,33 +132,39 @@ pub async fn exec(
 
     // Set image metadata to sbps
     // Check 'root' kernel parameters for sbps
-    if let Some(image_id) = image_id_opt {
-      if !image_map.contains_key(&image_id) {
-        let mut image: Image = backend
-          .get_images(&shasta_token, Some(&image_id))
-          .await?
-          .first()
-          .unwrap()
-          .clone();
+    if let Some(image_id) = image_id_opt
+      && !image_map.contains_key(&image_id)
+    {
+      let mut image: Image = backend
+        .get_images(&shasta_token, Some(&image_id))
+        .await?
+        .first()
+        .context("No image found for the given image id")?
+        .clone();
 
-        if boot_parameter.is_root_kernel_param_iscsi_ready() {
-          if common::user_interaction::confirm(
-            "Kernel parameters using SBPS/iSCSI. Do you want to project the boot image through SBPS?",
-            assume_yes,
-          ) {
-            log::info!(
-              "Setting 'sbps-project' metadata to 'true' for image id '{}'",
-              image_id
-            );
+      if boot_parameter.is_root_kernel_param_iscsi_ready() {
+        if common::user_interaction::confirm(
+          "Kernel parameters using SBPS/iSCSI. \
+           Do you want to project the boot image \
+           through SBPS?",
+          assume_yes,
+        ) {
+          log::info!(
+            "Setting 'sbps-project' metadata to \
+             'true' for image id '{}'",
+            image_id
+          );
 
-            image.set_boot_image_iscsi_ready();
+          image.set_boot_image_iscsi_ready();
 
-            log::debug!("Image:\n{:#?}", image);
+          log::debug!("Image:\n{:#?}", image);
 
-            image_map.insert(image_id.to_string(), image.clone());
-          } else {
-            log::info!("User chose to not project the image through SBPS");
-          }
+          image_map.insert(image_id.to_string(), image.clone());
+        } else {
+          log::info!(
+            "User chose to not project the \
+             image through SBPS"
+          );
         }
       }
     }
@@ -150,32 +172,41 @@ pub async fn exec(
 
   if need_restart {
     println!(
-      "Apply kernel parameters:\n{:?}\nTo nodes:\n{:?}",
+      "Apply kernel parameters:\n{:?}\n\
+       To nodes:\n{:?}",
       kernel_params,
       node_group.to_string()
     );
 
     if !common::user_interaction::confirm(
-      "This operation will replace the kernel parameters for the nodes below. Please confirm to proceed",
+      "This operation will replace the kernel \
+       parameters for the nodes below. Please \
+       confirm to proceed",
       assume_yes,
     ) {
-      return Err(Error::msg("Operation canceled by the user."));
+      bail!("Operation canceled by the user.");
     }
   } else {
-    return Err(Error::msg("No changes detected. Nothing to do. Exit"));
+    bail!("No changes detected. Nothing to do. Exit");
   }
 
   log::info!("need restart? {}", need_restart);
 
   if dry_run {
-    println!("Dry-run enabled. No changes persisted into the system");
     println!(
-      "Dry run mode. Would update kernel parameters below:\n{}",
-      serde_json::to_string_pretty(&current_node_boot_params_vec).unwrap()
+      "Dry-run enabled. No changes persisted \
+       into the system"
+    );
+    println!(
+      "Dry run mode. Would update kernel \
+       parameters below:\n{}",
+      serde_json::to_string_pretty(&current_node_boot_params_vec)
+        .context("Failed to serialize boot parameters",)?
     );
     println!(
       "Dry run mode. Would update images:\n{}",
-      serde_json::to_string_pretty(&image_map).unwrap()
+      serde_json::to_string_pretty(&image_map)
+        .context("Failed to serialize image map")?
     );
   } else {
     log::info!("Persist changes");
@@ -198,7 +229,7 @@ pub async fn exec(
       backend
         .update_image(
           &shasta_token,
-          image.id.clone().unwrap().as_str(),
+          image.id.clone().context("Image has no id")?.as_str(),
           &image.into(),
         )
         .await?;
@@ -207,10 +238,15 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token)
+      .context("Failed to get username from token")?;
+    let user_id = jwt_ops::get_preferred_username(&shasta_token).context(
+      "Failed to get preferred username \
+           from token",
+    )?;
 
-    // FIXME: We should not need to make this call here but at the beginning of the method as a
+    // FIXME: We should not need to make this call
+    // here but at the beginning of the method as a
     // prerequisite
     let xnames: Vec<&str> =
       xname_vec.iter().map(|xname| xname.as_str()).collect();
@@ -220,10 +256,26 @@ pub async fn exec(
       .await?;
 
     let msg_json = serde_json::json!(
-        { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_vec}, "group": group_map_vec.keys().collect::<Vec<_>>(), "message": format!("Apply kernel parameters: {}", kernel_params)});
+      {
+        "user": {
+          "id": user_id,
+          "name": username
+        },
+        "host": {
+          "hostname": xname_vec
+        },
+        "group": group_map_vec
+          .keys()
+          .collect::<Vec<_>>(),
+        "message": format!(
+          "Apply kernel parameters: {}",
+          kernel_params
+        )
+      }
+    );
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);
@@ -234,14 +286,13 @@ pub async fn exec(
   if !do_not_reboot && need_restart && !dry_run {
     log::info!("Restarting nodes");
 
-    crate::cli::commands::power_reset_nodes::exec(
-      &backend,
-      &shasta_token,
+    crate::cli::commands::power_common::exec_nodes(
+      ctx,
+      crate::cli::commands::power_common::PowerAction::Reset,
       &xname_to_reboot_vec.join(","),
       true,
       assume_yes,
       "table",
-      kafka_audit_opt,
     )
     .await?;
   }

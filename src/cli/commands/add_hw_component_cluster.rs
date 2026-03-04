@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 
 use crate::common;
 use manta_backend_dispatcher::{
@@ -8,7 +8,7 @@ use manta_backend_dispatcher::{
 };
 
 use crate::{
-  cli::commands::apply_hw_cluster_pin::utils::{
+  cli::commands::hw_cluster_common::utils::{
     calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
     get_hsm_node_hw_component_counter,
   },
@@ -34,12 +34,13 @@ pub async fn exec(
       if create_hsm_group {
         log::info!(
           "Group '{}' does not exist, but the option to create the group has been selected, creating it now.",
-          target_hsm_group_name.to_string()
+          target_hsm_group_name
         );
         if dryrun {
-          return Err(Error::msg(
-            "Dryrun selected, cannot create the new group and continue.",
-          ));
+          bail!(
+            "Dryrun selected, cannot create \
+             the new group and continue.",
+          );
         } else {
           let group = Group {
             label: target_hsm_group_name.to_string(),
@@ -51,13 +52,15 @@ pub async fn exec(
           backend
             .add_group(shasta_token, group)
             .await
-            .expect("Unable to create new group");
+            .context("Unable to create new group")?;
         }
       } else {
-        return Err(Error::msg(format!(
-          "Group '{}' does not exist, but the option to create the group was NOT specificied, cannot continue.",
-          target_hsm_group_name.to_string()
-        )));
+        bail!(
+          "Group '{}' does not exist, but the \
+           option to create the group was NOT \
+           specificied, cannot continue.",
+          target_hsm_group_name
+        );
       }
     }
   };
@@ -75,24 +78,32 @@ pub async fn exec(
 
   let target_hsm_group_name = pattern_element_vec.remove(0);
 
+  if !pattern_element_vec.len().is_multiple_of(2) {
+    bail!(
+      "Error in pattern: odd number of elements \
+       after group name. Expected pairs of \
+       <hw component>:<count>. \
+       eg tasna:a100:4:epyc:10:instinct:8",
+    );
+  }
+
   let mut user_defined_delta_hw_component_count_hashmap: HashMap<
     String,
     isize,
   > = HashMap::new();
 
   // Check user input is correct
-  for hw_component_counter in pattern_element_vec.chunks(2) {
-    if hw_component_counter[0].parse::<String>().is_ok()
-      && hw_component_counter[1].parse::<isize>().is_ok()
-    {
-      user_defined_delta_hw_component_count_hashmap.insert(
-        hw_component_counter[0].parse::<String>().unwrap(),
-        hw_component_counter[1].parse::<isize>().unwrap(),
-      );
+  for hw_component_counter in pattern_element_vec.chunks_exact(2) {
+    if let Ok(count) = hw_component_counter[1].parse::<isize>() {
+      user_defined_delta_hw_component_count_hashmap
+        .insert(hw_component_counter[0].to_string(), count);
     } else {
-      return Err(Error::msg(
-        "Error in pattern. Please make sure to follow <hsm name>:<hw component>:<counter>:... eg <tasna>:a100:4:epyc:10:instinct:8",
-      ));
+      bail!(
+        "Error in pattern. Please make sure to \
+         follow <hsm name>:<hw component>:\
+         <counter>:... eg \
+         <tasna>:a100:4:epyc:10:instinct:8",
+      );
     }
   }
 
@@ -119,7 +130,7 @@ pub async fn exec(
       &[parent_hsm_group_name.to_string()],
     )
     .await
-    .unwrap();
+    .context("Failed to get member vec from parent HSM group")?;
 
   // Get group hw component counters for target group
   let mut parent_hsm_node_hw_component_count_vec =
@@ -133,9 +144,7 @@ pub async fn exec(
     .await;
 
   // sort nodes hw counters by node name
-  parent_hsm_node_hw_component_count_vec.sort_by_key(
-    |target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone(),
-  );
+  parent_hsm_node_hw_component_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
   // Calculate hw component counters (summary) across all node within the group
   let parent_hsm_hw_component_summary: HashMap<String, usize> =
@@ -158,11 +167,16 @@ pub async fn exec(
     let current_counter: usize = *parent_hsm_hw_component_summary
       .get(hw_component)
       .unwrap_or(&0);
-    if *counter as isize > current_counter as isize {
-      return Err(Error::msg(format!(
-        "Cannot remove more hw component '{}' ({}) than available in parent group '{}' ({})",
-        hw_component, *counter, parent_hsm_group_name, current_counter
-      )));
+    if *counter > current_counter as isize {
+      bail!(
+        "Cannot remove more hw component '{}' \
+         ({}) than available in parent group \
+         '{}' ({})",
+        hw_component,
+        *counter,
+        parent_hsm_group_name,
+        current_counter
+      );
     }
     let new_counter: usize = current_counter - *counter as usize;
 
@@ -189,10 +203,10 @@ pub async fn exec(
   // Downscale parent group
   let hw_component_counters_to_move_out_from_parent_hsm =
         crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
-            &final_parent_hsm_hw_component_summary.clone(),
+            &final_parent_hsm_hw_component_summary,
             &final_parent_hsm_hw_component_summary
-                .into_iter()
-                .map(|(hw_component, _)| hw_component)
+                .keys()
+                .cloned()
                 .collect::<Vec<String>>(),
             &mut parent_hsm_node_hw_component_count_vec,
             &parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
@@ -215,7 +229,7 @@ pub async fn exec(
       &[target_hsm_group_name.to_string()],
     )
     .await
-    .unwrap();
+    .context("Failed to get member vec from target HSM group")?;
 
   target_hsm_node_vec.extend(nodes_moved_from_parent_hsm.clone());
 
@@ -261,9 +275,7 @@ pub async fn exec(
     .await;
 
   // sort nodes hw counters by node name
-  target_hsm_node_hw_component_count_vec.sort_by_key(
-    |target_hsm_group_hw_component| target_hsm_group_hw_component.0.clone(),
-  );
+  target_hsm_node_hw_component_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
   log::info!(
     "Group '{}' hw component counters: {:?}",
@@ -293,7 +305,7 @@ pub async fn exec(
            // It does NOT have `assume_yes`.
            // So I will pass `false` for assume_yes to force interaction, mirroring original behavior.
   ) {
-    return Err(Error::msg("Operation cancelled by user."));
+    bail!("Operation cancelled by user.");
   }
 
   // *********************************************************************************************************
@@ -302,15 +314,15 @@ pub async fn exec(
     log::info!("Dryrun enabled, not modifying the groups on the system.")
   } else {
     for xname in nodes_moved_from_parent_hsm {
-      let _ = backend
+      backend
         .delete_member_from_group(shasta_token, parent_hsm_group_name, &xname)
         .await
-        .unwrap();
+        .context("Failed to delete member from parent group")?;
 
       let _ = backend
         .add_members_to_group(shasta_token, target_hsm_group_name, &[&xname])
         .await
-        .unwrap();
+        .context("Failed to add member to target group")?;
     }
   }
   let target_hsm_group_value = serde_json::json!({
@@ -322,7 +334,8 @@ pub async fn exec(
 
   println!(
     "{}",
-    serde_json::to_string_pretty(&target_hsm_group_value).unwrap()
+    serde_json::to_string_pretty(&target_hsm_group_value)
+      .context("Failed to serialize target HSM group to JSON",)?
   );
 
   let parent_hsm_group_value = serde_json::json!({
@@ -334,7 +347,8 @@ pub async fn exec(
 
   println!(
     "{}",
-    serde_json::to_string_pretty(&parent_hsm_group_value).unwrap()
+    serde_json::to_string_pretty(&parent_hsm_group_value)
+      .context("Failed to serialize parent HSM group to JSON",)?
   );
 
   Ok(())

@@ -1,11 +1,13 @@
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::interfaces::hsm::{
   component::ComponentTrait, group::GroupTrait,
 };
 
 use crate::{
-  common::{self, audit::Audit, jwt_ops, kafka::Kafka, authentication::get_api_token},
+  common::{
+    self, audit::Audit, authentication::get_api_token, jwt_ops, kafka::Kafka,
+  },
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -49,9 +51,10 @@ pub async fn exec(
 
   // Check if there are any xname to migrate/move and exit otherwise
   if xname_to_move_vec.is_empty() {
-    return Err(Error::msg(
-      "The list of nodes to move is empty. Nothing to do. Exit",
-    ));
+    bail!(
+      "The list of nodes to move is empty. \
+       Nothing to do. Exit",
+    );
   }
 
   if common::user_interaction::confirm(
@@ -63,7 +66,7 @@ pub async fn exec(
   ) {
     log::info!("Continue",);
   } else {
-    return Err(Error::msg("Cancelled by user. Aborting."));
+    bail!("Cancelled by user. Aborting.");
   }
 
   if backend
@@ -85,22 +88,28 @@ pub async fn exec(
 
   // Remove xnames from HSM group
   for xname in &xname_to_move_vec {
-    let _ = backend
-      .delete_member_from_group(&shasta_token, &target_hsm_name, &xname)
+    backend
+      .delete_member_from_group(&shasta_token, target_hsm_name, xname)
       .await
-      .unwrap();
+      .with_context(|| {
+        format!(
+          "Failed to remove node '{}' from group '{}'",
+          xname, target_hsm_name
+        )
+      })?;
   }
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token).unwrap();
-    let user_id = jwt_ops::get_preferred_username(&shasta_token).unwrap();
+    let username = jwt_ops::get_name(&shasta_token).unwrap_or_default();
+    let user_id =
+      jwt_ops::get_preferred_username(&shasta_token).unwrap_or_default();
 
     let msg_json = serde_json::json!(
         { "user": {"id": user_id, "name": username}, "host": {"hostname": xname_to_move_vec}, "group": vec![target_hsm_name], "message": format!("Remove nodes from group '{}'", target_hsm_name)});
 
     let msg_data = serde_json::to_string(&msg_json)
-      .expect("Could not serialize audit message data");
+      .context("Could not serialize audit message data")?;
 
     if let Err(e) = kafka_audit.produce_message(msg_data.as_bytes()).await {
       log::warn!("Failed producing messages: {}", e);

@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use dialoguer::Select;
 use directories::ProjectDirs;
 
@@ -8,7 +8,7 @@ pub async fn exec() -> Result<(), Error> {
   unset_auth().await
 }
 
-pub async fn unset_auth() -> Result<(), Error> {
+async fn unset_auth() -> Result<(), Error> {
   let mut auth_token_list: Vec<PathBuf> = vec![];
 
   // XDG Base Directory Specification
@@ -18,11 +18,16 @@ pub async fn unset_auth() -> Result<(), Error> {
     "manta", /*application*/
   );
 
-  let path_to_manta_authentication_token_file =
-    PathBuf::from(project_dirs.unwrap().cache_dir());
+  let path_to_manta_authentication_token_file = PathBuf::from(
+    project_dirs
+      .context("Failed to resolve project directories")?
+      .cache_dir(),
+  );
 
-  for entry in fs::read_dir(path_to_manta_authentication_token_file).unwrap() {
-    auth_token_list.push(entry.unwrap().path())
+  for entry in fs::read_dir(&path_to_manta_authentication_token_file)
+    .context("Failed to read authentication token directory")?
+  {
+    auth_token_list.push(entry.context("Failed to read entry")?.path())
   }
 
   let selection = Select::new()
@@ -31,19 +36,23 @@ pub async fn unset_auth() -> Result<(), Error> {
     .items(
       &auth_token_list
         .iter()
-        .map(|path| path.file_name().unwrap().to_str().unwrap())
+        .map(|path| {
+          path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+        })
         .collect::<Vec<_>>(),
     )
     .interact()
-    .unwrap();
+    .context("Failed to get user selection")?;
 
   println!(
     "Deleting authentication file: {}",
     auth_token_list[selection]
       .file_name()
-      .unwrap()
-      .to_str()
-      .unwrap()
+      .and_then(|n| n.to_str())
+      .unwrap_or("unknown")
   );
 
   fs::remove_file(auth_token_list[selection].clone())?;

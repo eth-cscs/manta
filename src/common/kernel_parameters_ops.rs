@@ -11,7 +11,7 @@ pub fn print_table(
   let mut kernel_params_key_vec: Vec<String> =
     if let Some(highlight) = kernel_params_key_to_filter_opt {
       highlight
-        .split(",")
+        .split(',')
         .map(|value| value.trim().to_string())
         .collect()
     } else {

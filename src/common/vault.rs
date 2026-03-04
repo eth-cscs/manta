@@ -1,7 +1,7 @@
 pub mod http_client {
 
   use manta_backend_dispatcher::error::Error;
-  use serde_json::{json, Value};
+  use serde_json::{Value, json};
 
   pub async fn auth_oidc_jwt(
     vault_base_url: &str,
@@ -33,46 +33,19 @@ pub mod http_client {
     match resp.error_for_status() {
       Ok(resp) => {
         let resp_value = resp.json::<Value>().await?;
-        return Ok(String::from(
-          resp_value["auth"]
-            .get("client_token")
-            .and_then(Value::as_str)
-            .unwrap(),
-        ));
+        let client_token = resp_value["auth"]
+          .get("client_token")
+          .and_then(Value::as_str)
+          .ok_or_else(|| {
+            Error::Message(
+              "Vault auth response missing 'client_token' field".to_string(),
+            )
+          })?;
+        Ok(client_token.to_string())
       }
-      Err(e) => {
-        return Err(Error::NetError(e));
-      }
+      Err(e) => Err(Error::NetError(e)),
     }
   }
-
-  /* pub async fn auth_approle(vault_base_url: &str, vault_role_id: &str) -> Result<String, Error> {
-      // rest client create new cfs sessions
-      let client = reqwest::Client::builder().build()?;
-
-      let api_url = vault_base_url.to_owned() + "/v1/auth/approle/login";
-
-      log::debug!("Accessing/login to {}", api_url);
-
-      let resp = client
-          .post(api_url.clone())
-          // .post(format!("{}{}", vault_base_url, "/v1/auth/approle/login"))
-          .json(&json!({ "role_id": vault_role_id }))
-          .send()
-          .await?;
-
-      match resp.error_for_status() {
-          Ok(resp) => {
-              let resp_value = resp.json::<Value>().await?;
-              return Ok(String::from(
-                  resp_value["auth"]["client_token"].as_str().unwrap(),
-              ));
-          }
-          Err(e) => {
-              return Err(Error::NetError(e));
-          }
-      }
-  } */
 
   pub async fn fetch_secret(
     vault_auth_token: &str,
@@ -95,11 +68,9 @@ pub mod http_client {
     match resp.error_for_status() {
       Ok(resp) => {
         let secret_value: Value = resp.json().await?;
-        return Ok(secret_value["data"].clone());
+        Ok(secret_value["data"].clone())
       }
-      Err(e) => {
-        return Err(Error::NetError(e));
-      }
+      Err(e) => Err(Error::NetError(e)),
     }
   }
 
@@ -122,20 +93,20 @@ pub mod http_client {
     )
     .await?; // this works for hashicorp-vault for fulen may need /v1/secret/data/shasta/vcs
 
-    Ok(String::from(
-      vault_secret["data"]
-        .get("token")
-        .and_then(Value::as_str)
-        .unwrap(),
-    )) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
+    let vcs_token = vault_secret["data"]
+      .get("token")
+      .and_then(Value::as_str)
+      .ok_or_else(|| {
+      Error::Message("Vault secret response missing 'token' field".to_string())
+    })?;
+
+    Ok(vcs_token.to_string()) // this works for vault v1.12.0 for older versions may need vault_secret["data"]["token"]
   }
 
   pub async fn fetch_shasta_k8s_secrets_from_vault(
     vault_base_url: &str,
     site_name: &str,
-    // vault_role_id: &str,
     shasta_token: &str,
-    // secret_path: &str,
   ) -> Result<Value, Error> {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;

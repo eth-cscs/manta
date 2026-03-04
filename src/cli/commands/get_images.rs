@@ -6,7 +6,6 @@ use manta_backend_dispatcher::{
 };
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use std::collections::HashMap;
 
 /// If filtering by HSM group, then image name must include HSM group name (It assumms each image
 /// is built for a specific cluster based on ansible vars used by the CFS session). The reason
@@ -60,7 +59,8 @@ pub async fn exec(
   ]);
 
   for image_details in image_detail_vec {
-    let creation_date = image_details.0.created.as_ref().unwrap();
+    let unknown = String::from("unknown");
+    let creation_date = image_details.0.created.as_ref().unwrap_or(&unknown);
 
     // NOTE: CSM can have different date formats, so we need to try to parse it in different
     // ways
@@ -73,20 +73,20 @@ pub async fn exec(
     };
 
     table.add_row(vec![
-      image_details.0.id.as_ref().unwrap(),
+      image_details.0.id.as_deref().unwrap_or("unknown"),
       &image_details.0.name,
       &creation_date,
       &image_details.1,
       &image_details
         .2
-        .split(",")
+        .split(',')
         .map(|v| v.trim())
         .collect::<Vec<_>>()
         .join("\n"),
       &image_details
         .0
         .metadata
-        .unwrap_or(HashMap::new())
+        .unwrap_or_default()
         .iter()
         .map(|(key, value)| format!("{key}:{value}"))
         .collect::<Vec<_>>()

@@ -1,7 +1,7 @@
 use crate::common::{
   authentication::get_api_token, authorization::get_groups_names_available,
 };
-use anyhow::Error;
+use anyhow::{Context, Error, bail};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
@@ -35,18 +35,21 @@ pub async fn exec(
     "table" => print_table(&group_vec),
     "json" => println!(
       "{}",
-      serde_json::to_string_pretty(&serde_json::to_value(group_vec).unwrap())
-        .unwrap()
+      serde_json::to_string_pretty(
+        &serde_json::to_value(group_vec)
+          .context("Failed to convert groups to JSON value")?
+      )
+      .context("Failed to serialize groups to JSON")?
     ),
     _ => {
-      return Err(Error::msg("ERROR - output not valid"));
+      bail!("ERROR - output not valid");
     }
   }
 
   Ok(())
 }
 
-pub fn print_table(group_vec: &[Group]) {
+fn print_table(group_vec: &[Group]) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
 
@@ -61,7 +64,8 @@ pub fn print_table(group_vec: &[Group]) {
   for group in group_vec {
     let mut group_members = group.get_members();
     group_members.sort();
-    let node_group: NodeSet = group_members.join(", ").parse().unwrap();
+    let node_group: NodeSet =
+      group_members.join(", ").parse().unwrap_or_default();
 
     table.add_row(vec![
       group.label.clone(),
