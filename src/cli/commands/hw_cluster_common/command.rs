@@ -386,3 +386,156 @@ async fn apply_group_updates(
 
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // ---- parse_hw_pattern_usize ----
+
+  #[test]
+  fn parse_hw_pattern_usize_valid() {
+    let (names, counts) =
+      parse_hw_pattern_usize("tasna", "a100:4:epyc:10").unwrap();
+    assert_eq!(names, vec!["a100", "epyc"]);
+    assert_eq!(counts.get("a100"), Some(&4));
+    assert_eq!(counts.get("epyc"), Some(&10));
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_single_pair() {
+    let (names, counts) =
+      parse_hw_pattern_usize("group1", "instinct:8").unwrap();
+    assert_eq!(names, vec!["instinct"]);
+    assert_eq!(counts.get("instinct"), Some(&8));
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_odd_elements_errors() {
+    assert!(parse_hw_pattern_usize("g", "a100:4:epyc").is_err());
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_non_numeric_count_errors() {
+    assert!(parse_hw_pattern_usize("g", "a100:four").is_err());
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_negative_count_errors() {
+    // usize cannot be negative
+    assert!(parse_hw_pattern_usize("g", "a100:-3").is_err());
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_sorted_output() {
+    let (names, _) =
+      parse_hw_pattern_usize("g", "zebra:1:alpha:2:mid:3").unwrap();
+    assert_eq!(names, vec!["alpha", "mid", "zebra"]);
+  }
+
+  #[test]
+  fn parse_hw_pattern_usize_lowercased() {
+    // Pattern should be lowercased
+    let (names, counts) = parse_hw_pattern_usize("GROUP", "A100:4").unwrap();
+    assert_eq!(names, vec!["a100"]);
+    assert_eq!(counts.get("a100"), Some(&4));
+  }
+
+  // ---- validate_resource_sufficiency ----
+
+  #[test]
+  fn validate_sufficiency_passes() {
+    let target_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 4)]),
+    )];
+    let parent_hw = vec![(
+      "x1000c0s1b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 8)]),
+    )];
+    let requested = HashMap::from([("a100".to_string(), 10)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_ok()
+    );
+  }
+
+  #[test]
+  fn validate_sufficiency_fails_insufficient() {
+    let target_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let parent_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 2)]),
+    )];
+    let requested = HashMap::from([("a100".to_string(), 10)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_err()
+    );
+  }
+
+  #[test]
+  fn validate_sufficiency_fails_missing_component() {
+    let target_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let parent_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("epyc".to_string(), 10)]),
+    )];
+    let requested = HashMap::from([("a100".to_string(), 1)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_err()
+    );
+  }
+
+  #[test]
+  fn validate_sufficiency_exact_match() {
+    let target_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let parent_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 4)]),
+    )];
+    let requested = HashMap::from([("a100".to_string(), 4)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_ok()
+    );
+  }
+
+  #[test]
+  fn validate_sufficiency_combines_target_and_parent() {
+    // Target has a node not in parent — should be combined
+    let target_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 3)]),
+    )];
+    let parent_hw = vec![(
+      "x1000c0s1b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 3)]),
+    )];
+    let requested = HashMap::from([("a100".to_string(), 6)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_ok()
+    );
+  }
+
+  #[test]
+  fn validate_sufficiency_no_double_count_overlap() {
+    // Target node IS in parent — should NOT be double-counted
+    let target_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 4)]),
+    )];
+    let parent_hw = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 4)]),
+    )];
+    // Total available is 4, not 8
+    let requested = HashMap::from([("a100".to_string(), 5)]);
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested,)
+        .is_err()
+    );
+  }
+}

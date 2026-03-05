@@ -486,3 +486,174 @@ pub fn string_vec_to_multi_line_string(
 
   members
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // ---- validate_xname_format ----
+
+  #[test]
+  fn valid_xname() {
+    assert!(validate_xname_format("x1000c0s0b0n0"));
+  }
+
+  #[test]
+  fn valid_xname_max_values() {
+    assert!(validate_xname_format("x9999c7s64b1n7"));
+  }
+
+  #[test]
+  fn invalid_xname_missing_prefix() {
+    assert!(!validate_xname_format("1000c0s0b0n0"));
+  }
+
+  #[test]
+  fn invalid_xname_bad_cabinet() {
+    assert!(!validate_xname_format("x100c0s0b0n0"));
+  }
+
+  #[test]
+  fn invalid_xname_slot_too_high() {
+    assert!(!validate_xname_format("x1000c0s65b0n0"));
+  }
+
+  #[test]
+  fn invalid_xname_board_too_high() {
+    assert!(!validate_xname_format("x1000c0s0b2n0"));
+  }
+
+  #[test]
+  fn invalid_xname_node_too_high() {
+    assert!(!validate_xname_format("x1000c0s0b0n8"));
+  }
+
+  #[test]
+  fn invalid_xname_chassis_too_high() {
+    assert!(!validate_xname_format("x1000c8s0b0n0"));
+  }
+
+  #[test]
+  fn invalid_xname_empty() {
+    assert!(!validate_xname_format(""));
+  }
+
+  #[test]
+  fn invalid_xname_garbage() {
+    assert!(!validate_xname_format("not-an-xname"));
+  }
+
+  // ---- validate_nid_format ----
+
+  #[test]
+  fn valid_nid() {
+    assert!(validate_nid_format("nid000001"));
+  }
+
+  #[test]
+  fn valid_nid_all_zeros() {
+    assert!(validate_nid_format("nid000000"));
+  }
+
+  #[test]
+  fn invalid_nid_too_short() {
+    assert!(!validate_nid_format("nid001"));
+  }
+
+  #[test]
+  fn invalid_nid_too_long() {
+    assert!(!validate_nid_format("nid0000001"));
+  }
+
+  #[test]
+  fn invalid_nid_missing_prefix() {
+    assert!(!validate_nid_format("000000001"));
+  }
+
+  #[test]
+  fn invalid_nid_non_numeric() {
+    assert!(!validate_nid_format("nid00000a"));
+  }
+
+  #[test]
+  fn invalid_nid_uppercase() {
+    // validate_nid_format lowercases for starts_with check
+    // but strip_prefix("nid") on the original string fails
+    // for uppercase input, so uppercase NIDs are rejected
+    assert!(!validate_nid_format("NID000001"));
+  }
+
+  // ---- get_short_nid ----
+
+  #[test]
+  fn short_nid_valid() {
+    assert_eq!(get_short_nid("nid000001").unwrap(), 1);
+  }
+
+  #[test]
+  fn short_nid_larger_number() {
+    assert_eq!(get_short_nid("nid001234").unwrap(), 1234);
+  }
+
+  #[test]
+  fn short_nid_zero() {
+    assert_eq!(get_short_nid("nid000000").unwrap(), 0);
+  }
+
+  #[test]
+  fn short_nid_wrong_length() {
+    assert!(get_short_nid("nid001").is_err());
+  }
+
+  #[test]
+  fn short_nid_no_prefix() {
+    assert!(get_short_nid("xxx000001").is_err());
+  }
+
+  // ---- string_vec_to_multi_line_string ----
+
+  #[test]
+  fn multi_line_none() {
+    assert_eq!(string_vec_to_multi_line_string(None, 1), "");
+  }
+
+  #[test]
+  fn multi_line_empty() {
+    let nodes: Vec<String> = vec![];
+    assert_eq!(string_vec_to_multi_line_string(Some(&nodes), 1), "");
+  }
+
+  #[test]
+  fn multi_line_single_element() {
+    let nodes = vec!["x1000c0s0b0n0".to_string()];
+    assert_eq!(
+      string_vec_to_multi_line_string(Some(&nodes), 1),
+      "x1000c0s0b0n0"
+    );
+  }
+
+  #[test]
+  fn multi_line_two_elements_one_column() {
+    let nodes = vec!["x1000c0s0b0n0".to_string(), "x1000c0s1b0n0".to_string()];
+    assert_eq!(
+      string_vec_to_multi_line_string(Some(&nodes), 1),
+      "x1000c0s0b0n0,\nx1000c0s1b0n0"
+    );
+  }
+
+  #[test]
+  fn multi_line_two_elements_two_columns() {
+    let nodes = vec!["x1000c0s0b0n0".to_string(), "x1000c0s1b0n0".to_string()];
+    assert_eq!(
+      string_vec_to_multi_line_string(Some(&nodes), 2),
+      "x1000c0s0b0n0,x1000c0s1b0n0"
+    );
+  }
+
+  #[test]
+  fn multi_line_three_elements_two_columns() {
+    let nodes = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+    // i=1: 1%2=1 -> comma, i=2: 2%2=0 -> newline
+    assert_eq!(string_vec_to_multi_line_string(Some(&nodes), 2), "a,b,\nc");
+  }
+}

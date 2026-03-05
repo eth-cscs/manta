@@ -45,3 +45,82 @@ pub fn get_preferred_username(token: &str) -> Result<String, anyhow::Error> {
     None => Ok("MISSING".to_string()),
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Build a fake JWT with the given JSON payload.
+  fn make_jwt(payload: &serde_json::Value) -> String {
+    let header = BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+    let body = BASE64_URL_SAFE_NO_PAD.encode(payload.to_string());
+    format!("{}.{}.sig", header, body)
+  }
+
+  // ---- get_name ----
+
+  #[test]
+  fn get_name_present() {
+    let token = make_jwt(&serde_json::json!({
+      "name": "Alice Smith",
+      "preferred_username": "alice"
+    }));
+    assert_eq!(get_name(&token).unwrap(), "Alice Smith");
+  }
+
+  #[test]
+  fn get_name_missing_returns_missing() {
+    let token = make_jwt(&serde_json::json!({
+      "preferred_username": "alice"
+    }));
+    assert_eq!(get_name(&token).unwrap(), "MISSING");
+  }
+
+  #[test]
+  fn get_name_with_bearer_prefix() {
+    let token = make_jwt(&serde_json::json!({
+      "name": "Bob Jones"
+    }));
+    let bearer_token = format!("Bearer {}", token);
+    assert_eq!(get_name(&bearer_token).unwrap(), "Bob Jones");
+  }
+
+  // ---- get_preferred_username ----
+
+  #[test]
+  fn get_preferred_username_present() {
+    let token = make_jwt(&serde_json::json!({
+      "name": "Alice",
+      "preferred_username": "alice123"
+    }));
+    assert_eq!(get_preferred_username(&token).unwrap(), "alice123");
+  }
+
+  #[test]
+  fn get_preferred_username_missing_returns_missing() {
+    let token = make_jwt(&serde_json::json!({"name": "Alice"}));
+    assert_eq!(get_preferred_username(&token).unwrap(), "MISSING");
+  }
+
+  // ---- get_claims_from_jwt_token ----
+
+  #[test]
+  fn malformed_jwt_no_dots() {
+    assert!(get_claims_from_jwt_token("nodots").is_err());
+  }
+
+  #[test]
+  fn malformed_jwt_invalid_base64() {
+    assert!(get_claims_from_jwt_token("header.!!!invalid.sig").is_err());
+  }
+
+  #[test]
+  fn jwt_with_standard_base64_padding() {
+    // Some JWTs use standard base64 with padding
+    let payload = serde_json::json!({"name": "Test"});
+    let header = BASE64_STANDARD.encode(r#"{"alg":"none"}"#);
+    let body = BASE64_STANDARD.encode(payload.to_string());
+    let token = format!("{}.{}.sig", header, body);
+    assert_eq!(get_name(&token).unwrap(), "Test");
+  }
+}

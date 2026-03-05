@@ -724,3 +724,235 @@ pub fn print_hsm_group_json(
 
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // ---- parse_hw_pattern ----
+
+  #[test]
+  fn parse_hw_pattern_valid() {
+    let input = vec!["a100", "4", "epyc", "10"];
+    let (names, counts) = parse_hw_pattern(&input).unwrap();
+    assert_eq!(names, vec!["a100", "epyc"]);
+    assert_eq!(counts.get("a100"), Some(&4));
+    assert_eq!(counts.get("epyc"), Some(&10));
+  }
+
+  #[test]
+  fn parse_hw_pattern_single_pair() {
+    let input = vec!["instinct", "8"];
+    let (names, counts) = parse_hw_pattern(&input).unwrap();
+    assert_eq!(names, vec!["instinct"]);
+    assert_eq!(counts.get("instinct"), Some(&8));
+  }
+
+  #[test]
+  fn parse_hw_pattern_empty() {
+    let input: Vec<&str> = vec![];
+    let (names, counts) = parse_hw_pattern(&input).unwrap();
+    assert!(names.is_empty());
+    assert!(counts.is_empty());
+  }
+
+  #[test]
+  fn parse_hw_pattern_odd_elements_errors() {
+    let input = vec!["a100", "4", "epyc"];
+    assert!(parse_hw_pattern(&input).is_err());
+  }
+
+  #[test]
+  fn parse_hw_pattern_non_numeric_count_errors() {
+    let input = vec!["a100", "four"];
+    assert!(parse_hw_pattern(&input).is_err());
+  }
+
+  #[test]
+  fn parse_hw_pattern_negative_count() {
+    let input = vec!["a100", "-3"];
+    let (_, counts) = parse_hw_pattern(&input).unwrap();
+    assert_eq!(counts.get("a100"), Some(&-3));
+  }
+
+  #[test]
+  fn parse_hw_pattern_sorted_output() {
+    let input = vec!["zebra", "1", "alpha", "2", "mid", "3"];
+    let (names, _) = parse_hw_pattern(&input).unwrap();
+    assert_eq!(names, vec!["alpha", "mid", "zebra"]);
+  }
+
+  // ---- calculate_hsm_hw_component_summary ----
+
+  #[test]
+  fn summary_empty_input() {
+    let input: Vec<(String, HashMap<String, usize>)> = vec![];
+    let result = calculate_hsm_hw_component_summary(&input);
+    assert!(result.is_empty());
+  }
+
+  #[test]
+  fn summary_single_node() {
+    let mut hw = HashMap::new();
+    hw.insert("a100".to_string(), 4);
+    hw.insert("epyc".to_string(), 2);
+    let input = vec![("x1000c0s0b0n0".to_string(), hw)];
+    let result = calculate_hsm_hw_component_summary(&input);
+    assert_eq!(result.get("a100"), Some(&4));
+    assert_eq!(result.get("epyc"), Some(&2));
+  }
+
+  #[test]
+  fn summary_multiple_nodes() {
+    let mut hw1 = HashMap::new();
+    hw1.insert("a100".to_string(), 4);
+    hw1.insert("epyc".to_string(), 2);
+    let mut hw2 = HashMap::new();
+    hw2.insert("a100".to_string(), 2);
+    hw2.insert("instinct".to_string(), 8);
+    let input = vec![
+      ("x1000c0s0b0n0".to_string(), hw1),
+      ("x1000c0s1b0n0".to_string(), hw2),
+    ];
+    let result = calculate_hsm_hw_component_summary(&input);
+    assert_eq!(result.get("a100"), Some(&6));
+    assert_eq!(result.get("epyc"), Some(&2));
+    assert_eq!(result.get("instinct"), Some(&8));
+  }
+
+  // ---- keep_iterating_final_hsm ----
+
+  #[test]
+  fn keep_iterating_when_current_exceeds_final() {
+    let final_summary = HashMap::from([("a100".to_string(), 4)]);
+    let current_summary = HashMap::from([("a100".to_string(), 6)]);
+    assert!(keep_iterating_final_hsm(&final_summary, &current_summary));
+  }
+
+  #[test]
+  fn stop_iterating_when_current_equals_final() {
+    let final_summary = HashMap::from([("a100".to_string(), 4)]);
+    let current_summary = HashMap::from([("a100".to_string(), 4)]);
+    assert!(!keep_iterating_final_hsm(&final_summary, &current_summary));
+  }
+
+  #[test]
+  fn stop_iterating_when_current_below_final() {
+    let final_summary = HashMap::from([("a100".to_string(), 4)]);
+    let current_summary = HashMap::from([("a100".to_string(), 2)]);
+    assert!(!keep_iterating_final_hsm(&final_summary, &current_summary));
+  }
+
+  #[test]
+  fn stop_iterating_when_component_missing_from_current() {
+    let final_summary = HashMap::from([("a100".to_string(), 4)]);
+    let current_summary = HashMap::new();
+    assert!(!keep_iterating_final_hsm(&final_summary, &current_summary));
+  }
+
+  #[test]
+  fn keep_iterating_mixed_components() {
+    let final_summary =
+      HashMap::from([("a100".to_string(), 4), ("epyc".to_string(), 10)]);
+    let current_summary =
+      HashMap::from([("a100".to_string(), 4), ("epyc".to_string(), 12)]);
+    assert!(keep_iterating_final_hsm(&final_summary, &current_summary));
+  }
+
+  // ---- get_best_candidate_in_hsm ----
+
+  #[test]
+  fn best_candidate_empty_inputs() {
+    let mut scores: Vec<(String, f32)> = vec![];
+    let hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    assert!(get_best_candidate_in_hsm(&mut scores, &hw).is_none());
+  }
+
+  #[test]
+  fn best_candidate_highest_score_wins() {
+    let mut scores = vec![
+      ("x1000c0s0b0n0".to_string(), 2.0),
+      ("x1000c0s1b0n0".to_string(), 5.0),
+      ("x1000c0s2b0n0".to_string(), 3.0),
+    ];
+    let hw = vec![
+      (
+        "x1000c0s0b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 4)]),
+      ),
+      (
+        "x1000c0s1b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 2)]),
+      ),
+      (
+        "x1000c0s2b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 1)]),
+      ),
+    ];
+    let result = get_best_candidate_in_hsm(&mut scores, &hw).unwrap();
+    assert_eq!(result.0.0, "x1000c0s1b0n0");
+    assert_eq!(result.0.1, 5.0);
+    assert_eq!(result.1.get("a100"), Some(&2));
+  }
+
+  #[test]
+  fn best_candidate_tie_breaking_by_xname() {
+    let mut scores = vec![
+      ("x1000c0s1b0n0".to_string(), 5.0),
+      ("x1000c0s0b0n0".to_string(), 5.0),
+    ];
+    let hw = vec![
+      (
+        "x1000c0s0b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 1)]),
+      ),
+      (
+        "x1000c0s1b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 2)]),
+      ),
+    ];
+    let result = get_best_candidate_in_hsm(&mut scores, &hw).unwrap();
+    assert_eq!(result.0.0, "x1000c0s0b0n0");
+  }
+
+  // ---- calculate_hsm_node_scores_from_final_hsm ----
+
+  #[test]
+  fn scores_penalize_unrequested_components() {
+    let nodes = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("unwanted".to_string(), 2usize)]),
+    )];
+    let parent_summary = HashMap::from([("unwanted".to_string(), 2)]);
+    let final_summary = HashMap::new();
+    let scarcity = HashMap::from([("unwanted".to_string(), 1.0f32)]);
+    let scores = calculate_hsm_node_scores_from_final_hsm(
+      &nodes,
+      &parent_summary,
+      &final_summary,
+      &scarcity,
+    );
+    assert_eq!(scores.len(), 1);
+    assert!(scores[0].1 < 0.0);
+    assert_eq!(scores[0].1, -2.0);
+  }
+
+  #[test]
+  fn scores_reward_excess_components() {
+    let nodes = vec![(
+      "x1000c0s0b0n0".to_string(),
+      HashMap::from([("a100".to_string(), 4usize)]),
+    )];
+    let parent_summary = HashMap::from([("a100".to_string(), 8)]);
+    let final_summary = HashMap::from([("a100".to_string(), 4)]);
+    let scarcity = HashMap::from([("a100".to_string(), 2.0f32)]);
+    let scores = calculate_hsm_node_scores_from_final_hsm(
+      &nodes,
+      &parent_summary,
+      &final_summary,
+      &scarcity,
+    );
+    assert!(scores[0].1 > 0.0);
+    assert_eq!(scores[0].1, 8.0);
+  }
+}
