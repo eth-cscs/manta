@@ -17,6 +17,7 @@ use crate::common::{
   local_git_repo,
 };
 
+/// Create and run a CFS session on target nodes.
 pub async fn exec(
   cli_apply_session: &ArgMatches,
   ctx: &AppContext<'_>,

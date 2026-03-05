@@ -1,5 +1,7 @@
 use serde_json::Value;
 
+/// Extract memory DIMM capacities (MiB) from a node's
+/// hardware inventory JSON.
 pub fn get_list_memory_capacity_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<u64>> {
@@ -20,6 +22,8 @@ pub fn get_list_memory_capacity_from_hw_inventory_value(
     })
 }
 
+/// Extract processor model names from a node's hardware
+/// inventory JSON.
 pub fn get_list_processor_model_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<String>> {
@@ -39,6 +43,8 @@ pub fn get_list_processor_model_from_hw_inventory_value(
     })
 }
 
+/// Extract accelerator (GPU) model names from a node's
+/// hardware inventory JSON.
 pub fn get_list_accelerator_model_from_hw_inventory_value(
   hw_inventory: &Value,
 ) -> Option<Vec<String>> {

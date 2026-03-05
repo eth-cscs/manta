@@ -8,6 +8,7 @@ use manta_backend_dispatcher::{
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
+/// Display boot parameters for specified nodes.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

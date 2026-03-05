@@ -6,6 +6,7 @@ use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
+/// List or show BOS session templates.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

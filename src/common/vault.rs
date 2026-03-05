@@ -3,6 +3,8 @@ pub mod http_client {
   use anyhow::Context;
   use serde_json::{Value, json};
 
+  /// Authenticate to Vault using a JWT token and return
+  /// a Vault client token.
   pub async fn auth_oidc_jwt(
     vault_base_url: &str,
     shasta_token: &str,
@@ -41,6 +43,7 @@ pub mod http_client {
     Ok(client_token.to_string())
   }
 
+  /// Fetch a secret from Vault's KV store at `secret_path`.
   pub async fn fetch_secret(
     vault_auth_token: &str,
     vault_base_url: &str,
@@ -64,6 +67,7 @@ pub mod http_client {
     Ok(secret_value["data"].clone())
   }
 
+  /// Retrieve the Gitea VCS token from Vault.
   pub async fn fetch_shasta_vcs_token(
     shasta_token: &str,
     vault_base_url: &str,
@@ -92,6 +96,8 @@ pub mod http_client {
     Ok(vcs_token.to_string())
   }
 
+  /// Retrieve Kubernetes secrets (API URL, token, CA cert)
+  /// from Vault.
   pub async fn fetch_shasta_k8s_secrets_from_vault(
     vault_base_url: &str,
     site_name: &str,

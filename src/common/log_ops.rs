@@ -10,6 +10,8 @@ use log4rs::{
 };
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
+/// Configure log4rs with a console appender at the given
+/// `log_level` (e.g. `"info"`, `"debug"`).
 pub fn configure(log_level: String) -> Result<(), anyhow::Error> {
   let stdout = ConsoleAppender::builder()
     .encoder(Box::new(PatternEncoder::new("{h({l}):5.5} | {m}{n}")))

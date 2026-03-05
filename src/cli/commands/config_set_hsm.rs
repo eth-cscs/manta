@@ -6,6 +6,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Set the default HSM group in configuration.
 pub async fn exec(
   cli_config_set_hsm: &ArgMatches,
   backend: &StaticBackendDispatcher,

@@ -10,6 +10,7 @@ use manta_backend_dispatcher::{
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use nodeset::NodeSet;
 
+/// List HSM groups and their members.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

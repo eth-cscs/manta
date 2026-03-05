@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 
+/// Verify that the backend API endpoint is reachable
+/// (3-second connect timeout).
 pub async fn check_network_connectivity_to_backend(
   shasta_base_url: &str,
 ) -> Result<()> {

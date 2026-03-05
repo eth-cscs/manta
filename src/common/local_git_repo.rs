@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 use git2::{Commit, ObjectType, Repository};
 
+/// Open a local Git repository at the given path.
 pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
   let repo_root = PathBuf::from(repo_path);
 
@@ -11,6 +12,7 @@ pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
   Repository::open(repo_root.as_os_str())
 }
 
+/// Get the most recent commit on the current branch.
 pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
   let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
   obj
@@ -18,6 +20,8 @@ pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
     .map_err(|_| git2::Error::from_str("Couldn't find commit"))
 }
 
+/// Return `true` if all tracked files are clean; `false`
+/// if there are untracked or modified files.
 pub fn untracked_changed_local_files(
   repo: &Repository,
 ) -> Result<bool, Box<dyn std::error::Error>> {

@@ -7,6 +7,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// List Redfish endpoint registrations.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

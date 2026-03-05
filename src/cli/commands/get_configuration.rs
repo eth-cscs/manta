@@ -14,6 +14,7 @@ use crate::common::{
 };
 use chrono::NaiveDateTime;
 
+/// List or show CFS configuration details.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

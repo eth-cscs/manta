@@ -3,6 +3,9 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
+/// Dispatch `manta apply` subcommands (hardware, session,
+/// sat-file, boot, template, ephemeral-env,
+/// kernel-parameters).
 pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,

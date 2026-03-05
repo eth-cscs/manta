@@ -3,6 +3,8 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+/// Dispatch `manta update` subcommands (boot-parameters,
+/// redfish-endpoint).
 pub async fn handle_update(
   cli_update: &ArgMatches,
   ctx: &AppContext<'_>,

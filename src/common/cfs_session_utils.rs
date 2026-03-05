@@ -119,7 +119,8 @@ fn cfs_session_struct_to_vec(
   result
 }
 
-// Check if a session is related to a group the user has access to
+/// Check if a CFS session targets any group the user has
+/// access to.
 pub fn check_cfs_session_against_groups_available(
   cfs_session: &CfsSessionGetResponse,
   group_available: Vec<Group>,
@@ -138,6 +139,7 @@ pub fn check_cfs_session_against_groups_available(
   })
 }
 
+/// Print CFS sessions as a formatted table.
 pub fn print_table_struct(
   get_cfs_session_value_list: &[types::cfs::session::CfsSessionGetResponse],
 ) {
@@ -147,6 +149,7 @@ pub fn print_table_struct(
   println!("{table}");
 }
 
+/// Build a table of CFS sessions without printing it.
 pub fn get_table_struct(
   get_cfs_session_value_list: &[types::cfs::session::CfsSessionGetResponse],
 ) -> Table {

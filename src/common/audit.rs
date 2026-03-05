@@ -4,10 +4,12 @@ use serde::{Deserialize, Serialize};
 use super::{jwt_ops, kafka::Kafka};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+/// Wraps a [`Kafka`] instance for sending audit messages.
 pub struct Auditor {
   pub kafka: Kafka,
 }
 
+/// Trait for producing audit messages to a message broker.
 pub trait Audit {
   async fn produce_message(&self, data: &[u8]) -> Result<()>;
 }

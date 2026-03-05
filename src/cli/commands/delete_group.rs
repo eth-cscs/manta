@@ -6,6 +6,7 @@ use crate::{
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+/// Delete an HSM group.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

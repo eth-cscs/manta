@@ -8,6 +8,7 @@ use manta_backend_dispatcher::interfaces::{
 };
 use std::time::Instant;
 
+/// Delete or cancel a CFS session.
 pub async fn exec(
   ctx: &AppContext<'_>,
   session_name: &str,

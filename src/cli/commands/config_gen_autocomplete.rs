@@ -5,6 +5,7 @@ use std::{env, io, path::PathBuf};
 
 use anyhow::{Error, bail};
 
+/// Generate shell auto-completion scripts.
 pub async fn exec(
   cli: Command,
   cli_config_generate_autocomplete: &ArgMatches,

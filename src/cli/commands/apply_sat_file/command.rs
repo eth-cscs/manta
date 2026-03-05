@@ -15,6 +15,7 @@ use crate::{
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+/// Process and apply a SAT file to the system.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

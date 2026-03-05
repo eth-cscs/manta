@@ -5,6 +5,8 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+/// Dispatch top-level misc commands (validate-local-repo,
+/// add-nodes-to-groups, remove-nodes-from-groups).
 pub async fn handle_misc(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,

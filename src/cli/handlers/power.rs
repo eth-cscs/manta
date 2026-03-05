@@ -3,6 +3,8 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+/// Dispatch `manta power` subcommands (on, off, reset —
+/// each targeting nodes or clusters).
 pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,

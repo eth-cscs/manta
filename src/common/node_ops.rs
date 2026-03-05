@@ -46,6 +46,8 @@ fn get_short_nid(long_nid: &str) -> Result<usize, anyhow::Error> {
     })
 }
 
+/// Resolve a NID hostlist expression to xnames by
+/// cross-referencing available node metadata.
 pub async fn get_xname_from_nid_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
@@ -74,6 +76,8 @@ pub async fn get_xname_from_nid_hostlist(
   Ok(xname_vec)
 }
 
+/// Filter available node metadata to only those xnames
+/// present in `node_vec`.
 pub async fn get_xname_from_xname_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
@@ -285,6 +289,8 @@ pub fn validate_xname_format(xname: &str) -> bool {
   XNAME_RE.is_match(xname)
 }
 
+/// Print a formatted table of node details. When `wide`
+/// is true, an extra column for kernel parameters is shown.
 pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
@@ -364,6 +370,8 @@ pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
   println!("{table}");
 }
 
+/// Print aggregate summary tables showing counts by power
+/// status, boot config, runtime config, and boot image.
 pub fn print_summary(node_details_list: Vec<NodeDetails>) {
   let mut power_status_counters: HashMap<String, usize> = HashMap::new();
   let mut boot_configuration_counters: HashMap<String, usize> = HashMap::new();
@@ -457,6 +465,8 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
   println!("{table}");
 }
 
+/// Format a slice of strings into comma-separated lines,
+/// wrapping after every `num_columns` entries.
 pub fn string_vec_to_multi_line_string(
   nodes: Option<&[String]>,
   num_columns: usize,

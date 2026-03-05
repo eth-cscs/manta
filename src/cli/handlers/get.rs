@@ -8,6 +8,9 @@ use anyhow::{Context, Error};
 use clap::ArgMatches;
 use manta_backend_dispatcher::types::bss::BootParameters;
 
+/// Dispatch `manta get` subcommands (groups, session,
+/// configuration, template, images, cluster, hardware, nodes,
+/// boot-parameters, kernel-parameters, redfish-endpoint).
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,

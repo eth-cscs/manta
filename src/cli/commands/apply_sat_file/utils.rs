@@ -6,6 +6,9 @@ use serde_yaml::{Mapping, Value};
 use self::sessiontemplate::SessionTemplate;
 
 #[derive(Deserialize, Serialize, Debug)]
+/// Top-level representation of a SAT (System Admin Toolkit)
+/// YAML file containing configurations, images, and session
+/// templates.
 pub struct SatFile {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub configurations: Option<Vec<configuration::Configuration>>,
@@ -137,6 +140,8 @@ pub mod sessiontemplate {
 
   use serde::{Deserialize, Serialize};
 
+  /// A BOS session template linking an image, configuration,
+  /// and boot parameters for a set of nodes.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct SessionTemplate {
     pub name: String,
@@ -145,6 +150,7 @@ pub mod sessiontemplate {
     pub bos_parameters: BosParamters,
   }
 
+  /// How the IMS image is referenced — by name or by UUID.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImsDetails {
@@ -152,6 +158,8 @@ pub mod sessiontemplate {
     Id { id: String },
   }
 
+  /// Image reference within a session template — either an
+  /// IMS image or a cross-reference to another SAT image.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Image {
@@ -159,11 +167,14 @@ pub mod sessiontemplate {
     ImageRef { image_ref: String },
   }
 
+  /// BOS boot parameters containing a map of named boot sets.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct BosParamters {
     pub boot_sets: HashMap<String, BootSet>,
   }
 
+  /// A single boot set defining the kernel, network, and node
+  /// targeting for a BOS session template.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct BootSet {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -184,6 +195,7 @@ pub mod sessiontemplate {
     pub rootfs_provider_passthrough: Option<String>,
   }
 
+  /// Processor architecture for a boot set.
   #[derive(Deserialize, Serialize, Debug, Display)]
   #[allow(clippy::upper_case_acronyms)]
   pub enum Arch {
@@ -198,6 +210,7 @@ pub mod sessiontemplate {
 pub mod image {
   use serde::{Deserialize, Serialize};
 
+  /// Processor architecture for an IMS image build.
   #[derive(Deserialize, Serialize, Debug)]
   pub enum Arch {
     #[serde(rename(serialize = "aarch64", deserialize = "aarch64"))]
@@ -206,6 +219,7 @@ pub mod image {
     X86_64,
   }
 
+  /// Legacy IMS image reference with a recipe flag.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageIms {
@@ -213,6 +227,7 @@ pub mod image {
     IdIsRecipe { id: String, is_recipe: bool },
   }
 
+  /// Base IMS image reference used in newer SAT file format.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageBaseIms {
@@ -221,6 +236,7 @@ pub mod image {
     BackwardCompatible { is_recipe: Option<bool>, id: String },
   }
 
+  /// Criteria for filtering product catalog images.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Filter {
@@ -229,6 +245,7 @@ pub mod image {
     Arch { arch: Arch },
   }
 
+  /// A product catalog entry used as an image source.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Product {
     name: String,
@@ -238,6 +255,8 @@ pub mod image {
     filter: Filter,
   }
 
+  /// Source for a base image — IMS, product catalog, or
+  /// cross-reference to another SAT image.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Base {
@@ -246,7 +265,8 @@ pub mod image {
     ImageRef { image_ref: String },
   }
 
-  // Used for backguard compatibility
+  /// Wrapper for backward compatibility between the older
+  /// `ims` key and the newer `base` key in SAT image entries.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum BaseOrIms {
@@ -254,6 +274,7 @@ pub mod image {
     Ims { ims: ImageIms },
   }
 
+  /// An image definition in the SAT file `images` section.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Image {
     pub name: String,
@@ -274,6 +295,8 @@ pub mod image {
 pub mod configuration {
   use serde::{Deserialize, Serialize};
 
+  /// A product reference within a CFS configuration layer.
+  /// Variants capture different ways to pin a version/branch.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)]
   // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
@@ -295,6 +318,8 @@ pub mod configuration {
     },
   }
 
+  /// A Git repository reference within a CFS configuration
+  /// layer, pinned by commit, branch, or tag.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)]
   // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
@@ -305,11 +330,13 @@ pub mod configuration {
     GitTag { url: String, tag: String },
   }
 
+  /// Extra CFS layer parameters (e.g., requiring DKMS).
   #[derive(Deserialize, Serialize, Debug)]
   pub struct SpecialParameters {
     pub ims_require_dkms: bool,
   }
 
+  /// A CFS configuration layer sourced from a Git repo.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct LayerGit {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -320,6 +347,7 @@ pub mod configuration {
     pub special_parameters: Option<SpecialParameters>,
   }
 
+  /// A CFS configuration layer sourced from a product catalog.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct LayerProduct {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -329,6 +357,8 @@ pub mod configuration {
     pub product: Product,
   }
 
+  /// A CFS configuration layer — either Git-based or
+  /// product-catalog-based.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Layer {
@@ -336,6 +366,8 @@ pub mod configuration {
     LayerProduct(LayerProduct),
   }
 
+  /// An Ansible inventory source for a CFS configuration,
+  /// pinned by commit or branch.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Inventory {
@@ -353,6 +385,8 @@ pub mod configuration {
     },
   }
 
+  /// A CFS configuration definition in the SAT file
+  /// `configurations` section.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Configuration {
     pub name: String,
@@ -483,6 +517,9 @@ fn dot_notation_to_yaml(
   Ok(root)
 }
 
+/// Render a SAT file as a Jinja2 template, optionally
+/// merging a values file and CLI-provided overrides in dot
+/// notation.
 pub fn render_jinja2_sat_file_yaml(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,

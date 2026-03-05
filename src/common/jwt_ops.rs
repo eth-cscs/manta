@@ -23,6 +23,9 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, anyhow::Error> {
     .context("Could not convert JWT claims to a JSON object")
 }
 
+/// Extract the `name` claim from a JWT token.
+///
+/// Returns `"MISSING"` if the claim is absent.
 pub fn get_name(token: &str) -> Result<String, anyhow::Error> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 
@@ -34,6 +37,9 @@ pub fn get_name(token: &str) -> Result<String, anyhow::Error> {
   }
 }
 
+/// Extract the `preferred_username` claim from a JWT token.
+///
+/// Returns `"MISSING"` if the claim is absent.
 pub fn get_preferred_username(token: &str) -> Result<String, anyhow::Error> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 

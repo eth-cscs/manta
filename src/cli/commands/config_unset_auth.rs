@@ -5,6 +5,7 @@ use dialoguer::Select;
 
 use crate::common::config::get_default_cache_path;
 
+/// Remove cached authentication credentials.
 pub fn exec() -> Result<(), Error> {
   unset_auth()
 }

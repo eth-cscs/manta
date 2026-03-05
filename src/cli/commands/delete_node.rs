@@ -5,6 +5,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Delete a node and its associated resources.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

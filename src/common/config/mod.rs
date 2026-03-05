@@ -101,6 +101,9 @@ pub(crate) fn write_config_toml(
   Ok(())
 }
 
+/// Read the root CA certificate from `file_path`, falling
+/// back to the default config directory if the path is
+/// relative.
 pub fn get_csm_root_cert_content(
   file_path: &str,
 ) -> Result<Vec<u8>, anyhow::Error> {

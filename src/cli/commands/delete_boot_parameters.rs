@@ -7,6 +7,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Delete boot parameters for specified nodes.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

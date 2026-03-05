@@ -3,6 +3,7 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use anyhow::{Context, Error, bail};
 use csm_rs::ims;
 
+/// Create an ephemeral CFS environment for testing.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

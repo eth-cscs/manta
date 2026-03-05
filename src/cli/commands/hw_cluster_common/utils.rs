@@ -15,6 +15,8 @@ use super::command::HwClusterMode;
 /// A list of nodes with their hardware component counts.
 pub type NodeHwCountVec = Vec<(String, HashMap<String, usize>)>;
 
+/// Compute a scarcity score for each hardware component
+/// type across all nodes in the HSM group.
 pub async fn calculate_hw_component_scarcity_scores(
   hsm_node_hw_component_count: &[(String, HashMap<String, usize>)],
 ) -> HashMap<String, f32> {
@@ -116,6 +118,8 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
   node_score_vec
 }
 
+/// Check whether further iteration is needed to satisfy
+/// the target hardware pattern.
 pub fn keep_iterating_final_hsm(
   hsm_final_hw_component_summary_hashmap: &HashMap<String, usize>,
   hsm_current_hw_component_summary_hashmap: &HashMap<String, usize>,
@@ -172,7 +176,8 @@ async fn get_node_hw_component_count(
   (hsm_member.to_string(), node_hw_profile.0, node_hw_profile.1)
 }
 
-// Calculate/groups hw component counters
+/// Aggregate per-node hardware counters into a single
+/// summary map for the HSM group.
 pub fn calculate_hsm_hw_component_summary(
   target_hsm_group_node_hw_component_vec: &[(String, HashMap<String, usize>)],
 ) -> HashMap<String, usize> {
@@ -239,6 +244,8 @@ fn get_node_hw_properties_from_value(
   (node_hw_component_pattern_vec, memory_vec)
 }
 
+/// Print a table of node hardware component scores with
+/// color-coded cells.
 pub fn print_table_f32_score(
   user_defined_hw_componet_vec: &[String],
   hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
@@ -328,6 +335,8 @@ pub fn print_table_f32_score(
   log::info!("\n{table}\n");
 }
 
+/// Fetch hardware inventory for HSM group members and
+/// return per-node component counters.
 pub async fn get_hsm_node_hw_component_counter(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,

@@ -3,6 +3,8 @@ use crate::common::app_context::AppContext;
 use anyhow::Error;
 use clap::ArgMatches;
 
+/// Dispatch `manta config` subcommands (show, set, unset,
+/// gen-autocomplete).
 pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,

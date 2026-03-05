@@ -9,6 +9,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Remove the parent HSM group from configuration.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

@@ -6,6 +6,8 @@ use crate::cli::handlers::{
   add, apply, config, console, delete, get, log, migrate, misc, power, update,
 };
 
+/// Parse CLI arguments and dispatch to the appropriate
+/// subcommand handler.
 pub async fn process_cli(
   cli: Command,
   ctx: &AppContext<'_>,

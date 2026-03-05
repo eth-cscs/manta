@@ -18,6 +18,8 @@ use manta_backend_dispatcher::types::{
 use serde_json::Value;
 use std::path::PathBuf;
 
+/// Dispatch `manta add` subcommands (node, group,
+/// kernel-parameters, hardware cluster).
 pub async fn handle_add(
   cli_add: &ArgMatches,
   ctx: &AppContext<'_>,

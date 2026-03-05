@@ -8,6 +8,7 @@ use comfy_table::Table;
 
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 
+/// Delete CFS configurations and their derived artifacts.
 pub async fn exec(
   ctx: &AppContext<'_>,
   configuration_name_pattern_opt: Option<&str>,

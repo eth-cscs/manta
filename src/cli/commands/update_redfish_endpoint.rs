@@ -6,6 +6,7 @@ use manta_backend_dispatcher::{
 
 use crate::common::{app_context::AppContext, authentication::get_api_token};
 
+/// Update a Redfish endpoint configuration.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

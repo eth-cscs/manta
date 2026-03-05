@@ -4,6 +4,7 @@ use toml_edit::{Table, value};
 
 use crate::common::config::{read_config_toml, write_config_toml};
 
+/// Set the active site in configuration.
 pub fn exec(cli_config_set_site: &ArgMatches) -> Result<(), Error> {
   let new_site_opt: Option<&str> = cli_config_set_site
     .get_one::<String>("SITE_NAME")

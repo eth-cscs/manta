@@ -4,6 +4,7 @@ use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
 
+/// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
   Command::new(env!("CARGO_PKG_NAME"))
     .term_width(100)

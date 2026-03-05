@@ -19,6 +19,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Add hardware components to a cluster group.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,

@@ -3,6 +3,7 @@ use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::common;
 
+/// Print BOS session templates as a formatted table.
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
   let mut table = Table::new();
 

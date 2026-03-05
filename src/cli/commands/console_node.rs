@@ -9,6 +9,7 @@ use manta_backend_dispatcher::{
   interfaces::console::ConsoleTrait, types::K8sDetails,
 };
 
+/// Open an interactive serial console to a node.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

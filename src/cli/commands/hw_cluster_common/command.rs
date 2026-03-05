@@ -21,6 +21,8 @@ pub enum HwClusterMode {
   Unpin,
 }
 
+/// Execute a hardware cluster pin or unpin operation,
+/// moving nodes between target and parent HSM groups.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   mode: HwClusterMode,

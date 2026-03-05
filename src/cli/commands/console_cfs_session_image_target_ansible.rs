@@ -12,6 +12,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Open an interactive console to a CFS session container.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

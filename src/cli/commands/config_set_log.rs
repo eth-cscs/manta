@@ -4,6 +4,7 @@ use toml_edit::value;
 
 use crate::common::config::{read_config_toml, write_config_toml};
 
+/// Set the logging verbosity level.
 pub fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
   let log_level: &String = cli_config_set_log
     .get_one("LOG_LEVEL")

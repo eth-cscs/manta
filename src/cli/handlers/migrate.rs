@@ -8,6 +8,8 @@ use crate::common::{
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+/// Dispatch `manta migrate` subcommands (nodes, backup,
+/// restore).
 pub async fn handle_migrate(
   cli_migrate: &ArgMatches,
   ctx: &AppContext<'_>,

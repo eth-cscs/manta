@@ -11,6 +11,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Display kernel boot parameters for nodes.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

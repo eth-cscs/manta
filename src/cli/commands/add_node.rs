@@ -15,6 +15,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Register a new node and its Redfish endpoint.
 pub async fn exec(
   ctx: &AppContext<'_>,
   shasta_token: &str,

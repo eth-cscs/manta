@@ -8,6 +8,7 @@ use crate::common::{
 };
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
+/// Validate a local Git repo against the remote VCS.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

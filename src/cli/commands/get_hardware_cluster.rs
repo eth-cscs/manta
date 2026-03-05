@@ -17,6 +17,7 @@ use tokio::sync::Semaphore;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
+/// Display hardware inventory for a cluster.
 pub async fn exec(
   backend: StaticBackendDispatcher,
   site_name: &str,
@@ -420,6 +421,7 @@ fn print_table_details(node_summary_vec: &[NodeSummary]) {
   println!("{hw_configuration_table}");
 }
 
+/// Build a table of hardware component counts per node.
 pub fn get_table(
   user_defined_hw_componet_vec: &[String],
   hsm_node_hw_pattern_vec: &[(String, HashMap<String, usize>)],

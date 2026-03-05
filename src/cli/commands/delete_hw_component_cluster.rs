@@ -19,6 +19,7 @@ use crate::{
   },
 };
 
+/// Remove hardware components from a cluster group.
 pub async fn exec(
   ctx: &AppContext<'_>,
   target_hsm_group_name_arg_opt: Option<&str>,

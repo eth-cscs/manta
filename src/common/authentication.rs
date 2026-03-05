@@ -11,6 +11,8 @@ use std::{
   io::{self, IsTerminal, Read, Write},
 };
 
+/// Obtain a valid API token, trying in order: env var
+/// `MANTA_CSM_TOKEN`, cached file, interactive login.
 pub async fn get_api_token(
   backend: &StaticBackendDispatcher,
   site_name: &str,

@@ -7,6 +7,7 @@ use manta_backend_dispatcher::{
   interfaces::bss::BootParametersTrait, types::bss::BootParameters,
 };
 
+/// Update boot parameters for specified nodes.
 pub async fn exec(
   ctx: &AppContext<'_>,
   xnames: &str,

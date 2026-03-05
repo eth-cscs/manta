@@ -7,6 +7,7 @@ use crate::common::{
   self, app_context::AppContext, audit, authentication::get_api_token,
 };
 
+/// Move nodes between HSM groups with validation.
 pub async fn exec(
   ctx: &AppContext<'_>,
   target_hsm_name_vec: &[String],

@@ -6,6 +6,8 @@ use manta_backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
+/// Connection details for a single ALPS site (CSM or
+/// OCHAMI instance).
 pub struct Site {
   pub backend: String,
   pub socks5_proxy: Option<String>,
@@ -17,6 +19,8 @@ pub struct Site {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+/// Top-level manta configuration, persisted as TOML
+/// under `~/.config/manta/config.toml`.
 pub struct MantaConfiguration {
   pub log: String,
   pub site: String,

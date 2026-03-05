@@ -12,6 +12,7 @@ use crate::common::{
   boot_parameters::get_restricted_boot_parameters,
 };
 
+/// Delete IMS images and their linked artifacts.
 pub async fn exec(
   ctx: &AppContext<'_>,
   image_id_vec: &[&str],

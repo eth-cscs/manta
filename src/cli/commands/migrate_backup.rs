@@ -3,6 +3,7 @@ use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
 
 use crate::common::{app_context::AppContext, authentication::get_api_token};
 
+/// Back up cluster configuration to a local bundle.
 pub async fn exec(
   ctx: &AppContext<'_>,
   bos: Option<&str>,

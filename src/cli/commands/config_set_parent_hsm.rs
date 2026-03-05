@@ -6,6 +6,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
+/// Set the parent HSM group in configuration.
 pub async fn exec(
   cli_config_set_parent_hsm: &ArgMatches,
   backend: &StaticBackendDispatcher,

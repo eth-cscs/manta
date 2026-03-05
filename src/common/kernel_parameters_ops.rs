@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use comfy_table::{Cell, ContentArrangement, Table};
 use manta_backend_dispatcher::types::bss::BootParameters;
 
+/// Print kernel boot parameters grouped by common
+/// parameter sets.
 pub fn print_table(
   boot_parameters_vec: Vec<BootParameters>,
   kernel_params_key_to_filter_opt: Option<&str>,

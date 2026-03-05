@@ -6,6 +6,8 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::io::IsTerminal;
 
+/// Dispatch `manta console` subcommands (node,
+/// target-ansible).
 pub async fn handle_console(
   cli_console: &ArgMatches,
   ctx: &AppContext<'_>,

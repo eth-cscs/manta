@@ -3,6 +3,8 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
+/// Dispatch the `manta log` command to stream Kubernetes
+/// pod logs for a CFS session or a node's console.
 pub async fn handle_log(
   cli_log: &ArgMatches,
   ctx: &AppContext<'_>,

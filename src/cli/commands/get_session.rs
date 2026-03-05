@@ -3,6 +3,7 @@ use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
+/// List or show CFS session details.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

@@ -1,6 +1,7 @@
 use comfy_table::Table;
 use manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse;
 
+/// Print a power transition result as a table or JSON.
 pub fn print_summary_table(transition: TransitionResponse, output: &str) {
   if output == "table" {
     let mut table = Table::new();

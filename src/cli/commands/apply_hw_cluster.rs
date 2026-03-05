@@ -9,6 +9,7 @@ use crate::{
   },
 };
 
+/// Apply a hardware cluster configuration (pin or unpin).
 pub async fn exec(
   cli_apply_hw_cluster: &ArgMatches,
   ctx: &AppContext<'_>,

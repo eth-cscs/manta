@@ -11,6 +11,7 @@ use super::audit::Audit;
 use anyhow::{Context, Result};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+/// Kafka client configuration for audit message production.
 pub struct Kafka {
   pub brokers: Vec<String>,
   pub topic: String,

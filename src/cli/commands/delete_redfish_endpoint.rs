@@ -6,6 +6,7 @@ use crate::{
 };
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
 
+/// Delete a Redfish endpoint registration.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

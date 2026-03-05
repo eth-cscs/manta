@@ -3,10 +3,7 @@ use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{cli::commands::apply_boot_node, common::app_context::AppContext};
 
-/// Updates boot params and desired configuration
-/// for all nodes that belongs to a HSM group.
-/// If boot params defined, then nodes in HSM group
-/// will be rebooted.
+/// Apply a boot configuration to all nodes in a cluster.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

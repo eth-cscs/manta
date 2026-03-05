@@ -3,6 +3,7 @@ use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
 use crate::common::{app_context::AppContext, authentication::get_api_token};
 
+/// Restore cluster configuration from a backup bundle.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

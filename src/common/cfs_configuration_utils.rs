@@ -9,6 +9,7 @@ use manta_backend_dispatcher::types::{
 
 use super::DATETIME_FORMAT;
 
+/// Print CFS configurations as a formatted table.
 pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
   let mut table = Table::new();
 
@@ -53,6 +54,8 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
   println!("{table}");
 }
 
+/// Print a detailed CFS configuration with its derived
+/// sessions, templates, and images.
 pub fn print_table_details_struct(
   cfs_configuration: ConfigurationDetails,
   cfs_session_vec_opt: Option<Vec<CfsSessionGetResponse>>,

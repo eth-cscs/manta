@@ -18,6 +18,7 @@ use manta_backend_dispatcher::{
 };
 use std::collections::HashMap;
 
+/// Apply a boot configuration to specific nodes.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

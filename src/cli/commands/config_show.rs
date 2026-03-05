@@ -9,7 +9,7 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
-/// Prints Manta's configuration on screen
+/// Display the current manta configuration.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

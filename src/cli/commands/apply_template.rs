@@ -15,6 +15,7 @@ use crate::common::{
   node_ops::validate_xname_format,
 };
 
+/// Create a BOS session template and optionally boot.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,

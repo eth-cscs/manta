@@ -17,6 +17,7 @@ use crate::{
 
 use futures::{AsyncBufReadExt, TryStreamExt};
 
+/// Stream Kubernetes pod logs for a CFS session or node.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,

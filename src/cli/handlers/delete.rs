@@ -8,6 +8,9 @@ use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
+/// Dispatch `manta delete` subcommands (group, node,
+/// session, configuration, image, boot-parameters,
+/// kernel-parameters, hardware, redfish-endpoint).
 pub async fn handle_delete(
   cli_delete: &ArgMatches,
   ctx: &AppContext<'_>,
