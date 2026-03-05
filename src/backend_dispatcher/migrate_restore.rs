@@ -22,41 +22,21 @@ impl MigrateRestoreTrait for StaticBackendDispatcher {
     overwrite_image: bool,
     overwrite_template: bool,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.migrate_restore(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos_file,
-          cfs_file,
-          hsm_file,
-          ims_file,
-          image_dir,
-          overwrite_group,
-          overwrite_configuration,
-          overwrite_image,
-          overwrite_template,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.migrate_restore(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos_file,
-          cfs_file,
-          hsm_file,
-          ims_file,
-          image_dir,
-          overwrite_group,
-          overwrite_configuration,
-          overwrite_image,
-          overwrite_template,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      migrate_restore,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      bos_file,
+      cfs_file,
+      hsm_file,
+      ims_file,
+      image_dir,
+      overwrite_group,
+      overwrite_configuration,
+      overwrite_image,
+      overwrite_template
+    )
   }
 }

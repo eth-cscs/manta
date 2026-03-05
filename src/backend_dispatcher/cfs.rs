@@ -35,28 +35,15 @@ impl CfsTrait for StaticBackendDispatcher {
     timestamps: bool,
     k8s: &K8sDetails,
   ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_session_logs_stream(
-          shasta_token,
-          site_name,
-          cfs_session_name,
-          timestamps,
-          k8s,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_session_logs_stream(
-          shasta_token,
-          site_name,
-          cfs_session_name,
-          timestamps,
-          k8s,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_session_logs_stream,
+      shasta_token,
+      site_name,
+      cfs_session_name,
+      timestamps,
+      k8s
+    )
   }
 
   async fn get_session_logs_stream_by_xname(
@@ -67,20 +54,15 @@ impl CfsTrait for StaticBackendDispatcher {
     timestamps: bool,
     k8s: &K8sDetails,
   ) -> Result<Pin<Box<dyn AsyncBufRead + Send>>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_session_logs_stream_by_xname(
-          auth_token, site_name, xname, timestamps, k8s,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_session_logs_stream_by_xname(
-          auth_token, site_name, xname, timestamps, k8s,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_session_logs_stream_by_xname,
+      auth_token,
+      site_name,
+      xname,
+      timestamps,
+      k8s
+    )
   }
 
   async fn post_session(
@@ -90,16 +72,14 @@ impl CfsTrait for StaticBackendDispatcher {
     shasta_root_cert: &[u8],
     session: &CfsSessionPostRequest,
   ) -> Result<CfsSessionGetResponse, Error> {
-    match self {
-      CSM(b) => {
-        b.post_session(shasta_token, shasta_base_url, shasta_root_cert, session)
-          .await
-      }
-      OCHAMI(b) => {
-        b.post_session(shasta_token, shasta_base_url, shasta_root_cert, session)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      post_session,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      session
+    )
   }
 
   async fn get_sessions(
@@ -117,42 +97,22 @@ impl CfsTrait for StaticBackendDispatcher {
     is_succeded_opt: Option<bool>,
     tags_opt: Option<String>,
   ) -> Result<Vec<CfsSessionGetResponse>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_sessions(
-          auth_token,
-          base_url,
-          root_cert,
-          session_name_opt,
-          limit_opt,
-          after_id_opt,
-          min_age_opt,
-          max_age_opt,
-          status_opt,
-          name_contains_opt,
-          is_succeded_opt,
-          tags_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_sessions(
-          auth_token,
-          base_url,
-          root_cert,
-          session_name_opt,
-          limit_opt,
-          after_id_opt,
-          min_age_opt,
-          max_age_opt,
-          status_opt,
-          name_contains_opt,
-          is_succeded_opt,
-          tags_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_sessions,
+      auth_token,
+      base_url,
+      root_cert,
+      session_name_opt,
+      limit_opt,
+      after_id_opt,
+      min_age_opt,
+      max_age_opt,
+      status_opt,
+      name_contains_opt,
+      is_succeded_opt,
+      tags_opt
+    )
   }
 
   async fn get_and_filter_sessions(
@@ -170,42 +130,22 @@ impl CfsTrait for StaticBackendDispatcher {
     limit_number_opt: Option<&u8>,
     is_succeded_opt: Option<bool>,
   ) -> Result<Vec<CfsSessionGetResponse>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_and_filter_sessions(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_name_vec,
-          xname_vec,
-          min_age_opt,
-          max_age_opt,
-          type_opt,
-          status_opt,
-          cfs_session_name_opt,
-          limit_number_opt,
-          is_succeded_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_and_filter_sessions(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_name_vec,
-          xname_vec,
-          min_age_opt,
-          max_age_opt,
-          type_opt,
-          status_opt,
-          cfs_session_name_opt,
-          limit_number_opt,
-          is_succeded_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_and_filter_sessions,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      hsm_group_name_vec,
+      xname_vec,
+      min_age_opt,
+      max_age_opt,
+      type_opt,
+      status_opt,
+      cfs_session_name_opt,
+      limit_number_opt,
+      is_succeded_opt
+    )
   }
 
   async fn delete_and_cancel_session(
@@ -219,34 +159,18 @@ impl CfsTrait for StaticBackendDispatcher {
     bss_bootparameter_vec: &[BootParameters],
     dry_run: bool,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.delete_and_cancel_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          group_available_vec,
-          cfs_session,
-          cfs_component_vec,
-          bss_bootparameter_vec,
-          dry_run,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.delete_and_cancel_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          group_available_vec,
-          cfs_session,
-          cfs_component_vec,
-          bss_bootparameter_vec,
-          dry_run,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      delete_and_cancel_session,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      group_available_vec,
+      cfs_session,
+      cfs_component_vec,
+      bss_bootparameter_vec,
+      dry_run
+    )
   }
 
   async fn create_configuration_from_repos(
@@ -258,30 +182,16 @@ impl CfsTrait for StaticBackendDispatcher {
     local_git_commit_vec: &[&str],
     playbook_file_name_opt: Option<&str>,
   ) -> Result<CfsConfigurationRequest, Error> {
-    match self {
-      CSM(b) => {
-        b.create_configuration_from_repos(
-          gitea_token,
-          gitea_base_url,
-          shasta_root_cert,
-          repo_name_vec,
-          local_git_commit_vec,
-          playbook_file_name_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.create_configuration_from_repos(
-          gitea_token,
-          gitea_base_url,
-          shasta_root_cert,
-          repo_name_vec,
-          local_git_commit_vec,
-          playbook_file_name_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      create_configuration_from_repos,
+      gitea_token,
+      gitea_base_url,
+      shasta_root_cert,
+      repo_name_vec,
+      local_git_commit_vec,
+      playbook_file_name_opt
+    )
   }
 
   async fn get_configuration(
@@ -291,26 +201,14 @@ impl CfsTrait for StaticBackendDispatcher {
     root_cert: &[u8],
     cfs_configuration_name_opt: Option<&String>,
   ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          cfs_configuration_name_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          cfs_configuration_name_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_configuration,
+      auth_token,
+      base_url,
+      root_cert,
+      cfs_configuration_name_opt
+    )
   }
 
   async fn get_and_filter_configuration(
@@ -325,36 +223,19 @@ impl CfsTrait for StaticBackendDispatcher {
     until_opt: Option<NaiveDateTime>,
     limit_number_opt: Option<&u8>,
   ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_and_filter_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          configuration_name,
-          configuration_name_pattern,
-          hsm_group_name_vec,
-          since_opt,
-          until_opt,
-          limit_number_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_and_filter_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          configuration_name,
-          configuration_name_pattern,
-          hsm_group_name_vec,
-          since_opt,
-          until_opt,
-          limit_number_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_and_filter_configuration,
+      auth_token,
+      base_url,
+      root_cert,
+      configuration_name,
+      configuration_name_pattern,
+      hsm_group_name_vec,
+      since_opt,
+      until_opt,
+      limit_number_opt
+    )
   }
 
   async fn get_configuration_layer_details(
@@ -365,28 +246,15 @@ impl CfsTrait for StaticBackendDispatcher {
     layer: Layer,
     site_name: &str,
   ) -> Result<LayerDetails, Error> {
-    match self {
-      CSM(b) => {
-        b.get_configuration_layer_details(
-          shasta_root_cert,
-          gitea_base_url,
-          gitea_token,
-          layer,
-          site_name,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_configuration_layer_details(
-          shasta_root_cert,
-          gitea_base_url,
-          gitea_token,
-          layer,
-          site_name,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_configuration_layer_details,
+      shasta_root_cert,
+      gitea_base_url,
+      gitea_token,
+      layer,
+      site_name
+    )
   }
 
   async fn update_runtime_configuration(
@@ -398,30 +266,16 @@ impl CfsTrait for StaticBackendDispatcher {
     desired_configuration: &str,
     enabled: bool,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.update_runtime_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          xnames,
-          desired_configuration,
-          enabled,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.update_runtime_configuration(
-          auth_token,
-          base_url,
-          root_cert,
-          xnames,
-          desired_configuration,
-          enabled,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      update_runtime_configuration,
+      auth_token,
+      base_url,
+      root_cert,
+      xnames,
+      desired_configuration,
+      enabled
+    )
   }
 
   async fn put_configuration(
@@ -433,33 +287,20 @@ impl CfsTrait for StaticBackendDispatcher {
     configuration_name: &str,
     overwrite: bool,
   ) -> Result<CfsConfigurationResponse, Error> {
-    match self {
-      CSM(b) => {
-        b.put_configuration(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          configuration,
-          configuration_name,
-          overwrite,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.put_configuration(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          configuration,
-          configuration_name,
-          overwrite,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      put_configuration,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      configuration,
+      configuration_name,
+      overwrite
+    )
   }
 
-  // Get all CFS sessions, IMS images and BOS sessiontemplates related to a CFS configuration
+  // Get all CFS sessions, IMS images and BOS sessiontemplates
+  // related to a CFS configuration
   async fn get_derivatives(
     &self,
     auth_token: &str,
@@ -474,16 +315,14 @@ impl CfsTrait for StaticBackendDispatcher {
     ),
     Error,
   > {
-    match self {
-      CSM(b) => {
-        b.get_derivatives(auth_token, base_url, root_cert, configuration_name)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_derivatives(auth_token, base_url, root_cert, configuration_name)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_derivatives,
+      auth_token,
+      base_url,
+      root_cert,
+      configuration_name
+    )
   }
 
   async fn get_cfs_components(
@@ -498,29 +337,15 @@ impl CfsTrait for StaticBackendDispatcher {
     Vec<manta_backend_dispatcher::types::cfs::component::Component>,
     Error,
   > {
-    match self {
-      CSM(b) => {
-        b.get_cfs_components(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          configuration_name,
-          components_ids,
-          status,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_cfs_components(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          configuration_name,
-          components_ids,
-          status,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_cfs_components,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      configuration_name,
+      components_ids,
+      status
+    )
   }
 }

@@ -15,10 +15,7 @@ impl HardwareInventory for StaticBackendDispatcher {
     auth_token: &str,
     xname: &str,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.get_inventory_hardware(auth_token, xname).await,
-      OCHAMI(b) => b.get_inventory_hardware(auth_token, xname).await,
-    }
+    dispatch!(self, get_inventory_hardware, auth_token, xname)
   }
 
   async fn get_inventory_hardware_query(
@@ -31,20 +28,17 @@ impl HardwareInventory for StaticBackendDispatcher {
     partition: Option<&str>,
     format: Option<&str>,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => {
-        b.get_inventory_hardware_query(
-          auth_token, xname, r#type, children, parents, partition, format,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_inventory_hardware_query(
-          auth_token, xname, r#type, children, parents, partition, format,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_inventory_hardware_query,
+      auth_token,
+      xname,
+      r#type,
+      children,
+      parents,
+      partition,
+      format
+    )
   }
 
   async fn post_inventory_hardware(
@@ -52,9 +46,6 @@ impl HardwareInventory for StaticBackendDispatcher {
     auth_token: &str,
     hardware: HWInventoryByLocationList,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.post_inventory_hardware(auth_token, hardware).await,
-      OCHAMI(b) => b.post_inventory_hardware(auth_token, hardware).await,
-    }
+    dispatch!(self, post_inventory_hardware, auth_token, hardware)
   }
 }

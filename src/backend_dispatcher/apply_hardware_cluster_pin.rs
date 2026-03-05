@@ -19,35 +19,18 @@ impl ApplyHwClusterPin for StaticBackendDispatcher {
     create_target_hsm_group: bool,
     delete_empty_parent_hsm_group: bool,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.apply_hw_cluster_pin(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          target_hsm_group_name,
-          parent_hsm_group_name,
-          pattern,
-          nodryrun,
-          create_target_hsm_group,
-          delete_empty_parent_hsm_group,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.apply_hw_cluster_pin(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          target_hsm_group_name,
-          parent_hsm_group_name,
-          pattern,
-          nodryrun,
-          create_target_hsm_group,
-          delete_empty_parent_hsm_group,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      apply_hw_cluster_pin,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      target_hsm_group_name,
+      parent_hsm_group_name,
+      pattern,
+      nodryrun,
+      create_target_hsm_group,
+      delete_empty_parent_hsm_group
+    )
   }
 }

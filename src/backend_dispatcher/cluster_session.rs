@@ -16,25 +16,13 @@ impl ClusterSessionTrait for StaticBackendDispatcher {
     shasta_root_cert: &[u8],
     bos_session: types::bos::session::BosSession,
   ) -> Result<BosSession, Error> {
-    match self {
-      CSM(b) => {
-        b.post_template_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos_session,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.post_template_session(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos_session,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      post_template_session,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      bos_session
+    )
   }
 }

@@ -15,27 +15,14 @@ impl MigrateBackupTrait for StaticBackendDispatcher {
     bos: Option<&str>,
     destination: Option<&str>,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.migrate_backup(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos,
-          destination,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.migrate_backup(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          bos,
-          destination,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      migrate_backup,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      bos,
+      destination
+    )
   }
 }

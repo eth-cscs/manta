@@ -3,13 +3,13 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 use anyhow::Context;
+use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
 use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
 };
-use termion::color;
 
 pub async fn get_api_token(
   backend: &StaticBackendDispatcher,
@@ -149,11 +149,7 @@ fn store_token_in_local_file(
 async fn get_token_interactively(
   backend: &StaticBackendDispatcher,
 ) -> Result<String, anyhow::Error> {
-  println!(
-    "Please type your {}Keycloak credentials{}",
-    color::Fg(color::Green),
-    color::Fg(color::Reset)
-  );
+  println!("Please type your {}", "Keycloak credentials".green());
 
   let username: String = Input::new()
     .with_prompt("username")
@@ -178,11 +174,7 @@ async fn get_token_interactively(
       );
     }
 
-    println!(
-      "Please type your {}Keycloak credentials{}",
-      color::Fg(color::Green),
-      color::Fg(color::Reset)
-    );
+    println!("Please type your {}", "Keycloak credentials".green());
     let username: String = Input::new()
       .with_prompt("username")
       .interact_text()

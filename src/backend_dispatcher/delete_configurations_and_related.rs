@@ -33,32 +33,17 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
     ),
     Error,
   > {
-    match self {
-      CSM(b) => {
-        b.get_data_to_delete(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_name_available_vec,
-          configuration_name_pattern_opt,
-          since_opt,
-          until_opt,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_data_to_delete(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_name_available_vec,
-          configuration_name_pattern_opt,
-          since_opt,
-          until_opt,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_data_to_delete,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      hsm_name_available_vec,
+      configuration_name_pattern_opt,
+      since_opt,
+      until_opt
+    )
   }
 
   async fn delete(
@@ -71,31 +56,16 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
     cfs_session_name_vec: &[String],
     bos_sessiontemplate_name_vec: &[String],
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.delete(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          cfs_configuration_name_vec,
-          image_id_vec,
-          cfs_session_name_vec,
-          bos_sessiontemplate_name_vec,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.delete(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          cfs_configuration_name_vec,
-          image_id_vec,
-          cfs_session_name_vec,
-          bos_sessiontemplate_name_vec,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      delete,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      cfs_configuration_name_vec,
+      image_id_vec,
+      cfs_session_name_vec,
+      bos_sessiontemplate_name_vec
+    )
   }
 }

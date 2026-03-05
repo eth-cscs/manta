@@ -23,43 +23,22 @@ impl ApplySessionTrait for StaticBackendDispatcher {
     ansible_verbosity: Option<&str>,
     ansible_passthrough: Option<&str>,
   ) -> Result<(String, String), Error> {
-    match self {
-      CSM(b) => {
-        b.apply_session(
-          gitea_token,
-          gitea_base_url,
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          cfs_conf_sess_name,
-          playbook_yaml_file_name_opt,
-          hsm_group,
-          repos_name_vec,
-          repos_last_commit_id_vec,
-          ansible_limit,
-          ansible_verbosity,
-          ansible_passthrough,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.apply_session(
-          gitea_token,
-          gitea_base_url,
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          cfs_conf_sess_name,
-          playbook_yaml_file_name_opt,
-          hsm_group,
-          repos_name_vec,
-          repos_last_commit_id_vec,
-          ansible_limit,
-          ansible_verbosity,
-          ansible_passthrough,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      apply_session,
+      gitea_token,
+      gitea_base_url,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      cfs_conf_sess_name,
+      playbook_yaml_file_name_opt,
+      hsm_group,
+      repos_name_vec,
+      repos_last_commit_id_vec,
+      ansible_limit,
+      ansible_verbosity,
+      ansible_passthrough
+    )
   }
 }

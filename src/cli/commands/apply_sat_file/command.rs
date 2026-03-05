@@ -2,12 +2,12 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::{self, app_context::AppContext};
 
+use crossterm::style::Stylize;
 use manta_backend_dispatcher::{
   interfaces::apply_sat_file::SatTrait,
   types::{K8sAuth, K8sDetails},
 };
 use serde_yaml::Value;
-use termion::color;
 
 use crate::{
   cli::commands::apply_sat_file::utils,
@@ -117,9 +117,8 @@ pub async fn exec(
     )?;
 
   println!(
-    "{}#### SAT file content ####{}\n{}",
-    color::Fg(color::Blue),
-    color::Fg(color::Reset),
+    "{}\n{}",
+    "#### SAT file content ####".blue(),
     serde_yaml::to_string(&sat_template_file_yaml).context(
       "Failed to serialize SAT template to \
          YAML for display",

@@ -16,20 +16,14 @@ impl ComponentTrait for StaticBackendDispatcher {
     auth_token: &str,
     nid_only: Option<&str>,
   ) -> Result<NodeMetadataArray, Error> {
-    match self {
-      CSM(b) => b.get_all_nodes(auth_token, nid_only).await,
-      OCHAMI(b) => b.get_all_nodes(auth_token, nid_only).await,
-    }
+    dispatch!(self, get_all_nodes, auth_token, nid_only)
   }
 
   async fn get_node_metadata_available(
     &self,
     auth_token: &str,
   ) -> Result<Vec<Component>, Error> {
-    match self {
-      CSM(b) => b.get_node_metadata_available(auth_token).await,
-      OCHAMI(b) => b.get_node_metadata_available(auth_token).await,
-    }
+    dispatch!(self, get_node_metadata_available, auth_token)
   }
 
   async fn get(
@@ -56,60 +50,31 @@ impl ComponentTrait for StaticBackendDispatcher {
     role_only: Option<&str>,
     nid_only: Option<&str>,
   ) -> Result<NodeMetadataArray, Error> {
-    match self {
-      CSM(b) => {
-        b.get(
-          auth_token,
-          id,
-          r#type,
-          state,
-          flag,
-          role,
-          subrole,
-          enabled,
-          software_status,
-          subtype,
-          arch,
-          class,
-          nid,
-          nid_start,
-          nid_end,
-          partition,
-          group,
-          state_only,
-          flag_only,
-          role_only,
-          nid_only,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get(
-          auth_token,
-          id,
-          r#type,
-          state,
-          flag,
-          role,
-          subrole,
-          enabled,
-          software_status,
-          subtype,
-          arch,
-          class,
-          nid,
-          nid_start,
-          nid_end,
-          partition,
-          group,
-          state_only,
-          flag_only,
-          role_only,
-          nid_only,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get,
+      auth_token,
+      id,
+      r#type,
+      state,
+      flag,
+      role,
+      subrole,
+      enabled,
+      software_status,
+      subtype,
+      arch,
+      class,
+      nid,
+      nid_start,
+      nid_end,
+      partition,
+      group,
+      state_only,
+      flag_only,
+      role_only,
+      nid_only
+    )
   }
 
   async fn post_nodes(
@@ -117,10 +82,7 @@ impl ComponentTrait for StaticBackendDispatcher {
     auth_token: &str,
     component: ComponentArrayPostArray,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.post_nodes(auth_token, component).await,
-      OCHAMI(b) => b.post_nodes(auth_token, component).await,
-    }
+    dispatch!(self, post_nodes, auth_token, component)
   }
 
   async fn delete_node(
@@ -128,10 +90,7 @@ impl ComponentTrait for StaticBackendDispatcher {
     auth_token: &str,
     id: &str,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.delete_node(auth_token, id).await,
-      OCHAMI(b) => b.delete_node(auth_token, id).await,
-    }
+    dispatch!(self, delete_node, auth_token, id)
   }
 
   async fn nid_to_xname(
@@ -140,9 +99,6 @@ impl ComponentTrait for StaticBackendDispatcher {
     user_input_nid: &str,
     is_regex: bool,
   ) -> Result<Vec<String>, Error> {
-    match self {
-      CSM(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
-      OCHAMI(b) => b.nid_to_xname(auth_token, user_input_nid, is_regex).await,
-    }
+    dispatch!(self, nid_to_xname, auth_token, user_input_nid, is_regex)
   }
 }

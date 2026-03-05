@@ -15,10 +15,7 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
   ) -> Result<RedfishEndpointArray, Error> {
-    match self {
-      CSM(b) => b.get_all_redfish_endpoints(auth_token).await,
-      OCHAMI(b) => b.get_all_redfish_endpoints(auth_token).await,
-    }
+    dispatch!(self, get_all_redfish_endpoints, auth_token)
   }
 
   async fn get_redfish_endpoints(
@@ -32,34 +29,18 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
     ip_address: Option<&str>,
     last_status: Option<&str>,
   ) -> Result<RedfishEndpointArray, Error> {
-    match self {
-      CSM(b) => {
-        b.get_redfish_endpoints(
-          auth_token,
-          id,
-          fqdn,
-          r#type,
-          uuid,
-          macaddr,
-          ip_address,
-          last_status,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_redfish_endpoints(
-          auth_token,
-          id,
-          fqdn,
-          r#type,
-          uuid,
-          macaddr,
-          ip_address,
-          last_status,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_redfish_endpoints,
+      auth_token,
+      id,
+      fqdn,
+      r#type,
+      uuid,
+      macaddr,
+      ip_address,
+      last_status
+    )
   }
 
   async fn add_redfish_endpoint(
@@ -67,10 +48,7 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
     auth_token: &str,
     redfish_endpoint: &RedfishEndpointArray,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.add_redfish_endpoint(auth_token, redfish_endpoint).await,
-      OCHAMI(b) => b.add_redfish_endpoint(auth_token, redfish_endpoint).await,
-    }
+    dispatch!(self, add_redfish_endpoint, auth_token, redfish_endpoint)
   }
 
   async fn update_redfish_endpoint(
@@ -78,16 +56,7 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
     auth_token: &str,
     redfish_endpoint: &RedfishEndpoint,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.update_redfish_endpoint(auth_token, redfish_endpoint)
-          .await
-      }
-      OCHAMI(b) => {
-        b.update_redfish_endpoint(auth_token, redfish_endpoint)
-          .await
-      }
-    }
+    dispatch!(self, update_redfish_endpoint, auth_token, redfish_endpoint)
   }
 
   async fn delete_redfish_endpoint(
@@ -95,9 +64,6 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
     auth_token: &str,
     id: &str,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.delete_redfish_endpoint(auth_token, id).await,
-      OCHAMI(b) => b.delete_redfish_endpoint(auth_token, id).await,
-    }
+    dispatch!(self, delete_redfish_endpoint, auth_token, id)
   }
 }

@@ -12,10 +12,7 @@ impl BootParametersTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
   ) -> Result<Vec<BootParameters>, Error> {
-    match self {
-      CSM(b) => b.get_all_bootparameters(auth_token).await,
-      OCHAMI(b) => b.get_all_bootparameters(auth_token).await,
-    }
+    dispatch!(self, get_all_bootparameters, auth_token)
   }
 
   async fn get_bootparameters(
@@ -23,10 +20,7 @@ impl BootParametersTrait for StaticBackendDispatcher {
     auth_token: &str,
     nodes: &[String],
   ) -> Result<Vec<BootParameters>, Error> {
-    match self {
-      CSM(b) => b.get_bootparameters(auth_token, nodes).await,
-      OCHAMI(b) => b.get_bootparameters(auth_token, nodes).await,
-    }
+    dispatch!(self, get_bootparameters, auth_token, nodes)
   }
 
   async fn add_bootparameters(
@@ -34,10 +28,7 @@ impl BootParametersTrait for StaticBackendDispatcher {
     auth_token: &str,
     boot_parameters: &BootParameters,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.add_bootparameters(auth_token, boot_parameters).await,
-      OCHAMI(b) => b.add_bootparameters(auth_token, boot_parameters).await,
-    }
+    dispatch!(self, add_bootparameters, auth_token, boot_parameters)
   }
 
   async fn update_bootparameters(
@@ -45,10 +36,7 @@ impl BootParametersTrait for StaticBackendDispatcher {
     auth_token: &str,
     boot_parameters: &BootParameters,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.update_bootparameters(auth_token, boot_parameters).await,
-      OCHAMI(b) => b.update_bootparameters(auth_token, boot_parameters).await,
-    }
+    dispatch!(self, update_bootparameters, auth_token, boot_parameters)
   }
 
   async fn delete_bootparameters(
@@ -56,9 +44,6 @@ impl BootParametersTrait for StaticBackendDispatcher {
     auth_token: &str,
     boot_parameters: &BootParameters,
   ) -> Result<String, Error> {
-    match self {
-      CSM(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
-      OCHAMI(b) => b.delete_bootparameters(auth_token, boot_parameters).await,
-    }
+    dispatch!(self, delete_bootparameters, auth_token, boot_parameters)
   }
 }

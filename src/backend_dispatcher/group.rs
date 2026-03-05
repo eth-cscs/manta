@@ -15,20 +15,14 @@ impl GroupTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
   ) -> Result<Vec<Group>, Error> {
-    match self {
-      CSM(b) => b.get_group_available(auth_token).await,
-      OCHAMI(b) => b.get_group_available(auth_token).await,
-    }
+    dispatch!(self, get_group_available, auth_token)
   }
 
   async fn get_group_name_available(
     &self,
     jwt_token: &str,
   ) -> Result<Vec<String>, Error> {
-    match self {
-      CSM(b) => b.get_group_name_available(jwt_token).await,
-      OCHAMI(b) => b.get_group_name_available(jwt_token).await,
-    }
+    dispatch!(self, get_group_name_available, jwt_token)
   }
 
   async fn add_group(
@@ -36,10 +30,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_group: Group,
   ) -> Result<Group, Error> {
-    match self {
-      CSM(b) => b.add_group(auth_token, hsm_group).await,
-      OCHAMI(b) => b.add_group(auth_token, hsm_group).await,
-    }
+    dispatch!(self, add_group, auth_token, hsm_group)
   }
 
   // FIXME: rename function to 'get_hsm_group_members'
@@ -48,16 +39,12 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_group_name_vec: &[String],
   ) -> Result<Vec<String>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_member_vec_from_group_name_vec(auth_token, hsm_group_name_vec)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_member_vec_from_group_name_vec,
+      auth_token,
+      hsm_group_name_vec
+    )
   }
 
   async fn get_group_map_and_filter_by_group_vec(
@@ -65,16 +52,12 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_group_map_and_filter_by_group_vec(auth_token, hsm_name_vec)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_group_map_and_filter_by_group_vec,
+      auth_token,
+      hsm_name_vec
+    )
   }
 
   async fn get_group_map_and_filter_by_member_vec(
@@ -82,26 +65,19 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     member_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_group_map_and_filter_by_member_vec(auth_token, member_vec)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_group_map_and_filter_by_member_vec(auth_token, member_vec)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_group_map_and_filter_by_member_vec,
+      auth_token,
+      member_vec
+    )
   }
 
   async fn get_all_groups(
     &self,
     auth_token: &str,
   ) -> Result<Vec<Group>, Error> {
-    match self {
-      CSM(b) => b.get_all_groups(auth_token).await,
-      OCHAMI(b) => b.get_all_groups(auth_token).await,
-    }
+    dispatch!(self, get_all_groups, auth_token)
   }
 
   async fn get_group(
@@ -109,10 +85,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_name: &str,
   ) -> Result<Group, Error> {
-    match self {
-      CSM(b) => b.get_group(auth_token, hsm_name).await,
-      OCHAMI(b) => b.get_group(auth_token, hsm_name).await,
-    }
+    dispatch!(self, get_group, auth_token, hsm_name)
   }
 
   async fn get_groups(
@@ -120,10 +93,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_name_vec: Option<&[String]>,
   ) -> Result<Vec<Group>, Error> {
-    match self {
-      CSM(b) => b.get_groups(auth_token, hsm_name_vec).await,
-      OCHAMI(b) => b.get_groups(auth_token, hsm_name_vec).await,
-    }
+    dispatch!(self, get_groups, auth_token, hsm_name_vec)
   }
 
   async fn delete_group(
@@ -131,10 +101,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_group_label: &str,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.delete_group(auth_token, hsm_group_label).await,
-      OCHAMI(b) => b.delete_group(auth_token, hsm_group_label).await,
-    }
+    dispatch!(self, delete_group, auth_token, hsm_group_label)
   }
 
   async fn get_hsm_map_and_filter_by_hsm_name_vec(
@@ -142,16 +109,12 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     hsm_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_hsm_map_and_filter_by_hsm_name_vec(auth_token, hsm_name_vec)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_hsm_map_and_filter_by_hsm_name_vec,
+      auth_token,
+      hsm_name_vec
+    )
   }
 
   async fn post_member(
@@ -160,10 +123,7 @@ impl GroupTrait for StaticBackendDispatcher {
     group_label: &str,
     xname: &str,
   ) -> Result<Value, Error> {
-    match self {
-      CSM(b) => b.post_member(auth_token, group_label, xname).await,
-      OCHAMI(b) => b.post_member(auth_token, group_label, xname).await,
-    }
+    dispatch!(self, post_member, auth_token, group_label, xname)
   }
 
   // Add members to group.
@@ -174,16 +134,7 @@ impl GroupTrait for StaticBackendDispatcher {
     group_label: &str,
     xnames: &[&str],
   ) -> Result<Vec<String>, Error> {
-    match self {
-      CSM(b) => {
-        b.add_members_to_group(auth_token, group_label, xnames)
-          .await
-      }
-      OCHAMI(b) => {
-        b.add_members_to_group(auth_token, group_label, xnames)
-          .await
-      }
-    }
+    dispatch!(self, add_members_to_group, auth_token, group_label, xnames)
   }
 
   async fn delete_member_from_group(
@@ -192,16 +143,13 @@ impl GroupTrait for StaticBackendDispatcher {
     group_label: &str,
     xname: &str,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.delete_member_from_group(auth_token, group_label, xname)
-          .await
-      }
-      OCHAMI(b) => {
-        b.delete_member_from_group(auth_token, group_label, xname)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      delete_member_from_group,
+      auth_token,
+      group_label,
+      xname
+    )
   }
 
   // HSM/GROUP
@@ -212,26 +160,14 @@ impl GroupTrait for StaticBackendDispatcher {
     parent_hsm_group_name: &str,
     new_target_hsm_members: &[&str],
   ) -> Result<(Vec<String>, Vec<String>), Error> {
-    match self {
-      CSM(b) => {
-        b.migrate_group_members(
-          auth_token,
-          target_hsm_group_name,
-          parent_hsm_group_name,
-          new_target_hsm_members,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.migrate_group_members(
-          auth_token,
-          target_hsm_group_name,
-          parent_hsm_group_name,
-          new_target_hsm_members,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      migrate_group_members,
+      auth_token,
+      target_hsm_group_name,
+      parent_hsm_group_name,
+      new_target_hsm_members
+    )
   }
 
   // HSM/GROUP
@@ -242,25 +178,13 @@ impl GroupTrait for StaticBackendDispatcher {
     members_to_remove: &[&str],
     members_to_add: &[&str],
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.update_group_members(
-          auth_token,
-          group_name,
-          members_to_remove,
-          members_to_add,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.update_group_members(
-          auth_token,
-          group_name,
-          members_to_remove,
-          members_to_add,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      update_group_members,
+      auth_token,
+      group_name,
+      members_to_remove,
+      members_to_add
+    )
   }
 }

@@ -12,16 +12,10 @@ impl AuthenticationTrait for StaticBackendDispatcher {
     username: &str,
     password: &str,
   ) -> Result<String, Error> {
-    match self {
-      CSM(b) => b.get_api_token(username, password).await,
-      OCHAMI(b) => b.get_api_token(username, password).await,
-    }
+    dispatch!(self, get_api_token, username, password)
   }
 
   async fn validate_api_token(&self, auth_token: &str) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.validate_api_token(auth_token).await,
-      OCHAMI(b) => b.validate_api_token(auth_token).await,
-    }
+    dispatch!(self, validate_api_token, auth_token)
   }
 }

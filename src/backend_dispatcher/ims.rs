@@ -14,10 +14,7 @@ impl ImsTrait for StaticBackendDispatcher {
     shasta_token: &str,
     image_id_opt: Option<&str>,
   ) -> Result<Vec<Image>, Error> {
-    match self {
-      CSM(b) => b.get_images(shasta_token, image_id_opt).await,
-      OCHAMI(b) => b.get_images(shasta_token, image_id_opt).await,
-    }
+    dispatch!(self, get_images, shasta_token, image_id_opt)
   }
 
   async fn get_all_images(
@@ -26,23 +23,17 @@ impl ImsTrait for StaticBackendDispatcher {
     shasta_base_url: &str,
     shasta_root_cert: &[u8],
   ) -> Result<Vec<Image>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_all_images(shasta_token, shasta_base_url, shasta_root_cert)
-          .await
-      }
-      OCHAMI(b) => {
-        b.get_all_images(shasta_token, shasta_base_url, shasta_root_cert)
-          .await
-      }
-    }
+    dispatch!(
+      self,
+      get_all_images,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert
+    )
   }
 
   fn filter_images(&self, image_vec: &mut Vec<Image>) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.filter_images(image_vec),
-      OCHAMI(b) => b.filter_images(image_vec),
-    }
+    dispatch!(sync self, filter_images, image_vec)
   }
 
   async fn update_image(
@@ -51,10 +42,7 @@ impl ImsTrait for StaticBackendDispatcher {
     image_id: &str,
     image: &PatchImage,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => b.update_image(shasta_token, image_id, image).await,
-      OCHAMI(b) => b.update_image(shasta_token, image_id, image).await,
-    }
+    dispatch!(self, update_image, shasta_token, image_id, image)
   }
 
   async fn delete_image(
@@ -64,26 +52,14 @@ impl ImsTrait for StaticBackendDispatcher {
     shasta_root_cert: &[u8],
     image_id: &str,
   ) -> Result<(), Error> {
-    match self {
-      CSM(b) => {
-        b.delete_image(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          image_id,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.delete_image(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          image_id,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      delete_image,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      image_id
+    )
   }
 }
 
@@ -97,29 +73,15 @@ impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
     id_opt: Option<&str>,
     limit_number: Option<&u8>,
   ) -> Result<Vec<(Image, String, String, bool)>, Error> {
-    match self {
-      CSM(b) => {
-        b.get_images_and_details(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_name_vec,
-          id_opt,
-          limit_number,
-        )
-        .await
-      }
-      OCHAMI(b) => {
-        b.get_images_and_details(
-          shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          hsm_group_name_vec,
-          id_opt,
-          limit_number,
-        )
-        .await
-      }
-    }
+    dispatch!(
+      self,
+      get_images_and_details,
+      shasta_token,
+      shasta_base_url,
+      shasta_root_cert,
+      hsm_group_name_vec,
+      id_opt,
+      limit_number
+    )
   }
 }

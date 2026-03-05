@@ -13,10 +13,7 @@ impl PCSTrait for StaticBackendDispatcher {
     auth_token: &str,
     nodes: &[String],
   ) -> Result<TransitionResponse, Error> {
-    match self {
-      CSM(b) => b.power_on_sync(auth_token, nodes).await,
-      OCHAMI(b) => b.power_on_sync(auth_token, nodes).await,
-    }
+    dispatch!(self, power_on_sync, auth_token, nodes)
   }
 
   async fn power_off_sync(
@@ -25,10 +22,7 @@ impl PCSTrait for StaticBackendDispatcher {
     nodes: &[String],
     force: bool,
   ) -> Result<TransitionResponse, Error> {
-    match self {
-      CSM(b) => b.power_off_sync(auth_token, nodes, force).await,
-      OCHAMI(b) => b.power_off_sync(auth_token, nodes, force).await,
-    }
+    dispatch!(self, power_off_sync, auth_token, nodes, force)
   }
 
   async fn power_reset_sync(
@@ -37,9 +31,6 @@ impl PCSTrait for StaticBackendDispatcher {
     nodes: &[String],
     force: bool,
   ) -> Result<TransitionResponse, Error> {
-    match self {
-      CSM(b) => b.power_reset_sync(auth_token, nodes, force).await,
-      OCHAMI(b) => b.power_reset_sync(auth_token, nodes, force).await,
-    }
+    dispatch!(self, power_reset_sync, auth_token, nodes, force)
   }
 }
