@@ -8,7 +8,7 @@ use nodeset::NodeSet;
 
 use crate::common::{
   self, app_context::AppContext, audit, authentication::get_api_token,
-  authorization::get_groups_names_available, jwt_ops,
+  authorization::get_groups_names_available,
 };
 
 /// The three power operations supported by the backend.
@@ -114,11 +114,6 @@ pub async fn exec_nodes(
 
   // Audit
   if let Some(kafka_audit) = ctx.kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token)
-      .context("Failed to get username from token")?;
-    let user_id = jwt_ops::get_preferred_username(&shasta_token)
-      .context("Failed to get preferred username from token")?;
-
     let group_map = backend
       .get_group_map_and_filter_by_member_vec(
         &shasta_token,
@@ -127,16 +122,14 @@ pub async fn exec_nodes(
       .await
       .context("Failed to get group map for audit")?;
 
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "host": {"hostname": xname_vec},
-      "group": group_map
-        .keys()
-        .collect::<Vec<_>>(),
-      "message": action.to_string(),
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      &shasta_token,
+      action.to_string(),
+      Some(serde_json::json!(xname_vec)),
+      Some(serde_json::json!(group_map.keys().collect::<Vec<_>>())),
+    )
+    .await;
   }
 
   Ok(())
@@ -202,18 +195,14 @@ pub async fn exec_cluster(
 
   // Audit
   if let Some(kafka_audit) = ctx.kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token)
-      .context("Failed to get username from token")?;
-    let user_id = jwt_ops::get_preferred_username(&shasta_token)
-      .context("Failed to get preferred username from token")?;
-
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "group": hsm_group_name_arg,
-      "message": action.to_string(),
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      &shasta_token,
+      action.to_string(),
+      None,
+      Some(serde_json::json!(hsm_group_name_arg)),
+    )
+    .await;
   }
 
   Ok(())

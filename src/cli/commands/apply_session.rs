@@ -14,7 +14,7 @@ use crate::common::{
   audit,
   authentication::get_api_token,
   authorization::{get_groups_names_available, validate_target_hsm_members},
-  jwt_ops, local_git_repo,
+  local_git_repo,
 };
 
 pub async fn exec(
@@ -219,30 +219,14 @@ pub async fn apply_session(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).context(
-      "Could not extract name \
-         from JWT token",
-    )?;
-    let user_id = jwt_ops::get_preferred_username(shasta_token).context(
-      "Could not extract username \
-           from JWT token",
-    )?;
-
-    let msg_json = serde_json::json!(
-      {
-        "user": {
-          "id": user_id,
-          "name": username
-        },
-        "host": {
-          "hostname": ansible_limit
-        },
-        "group": vec![hsm_group_opt],
-        "message": "Apply session"
-      }
-    );
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      shasta_token,
+      "Apply session",
+      Some(serde_json::json!(ansible_limit)),
+      Some(serde_json::json!(vec![hsm_group_opt])),
+    )
+    .await;
   }
 
   Ok((cfs_configuration_name, cfs_session_name))

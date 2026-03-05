@@ -1,4 +1,4 @@
-use crate::common::{self, app_context::AppContext, audit, jwt_ops};
+use crate::common::{self, app_context::AppContext, audit};
 use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
@@ -221,13 +221,6 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token)
-      .context("Failed to get username from token")?;
-    let user_id = jwt_ops::get_preferred_username(&shasta_token).context(
-      "Failed to get preferred username \
-           from token",
-    )?;
-
     // FIXME: We should not need to make this call
     // here but at the beginning of the method as a
     // prerequisite
@@ -238,26 +231,14 @@ pub async fn exec(
       .get_group_map_and_filter_by_member_vec(&shasta_token, &xnames)
       .await?;
 
-    let msg_json = serde_json::json!(
-      {
-        "user": {
-          "id": user_id,
-          "name": username
-        },
-        "host": {
-          "hostname": xname_vec
-        },
-        "group": group_map_vec
-          .keys()
-          .collect::<Vec<_>>(),
-        "message": format!(
-          "Apply kernel parameters: {}",
-          kernel_params
-        )
-      }
-    );
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      &shasta_token,
+      format!("Apply kernel parameters: {}", kernel_params),
+      Some(serde_json::json!(xname_vec)),
+      Some(serde_json::json!(group_map_vec.keys().collect::<Vec<_>>())),
+    )
+    .await;
   }
 
   // Reboot if needed

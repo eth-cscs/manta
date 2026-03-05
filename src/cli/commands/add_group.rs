@@ -1,4 +1,4 @@
-use crate::common::{self, audit, jwt_ops};
+use crate::common::{self, audit};
 use crate::common::{
   app_context::AppContext, authorization::validate_target_hsm_members,
 };
@@ -77,20 +77,14 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(auth_token).unwrap_or_default();
-    let user_id =
-      jwt_ops::get_preferred_username(auth_token).unwrap_or_default();
-
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "host": {
-        "hostname": xname_vec_opt.unwrap_or_default()
-      },
-      "group": label,
-      "message": format!("Create Group '{}'", label),
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      auth_token,
+      format!("Create Group '{}'", label),
+      Some(serde_json::json!(xname_vec_opt.unwrap_or_default())),
+      Some(serde_json::json!(label)),
+    )
+    .await;
   }
 
   Ok(())

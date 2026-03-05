@@ -11,7 +11,7 @@ use manta_backend_dispatcher::{
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::{
-  common::{app_context::AppContext, audit, jwt_ops},
+  common::{app_context::AppContext, audit},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -107,18 +107,14 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(shasta_token).unwrap_or_default();
-    let user_id =
-      jwt_ops::get_preferred_username(shasta_token).unwrap_or_default();
-
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "host": {"hostname": id},
-      "group": [],
-      "message": "add node",
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      shasta_token,
+      "add node",
+      Some(serde_json::json!(id)),
+      Some(serde_json::json!([])),
+    )
+    .await;
   }
 
   println!("Node '{}' created and added to group '{}'", id, group);

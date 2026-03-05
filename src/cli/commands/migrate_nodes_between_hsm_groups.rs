@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::common::{
-  self, app_context::AppContext, audit, authentication::get_api_token, jwt_ops,
+  self, app_context::AppContext, audit, authentication::get_api_token,
 };
 
 pub async fn exec(
@@ -122,26 +122,20 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token)
-      .context("Failed to get username from JWT token")?;
-    let user_id = jwt_ops::get_preferred_username(&shasta_token)
-      .context("Failed to get user ID from JWT token")?;
-
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "host": {"hostname": xname_to_move_vec},
-      "group": vec![
-        parent_hsm_name_vec,
-        target_hsm_name_vec
-      ],
-      "message": format!(
+    audit::send_audit(
+      kafka_audit,
+      &shasta_token,
+      format!(
         "Migrate nodes from {:?} to {:?}",
+        parent_hsm_name_vec, target_hsm_name_vec
+      ),
+      Some(serde_json::json!(xname_to_move_vec)),
+      Some(serde_json::json!(vec![
         parent_hsm_name_vec,
         target_hsm_name_vec
-      ),
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+      ])),
+    )
+    .await;
   }
 
   Ok(())

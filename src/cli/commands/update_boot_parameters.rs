@@ -1,6 +1,6 @@
 use crate::common::{
   app_context::AppContext, audit, authentication::get_api_token,
-  authorization::validate_target_hsm_members, jwt_ops,
+  authorization::validate_target_hsm_members,
 };
 use anyhow::Error;
 use manta_backend_dispatcher::{
@@ -56,17 +56,14 @@ pub async fn exec(
 
   // Audit
   if let Some(kafka_audit) = kafka_audit_opt {
-    let username = jwt_ops::get_name(&shasta_token).unwrap_or_default();
-    let user_id =
-      jwt_ops::get_preferred_username(&shasta_token).unwrap_or_default();
-
-    let msg_json = serde_json::json!({
-      "user": {"id": user_id, "name": username},
-      "host": {"hostname": hosts},
-      "message": "Update boot parameters",
-    });
-
-    audit::send_audit_message(kafka_audit, msg_json).await;
+    audit::send_audit(
+      kafka_audit,
+      &shasta_token,
+      "Update boot parameters",
+      Some(serde_json::json!(hosts)),
+      None,
+    )
+    .await;
   }
 
   Ok(())
