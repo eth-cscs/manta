@@ -65,127 +65,26 @@ pub async fn exec(
   )
   .await?;
 
-  // Update BSS BOOT PARAMETERS
-  //
   // IMPORTANT: ALWAYS SET KERNEL PARAMS BEFORE BOOT
-  // IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT
-  // IMAGE, THEREFORE IF USER WANTS TO CHANGE BOTH
-  // KERNEL PARAMS AND BOOT IMAGE, THEN, CHANGING
-  //
-  // THE BOOT IMAGE LATER WILL MAKE SURE WE PUT IN
-  // PLACE THE RIGHT BOOT IMAGE
-  // Update kernel parameters
+  // IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT IMAGE,
+  // THEREFORE IF USER WANTS TO CHANGE BOTH, CHANGING
+  // THE BOOT IMAGE LATER WILL PUT THE RIGHT ONE IN
+  // PLACE.
   if let Some(new_kernel_parameters) = new_kernel_parameters_opt {
-    for boot_parameter in current_node_boot_param_vec.iter_mut() {
-      log::info!(
-        "Updating '{:?}' kernel parameters to '{}'",
-        boot_parameter.hosts,
-        new_kernel_parameters
-      );
-
-      // First. update the kernel parameters in the
-      // current boot params struct
-      // Update boot params
-      let kernel_params_changed =
-        boot_parameter.apply_kernel_params(new_kernel_parameters);
-
-      need_restart = kernel_params_changed || need_restart;
-
-      log::info!("need restart? {}", need_restart);
-
-      let image_id =
-        boot_parameter.try_get_boot_image_id().ok_or_else(|| {
-          Error::msg(format!(
-            "Could not get boot image id from boot \
-             parameters for hosts: {:?}",
-            boot_parameter.hosts
-          ))
-        })?;
-
-      // Second. update the boot image in the current
-      // boot params struct to make sure it is in sync
-      // with the kernel params with the latest boot
-      // image id and etag
-      let _ = boot_parameter
-        .update_boot_image(&image_id, &boot_parameter.get_boot_image_etag())?;
-    }
+    need_restart |= apply_kernel_params(
+      &mut current_node_boot_param_vec,
+      new_kernel_parameters,
+    )?;
   }
 
-  // IMPORTANT: ALWAYS SET KERNEL PARAMS BEFORE BOOT
-  // IMAGE BECAUSE KERNEL ALSO UPDATES THE BOOT
-  // IMAGE, THEREFORE IF USER WANTS TO CHANGE BOTH
-  // KERNEL PARAMS AND BOOT IMAGE, THEN, CHANGING
-  //
-  // Update boot image
-  //
-  let mut image_vec = HashMap::<String, Image>::new();
-
-  if let Some(new_boot_image) = new_boot_image_opt {
-    // User provided new image and all boot parameters
-    // will use it
-    let new_boot_image_id = new_boot_image
-      .id
-      .as_ref()
-      .context("New boot image id is missing")?
-      .clone();
-
-    let new_boot_image_etag = new_boot_image
-      .link
-      .as_ref()
-      .and_then(|link| link.etag.as_ref())
-      .context("New boot image etag is missing")?;
-
-    image_vec.insert(new_boot_image_id.clone(), new_boot_image.clone());
-
-    let boot_params_to_update_vec: Vec<&BootParameters> =
-      current_node_boot_param_vec
-        .iter()
-        .filter(|&boot_param| {
-          boot_param.try_get_boot_image_id().as_deref()
-            != Some(new_boot_image_id.as_str())
-        })
-        .collect();
-
-    if !boot_params_to_update_vec.is_empty() {
-      // Update boot params
-      current_node_boot_param_vec
-        .iter_mut()
-        .for_each(|boot_parameter| {
-          log::info!(
-            "Updating '{:?}' boot image to '{}'",
-            boot_parameter.hosts,
-            new_boot_image_id
-          );
-
-          let _ = boot_parameter
-            .update_boot_image(&new_boot_image_id, new_boot_image_etag);
-        });
-
-      need_restart = true;
-    }
-  } else {
-    // User did not provide new image but we might need
-    // to update images if "root" kernel param use "sbps"
-    for boot_parameter in &current_node_boot_param_vec {
-      let boot_image_id =
-        boot_parameter.try_get_boot_image_id().ok_or_else(|| {
-          Error::msg(format!(
-            "Could not get boot image id from boot \
-             parameters for hosts: {:?}",
-            boot_parameter.hosts
-          ))
-        })?;
-
-      let boot_image = backend
-        .get_images(&shasta_token, Some(boot_image_id.as_str()))
-        .await?
-        .first()
-        .context("No image found for boot image id")?
-        .clone();
-
-      image_vec.insert(boot_image_id, boot_image);
-    }
-  }
+  let mut image_vec = collect_boot_images(
+    backend,
+    &shasta_token,
+    &mut current_node_boot_param_vec,
+    new_boot_image_opt,
+    &mut need_restart,
+  )
+  .await?;
 
   log::debug!(
     "boot params to update vec:\n{:#?}",
@@ -373,4 +272,112 @@ async fn get_new_boot_image(
   };
 
   Ok(new_boot_image)
+}
+
+/// Apply new kernel parameters to all boot parameters,
+/// returning `true` if any parameter actually changed.
+fn apply_kernel_params(
+  boot_param_vec: &mut [BootParameters],
+  new_kernel_parameters: &str,
+) -> Result<bool, Error> {
+  let mut any_changed = false;
+
+  for boot_parameter in boot_param_vec.iter_mut() {
+    log::info!(
+      "Updating '{:?}' kernel parameters to '{}'",
+      boot_parameter.hosts,
+      new_kernel_parameters
+    );
+
+    let changed = boot_parameter.apply_kernel_params(new_kernel_parameters);
+    any_changed = changed || any_changed;
+
+    log::info!("need restart? {}", any_changed);
+
+    let image_id = boot_parameter.try_get_boot_image_id().ok_or_else(|| {
+      Error::msg(format!(
+        "Could not get boot image id from boot \
+           parameters for hosts: {:?}",
+        boot_parameter.hosts
+      ))
+    })?;
+
+    // Update boot image to stay in sync with kernel
+    // params (latest image id and etag)
+    let _ = boot_parameter
+      .update_boot_image(&image_id, &boot_parameter.get_boot_image_etag())?;
+  }
+
+  Ok(any_changed)
+}
+
+/// Collect boot images: if a new image was provided, update
+/// all boot params to use it; otherwise fetch the current
+/// boot image for each node.
+async fn collect_boot_images(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  boot_param_vec: &mut [BootParameters],
+  new_boot_image_opt: Option<Image>,
+  need_restart: &mut bool,
+) -> Result<HashMap<String, Image>, Error> {
+  let mut image_vec = HashMap::<String, Image>::new();
+
+  if let Some(new_boot_image) = new_boot_image_opt {
+    let new_boot_image_id = new_boot_image
+      .id
+      .as_ref()
+      .context("New boot image id is missing")?
+      .clone();
+
+    let new_boot_image_etag = new_boot_image
+      .link
+      .as_ref()
+      .and_then(|link| link.etag.as_ref())
+      .context("New boot image etag is missing")?;
+
+    image_vec.insert(new_boot_image_id.clone(), new_boot_image.clone());
+
+    let any_differ = boot_param_vec.iter().any(|bp| {
+      bp.try_get_boot_image_id().as_deref() != Some(new_boot_image_id.as_str())
+    });
+
+    if any_differ {
+      boot_param_vec.iter_mut().for_each(|boot_parameter| {
+        log::info!(
+          "Updating '{:?}' boot image to '{}'",
+          boot_parameter.hosts,
+          new_boot_image_id
+        );
+        let _ = boot_parameter
+          .update_boot_image(&new_boot_image_id, new_boot_image_etag);
+      });
+
+      *need_restart = true;
+    }
+  } else {
+    // No new image — fetch current boot image for each
+    // node (may need updating if "root" uses "sbps")
+    for boot_parameter in boot_param_vec.iter() {
+      let boot_image_id =
+        boot_parameter.try_get_boot_image_id().ok_or_else(|| {
+          Error::msg(format!(
+            "Could not get boot image id from boot \
+             parameters for hosts: {:?}",
+            boot_parameter.hosts
+          ))
+        })?;
+
+      let boot_image = backend
+        .get_images(shasta_token, Some(boot_image_id.as_str()))
+        .await?
+        .first()
+        .context("No image found for boot image id")?
+        .clone();
+
+      image_vec.insert(boot_image_id, boot_image);
+    }
+  }
+
+  Ok(image_vec)
 }

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::{Context, Error, bail};
 
-use crate::common;
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -12,8 +11,9 @@ use crate::{
     MEMORY_CAPACITY_LCM,
     utils::{
       calculate_hsm_hw_component_summary,
-      calculate_hw_component_scarcity_scores,
-      get_hsm_node_hw_component_counter,
+      calculate_hw_component_scarcity_scores, fetch_hsm_hw_inventory,
+      get_hsm_node_hw_component_counter, parse_hw_pattern,
+      print_hsm_group_json, show_solution_and_confirm,
     },
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
@@ -28,131 +28,46 @@ pub async fn exec(
   dryrun: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
+  ensure_target_group_exists(
+    backend,
+    shasta_token,
+    target_hsm_group_name,
+    dryrun,
+    create_hsm_group,
+  )
+  .await?;
+
+  // Parse the hardware pattern
   let pattern = format!("{}:{}", target_hsm_group_name, pattern);
-
-  match backend.get_group(shasta_token, target_hsm_group_name).await {
-    Ok(_) => {
-      log::debug!("The group '{}' exists, good.", target_hsm_group_name)
-    }
-    Err(_) => {
-      if create_hsm_group {
-        log::info!(
-          "Group '{}' does not exist, but the option to create the group has been selected, creating it now.",
-          target_hsm_group_name
-        );
-        if dryrun {
-          bail!(
-            "Dryrun selected, cannot create \
-             the new group and continue.",
-          );
-        } else {
-          let group = Group {
-            label: target_hsm_group_name.to_string(),
-            description: None,
-            tags: None,
-            members: None,
-            exclusive_group: Some("false".to_string()),
-          };
-          backend
-            .add_group(shasta_token, group)
-            .await
-            .context("Unable to create new group")?;
-        }
-      } else {
-        bail!(
-          "Group '{}' does not exist, but the \
-           option to create the group was NOT \
-           specificied, cannot continue.",
-          target_hsm_group_name
-        );
-      }
-    }
-  };
-
-  log::info!("pattern: {}", pattern);
-
-  // lcm -> used to normalize and quantify memory capacity
-  let mem_lcm = MEMORY_CAPACITY_LCM;
-
-  // Normalize text in lowercase and separate each group hw inventory pattern
   let pattern_lowercase = pattern.to_lowercase();
-
   let mut pattern_element_vec: Vec<&str> =
     pattern_lowercase.split(':').collect();
-
   let target_hsm_group_name = pattern_element_vec.remove(0);
 
-  if !pattern_element_vec.len().is_multiple_of(2) {
-    bail!(
-      "Error in pattern: odd number of elements \
-       after group name. Expected pairs of \
-       <hw component>:<count>. \
-       eg tasna:a100:4:epyc:10:instinct:8",
-    );
-  }
-
-  let mut user_defined_delta_hw_component_count_hashmap: HashMap<
-    String,
-    isize,
-  > = HashMap::new();
-
-  // Check user input is correct
-  for hw_component_counter in pattern_element_vec.chunks_exact(2) {
-    if let Ok(count) = hw_component_counter[1].parse::<isize>() {
-      user_defined_delta_hw_component_count_hashmap
-        .insert(hw_component_counter[0].to_string(), count);
-    } else {
-      bail!(
-        "Error in pattern. Please make sure to \
-         follow <hsm name>:<hw component>:\
-         <counter>:... eg \
-         <tasna>:a100:4:epyc:10:instinct:8",
-      );
-    }
-  }
+  let (
+    user_defined_delta_hw_component_vec,
+    user_defined_delta_hw_component_count_hashmap,
+  ) = parse_hw_pattern(&pattern_element_vec)?;
 
   log::info!(
     "User defined hw components with counters: {:?}",
     user_defined_delta_hw_component_count_hashmap
   );
 
-  let mut user_defined_delta_hw_component_vec: Vec<String> =
-    user_defined_delta_hw_component_count_hashmap
-      .keys()
-      .cloned()
-      .collect();
-
-  user_defined_delta_hw_component_vec.sort();
-
-  // *********************************************************************************************************
-  // PREPREQUISITES - GET DATA - PARENT GROUP
-
-  // Get parent group members
-  let parent_hsm_group_member_vec: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(
-      shasta_token,
-      &[parent_hsm_group_name.to_string()],
-    )
-    .await
-    .context("Failed to get member vec from parent HSM group")?;
-
-  // Get group hw component counters for target group
-  let mut parent_hsm_node_hw_component_count_vec =
-    get_hsm_node_hw_component_counter(
-      backend,
-      shasta_token,
-      &user_defined_delta_hw_component_vec,
-      &parent_hsm_group_member_vec,
-      mem_lcm,
-    )
-    .await;
-
-  // sort nodes hw counters by node name
-  parent_hsm_node_hw_component_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
-
-  // Calculate hw component counters (summary) across all node within the group
-  let parent_hsm_hw_component_summary: HashMap<String, usize> =
-    calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
+  // Fetch parent HSM inventory
+  let mem_lcm = MEMORY_CAPACITY_LCM;
+  let (
+    _parent_member_vec,
+    mut parent_hsm_node_hw_component_count_vec,
+    parent_hsm_hw_component_summary,
+  ) = fetch_hsm_hw_inventory(
+    backend,
+    shasta_token,
+    &user_defined_delta_hw_component_vec,
+    parent_hsm_group_name,
+    mem_lcm,
+  )
+  .await?;
 
   log::info!(
     "Parent group '{}' hw component summary: {:?}",
@@ -160,73 +75,38 @@ pub async fn exec(
     parent_hsm_hw_component_summary
   );
 
-  // *********************************************************************************************************
-  // CALCULATE FINAL GROUP HW COMPONENT COUNTERS (SUMMARY) AND DELTAS Calculate the hw components the target group should have after applying the deltas
-  // (removing the hw components from the target hsm spcecified by the user)
-  let mut final_parent_hsm_hw_component_summary: HashMap<String, usize> =
-    HashMap::new();
+  // Calculate final parent summary after removing
+  // the requested hw components
+  let final_parent_hsm_hw_component_summary = compute_final_parent_summary(
+    &parent_hsm_hw_component_summary,
+    &user_defined_delta_hw_component_count_hashmap,
+    parent_hsm_group_name,
+  )?;
 
-  for (hw_component, counter) in &user_defined_delta_hw_component_count_hashmap
-  {
-    let current_counter: usize = *parent_hsm_hw_component_summary
-      .get(hw_component)
-      .unwrap_or(&0);
-    if *counter > current_counter as isize {
-      bail!(
-        "Cannot remove more hw component '{}' \
-         ({}) than available in parent group \
-         '{}' ({})",
-        hw_component,
-        *counter,
-        parent_hsm_group_name,
-        current_counter
-      );
-    }
-    let new_counter: usize = current_counter - *counter as usize;
-
-    final_parent_hsm_hw_component_summary
-      .insert(hw_component.to_string(), new_counter);
-  }
-
-  //*************************************************************************************
-  // CALCULATE HW COMPONENT TYPE SCORE BASED ON SCARCITY
-  // Get parent group members
-  // Calculate nomarlized score for each hw component type in as much groups as possible
-  // related to the stakeholders using these nodes
-  let parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap: HashMap<
-    String,
-    f32,
-  > = calculate_hw_component_scarcity_scores(
+  // Calculate scarcity scores
+  let scarcity_scores = calculate_hw_component_scarcity_scores(
     &parent_hsm_node_hw_component_count_vec,
   )
   .await;
 
-  // *********************************************************************************************************
-  // FIND NODES TO MOVE FROM PARENT TO TARGET GROUP
+  // Find nodes to move from parent to target
+  let hw_counters_to_move =
+    crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
+      &final_parent_hsm_hw_component_summary,
+      &final_parent_hsm_hw_component_summary
+        .keys()
+        .cloned()
+        .collect::<Vec<String>>(),
+      &mut parent_hsm_node_hw_component_count_vec,
+      &scarcity_scores,
+    )?;
 
-  // Downscale parent group
-  let hw_component_counters_to_move_out_from_parent_hsm =
-        crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
-            &final_parent_hsm_hw_component_summary,
-            &final_parent_hsm_hw_component_summary
-                .keys()
-                .cloned()
-                .collect::<Vec<String>>(),
-            &mut parent_hsm_node_hw_component_count_vec,
-            &parent_hsm_hw_component_type_scores_based_on_scarcity_hashmap,
-        )?;
+  let nodes_to_move: Vec<String> = hw_counters_to_move
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
 
-  // *********************************************************************************************************
-  // PREPARE INFORMATION TO SHOW
-
-  let nodes_moved_from_parent_hsm =
-    hw_component_counters_to_move_out_from_parent_hsm
-      .iter()
-      .map(|(xname, _)| xname)
-      .cloned()
-      .collect::<Vec<String>>();
-
-  // Get target group members
+  // Build final target node list
   let mut target_hsm_node_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
@@ -235,39 +115,10 @@ pub async fn exec(
     .await
     .context("Failed to get member vec from target HSM group")?;
 
-  target_hsm_node_vec.extend(nodes_moved_from_parent_hsm.clone());
-
+  target_hsm_node_vec.extend(nodes_to_move.clone());
   target_hsm_node_vec.sort();
 
-  // Get hw component counters for target group
-  let target_hsm_node_hw_component_count_vec =
-    get_hsm_node_hw_component_counter(
-      backend,
-      shasta_token,
-      &user_defined_delta_hw_component_vec,
-      &target_hsm_node_vec,
-      mem_lcm,
-    )
-    .await;
-
-  let target_hsm_hw_component_summary =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
-
-  // Get list of xnames in target group
-  let parent_hsm_node_vec = parent_hsm_node_hw_component_count_vec
-    .iter()
-    .map(|(xname, _)| xname)
-    .cloned()
-    .collect::<Vec<String>>();
-
-  // *********************************************************************************************************
-  // SHOW THE SOLUTION
-
-  log::info!("----- SOLUTION -----");
-
-  log::info!("Hw components in group '{}'", target_hsm_group_name);
-
-  // get hsm hw component counters for target hsm
+  // Get hw component counters for the combined target
   let mut target_hsm_node_hw_component_count_vec =
     get_hsm_node_hw_component_counter(
       backend,
@@ -278,82 +129,132 @@ pub async fn exec(
     )
     .await;
 
-  // sort nodes hw counters by node name
   target_hsm_node_hw_component_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-  log::info!(
-    "Group '{}' hw component counters: {:?}",
+  let target_hsm_hw_component_summary =
+    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+
+  // Show solution and confirm
+  show_solution_and_confirm(
     target_hsm_group_name,
-    target_hsm_node_hw_component_count_vec
-  );
+    &user_defined_delta_hw_component_vec,
+    &target_hsm_node_hw_component_count_vec,
+    &target_hsm_hw_component_summary,
+  )?;
 
-  let hw_configuration_table =
-    crate::cli::commands::get_hardware_cluster::get_table(
-      &user_defined_delta_hw_component_vec,
-      &target_hsm_node_hw_component_count_vec,
-    );
-
-  log::info!("\n{hw_configuration_table}");
-
-  let confirm_message = format!(
-    "Please check and confirm new hw summary for cluster '{}': {:?}",
-    target_hsm_group_name, target_hsm_hw_component_summary
-  );
-
-  if !common::user_interaction::confirm(
-    &confirm_message,
-    false, // Note: The original code didn't seem to have an assume_yes argument in `exec` signature related to this confirmation, but `exec` doesn't take assume_yes.
-           // However, looking at the pattern, usually assume_yes is passed down.
-           // BUT this function signature is:
-           // pub async fn exec(..., dryrun: bool, create_hsm_group: bool)
-           // It does NOT have `assume_yes`.
-           // So I will pass `false` for assume_yes to force interaction, mirroring original behavior.
-  ) {
-    bail!("Operation cancelled by user.");
-  }
-
-  // *********************************************************************************************************
-  // UPDATE GROUP MEMBERS IN CSM
+  // Apply changes
   if dryrun {
-    log::info!("Dryrun enabled, not modifying the groups on the system.")
+    log::info!(
+      "Dryrun enabled, not modifying the groups \
+       on the system."
+    )
   } else {
-    for xname in nodes_moved_from_parent_hsm {
+    for xname in &nodes_to_move {
       backend
-        .delete_member_from_group(shasta_token, parent_hsm_group_name, &xname)
+        .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
         .await
         .context("Failed to delete member from parent group")?;
 
       let _ = backend
-        .add_members_to_group(shasta_token, target_hsm_group_name, &[&xname])
+        .add_members_to_group(
+          shasta_token,
+          target_hsm_group_name,
+          &[xname.as_str()],
+        )
         .await
         .context("Failed to add member to target group")?;
     }
   }
-  let target_hsm_group_value = serde_json::json!({
-      "label": target_hsm_group_name,
-      "description": "",
-      "members": target_hsm_node_vec,
-      "tags": []
-  });
 
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&target_hsm_group_value)
-      .context("Failed to serialize target HSM group to JSON",)?
-  );
+  // Build parent node list for display
+  let parent_hsm_node_vec: Vec<String> = parent_hsm_node_hw_component_count_vec
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
 
-  let parent_hsm_group_value = serde_json::json!({
-      "label": parent_hsm_group_name,
-      "description": "",
-      "members": parent_hsm_node_vec,
-      "tags": []
-  });
-
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&parent_hsm_group_value)
-      .context("Failed to serialize parent HSM group to JSON",)?
-  );
+  print_hsm_group_json(target_hsm_group_name, &target_hsm_node_vec)?;
+  print_hsm_group_json(parent_hsm_group_name, &parent_hsm_node_vec)?;
 
   Ok(())
+}
+
+/// Ensure the target HSM group exists, creating it if
+/// `create_hsm_group` is set.
+async fn ensure_target_group_exists(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  target_hsm_group_name: &str,
+  dryrun: bool,
+  create_hsm_group: bool,
+) -> Result<(), Error> {
+  match backend.get_group(shasta_token, target_hsm_group_name).await {
+    Ok(_) => {
+      log::debug!("The group '{}' exists, good.", target_hsm_group_name);
+      Ok(())
+    }
+    Err(_) => {
+      if !create_hsm_group {
+        bail!(
+          "Group '{}' does not exist, but the \
+           option to create the group was NOT \
+           specified, cannot continue.",
+          target_hsm_group_name
+        );
+      }
+      log::info!(
+        "Group '{}' does not exist, but the option \
+         to create the group has been selected, \
+         creating it now.",
+        target_hsm_group_name
+      );
+      if dryrun {
+        bail!(
+          "Dryrun selected, cannot create \
+           the new group and continue.",
+        );
+      }
+      let group = Group {
+        label: target_hsm_group_name.to_string(),
+        description: None,
+        tags: None,
+        members: None,
+        exclusive_group: Some("false".to_string()),
+      };
+      backend
+        .add_group(shasta_token, group)
+        .await
+        .context("Unable to create new group")?;
+      Ok(())
+    }
+  }
+}
+
+/// Compute the final parent HSM hw component summary after
+/// subtracting the user-requested deltas. Returns an error
+/// if the parent doesn't have enough of any component.
+fn compute_final_parent_summary(
+  current_summary: &HashMap<String, usize>,
+  deltas: &HashMap<String, isize>,
+  parent_group_name: &str,
+) -> Result<HashMap<String, usize>, Error> {
+  let mut final_summary: HashMap<String, usize> = HashMap::new();
+
+  for (hw_component, counter) in deltas {
+    let current = *current_summary.get(hw_component).unwrap_or(&0);
+    if *counter > current as isize {
+      bail!(
+        "Cannot remove more hw component '{}' \
+         ({}) than available in parent group \
+         '{}' ({})",
+        hw_component,
+        *counter,
+        parent_group_name,
+        current
+      );
+    }
+    let new_counter = current - *counter as usize;
+    final_summary.insert(hw_component.to_string(), new_counter);
+  }
+
+  Ok(final_summary)
 }

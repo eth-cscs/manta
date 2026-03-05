@@ -10,6 +10,8 @@ use manta_backend_dispatcher::{
 use nodeset::NodeSet;
 use std::collections::HashMap;
 
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+
 /// Updates the kernel parameters for a set of nodes
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
@@ -34,52 +36,14 @@ pub async fn exec(
 
   // Get nodes from either hosts_expression or
   // hsm_group_name
-  let xname_vec: Vec<String> = if let Some(hosts_expr) = hosts_expression {
-    // Case 1: Nodes provided explicitly
-    common::node_ops::resolve_hosts_expression(
-      &backend,
-      &shasta_token,
-      hosts_expr,
-      false,
-    )
-    .await?
-  } else if let Some(hsm_group) = hsm_group_name_arg_opt {
-    // Case 2: Nodes from HSM group
-    backend
-      .get_member_vec_from_group_name_vec(
-        &shasta_token,
-        &[hsm_group.to_string()],
-      )
-      .await
-      .with_context(|| {
-        format!(
-          "Could not get members for \
-             HSM group {}",
-          hsm_group
-        )
-      })?
-  } else if let Some(settings_hsm_group) = settings_hsm_group_name_opt {
-    // Case 3: Nodes from settings HSM group
-    backend
-      .get_member_vec_from_group_name_vec(
-        &shasta_token,
-        &[settings_hsm_group.to_string()],
-      )
-      .await
-      .with_context(|| {
-        format!(
-          "Could not get members for \
-             settings HSM group {}",
-          settings_hsm_group
-        )
-      })?
-  } else {
-    bail!(
-      "No nodes provided. Please provide \
-         either a list of nodes via --nodes or an \
-         HSM group via --hsm-group",
-    );
-  };
+  let xname_vec = resolve_target_nodes(
+    &backend,
+    &shasta_token,
+    hosts_expression,
+    hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
 
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
   let mut image_map: HashMap<String, Image> = HashMap::new();
@@ -257,4 +221,56 @@ pub async fn exec(
   }
 
   Ok(())
+}
+
+/// Resolve the target nodes from either a hosts expression,
+/// an explicit HSM group name, or the settings HSM group.
+async fn resolve_target_nodes(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  hosts_expression: Option<&str>,
+  hsm_group_name_arg_opt: Option<&str>,
+  settings_hsm_group_name_opt: Option<&str>,
+) -> Result<Vec<String>, Error> {
+  if let Some(hosts_expr) = hosts_expression {
+    common::node_ops::resolve_hosts_expression(
+      backend,
+      shasta_token,
+      hosts_expr,
+      false,
+    )
+    .await
+  } else if let Some(hsm_group) = hsm_group_name_arg_opt {
+    let members: Vec<String> = backend
+      .get_member_vec_from_group_name_vec(
+        shasta_token,
+        &[hsm_group.to_string()],
+      )
+      .await
+      .with_context(|| {
+        format!("Could not get members for HSM group {}", hsm_group)
+      })?;
+    Ok(members)
+  } else if let Some(settings_hsm_group) = settings_hsm_group_name_opt {
+    let members: Vec<String> = backend
+      .get_member_vec_from_group_name_vec(
+        shasta_token,
+        &[settings_hsm_group.to_string()],
+      )
+      .await
+      .with_context(|| {
+        format!(
+          "Could not get members for \
+           settings HSM group {}",
+          settings_hsm_group
+        )
+      })?;
+    Ok(members)
+  } else {
+    bail!(
+      "No nodes provided. Please provide \
+       either a list of nodes via --nodes or an \
+       HSM group via --hsm-group",
+    )
+  }
 }

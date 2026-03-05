@@ -2,7 +2,9 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use anyhow::Error;
 use comfy_table::Color;
-use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
+use manta_backend_dispatcher::interfaces::hsm::{
+  group::GroupTrait, hardware_inventory::HardwareInventory,
+};
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
@@ -581,4 +583,144 @@ pub async fn resolve_hw_description_to_xnames(
     new_target_hsm_node_hw_component_count_vec,
     combined_target_parent_hsm_node_hw_component_count_vec,
   ))
+}
+
+/// Parse a hardware pattern string like `"a100:4:epyc:10"`
+/// into a sorted list of hw component names and a hashmap
+/// of `{component -> count}`.
+///
+/// The input `pattern_elements` must contain an even number
+/// of colon-separated tokens (pairs of name:count).
+pub fn parse_hw_pattern(
+  pattern_elements: &[&str],
+) -> Result<(Vec<String>, HashMap<String, isize>), Error> {
+  use anyhow::bail;
+
+  if !pattern_elements.len().is_multiple_of(2) {
+    bail!(
+      "Error in pattern: odd number of elements \
+       after group name. Expected pairs of \
+       <hw component>:<count>. \
+       eg tasna:a100:4:epyc:10:instinct:8",
+    );
+  }
+
+  let mut hw_component_count: HashMap<String, isize> = HashMap::new();
+
+  for chunk in pattern_elements.chunks_exact(2) {
+    if let Ok(count) = chunk[1].parse::<isize>() {
+      hw_component_count.insert(chunk[0].to_string(), count);
+    } else {
+      bail!(
+        "Error in pattern. Please make sure to \
+         follow <hsm name>:<hw component>:\
+         <counter>:... \
+         eg <tasna>:a100:4:epyc:10:instinct:8",
+      );
+    }
+  }
+
+  let mut hw_component_vec: Vec<String> =
+    hw_component_count.keys().cloned().collect();
+  hw_component_vec.sort();
+
+  Ok((hw_component_vec, hw_component_count))
+}
+
+/// Fetch HSM group member xnames, compute per-node hw
+/// component counts, sort by xname, and compute the group
+/// summary.
+pub async fn fetch_hsm_hw_inventory(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  hw_components: &[String],
+  group_name: &str,
+  mem_lcm: u64,
+) -> Result<(Vec<String>, NodeHwCountVec, HashMap<String, usize>), Error> {
+  use anyhow::Context;
+
+  let member_vec: Vec<String> = backend
+    .get_member_vec_from_group_name_vec(shasta_token, &[group_name.to_string()])
+    .await
+    .with_context(|| {
+      format!("Failed to get members from HSM group '{}'", group_name)
+    })?;
+
+  let mut node_hw_count_vec = get_hsm_node_hw_component_counter(
+    backend,
+    shasta_token,
+    hw_components,
+    &member_vec,
+    mem_lcm,
+  )
+  .await;
+
+  node_hw_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
+
+  let summary = calculate_hsm_hw_component_summary(&node_hw_count_vec);
+
+  Ok((member_vec, node_hw_count_vec, summary))
+}
+
+/// Display the hw configuration table and prompt the user
+/// for confirmation.
+pub fn show_solution_and_confirm(
+  group_name: &str,
+  hw_component_vec: &[String],
+  node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
+  hw_component_summary: &HashMap<String, usize>,
+) -> Result<(), Error> {
+  use anyhow::bail;
+
+  log::info!("----- SOLUTION -----");
+  log::info!("Hw components in HSM '{}'", group_name);
+  log::info!(
+    "hsm '{}' hw component counters: {:?}",
+    group_name,
+    node_hw_component_count_vec
+  );
+
+  let table = crate::cli::commands::get_hardware_cluster::get_table(
+    hw_component_vec,
+    node_hw_component_count_vec,
+  );
+
+  log::info!("\n{table}");
+
+  let confirm_message = format!(
+    "Please check and confirm new hw summary for \
+     cluster '{}': {:?}",
+    group_name, hw_component_summary
+  );
+
+  if !crate::common::user_interaction::confirm(&confirm_message, false) {
+    bail!("Operation cancelled by user.");
+  }
+
+  Ok(())
+}
+
+/// Print a JSON representation of an HSM group to stdout.
+pub fn print_hsm_group_json(
+  label: &str,
+  members: &[String],
+) -> Result<(), Error> {
+  use anyhow::Context;
+
+  let value = serde_json::json!({
+    "label": label,
+    "description": "",
+    "members": members,
+    "tags": []
+  });
+
+  println!(
+    "{}",
+    serde_json::to_string_pretty(&value).with_context(|| format!(
+      "Failed to serialize HSM group '{}' to JSON",
+      label
+    ))?
+  );
+
+  Ok(())
 }
