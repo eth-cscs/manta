@@ -1,7 +1,6 @@
 use anyhow::{Context, Error, bail};
 use chrono::DateTime;
 use serde_json::Value;
-use substring::Substring;
 
 use crate::common::{
   authentication::get_api_token, local_git_repo,
@@ -13,7 +12,7 @@ pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
   shasta_root_cert: &[u8],
-  vault_base_url: Option<&String>,
+  vault_base_url: Option<&str>,
   gitea_base_url: &str,
   repo_path: &str,
 ) -> Result<(), Error> {
@@ -31,12 +30,8 @@ pub async fn exec(
 
   println!("Validate local repo {}", repo_path);
 
-  let repo = local_git_repo::get_repo(repo_path).map_err(|e| {
-    Error::msg(format!(
-      "Could not open git repo in {}. Reason: {}",
-      repo_path, e
-    ))
-  })?;
+  let repo = local_git_repo::get_repo(repo_path)
+    .with_context(|| format!("Could not open git repo in {}", repo_path))?;
 
   log::info!("Repo '{}' found", repo_path);
 
@@ -55,16 +50,10 @@ pub async fn exec(
     .url()
     .context("Remote 'origin' URL is not valid UTF-8")?;
 
-  // TODO: do we still need the 'substring' crate? try to get rid of it
-  let repo_name = repo_ref_origin_url
-    .substring(
-      repo_ref_origin_url
-        .rfind('/')
-        .context("Remote URL has no '/' separator")?
-        + 1, // repo name should not include URI '/' separator
-      repo_ref_origin_url.len(), // repo_ref_origin_url.rfind(|c| c == '.').unwrap(),
-    )
-    .trim_end_matches(".git");
+  let slash_pos = repo_ref_origin_url
+    .rfind('/')
+    .context("Remote URL has no '/' separator")?;
+  let repo_name = repo_ref_origin_url[slash_pos + 1..].trim_end_matches(".git");
 
   println!("Repository name: {}", repo_name);
 
@@ -83,12 +72,10 @@ pub async fn exec(
   );
 
   // Check if all changes in local repo has been commited locally
-  if !local_git_repo::untracked_changed_local_files(&repo).map_err(|e| {
-    Error::msg(format!(
-      "Failed to check for untracked/changed files: {}",
-      e
-    ))
-  })? {
+  if !local_git_repo::untracked_changed_local_files(&repo)
+    .map_err(|e| anyhow::anyhow!("{e}"))
+    .context("Failed to check for untracked/changed files")?
+  {
     println!("Local changes committed: ❌");
     exit_code = 1;
   } else {

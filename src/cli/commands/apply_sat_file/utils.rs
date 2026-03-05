@@ -26,7 +26,7 @@ impl SatFile {
     // we will remove 'session_templates' section from SAT fiel and also the entries in
     // 'configurations' section not used
     if image_only {
-      let image_vec_opt: Option<&Vec<Image>> = self.images.as_ref();
+      let image_vec_opt: Option<&[Image]> = self.images.as_deref();
 
       let configuration_name_image_vec: Vec<String> = match image_vec_opt {
         Some(image_vec) => image_vec
@@ -55,8 +55,8 @@ impl SatFile {
     // we will remove 'images' section from SAT fiel and also the entries in
     // 'configurations' section not used
     if session_template_only {
-      let sessiontemplate_vec_opt: Option<&Vec<SessionTemplate>> =
-        self.session_templates.as_ref();
+      let sessiontemplate_vec_opt: Option<&[SessionTemplate]> =
+        self.session_templates.as_deref();
 
       let image_name_sessiontemplate_vec: Vec<String> = self
         .session_templates

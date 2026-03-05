@@ -13,8 +13,8 @@ use nodeset::NodeSet;
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  group_name_arg_opt: Option<&String>,
-  settings_hsm_group_name_opt: Option<&String>,
+  group_name_arg_opt: Option<&str>,
+  settings_hsm_group_name_opt: Option<&str>,
   output: &str,
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(backend, site_name).await?;

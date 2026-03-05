@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::interfaces::hsm::{
-  component::ComponentTrait, group::GroupTrait,
-};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::common::{
   self, app_context::AppContext, audit, authentication::get_api_token, jwt_ops,
@@ -26,26 +24,13 @@ pub async fn exec(
   // Filter xnames to the ones members to HSM groups the user has access to
   //
   // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(&shasta_token)
-    .await
-    .map_err(|e| {
-      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
-    })?;
-
-  let mut xname_to_move_vec =
-    common::node_ops::from_hosts_expression_to_xname_vec(
-      hosts_expression,
-      false,
-      node_metadata_available_vec,
-    )
-    .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not convert user input to list of xnames. Reason:\n{}",
-        e
-      ))
-    })?;
+  let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
+    hosts_expression,
+    false,
+  )
+  .await?;
 
   if xname_to_move_vec.is_empty() {
     bail!(
@@ -53,9 +38,6 @@ pub async fn exec(
        Nothing to do",
     );
   }
-
-  xname_to_move_vec.sort();
-  xname_to_move_vec.dedup();
 
   // Get HashMap with HSM groups and members curated for this request.
   // NOTE: the list of HSM groups are the ones the user has access to and containing nodes within

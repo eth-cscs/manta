@@ -10,12 +10,19 @@ pub async fn handle_update(
   if let Some(cli_update_boot_parameters) =
     cli_update.subcommand_matches("boot-parameters")
   {
-    let hosts: &String = cli_update_boot_parameters
-      .get_one("hosts")
+    let hosts: &str = cli_update_boot_parameters
+      .get_one::<String>("hosts")
+      .map(String::as_str)
       .context("The 'hosts' argument is mandatory")?;
-    let params: Option<&String> = cli_update_boot_parameters.get_one("params");
-    let kernel: Option<&String> = cli_update_boot_parameters.get_one("kernel");
-    let initrd: Option<&String> = cli_update_boot_parameters.get_one("initrd");
+    let params = cli_update_boot_parameters
+      .get_one::<String>("params")
+      .map(String::as_str);
+    let kernel = cli_update_boot_parameters
+      .get_one::<String>("kernel")
+      .map(String::as_str);
+    let initrd = cli_update_boot_parameters
+      .get_one::<String>("initrd")
+      .map(String::as_str);
 
     update_boot_parameters::exec(
       ctx, hosts, None, None, params, kernel, initrd,

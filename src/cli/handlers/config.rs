@@ -32,17 +32,17 @@ pub async fn handle_config(
     }
     if let Some(cli_config_set_site) = cli_config_set.subcommand_matches("site")
     {
-      commands::config_set_site::exec(cli_config_set_site).await?;
+      commands::config_set_site::exec(cli_config_set_site)?;
     }
     if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log") {
-      commands::config_set_log::exec(cli_config_set_log).await?;
+      commands::config_set_log::exec(cli_config_set_log)?;
     }
   } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset")
   {
     if let Some(_cli_config_unset_hsm) =
       cli_config_unset.subcommand_matches("hsm")
     {
-      commands::config_unset_hsm::exec().await?;
+      commands::config_unset_hsm::exec()?;
     }
     if let Some(_cli_config_unset_parent_hsm) =
       cli_config_unset.subcommand_matches("parent-hsm")
@@ -53,7 +53,7 @@ pub async fn handle_config(
     if let Some(_cli_config_unset_auth) =
       cli_config_unset.subcommand_matches("auth")
     {
-      commands::config_unset_auth::exec().await?;
+      commands::config_unset_auth::exec()?;
     }
   } else if let Some(cli_config_generate_autocomplete) =
     cli_config.subcommand_matches("gen-autocomplete")

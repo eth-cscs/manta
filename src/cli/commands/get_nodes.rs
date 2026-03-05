@@ -1,5 +1,4 @@
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 
 use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
@@ -24,21 +23,13 @@ pub async fn exec(
   let status_summary = cli_get_nodes.get_flag("summary-status");
 
   // Convert user input to xname
-  let node_metadata_available_vec =
-    backend.get_node_metadata_available(&shasta_token).await?;
-
-  let mut node_list = common::node_ops::from_hosts_expression_to_xname_vec(
+  let node_list = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
     xname_requested,
     is_include_siblings,
-    node_metadata_available_vec,
   )
-  .await
-  .map_err(|e| {
-    Error::msg(format!(
-      "Could not convert user input to list of xnames. Reason:\n{}",
-      e
-    ))
-  })?;
+  .await?;
 
   if node_list.is_empty() {
     bail!(
@@ -46,9 +37,6 @@ pub async fn exec(
        Nothing to do",
     );
   }
-
-  node_list.sort();
-  node_list.dedup();
 
   let node_details_list_rslt = csm_rs::node::utils::get_node_details(
     &shasta_token,
@@ -147,10 +135,10 @@ pub async fn exec(
         common::node_ops::print_summary(node_details_list);
       }
       Some("table-wide") => {
-        common::node_ops::print_table_wide(node_details_list);
+        common::node_ops::print_table(node_details_list, true);
       }
       Some("table") => {
-        common::node_ops::print_table(node_details_list);
+        common::node_ops::print_table(node_details_list, false);
       }
       _ => {
         bail!(

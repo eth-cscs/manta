@@ -15,9 +15,12 @@ pub async fn handle_migrate(
   if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let dry_run: bool = cli_migrate_nodes.get_flag("dry-run");
-    let from_opt: Option<&String> = cli_migrate_nodes.get_one("from");
-    let to: &String = cli_migrate_nodes
-      .get_one("to")
+    let from_opt = cli_migrate_nodes
+      .get_one::<String>("from")
+      .map(String::as_str);
+    let to: &str = cli_migrate_nodes
+      .get_one::<String>("to")
+      .map(String::as_str)
       .context("The 'to' argument is mandatory")?;
     let xnames_string: &String = cli_migrate_nodes
       .get_one("XNAMES")

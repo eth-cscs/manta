@@ -15,8 +15,8 @@ pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
   xnames: &str,
-  type_artifact_opt: Option<&String>,
-  output_opt: Option<&String>,
+  type_artifact_opt: Option<&str>,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let shasta_token =
     common::authentication::get_api_token(backend, site_name).await?;
@@ -125,8 +125,8 @@ fn print_table(node_summary_vec: &[NodeSummary]) {
         Cell::new(node_accel.r#type.clone()),
         Cell::new(
           node_accel
-            .clone()
             .info
+            .clone()
             .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);
@@ -139,8 +139,8 @@ fn print_table(node_summary_vec: &[NodeSummary]) {
         Cell::new(node_hsn_nic.r#type.clone()),
         Cell::new(
           node_hsn_nic
-            .clone()
             .info
+            .clone()
             .unwrap_or_else(|| "*** Missing info".to_string()),
         ),
       ]);

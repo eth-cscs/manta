@@ -15,7 +15,7 @@ use crate::{
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  settings_hsm_group_name_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&str>,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   session_name: &str,
@@ -47,9 +47,7 @@ pub async fn exec(
       None,
     )
     .await
-    .map_err(|e| {
-      Error::msg(format!("Failed to get CFS sessions. Reason:\n{e}"))
-    })?;
+    .context("Failed to get CFS sessions")?;
 
   if cfs_session_vec.is_empty() {
     bail!("No CFS session found");

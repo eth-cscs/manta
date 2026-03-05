@@ -32,7 +32,7 @@ pub async fn exec(
   let shasta_token = get_api_token(backend, site_name).await?;
   let target_hsm_group_vec =
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
-      vec![settings_hsm_group_name.clone()]
+      vec![settings_hsm_group_name.to_string()]
     } else {
       get_groups_names_available(
         backend,

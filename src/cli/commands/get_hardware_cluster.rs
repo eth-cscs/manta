@@ -20,9 +20,9 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub async fn exec(
   backend: StaticBackendDispatcher,
   site_name: &str,
-  hsm_group_name_arg_opt: Option<&String>,
-  settings_hsm_group_name_opt: Option<&String>,
-  output_opt: Option<&String>,
+  hsm_group_name_arg_opt: Option<&str>,
+  settings_hsm_group_name_opt: Option<&str>,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(&backend, site_name).await?;
 

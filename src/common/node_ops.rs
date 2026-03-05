@@ -6,7 +6,8 @@ use comfy_table::{Cell, ContentArrangement, Table};
 use csm_rs::node::types::NodeDetails;
 use hostlist_parser::parse;
 use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Component,
+  interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
+  types::Component,
 };
 use regex::Regex;
 
@@ -100,6 +101,39 @@ pub async fn get_xname_from_xname_hostlist(
 // Unused get_xname_from_nid_regex removed
 
 // Unused get_xname_from_xname_regex removed
+
+/// Convenience wrapper that fetches node metadata from the backend
+/// and resolves a hosts expression to a sorted, deduplicated list
+/// of xnames.
+///
+/// This combines the two-step pattern of
+/// `backend.get_node_metadata_available()` followed by
+/// `from_hosts_expression_to_xname_vec()` that appears in many
+/// command files.
+pub async fn resolve_hosts_expression(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  hosts_expression: &str,
+  is_include_siblings: bool,
+) -> Result<Vec<String>, anyhow::Error> {
+  let node_metadata_available_vec = backend
+    .get_node_metadata_available(shasta_token)
+    .await
+    .context("Could not get node metadata")?;
+
+  let mut xname_vec = from_hosts_expression_to_xname_vec(
+    hosts_expression,
+    is_include_siblings,
+    node_metadata_available_vec,
+  )
+  .await
+  .context("Could not convert user input to list of xnames")?;
+
+  xname_vec.sort();
+  xname_vec.dedup();
+
+  Ok(xname_vec)
+}
 
 /// Translates and filters a 'host expression' into a list of xnames.
 /// a host expression is a comma separated list of NIDs or XNAMEs, a regex or a hostlist
@@ -251,51 +285,11 @@ pub fn validate_xname_format(xname: &str) -> bool {
   XNAME_RE.is_match(xname)
 }
 
-pub fn print_table(nodes_status: Vec<NodeDetails>) {
+pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
 
-  table.set_header(vec![
-    "XNAME",
-    "NID",
-    "HSM",
-    "Power",
-    "Runtime Config",
-    "Config Stat",
-    "Enabled",
-    "# Error",
-    "Image ID",
-  ]);
-
-  for node_status in nodes_status {
-    let mut node_vec: Vec<String> = node_status
-      .hsm
-      .split(',')
-      .map(|xname_str| xname_str.trim().to_string())
-      .collect();
-    node_vec.sort();
-
-    table.add_row(vec![
-      Cell::new(node_status.xname),
-      Cell::new(node_status.nid),
-      Cell::new(string_vec_to_multi_line_string(Some(&node_vec), 1)),
-      Cell::new(node_status.power_status),
-      Cell::new(node_status.desired_configuration),
-      Cell::new(node_status.configuration_status),
-      Cell::new(node_status.enabled),
-      Cell::new(node_status.error_count),
-      Cell::new(node_status.boot_image_id),
-    ]);
-  }
-
-  println!("{table}");
-}
-
-pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
-  let mut table = Table::new();
-  table.set_content_arrangement(ContentArrangement::Dynamic);
-
-  table.set_header(vec![
+  let mut header = vec![
     "XNAME",
     "NID",
     "HSM",
@@ -305,37 +299,15 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
     "Enabled",
     "Error #",
     "Image ID",
-    "Kernel Params",
-  ]);
+  ];
+
+  if wide {
+    header.push("Kernel Params");
+  }
+
+  table.set_header(header);
 
   for node_status in nodes_status {
-    let kernel_params_vec: Vec<&str> =
-      node_status.kernel_params.split_whitespace().collect();
-    let cell_max_width = kernel_params_vec
-      .iter()
-      .map(|value| value.len())
-      .max()
-      .unwrap_or(0);
-
-    let mut kernel_params_string: String = kernel_params_vec
-      .first()
-      .map(|s| s.to_string())
-      .unwrap_or_default();
-    let mut cell_width = kernel_params_string.len();
-
-    for kernel_param in kernel_params_vec.iter().skip(1) {
-      cell_width += kernel_param.len();
-
-      if cell_width + kernel_param.len() >= cell_max_width {
-        kernel_params_string.push('\n');
-        cell_width = 0;
-      } else {
-        kernel_params_string.push(' ');
-      }
-
-      kernel_params_string.push_str(kernel_param);
-    }
-
     let mut node_vec: Vec<String> = node_status
       .hsm
       .split(',')
@@ -343,7 +315,7 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
       .collect();
     node_vec.sort();
 
-    table.add_row(vec![
+    let mut row = vec![
       Cell::new(node_status.xname),
       Cell::new(node_status.nid),
       Cell::new(string_vec_to_multi_line_string(Some(&node_vec), 1)),
@@ -353,8 +325,40 @@ pub fn print_table_wide(nodes_status: Vec<NodeDetails>) {
       Cell::new(node_status.enabled),
       Cell::new(node_status.error_count),
       Cell::new(node_status.boot_image_id),
-      Cell::new(kernel_params_string),
-    ]);
+    ];
+
+    if wide {
+      let kernel_params_vec: Vec<&str> =
+        node_status.kernel_params.split_whitespace().collect();
+      let cell_max_width = kernel_params_vec
+        .iter()
+        .map(|value| value.len())
+        .max()
+        .unwrap_or(0);
+
+      let mut kernel_params_string: String = kernel_params_vec
+        .first()
+        .map(|s| s.to_string())
+        .unwrap_or_default();
+      let mut cell_width = kernel_params_string.len();
+
+      for kernel_param in kernel_params_vec.iter().skip(1) {
+        cell_width += kernel_param.len();
+
+        if cell_width + kernel_param.len() >= cell_max_width {
+          kernel_params_string.push('\n');
+          cell_width = 0;
+        } else {
+          kernel_params_string.push(' ');
+        }
+
+        kernel_params_string.push_str(kernel_param);
+      }
+
+      row.push(Cell::new(kernel_params_string));
+    }
+
+    table.add_row(row);
   }
 
   println!("{table}");

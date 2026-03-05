@@ -14,11 +14,12 @@ pub async fn exec(
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_cluster: &clap::ArgMatches,
-  settings_hsm_group_name_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(backend, site_name).await?;
-  let hsm_group_name_arg_opt: Option<&String> =
-    cli_get_cluster.get_one("HSM_GROUP_NAME");
+  let hsm_group_name_arg_opt: Option<&str> = cli_get_cluster
+    .get_one::<String>("HSM_GROUP_NAME")
+    .map(String::as_str);
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
@@ -145,11 +146,11 @@ pub async fn exec(
   } else if let Some(output) = output_opt
     && output.eq("table-wide")
   {
-    node_ops::print_table_wide(node_details_list);
+    node_ops::print_table(node_details_list, true);
   } else if let Some(output) = output_opt
     && output.eq("table")
   {
-    node_ops::print_table(node_details_list);
+    node_ops::print_table(node_details_list, false);
   } else {
     bail!("Output value not recognized or missing",);
   }

@@ -1,8 +1,6 @@
-use anyhow::{Error, bail};
+use anyhow::{Context, Error, bail};
 
-use manta_backend_dispatcher::interfaces::hsm::{
-  component::ComponentTrait, group::GroupTrait,
-};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
   common::{self, audit, authentication::get_api_token, jwt_ops, kafka::Kafka},
@@ -13,7 +11,7 @@ use crate::{
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
-  target_hsm_name: &String,
+  target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
@@ -21,25 +19,13 @@ pub async fn exec(
   let shasta_token = get_api_token(backend, site_name).await?;
 
   // Convert user input to xname
-  let node_metadata_available_vec =
-    backend.get_node_metadata_available(&shasta_token).await?;
-
-  let mut xname_to_move_vec =
-    common::node_ops::from_hosts_expression_to_xname_vec(
-      hosts_expression,
-      false,
-      node_metadata_available_vec,
-    )
-    .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not convert user input to list of xnames. Reason:\n{}",
-        e
-      ))
-    })?;
-
-  xname_to_move_vec.sort();
-  xname_to_move_vec.dedup();
+  let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
+    hosts_expression,
+    false,
+  )
+  .await?;
 
   // Check if there are any xname to migrate/move and exit otherwise
   if xname_to_move_vec.is_empty() {
@@ -89,11 +75,12 @@ pub async fn exec(
   let mut target_hsm_group_member_vec = backend
     .add_members_to_group(&shasta_token, target_hsm_name, &xnames_to_move)
     .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not add nodes {:?} to HSM group '{}'. Reason:\n{}",
-        xnames_to_move, target_hsm_name, e
-      ))
+    .with_context(|| {
+      format!(
+        "Could not add nodes {:?} \
+           to HSM group '{}'",
+        xnames_to_move, target_hsm_name
+      )
     })?;
 
   target_hsm_group_member_vec.sort();

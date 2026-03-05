@@ -1,10 +1,7 @@
 use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
-  interfaces::{
-    bss::BootParametersTrait,
-    hsm::{component::ComponentTrait, group::GroupTrait},
-  },
+  interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
   types::{self},
 };
 
@@ -18,8 +15,8 @@ use nodeset::NodeSet;
 /// reboots the nodes which kernel params have changed
 pub async fn exec(
   ctx: &AppContext<'_>,
-  hsm_group_name_arg_opt: Option<&String>,
-  nodes: Option<&String>,
+  hsm_group_name_arg_opt: Option<&str>,
+  nodes: Option<&str>,
   kernel_params: &str,
   assume_yes: bool,
   do_not_reboot: bool,
@@ -50,7 +47,7 @@ pub async fn exec(
     }
   } else {
     nodes
-      .cloned()
+      .map(str::to_string)
       .context("Neither HSM group nor nodes defined")?
   };
 
@@ -60,24 +57,13 @@ pub async fn exec(
   let mut xname_to_reboot_vec: Vec<String> = Vec::new();
 
   // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(&shasta_token)
-    .await
-    .map_err(|e| {
-      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
-    })?;
-
-  let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+  let xname_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
     &hosts_expression,
     false,
-    node_metadata_available_vec,
   )
-  .await
-  .map_err(|e| {
-    Error::msg(format!(
-      "Could not convert user input to list of xnames. Reason:\n{e}"
-    ))
-  })?;
+  .await?;
 
   let mut current_node_boot_params_vec: Vec<types::bss::BootParameters> =
     backend

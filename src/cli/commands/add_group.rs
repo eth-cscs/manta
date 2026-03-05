@@ -4,7 +4,6 @@ use crate::common::{
 };
 use anyhow::{Context, Error, bail};
 
-use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::{
   interfaces::hsm::group::GroupTrait, types::Group,
 };
@@ -14,8 +13,8 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   auth_token: &str,
   label: &str,
-  description: Option<&String>,
-  hosts_expression_opt: Option<&String>,
+  description: Option<&str>,
+  hosts_expression_opt: Option<&str>,
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
@@ -24,24 +23,13 @@ pub async fn exec(
   let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
     Some(hosts_expression) => {
       // Convert user input to xname
-      let node_metadata_available_vec = backend
-        .get_node_metadata_available(auth_token)
-        .await
-        .map_err(|e| {
-          Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
-        })?;
-
-      let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+      let xname_vec = common::node_ops::resolve_hosts_expression(
+        &backend,
+        auth_token,
         hosts_expression,
         false,
-        node_metadata_available_vec,
       )
-      .await
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not convert user input to list of xnames. Reason:\n{e}"
-        ))
-      })?;
+      .await?;
 
       Some(xname_vec)
     }
@@ -56,7 +44,7 @@ pub async fn exec(
   // Create Group instance for http payload
   let group = Group::new(
     label,
-    description.cloned(),
+    description.map(str::to_string),
     xname_vec_opt.clone(),
     None,
     None,

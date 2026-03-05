@@ -6,7 +6,7 @@ use is_executable::IsExecutable;
 
 /// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
 /// returns Ok(exit_code) or Err() with the description of the error
-pub async fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
+pub fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
   let hook = hook_opt.context("Hook command is empty")?;
   let mut command = shell(hook);
   let output = command
@@ -32,7 +32,7 @@ pub async fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
 
 /// Checks that the hook exists and is executable
 /// returns Ok if all good, an error message otherwise
-pub async fn check_hook_perms(hook_opt: Option<&str>) -> Result<(), Error> {
+pub fn check_hook_perms(hook_opt: Option<&str>) -> Result<(), Error> {
   let hook = hook_opt.context("Hook command is empty")?;
   let program_name = hook
     .split(' ')

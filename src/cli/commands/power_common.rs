@@ -2,8 +2,7 @@ use std::fmt;
 
 use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::{
-  hsm::{component::ComponentTrait, group::GroupTrait},
-  pcs::PCSTrait,
+  hsm::group::GroupTrait, pcs::PCSTrait,
 };
 use nodeset::NodeSet;
 
@@ -73,25 +72,13 @@ pub async fn exec_nodes(
   let shasta_token = get_api_token(backend, ctx.site_name).await?;
 
   // Convert user input to xnames
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(&shasta_token)
-    .await
-    .map_err(|e| {
-      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
-    })?;
-
-  let mut xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+  let xname_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
     hosts_expression,
     false,
-    node_metadata_available_vec,
   )
-  .await
-  .map_err(|e| {
-    Error::msg(format!(
-      "Could not convert user input to list of \
-         xnames. Reason:\n{e}"
-    ))
-  })?;
+  .await?;
 
   if xname_vec.is_empty() {
     bail!(
@@ -99,9 +86,6 @@ pub async fn exec_nodes(
        Nothing to do.",
     );
   }
-
-  xname_vec.sort();
-  xname_vec.dedup();
 
   let node_group: NodeSet = xname_vec
     .join(", ")
@@ -174,7 +158,7 @@ pub async fn exec_cluster(
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
-    Some(&hsm_group_name_arg.to_string()),
+    Some(hsm_group_name_arg),
     ctx.settings_hsm_group_name_opt,
   )
   .await?;

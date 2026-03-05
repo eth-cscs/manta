@@ -38,10 +38,12 @@ pub async fn handle_delete(
     let dryrun = cli_delete_hw_configuration.get_flag("dry-run");
     let delete_hsm_group =
       cli_delete_hw_configuration.get_flag("delete-hsm-group");
-    let target_hsm_group_name_arg_opt: Option<&String> =
-      cli_delete_hw_configuration.get_one("target-cluster");
-    let parent_hsm_group_name_arg_opt: Option<&String> =
-      cli_delete_hw_configuration.get_one("parent-cluster");
+    let target_hsm_group_name_arg_opt = cli_delete_hw_configuration
+      .get_one::<String>("target-cluster")
+      .map(String::as_str);
+    let parent_hsm_group_name_arg_opt = cli_delete_hw_configuration
+      .get_one::<String>("parent-cluster")
+      .map(String::as_str);
     let pattern = cli_delete_hw_configuration
       .get_one::<String>("pattern")
       .context("'pattern' argument is mandatory")?;
@@ -58,9 +60,9 @@ pub async fn handle_delete(
   } else if let Some(cli_delete_boot_parameters) =
     cli_delete.subcommand_matches("boot-parameters")
   {
-    let xnames: Option<&String> = cli_delete_boot_parameters.get_one("hosts");
+    let xnames = cli_delete_boot_parameters.get_one::<String>("hosts");
     let hosts: Vec<String> = xnames
-      .cloned()
+      .map(String::as_str)
       .unwrap_or_default()
       .split(',')
       .map(String::from)
@@ -77,9 +79,12 @@ pub async fn handle_delete(
   } else if let Some(cli_delete_kernel_parameters) =
     cli_delete.subcommand_matches("kernel-parameters")
   {
-    let hsm_group_name_arg_opt =
-      cli_delete_kernel_parameters.get_one("hsm-group");
-    let nodes = cli_delete_kernel_parameters.get_one::<String>("nodes");
+    let hsm_group_name_arg_opt = cli_delete_kernel_parameters
+      .get_one::<String>("hsm-group")
+      .map(String::as_str);
+    let nodes = cli_delete_kernel_parameters
+      .get_one::<String>("nodes")
+      .map(String::as_str);
     let kernel_parameters = cli_delete_kernel_parameters
       .get_one::<String>("VALUE")
       .context("'VALUE' argument is mandatory")?;

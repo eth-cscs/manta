@@ -19,18 +19,22 @@ pub async fn exec(
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_images: &clap::ArgMatches,
-  settings_hsm_group_name_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<(), anyhow::Error> {
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name).await?;
 
   let id: Option<&String> = cli_get_images.get_one::<String>("id");
-  let hsm_group_name_arg_opt = cli_get_images.try_get_one("hsm-group");
+  let hsm_group_name_arg_opt: Option<&str> = cli_get_images
+    .try_get_one::<String>("hsm-group")
+    .ok()
+    .flatten()
+    .map(String::as_str);
   let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
-    hsm_group_name_arg_opt.unwrap_or(None),
+    hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
   .await

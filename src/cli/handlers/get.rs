@@ -13,7 +13,9 @@ pub async fn handle_get(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
-    let group_name_arg_opt: Option<&String> = cli_get_groups.get_one("VALUE");
+    let group_name_arg_opt = cli_get_groups
+      .get_one::<String>("VALUE")
+      .map(String::as_str);
     let output: String = cli_get_groups
       .get_one("output")
       .cloned()
@@ -31,14 +33,17 @@ pub async fn handle_get(
     if let Some(cli_get_hardware_cluster) =
       cli_get_hardware.subcommand_matches("cluster")
     {
-      let hsm_group_name_arg_opt: Option<&String> =
-        cli_get_hardware_cluster.get_one("CLUSTER_NAME");
+      let hsm_group_name_arg_opt = cli_get_hardware_cluster
+        .get_one::<String>("CLUSTER_NAME")
+        .map(String::as_str);
       get_hardware_cluster::exec(
         ctx.backend.clone(),
         ctx.site_name,
         hsm_group_name_arg_opt,
         ctx.settings_hsm_group_name_opt,
-        cli_get_hardware_cluster.get_one::<String>("output"),
+        cli_get_hardware_cluster
+          .get_one::<String>("output")
+          .map(String::as_str),
       )
       .await?;
     } else if let Some(cli_get_hardware_node) =
@@ -51,35 +56,44 @@ pub async fn handle_get(
         ctx.backend,
         ctx.site_name,
         xnames,
-        cli_get_hardware_node.get_one::<String>("type"),
-        cli_get_hardware_node.get_one::<String>("output"),
+        cli_get_hardware_node
+          .get_one::<String>("type")
+          .map(String::as_str),
+        cli_get_hardware_node
+          .get_one::<String>("output")
+          .map(String::as_str),
       )
       .await?;
     }
   } else if let Some(cli_get_configuration) =
     cli_get.subcommand_matches("configurations")
   {
-    let name: Option<&String> = cli_get_configuration.get_one::<String>("name");
-    let pattern: Option<&String> =
-      cli_get_configuration.get_one::<String>("pattern");
+    let name = cli_get_configuration
+      .get_one::<String>("name")
+      .map(String::as_str);
+    let pattern = cli_get_configuration
+      .get_one::<String>("pattern")
+      .map(String::as_str);
     let hsm_group_name_arg_rslt =
-      cli_get_configuration.try_get_one("hsm-group");
+      cli_get_configuration.try_get_one::<String>("hsm-group");
     let limit: Option<&u8> =
       if let Some(true) = cli_get_configuration.get_one("most-recent") {
         Some(&1)
       } else {
         cli_get_configuration.get_one::<u8>("limit")
       };
-    let output: Option<&String> = cli_get_configuration.get_one("output");
+    let output = cli_get_configuration
+      .get_one::<String>("output")
+      .map(String::as_str);
     get_configuration::exec(
       ctx,
-      name.map(String::as_str),
-      pattern.map(String::as_str),
-      hsm_group_name_arg_rslt.unwrap_or(None),
+      name,
+      pattern,
+      hsm_group_name_arg_rslt.ok().flatten().map(String::as_str),
       None,
       None,
       limit,
-      output.map(String::as_str),
+      output,
     )
     .await?;
   } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {

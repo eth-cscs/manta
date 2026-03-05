@@ -1,18 +1,20 @@
 use anyhow::Context;
-use base64::decode;
+use base64::prelude::*;
 use serde_json::Value;
 
 fn get_claims_from_jwt_token(token: &str) -> Result<Value, anyhow::Error> {
-  let base64_claims = token
-    .split(' ')
-    .nth(1)
-    .unwrap_or(token)
-    .split('.')
-    .nth(1)
-    .unwrap_or("JWT Token not valid");
+  // Handle both "Bearer <token>" and bare "<token>" formats
+  let jwt_body = token.split(' ').nth(1).unwrap_or(token);
 
-  let claims_u8 =
-    decode(base64_claims).context("Could not get claims in JWT token")?;
+  let base64_claims = jwt_body.split('.').nth(1).context(
+    "JWT token is malformed: expected \
+     header.payload.signature format",
+  )?;
+
+  let claims_u8 = BASE64_URL_SAFE_NO_PAD
+    .decode(base64_claims)
+    .or_else(|_| BASE64_STANDARD.decode(base64_claims))
+    .context("Could not get claims in JWT token")?;
 
   let claims_str = std::str::from_utf8(&claims_u8)
     .context("Could not convert JWT claims to string")?;

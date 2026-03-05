@@ -53,9 +53,11 @@ pub async fn handle_add(
     let label = cli_add_group
       .get_one::<String>("label")
       .context("'label' argument is mandatory")?;
-    let description: Option<&String> = cli_add_group.get_one("description");
-    let node_expression: Option<&String> =
-      cli_add_group.get_one::<String>("nodes");
+    let description = cli_add_group
+      .get_one::<String>("description")
+      .map(String::as_str);
+    let node_expression =
+      cli_add_group.get_one::<String>("nodes").map(String::as_str);
     add_group::exec(
       ctx,
       &shasta_token,
@@ -70,8 +72,9 @@ pub async fn handle_add(
     cli_add.subcommand_matches("hardware")
   {
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
-    let target_hsm_group_name_arg_opt: Option<&String> =
-      cli_add_hw_configuration.get_one("target-cluster");
+    let target_hsm_group_name_arg_opt = cli_add_hw_configuration
+      .get_one::<String>("target-cluster")
+      .map(String::as_str);
     let target_hsm_group_vec = get_groups_names_available(
       ctx.backend,
       &shasta_token,
@@ -79,8 +82,9 @@ pub async fn handle_add(
       ctx.settings_hsm_group_name_opt,
     )
     .await?;
-    let parent_hsm_group_name_arg_opt: Option<&String> =
-      cli_add_hw_configuration.get_one("parent-cluster");
+    let parent_hsm_group_name_arg_opt = cli_add_hw_configuration
+      .get_one::<String>("parent-cluster")
+      .map(String::as_str);
     let parent_hsm_group_vec = get_groups_names_available(
       ctx.backend,
       &shasta_token,
@@ -173,8 +177,10 @@ pub async fn handle_add(
     cli_add.subcommand_matches("kernel-parameters")
   {
     let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
-    let hsm_group_name_arg_opt = cli_add_kernel_parameters.get_one("hsm-group");
-    let nodes: &String = if hsm_group_name_arg_opt.is_some() {
+    let hsm_group_name_arg_opt = cli_add_kernel_parameters
+      .get_one::<String>("hsm-group")
+      .map(String::as_str);
+    let nodes: &str = if hsm_group_name_arg_opt.is_some() {
       let hsm_group_name_vec = get_groups_names_available(
         ctx.backend,
         &shasta_token,

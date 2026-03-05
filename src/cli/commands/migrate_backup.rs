@@ -29,7 +29,7 @@ pub async fn exec(
     posthook.unwrap_or("none"),
   );
   if let Some(prehook_path) = prehook {
-    match crate::common::hooks::check_hook_perms(Some(prehook_path)).await {
+    match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
       Ok(_r) => {
         log::debug!("Pre-hook script exists and is executable.")
       }
@@ -39,7 +39,7 @@ pub async fn exec(
     };
   }
   if let Some(posthook_path) = posthook {
-    match crate::common::hooks::check_hook_perms(Some(posthook_path)).await {
+    match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
       Ok(_) => {
         log::debug!("Post-hook script exists and is executable.")
       }
@@ -50,7 +50,7 @@ pub async fn exec(
   }
 
   println!("Running the pre-hook {}", prehook.unwrap_or("none"));
-  match crate::common::hooks::run_hook(prehook).await {
+  match crate::common::hooks::run_hook(prehook) {
     Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
     Err(_error) => {
       bail!("Pre-hook script failed. Error: {}", _error);
@@ -78,7 +78,7 @@ pub async fn exec(
 
   if let Some(posthook_path) = posthook {
     println!("Running the post-hook {}", posthook_path);
-    match crate::common::hooks::run_hook(posthook).await {
+    match crate::common::hooks::run_hook(posthook) {
       Ok(_code) => {
         log::debug!("Post-hook script completed ok. RT={}", _code);
       }

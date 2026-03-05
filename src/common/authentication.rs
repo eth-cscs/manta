@@ -108,9 +108,11 @@ async fn get_token_from_local_file(
 
   let mut shasta_token = String::new();
   File::open(&path)
-    .map_err(|e| {
+    .inspect_err(|e| {
       log::debug!("Could not open token file '{}': {}", path.display(), e);
-      anyhow::anyhow!("Authentication token not found in '{}'", path.display())
+    })
+    .with_context(|| {
+      format!("Authentication token not found in '{}'", path.display())
     })?
     .read_to_string(&mut shasta_token)?;
 

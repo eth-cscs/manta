@@ -3,9 +3,7 @@ use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
   interfaces::{
-    bss::BootParametersTrait,
-    hsm::{component::ComponentTrait, group::GroupTrait},
-    ims::ImsTrait,
+    bss::BootParametersTrait, hsm::group::GroupTrait, ims::ImsTrait,
   },
   types::{self, ims::Image},
 };
@@ -38,28 +36,13 @@ pub async fn exec(
   // hsm_group_name
   let xname_vec: Vec<String> = if let Some(hosts_expr) = hosts_expression {
     // Case 1: Nodes provided explicitly
-    let node_metadata_available_vec = backend
-      .get_node_metadata_available(&shasta_token)
-      .await
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not get node metadata. \
-             Reason:\n{e}"
-        ))
-      })?;
-
-    common::node_ops::from_hosts_expression_to_xname_vec(
+    common::node_ops::resolve_hosts_expression(
+      &backend,
+      &shasta_token,
       hosts_expr,
       false,
-      node_metadata_available_vec,
     )
-    .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not convert user input to \
-           list of xnames. Reason:\n{e}"
-      ))
-    })?
+    .await?
   } else if let Some(hsm_group) = hsm_group_name_arg_opt {
     // Case 2: Nodes from HSM group
     backend
@@ -68,12 +51,12 @@ pub async fn exec(
         &[hsm_group.to_string()],
       )
       .await
-      .map_err(|e| {
-        Error::msg(format!(
+      .with_context(|| {
+        format!(
           "Could not get members for \
-             HSM group {}. Reason:\n{e}",
+             HSM group {}",
           hsm_group
-        ))
+        )
       })?
   } else if let Some(settings_hsm_group) = settings_hsm_group_name_opt {
     // Case 3: Nodes from settings HSM group
@@ -83,12 +66,12 @@ pub async fn exec(
         &[settings_hsm_group.to_string()],
       )
       .await
-      .map_err(|e| {
-        Error::msg(format!(
+      .with_context(|| {
+        format!(
           "Could not get members for \
-             settings HSM group {}. Reason:\n{e}",
+             settings HSM group {}",
           settings_hsm_group
-        ))
+        )
       })?
   } else {
     bail!(

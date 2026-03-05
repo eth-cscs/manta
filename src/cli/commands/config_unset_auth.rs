@@ -5,11 +5,11 @@ use dialoguer::Select;
 
 use crate::common::config::get_default_cache_path;
 
-pub async fn exec() -> Result<(), Error> {
-  unset_auth().await
+pub fn exec() -> Result<(), Error> {
+  unset_auth()
 }
 
-async fn unset_auth() -> Result<(), Error> {
+fn unset_auth() -> Result<(), Error> {
   let mut auth_token_list: Vec<std::path::PathBuf> = vec![];
 
   let path_to_manta_authentication_token_file = get_default_cache_path()?;

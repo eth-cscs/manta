@@ -60,7 +60,7 @@ pub async fn exec(
   // Validate Pre-hook
   log::info!("Validating pre-hook script");
   if let Some(prehook) = prehook_opt {
-    match crate::common::hooks::check_hook_perms(prehook_opt).await {
+    match crate::common::hooks::check_hook_perms(prehook_opt) {
       Ok(_r) => println!(
         "Pre-hook script '{}' exists \
          and is executable.",
@@ -75,7 +75,7 @@ pub async fn exec(
   // Validate Post-hook
   log::info!("Validating post-hook script");
   if let Some(posthook) = posthook_opt {
-    match crate::common::hooks::check_hook_perms(posthook_opt).await {
+    match crate::common::hooks::check_hook_perms(posthook_opt) {
       Ok(_) => println!(
         "Post-hook script '{}' exists \
          and is executable.",
@@ -101,12 +101,10 @@ pub async fn exec(
     )?;
 
   let mut sat_template: utils::SatFile =
-    serde_yaml::from_str(&sat_template_file_string).map_err(|e| {
-      Error::msg(format!(
-        "Could not parse SAT template yaml \
-           file. Error:\n{e}"
-      ))
-    })?;
+    serde_yaml::from_str(&sat_template_file_string).context(
+      "Could not parse SAT template yaml \
+         file",
+    )?;
 
   // Filter either images or session_templates
   // section according to user request
@@ -153,7 +151,7 @@ pub async fn exec(
   // Run/process Pre-hook
   if let Some(prehook) = prehook_opt {
     println!("Running the pre-hook '{}'", &prehook);
-    let code = crate::common::hooks::run_hook(prehook_opt).await?;
+    let code = crate::common::hooks::run_hook(prehook_opt)?;
 
     log::debug!("Pre-hook script completed ok. RT={}", code);
   }
@@ -208,7 +206,7 @@ pub async fn exec(
   // Run/process Post-hook
   if let Some(posthook) = posthook_opt {
     println!("Running the post-hook '{}'", &posthook);
-    let code = crate::common::hooks::run_hook(posthook_opt).await?;
+    let code = crate::common::hooks::run_hook(posthook_opt)?;
 
     log::debug!("Post-hook script completed ok. RT={}", code);
   }

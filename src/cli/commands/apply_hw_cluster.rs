@@ -19,8 +19,9 @@ pub async fn exec(
 
   let shasta_token = get_api_token(backend, site_name).await?;
 
-  let target_hsm_group_name_arg_opt: Option<&String> =
-    cli_apply_hw_cluster.get_one("target-cluster");
+  let target_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
+    .get_one::<String>("target-cluster")
+    .map(String::as_str);
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
@@ -29,8 +30,9 @@ pub async fn exec(
   )
   .await?;
 
-  let parent_hsm_group_name_arg_opt: Option<&String> =
-    cli_apply_hw_cluster.get_one("parent-cluster");
+  let parent_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
+    .get_one::<String>("parent-cluster")
+    .map(String::as_str);
   let parent_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,

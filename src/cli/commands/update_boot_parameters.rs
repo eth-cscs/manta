@@ -10,11 +10,11 @@ use manta_backend_dispatcher::{
 pub async fn exec(
   ctx: &AppContext<'_>,
   xnames: &str,
-  nids: Option<&String>,
-  macs: Option<&String>,
-  params: Option<&String>,
-  kernel: Option<&String>,
-  initrd: Option<&String>,
+  nids: Option<&str>,
+  macs: Option<&str>,
+  params: Option<&str>,
+  kernel: Option<&str>,
+  initrd: Option<&str>,
 ) -> Result<(), Error> {
   let backend = ctx.backend;
   let site_name = ctx.site_name;
@@ -27,14 +27,14 @@ pub async fn exec(
   let hosts: Vec<String> = xnames.split(',').map(String::from).collect();
   let macs: Option<Vec<String>> =
     macs.map(|x| x.split(',').map(String::from).collect());
-  let nids: Option<Vec<u32>> = nids.cloned().map(|x| {
+  let nids: Option<Vec<u32>> = nids.map(|x| {
     x.split(',')
       .map(|x| x.to_string().parse::<u32>().unwrap_or_default())
       .collect()
   });
-  let params: String = params.cloned().unwrap_or_default().to_string();
-  let kernel: String = kernel.cloned().unwrap_or_default().to_string();
-  let initrd: String = initrd.cloned().unwrap_or_default().to_string();
+  let params: String = params.unwrap_or_default().to_string();
+  let kernel: String = kernel.unwrap_or_default().to_string();
+  let initrd: String = initrd.unwrap_or_default().to_string();
 
   validate_target_hsm_members(backend, &shasta_token, &hosts).await?;
 

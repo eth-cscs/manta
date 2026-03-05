@@ -5,7 +5,7 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 
 pub fn print_table(
   boot_parameters_vec: Vec<BootParameters>,
-  kernel_params_key_to_filter_opt: Option<&String>,
+  kernel_params_key_to_filter_opt: Option<&str>,
 ) {
   // Get list of key value pairs from kernel params to filter
   let mut kernel_params_key_vec: Vec<String> =

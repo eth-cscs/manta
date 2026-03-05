@@ -7,7 +7,7 @@ use manta_backend_dispatcher::types::{
 use super::DATETIME_FORMAT;
 
 fn cfs_session_struct_to_vec(
-  cfs_session: manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
+  cfs_session: &manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse,
 ) -> Vec<String> {
   let start_time_utc = cfs_session
     .get_start_time()
@@ -109,9 +109,9 @@ fn cfs_session_struct_to_vec(
   result.push(
     cfs_session
       .status
-      .and_then(|s| s.artifacts)
-      .unwrap_or_default()
-      .first()
+      .as_ref()
+      .and_then(|s| s.artifacts.as_ref())
+      .and_then(|artifacts| artifacts.first())
       .and_then(|artifact| artifact.result_id.clone())
       .unwrap_or_default(),
   );
@@ -165,7 +165,7 @@ pub fn get_table_struct(
   ]);
 
   for cfs_session_value in get_cfs_session_value_list {
-    table.add_row(cfs_session_struct_to_vec(cfs_session_value.clone()));
+    table.add_row(cfs_session_struct_to_vec(cfs_session_value));
   }
 
   table

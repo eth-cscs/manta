@@ -34,10 +34,10 @@ pub fn gen_autocomplete(
     .ok_or_else(|| Error::msg("Could not determine shell from $SHELL env"))?;
 
     shell_ostring.into_string().map_err(|os_str| {
-      Error::msg(format!(
+      anyhow::anyhow!(
         "Could not convert shell name to string: '{}'",
         os_str.to_string_lossy()
-      ))
+      )
     })?
   };
 

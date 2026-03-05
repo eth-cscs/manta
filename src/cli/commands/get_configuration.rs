@@ -19,7 +19,7 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   configuration_name_opt: Option<&str>,
   configuration_name_pattern_opt: Option<&str>,
-  hsm_group_name_arg_opt: Option<&String>,
+  hsm_group_name_arg_opt: Option<&str>,
   since_opt: Option<NaiveDateTime>,
   until_opt: Option<NaiveDateTime>,
   limit: Option<&u8>,
@@ -94,12 +94,7 @@ pub async fn exec(
           site_name,
         )
         .await
-        .map_err(|e| {
-          Error::msg(format!(
-            "Could not fetch configuration layer details. Reason:\n{:#?}",
-            e
-          ))
-        })?;
+        .context("Could not fetch configuration layer details")?;
 
       layer_details_vec.push(layer_details);
     }
@@ -113,12 +108,7 @@ pub async fn exec(
           &most_recent_cfs_configuration.name,
         )
         .await
-        .map_err(|e| {
-          Error::msg(format!(
-            "Could not fetch configuration derivatives. Reason:\n{:#?}",
-            e
-          ))
-        })?;
+        .context("Could not fetch configuration derivatives")?;
 
     crate::common::cfs_configuration_utils::print_table_details_struct(
       ConfigurationDetails::new(

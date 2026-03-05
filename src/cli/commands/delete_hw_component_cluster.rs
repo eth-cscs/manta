@@ -21,8 +21,8 @@ use crate::{
 
 pub async fn exec(
   ctx: &AppContext<'_>,
-  target_hsm_group_name_arg_opt: Option<&String>,
-  parent_hsm_group_name_arg_opt: Option<&String>,
+  target_hsm_group_name_arg_opt: Option<&str>,
+  parent_hsm_group_name_arg_opt: Option<&str>,
   pattern: &str,
   dryrun: bool,
   delete_hsm_group: bool,
@@ -414,7 +414,7 @@ pub async fn exec(
 
   let target_hsm_group_value = serde_json::json!({
       "label": target_hsm_group_name,
-      "decription": "",
+      "description": "",
       "members": target_hsm_node_vec,
       "tags": []
   });
@@ -427,7 +427,7 @@ pub async fn exec(
 
   let parent_hsm_group_value = serde_json::json!({
       "label": parent_hsm_group_name,
-      "decription": "",
+      "description": "",
       "members": parent_hsm_node_vec,
       "tags": []
   });

@@ -26,7 +26,7 @@ pub fn get_list_processor_model_from_hw_inventory_value(
   hw_inventory
     .pointer("/Nodes/0/Processors")
     .and_then(Value::as_array)
-    .map(|processor_list: &Vec<Value>| {
+    .map(|processor_list| {
       processor_list
         .iter()
         .filter_map(|processor| {

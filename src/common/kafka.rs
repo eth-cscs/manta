@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::audit::Audit;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Kafka {
@@ -25,7 +25,7 @@ impl Audit for Kafka {
       .set("bootstrap.servers", brokers)
       .set("message.timeout.ms", "5000")
       .create()
-      .map_err(|e| anyhow::anyhow!("Failed to create Kafka producer: {}", e))?;
+      .context("Failed to create Kafka producer")?;
 
     let delivery_status = producer
       .send::<Vec<u8>, _, _>(

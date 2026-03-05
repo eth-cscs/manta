@@ -10,8 +10,8 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub async fn get_groups_names_available(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
-  group_cli_arg_opt: Option<&String>,
-  group_env_or_config_file_opt: Option<&String>,
+  group_cli_arg_opt: Option<&str>,
+  group_env_or_config_file_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
   // Get list of groups the user has access to
   let hsm_name_available_vec =
@@ -28,7 +28,10 @@ pub async fn get_groups_names_available(
 
   // Validate the user has access to the HSM group is requested
   if let Some(target_hsm_group) = target_hsm_group_opt {
-    if !hsm_name_available_vec.contains(target_hsm_group) {
+    if !hsm_name_available_vec
+      .iter()
+      .any(|name| name == target_hsm_group)
+    {
       let mut hsm_name_available_vec = hsm_name_available_vec;
       hsm_name_available_vec.sort();
       bail!(

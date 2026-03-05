@@ -48,7 +48,7 @@ pub async fn exec(
     "Creating ephemeral environment baed on image ID {}",
     image_id
   );
-  let resp_json= ims::job::http_client::post_customize(
+  let resp_json = ims::job::http_client::post_customize(
     &shasta_token,
     shasta_base_url,
     shasta_root_cert,
@@ -58,12 +58,12 @@ pub async fn exec(
       .as_str()
       .context("SSH key ID is not a string")?,
   )
-  .await.map_err(|e| {
-    Error::msg(format!(
-      "Could not create ephemeral environment based on image ID {}. Reason:\n{}",
-      image_id,
-      e
-    ))
+  .await
+  .with_context(|| {
+    format!(
+      "Could not create ephemeral environment \
+       based on image ID {image_id}"
+    )
   })?;
 
   let hostname_value = resp_json

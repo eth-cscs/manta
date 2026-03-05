@@ -31,8 +31,9 @@ pub async fn handle_misc(
     let hosts_expression = cli_add_nodes
       .get_one::<String>("nodes")
       .context("The 'nodes' argument must have a value")?;
-    let target_hsm_name: &String = cli_add_nodes
+    let target_hsm_name: &str = cli_add_nodes
       .get_one::<String>("group")
+      .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
     add_nodes_to_hsm_groups::exec(
       ctx.backend,
@@ -50,8 +51,9 @@ pub async fn handle_misc(
     let nodes = cli_remove_nodes
       .get_one::<String>("nodes")
       .context("The 'nodes' argument must have a value")?;
-    let target_hsm_name: &String = cli_remove_nodes
+    let target_hsm_name: &str = cli_remove_nodes
       .get_one::<String>("group")
+      .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
     remove_nodes_from_hsm_groups::exec(
       ctx.backend,

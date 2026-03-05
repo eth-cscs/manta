@@ -12,18 +12,22 @@ pub async fn exec(
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   cli_get_template: &clap::ArgMatches,
-  settings_hsm_group_name_opt: Option<&String>,
+  settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<(), Error> {
   let shasta_token = get_api_token(backend, site_name).await?;
   let name: Option<&String> = cli_get_template.get_one::<String>("name");
-  let hsm_group_name_arg_opt = cli_get_template.try_get_one("hsm-group");
+  let hsm_group_name_arg_opt: Option<&str> = cli_get_template
+    .try_get_one::<String>("hsm-group")
+    .ok()
+    .flatten()
+    .map(String::as_str);
   let output: &String = cli_get_template
     .get_one("output")
     .context("output must be a valid value")?;
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
-    hsm_group_name_arg_opt.unwrap_or(None),
+    hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
   .await?;
@@ -55,12 +59,7 @@ pub async fn exec(
       limit_number_opt,
     )
     .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not get BOS sessiontemplate list. Reason:\n{:#?}",
-        e
-      ))
-    })?;
+    .context("Could not get BOS sessiontemplate list")?;
 
   bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 

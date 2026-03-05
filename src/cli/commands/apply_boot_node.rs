@@ -10,10 +10,7 @@ use crate::{
 use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::{
-  interfaces::{
-    bss::BootParametersTrait, cfs::CfsTrait, hsm::component::ComponentTrait,
-    ims::ImsTrait,
-  },
+  interfaces::{bss::BootParametersTrait, cfs::CfsTrait, ims::ImsTrait},
   types::{
     bss::BootParameters,
     ims::{Image, PatchImage},
@@ -44,13 +41,11 @@ pub async fn exec(
   let mut need_restart = false;
 
   // Convert user input to xname
-  let node_metadata_available_vec =
-    backend.get_node_metadata_available(&shasta_token).await?;
-
-  let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+  let xname_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
     hosts_expression,
     false,
-    node_metadata_available_vec,
   )
   .await?;
 
@@ -146,7 +141,8 @@ pub async fn exec(
       current_node_boot_param_vec
         .iter()
         .filter(|&boot_param| {
-          boot_param.try_get_boot_image_id() != Some(new_boot_image_id.clone())
+          boot_param.try_get_boot_image_id().as_deref()
+            != Some(new_boot_image_id.as_str())
         })
         .collect();
 
@@ -277,9 +273,7 @@ pub async fn exec(
           true,
         )
         .await
-        .map_err(|e| {
-          Error::msg(format!("Error updating runtime configuration: {}", e))
-        })?;
+        .context("Error updating runtime configuration")?;
 
       // Update images
       for (_, image) in image_vec {

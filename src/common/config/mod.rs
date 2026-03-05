@@ -2,7 +2,7 @@ pub mod types;
 
 use std::{
   collections::HashMap,
-  fs::File,
+  fs::{self, File},
   io::{Read, Write},
   path::PathBuf,
 };
@@ -12,6 +12,7 @@ use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
+use toml_edit::DocumentMut;
 use types::{MantaConfiguration, Site};
 
 use crate::common::{
@@ -56,6 +57,48 @@ pub(crate) fn get_default_manta_config_file_path()
 /// (e.g. `~/.cache/manta/`).
 pub(crate) fn get_default_cache_path() -> Result<PathBuf, anyhow::Error> {
   Ok(PathBuf::from(get_project_dirs()?.cache_dir()))
+}
+
+/// Reads the manta configuration file and parses it as TOML.
+///
+/// Returns both the file path (for later writing) and the
+/// parsed `DocumentMut`.
+pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), anyhow::Error>
+{
+  let path = get_default_manta_config_file_path()?;
+
+  log::debug!(
+    "Reading manta configuration from {}",
+    path.to_string_lossy()
+  );
+
+  let content =
+    fs::read_to_string(&path).context("Error reading configuration file")?;
+
+  let doc = content
+    .parse::<DocumentMut>()
+    .context("Could not parse configuration file as TOML")?;
+
+  Ok((path, doc))
+}
+
+/// Writes a `DocumentMut` back to the manta configuration file.
+pub(crate) fn write_config_toml(
+  path: &std::path::Path,
+  doc: &DocumentMut,
+) -> Result<(), anyhow::Error> {
+  let mut file = std::fs::OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .open(path)
+    .context("Failed to open configuration file for writing")?;
+
+  file
+    .write_all(doc.to_string().as_bytes())
+    .context("Failed to write configuration file")?;
+  file.flush().context("Failed to flush configuration file")?;
+
+  Ok(())
 }
 
 pub fn get_csm_root_cert_content(

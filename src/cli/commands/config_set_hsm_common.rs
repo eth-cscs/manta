@@ -1,11 +1,9 @@
-use std::{fs, io::Write};
-
 use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use toml_edit::{DocumentMut, value};
+use toml_edit::value;
 
 use crate::{
-  common::config::get_default_manta_config_file_path,
+  common::config::{read_config_toml, write_config_toml},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -23,20 +21,7 @@ pub async fn set_hsm_config_value(
   toml_key: &str,
   label: &str,
 ) -> Result<(), Error> {
-  let path_to_manta_configuration_file = get_default_manta_config_file_path()?;
-
-  log::debug!(
-    "Reading manta configuration from {}",
-    &path_to_manta_configuration_file.to_string_lossy()
-  );
-
-  let config_file_content =
-    fs::read_to_string(path_to_manta_configuration_file.clone())
-      .context("Error reading configuration file")?;
-
-  let mut doc = config_file_content
-    .parse::<DocumentMut>()
-    .context("Could not parse configuration file as TOML")?;
+  let (path, mut doc) = read_config_toml()?;
 
   let mut settings_hsm_available_vec = backend
     .get_group_name_available(shasta_token)
@@ -67,19 +52,7 @@ pub async fn set_hsm_config_value(
 
   doc[toml_key] = value(new_hsm);
 
-  // Write updated content to configuration file
-  let mut manta_configuration_file = std::fs::OpenOptions::new()
-    .write(true)
-    .truncate(true)
-    .open(&path_to_manta_configuration_file)
-    .context("Failed to open configuration file for writing")?;
-
-  manta_configuration_file
-    .write_all(doc.to_string().as_bytes())
-    .context("Failed to write configuration file")?;
-  manta_configuration_file
-    .flush()
-    .context("Failed to flush configuration file")?;
+  write_config_toml(&path, &doc)?;
 
   println!("{label} set to '{new_hsm}'");
 

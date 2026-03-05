@@ -6,8 +6,7 @@ use crate::{
 
 use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
-  interfaces::{console::ConsoleTrait, hsm::component::ComponentTrait},
-  types::K8sDetails,
+  interfaces::console::ConsoleTrait, types::K8sDetails,
 };
 
 pub async fn exec(
@@ -19,26 +18,13 @@ pub async fn exec(
   let shasta_token = get_api_token(backend, site_name).await?;
 
   // Convert user input to xname
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(&shasta_token)
-    .await
-    .map_err(|e| {
-      Error::msg(format!("Could not get node metadata. Reason:\n{e}"))
-    })?;
-
-  let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+  let xname_vec = common::node_ops::resolve_hosts_expression(
+    backend,
+    &shasta_token,
     xname,
     false,
-    node_metadata_available_vec,
   )
-  .await
-  .map_err(|e| {
-    Error::msg(format!(
-      "Could not convert user input to list of \
-         xnames. Reason:\n{}",
-      e
-    ))
-  })?;
+  .await?;
 
   if xname_vec.len() != 1 {
     bail!(

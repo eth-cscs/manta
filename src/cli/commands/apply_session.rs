@@ -4,10 +4,7 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use futures::{AsyncBufReadExt, TryStreamExt};
 use manta_backend_dispatcher::{
-  interfaces::{
-    apply_session::ApplySessionTrait, cfs::CfsTrait,
-    hsm::component::ComponentTrait,
-  },
+  interfaces::{apply_session::ApplySessionTrait, cfs::CfsTrait},
   types::K8sDetails,
 };
 
@@ -19,8 +16,6 @@ use crate::common::{
   authorization::{get_groups_names_available, validate_target_hsm_members},
   jwt_ops, local_git_repo,
 };
-
-use substring::Substring;
 
 pub async fn exec(
   cli_apply_session: &ArgMatches,
@@ -47,8 +42,9 @@ pub async fn exec(
     .cloned()
     .collect();
 
-  let hsm_group_name_arg_opt: Option<&String> =
-    cli_apply_session.get_one("hsm-group");
+  let hsm_group_name_arg_opt: Option<&str> = cli_apply_session
+    .get_one::<String>("hsm-group")
+    .map(String::as_str);
 
   let cfs_conf_sess_name_opt: Option<&String> =
     cli_apply_session.get_one("name");
@@ -114,7 +110,7 @@ pub async fn exec(
     &shasta_token,
     cfs_conf_sess_name_opt.map(String::as_str),
     playbook_file_name_opt.map(String::as_str),
-    hsm_group_name_arg_opt.map(String::as_str),
+    hsm_group_name_arg_opt,
     &repo_path_vec,
     hsm_group_members_opt,
     ansible_verbosity.map(String::as_str),
@@ -155,28 +151,13 @@ pub async fn apply_session(
   let kafka_audit_opt = ctx.kafka_audit_opt;
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
     // Convert user input to xname
-    let node_metadata_available_vec = backend
-      .get_node_metadata_available(shasta_token)
-      .await
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not get node metadata. \
-             Reason:\n{e}"
-        ))
-      })?;
-
-    let xname_vec = common::node_ops::from_hosts_expression_to_xname_vec(
+    let xname_vec = common::node_ops::resolve_hosts_expression(
+      &backend,
+      shasta_token,
       ansible_limit,
       false,
-      node_metadata_available_vec,
     )
-    .await
-    .map_err(|e| {
-      Error::msg(format!(
-        "Could not convert user input \
-             to list of xnames. Reason:\n{e}"
-      ))
-    })?;
+    .await?;
 
     Some(xname_vec.join(","))
   } else {
@@ -301,12 +282,13 @@ fn check_local_repos(
     // Check if all changes in local repo have been
     // committed locally
     let all_committed = local_git_repo::untracked_changed_local_files(&repo)
-      .map_err(|e| {
-        Error::msg(format!(
-          "Could not check local repo status \
-             at {}: {e}",
+      .map_err(|e| Error::msg(e.to_string()))
+      .with_context(|| {
+        format!(
+          "Could not check local repo \
+               status at {}",
           repo_path.display()
-        ))
+        )
       })?;
 
     if !all_committed {
@@ -344,17 +326,14 @@ fn check_local_repos(
 
     log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
 
-    let repo_name_raw = repo_ref_origin_url.substring(
-      repo_ref_origin_url.rfind('/').with_context(|| {
-        format!(
-          "Remote URL '{}' has unexpected \
+    let slash_pos = repo_ref_origin_url.rfind('/').with_context(|| {
+      format!(
+        "Remote URL '{}' has unexpected \
            format (no '/' found)",
-          repo_ref_origin_url
-        )
-      })?
-        + 1,
-      repo_ref_origin_url.len(),
-    );
+        repo_ref_origin_url
+      )
+    })?;
+    let repo_name_raw = &repo_ref_origin_url[slash_pos + 1..];
 
     let timestamp = local_last_commit.time().seconds();
     let tm = chrono::DateTime::from_timestamp(timestamp, 0)
