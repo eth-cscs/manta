@@ -24,12 +24,9 @@ impl StaticBackendDispatcher {
     base_url: &str,
     root_cert: &[u8],
   ) -> Result<Self, Error> {
-    let csm = Csm::new(base_url, root_cert);
-    let ochami = Ochami::new(base_url, root_cert);
-
     match backend_type {
-      "csm" => Ok(Self::CSM(csm)),
-      "ochami" => Ok(Self::OCHAMI(ochami)),
+      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert))),
+      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
       _ => bail!("Backend '{}' not supported", backend_type),
     }
   }

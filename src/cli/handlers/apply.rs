@@ -17,6 +17,8 @@ pub async fn handle_apply(
       cli_apply_hw.subcommand_matches("cluster")
     {
       commands::apply_hw_cluster::exec(cli_apply_hw_cluster, ctx).await?
+    } else {
+      bail!("Unknown 'apply hardware' subcommand");
     }
   } else if let Some(cli_apply_session) =
     cli_apply.subcommand_matches("session")
@@ -118,25 +120,28 @@ pub async fn handle_apply(
 
     commands::apply_sat_file::command::exec(
       ctx,
-      vault_base_url,
-      k8s_api_url,
-      sat_file_content.as_str(),
-      values_file_content_opt,
-      values_cli_opt,
-      ansible_verbosity,
-      ansible_passthrough.as_deref(),
-      reboot,
-      watch_logs,
-      timestamps,
-      prehook.map(String::as_str),
-      posthook.map(String::as_str),
-      cli_apply_sat_file.get_flag("image-only"),
-      cli_apply_sat_file.get_flag("sessiontemplate-only"),
-      true,
-      overwrite,
-      dry_run,
-      assume_yes,
-      k8s_details,
+      &commands::apply_sat_file::command::SatApplyOptions {
+        vault_base_url,
+        k8s_api_url,
+        sat_file_content: sat_file_content.as_str(),
+        values_file_content_opt,
+        values_cli_opt,
+        ansible_verbosity_opt: ansible_verbosity,
+        ansible_passthrough_opt: ansible_passthrough.as_deref(),
+        reboot,
+        watch_logs,
+        timestamps,
+        prehook_opt: prehook.map(String::as_str),
+        posthook_opt: posthook.map(String::as_str),
+        image_only: cli_apply_sat_file.get_flag("image-only"),
+        session_template_only: cli_apply_sat_file
+          .get_flag("sessiontemplate-only"),
+        debug_on_failure: true,
+        overwrite,
+        dry_run,
+        assume_yes,
+        k8s: k8s_details,
+      },
     )
     .await?;
   } else if let Some(cli_apply_template) =
@@ -310,7 +315,11 @@ pub async fn handle_apply(
         dry_run,
       )
       .await?;
+    } else {
+      bail!("Unknown 'apply boot' subcommand");
     }
+  } else {
+    bail!("Unknown 'apply' subcommand");
   }
 
   Ok(())

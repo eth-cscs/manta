@@ -5,14 +5,17 @@ pub fn get_restricted_boot_parameters(
   group_available_vec: &[Group],
   boot_parameter_vec: &[BootParameters],
 ) -> Vec<BootParameters> {
-  let mut group_member_available_vec = group_available_vec
+  let group_members: Vec<String> = group_available_vec
     .iter()
-    .flat_map(|group| group.get_members());
+    .flat_map(|group| group.get_members())
+    .collect();
 
   boot_parameter_vec
     .iter()
-    .filter(|&boot_param| {
-      group_member_available_vec.any(|gma| !boot_param.hosts.contains(&gma))
+    .filter(|boot_param| {
+      group_members
+        .iter()
+        .any(|gma| boot_param.hosts.contains(gma))
     })
     .cloned()
     .collect::<Vec<BootParameters>>()

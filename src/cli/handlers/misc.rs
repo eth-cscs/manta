@@ -2,7 +2,7 @@ use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups, validate_local_repo,
 };
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch top-level misc commands (validate-local-repo,
@@ -70,6 +70,8 @@ pub async fn handle_misc(
     println!("Download boot image");
   } else if cli_root.subcommand_matches("upload-boot-image").is_some() {
     println!("Upload boot image");
+  } else {
+    bail!("Unknown command");
   }
   Ok(())
 }

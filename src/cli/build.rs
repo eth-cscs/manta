@@ -45,8 +45,8 @@ fn subcommand_config() -> Command {
     .arg(arg!(<SITE_NAME> "site name"));
 
   let subcommand_config_set_log =
-    Command::new("log").about("Set site to work on").arg(
-      arg!(<LOG_LEVEL> "log verbority level")
+    Command::new("log").about("Set log verbosity level").arg(
+      arg!(<LOG_LEVEL> "log verbosity level")
         .value_parser(["error", "warn", "info", "debug", "trace"]),
     );
 

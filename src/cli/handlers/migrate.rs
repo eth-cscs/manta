@@ -5,7 +5,7 @@ use crate::common::{
   app_context::AppContext, authentication::get_api_token,
   authorization::get_groups_names_available,
 };
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta migrate` subcommands (nodes, backup,
@@ -113,7 +113,11 @@ pub async fn handle_migrate(
         overwrite,
       )
       .await?;
+    } else {
+      bail!("Unknown 'migrate vCluster' subcommand");
     }
+  } else {
+    bail!("Unknown 'migrate' subcommand");
   }
   Ok(())
 }

@@ -25,15 +25,13 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let settings = match settings {
     Ok(s) => s,
     Err(e) => {
-      eprintln!("Could not read configuration file: {}", e);
-      std::process::exit(1);
+      return Err(format!("Could not read configuration file: {}", e).into());
     }
   };
-  let configuration: MantaConfiguration =
-    settings.clone().try_deserialize().unwrap_or_else(|e| {
-      eprintln!("Configuration file is not valid: {}", e);
-      std::process::exit(1);
-    });
+  let configuration: MantaConfiguration = settings
+    .clone()
+    .try_deserialize()
+    .map_err(|e| format!("Configuration file is not valid: {}", e))?;
   // Drop the preliminary runtime before setting env vars — no
   // other threads are alive at this point.
   drop(preliminary_rt);
@@ -41,10 +39,9 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // Set SOCKS5 proxy env var while we are still single-threaded.
   let site_name: String = configuration.site.clone();
   let site_details_value =
-    configuration.sites.get(&site_name).unwrap_or_else(|| {
-      eprintln!("Site '{}' not found in configuration file", site_name);
-      std::process::exit(1);
-    });
+    configuration.sites.get(&site_name).ok_or_else(|| {
+      format!("Site '{}' not found in configuration file", site_name)
+    })?;
   if let Some(socks_proxy) = &site_details_value.socks5_proxy
     && !socks_proxy.is_empty()
   {
@@ -78,10 +75,9 @@ async fn run(
   log_ops::configure(log_level)?;
 
   let site_details_value =
-    configuration.sites.get(&site_name).unwrap_or_else(|| {
-      eprintln!("Site '{}' not found in configuration file", site_name);
-      std::process::exit(1);
-    });
+    configuration.sites.get(&site_name).ok_or_else(|| {
+      format!("Site '{}' not found in configuration file", site_name)
+    })?;
 
   if let Some(socks_proxy) = &site_details_value.socks5_proxy {
     if !socks_proxy.is_empty() {
@@ -103,8 +99,9 @@ async fn run(
     "csm" => shasta_barebone_url.to_owned() + "/apis",
     "ochami" => shasta_barebone_url.to_owned(),
     _ => {
-      eprintln!("Invalid backend technology: {}", backend_tech);
-      std::process::exit(1);
+      return Err(
+        format!("Invalid backend technology: {}", backend_tech).into(),
+      );
     }
   };
   let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
@@ -173,9 +170,6 @@ async fn run(
 
   match cli_result {
     Ok(_) => Ok(()),
-    Err(e) => {
-      eprintln!("{}", e);
-      std::process::exit(1);
-    }
+    Err(e) => Err(e.into()),
   }
 }

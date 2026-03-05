@@ -1,6 +1,6 @@
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
-use anyhow::Error;
+use anyhow::{Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta config` subcommands (show, set, unset,
@@ -8,7 +8,6 @@ use clap::ArgMatches;
 pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,
-  cli: clap::Command,
 ) -> Result<(), Error> {
   if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
     commands::config_show::exec(ctx.backend, ctx.site_name, ctx.settings)
@@ -60,11 +59,16 @@ pub async fn handle_config(
   } else if let Some(cli_config_generate_autocomplete) =
     cli_config.subcommand_matches("gen-autocomplete")
   {
+    // Rebuild CLI tree only when actually needed for
+    // shell completion generation
+    let cli = crate::cli::build::build_cli();
     commands::config_gen_autocomplete::exec(
       cli,
       cli_config_generate_autocomplete,
     )
     .await?;
+  } else {
+    bail!("Unknown 'config' subcommand");
   }
   Ok(())
 }

@@ -1,6 +1,6 @@
 use crate::cli::commands::power_common::{self, PowerAction};
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta power` subcommands (on, off, reset —
@@ -48,6 +48,8 @@ pub async fn handle_power(
         output,
       )
       .await?;
+    } else {
+      bail!("Unknown 'power on' subcommand");
     }
   } else if let Some(cli_power_off) = cli_power.subcommand_matches("off") {
     if let Some(cli_power_off_cluster) =
@@ -94,6 +96,8 @@ pub async fn handle_power(
         output,
       )
       .await?;
+    } else {
+      bail!("Unknown 'power off' subcommand");
     }
   } else if let Some(cli_power_reset) = cli_power.subcommand_matches("reset") {
     if let Some(cli_power_reset_cluster) =
@@ -143,7 +147,11 @@ pub async fn handle_power(
         output,
       )
       .await?;
+    } else {
+      bail!("Unknown 'power reset' subcommand");
     }
+  } else {
+    bail!("Unknown 'power' subcommand");
   }
   Ok(())
 }

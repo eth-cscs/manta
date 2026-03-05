@@ -9,6 +9,7 @@ use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
+  os::unix::fs::OpenOptionsExt,
 };
 
 /// Obtain a valid API token, trying in order: env var
@@ -142,7 +143,12 @@ fn store_token_in_local_file(
 
   log::info!("Cache file: {:?}", path);
 
-  let mut file: File = File::create(&path)?;
+  let mut file: File = File::options()
+    .write(true)
+    .create(true)
+    .truncate(true)
+    .mode(0o600)
+    .open(&path)?;
   file.write_all(shasta_token.as_bytes())?;
 
   Ok(())

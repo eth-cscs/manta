@@ -25,7 +25,7 @@ fn unset_auth() -> Result<(), Error> {
     .with_prompt("Please choose the site token to delete from the list below")
     .default(0)
     .items(
-      &auth_token_list
+      auth_token_list
         .iter()
         .map(|path| {
           path

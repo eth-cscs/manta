@@ -298,13 +298,10 @@ async fn create_new_config_file(
     String::new()
   };
 
-  // If both kafka broker and topic are empty, then auditor is None
+  // Create auditor only when both broker and topic are provided
   let auditor =
-    if audit_kafka_brokers.is_empty() && audit_kafka_topic.is_empty() {
-      let kafka = Kafka {
-        brokers: vec![audit_kafka_brokers],
-        topic: audit_kafka_topic,
-      };
+    if !audit_kafka_brokers.is_empty() && !audit_kafka_topic.is_empty() {
+      let kafka = Kafka::new(vec![audit_kafka_brokers], audit_kafka_topic);
 
       Some(Auditor { kafka })
     } else {

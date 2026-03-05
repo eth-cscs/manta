@@ -54,28 +54,27 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.34"
 log = "0.4.27"
-log4rs = { version = "1.2.0", default-features = false }
-tokio = { version = "1.45", features = ["full"] }
+log4rs = { version = "1.4.0", default-features = false }
+tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "time"] }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
 git2 = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
-dialoguer = { version = "0.10.2", features = ["password"], default-features = false }
-indicatif = { version = "0.17.7", default-features = false }
+dialoguer = { version = "0.12.0", features = ["password"], default-features = false }
 futures = { version = "0.3.31", default-features = false }
 toml = "0.8.16"
-toml_edit = "0.22.24" # used to edit manta configuration file
-clap = { version = "4.3.21", features = ["wrap_help"] }
-clap_complete = "4.3.2"
+toml_edit = "0.22.27" # used to edit manta configuration file
+clap = { version = "4.5.60", features = ["wrap_help"] }
+clap_complete = "4.5.66"
 regex = "1.6.0"
-directories = "4.0.1"                                                      # XDG Base Directory Specification
-comfy-table = "6.1.1"
-crossterm = { version = "0.27.0", default-features = false }               # terminal colors and raw mode
+directories = "6.0.0"                                                      # XDG Base Directory Specification
+comfy-table = "7.2.2"
+crossterm = { version = "0.29.0", default-features = false }               # terminal colors and raw mode
 execute = "0.2.13"
 is_executable = "1.0.1"
 minijinja = { version = "2.4.0", features = ["custom_syntax"] }
 rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
-config = { version = "0.13.2", features = ["toml"], default-features = false }
+config = { version = "0.15.19", features = ["toml"], default-features = false }
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

@@ -1,6 +1,6 @@
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta update` subcommands (boot-parameters,
@@ -80,6 +80,8 @@ pub async fn handle_update(
       template_id,
     )
     .await?;
+  } else {
+    bail!("Unknown 'update' subcommand");
   }
   Ok(())
 }

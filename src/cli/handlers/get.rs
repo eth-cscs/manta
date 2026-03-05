@@ -4,7 +4,7 @@ use crate::cli::commands::{
   get_nodes, get_session, get_template,
 };
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_backend_dispatcher::types::bss::BootParameters;
 
@@ -67,6 +67,8 @@ pub async fn handle_get(
           .map(String::as_str),
       )
       .await?;
+    } else {
+      bail!("Unknown 'get hardware' subcommand");
     }
   } else if let Some(cli_get_configuration) =
     cli_get.subcommand_matches("configurations")
@@ -178,6 +180,8 @@ pub async fn handle_get(
       cli_get_redfish_endopints,
     )
     .await?;
+  } else {
+    bail!("Unknown 'get' subcommand");
   }
   Ok(())
 }

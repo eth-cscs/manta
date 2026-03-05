@@ -12,16 +12,16 @@ pub async fn process_cli(
   cli: Command,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let cli_root = cli.clone().get_matches();
+  let cli_root = cli.get_matches();
 
   if let Some(cli_config) = cli_root.subcommand_matches("config") {
-    config::handle_config(cli_config, ctx, cli).await?;
+    config::handle_config(cli_config, ctx).await?;
   } else if let Some(cli_power) = cli_root.subcommand_matches("power") {
     power::handle_power(cli_power, ctx).await?;
   } else if let Some(cli_add) = cli_root.subcommand_matches("add") {
     add::handle_add(cli_add, ctx).await?;
-  } else if let Some(_cli_update) = cli_root.subcommand_matches("update") {
-    update::handle_update(&cli_root, ctx).await?;
+  } else if let Some(cli_update) = cli_root.subcommand_matches("update") {
+    update::handle_update(cli_update, ctx).await?;
   } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
     get::handle_get(cli_get, ctx).await?;
   } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {

@@ -57,6 +57,8 @@ pub async fn handle_console(
       k8s_details,
     )
     .await?;
+  } else {
+    bail!("Unknown 'console' subcommand");
   }
   Ok(())
 }

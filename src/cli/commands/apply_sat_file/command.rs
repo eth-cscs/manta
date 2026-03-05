@@ -15,29 +15,36 @@ use crate::{
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+/// Options for applying a SAT file.
+///
+/// Bundles the many parameters needed by [`exec`] into a
+/// single struct, improving call-site readability.
+pub struct SatApplyOptions<'a> {
+  pub vault_base_url: &'a str,
+  pub k8s_api_url: &'a str,
+  pub sat_file_content: &'a str,
+  pub values_file_content_opt: Option<&'a str>,
+  pub values_cli_opt: Option<&'a [String]>,
+  pub ansible_verbosity_opt: Option<u8>,
+  pub ansible_passthrough_opt: Option<&'a str>,
+  pub reboot: bool,
+  pub watch_logs: bool,
+  pub timestamps: bool,
+  pub prehook_opt: Option<&'a str>,
+  pub posthook_opt: Option<&'a str>,
+  pub image_only: bool,
+  pub session_template_only: bool,
+  pub debug_on_failure: bool,
+  pub overwrite: bool,
+  pub dry_run: bool,
+  pub assume_yes: bool,
+  pub k8s: &'a K8sDetails,
+}
+
 /// Process and apply a SAT file to the system.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
-  vault_base_url: &str,
-  k8s_api_url: &str,
-  sat_file_content: &str,
-  values_file_content_opt: Option<&str>,
-  values_cli_opt: Option<&[String]>,
-  ansible_verbosity_opt: Option<u8>,
-  ansible_passthrough_opt: Option<&str>,
-  reboot: bool,
-  watch_logs: bool,
-  timestamps: bool,
-  prehook_opt: Option<&str>,
-  posthook_opt: Option<&str>,
-  image_only: bool,
-  session_template_only: bool,
-  debug_on_failure: bool,
-  overwrite: bool,
-  dry_run: bool,
-  assume_yes: bool,
-  k8s: &K8sDetails,
+  opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
   let backend = ctx.backend;
   let site_name = ctx.site_name;
@@ -50,7 +57,7 @@ pub async fn exec(
 
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
     &shasta_token,
-    vault_base_url,
+    opts.vault_base_url,
     site_name,
   )
   .await?;
@@ -60,8 +67,8 @@ pub async fn exec(
 
   // Validate Pre-hook
   log::info!("Validating pre-hook script");
-  if let Some(prehook) = prehook_opt {
-    match crate::common::hooks::check_hook_perms(prehook_opt) {
+  if let Some(prehook) = opts.prehook_opt {
+    match crate::common::hooks::check_hook_perms(opts.prehook_opt) {
       Ok(_r) => println!(
         "Pre-hook script '{}' exists \
          and is executable.",
@@ -75,8 +82,8 @@ pub async fn exec(
 
   // Validate Post-hook
   log::info!("Validating post-hook script");
-  if let Some(posthook) = posthook_opt {
-    match crate::common::hooks::check_hook_perms(posthook_opt) {
+  if let Some(posthook) = opts.posthook_opt {
+    match crate::common::hooks::check_hook_perms(opts.posthook_opt) {
       Ok(_) => println!(
         "Post-hook script '{}' exists \
          and is executable.",
@@ -90,9 +97,9 @@ pub async fn exec(
 
   log::info!("Render SAT template file");
   let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
-    sat_file_content,
-    values_file_content_opt,
-    values_cli_opt,
+    opts.sat_file_content,
+    opts.values_file_content_opt,
+    opts.values_cli_opt,
   )?;
 
   let sat_template_file_string = serde_yaml::to_string(&sat_template_file_yaml)
@@ -109,7 +116,7 @@ pub async fn exec(
 
   // Filter either images or session_templates
   // section according to user request
-  sat_template.filter(image_only, session_template_only)?;
+  sat_template.filter(opts.image_only, opts.session_template_only)?;
 
   let sat_template_file_yaml: Value = serde_yaml::to_value(sat_template)
     .context(
@@ -129,7 +136,7 @@ pub async fn exec(
   if !common::user_interaction::confirm(
     "Please check the template above and \
      confirm to proceed.",
-    assume_yes,
+    opts.assume_yes,
   ) {
     bail!("Operation canceled by user");
   }
@@ -137,11 +144,11 @@ pub async fn exec(
   // Confirm reboot if session_templates are to be
   // applied
   if sat_template_file_yaml.get("session_templates").is_some()
-    && reboot
+    && opts.reboot
     && !common::user_interaction::confirm(
       "This operation will reboot nodes. \
        Please confirm to proceed.",
-      assume_yes,
+      opts.assume_yes,
     )
   {
     println!("Operation canceled by user");
@@ -149,15 +156,15 @@ pub async fn exec(
   }
 
   // Run/process Pre-hook
-  if let Some(prehook) = prehook_opt {
+  if let Some(prehook) = opts.prehook_opt {
     println!("Running the pre-hook '{}'", &prehook);
-    let code = crate::common::hooks::run_hook(prehook_opt)?;
+    let code = crate::common::hooks::run_hook(opts.prehook_opt)?;
 
     log::debug!("Pre-hook script completed ok. RT={}", code);
   }
 
   // Get K8s secrets
-  let shasta_k8s_secrets = match &k8s.authentication {
+  let shasta_k8s_secrets = match &opts.k8s.authentication {
     K8sAuth::Native {
       certificate_authority_data,
       client_certificate_data,
@@ -184,29 +191,29 @@ pub async fn exec(
       &shasta_token,
       shasta_base_url,
       shasta_root_cert,
-      vault_base_url,
+      opts.vault_base_url,
       site_name,
-      k8s_api_url,
+      opts.k8s_api_url,
       shasta_k8s_secrets,
       sat_template_file_yaml,
       &hsm_group_available_vec,
-      ansible_verbosity_opt,
-      ansible_passthrough_opt,
+      opts.ansible_verbosity_opt,
+      opts.ansible_passthrough_opt,
       gitea_base_url,
       &gitea_token,
-      reboot,
-      watch_logs,
-      timestamps,
-      debug_on_failure,
-      overwrite,
-      dry_run,
+      opts.reboot,
+      opts.watch_logs,
+      opts.timestamps,
+      opts.debug_on_failure,
+      opts.overwrite,
+      opts.dry_run,
     )
     .await?;
 
   // Run/process Post-hook
-  if let Some(posthook) = posthook_opt {
+  if let Some(posthook) = opts.posthook_opt {
     println!("Running the post-hook '{}'", &posthook);
-    let code = crate::common::hooks::run_hook(posthook_opt)?;
+    let code = crate::common::hooks::run_hook(opts.posthook_opt)?;
 
     log::debug!("Post-hook script completed ok. RT={}", code);
   }

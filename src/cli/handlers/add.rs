@@ -287,6 +287,8 @@ pub async fn handle_add(
       .add_redfish_endpoint(&shasta_token, &redfish_endpoint_array)
       .await?;
     println!("Redfish endpoint for node '{}' added", id);
+  } else {
+    bail!("Unknown 'add' subcommand");
   }
   Ok(())
 }

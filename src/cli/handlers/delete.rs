@@ -199,6 +199,8 @@ pub async fn handle_delete(
         bail!("Failed to delete images: {e}");
       }
     }
+  } else {
+    bail!("Unknown 'delete' subcommand");
   }
   Ok(())
 }
