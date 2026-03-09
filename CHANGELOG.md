@@ -2,11 +2,152 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.61.0] - 2026-03-09
+
+### Bug Fixes
+
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- Effort 6 — bugs, security, quality improvements, and dep updates
+- When processing a SAT file, images are not searched using a fuzzy finder but a name match
+
+### Documentation
+
+- Add doc comments to all public APIs across 77 files (P19)
+
+### Miscellaneous Tasks
+
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Effort 6 — bugs, security, quality improvements, and dep updates
+
+### Refactor
+
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Cargo check (0 errors/warnings), cargo clippy -D warnings
+- Comprehensive code quality improvement (Efforts 1-4, P1-P3)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 4 code quality improvements (P4-P17)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Complete Effort 5 code quality improvements (P1-P16, P2)
+- Add dispatch! macro for backend dispatcher (P12) and replace termion with crossterm (P15)
+- Created dispatch! macro in backend_dispatcher/mod.rs that eliminates
+- Add dispatch! macro for backend dispatcher (P12) and replace termion with crossterm (P15)
+- Add dispatch! macro for backend dispatcher (P12) and replace termion with crossterm (P15)
+- Replaced termion::color with crossterm::style::Stylize in
+- Add dispatch! macro for backend dispatcher (P12) and replace termion with crossterm (P15)
+- Add dispatch! macro for backend dispatcher (P12) and replace termion with crossterm (P15)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Extract send_audit() helper to deduplicate audit message construction (P17)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+- Decompose top 5 largest functions into smaller helpers (P14)
+
+### Testing
+
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+- Add unit tests for 31 pure functions across 4 modules (P18)
+
 ## [1.60.4] - 2026-02-27
 
 ### Bug Fixes
 
 - Power management operations not able to deserialize struct response when creating a transition
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.60.4
 
 ### Refactor
 
