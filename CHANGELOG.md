@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.61.1] - 2026-03-27
+
+### Bug Fixes
+
+- Improve error message when command 'delete configuration' does not have enough context to find out if user has access to delete the requested configuration
+
+### Features
+
+- Add new argument '--most-recent' to command 'get images'
+- Add new argument '--most-recent' to command 'get images'
+
 ## [1.61.0] - 2026-03-09
 
 ### Bug Fixes
@@ -39,6 +50,7 @@ All notable changes to this project will be documented in this file.
 - Decompose top 5 largest functions into smaller helpers (P14)
 - Add unit tests for 31 pure functions across 4 modules (P18)
 - Effort 6 — bugs, security, quality improvements, and dep updates
+- Release manta-cli version 1.61.0
 
 ### Refactor
 
