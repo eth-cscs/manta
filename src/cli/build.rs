@@ -321,6 +321,7 @@ fn subcommand_get_images() -> Command {
   Command::new("images")
     .about("Get image information")
     .arg(arg!(-i --id <VALUE> "Image ID"))
+    .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
         .value_parser(value_parser!(u8).range(1..)),

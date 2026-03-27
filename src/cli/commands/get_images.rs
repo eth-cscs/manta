@@ -30,7 +30,13 @@ pub async fn exec(
     .ok()
     .flatten()
     .map(String::as_str);
-  let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
+  // let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
+  let limit: Option<&u8> =
+    if let Some(true) = cli_get_images.get_one("most-recent") {
+      Some(&1)
+    } else {
+      cli_get_images.get_one::<u8>("limit")
+    };
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,

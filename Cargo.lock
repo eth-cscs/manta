@@ -971,7 +971,7 @@ dependencies = [
 
 [[package]]
 name = "csm-rs"
-version = "0.102.0"
+version = "0.102.1"
 dependencies = [
  "anyhow",
  "aws-config",
