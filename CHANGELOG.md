@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.61.2] - 2026-04-06
+
+### Miscellaneous Tasks
+
+- Update Cargo.lock
+
+### Refactor
+
+- Clean unnecessary files
+
 ## [1.61.1] - 2026-03-27
 
 ### Bug Fixes
@@ -12,6 +22,10 @@ All notable changes to this project will be documented in this file.
 
 - Add new argument '--most-recent' to command 'get images'
 - Add new argument '--most-recent' to command 'get images'
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.61.1
 
 ## [1.61.0] - 2026-03-09
 

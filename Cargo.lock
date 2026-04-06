@@ -2463,7 +2463,7 @@ dependencies = [
 
 [[package]]
 name = "manta-cli"
-version = "1.61.1"
+version = "1.61.2"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
