@@ -971,9 +971,9 @@ dependencies = [
 
 [[package]]
 name = "csm-rs"
-version = "0.102.1"
+version = "0.102.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f502addf72ca260487e043d5288b814c5ec5cf353fb4e2a86a0c16733246f26"
+checksum = "16e4f8c76a832b44f80de0a1cdc5a1bc9542204db5b8f6edecb1483887e73b98"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -988,7 +988,6 @@ dependencies = [
  "directories 4.0.1",
  "futures",
  "futures-channel",
- "git2",
  "globset",
  "hostlist-parser",
  "http 1.4.0",
