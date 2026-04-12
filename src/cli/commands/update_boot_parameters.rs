@@ -62,16 +62,14 @@ pub async fn exec(
     .await?;
 
   // Audit
-  if let Some(kafka_audit) = kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      &shasta_token,
-      "Update boot parameters",
-      Some(serde_json::json!(hosts)),
-      None,
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    kafka_audit_opt,
+    &shasta_token,
+    "Update boot parameters",
+    Some(serde_json::json!(hosts)),
+    None,
+  )
+  .await;
 
   Ok(())
 }

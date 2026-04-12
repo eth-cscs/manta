@@ -29,16 +29,14 @@ pub async fn exec(
   println!("Group '{}' deleted", label);
 
   // Audit
-  if let Some(kafka_audit) = kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      &auth_token,
-      format!("Delete Group '{}'", label),
-      None,
-      Some(serde_json::json!(label)),
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    kafka_audit_opt,
+    &auth_token,
+    format!("Delete Group '{}'", label),
+    None,
+    Some(serde_json::json!(label)),
+  )
+  .await;
 
   Ok(())
 }

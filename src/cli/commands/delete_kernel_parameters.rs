@@ -1,9 +1,5 @@
-use crate::common::{
-  self, app_context::AppContext, authentication::get_api_token,
-  authorization::get_groups_names_available,
-};
-use anyhow::{Context, Error};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use crate::common::{app_context::AppContext, authentication::get_api_token};
+use anyhow::Error;
 
 use super::kernel_parameters_common::{self, KernelParamOperation};
 
@@ -18,42 +14,19 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let shasta_token =
+    get_api_token(ctx.backend, ctx.site_name).await?;
 
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  // Resolve target nodes: either from HSM group or from explicit node list
-  let hosts_expression: String = if hsm_group_name_arg_opt.is_some() {
-    let hsm_group_name_vec = get_groups_names_available(
-      backend,
+  // Resolve target nodes from hosts expression, HSM group, or settings
+  let xname_vec =
+    crate::common::node_ops::resolve_target_nodes(
+      ctx.backend,
       &shasta_token,
+      nodes,
       hsm_group_name_arg_opt,
-      settings_hsm_group_name_opt,
+      ctx.settings_hsm_group_name_opt,
     )
     .await?;
-    let hsm_members: Vec<String> = backend
-      .get_member_vec_from_group_name_vec(
-        &shasta_token,
-        &hsm_group_name_vec,
-      )
-      .await
-      .context("Could not fetch HSM groups members")?;
-    hsm_members.join(",")
-  } else {
-    nodes
-      .map(str::to_string)
-      .context("Neither HSM group nor nodes defined")?
-  };
-
-  let xname_vec = common::node_ops::resolve_hosts_expression(
-    backend,
-    &shasta_token,
-    &hosts_expression,
-    false,
-  )
-  .await?;
 
   kernel_parameters_common::exec(
     ctx,

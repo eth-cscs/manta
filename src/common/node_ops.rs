@@ -499,6 +499,62 @@ pub fn string_vec_to_multi_line_string(
   members
 }
 
+/// Resolve target nodes from either a hosts expression, an
+/// explicit HSM group name, or the settings-level HSM group.
+///
+/// Priority order:
+/// 1. `hosts_expression` — parsed and validated via
+///    [`resolve_hosts_expression`].
+/// 2. `hsm_group_name_arg_opt` — the CLI `--hsm-group`
+///    argument; validated for access via
+///    [`get_groups_names_available`], then expanded to member
+///    xnames.
+/// 3. `settings_hsm_group_name_opt` — the group configured in
+///    the environment or config file; same treatment as (2).
+///
+/// Returns a sorted, deduplicated `Vec<String>` of xnames.
+pub async fn resolve_target_nodes(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  hosts_expression: Option<&str>,
+  hsm_group_name_arg_opt: Option<&str>,
+  settings_hsm_group_name_opt: Option<&str>,
+) -> Result<Vec<String>, anyhow::Error> {
+  if let Some(hosts_expr) = hosts_expression {
+    resolve_hosts_expression(backend, shasta_token, hosts_expr, false).await
+  } else if hsm_group_name_arg_opt.is_some()
+    || settings_hsm_group_name_opt.is_some()
+  {
+    let hsm_group_name_vec =
+      super::authorization::get_groups_names_available(
+        backend,
+        shasta_token,
+        hsm_group_name_arg_opt,
+        settings_hsm_group_name_opt,
+      )
+      .await
+      .context("Failed to get available HSM group names")?;
+
+    let hsm_members: Vec<String> = backend
+      .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
+      .await
+      .context("Could not fetch HSM group members")?;
+
+    resolve_hosts_expression(
+      backend,
+      shasta_token,
+      &hsm_members.join(","),
+      false,
+    )
+    .await
+  } else {
+    anyhow::bail!(
+      "No nodes provided. Please provide either a list of nodes \
+       via --nodes or an HSM group via --hsm-group",
+    )
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

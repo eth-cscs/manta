@@ -219,16 +219,14 @@ async fn apply_session(
   }
 
   // Audit
-  if let Some(kafka_audit) = kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      shasta_token,
-      "Apply session",
-      Some(serde_json::json!(ansible_limit)),
-      Some(serde_json::json!(vec![hsm_group_opt])),
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    kafka_audit_opt,
+    shasta_token,
+    "Apply session",
+    Some(serde_json::json!(ansible_limit)),
+    Some(serde_json::json!(vec![hsm_group_opt])),
+  )
+  .await;
 
   Ok((cfs_configuration_name, cfs_session_name))
 }

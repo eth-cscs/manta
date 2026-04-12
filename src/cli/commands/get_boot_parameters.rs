@@ -1,8 +1,5 @@
-use anyhow::Context;
-
-use crate::common::authorization::get_groups_names_available;
 use manta_backend_dispatcher::{
-  interfaces::{bss::BootParametersTrait, hsm::group::GroupTrait},
+  interfaces::bss::BootParametersTrait,
   types::bss::BootParameters,
 };
 
@@ -21,38 +18,22 @@ pub async fn exec(
   let hsm_group_name_arg_opt: Option<&str> = cli_get_boot_parameters
     .get_one::<String>("hsm-group")
     .map(String::as_str);
-  let nodes: String = if hsm_group_name_arg_opt.is_some() {
-    let hsm_group_name_vec = get_groups_names_available(
-      backend,
-      &shasta_token,
-      hsm_group_name_arg_opt,
-      settings_hsm_group_name_opt,
-    )
-    .await
-    .context("Failed to get available HSM group names")?;
-    backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
-      .await
-      .context("Could not fetch HSM groups members")?
-      .join(",")
-  } else {
-    cli_get_boot_parameters
-      .get_one::<String>("nodes")
-      .ok_or_else(|| anyhow::anyhow!("Neither HSM group nor nodes defined"))?
-      .clone()
-  };
+
+  let nodes_arg: Option<&str> = cli_get_boot_parameters
+    .get_one::<String>("nodes")
+    .map(String::as_str);
+
+  let xname_vec = common::node_ops::resolve_target_nodes(
+    backend,
+    &shasta_token,
+    nodes_arg,
+    hsm_group_name_arg_opt,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
 
   // Get BSS boot parameters
   println!("Get boot parameters");
-
-  // Convert user input to xname
-  let xname_vec = common::node_ops::resolve_hosts_expression(
-    backend,
-    &shasta_token,
-    &nodes,
-    false,
-  )
-  .await?;
 
   Ok(
     backend

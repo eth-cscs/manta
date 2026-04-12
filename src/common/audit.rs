@@ -1,7 +1,9 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use serde::{Deserialize, Serialize};
 
 use super::{jwt_ops, kafka::Kafka};
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.
@@ -71,4 +73,55 @@ pub async fn send_audit(
   }
 
   send_audit_message(kafka, msg).await;
+}
+
+/// Send an audit message if a Kafka instance is configured.
+///
+/// This is a convenience wrapper around [`send_audit`] that
+/// handles the common `if let Some(kafka) = kafka_opt { ... }`
+/// pattern found at every audit call site.
+pub async fn maybe_send_audit(
+  kafka_opt: Option<&Kafka>,
+  token: &str,
+  message: impl Into<String>,
+  host: Option<serde_json::Value>,
+  group: Option<serde_json::Value>,
+) {
+  if let Some(kafka) = kafka_opt {
+    send_audit(kafka, token, message, host, group).await;
+  }
+}
+
+/// Send an audit message with group names resolved from a
+/// backend lookup.
+///
+/// Like [`maybe_send_audit`], but first queries the backend to
+/// discover which HSM groups the given `xnames` belong to, and
+/// includes those group names in the audit message.
+pub async fn maybe_send_audit_with_group_lookup(
+  kafka_opt: Option<&Kafka>,
+  backend: &StaticBackendDispatcher,
+  token: &str,
+  message: impl Into<String>,
+  xnames: &[String],
+) -> Result<()> {
+  if let Some(kafka) = kafka_opt {
+    let xname_refs: Vec<&str> =
+      xnames.iter().map(String::as_str).collect();
+
+    let group_map = backend
+      .get_group_map_and_filter_by_member_vec(token, &xname_refs)
+      .await
+      .context("Failed to get group map for audit")?;
+
+    send_audit(
+      kafka,
+      token,
+      message,
+      Some(serde_json::json!(xnames)),
+      Some(serde_json::json!(group_map.keys().collect::<Vec<_>>())),
+    )
+    .await;
+  }
+  Ok(())
 }

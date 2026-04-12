@@ -78,16 +78,14 @@ pub async fn exec(
   }
 
   // Audit
-  if let Some(kafka_audit) = kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      &shasta_token,
-      format!("Remove nodes from group '{}'", target_hsm_name),
-      Some(serde_json::json!(xname_to_move_vec)),
-      Some(serde_json::json!(vec![target_hsm_name])),
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    kafka_audit_opt,
+    &shasta_token,
+    format!("Remove nodes from group '{}'", target_hsm_name),
+    Some(serde_json::json!(xname_to_move_vec)),
+    Some(serde_json::json!(vec![target_hsm_name])),
+  )
+  .await;
 
   Ok(())
 }

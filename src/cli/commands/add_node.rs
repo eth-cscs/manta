@@ -107,16 +107,14 @@ pub async fn exec(
   }
 
   // Audit
-  if let Some(kafka_audit) = kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      shasta_token,
-      "add node",
-      Some(serde_json::json!(id)),
-      Some(serde_json::json!([])),
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    kafka_audit_opt,
+    shasta_token,
+    "add node",
+    Some(serde_json::json!(id)),
+    Some(serde_json::json!([])),
+  )
+  .await;
 
   println!("Node '{}' created and added to group '{}'", id, group);
 

@@ -113,24 +113,14 @@ pub async fn exec_nodes(
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
   // Audit
-  if let Some(kafka_audit) = ctx.kafka_audit_opt {
-    let group_map = backend
-      .get_group_map_and_filter_by_member_vec(
-        &shasta_token,
-        &xname_vec.iter().map(String::as_str).collect::<Vec<_>>(),
-      )
-      .await
-      .context("Failed to get group map for audit")?;
-
-    audit::send_audit(
-      kafka_audit,
-      &shasta_token,
-      action.to_string(),
-      Some(serde_json::json!(xname_vec)),
-      Some(serde_json::json!(group_map.keys().collect::<Vec<_>>())),
-    )
-    .await;
-  }
+  audit::maybe_send_audit_with_group_lookup(
+    ctx.kafka_audit_opt,
+    backend,
+    &shasta_token,
+    action.to_string(),
+    &xname_vec,
+  )
+  .await?;
 
   Ok(())
 }
@@ -194,16 +184,14 @@ pub async fn exec_cluster(
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);
 
   // Audit
-  if let Some(kafka_audit) = ctx.kafka_audit_opt {
-    audit::send_audit(
-      kafka_audit,
-      &shasta_token,
-      action.to_string(),
-      None,
-      Some(serde_json::json!(hsm_group_name_arg)),
-    )
-    .await;
-  }
+  audit::maybe_send_audit(
+    ctx.kafka_audit_opt,
+    &shasta_token,
+    action.to_string(),
+    None,
+    Some(serde_json::json!(hsm_group_name_arg)),
+  )
+  .await;
 
   Ok(())
 }

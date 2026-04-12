@@ -9,7 +9,7 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::{
-  group::GroupTrait, redfish_endpoint::RedfishEndpointTrait,
+  redfish_endpoint::RedfishEndpointTrait,
 };
 use manta_backend_dispatcher::types::{
   bss::BootParameters,
@@ -178,32 +178,15 @@ pub async fn handle_add(
   } else if let Some(cli_add_kernel_parameters) =
     cli_add.subcommand_matches("kernel-parameters")
   {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
     let hsm_group_name_arg_opt = cli_add_kernel_parameters
       .get_one::<String>("hsm-group")
       .map(String::as_str);
-    let nodes: &str = if hsm_group_name_arg_opt.is_some() {
-      let hsm_group_name_vec = get_groups_names_available(
-        ctx.backend,
-        &shasta_token,
-        hsm_group_name_arg_opt,
-        ctx.settings_hsm_group_name_opt,
-      )
-      .await?;
-      let hsm_members_rslt = ctx
-        .backend
-        .get_member_vec_from_group_name_vec(&shasta_token, &hsm_group_name_vec)
-        .await;
-      match hsm_members_rslt {
-        Ok(hsm_members) => &hsm_members.join(","),
-        Err(e) => {
-          bail!("Could not fetch HSM groups members: {}", e);
-        }
-      }
-    } else {
+    let nodes_opt: Option<&str> = if hsm_group_name_arg_opt.is_none() {
       cli_add_kernel_parameters
         .get_one::<String>("nodes")
-        .context("Neither HSM group nor nodes defined")?
+        .map(String::as_str)
+    } else {
+      None
     };
     let kernel_parameters = cli_add_kernel_parameters
       .get_one::<String>("VALUE")
@@ -216,7 +199,8 @@ pub async fn handle_add(
     add_kernel_parameters::exec(
       ctx,
       kernel_parameters,
-      nodes,
+      nodes_opt,
+      hsm_group_name_arg_opt,
       overwrite,
       assume_yes,
       do_not_reboot,

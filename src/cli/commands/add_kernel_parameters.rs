@@ -1,4 +1,4 @@
-use crate::common::{self, app_context::AppContext, authentication::get_api_token};
+use crate::common::{app_context::AppContext, authentication::get_api_token};
 use anyhow::Error;
 
 use super::kernel_parameters_common::{self, KernelParamOperation};
@@ -9,7 +9,8 @@ use super::kernel_parameters_common::{self, KernelParamOperation};
 pub async fn exec(
   ctx: &AppContext<'_>,
   kernel_params: &str,
-  hosts_expression: &str,
+  hosts_expression: Option<&str>,
+  hsm_group_name_arg_opt: Option<&str>,
   overwrite: bool,
   assume_yes: bool,
   do_not_reboot: bool,
@@ -18,12 +19,13 @@ pub async fn exec(
   let shasta_token =
     get_api_token(ctx.backend, ctx.site_name).await?;
 
-  // Resolve hosts expression to xnames
-  let xname_vec = common::node_ops::resolve_hosts_expression(
+  // Resolve target nodes from hosts expression, HSM group, or settings
+  let xname_vec = crate::common::node_ops::resolve_target_nodes(
     ctx.backend,
     &shasta_token,
     hosts_expression,
-    false,
+    hsm_group_name_arg_opt,
+    ctx.settings_hsm_group_name_opt,
   )
   .await?;
 
