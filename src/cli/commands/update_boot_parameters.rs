@@ -2,7 +2,7 @@ use crate::common::{
   app_context::AppContext, audit, authentication::get_api_token,
   authorization::validate_target_hsm_members,
 };
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::{
   interfaces::bss::BootParametersTrait, types::bss::BootParameters,
 };
@@ -28,11 +28,17 @@ pub async fn exec(
   let hosts: Vec<String> = xnames.split(',').map(String::from).collect();
   let macs: Option<Vec<String>> =
     macs.map(|x| x.split(',').map(String::from).collect());
-  let nids: Option<Vec<u32>> = nids.map(|x| {
-    x.split(',')
-      .map(|x| x.to_string().parse::<u32>().unwrap_or_default())
-      .collect()
-  });
+  let nids: Option<Vec<u32>> = nids
+    .map(|x| {
+      x.split(',')
+        .map(|nid| {
+          nid.parse::<u32>().with_context(|| {
+            format!("Invalid NID '{nid}': expected a positive integer")
+          })
+        })
+        .collect::<Result<Vec<u32>, _>>()
+    })
+    .transpose()?;
   let params: String = params.unwrap_or_default().to_string();
   let kernel: String = kernel.unwrap_or_default().to_string();
   let initrd: String = initrd.unwrap_or_default().to_string();

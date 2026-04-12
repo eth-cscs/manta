@@ -44,7 +44,7 @@ pub async fn exec(
   ) {
     log::info!("Continue",);
   } else {
-    bail!("Cancelled by user. Aborting.");
+    bail!("Operation cancelled by user");
   }
 
   if backend

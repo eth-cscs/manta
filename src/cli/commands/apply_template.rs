@@ -102,9 +102,8 @@ pub async fn exec(
     bos_sessiontemplate.get_target_xname()
   };
 
-  let _ =
-    validate_target_hsm_members(backend, &shasta_token, &target_xname_vec)
-      .await;
+  validate_target_hsm_members(backend, &shasta_token, &target_xname_vec)
+    .await?;
 
   // Validate user has access to the xnames defined in
   // `limit` argument
@@ -158,12 +157,12 @@ pub async fn exec(
      'limit argument'"
   );
 
-  let _ = validate_target_hsm_members(
+  validate_target_hsm_members(
     backend,
     &shasta_token,
     &xnames_to_validate_access_vec,
   )
-  .await;
+  .await?;
 
   log::info!("Access to '{}' granted. Continue.", limit);
 
@@ -200,7 +199,14 @@ pub async fn exec(
   let bos_session = BosSession {
     name: bos_session_name_opt.map(str::to_string),
     tenant: None,
-    operation: Operation::from_str(bos_session_operation).ok(),
+    operation: Some(
+      Operation::from_str(bos_session_operation).map_err(|_| {
+        Error::msg(format!(
+          "Invalid BOS session operation '{}'",
+          bos_session_operation
+        ))
+      })?,
+    ),
     template_name: bos_sessiontemplate_name.to_string(),
     limit: Some(limit_vec.join(",")),
     stage: Some(false),

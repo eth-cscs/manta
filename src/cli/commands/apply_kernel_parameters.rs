@@ -131,7 +131,7 @@ pub async fn exec(
        confirm to proceed",
       assume_yes,
     ) {
-      bail!("Operation canceled by the user.");
+      bail!("Operation cancelled by user");
     }
   } else {
     bail!("No changes detected. Nothing to do");

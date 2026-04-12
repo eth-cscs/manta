@@ -3,6 +3,9 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use anyhow::{Context, Error, bail};
 use csm_rs::ims;
 
+/// Name used for ephemeral IMS images created during environment setup.
+const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
+
 /// Create an ephemeral CFS environment for testing.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
@@ -46,14 +49,14 @@ pub async fn exec(
 
   // Create IMS Job
   log::info!(
-    "Creating ephemeral environment baed on image ID {}",
+    "Creating ephemeral environment based on image ID {}",
     image_id
   );
   let resp_json = ims::job::http_client::post_customize(
     &shasta_token,
     shasta_base_url,
     shasta_root_cert,
-    "__ephemeral_image",
+    EPHEMERAL_IMAGE_NAME,
     image_id,
     user_public_ssh_id_value
       .as_str()

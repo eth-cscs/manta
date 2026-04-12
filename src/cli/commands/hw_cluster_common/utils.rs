@@ -247,7 +247,7 @@ fn get_node_hw_properties_from_value(
 /// Print a table of node hardware component scores with
 /// color-coded cells.
 pub fn print_table_f32_score(
-  user_defined_hw_componet_vec: &[String],
+  user_defined_hw_component_vec: &[String],
   hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
   hsm_score_vec: &[(String, f32)],
 ) {
@@ -259,7 +259,7 @@ pub fn print_table_f32_score(
     .collect();
 
   let mut all_hw_component_vec =
-    [hsm_hw_component_vec, user_defined_hw_componet_vec.to_vec()].concat();
+    [hsm_hw_component_vec, user_defined_hw_component_vec.to_vec()].concat();
 
   all_hw_component_vec.sort();
   all_hw_component_vec.dedup();
@@ -284,7 +284,7 @@ pub fn print_table_f32_score(
     );
     // User hw components table cell
     for hw_component in &all_hw_component_vec {
-      if user_defined_hw_componet_vec.contains(hw_component)
+      if user_defined_hw_component_vec.contains(hw_component)
         && node_pattern_hashmap.contains_key(hw_component)
       {
         let counter =
@@ -445,7 +445,7 @@ pub fn get_best_candidate_in_hsm(
   hsm_hw_component_vec
     .iter()
     .find(|(node, _)| node.eq(&best_candidate.0))
-    .map(|best_candiate| (best_candidate, best_candiate.1.clone()))
+    .map(|best_candidate_hw| (best_candidate, best_candidate_hw.1.clone()))
 }
 
 /// For PIN mode: selects the best candidate preferring
@@ -703,7 +703,7 @@ pub fn show_solution_and_confirm(
   );
 
   if !crate::common::user_interaction::confirm(&confirm_message, false) {
-    bail!("Operation cancelled by user.");
+    bail!("Operation cancelled by user");
   }
 
   Ok(())

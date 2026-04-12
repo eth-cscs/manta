@@ -111,19 +111,6 @@ pub async fn exec(
     } else {
       println!("{}", node_nid_list.join(","));
     }
-  } else if false {
-    let node_xname_list = node_details_list
-      .iter()
-      .map(|node_details| node_details.xname.clone())
-      .collect::<Vec<String>>();
-
-    if output_opt.is_some_and(|v| v == "json") {
-      let json = serde_json::to_string(&node_xname_list)
-        .context("Failed to serialize node xname list")?;
-      println!("{}", json);
-    } else {
-      println!("{}", node_xname_list.join(","));
-    }
   } else {
     match output_opt.map(String::as_str) {
       Some("json") => {

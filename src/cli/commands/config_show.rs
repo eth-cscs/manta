@@ -34,7 +34,13 @@ async fn show(
     settings.get_string("parent_hsm_group").unwrap_or_default();
 
   let hsm_group_available_opt = if let Some(shasta_token) = shasta_token_opt {
-    backend.get_group_name_available(&shasta_token).await.ok()
+    match backend.get_group_name_available(&shasta_token).await {
+      Ok(groups) => Some(groups),
+      Err(e) => {
+        log::warn!("Failed to fetch available HSM groups: {}", e);
+        None
+      }
+    }
   } else {
     None
   };

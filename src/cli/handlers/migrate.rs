@@ -58,7 +58,7 @@ pub async fn handle_migrate(
       &to,
       &from,
       xnames_string,
-      !dry_run,
+      dry_run,
       false,
     )
     .await?;

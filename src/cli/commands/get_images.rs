@@ -30,7 +30,6 @@ pub async fn exec(
     .ok()
     .flatten()
     .map(String::as_str);
-  // let limit: Option<&u8> = cli_get_images.get_one::<u8>("limit");
   let limit: Option<&u8> =
     if let Some(true) = cli_get_images.get_one("most-recent") {
       Some(&1)
@@ -67,8 +66,7 @@ pub async fn exec(
     "Creation time",
     "CFS config",
     "HSM groups",
-    "Tags", // "BOS sessiontemplate",
-            // "CFS session name",
+    "Tags",
   ]);
 
   for image_details in image_detail_vec {

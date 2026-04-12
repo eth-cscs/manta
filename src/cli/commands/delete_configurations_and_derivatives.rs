@@ -135,10 +135,10 @@ pub async fn exec(
   // ASK USER FOR CONFIRMATION
   //
   if !common::user_interaction::confirm(
-    "Please revew the data above and confirm to delete:",
+    "Please review the data above and confirm to delete:",
     assume_yes,
   ) {
-    bail!("Operation canceled by the user.");
+    bail!("Operation cancelled by user");
   }
 
   // DELETE DATA

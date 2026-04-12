@@ -50,13 +50,15 @@ pub async fn exec(
     };
   }
 
-  println!("Running the pre-hook {}", prehook.unwrap_or("none"));
-  match crate::common::hooks::run_hook(prehook) {
-    Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
-    Err(_error) => {
-      bail!("Pre-hook script failed. Error: {}", _error);
-    }
-  };
+  if let Some(prehook_path) = prehook {
+    println!("Running the pre-hook {}", prehook_path);
+    match crate::common::hooks::run_hook(Some(prehook_path)) {
+      Ok(_code) => log::debug!("Pre-hook script completed ok. RT={}", _code),
+      Err(_error) => {
+        bail!("Pre-hook script failed. Error: {}", _error);
+      }
+    };
+  }
 
   let migrate_backup_rslt = backend
     .migrate_backup(

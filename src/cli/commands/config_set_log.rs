@@ -8,7 +8,7 @@ use crate::common::config::{read_config_toml, write_config_toml};
 pub fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
   let log_level: &String = cli_config_set_log
     .get_one("LOG_LEVEL")
-    .ok_or_else(|| Error::msg("Error"))?;
+    .ok_or_else(|| Error::msg("LOG_LEVEL argument is required"))?;
 
   set_log(log_level)
 }

@@ -109,7 +109,7 @@ pub async fn exec(
       "This operation will delete the kernel parameters for the nodes below. Please confirm to proceed",
       assume_yes,
     ) {
-      bail!("Operation canceled by the user.");
+      bail!("Operation cancelled by user");
     }
   } else {
     bail!("No changes detected. Nothing to do");

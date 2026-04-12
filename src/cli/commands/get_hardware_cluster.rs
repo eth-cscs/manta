@@ -89,8 +89,6 @@ pub async fn exec(
     //
     let permit = Arc::clone(&sem).acquire_owned().await;
 
-    // log::debug!("Getting HW inventory details for node '{}'", hsm_member);
-
     tasks.spawn(async move {
       let _permit = permit; // Wait semaphore to allow new tasks https://github.com/tokio-rs/tokio/discussions/2648#discussioncomment-34885
       let hw_inventory_value = backend_cp
@@ -423,7 +421,7 @@ fn print_table_details(node_summary_vec: &[NodeSummary]) {
 
 /// Build a table of hardware component counts per node.
 pub fn get_table(
-  user_defined_hw_componet_vec: &[String],
+  user_defined_hw_component_vec: &[String],
   hsm_node_hw_pattern_vec: &[(String, HashMap<String, usize>)],
 ) -> Table {
   let hsm_hw_component_vec: Vec<String> = hsm_node_hw_pattern_vec
@@ -434,7 +432,7 @@ pub fn get_table(
     .collect();
 
   let mut all_hw_component_vec =
-    [hsm_hw_component_vec, user_defined_hw_componet_vec.to_vec()].concat();
+    [hsm_hw_component_vec, user_defined_hw_component_vec.to_vec()].concat();
 
   all_hw_component_vec.sort();
   all_hw_component_vec.dedup();
@@ -466,7 +464,7 @@ pub fn get_table(
             .fg(Color::Yellow)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
-      } else if user_defined_hw_componet_vec.contains(hw_component)
+      } else if user_defined_hw_component_vec.contains(hw_component)
         && node_pattern_hashmap.contains_key(hw_component)
       {
         let counter =

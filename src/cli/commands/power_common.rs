@@ -100,7 +100,7 @@ pub async fn exec_nodes(
 
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
-    bail!("Cancelled by user. Aborting.");
+    bail!("Operation cancelled by user");
   }
 
   let power_mgmt_summary =
@@ -181,7 +181,7 @@ pub async fn exec_cluster(
 
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
-    bail!("Cancelled by user. Aborting.");
+    bail!("Operation cancelled by user");
   }
 
   let power_mgmt_summary =

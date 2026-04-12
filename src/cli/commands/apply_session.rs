@@ -129,7 +129,7 @@ pub async fn exec(
 /// Returns a tuple like
 /// (<cfs configuration name>, <cfs session name>)
 #[allow(clippy::too_many_arguments)]
-pub async fn apply_session(
+async fn apply_session(
   ctx: &AppContext<'_>,
   gitea_token: &str,
   shasta_token: &str,
@@ -288,7 +288,7 @@ fn check_local_repos(
           local_last_commit.id()
         );
       } else {
-        bail!("Cancelled by user. Aborting.");
+        bail!("Operation cancelled by user");
       }
     }
 
@@ -376,7 +376,7 @@ fn check_local_repos(
        and layer(s)"
     );
   } else {
-    bail!("Cancelled by user. Aborting.");
+    bail!("Operation cancelled by user");
   }
 
   Ok((repo_name_vec, repo_last_commit_id_vec))

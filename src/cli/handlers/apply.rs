@@ -9,8 +9,6 @@ use clap::ArgMatches;
 pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,
-  vault_base_url: &str,
-  k8s_api_url: &str,
 ) -> Result<(), Error> {
   if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
     if let Some(cli_apply_hw_cluster) =
@@ -23,11 +21,21 @@ pub async fn handle_apply(
   } else if let Some(cli_apply_session) =
     cli_apply.subcommand_matches("session")
   {
+    let vault_base_url = ctx
+      .vault_base_url
+      .context("vault_base_url is required for apply session")?;
     commands::apply_session::exec(cli_apply_session, ctx, vault_base_url)
       .await?
   } else if let Some(cli_apply_sat_file) =
     cli_apply.subcommand_matches("sat-file")
   {
+    let vault_base_url = ctx
+      .vault_base_url
+      .context("vault_base_url is required for apply sat-file")?;
+    let k8s_api_url = ctx
+      .k8s_api_url
+      .context("k8s_api_url is required for apply sat-file")?;
+
     let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
 
     let cli_value_vec_opt: Option<Vec<String>> =

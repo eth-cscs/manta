@@ -20,13 +20,20 @@ static XNAME_RE: LazyLock<Regex> = LazyLock::new(|| {
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
+/// Length of a NID string, e.g. "nid000001" = 9 characters.
+const NID_STRING_LENGTH: usize = 9;
+
+/// Length of the xname blade prefix, e.g. "x1000c7s0b" = 10 characters.
+const XNAME_BLADE_PREFIX_LEN: usize = 10;
+
 // Validate and get short nid
 fn get_short_nid(long_nid: &str) -> Result<usize, anyhow::Error> {
   // Validate nid has the right length
-  if long_nid.len() != 9 {
+  if long_nid.len() != NID_STRING_LENGTH {
     anyhow::bail!(
-      "Nid '{}' not valid, Nid does not have 9 characters",
-      long_nid
+      "Nid '{}' not valid, Nid does not have {} characters",
+      long_nid,
+      NID_STRING_LENGTH
     );
   }
 
@@ -152,7 +159,8 @@ pub async fn from_hosts_expression_to_xname_vec(
   let hostlist_expanded_vec_rslt =
     parse(user_input).map_err(|e| anyhow::anyhow!(e.to_string()));
 
-  let xname_vec = if let Ok(node_vec) = hostlist_expanded_vec_rslt {
+  let xname_vec = match hostlist_expanded_vec_rslt {
+    Ok(node_vec) => {
     log::debug!("Hostlist format is valid");
     // If hostlist, expand hostlist
     let xname_vec: Vec<String> = if validate_nid_format_vec(&node_vec) {
@@ -180,10 +188,12 @@ pub async fn from_hosts_expression_to_xname_vec(
     };
 
     xname_vec
-  } else {
-    anyhow::bail!(
-      "Could not parse user input as a list of nodes from a hostlist or regex expression."
-    );
+    }
+    Err(e) => {
+      anyhow::bail!(
+        "Could not parse user input as a list of nodes from a hostlist or regex expression: {e}"
+      );
+    }
   };
 
   if xname_vec.is_empty() {
@@ -197,7 +207,7 @@ pub async fn from_hosts_expression_to_xname_vec(
     log::debug!("Include siblings");
     let xname_blade_vec: Vec<String> = xname_vec
       .iter()
-      .map(|xname| xname[0..10].to_string())
+      .map(|xname| xname.get(0..XNAME_BLADE_PREFIX_LEN).unwrap_or(xname).to_string())
       .collect();
 
     log::debug!("XNAME blades:\n{:?}", xname_blade_vec);
@@ -471,6 +481,10 @@ pub fn string_vec_to_multi_line_string(
   nodes: Option<&[String]>,
   num_columns: usize,
 ) -> String {
+  if num_columns == 0 {
+    return String::new();
+  }
+
   let mut members: String;
 
   match nodes {

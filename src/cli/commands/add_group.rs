@@ -58,7 +58,7 @@ pub async fn exec(
     ),
     assume_yes,
   ) {
-    bail!("Operation canceled by the user.");
+    bail!("Operation cancelled by user");
   }
 
   if dryrun {

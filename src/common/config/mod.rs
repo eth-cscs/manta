@@ -120,7 +120,9 @@ pub fn get_csm_root_cert_content(
 
   match file_rslt {
     Ok(mut file) => {
-      let _ = file.read_to_end(&mut buf);
+      file
+        .read_to_end(&mut buf)
+        .context("Failed to read CA root certificate file")?;
 
       Ok(buf)
     }
@@ -197,7 +199,7 @@ async fn create_new_config_file(
 ) -> Result<(), anyhow::Error> {
   eprintln!("Configuration file not found. Please introduce values below:");
 
-  let log_level_values = vec!["error", "info", "warning", "debug", "trace"];
+  let log_level_values = vec!["error", "info", "warn", "debug", "trace"];
 
   let log_selection = Select::new()
     .with_prompt("Please select 'log verbosity' level from the list below")
@@ -344,10 +346,8 @@ async fn create_new_config_file(
   let site_details = Site {
     socks5_proxy,
     shasta_base_url,
-    // k8s_api_url: Some(k8s_api_url),
     vault_base_url: Some(vault_base_url),
     vault_secret_path: Some(vault_secret_path),
-    // vault_role_id: Some(vault_role_id),
     root_ca_cert_file,
     k8s: Some(k8s_details),
     backend,

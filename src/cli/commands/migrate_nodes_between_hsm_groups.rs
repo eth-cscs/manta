@@ -13,7 +13,7 @@ pub async fn exec(
   target_hsm_name_vec: &[String],
   parent_hsm_name_vec: &[String],
   hosts_expression: &str,
-  nodryrun: bool,
+  dry_run: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
   let backend = ctx.backend;
@@ -70,7 +70,7 @@ pub async fn exec(
         "HSM group {} does not exist, it will be created",
         target_hsm_name
       );
-      if nodryrun {
+      if !dry_run {
       } else {
         bail!(
           "Dry-run selected, cannot create the \
@@ -80,7 +80,7 @@ pub async fn exec(
     } else {
       bail!(
         "HSM group {} does not exist, but the option \
-         to create the group was NOT specificied, \
+         to create the group was NOT specified, \
          cannot continue.",
         target_hsm_name
       );

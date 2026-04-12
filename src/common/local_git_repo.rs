@@ -15,9 +15,9 @@ pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
 /// Get the most recent commit on the current branch.
 pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
   let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
-  obj
-    .into_commit()
-    .map_err(|_| git2::Error::from_str("Couldn't find commit"))
+  obj.into_commit().map_err(|obj| {
+    git2::Error::from_str(&format!("Expected commit but got {:?}", obj.kind()))
+  })
 }
 
 /// Return `true` if all tracked files are clean; `false`

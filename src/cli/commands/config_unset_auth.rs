@@ -21,6 +21,10 @@ fn unset_auth() -> Result<(), Error> {
     auth_token_list.push(entry.context("Failed to read entry")?.path())
   }
 
+  if auth_token_list.is_empty() {
+    anyhow::bail!("No cached authentication tokens found");
+  }
+
   let selection = Select::new()
     .with_prompt("Please choose the site token to delete from the list below")
     .default(0)

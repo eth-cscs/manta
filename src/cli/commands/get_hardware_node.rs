@@ -61,7 +61,14 @@ pub async fn exec(
       .ok_or_else(|| {
         Error::msg(format!("Node '{}' not found in hardware inventory", xnames))
       })?;
-    node_hw_inventory = &matching_node[type_artifact];
+    node_hw_inventory = matching_node
+      .get(type_artifact)
+      .ok_or_else(|| {
+        Error::msg(format!(
+          "Artifact type '{}' not found in node '{}'",
+          type_artifact, xnames
+        ))
+      })?;
   }
 
   let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());

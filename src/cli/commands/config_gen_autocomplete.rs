@@ -3,10 +3,10 @@ use clap_complete::{generate, generate_to};
 
 use std::{env, io, path::PathBuf};
 
-use anyhow::{Error, bail};
+use anyhow::{bail, Error};
 
 /// Generate shell auto-completion scripts.
-pub async fn exec(
+pub fn exec(
   cli: Command,
   cli_config_generate_autocomplete: &ArgMatches,
 ) -> Result<(), Error> {
@@ -19,7 +19,7 @@ pub async fn exec(
   gen_autocomplete(cli, shell_opt, path_opt)
 }
 
-pub fn gen_autocomplete(
+fn gen_autocomplete(
   mut cli: clap::Command,
   shell_opt: Option<String>,
   path_opt: Option<PathBuf>,

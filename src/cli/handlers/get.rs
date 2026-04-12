@@ -164,20 +164,20 @@ pub async fn handle_get(
   } else if let Some(cli_get_kernel_parameters) =
     cli_get.subcommand_matches("kernel-parameters")
   {
-    let _ = get_kernel_parameters::exec(
+    get_kernel_parameters::exec(
       ctx.backend,
       ctx.site_name,
       cli_get_kernel_parameters,
       ctx.settings_hsm_group_name_opt,
     )
-    .await;
-  } else if let Some(cli_get_redfish_endopints) =
+    .await?;
+  } else if let Some(cli_get_redfish_endpoints) =
     cli_get.subcommand_matches("redfish-endpoints")
   {
     crate::cli::commands::get_redfish_endpoints::exec(
       ctx.backend,
       ctx.site_name,
-      cli_get_redfish_endopints,
+      cli_get_redfish_endpoints,
     )
     .await?;
   } else {

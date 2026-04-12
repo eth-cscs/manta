@@ -73,15 +73,25 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       let image_vec_rslt =
         backend.get_images(shasta_token, Some(&image_id)).await;
 
-      if let Ok(mut image_vec) = image_vec_rslt {
-        log::info!(
-          "Found the image ID '{}' related to CFS sesison '{}'",
-          image_id,
-          cfs_session_name,
-        );
+      match image_vec_rslt {
+        Ok(mut image_vec) => {
+          log::info!(
+            "Found the image ID '{}' related to CFS sesison '{}'",
+            image_id,
+            cfs_session_name,
+          );
 
-        boot_image_id_vec.append(&mut image_vec);
-      };
+          boot_image_id_vec.append(&mut image_vec);
+        }
+        Err(e) => {
+          log::warn!(
+            "Failed to fetch image '{}' for CFS session '{}': {}",
+            image_id,
+            cfs_session_name,
+            e
+          );
+        }
+      }
     }
   }
 

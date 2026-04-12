@@ -296,9 +296,10 @@ async fn apply_node_moves(
       .delete_member_from_group(shasta_token, target_group, xname.as_str())
       .await?;
 
-    let _ = backend
+    backend
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
-      .await;
+      .await
+      .context("Failed to add node to parent group")?;
   }
 
   if target_will_be_empty {

@@ -65,8 +65,7 @@ pub async fn handle_config(
     commands::config_gen_autocomplete::exec(
       cli,
       cli_config_generate_autocomplete,
-    )
-    .await?;
+    )?;
   } else {
     bail!("Unknown 'config' subcommand");
   }

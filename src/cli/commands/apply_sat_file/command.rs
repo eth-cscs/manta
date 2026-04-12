@@ -138,7 +138,7 @@ pub async fn exec(
      confirm to proceed.",
     opts.assume_yes,
   ) {
-    bail!("Operation canceled by user");
+    bail!("Operation cancelled by user");
   }
 
   // Confirm reboot if session_templates are to be
@@ -151,7 +151,7 @@ pub async fn exec(
       opts.assume_yes,
     )
   {
-    println!("Operation canceled by user");
+    println!("Operation cancelled by user");
     return Ok(());
   }
 

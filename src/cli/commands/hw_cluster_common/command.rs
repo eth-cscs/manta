@@ -317,7 +317,7 @@ async fn apply_group_updates(
        HSM groups on the system."
     );
   } else {
-    let _ = backend
+    backend
       .update_group_members(
         shasta_token,
         target_group,
@@ -330,7 +330,8 @@ async fn apply_group_updates(
           .map(String::as_str)
           .collect::<Vec<&str>>(),
       )
-      .await;
+      .await
+      .context("Failed to update target HSM group members")?;
   }
 
   // Update parent group
@@ -343,7 +344,7 @@ async fn apply_group_updates(
   } else {
     let parent_will_be_empty =
       old_target_members.len() == old_parent_members.len();
-    let _ = backend
+    backend
       .update_group_members(
         shasta_token,
         parent_group,
@@ -356,7 +357,8 @@ async fn apply_group_updates(
           .map(String::as_str)
           .collect::<Vec<&str>>(),
       )
-      .await;
+      .await
+      .context("Failed to update parent HSM group members")?;
 
     if parent_will_be_empty && delete_empty_parent {
       log::info!(

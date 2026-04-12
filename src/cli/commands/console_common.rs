@@ -79,11 +79,15 @@ pub async fn run_console_loop(
 pub fn handle_console_result(result: Result<(), anyhow::Error>) {
   match result {
     Ok(()) => {
-      let _ = crossterm::terminal::disable_raw_mode();
+      if let Err(e) = crossterm::terminal::disable_raw_mode() {
+        log::warn!("Failed to disable terminal raw mode: {}", e);
+      }
       log::info!("Console closed");
     }
     Err(error) => {
-      let _ = crossterm::terminal::disable_raw_mode();
+      if let Err(e) = crossterm::terminal::disable_raw_mode() {
+        log::warn!("Failed to disable terminal raw mode: {}", e);
+      }
       log::error!("{:?}", error);
     }
   }

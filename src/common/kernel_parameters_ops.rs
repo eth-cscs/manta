@@ -68,7 +68,6 @@ pub fn print_table(
   for (kernel_params_vec, xname_vec) in kernel_param_node_map {
     let xnames = xname_vec.join("\n");
 
-    // table.add_row(vec![Cell::new(xnames), Cell::new(kernel_params_string)]);
     table.add_row(vec![
       Cell::new(xnames),
       Cell::new(kernel_params_vec.join(" ")),

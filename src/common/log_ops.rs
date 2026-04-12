@@ -3,10 +3,10 @@ use std::str::FromStr;
 use anyhow::Context;
 use log::LevelFilter;
 use log4rs::{
-  Config,
   append::console::ConsoleAppender,
   config::{Appender, Logger, Root},
   encode::pattern::PatternEncoder,
+  Config,
 };
 
 // Code base log4rs configuration to avoid having a separate file for this to keep portability
@@ -35,8 +35,6 @@ pub fn configure(log_level: String) -> Result<(), anyhow::Error> {
 
   let _handle =
     log4rs::init_config(config).context("Failed to initialize log4rs")?;
-
-  // use handle to change logger configuration at runtime
 
   Ok(())
 }

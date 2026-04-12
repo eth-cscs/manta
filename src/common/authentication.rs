@@ -12,6 +12,15 @@ use std::{
   os::unix::fs::OpenOptionsExt,
 };
 
+/// Environment variable name for the API authentication token.
+const AUTH_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
+
+/// Suffix appended to the site name to form the auth cache filename.
+const AUTH_CACHE_FILE_SUFFIX: &str = "_auth";
+
+/// Maximum number of interactive login attempts before giving up.
+const MAX_LOGIN_ATTEMPTS: u32 = 3;
+
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login.
 pub async fn get_api_token(
@@ -68,7 +77,7 @@ pub async fn get_api_token(
 async fn get_token_from_env(
   backend: &StaticBackendDispatcher,
 ) -> Result<String, anyhow::Error> {
-  let auth_token_env_name = "MANTA_CSM_TOKEN";
+  let auth_token_env_name = AUTH_TOKEN_ENV_VAR;
 
   // Look for authentication token in env vars
   log::info!(
@@ -102,7 +111,7 @@ async fn get_token_from_local_file(
   // Look for authentication token in filesystem
   let mut path = get_default_cache_path()?;
 
-  path.push(site_name.to_string() + "_auth"); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
+  path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
 
   log::info!(
     "Looking for authentication token in filesystem file '{}'",
@@ -139,7 +148,7 @@ fn store_token_in_local_file(
 
   create_dir_all(&path)?;
 
-  path.push(site_name.to_string() + "_auth"); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
+  path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
 
   log::info!("Cache file: {:?}", path);
 
@@ -173,7 +182,7 @@ async fn get_token_interactively(
 
   let mut attempts = 0;
 
-  while shasta_token_rslt.is_err() && attempts < 3 {
+  while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
     if let Err(ref err) = shasta_token_rslt {
       log::info!(
         "Authentication attempt {} failed. Reason: {}",

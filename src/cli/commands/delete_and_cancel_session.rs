@@ -91,7 +91,7 @@ pub async fn exec(
     ),
     assume_yes,
   ) {
-    println!("Cancelled by user. Aborting.");
+    println!("Operation cancelled by user");
     return Ok(());
   }
 
@@ -105,7 +105,7 @@ pub async fn exec(
       assume_yes,
     )
   {
-    println!("Cancelled by user. Aborting.");
+    println!("Operation cancelled by user");
     return Ok(());
   }
 

@@ -1,5 +1,5 @@
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::Error;
 use clap::Command;
 
 use crate::cli::handlers::{
@@ -25,13 +25,7 @@ pub async fn process_cli(
   } else if let Some(cli_get) = cli_root.subcommand_matches("get") {
     get::handle_get(cli_get, ctx).await?;
   } else if let Some(cli_apply) = cli_root.subcommand_matches("apply") {
-    let vault_base_url = ctx
-      .vault_base_url
-      .context("vault_base_url is required for apply")?;
-    let k8s_api_url = ctx
-      .k8s_api_url
-      .context("k8s_api_url is required for apply")?;
-    apply::handle_apply(cli_apply, ctx, vault_base_url, k8s_api_url).await?;
+    apply::handle_apply(cli_apply, ctx).await?;
   } else if let Some(cli_log) = cli_root.subcommand_matches("log") {
     log::handle_log(cli_log, ctx).await?;
   } else if let Some(cli_console) = cli_root.subcommand_matches("console") {

@@ -344,15 +344,16 @@ async fn collect_boot_images(
     });
 
     if any_differ {
-      boot_param_vec.iter_mut().for_each(|boot_parameter| {
+      for boot_parameter in boot_param_vec.iter_mut() {
         log::info!(
           "Updating '{:?}' boot image to '{}'",
           boot_parameter.hosts,
           new_boot_image_id
         );
-        let _ = boot_parameter
-          .update_boot_image(&new_boot_image_id, new_boot_image_etag);
-      });
+        boot_parameter
+          .update_boot_image(&new_boot_image_id, new_boot_image_etag)
+          .context("Failed to update boot image")?;
+      }
 
       *need_restart = true;
     }
