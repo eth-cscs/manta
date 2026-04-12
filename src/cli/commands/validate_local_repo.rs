@@ -42,19 +42,8 @@ pub async fn exec(
 
   log::info!("Checking local repo status ({})", &repo.path().display());
 
-  // Get repo name
-  let repo_ref_origin = repo
-    .find_remote("origin")
-    .context("Failed to find remote 'origin'")?;
-
-  let repo_ref_origin_url = repo_ref_origin
-    .url()
-    .context("Remote 'origin' URL is not valid UTF-8")?;
-
-  let slash_pos = repo_ref_origin_url
-    .rfind('/')
-    .context("Remote URL has no '/' separator")?;
-  let repo_name = repo_ref_origin_url[slash_pos + 1..].trim_end_matches(".git");
+  // Get repo name from 'origin' remote URL
+  let repo_name = local_git_repo::parse_repo_name_from_remote(&repo)?;
 
   println!("Repository name: {}", repo_name);
 
@@ -86,7 +75,7 @@ pub async fn exec(
   let remote_ref_value_vec = csm_rs::common::gitea::http_client::get_all_refs(
     gitea_base_url,
     &gitea_token,
-    repo_name,
+    &repo_name,
     shasta_root_cert,
   )
   .await
@@ -136,7 +125,7 @@ pub async fn exec(
   let gitea_commit_details =
     csm_rs::common::gitea::http_client::get_commit_details(
       gitea_base_url,
-      repo_name,
+      &repo_name,
       &head_commit_id.to_string(),
       &gitea_token,
       shasta_root_cert,

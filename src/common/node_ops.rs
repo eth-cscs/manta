@@ -380,6 +380,25 @@ pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
   println!("{table}");
 }
 
+/// Print a two-column summary table from a counter hashmap.
+fn print_counter_table(
+  header: &str,
+  value_header: &str,
+  counters: &HashMap<String, usize>,
+) {
+  let mut table = Table::new();
+  table.set_header(vec![header, value_header]);
+  for (name, count) in counters {
+    table
+      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
+      .add_row(vec![
+        Cell::new(name),
+        Cell::new(count).set_alignment(comfy_table::CellAlignment::Center),
+      ]);
+  }
+  println!("{table}");
+}
+
 /// Print aggregate summary tables showing counts by power
 /// status, boot config, runtime config, and boot image.
 pub fn print_summary(node_details_list: Vec<NodeDetails>) {
@@ -429,50 +448,19 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
 
   println!("{table}");
 
-  let mut table = Table::new();
+  print_counter_table(
+    "Boot configuration name",
+    "Num nodes",
+    &boot_configuration_counters,
+  );
 
-  table.set_header(vec!["Boot configuration name", "Num nodes"]);
+  print_counter_table("Boot image id", "Num nodes", &boot_image_counters);
 
-  for (config_name, counter) in boot_configuration_counters {
-    table
-      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
-      .add_row(vec![
-        Cell::new(config_name),
-        Cell::new(counter).set_alignment(comfy_table::CellAlignment::Center),
-      ]);
-  }
-
-  println!("{table}");
-
-  let mut table = Table::new();
-
-  table.set_header(vec!["Boot image id", "Num nodes"]);
-
-  for (image_id, counter) in boot_image_counters {
-    table
-      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
-      .add_row(vec![
-        Cell::new(image_id),
-        Cell::new(counter).set_alignment(comfy_table::CellAlignment::Center),
-      ]);
-  }
-
-  println!("{table}");
-
-  let mut table = Table::new();
-
-  table.set_header(vec!["Runtime configuration name", "Num nodes"]);
-
-  for (config_name, counter) in runtime_configuration_counters {
-    table
-      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
-      .add_row(vec![
-        Cell::new(config_name),
-        Cell::new(counter).set_alignment(comfy_table::CellAlignment::Center),
-      ]);
-  }
-
-  println!("{table}");
+  print_counter_table(
+    "Runtime configuration name",
+    "Num nodes",
+    &runtime_configuration_counters,
+  );
 }
 
 /// Format a slice of strings into comma-separated lines,

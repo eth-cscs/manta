@@ -306,6 +306,22 @@ fn print_table_summary(hsm_hw_component_summary_vec: &HashMap<String, usize>) {
   println!("{table}");
 }
 
+/// Count occurrences of hardware component info strings.
+///
+/// Takes an iterator of `Option<String>` info values (one per
+/// hardware component instance), filters out `None`s, and returns
+/// both the per-component count map and the set of unique names.
+fn count_hw_components(
+  info_iter: impl Iterator<Item = Option<String>>,
+) -> (HashMap<String, usize>, HashSet<String>) {
+  let mut counts: HashMap<String, usize> = HashMap::new();
+  for info in info_iter.flatten() {
+    counts.entry(info).and_modify(|q| *q += 1).or_insert(1);
+  }
+  let keys: HashSet<String> = counts.keys().cloned().collect();
+  (counts, keys)
+}
+
 fn print_table_details(node_summary_vec: &[NodeSummary]) {
   let mut hsm_node_hw_component_count_hashmap_vec: Vec<(
     String,
@@ -321,81 +337,32 @@ fn print_table_details(node_summary_vec: &[NodeSummary]) {
     let mut node_hw_component_count_hashmap: HashMap<String, usize> =
       HashMap::new();
 
-    let processor_info_vec: Vec<String> = node_summary
-      .processors
-      .iter()
-      .filter_map(|processor| processor.info.as_ref().cloned())
-      .collect();
+    let (proc_counts, proc_keys) = count_hw_components(
+      node_summary.processors.iter().map(|p| p.info.clone()),
+    );
+    processor_set.extend(proc_keys);
+    node_hw_component_count_hashmap.extend(proc_counts);
 
-    let mut processor_count_hashmap: HashMap<String, usize> = HashMap::new();
-    for processor_info in &processor_info_vec {
-      processor_count_hashmap
-        .entry(processor_info.to_string())
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
-    }
+    let (accel_counts, accel_keys) = count_hw_components(
+      node_summary.node_accels.iter().map(|a| a.info.clone()),
+    );
+    accelerator_set.extend(accel_keys);
+    node_hw_component_count_hashmap.extend(accel_counts);
 
-    let hw_component_set: HashSet<String> =
-      processor_count_hashmap.keys().cloned().collect();
-    processor_set.extend(hw_component_set);
-    node_hw_component_count_hashmap.extend(processor_count_hashmap);
+    let (mem_counts, mem_keys) = count_hw_components(
+      node_summary
+        .memory
+        .iter()
+        .map(|m| Some(m.info.clone().unwrap_or_else(|| "ERROR".to_string()))),
+    );
+    memory_set.extend(mem_keys);
+    node_hw_component_count_hashmap.extend(mem_counts);
 
-    let accelerator_info_vec: Vec<String> = node_summary
-      .node_accels
-      .iter()
-      .filter_map(|node_accel| node_accel.info.as_ref().cloned())
-      .collect();
-
-    let mut accelerator_count_hashmap: HashMap<String, usize> = HashMap::new();
-    for accelerator_info in &accelerator_info_vec {
-      accelerator_count_hashmap
-        .entry(accelerator_info.to_string())
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
-    }
-
-    let hw_component_set: HashSet<String> =
-      accelerator_count_hashmap.keys().cloned().collect();
-    accelerator_set.extend(hw_component_set);
-    node_hw_component_count_hashmap.extend(accelerator_count_hashmap);
-
-    let memory_info_vec: Vec<String> = node_summary
-      .memory
-      .iter()
-      .map(|mem| mem.info.clone().unwrap_or_else(|| "ERROR".to_string()))
-      .collect();
-
-    let mut memory_count_hashmap: HashMap<String, usize> = HashMap::new();
-    for memory_info in &memory_info_vec {
-      memory_count_hashmap
-        .entry(memory_info.to_string())
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
-    }
-
-    let hw_component_set: HashSet<String> =
-      memory_count_hashmap.keys().cloned().collect();
-    memory_set.extend(hw_component_set);
-    node_hw_component_count_hashmap.extend(memory_count_hashmap);
-
-    let hsn_nic_info_vec: Vec<String> = node_summary
-      .node_hsn_nics
-      .iter()
-      .filter_map(|hsn_nic| hsn_nic.info.as_ref().cloned())
-      .collect();
-
-    let mut hsn_nic_count_hashmap: HashMap<String, usize> = HashMap::new();
-    for hsn_nic_info in &hsn_nic_info_vec {
-      hsn_nic_count_hashmap
-        .entry(hsn_nic_info.to_string())
-        .and_modify(|qty| *qty += 1)
-        .or_insert(1);
-    }
-
-    let hw_component_set: HashSet<String> =
-      hsn_nic_count_hashmap.keys().cloned().collect();
-    hsn_set.extend(hw_component_set);
-    node_hw_component_count_hashmap.extend(hsn_nic_count_hashmap);
+    let (hsn_counts, hsn_keys) = count_hw_components(
+      node_summary.node_hsn_nics.iter().map(|h| h.info.clone()),
+    );
+    hsn_set.extend(hsn_keys);
+    node_hw_component_count_hashmap.extend(hsn_counts);
 
     hsm_node_hw_component_count_hashmap_vec
       .push((node_summary.xname.clone(), node_hw_component_count_hashmap))

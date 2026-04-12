@@ -194,6 +194,34 @@ pub async fn get_configuration() -> Result<Config, anyhow::Error> {
     .context("Could not process manta configuration file")
 }
 
+/// Prompt the user for a string value with a default.
+fn prompt_string(
+  prompt: &str,
+  default: &str,
+) -> Result<String, anyhow::Error> {
+  Input::new()
+    .with_prompt(prompt)
+    .default(default.to_string())
+    .show_default(true)
+    .interact_text()
+    .with_context(|| format!("Failed to read: {}", prompt))
+}
+
+/// Prompt the user for a string value with a default,
+/// allowing empty input.
+fn prompt_string_allow_empty(
+  prompt: &str,
+  default: &str,
+) -> Result<String, anyhow::Error> {
+  Input::new()
+    .with_prompt(prompt)
+    .default(default.to_string())
+    .show_default(true)
+    .allow_empty(true)
+    .interact_text()
+    .with_context(|| format!("Failed to read: {}", prompt))
+}
+
 async fn create_new_config_file(
   config_file_path_opt: Option<&PathBuf>,
 ) -> Result<(), anyhow::Error> {
@@ -212,63 +240,44 @@ async fn create_new_config_file(
 
   let parent_hsm_group = String::new();
 
-  let audit_file: String = Input::new()
-    .with_prompt("Please type full path for the audit file")
-    .default(
-      get_default_manta_audit_file_path()?
-        .to_string_lossy()
-        .to_string(),
-    )
-    .show_default(true)
-    .allow_empty(true)
-    .interact_text()
-    .context("Failed to read audit file path")?;
+  let audit_file: String = prompt_string_allow_empty(
+    "Please type full path for the audit file",
+    &get_default_manta_audit_file_path()?
+      .to_string_lossy()
+      .to_string(),
+  )?;
 
-  let site: String = Input::new()
-    .with_prompt("Please type site name")
-    .default("alps".to_string())
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read site name")?;
+  let site: String = prompt_string(
+    "Please type site name",
+    "alps",
+  )?;
 
-  let shasta_base_url: String = Input::new()
-    .with_prompt("Please type site management plane URL")
-    .default("https://api.cmn.alps.cscs.ch".to_string())
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read management plane URL")?;
+  let shasta_base_url: String = prompt_string(
+    "Please type site management plane URL",
+    "https://api.cmn.alps.cscs.ch",
+  )?;
 
-  let k8s_api_url: String = Input::new()
-    .with_prompt("Please type kubernetes api URL")
-    .default("https://10.252.1.12:6442".to_string())
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read kubernetes API URL")?;
+  let k8s_api_url: String = prompt_string(
+    "Please type kubernetes api URL",
+    "https://10.252.1.12:6442",
+  )?;
 
-  let vault_base_url: String = Input::new()
-    .with_prompt("Please type Hashicorp Vault URL")
-    .default("https://hashicorp-vault.cscs.ch:8200".to_string())
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read Vault URL")?;
+  let vault_base_url: String = prompt_string(
+    "Please type Hashicorp Vault URL",
+    "https://hashicorp-vault.cscs.ch:8200",
+  )?;
 
-  let vault_secret_path: String = Input::new()
-    .with_prompt("Please type Hashicorp Vault secret path")
-    .default("shasta".to_string())
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read Vault secret path")?;
+  let vault_secret_path: String = prompt_string(
+    "Please type Hashicorp Vault secret path",
+    "shasta",
+  )?;
 
-  let root_ca_cert_file: String = Input::new()
-    .with_prompt("Please type full path for the CA public certificate file")
-    .default(
-      get_default_mgmt_plane_ca_cert_file_path()?
-        .to_string_lossy()
-        .to_string(),
-    )
-    .show_default(true)
-    .interact_text()
-    .context("Failed to read CA certificate file path")?;
+  let root_ca_cert_file: String = prompt_string(
+    "Please type full path for the CA public certificate file",
+    &get_default_mgmt_plane_ca_cert_file_path()?
+      .to_string_lossy()
+      .to_string(),
+  )?;
 
   let backend_options = vec!["csm", "ochami"];
 
@@ -282,20 +291,18 @@ async fn create_new_config_file(
   let backend = backend_options[backend_selection].to_string();
 
   // Broker is optional value
-  let audit_kafka_brokers: String = Input::new()
-    .with_prompt("Please type kafka broker to send audit logs")
-    .default("kafka.o11y.cscs.ch:9095".to_string())
-    .show_default(true)
-    .interact_text()
-    .unwrap_or_default();
+  let audit_kafka_brokers: String = prompt_string_allow_empty(
+    "Please type kafka broker to send audit logs",
+    "kafka.o11y.cscs.ch:9095",
+  )
+  .unwrap_or_default();
 
   let audit_kafka_topic: String = if !audit_kafka_brokers.is_empty() {
-    Input::new()
-      .with_prompt("Please type kafka topic to send audit logs")
-      .default("test-topic".to_string())
-      .show_default(true)
-      .interact_text()
-      .unwrap_or_default()
+    prompt_string(
+      "Please type kafka topic to send audit logs",
+      "test-topic",
+    )
+    .unwrap_or_default()
   } else {
     String::new()
   };
@@ -322,14 +329,10 @@ async fn create_new_config_file(
     println!("This machine cannot access CSM API, configuring SOCKS5 proxy");
 
     // Get the right socks5 proxy value based on if client can reach backend api or not
-    Some(
-      Input::new()
-        .with_prompt("Please type socks5 proxy URL")
-        .default("socks5h://127.0.0.1:1080".to_string())
-        .allow_empty(true)
-        .interact_text()
-        .context("Failed to read SOCKS5 proxy URL")?,
-    )
+    Some(prompt_string_allow_empty(
+      "Please type socks5 proxy URL",
+      "socks5h://127.0.0.1:1080",
+    )?)
   };
 
   let k8s_auth = K8sAuth::Native {

@@ -293,32 +293,15 @@ fn check_local_repos(
     }
 
     // Get repo name from 'origin' remote URL
-    let repo_ref_origin = repo.find_remote("origin").with_context(|| {
-      format!(
-        "Could not find 'origin' remote in \
-           repo at {}",
-        repo_path.display()
-      )
-    })?;
-
-    let repo_ref_origin_url = repo_ref_origin.url().with_context(|| {
-      format!(
-        "Remote 'origin' URL is not valid \
-           UTF-8 in repo at {}",
-        repo_path.display()
-      )
-    })?;
-
-    log::info!("Repo ref origin URL: {}", repo_ref_origin_url);
-
-    let slash_pos = repo_ref_origin_url.rfind('/').with_context(|| {
-      format!(
-        "Remote URL '{}' has unexpected \
-           format (no '/' found)",
-        repo_ref_origin_url
-      )
-    })?;
-    let repo_name_raw = &repo_ref_origin_url[slash_pos + 1..];
+    let repo_name_raw =
+      local_git_repo::parse_repo_name_from_remote(&repo)
+        .with_context(|| {
+          format!(
+            "Could not extract repo name from \
+             remote in {}",
+            repo_path.display()
+          )
+        })?;
 
     let timestamp = local_last_commit.time().seconds();
     let tm = chrono::DateTime::from_timestamp(timestamp, 0)
@@ -343,7 +326,7 @@ fn check_local_repos(
     // Collect data for CFS configuration creation
     repo_last_commit_id_vec.push(local_last_commit.id().to_string());
 
-    let repo_name = "cray/".to_owned() + repo_name_raw.trim_end_matches(".git");
+    let repo_name = "cray/".to_owned() + &repo_name_raw;
     repo_name_vec.push(repo_name);
   }
 

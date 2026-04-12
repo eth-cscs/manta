@@ -41,6 +41,35 @@ pub struct SatApplyOptions<'a> {
   pub k8s: &'a K8sDetails,
 }
 
+/// Validate that a hook script exists and is executable.
+fn validate_hook(
+  hook_opt: Option<&str>,
+  label: &str,
+) -> Result<(), Error> {
+  if let Some(hook) = hook_opt {
+    crate::common::hooks::check_hook_perms(hook_opt)
+      .map_err(|e| anyhow::anyhow!("{}. File: {}", e, hook))?;
+    println!(
+      "{}-hook script '{}' exists and is executable.",
+      label, hook
+    );
+  }
+  Ok(())
+}
+
+/// Run a hook script if one was provided.
+fn run_hook_if_present(
+  hook_opt: Option<&str>,
+  label: &str,
+) -> Result<(), Error> {
+  if let Some(hook) = hook_opt {
+    println!("Running the {}-hook '{}'", label, hook);
+    let code = crate::common::hooks::run_hook(hook_opt)?;
+    log::debug!("{}-hook script completed ok. RT={}", label, code);
+  }
+  Ok(())
+}
+
 /// Process and apply a SAT file to the system.
 pub async fn exec(
   ctx: &AppContext<'_>,
@@ -65,35 +94,9 @@ pub async fn exec(
   let hsm_group_available_vec =
     backend.get_group_name_available(&shasta_token).await?;
 
-  // Validate Pre-hook
-  log::info!("Validating pre-hook script");
-  if let Some(prehook) = opts.prehook_opt {
-    match crate::common::hooks::check_hook_perms(opts.prehook_opt) {
-      Ok(_r) => println!(
-        "Pre-hook script '{}' exists \
-         and is executable.",
-        prehook
-      ),
-      Err(e) => {
-        bail!("{}. File: {}", e, &prehook);
-      }
-    };
-  }
-
-  // Validate Post-hook
-  log::info!("Validating post-hook script");
-  if let Some(posthook) = opts.posthook_opt {
-    match crate::common::hooks::check_hook_perms(opts.posthook_opt) {
-      Ok(_) => println!(
-        "Post-hook script '{}' exists \
-         and is executable.",
-        posthook
-      ),
-      Err(e) => {
-        bail!("{}. File: {}", e, &posthook);
-      }
-    };
-  }
+  // Validate hooks
+  validate_hook(opts.prehook_opt, "Pre")?;
+  validate_hook(opts.posthook_opt, "Post")?;
 
   log::info!("Render SAT template file");
   let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
@@ -156,12 +159,7 @@ pub async fn exec(
   }
 
   // Run/process Pre-hook
-  if let Some(prehook) = opts.prehook_opt {
-    println!("Running the pre-hook '{}'", &prehook);
-    let code = crate::common::hooks::run_hook(opts.prehook_opt)?;
-
-    log::debug!("Pre-hook script completed ok. RT={}", code);
-  }
+  run_hook_if_present(opts.prehook_opt, "pre")?;
 
   // Get K8s secrets
   let shasta_k8s_secrets = match &opts.k8s.authentication {
@@ -211,12 +209,7 @@ pub async fn exec(
     .await?;
 
   // Run/process Post-hook
-  if let Some(posthook) = opts.posthook_opt {
-    println!("Running the post-hook '{}'", &posthook);
-    let code = crate::common::hooks::run_hook(opts.posthook_opt)?;
-
-    log::debug!("Post-hook script completed ok. RT={}", code);
-  }
+  run_hook_if_present(opts.posthook_opt, "post")?;
 
   Ok(())
 }
