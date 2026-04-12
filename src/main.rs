@@ -11,6 +11,12 @@ use manta_backend_dispatcher::StaticBackendDispatcher;
 
 use crate::common::log_ops;
 
+/// URL path suffix for the CSM API endpoint.
+const API_URL_SUFFIX: &str = "/apis";
+
+/// URL path suffix for the Gitea VCS endpoint.
+const VCS_URL_SUFFIX: &str = "/vcs";
+
 /// Synchronous entry point. Sets environment variables (which
 /// must happen before the multi-threaded tokio runtime is active)
 /// and then launches the async runtime.
@@ -93,10 +99,10 @@ async fn run(
   let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
     // old configuration file. TODO: remove this when needed in the future and all users are
     // using the right configuration file
-    .strip_suffix("/apis")
+    .strip_suffix(API_URL_SUFFIX)
     .unwrap_or(shasta_base_url);
   let shasta_api_url = match backend_tech.as_str() {
-    "csm" => shasta_barebone_url.to_owned() + "/apis",
+    "csm" => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
     "ochami" => shasta_barebone_url.to_owned(),
     _ => {
       return Err(
@@ -104,7 +110,7 @@ async fn run(
       );
     }
   };
-  let gitea_base_url = shasta_barebone_url.to_owned() + "/vcs";
+  let gitea_base_url = shasta_barebone_url.to_owned() + VCS_URL_SUFFIX;
   let k8s_api_url: Option<&String> = site_details_value
     .k8s
     .as_ref()

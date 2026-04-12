@@ -10,6 +10,13 @@ use super::audit::Audit;
 
 use anyhow::{Context, Result};
 
+/// Kafka message delivery timeout in milliseconds.
+const KAFKA_MESSAGE_TIMEOUT_MS: &str = "5000";
+
+/// How long to wait for Kafka delivery confirmation.
+/// Zero means fire-and-forget.
+const KAFKA_DELIVERY_WAIT: Duration = Duration::from_secs(0);
+
 /// Kafka client configuration for audit message production.
 ///
 /// The [`FutureProducer`] is lazily created on the first
@@ -72,7 +79,7 @@ impl Kafka {
     let brokers = self.brokers.join(",");
     let p: FutureProducer = ClientConfig::new()
       .set("bootstrap.servers", &brokers)
-      .set("message.timeout.ms", "5000")
+      .set("message.timeout.ms", KAFKA_MESSAGE_TIMEOUT_MS)
       .create()
       .context("Failed to create Kafka producer")?;
     // Another thread may have raced us; either value is
@@ -88,7 +95,7 @@ impl Audit for Kafka {
     let delivery_status = producer
       .send::<Vec<u8>, _, _>(
         FutureRecord::to(&self.topic).payload(data),
-        Duration::from_secs(0),
+        KAFKA_DELIVERY_WAIT,
       )
       .await;
 

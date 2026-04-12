@@ -108,8 +108,8 @@ pub async fn exec(
     if common::user_interaction::confirm(
       &format!(
         "This operation will modify the nodes \
-         below:\n{:?}\nDo you want to continue?",
-        xname_vec
+         below:\n{}\nDo you want to continue?",
+        xname_vec.join(", ")
       ),
       assume_yes,
     ) {

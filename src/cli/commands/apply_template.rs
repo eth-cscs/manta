@@ -181,7 +181,7 @@ pub async fn exec(
 
   if !common::user_interaction::confirm(
     &format!(
-      "{:?}\nThe nodes above will {}. \
+      "{}\nThe nodes above will {}. \
        Please confirm to proceed?",
       limit_vec.join(","),
       operation

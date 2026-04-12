@@ -63,8 +63,12 @@ pub async fn exec(
   if !image_xnames_boot_map.is_empty() {
     bail!(
       "The following images could not be deleted \
-       since they boot nodes.\n{:#?}",
+       since they boot nodes.\n{}",
       image_xnames_boot_map
+        .iter()
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
     );
   }
 
@@ -80,8 +84,8 @@ pub async fn exec(
     bail!(
       "The following image ids are not deletable \
        because they are used by hosts that are not part \
-       of the groups available to the user:\n{:#?}",
-      image_restricted_vec
+       of the groups available to the user:\n{}",
+      image_restricted_vec.join(", ")
     );
   }
 
@@ -110,7 +114,7 @@ pub async fn exec(
     }
   }
 
-  println!("Images deleted:\n{:?}", image_id_vec);
+  println!("Images deleted:\n{}", image_id_vec.join(", "));
 
   Ok(())
 }

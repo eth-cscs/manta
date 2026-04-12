@@ -37,8 +37,8 @@ pub async fn exec(
 
   if common::user_interaction::confirm(
     &format!(
-      "{:?}\nThe nodes above will be removed from HSM group '{}'. Do you want to proceed?",
-      xname_to_move_vec, target_hsm_name
+      "{}\nThe nodes above will be removed from HSM group '{}'. Do you want to proceed?",
+      xname_to_move_vec.join(", "), target_hsm_name
     ),
     false,
   ) {

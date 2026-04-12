@@ -17,6 +17,9 @@ use crate::common::{
   local_git_repo,
 };
 
+/// Gitea repository name prefix used by CFS.
+const GITEA_REPO_NAME_PREFIX: &str = "cray/";
+
 /// Create and run a CFS session on target nodes.
 pub async fn exec(
   cli_apply_session: &ArgMatches,
@@ -324,7 +327,7 @@ fn check_local_repos(
     // Collect data for CFS configuration creation
     repo_last_commit_id_vec.push(local_last_commit.id().to_string());
 
-    let repo_name = "cray/".to_owned() + &repo_name_raw;
+    let repo_name = GITEA_REPO_NAME_PREFIX.to_owned() + &repo_name_raw;
     repo_name_vec.push(repo_name);
   }
 

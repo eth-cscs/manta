@@ -2,13 +2,16 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 
+/// Timeout in seconds for the backend connectivity check.
+const BACKEND_CONNECT_TIMEOUT_SECS: u64 = 3;
+
 /// Verify that the backend API endpoint is reachable
 /// (3-second connect timeout).
 pub async fn check_network_connectivity_to_backend(
   shasta_base_url: &str,
 ) -> Result<()> {
   let client_builder =
-    reqwest::Client::builder().connect_timeout(Duration::new(3, 0));
+    reqwest::Client::builder().connect_timeout(Duration::from_secs(BACKEND_CONNECT_TIMEOUT_SECS));
 
   // Build client
   let client = client_builder

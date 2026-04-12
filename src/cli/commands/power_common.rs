@@ -107,7 +107,7 @@ pub async fn exec_nodes(
     call_backend(backend, &shasta_token, &xname_vec, action, force)
       .await
       .with_context(|| {
-        format!("Could not {} node/s '{:?}'", action.error_verb(), xname_vec,)
+        format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
       })?;
 
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);
@@ -178,7 +178,7 @@ pub async fn exec_cluster(
     call_backend(backend, &shasta_token, &xname_vec, action, force)
       .await
       .with_context(|| {
-        format!("Could not {} node/s '{:?}'", action.error_verb(), xname_vec,)
+        format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
       })?;
 
   common::pcs_utils::print_summary_table(power_mgmt_summary, output);

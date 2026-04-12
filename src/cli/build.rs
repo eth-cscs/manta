@@ -1,13 +1,16 @@
-use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
+use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
 use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
 
+/// Terminal width for CLI help output formatting.
+const CLI_TERM_WIDTH: usize = 100;
+
 /// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
   Command::new(env!("CARGO_PKG_NAME"))
-    .term_width(100)
+    .term_width(CLI_TERM_WIDTH)
     .version(env!("CARGO_PKG_VERSION"))
     .arg_required_else_help(true)
     .subcommand(subcommand_config())

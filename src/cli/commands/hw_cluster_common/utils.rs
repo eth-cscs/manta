@@ -12,6 +12,9 @@ use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
 
 use super::command::HwClusterMode;
 
+/// Maximum number of concurrent hardware component queries.
+const HW_COMPONENT_CONCURRENCY_LIMIT: usize = 5;
+
 /// A list of nodes with their hardware component counts.
 pub type NodeHwCountVec = Vec<(String, HashMap<String, usize>)>;
 
@@ -351,7 +354,7 @@ pub async fn get_hsm_node_hw_component_counter(
 
   let mut tasks = tokio::task::JoinSet::new();
 
-  let sem = Arc::new(Semaphore::new(5)); // CSM 1.3.1 higher
+  let sem = Arc::new(Semaphore::new(HW_COMPONENT_CONCURRENCY_LIMIT)); // CSM 1.3.1 higher
   // number of concurrent tasks won't make it faster
 
   // Calculate HSM group hw component counters
@@ -411,7 +414,7 @@ pub async fn get_hsm_node_hw_component_counter(
         node_hw_component_count_hashmap,
       ));
     } else {
-      log::error!("Failed procesing/fetching node hw information");
+      log::error!("Failed processing/fetching node hw information");
     }
   }
 
@@ -698,8 +701,13 @@ pub fn show_solution_and_confirm(
 
   let confirm_message = format!(
     "Please check and confirm new hw summary for \
-     cluster '{}': {:?}",
-    group_name, hw_component_summary
+     cluster '{}': {}",
+    group_name,
+    hw_component_summary
+      .iter()
+      .map(|(k, v)| format!("{}: {}", k, v))
+      .collect::<Vec<_>>()
+      .join(", ")
   );
 
   if !crate::common::user_interaction::confirm(&confirm_message, false) {

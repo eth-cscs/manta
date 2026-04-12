@@ -3,6 +3,15 @@ pub mod http_client {
   use anyhow::Context;
   use serde_json::{Value, json};
 
+  /// Vault API version prefix.
+  const VAULT_API_PREFIX: &str = "/v1";
+
+  /// Vault KV secret path prefix for manta.
+  const VAULT_SECRET_PATH_PREFIX: &str = "manta/data";
+
+  /// Vault role name used for JWT authentication.
+  const VAULT_ROLE: &str = "manta";
+
   /// Authenticate to Vault using a JWT token and return
   /// a Vault client token.
   pub async fn auth_oidc_jwt(
@@ -13,13 +22,13 @@ pub mod http_client {
     // NOTE: role is hardcoded to manta, this is the role that is created in vault for the
     // jwt-manta auth method. This role is created by the vault admin and is used to
     // authenticate
-    let role = "manta";
+    let role = VAULT_ROLE;
 
     // rest client create new cfs sessions
     let client = reqwest::Client::builder().build()?;
 
     let api_url =
-      format!("{}/v1/auth/jwt-manta-{}/login", vault_base_url, site_name);
+      format!("{}{}/auth/jwt-manta-{}/login", vault_base_url, VAULT_API_PREFIX, site_name);
 
     log::debug!("Accessing/login to {}", api_url);
 
@@ -76,12 +85,12 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path = format!("manta/data/{}", site_name);
+    let vault_secret_path = format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
 
     let vault_secret = fetch_secret(
       &vault_token,
       vault_base_url,
-      &format!("/v1/{}/vcs", vault_secret_path),
+      &format!("{}/{}/vcs", VAULT_API_PREFIX, vault_secret_path),
     )
     .await
     .context("Failed to fetch VCS secret from Vault")?;
@@ -106,12 +115,12 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path = format!("manta/data/{}", site_name);
+    let vault_secret_path = format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
 
     let secret = fetch_secret(
       &vault_token,
       vault_base_url,
-      &format!("/v1/{}/k8s", vault_secret_path),
+      &format!("{}/{}/k8s", VAULT_API_PREFIX, vault_secret_path),
     )
     .await
     .context("Failed to fetch k8s secrets from Vault")?;

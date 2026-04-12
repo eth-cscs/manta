@@ -17,6 +17,12 @@ use tokio::sync::Semaphore;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
+/// Maximum number of concurrent hardware inventory requests.
+const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
+
+/// Divisor to convert MiB to GiB.
+const MIB_PER_GIB: usize = 1024;
+
 /// Display hardware inventory for a cluster.
 pub async fn exec(
   backend: StaticBackendDispatcher,
@@ -38,8 +44,6 @@ pub async fn exec(
   let hsm_group_name = target_hsm_group_vec
     .first()
     .context("No HSM groups available for this user")?;
-
-  let pipe_size = 15;
 
   // Target HSM group
   let hsm_group = backend
@@ -66,7 +70,7 @@ pub async fn exec(
 
   let mut tasks = tokio::task::JoinSet::new();
 
-  let sem = Arc::new(Semaphore::new(pipe_size));
+  let sem = Arc::new(Semaphore::new(HW_INVENTORY_CONCURRENCY_LIMIT));
   // make it faster
 
   let num_hsm_group_members = hsm_group_target_members.len();
@@ -212,9 +216,9 @@ fn calculate_hsm_hw_component_summary(
       node_hw_component_summary
         .entry(artifact_summary.r#type.to_string() + " (GiB)")
         .and_modify(|summary_quantity| {
-          *summary_quantity += memory_capacity / 1024;
+          *summary_quantity += memory_capacity / MIB_PER_GIB;
         })
-        .or_insert(memory_capacity / 1024);
+        .or_insert(memory_capacity / MIB_PER_GIB);
     }
     for artifact_summary in &node_summary.node_hsn_nics {
       if let Some(info) = artifact_summary.info.as_ref() {

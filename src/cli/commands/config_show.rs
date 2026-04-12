@@ -62,7 +62,7 @@ async fn show(
       .unwrap_or_else(|_| "<unknown>".to_string())
   );
   println!("Log level: {}", log_level);
-  println!("Sites: {:?}", site_table.keys().collect::<Vec<&String>>());
+  println!("Sites: {}", site_table.keys().cloned().collect::<Vec<String>>().join(", "));
   println!("Current site: {}", site_name);
   println!(
     "Groups available: {}",

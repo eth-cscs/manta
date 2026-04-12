@@ -74,9 +74,9 @@ async fn validation(
   if !members_orphan_if_group_deleted.is_empty() {
     bail!(
       "The hosts below will become orphan if group '{}' \
-       gets deleted.\n{:?}",
+       gets deleted.\n{}",
       label,
-      members_orphan_if_group_deleted
+      members_orphan_if_group_deleted.join(", ")
     );
   }
 
