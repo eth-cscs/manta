@@ -724,4 +724,181 @@ mod tests {
     // i=1: 1%2=1 -> comma, i=2: 2%2=0 -> newline
     assert_eq!(string_vec_to_multi_line_string(Some(&nodes), 2), "a,b,\nc");
   }
+
+  // ---- helper ----
+
+  /// Build a minimal `Component` with only `id` and `nid` populated;
+  /// every other field is `None`.
+  fn make_component(id: &str, nid: Option<usize>) -> Component {
+    Component {
+      id: Some(id.to_string()),
+      r#type: None,
+      state: None,
+      flag: None,
+      enabled: None,
+      software_status: None,
+      role: None,
+      sub_role: None,
+      nid,
+      subtype: None,
+      net_type: None,
+      arch: None,
+      class: None,
+      reservation_disabled: None,
+      locked: None,
+    }
+  }
+
+  // ---- get_xname_from_nid_hostlist ----
+
+  #[tokio::test]
+  async fn nid_hostlist_matching_nids() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+      make_component("x1000c0s1b0n0", Some(2)),
+      make_component("x1000c0s2b0n0", Some(3)),
+    ];
+    let nids = vec!["nid000001".to_string(), "nid000003".to_string()];
+
+    let result = get_xname_from_nid_hostlist(&nids, &metadata).await.unwrap();
+    assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s2b0n0"]);
+  }
+
+  #[tokio::test]
+  async fn nid_hostlist_no_match() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+    ];
+    let nids = vec!["nid000099".to_string()];
+
+    let result = get_xname_from_nid_hostlist(&nids, &metadata).await.unwrap();
+    assert!(result.is_empty());
+  }
+
+  #[tokio::test]
+  async fn nid_hostlist_empty_inputs() {
+    let result = get_xname_from_nid_hostlist(&[], &[]).await.unwrap();
+    assert!(result.is_empty());
+  }
+
+  // ---- get_xname_from_xname_hostlist ----
+
+  #[tokio::test]
+  async fn xname_hostlist_matching_xnames() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+      make_component("x1000c0s1b0n0", Some(2)),
+      make_component("x1000c0s2b0n0", Some(3)),
+    ];
+    let xnames = vec![
+      "x1000c0s0b0n0".to_string(),
+      "x1000c0s2b0n0".to_string(),
+    ];
+
+    let result = get_xname_from_xname_hostlist(&xnames, &metadata).await.unwrap();
+    assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s2b0n0"]);
+  }
+
+  #[tokio::test]
+  async fn xname_hostlist_no_match() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+    ];
+    let xnames = vec!["x9999c0s0b0n0".to_string()];
+
+    let result = get_xname_from_xname_hostlist(&xnames, &metadata).await.unwrap();
+    assert!(result.is_empty());
+  }
+
+  #[tokio::test]
+  async fn xname_hostlist_empty_inputs() {
+    let result = get_xname_from_xname_hostlist(&[], &[]).await.unwrap();
+    assert!(result.is_empty());
+  }
+
+  // ---- from_hosts_expression_to_xname_vec ----
+
+  #[tokio::test]
+  async fn hosts_expression_nid_list() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+      make_component("x1000c0s1b0n0", Some(2)),
+      make_component("x1000c0s2b0n0", Some(3)),
+    ];
+    // Comma-separated NID hostlist
+    let result = from_hosts_expression_to_xname_vec(
+      "nid000001,nid000002",
+      false,
+      metadata,
+    )
+    .await
+    .unwrap();
+    assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s1b0n0"]);
+  }
+
+  #[tokio::test]
+  async fn hosts_expression_xname_list() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+      make_component("x1000c0s1b0n0", Some(2)),
+    ];
+    let result = from_hosts_expression_to_xname_vec(
+      "x1000c0s0b0n0,x1000c0s1b0n0",
+      false,
+      metadata,
+    )
+    .await
+    .unwrap();
+    assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s1b0n0"]);
+  }
+
+  #[tokio::test]
+  async fn hosts_expression_invalid_input() {
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+    ];
+    // "foobar" is neither a valid NID nor xname
+    let result = from_hosts_expression_to_xname_vec(
+      "foobar",
+      false,
+      metadata,
+    )
+    .await;
+    assert!(result.is_err());
+  }
+
+  #[tokio::test]
+  async fn hosts_expression_nid_no_metadata_match_returns_error() {
+    // All NIDs are valid but none match the metadata -> empty -> error
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(99)),
+    ];
+    let result = from_hosts_expression_to_xname_vec(
+      "nid000001",
+      false,
+      metadata,
+    )
+    .await;
+    assert!(result.is_err());
+  }
+
+  #[tokio::test]
+  async fn hosts_expression_include_siblings() {
+    // Two nodes on the same blade (x1000c0s0b0), one on a different blade
+    let metadata = vec![
+      make_component("x1000c0s0b0n0", Some(1)),
+      make_component("x1000c0s0b0n1", Some(2)), // sibling of n0
+      make_component("x1000c0s1b0n0", Some(3)), // different blade
+    ];
+    // Request only nid000001 but include siblings
+    let mut result = from_hosts_expression_to_xname_vec(
+      "nid000001",
+      true,
+      metadata,
+    )
+    .await
+    .unwrap();
+    result.sort();
+    assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
+  }
 }

@@ -972,4 +972,133 @@ mod tests {
     assert!(scores[0].1 > 0.0);
     assert_eq!(scores[0].1, 8.0);
   }
+
+  // ---- calculate_hw_component_scarcity_scores ----
+
+  #[tokio::test]
+  async fn scarcity_scores_single_component_type() {
+    let input = vec![
+      (
+        "x1000c0s0b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 4usize)]),
+      ),
+      (
+        "x1000c0s1b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 2usize)]),
+      ),
+    ];
+    let scores = calculate_hw_component_scarcity_scores(&input).await;
+    // total = 6, a100 total = 6 → score = 6/6 = 1.0
+    assert_eq!(scores.len(), 1);
+    assert!((scores["a100"] - 1.0).abs() < f32::EPSILON);
+  }
+
+  #[tokio::test]
+  async fn scarcity_scores_multiple_component_types() {
+    let input = vec![
+      (
+        "x1000c0s0b0n0".to_string(),
+        HashMap::from([
+          ("a100".to_string(), 4usize),
+          ("epyc".to_string(), 2usize),
+        ]),
+      ),
+      (
+        "x1000c0s1b0n0".to_string(),
+        HashMap::from([("a100".to_string(), 2usize)]),
+      ),
+    ];
+    let scores = calculate_hw_component_scarcity_scores(&input).await;
+    // total = 4 + 2 + 2 = 8
+    // a100 total = 6 → score = 8/6 ≈ 1.333
+    // epyc total = 2 → score = 8/2 = 4.0
+    assert_eq!(scores.len(), 2);
+    assert!((scores["a100"] - 8.0 / 6.0).abs() < 0.001);
+    assert!((scores["epyc"] - 4.0).abs() < f32::EPSILON);
+  }
+
+  #[tokio::test]
+  async fn scarcity_scores_empty_input() {
+    let input: Vec<(String, HashMap<String, usize>)> = vec![];
+    let scores = calculate_hw_component_scarcity_scores(&input).await;
+    assert!(scores.is_empty());
+  }
+
+  #[tokio::test]
+  async fn scarcity_scores_scarce_component_gets_higher_score() {
+    let input = vec![
+      (
+        "n1".to_string(),
+        HashMap::from([
+          ("common".to_string(), 10usize),
+          ("rare".to_string(), 1usize),
+        ]),
+      ),
+      (
+        "n2".to_string(),
+        HashMap::from([("common".to_string(), 10usize)]),
+      ),
+    ];
+    let scores = calculate_hw_component_scarcity_scores(&input).await;
+    assert!(scores["rare"] > scores["common"]);
+  }
+
+  // ---- get_best_candidate_in_target_and_parent_hsm ----
+
+  #[test]
+  fn target_and_parent_prefers_target() {
+    let mut target_scores = vec![("t1".to_string(), 3.0f32)];
+    let mut parent_scores = vec![("p1".to_string(), 5.0f32)];
+    let mut target_hw = vec![(
+      "t1".to_string(),
+      HashMap::from([("a100".to_string(), 4usize)]),
+    )];
+    let parent_hw = vec![(
+      "p1".to_string(),
+      HashMap::from([("a100".to_string(), 2usize)]),
+    )];
+    let result = get_best_candidate_in_target_and_parent_hsm(
+      &mut target_scores,
+      &mut parent_scores,
+      &mut target_hw,
+      &parent_hw,
+    );
+    let (candidate, hw) = result.unwrap();
+    assert_eq!(candidate.0, "t1");
+    assert_eq!(hw.get("a100"), Some(&4));
+  }
+
+  #[test]
+  fn target_and_parent_falls_back_to_parent_when_target_empty() {
+    let mut target_scores: Vec<(String, f32)> = vec![];
+    let mut parent_scores = vec![("p1".to_string(), 5.0f32)];
+    let mut target_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let parent_hw = vec![(
+      "p1".to_string(),
+      HashMap::from([("a100".to_string(), 2usize)]),
+    )];
+    let result = get_best_candidate_in_target_and_parent_hsm(
+      &mut target_scores,
+      &mut parent_scores,
+      &mut target_hw,
+      &parent_hw,
+    );
+    let (candidate, _) = result.unwrap();
+    assert_eq!(candidate.0, "p1");
+  }
+
+  #[test]
+  fn target_and_parent_returns_none_when_both_empty() {
+    let mut target_scores: Vec<(String, f32)> = vec![];
+    let mut parent_scores: Vec<(String, f32)> = vec![];
+    let mut target_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let parent_hw: Vec<(String, HashMap<String, usize>)> = vec![];
+    let result = get_best_candidate_in_target_and_parent_hsm(
+      &mut target_scores,
+      &mut parent_scores,
+      &mut target_hw,
+      &parent_hw,
+    );
+    assert!(result.is_none());
+  }
 }

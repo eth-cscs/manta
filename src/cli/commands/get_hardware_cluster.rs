@@ -458,3 +458,144 @@ pub fn get_table(
 
   table
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use manta_backend_dispatcher::types::{ArtifactType, ArtifactSummary, NodeSummary};
+
+  /// Helper: create an ArtifactSummary with the given info string.
+  fn make_artifact(art_type: ArtifactType, info: Option<&str>) -> ArtifactSummary {
+    ArtifactSummary {
+      xname: "x0".to_string(),
+      r#type: art_type,
+      info: info.map(String::from),
+    }
+  }
+
+  // ── count_hw_components ──
+
+  #[test]
+  fn count_hw_components_counts_correctly() {
+    let items = vec![
+      Some("AMD EPYC 7742".to_string()),
+      Some("AMD EPYC 7742".to_string()),
+      Some("Intel Xeon Gold".to_string()),
+      None,
+    ];
+    let (counts, keys) = count_hw_components(items.into_iter());
+    assert_eq!(counts.get("AMD EPYC 7742"), Some(&2));
+    assert_eq!(counts.get("Intel Xeon Gold"), Some(&1));
+    assert_eq!(keys.len(), 2);
+  }
+
+  #[test]
+  fn count_hw_components_all_none() {
+    let items: Vec<Option<String>> = vec![None, None];
+    let (counts, keys) = count_hw_components(items.into_iter());
+    assert!(counts.is_empty());
+    assert!(keys.is_empty());
+  }
+
+  #[test]
+  fn count_hw_components_empty_input() {
+    let items: Vec<Option<String>> = vec![];
+    let (counts, keys) = count_hw_components(items.into_iter());
+    assert!(counts.is_empty());
+    assert!(keys.is_empty());
+  }
+
+  // ── calculate_hsm_hw_component_summary ──
+
+  #[test]
+  fn summary_counts_processors_and_accels() {
+    let nodes = vec![NodeSummary {
+      xname: "x1000c0s0b0n0".to_string(),
+      processors: vec![
+        make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
+        make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
+      ],
+      node_accels: vec![
+        make_artifact(ArtifactType::NodeAccel, Some("NVIDIA A100")),
+      ],
+      memory: vec![],
+      node_hsn_nics: vec![],
+      ..Default::default()
+    }];
+    let summary = calculate_hsm_hw_component_summary(&nodes);
+    assert_eq!(summary.get("AMD EPYC 7742"), Some(&2));
+    assert_eq!(summary.get("NVIDIA A100"), Some(&1));
+  }
+
+  #[test]
+  fn summary_converts_memory_mib_to_gib() {
+    let nodes = vec![NodeSummary {
+      xname: "x1000c0s0b0n0".to_string(),
+      processors: vec![],
+      node_accels: vec![],
+      memory: vec![
+        ArtifactSummary {
+          xname: "x0".to_string(),
+          r#type: ArtifactType::Memory,
+          info: Some("16384 MiB".to_string()),
+        },
+        ArtifactSummary {
+          xname: "x0".to_string(),
+          r#type: ArtifactType::Memory,
+          info: Some("16384 MiB".to_string()),
+        },
+      ],
+      node_hsn_nics: vec![],
+      ..Default::default()
+    }];
+    let summary = calculate_hsm_hw_component_summary(&nodes);
+    // 16384 / 1024 = 16 GiB each → 32 total
+    assert_eq!(summary.get("Memory (GiB)"), Some(&32));
+  }
+
+  #[test]
+  fn summary_aggregates_across_multiple_nodes() {
+    let nodes = vec![
+      NodeSummary {
+        xname: "n1".to_string(),
+        processors: vec![
+          make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
+        ],
+        ..Default::default()
+      },
+      NodeSummary {
+        xname: "n2".to_string(),
+        processors: vec![
+          make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
+          make_artifact(ArtifactType::Processor, Some("Intel Xeon Gold")),
+        ],
+        ..Default::default()
+      },
+    ];
+    let summary = calculate_hsm_hw_component_summary(&nodes);
+    assert_eq!(summary.get("AMD EPYC 7742"), Some(&2));
+    assert_eq!(summary.get("Intel Xeon Gold"), Some(&1));
+  }
+
+  #[test]
+  fn summary_empty_nodes() {
+    let nodes: Vec<NodeSummary> = vec![];
+    let summary = calculate_hsm_hw_component_summary(&nodes);
+    assert!(summary.is_empty());
+  }
+
+  #[test]
+  fn summary_skips_none_info_in_processors() {
+    let nodes = vec![NodeSummary {
+      xname: "n1".to_string(),
+      processors: vec![
+        make_artifact(ArtifactType::Processor, None),
+        make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
+      ],
+      ..Default::default()
+    }];
+    let summary = calculate_hsm_hw_component_summary(&nodes);
+    assert_eq!(summary.get("AMD EPYC 7742"), Some(&1));
+    assert_eq!(summary.len(), 1);
+  }
+}
