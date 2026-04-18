@@ -1,6 +1,6 @@
 use crate::common::app_context::AppContext;
 use anyhow::Error;
-use clap::Command;
+use clap::ArgMatches;
 
 use crate::cli::handlers::{
   add, apply, config, console, delete, get, log, migrate, misc, power, update,
@@ -9,11 +9,9 @@ use crate::cli::handlers::{
 /// Parse CLI arguments and dispatch to the appropriate
 /// subcommand handler.
 pub async fn process_cli(
-  cli: Command,
+  cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let cli_root = cli.get_matches();
-
   if let Some(cli_config) = cli_root.subcommand_matches("config") {
     config::handle_config(cli_config, ctx).await?;
   } else if let Some(cli_power) = cli_root.subcommand_matches("power") {

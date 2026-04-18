@@ -9,6 +9,8 @@ use common::{
 };
 use manta_backend_dispatcher::StaticBackendDispatcher;
 
+use clap::ArgMatches;
+
 use crate::common::log_ops;
 
 /// URL path suffix for the CSM API endpoint.
@@ -21,6 +23,10 @@ const VCS_URL_SUFFIX: &str = "/vcs";
 /// must happen before the multi-threaded tokio runtime is active)
 /// and then launches the async runtime.
 fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+  // Parse CLI arguments early so we can extract --site before
+  // starting the multi-threaded runtime.
+  let cli_matches = crate::cli::build::build_cli().get_matches();
+
   // Build a *single-threaded* runtime just to load the config
   // file so we can read the SOCKS5 proxy value.
   let preliminary_rt = tokio::runtime::Builder::new_current_thread()
@@ -42,12 +48,22 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // other threads are alive at this point.
   drop(preliminary_rt);
 
-  // Set SOCKS5 proxy env var while we are still single-threaded.
-  let site_name: String = configuration.site.clone();
+  // Resolve the active site: --site flag overrides config file.
+  let site_name: String = cli_matches
+    .get_one::<String>("site")
+    .cloned()
+    .unwrap_or_else(|| configuration.site.clone());
+
   let site_details_value =
     configuration.sites.get(&site_name).ok_or_else(|| {
-      format!("Site '{}' not found in configuration file", site_name)
+      let available: Vec<&String> = configuration.sites.keys().collect();
+      format!(
+        "Site '{}' not found in configuration file. Available sites: {:?}",
+        site_name, available
+      )
     })?;
+
+  // Set SOCKS5 proxy env var while we are still single-threaded.
   if let Some(socks_proxy) = &site_details_value.socks5_proxy
     && !socks_proxy.is_empty()
   {
@@ -63,7 +79,7 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()?;
-  rt.block_on(run(settings, configuration, site_name))
+  rt.block_on(run(settings, configuration, site_name, cli_matches))
 }
 
 /// Async entry point — runs on the multi-threaded tokio runtime
@@ -72,6 +88,7 @@ async fn run(
   settings: config::Config,
   configuration: MantaConfiguration,
   site_name: String,
+  cli_matches: ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
   // Configure logging
   let log_level = settings
@@ -156,8 +173,6 @@ async fn run(
   )?;
 
   // Process input params
-  let cli = crate::cli::build::build_cli();
-
   let app_context = AppContext {
     backend: &backend,
     site_name: &site_name,
@@ -172,7 +187,8 @@ async fn run(
     configuration: &configuration,
   };
 
-  let cli_result = crate::cli::process::process_cli(cli, &app_context).await;
+  let cli_result =
+    crate::cli::process::process_cli(&cli_matches, &app_context).await;
 
   match cli_result {
     Ok(_) => Ok(()),

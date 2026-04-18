@@ -13,6 +13,11 @@ pub fn build_cli() -> Command {
     .term_width(CLI_TERM_WIDTH)
     .version(env!("CARGO_PKG_VERSION"))
     .arg_required_else_help(true)
+    .arg(
+      arg!(--site <SITE_NAME> "Override the active site for this invocation")
+        .global(true)
+        .required(false),
+    )
     .subcommand(subcommand_config())
     .subcommand(subcommand_get())
     .subcommand(subcommand_add())
