@@ -31,15 +31,15 @@ publish = true
 
 # PROD
 
-manta-backend-dispatcher = "0.21.1"
-csm-rs = "0.102.2"
-ochami-rs = "0.11.2"
+# manta-backend-dispatcher = "0.21.1"
+# csm-rs = "0.102.2"
+# ochami-rs = "0.11.2"
 
 # DEV - Only for development purposes
 
-# manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-# ochami-rs = { path = "../ochami-rs" }
-# csm-rs = { path = "../csm-rs" }
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+ochami-rs = { path = "../ochami-rs" }
+csm-rs = { path = "../csm-rs" }
 
 # --- END MANTA DEPENDENCIES ---
 
@@ -75,6 +75,11 @@ minijinja = { version = "2.4.0", features = ["custom_syntax"] }
 rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

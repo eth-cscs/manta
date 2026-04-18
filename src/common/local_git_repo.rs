@@ -55,6 +55,14 @@ pub fn untracked_changed_local_files(
     }
 }
 
+/// Extract the repository name from a remote URL string.
+///
+/// Takes the last path segment and strips any trailing `.git` suffix.
+pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
+  let slash_pos = url.rfind('/')?;
+  Some(url[slash_pos + 1..].trim_end_matches(".git").to_string())
+}
+
 /// Extract the repository name from the "origin" remote URL.
 ///
 /// Finds the `origin` remote, reads its URL, takes the last
@@ -68,6 +76,157 @@ pub fn parse_repo_name_from_remote(
   let url = remote
     .url()
     .context("Remote 'origin' URL is not valid UTF-8")?;
-  let slash_pos = url.rfind('/').context("Remote URL has no '/' separator")?;
-  Ok(url[slash_pos + 1..].trim_end_matches(".git").to_string())
+  parse_repo_name_from_url(url).context("Remote URL has no '/' separator")
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // ── parse_repo_name_from_url ──
+
+  #[test]
+  fn https_url_with_git_suffix() {
+    assert_eq!(
+      parse_repo_name_from_url("https://github.com/org/my-repo.git"),
+      Some("my-repo".to_string())
+    );
+  }
+
+  #[test]
+  fn https_url_without_git_suffix() {
+    assert_eq!(
+      parse_repo_name_from_url("https://github.com/org/my-repo"),
+      Some("my-repo".to_string())
+    );
+  }
+
+  #[test]
+  fn ssh_url() {
+    assert_eq!(
+      parse_repo_name_from_url("git@github.com:org/my-repo.git"),
+      Some("my-repo".to_string())
+    );
+  }
+
+  #[test]
+  fn url_with_trailing_slash_returns_empty() {
+    assert_eq!(
+      parse_repo_name_from_url("https://github.com/org/"),
+      Some("".to_string())
+    );
+  }
+
+  #[test]
+  fn url_no_slash_returns_none() {
+    assert_eq!(parse_repo_name_from_url("no-slash"), None);
+  }
+
+  #[test]
+  fn deeply_nested_path() {
+    assert_eq!(
+      parse_repo_name_from_url("https://example.com/a/b/c/repo-name.git"),
+      Some("repo-name".to_string())
+    );
+  }
+
+  // ── git repo operations with temp dirs ──
+
+  #[test]
+  fn get_repo_valid_path() {
+    let tmp = tempfile::tempdir().unwrap();
+    Repository::init(tmp.path()).unwrap();
+    let repo = get_repo(tmp.path().to_str().unwrap());
+    assert!(repo.is_ok());
+  }
+
+  #[test]
+  fn get_repo_invalid_path() {
+    let result = get_repo("/nonexistent/path/to/repo");
+    assert!(result.is_err());
+  }
+
+  #[test]
+  fn get_last_commit_on_empty_repo_fails() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+    // Empty repo has no HEAD commit
+    assert!(get_last_commit(&repo).is_err());
+  }
+
+  #[test]
+  fn get_last_commit_after_initial_commit() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+
+    // Create an initial commit
+    let sig = git2::Signature::now("Test", "test@example.com").unwrap();
+    let tree_id = {
+      let mut index = repo.index().unwrap();
+      index.write_tree().unwrap()
+    };
+    let tree = repo.find_tree(tree_id).unwrap();
+    repo
+      .commit(Some("HEAD"), &sig, &sig, "initial commit", &tree, &[])
+      .unwrap();
+
+    let commit = get_last_commit(&repo).unwrap();
+    assert_eq!(commit.message(), Some("initial commit"));
+  }
+
+  #[test]
+  fn parse_repo_name_from_remote_with_origin() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+    repo
+      .remote("origin", "https://github.com/org/test-repo.git")
+      .unwrap();
+
+    let name = parse_repo_name_from_remote(&repo).unwrap();
+    assert_eq!(name, "test-repo");
+  }
+
+  #[test]
+  fn parse_repo_name_from_remote_no_origin_fails() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+    assert!(parse_repo_name_from_remote(&repo).is_err());
+  }
+
+  #[test]
+  fn untracked_files_clean_repo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+
+    // Create initial commit so repo has a valid HEAD
+    let sig = git2::Signature::now("Test", "test@example.com").unwrap();
+    let tree_id = repo.index().unwrap().write_tree().unwrap();
+    let tree = repo.find_tree(tree_id).unwrap();
+    repo
+      .commit(Some("HEAD"), &sig, &sig, "init", &tree, &[])
+      .unwrap();
+
+    let clean = untracked_changed_local_files(&repo).unwrap();
+    assert!(clean, "Clean repo should report true");
+  }
+
+  #[test]
+  fn untracked_files_dirty_repo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let repo = Repository::init(tmp.path()).unwrap();
+
+    // Create initial commit
+    let sig = git2::Signature::now("Test", "test@example.com").unwrap();
+    let tree_id = repo.index().unwrap().write_tree().unwrap();
+    let tree = repo.find_tree(tree_id).unwrap();
+    repo
+      .commit(Some("HEAD"), &sig, &sig, "init", &tree, &[])
+      .unwrap();
+
+    // Create an untracked file
+    std::fs::write(tmp.path().join("new_file.txt"), "content").unwrap();
+
+    let clean = untracked_changed_local_files(&repo).unwrap();
+    assert!(!clean, "Repo with untracked file should report false");
+  }
 }

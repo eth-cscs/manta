@@ -66,10 +66,113 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
 
   let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
-  render_jinja2_sat_file_yaml(
+  let result = render_jinja2_sat_file_yaml(
     sat_file_content,
     Some(values_file_content),
     Some(&var_content),
   )
   .unwrap();
+
+  // Verify CLI var override took effect (config.name = "new-value" instead of "test-config")
+  let name = result.get("name").unwrap().as_str().unwrap();
+  assert_eq!(name, "new-value", "CLI --var should override values file");
+
+  // Verify configuration name uses the overridden config.name
+  let configs = result.get("configurations").unwrap().as_sequence().unwrap();
+  assert_eq!(configs.len(), 1);
+  let config_name = configs[0].get("name").unwrap().as_str().unwrap();
+  assert_eq!(config_name, "new-value-v1.0.0");
+
+  // Verify image name uses value from values file
+  let images = result.get("images").unwrap().as_sequence().unwrap();
+  let image_name = images[0].get("name").unwrap().as_str().unwrap();
+  assert_eq!(image_name, "zinal-nomad-v1.0.5");
+
+  // Verify HSM group name was substituted
+  let image_groups = images[0]
+    .get("configuration_group_names")
+    .unwrap()
+    .as_sequence()
+    .unwrap();
+  assert_eq!(image_groups[1].as_str().unwrap(), "zinal_cta");
+
+  // Verify session template name
+  let templates = result
+    .get("session_templates")
+    .unwrap()
+    .as_sequence()
+    .unwrap();
+  let st_name = templates[0].get("name").unwrap().as_str().unwrap();
+  assert_eq!(st_name, "deploy-cluster-action");
+
+  // Verify session template configuration uses overridden name
+  let st_config = templates[0].get("configuration").unwrap().as_str().unwrap();
+  assert_eq!(st_config, "new-value-v1.0.0");
+}
+
+/// Test rendering without a values file fails when template has variables
+#[test]
+fn test_render_sat_file_without_values_file() {
+  let sat_file_content = r#"
+        name: "{{ config.name }}"
+        "#;
+
+  let result = render_jinja2_sat_file_yaml(sat_file_content, None, None);
+
+  // Should fail because config.name is undefined
+  assert!(
+    result.is_err(),
+    "Rendering with undefined variables should fail"
+  );
+}
+
+/// Test rendering a SAT file with no template variables (plain YAML)
+#[test]
+fn test_render_plain_sat_file_no_variables() {
+  let sat_file_content = r#"
+        name: "my-config"
+        configurations:
+        - name: "static-config"
+          layers:
+          - name: layer1
+            playbook: site.yml
+            git:
+              url: https://example.com/repo.git
+              branch: main
+        "#;
+
+  let result =
+    render_jinja2_sat_file_yaml(sat_file_content, None, None).unwrap();
+
+  assert_eq!(result.get("name").unwrap().as_str().unwrap(), "my-config");
+  let configs = result.get("configurations").unwrap().as_sequence().unwrap();
+  assert_eq!(
+    configs[0].get("name").unwrap().as_str().unwrap(),
+    "static-config"
+  );
+}
+
+/// Test that values file without CLI overrides works correctly
+#[test]
+fn test_render_sat_file_with_values_no_overrides() {
+  let sat_file_content = r#"
+        name: "{{ app.name }}"
+        version: "{{ app.version }}"
+        "#;
+
+  let values_file_content = r#"
+        app:
+          name: "my-app"
+          version: "2.0"
+        "#;
+
+  let result = render_jinja2_sat_file_yaml(
+    sat_file_content,
+    Some(values_file_content),
+    None,
+  )
+  .unwrap();
+
+  assert_eq!(result.get("name").unwrap().as_str().unwrap(), "my-app");
+  assert_eq!(result.get("version").unwrap().as_str().unwrap(), "2.0");
 }

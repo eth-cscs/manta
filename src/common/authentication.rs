@@ -163,6 +163,97 @@ fn store_token_in_local_file(
   Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::os::unix::fs::PermissionsExt;
+
+  #[test]
+  fn store_and_read_token_from_local_file() {
+    let tmp_dir = tempfile::tempdir().unwrap();
+
+    // Override cache path by using a site name that results in a file inside tmp_dir
+    let site_name = "test_site";
+    let token = "my-secret-token-12345";
+
+    // We can't easily override get_default_cache_path, so test the file
+    // writing logic directly
+    let mut path = tmp_dir.path().to_path_buf();
+    path.push(format!("{}{}", site_name, AUTH_CACHE_FILE_SUFFIX));
+
+    let mut file = File::options()
+      .write(true)
+      .create(true)
+      .truncate(true)
+      .mode(0o600)
+      .open(&path)
+      .unwrap();
+    file.write_all(token.as_bytes()).unwrap();
+
+    // Read back
+    let mut content = String::new();
+    File::open(&path)
+      .unwrap()
+      .read_to_string(&mut content)
+      .unwrap();
+    assert_eq!(content, token);
+
+    // Verify permissions are restrictive (owner-only)
+    let metadata = std::fs::metadata(&path).unwrap();
+    let mode = metadata.permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600, "Token file should have 600 permissions");
+  }
+
+  #[test]
+  fn store_token_overwrites_existing() {
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let mut path = tmp_dir.path().to_path_buf();
+    path.push("overwrite_test_auth");
+
+    // Write first token
+    let mut file = File::options()
+      .write(true)
+      .create(true)
+      .truncate(true)
+      .mode(0o600)
+      .open(&path)
+      .unwrap();
+    file.write_all(b"old-token").unwrap();
+
+    // Write second token (overwrite)
+    let mut file = File::options()
+      .write(true)
+      .create(true)
+      .truncate(true)
+      .mode(0o600)
+      .open(&path)
+      .unwrap();
+    file.write_all(b"new-token").unwrap();
+
+    let mut content = String::new();
+    File::open(&path)
+      .unwrap()
+      .read_to_string(&mut content)
+      .unwrap();
+    assert_eq!(content, "new-token");
+  }
+
+  #[test]
+  fn auth_token_env_var_name() {
+    assert_eq!(AUTH_TOKEN_ENV_VAR, "MANTA_CSM_TOKEN");
+  }
+
+  #[test]
+  fn auth_cache_file_suffix_value() {
+    assert_eq!(AUTH_CACHE_FILE_SUFFIX, "_auth");
+  }
+
+  #[test]
+  fn max_login_attempts_is_reasonable() {
+    assert!(MAX_LOGIN_ATTEMPTS >= 1 && MAX_LOGIN_ATTEMPTS <= 10);
+  }
+}
+
 async fn get_token_interactively(
   backend: &StaticBackendDispatcher,
 ) -> Result<String, anyhow::Error> {

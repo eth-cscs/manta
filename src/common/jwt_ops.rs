@@ -129,4 +129,40 @@ mod tests {
     let token = format!("{}.{}.sig", header, body);
     assert_eq!(get_name(&token).unwrap(), "Test");
   }
+
+  #[test]
+  fn empty_token_string_is_err() {
+    assert!(get_claims_from_jwt_token("").is_err());
+  }
+
+  #[test]
+  fn jwt_with_valid_base64_but_invalid_json() {
+    // base64 of "not json at all"
+    let body = BASE64_URL_SAFE_NO_PAD.encode("not json at all");
+    let token = format!("header.{}.sig", body);
+    assert!(get_claims_from_jwt_token(&token).is_err());
+  }
+
+  #[test]
+  fn jwt_with_valid_base64_but_invalid_utf8() {
+    // Raw bytes that aren't valid UTF-8
+    let body = BASE64_URL_SAFE_NO_PAD.encode(&[0xFF, 0xFE, 0xFD]);
+    let token = format!("header.{}.sig", body);
+    assert!(get_claims_from_jwt_token(&token).is_err());
+  }
+
+  #[test]
+  fn get_name_with_empty_string_name() {
+    let token = make_jwt(&serde_json::json!({"name": ""}));
+    assert_eq!(get_name(&token).unwrap(), "");
+  }
+
+  #[test]
+  fn bearer_prefix_with_extra_spaces() {
+    // "Bearer  token" - the split(' ').nth(1) would get empty string
+    let token = make_jwt(&serde_json::json!({"name": "Test"}));
+    let bad_bearer = format!("Bearer  {}", token);
+    // nth(1) returns empty string, which has no dots -> error
+    assert!(get_name(&bad_bearer).is_err());
+  }
 }

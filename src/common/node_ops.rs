@@ -901,4 +901,56 @@ mod tests {
     result.sort();
     assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
   }
+
+  // ── validate_nid_format_vec ──
+
+  #[test]
+  fn validate_nid_format_vec_all_valid() {
+    let nids = vec!["nid000001".to_string(), "nid000099".to_string()];
+    assert!(validate_nid_format_vec(&nids));
+  }
+
+  #[test]
+  fn validate_nid_format_vec_one_invalid() {
+    let nids = vec!["nid000001".to_string(), "x1000c0s0b0n0".to_string()];
+    assert!(!validate_nid_format_vec(&nids));
+  }
+
+  #[test]
+  fn validate_nid_format_vec_empty() {
+    let nids: Vec<String> = vec![];
+    assert!(validate_nid_format_vec(&nids), "empty vec should return true (vacuous truth)");
+  }
+
+  #[test]
+  fn validate_nid_format_vec_all_invalid() {
+    let nids = vec!["bad".to_string(), "worse".to_string()];
+    assert!(!validate_nid_format_vec(&nids));
+  }
+
+  // ── validate_xname_format_vec ──
+
+  #[test]
+  fn validate_xname_format_vec_all_valid() {
+    let xnames = vec!["x1000c0s0b0n0".to_string(), "x9999c7s7b1n1".to_string()];
+    assert!(validate_xname_format_vec(&xnames));
+  }
+
+  #[test]
+  fn validate_xname_format_vec_one_invalid() {
+    let xnames = vec!["x1000c0s0b0n0".to_string(), "nid000001".to_string()];
+    assert!(!validate_xname_format_vec(&xnames));
+  }
+
+  #[test]
+  fn validate_xname_format_vec_empty() {
+    let xnames: Vec<String> = vec![];
+    assert!(validate_xname_format_vec(&xnames), "empty vec should return true (vacuous truth)");
+  }
+
+  #[test]
+  fn validate_xname_format_vec_all_invalid() {
+    let xnames = vec!["garbage".to_string(), "not_xname".to_string()];
+    assert!(!validate_xname_format_vec(&xnames));
+  }
 }
