@@ -1,26 +1,15 @@
-use anyhow::Context;
+use anyhow::Error;
 
-use crate::{
-  common::authentication::get_api_token,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
-use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
+use crate::common::app_context::AppContext;
+use crate::service::redfish_endpoints;
 
-/// Delete a Redfish endpoint registration.
+/// CLI adapter for `manta delete redfish-endpoint`.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
+  ctx: &AppContext<'_>,
+  token: &str,
   id: &str,
-) -> Result<(), anyhow::Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  let result = backend.delete_redfish_endpoint(&shasta_token, id).await;
-
-  result.with_context(|| {
-    format!("Failed to delete redfish endpoint for id '{}'", id)
-  })?;
-
+) -> Result<(), Error> {
+  redfish_endpoints::delete_redfish_endpoint(&ctx.infra, token, id).await?;
   println!("Redfish endpoint for id '{}' deleted successfully", id);
-
   Ok(())
 }

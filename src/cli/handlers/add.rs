@@ -1,5 +1,6 @@
 use crate::cli::commands::{
-  add_group, add_hw_component_cluster, add_kernel_parameters, add_node,
+  add_boot_parameters, add_group, add_hw_component_cluster,
+  add_kernel_parameters, add_node, add_redfish_endpoint,
 };
 use crate::common::app_context::AppContext;
 use crate::common::{
@@ -7,25 +8,18 @@ use crate::common::{
 };
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
-use manta_backend_dispatcher::interfaces::hsm::{
-  redfish_endpoint::RedfishEndpointTrait,
-};
-use manta_backend_dispatcher::types::{
-  bss::BootParameters,
-  hsm::inventory::{RedfishEndpoint, RedfishEndpointArray},
-};
-use serde_json::Value;
 use std::path::PathBuf;
 
 /// Dispatch `manta add` subcommands (node, group,
-/// kernel-parameters, hardware cluster).
+/// kernel-parameters, hardware cluster, boot-parameters,
+/// redfish-endpoint).
 pub async fn handle_add(
   cli_add: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_add_node) = cli_add.subcommand_matches("node") {
-    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let id = cli_add_node
       .get_one::<String>("id")
       .context("'id' argument is mandatory")?;
@@ -42,7 +36,7 @@ pub async fn handle_add(
 
     add_node::exec(
       ctx,
-      &shasta_token,
+      &token,
       id,
       group,
       enabled,
@@ -51,7 +45,6 @@ pub async fn handle_add(
     )
     .await?;
   } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
-    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let label = cli_add_group
       .get_one::<String>("label")
       .context("'label' argument is mandatory")?;
@@ -62,7 +55,7 @@ pub async fn handle_add(
       cli_add_group.get_one::<String>("nodes").map(String::as_str);
     add_group::exec(
       ctx,
-      &shasta_token,
+      &token,
       label,
       description,
       node_expression,
@@ -73,13 +66,12 @@ pub async fn handle_add(
   } else if let Some(cli_add_hw_configuration) =
     cli_add.subcommand_matches("hardware")
   {
-    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let target_hsm_group_name_arg_opt = cli_add_hw_configuration
       .get_one::<String>("target-cluster")
       .map(String::as_str);
     let target_hsm_group_vec = get_groups_names_available(
       ctx.infra.backend,
-      &shasta_token,
+      &token,
       target_hsm_group_name_arg_opt,
       ctx.cli.settings_hsm_group_name_opt,
     )
@@ -89,7 +81,7 @@ pub async fn handle_add(
       .map(String::as_str);
     let parent_hsm_group_vec = get_groups_names_available(
       ctx.infra.backend,
-      &shasta_token,
+      &token,
       parent_hsm_group_name_arg_opt,
       ctx.cli.settings_hsm_group_name_opt,
     )
@@ -100,7 +92,7 @@ pub async fn handle_add(
       .unwrap_or(&false);
     add_hw_component_cluster::exec(
       ctx.infra.backend,
-      &shasta_token,
+      &token,
       target_hsm_group_vec
         .first()
         .context("No target HSM groups available")?,
@@ -117,64 +109,7 @@ pub async fn handle_add(
   } else if let Some(cli_add_boot_parameters) =
     cli_add.subcommand_matches("boot-parameters")
   {
-    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-    let hosts = cli_add_boot_parameters
-      .get_one::<String>("hosts")
-      .context("'hosts' argument is mandatory")?;
-    let macs: Option<String> = cli_add_boot_parameters.get_one("macs").cloned();
-    let nids: Option<String> = cli_add_boot_parameters.get_one("nids").cloned();
-    let params = cli_add_boot_parameters
-      .get_one::<String>("params")
-      .context("'params' argument is mandatory")?
-      .clone();
-    let kernel = cli_add_boot_parameters
-      .get_one::<String>("kernel")
-      .context("'kernel' argument is mandatory")?
-      .clone();
-    let initrd = cli_add_boot_parameters
-      .get_one::<String>("initrd")
-      .context("'initrd' argument is mandatory")?
-      .clone();
-    let cloud_init = cli_add_boot_parameters
-      .get_one::<Value>("cloud-init")
-      .cloned();
-    let host_vec = hosts
-      .split(',')
-      .map(|value| value.trim().to_string())
-      .collect::<Vec<String>>();
-    let mac_vec = macs.map(|x| {
-      x.split(',')
-        .map(|value| value.trim().to_string())
-        .collect::<Vec<String>>()
-    });
-    let nid_vec: Option<Vec<u32>> = nids
-      .map(|x| {
-        x.split(',')
-          .map(|value| {
-            value.trim().parse().with_context(|| {
-              format!(
-                "Could not parse NID value '{}' as a number",
-                value.trim()
-              )
-            })
-          })
-          .collect::<Result<Vec<u32>, _>>()
-      })
-      .transpose()?;
-    let boot_parameters = BootParameters {
-      hosts: host_vec,
-      macs: mac_vec,
-      nids: nid_vec,
-      params,
-      kernel,
-      initrd,
-      cloud_init,
-    };
-    ctx.infra
-      .backend
-      .add_bootparameters(&shasta_token, &boot_parameters)
-      .await?;
-    println!("Boot parameters created successfully");
+    add_boot_parameters::exec(ctx, &token, cli_add_boot_parameters).await?;
   } else if let Some(cli_add_kernel_parameters) =
     cli_add.subcommand_matches("kernel-parameters")
   {
@@ -210,67 +145,7 @@ pub async fn handle_add(
   } else if let Some(cli_add_redfish_endpoint) =
     cli_add.subcommand_matches("redfish-endpoint")
   {
-    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-    let id = cli_add_redfish_endpoint
-      .get_one::<String>("id")
-      .context("'id' argument is mandatory")?
-      .to_string();
-    let name: Option<String> =
-      cli_add_redfish_endpoint.get_one("name").cloned();
-    let hostname: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("hostname")
-      .cloned();
-    let domain: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("domain")
-      .cloned();
-    let fqdn: Option<String> =
-      cli_add_redfish_endpoint.get_one::<String>("fqdn").cloned();
-    let enabled: bool = cli_add_redfish_endpoint.get_flag("enabled");
-    let user: Option<String> =
-      cli_add_redfish_endpoint.get_one::<String>("user").cloned();
-    let password: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("password")
-      .cloned();
-    let use_ssdp: bool = cli_add_redfish_endpoint.get_flag("use-ssdp");
-    let mac_required: bool = cli_add_redfish_endpoint.get_flag("mac-required");
-    let mac_addr: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("macaddr")
-      .cloned();
-    let ip_address: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("ipaddress")
-      .cloned();
-    let rediscover_on_update: bool =
-      cli_add_redfish_endpoint.get_flag("rediscover-on-update");
-    let template_id: Option<String> = cli_add_redfish_endpoint
-      .get_one::<String>("template-id")
-      .cloned();
-    let redfish_endpoint = RedfishEndpoint {
-      id: id.clone(),
-      name,
-      hostname,
-      domain,
-      fqdn,
-      enabled: Some(enabled),
-      user,
-      password,
-      use_ssdp: Some(use_ssdp),
-      mac_required: Some(mac_required),
-      mac_addr,
-      ip_address,
-      rediscover_on_update: Some(rediscover_on_update),
-      template_id,
-      r#type: None,
-      uuid: None,
-      discovery_info: None,
-    };
-    let redfish_endpoint_array = RedfishEndpointArray {
-      redfish_endpoints: Some(vec![redfish_endpoint]),
-    };
-    ctx.infra
-      .backend
-      .add_redfish_endpoint(&shasta_token, &redfish_endpoint_array)
-      .await?;
-    println!("Redfish endpoint for node '{}' added", id);
+    add_redfish_endpoint::exec(ctx, &token, cli_add_redfish_endpoint).await?;
   } else {
     bail!("Unknown 'add' subcommand");
   }

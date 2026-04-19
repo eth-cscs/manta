@@ -1,14 +1,9 @@
-use crate::common::{self, audit};
-use crate::common::{
-  app_context::AppContext, authorization::validate_target_hsm_members,
-};
 use anyhow::{Context, Error, bail};
 
-use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Group,
-};
+use crate::common::{self, app_context::AppContext, audit};
+use crate::service::group;
 
-/// Creates a group of nodes. It is allowed to create a group with no nodes.
+/// CLI adapter for `manta add group`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   auth_token: &str,
@@ -18,42 +13,19 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.infra.backend.clone();
-  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
-  let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
-    Some(hosts_expression) => {
-      // Convert user input to xname
-      let xname_vec = common::node_ops::resolve_hosts_expression(
-        &backend,
-        auth_token,
-        hosts_expression,
-        false,
-      )
-      .await?;
-
-      Some(xname_vec)
-    }
-    None => None,
-  };
-
-  // Validate user has access to the list of xnames requested
-  if let Some(xname_vec) = &xname_vec_opt {
-    validate_target_hsm_members(&backend, auth_token, xname_vec).await?;
-  }
-
-  // Create Group instance for http payload
-  let group = Group::new(
+  let (grp, xname_vec_opt) = group::prepare_add_group(
+    &ctx.infra,
+    auth_token,
     label,
-    description.map(str::to_string),
-    xname_vec_opt.clone(),
-    None,
-    None,
-  );
+    description,
+    hosts_expression_opt,
+  )
+  .await?;
 
   if !common::user_interaction::confirm(
     &format!(
       "This operation will create the group below:\n{}\nPlease confirm to proceed",
-      serde_json::to_string_pretty(&group)
+      serde_json::to_string_pretty(&grp)
         .context("Failed to serialize group")?
     ),
     assume_yes,
@@ -64,20 +36,19 @@ pub async fn exec(
   if dryrun {
     println!(
       "Dryrun mode: The group below would be created:\n{}",
-      serde_json::to_string_pretty(&group)
+      serde_json::to_string_pretty(&grp)
         .context("Failed to serialize group")?
     );
     return Ok(());
   }
 
-  // Call backend to create group
-  let _ = backend.add_group(auth_token, group).await?;
+  group::create_group(&ctx.infra, auth_token, grp).await?;
 
   println!("Group '{}' created", label);
 
   // Audit
   audit::maybe_send_audit(
-    kafka_audit_opt,
+    ctx.cli.kafka_audit_opt,
     auth_token,
     format!("Create Group '{}'", label),
     Some(serde_json::json!(xname_vec_opt.unwrap_or_default())),

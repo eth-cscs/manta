@@ -1,37 +1,15 @@
-use anyhow::Context;
-use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
-use manta_backend_dispatcher::types::bss::BootParameters;
+use anyhow::Error;
 
-use crate::{
-  common::authentication::get_api_token,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::common::app_context::AppContext;
+use crate::service::boot_parameters;
 
-/// Delete boot parameters for specified nodes.
+/// CLI adapter for `manta delete boot-parameters`.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
+  ctx: &AppContext<'_>,
+  token: &str,
   hosts: Vec<String>,
-) -> Result<(), anyhow::Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  let boot_parameters = BootParameters {
-    hosts,
-    macs: None,
-    nids: None,
-    params: String::new(),
-    kernel: String::new(),
-    initrd: String::new(),
-    cloud_init: None,
-  };
-
-  let result = backend
-    .delete_bootparameters(&shasta_token, &boot_parameters)
-    .await;
-
-  result.context("Failed to delete boot parameters")?;
-
+) -> Result<(), Error> {
+  boot_parameters::delete_boot_parameters(&ctx.infra, token, hosts).await?;
   println!("Boot parameters deleted successfully");
-
   Ok(())
 }

@@ -1,15 +1,13 @@
 use anyhow::Error;
-use manta_backend_dispatcher::{
-  interfaces::hsm::redfish_endpoint::RedfishEndpointTrait,
-  types::hsm::inventory::RedfishEndpoint,
-};
 
-use crate::common::{app_context::AppContext, authentication::get_api_token};
+use crate::common::app_context::AppContext;
+use crate::service::redfish_endpoints::{self, UpdateRedfishEndpointParams};
 
-/// Update a Redfish endpoint configuration.
+/// CLI adapter for `manta update redfish-endpoint`.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   id: String,
   name: Option<String>,
   hostname: Option<String>,
@@ -25,34 +23,24 @@ pub async fn exec(
   rediscover_on_update: bool,
   template_id: Option<String>,
 ) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
-
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  let redfish_endpoint = RedfishEndpoint {
+  let params = UpdateRedfishEndpointParams {
     id,
     name,
     hostname,
     domain,
     fqdn,
-    enabled: Some(enabled),
+    enabled,
     user,
     password,
-    use_ssdp: Some(use_ssdp),
-    mac_required: Some(mac_required),
+    use_ssdp,
+    mac_required,
     mac_addr,
     ip_address,
-    rediscover_on_update: Some(rediscover_on_update),
+    rediscover_on_update,
     template_id,
-    r#type: None,
-    uuid: None,
-    discovery_info: None,
   };
 
-  backend
-    .update_redfish_endpoint(&shasta_token, &redfish_endpoint)
-    .await?;
+  redfish_endpoints::update_redfish_endpoint(&ctx.infra, token, params).await?;
 
   Ok(())
 }

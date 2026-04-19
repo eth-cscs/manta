@@ -1,5 +1,6 @@
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -9,6 +10,8 @@ pub async fn handle_update(
   cli_update: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_update_boot_parameters) =
     cli_update.subcommand_matches("boot-parameters")
   {
@@ -27,7 +30,7 @@ pub async fn handle_update(
       .map(String::as_str);
 
     update_boot_parameters::exec(
-      ctx, hosts, None, None, params, kernel, initrd,
+      ctx, &token, hosts, None, None, params, kernel, initrd,
     )
     .await?;
   } else if let Some(cli_update_redfish_endpoint) =
@@ -64,6 +67,7 @@ pub async fn handle_update(
 
     update_redfish_endpoint::exec(
       ctx,
+      &token,
       id,
       name,
       hostname,

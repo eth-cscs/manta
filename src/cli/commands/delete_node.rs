@@ -1,29 +1,15 @@
-use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
+use anyhow::Error;
 
-use crate::{
-  common::authentication::get_api_token,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::common::app_context::AppContext;
+use crate::service::node;
 
-/// Delete a node and its associated resources.
+/// CLI adapter for `manta delete node`.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
+  ctx: &AppContext<'_>,
+  token: &str,
   id: &str,
-) -> Result<(), anyhow::Error> {
-  let auth_token = get_api_token(backend, site_name).await?;
-  // Delete node
-  backend.delete_node(&auth_token, id).await?;
-
-  // Delete hsm hardware inventory related to a node
-  //
-  // Delete hsm network interfaces related to a node
-  //
-  // Delete hsm redfish interfaces related to a node
-  //
-  // Delete BSS boot parameters related to a node
-
+) -> Result<(), Error> {
+  node::delete_node(&ctx.infra, token, id).await?;
   println!("Node deleted '{}'", id);
-
   Ok(())
 }

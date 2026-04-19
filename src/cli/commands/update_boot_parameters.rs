@@ -1,29 +1,21 @@
-use crate::common::{
-  app_context::AppContext, audit, authentication::get_api_token,
-  authorization::validate_target_hsm_members,
-};
 use anyhow::{Context, Error};
-use manta_backend_dispatcher::{
-  interfaces::bss::BootParametersTrait, types::bss::BootParameters,
-};
 
-/// Update boot parameters for specified nodes.
+use crate::common::app_context::AppContext;
+use crate::common::audit;
+use crate::service::boot_parameters::{self, UpdateBootParametersParams};
+
+/// CLI adapter for `manta update boot-parameters`.
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   xnames: &str,
   nids: Option<&str>,
   macs: Option<&str>,
-  params: Option<&str>,
+  boot_params: Option<&str>,
   kernel: Option<&str>,
   initrd: Option<&str>,
 ) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
-  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
-
   println!("Update boot parameters");
-
-  let shasta_token = get_api_token(backend, site_name).await?;
 
   let hosts: Vec<String> = xnames.split(',').map(String::from).collect();
   let macs: Option<Vec<String>> =
@@ -39,32 +31,22 @@ pub async fn exec(
         .collect::<Result<Vec<u32>, _>>()
     })
     .transpose()?;
-  let params: String = params.unwrap_or_default().to_string();
-  let kernel: String = kernel.unwrap_or_default().to_string();
-  let initrd: String = initrd.unwrap_or_default().to_string();
 
-  validate_target_hsm_members(backend, &shasta_token, &hosts).await?;
-
-  let boot_parameters = BootParameters {
+  let params = UpdateBootParametersParams {
     hosts: hosts.clone(),
-    macs,
     nids,
-    params,
-    kernel,
-    initrd,
-    cloud_init: None,
+    macs,
+    params: boot_params.unwrap_or_default().to_string(),
+    kernel: kernel.unwrap_or_default().to_string(),
+    initrd: initrd.unwrap_or_default().to_string(),
   };
 
-  log::debug!("new boot params: {:#?}", boot_parameters);
-
-  backend
-    .update_bootparameters(&shasta_token, &boot_parameters)
-    .await?;
+  boot_parameters::update_boot_parameters(&ctx.infra, token, params).await?;
 
   // Audit
   audit::maybe_send_audit(
-    kafka_audit_opt,
-    &shasta_token,
+    ctx.cli.kafka_audit_opt,
+    token,
     "Update boot parameters",
     Some(serde_json::json!(hosts)),
     None,

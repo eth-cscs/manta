@@ -5,6 +5,7 @@ use crate::cli::commands::{
   delete_node, delete_redfish_endpoint,
 };
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -15,6 +16,8 @@ pub async fn handle_delete(
   cli_delete: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_delete_group) = cli_delete.subcommand_matches("group") {
     let label: &String = cli_delete_group
       .get_one("VALUE")
@@ -23,8 +26,8 @@ pub async fn handle_delete(
       .get_one("force")
       .context("'force' argument must have a value")?;
     delete_group::exec(
-      ctx.infra.backend,
-      ctx.infra.site_name,
+      ctx,
+      &token,
       label,
       force,
       ctx.cli.kafka_audit_opt,
@@ -34,7 +37,7 @@ pub async fn handle_delete(
     let id: &String = cli_delete_node
       .get_one("VALUE")
       .context("Group name argument is mandatory")?;
-    delete_node::exec(ctx.infra.backend, ctx.infra.site_name, id).await?;
+    delete_node::exec(ctx, &token, id).await?;
   } else if let Some(cli_delete_hw_configuration) =
     cli_delete.subcommand_matches("hardware")
   {
@@ -70,7 +73,7 @@ pub async fn handle_delete(
       .split(',')
       .map(String::from)
       .collect();
-    delete_boot_parameters::exec(ctx.infra.backend, ctx.infra.site_name, hosts).await?;
+    delete_boot_parameters::exec(ctx, &token, hosts).await?;
   } else if let Some(cli_delete_redfish_endpoint) =
     cli_delete.subcommand_matches("redfish-endpoint")
   {
@@ -78,7 +81,7 @@ pub async fn handle_delete(
       "Host argument is mandatory. \
          Please provide the host to delete",
     )?;
-    delete_redfish_endpoint::exec(ctx.infra.backend, ctx.infra.site_name, id).await?;
+    delete_redfish_endpoint::exec(ctx, &token, id).await?;
   } else if let Some(cli_delete_kernel_parameters) =
     cli_delete.subcommand_matches("kernel-parameters")
   {
