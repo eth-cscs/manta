@@ -8,4 +8,5 @@ pub mod kernel_parameters;
 pub mod node;
 pub mod redfish_endpoints;
 pub mod session;
+pub mod migrate;
 pub mod template;
