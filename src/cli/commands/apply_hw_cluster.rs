@@ -4,7 +4,7 @@ use clap::ArgMatches;
 use crate::{
   cli::commands::hw_cluster_common::command::{self, HwClusterMode},
   common::{
-    app_context::AppContext, authentication::get_api_token,
+    app_context::AppContext,
     authorization::get_groups_names_available,
   },
 };
@@ -13,19 +13,17 @@ use crate::{
 pub async fn exec(
   cli_apply_hw_cluster: &ArgMatches,
   ctx: &AppContext<'_>,
+  token: &str,
 ) -> Result<(), Error> {
   let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
   let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
-
-  let shasta_token = get_api_token(backend, site_name).await?;
 
   let target_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
     .get_one::<String>("target-cluster")
     .map(String::as_str);
   let target_hsm_group_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     target_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
@@ -36,7 +34,7 @@ pub async fn exec(
     .map(String::as_str);
   let parent_hsm_group_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     parent_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
@@ -65,7 +63,7 @@ pub async fn exec(
   command::exec(
     mode,
     ctx,
-    &shasta_token,
+    token,
     target_hsm_group_vec
       .first()
       .context("No target HSM group found")?,

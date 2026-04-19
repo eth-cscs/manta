@@ -56,6 +56,7 @@ pub async fn handle_delete(
 
     delete_hw_component_cluster::exec(
       ctx,
+      &token,
       target_hsm_group_name_arg_opt,
       parent_hsm_group_name_arg_opt,
       pattern,

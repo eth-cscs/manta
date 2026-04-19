@@ -14,7 +14,7 @@ use crate::{
     },
   },
   common::{
-    app_context::AppContext, authentication::get_api_token,
+    app_context::AppContext,
     authorization::get_groups_names_available,
   },
 };
@@ -22,6 +22,7 @@ use crate::{
 /// Remove hardware components from a cluster group.
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   target_hsm_group_name_arg_opt: Option<&str>,
   parent_hsm_group_name_arg_opt: Option<&str>,
   pattern: &str,
@@ -29,19 +30,17 @@ pub async fn exec(
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
   let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
   let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
-  let shasta_token = get_api_token(backend, site_name).await?;
   let target_hsm_group_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     target_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
   .await?;
   let parent_hsm_group_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     parent_hsm_group_name_arg_opt,
     settings_hsm_group_name_opt,
   )
@@ -55,7 +54,7 @@ pub async fn exec(
     .context("Parent HSM group vec is empty")?;
 
   match backend
-    .get_group(&shasta_token, target_hsm_group_name)
+    .get_group(token, target_hsm_group_name)
     .await
   {
     Ok(_) => {
@@ -95,7 +94,7 @@ pub async fn exec(
     target_hsm_hw_component_summary,
   ) = fetch_hsm_hw_inventory(
     backend,
-    &shasta_token,
+    token,
     &user_defined_delta_hw_component_vec,
     target_hsm_group_name,
     mem_lcm,
@@ -105,7 +104,7 @@ pub async fn exec(
   if target_hsm_node_hw_component_count_vec.is_empty() {
     return handle_empty_target(
       backend,
-      &shasta_token,
+      token,
       target_hsm_group_name,
       dryrun,
       delete_hsm_group,
@@ -126,7 +125,7 @@ pub async fn exec(
     _parent_hsm_hw_component_summary,
   ) = fetch_hsm_hw_inventory(
     backend,
-    &shasta_token,
+    token,
     &user_defined_delta_hw_component_vec,
     parent_hsm_group_name,
     mem_lcm,
@@ -195,7 +194,7 @@ pub async fn exec(
   } else {
     apply_node_moves(
       backend,
-      &shasta_token,
+      token,
       target_hsm_group_name,
       parent_hsm_group_name,
       &nodes_to_move,

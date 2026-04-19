@@ -1,4 +1,5 @@
 use anyhow::Error;
+use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
@@ -163,4 +164,59 @@ pub async fn execute_session_deletion(
     .await?;
 
   Ok(())
+}
+
+/// Resolve ansible-limit hosts to xnames and create a CFS
+/// session via the backend.
+///
+/// Returns `(cfs_configuration_name, cfs_session_name)`.
+#[allow(clippy::too_many_arguments)]
+pub async fn create_cfs_session(
+    infra: &InfraContext<'_>,
+    token: &str,
+    gitea_token: &str,
+    cfs_conf_sess_name: Option<&str>,
+    playbook_yaml_file_name_opt: Option<&str>,
+    hsm_group_opt: Option<&str>,
+    repo_name_vec: &[&str],
+    repo_last_commit_id_vec: &[&str],
+    ansible_limit_opt: Option<&str>,
+    ansible_verbosity: Option<&str>,
+    ansible_passthrough: Option<&str>,
+) -> Result<(String, String), Error> {
+    let backend = infra.backend;
+
+    // Resolve ansible-limit to xnames if provided
+    let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
+        let xname_vec = crate::common::node_ops::resolve_hosts_expression(
+            backend,
+            token,
+            ansible_limit,
+            false,
+        )
+        .await?;
+        Some(xname_vec.join(","))
+    } else {
+        None
+    };
+
+    let (cfs_configuration_name, cfs_session_name) = backend
+        .apply_session(
+            gitea_token,
+            infra.gitea_base_url,
+            token,
+            infra.shasta_base_url,
+            infra.shasta_root_cert,
+            cfs_conf_sess_name,
+            playbook_yaml_file_name_opt,
+            hsm_group_opt,
+            repo_name_vec,
+            repo_last_commit_id_vec,
+            ansible_limit.as_deref(),
+            ansible_verbosity,
+            ansible_passthrough,
+        )
+        .await?;
+
+    Ok((cfs_configuration_name, cfs_session_name))
 }

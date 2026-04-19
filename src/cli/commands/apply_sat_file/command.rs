@@ -73,6 +73,7 @@ fn run_hook_if_present(
 /// Process and apply a SAT file to the system.
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
   let backend = ctx.infra.backend;
@@ -81,18 +82,15 @@ pub async fn exec(
   let shasta_root_cert = ctx.infra.shasta_root_cert;
   let gitea_base_url = ctx.infra.gitea_base_url;
 
-  let shasta_token =
-    crate::common::authentication::get_api_token(backend, site_name).await?;
-
   let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-    &shasta_token,
+    token,
     opts.vault_base_url,
     site_name,
   )
   .await?;
 
   let hsm_group_available_vec =
-    backend.get_group_name_available(&shasta_token).await?;
+    backend.get_group_name_available(token).await?;
 
   // Validate hooks
   validate_hook(opts.prehook_opt, "Pre")?;
@@ -178,7 +176,7 @@ pub async fn exec(
       })
     }
     K8sAuth::Vault { base_url } => {
-      fetch_shasta_k8s_secrets_from_vault(base_url, site_name, &shasta_token)
+      fetch_shasta_k8s_secrets_from_vault(base_url, site_name, token)
         .await
         .context("Failed to fetch K8s secrets from Vault")?
     }
@@ -186,7 +184,7 @@ pub async fn exec(
 
   backend
     .apply_sat_file(
-      &shasta_token,
+      token,
       shasta_base_url,
       shasta_root_cert,
       opts.vault_base_url,

@@ -1,5 +1,6 @@
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -10,11 +11,13 @@ pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_apply_hw) = cli_apply.subcommand_matches("hardware") {
     if let Some(cli_apply_hw_cluster) =
       cli_apply_hw.subcommand_matches("cluster")
     {
-      commands::apply_hw_cluster::exec(cli_apply_hw_cluster, ctx).await?
+      commands::apply_hw_cluster::exec(cli_apply_hw_cluster, ctx, &token).await?
     } else {
       bail!("Unknown 'apply hardware' subcommand");
     }
@@ -24,7 +27,7 @@ pub async fn handle_apply(
     let vault_base_url = ctx.infra
       .vault_base_url
       .context("vault_base_url is required for apply session")?;
-    commands::apply_session::exec(cli_apply_session, ctx, vault_base_url)
+    commands::apply_session::exec(cli_apply_session, ctx, &token, vault_base_url)
       .await?
   } else if let Some(cli_apply_sat_file) =
     cli_apply.subcommand_matches("sat-file")
@@ -128,6 +131,7 @@ pub async fn handle_apply(
 
     commands::apply_sat_file::command::exec(
       ctx,
+      &token,
       &commands::apply_sat_file::command::SatApplyOptions {
         vault_base_url,
         k8s_api_url,
@@ -178,11 +182,7 @@ pub async fn handle_apply(
 
     commands::apply_template::exec(
       ctx,
-      &crate::common::authentication::get_api_token(
-        ctx.infra.backend,
-        ctx.infra.site_name,
-      )
-      .await?,
+      &token,
       bos_session_name_opt.map(String::as_str),
       bos_sessiontemplate_name,
       bos_session_operation,
@@ -203,10 +203,9 @@ pub async fn handle_apply(
     }
 
     commands::apply_ephemeral_env::exec(
-      ctx.infra.backend,
-      ctx.infra.site_name,
       ctx.infra.shasta_base_url,
       ctx.infra.shasta_root_cert,
+      &token,
       cli_apply_ephemeral_environment
         .get_one::<String>("image-id")
         .context("'image-id' argument is mandatory")?,
@@ -234,12 +233,6 @@ pub async fn handle_apply(
     let assume_yes: bool = cli_apply_kernel_parameters.get_flag("assume-yes");
     let do_not_reboot: bool =
       cli_apply_kernel_parameters.get_flag("do-not-reboot");
-
-    let token = crate::common::authentication::get_api_token(
-      ctx.infra.backend,
-      ctx.infra.site_name,
-    )
-    .await?;
 
     commands::apply_kernel_parameters::exec(
       ctx,
@@ -286,15 +279,9 @@ pub async fn handle_apply(
 
       let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
 
-      let boot_token = crate::common::authentication::get_api_token(
-        ctx.infra.backend,
-        ctx.infra.site_name,
-      )
-      .await?;
-
       commands::apply_boot_node::exec(
         ctx,
-        &boot_token,
+        &token,
         new_boot_image_id_opt.map(String::as_str),
         new_boot_image_configuration_opt.map(String::as_str),
         new_runtime_configuration_opt.map(String::as_str),
@@ -330,15 +317,9 @@ pub async fn handle_apply(
 
       let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
 
-      let boot_cluster_token = crate::common::authentication::get_api_token(
-        ctx.infra.backend,
-        ctx.infra.site_name,
-      )
-      .await?;
-
       commands::apply_boot_cluster::exec(
         ctx,
-        &boot_cluster_token,
+        &token,
         new_boot_image_id_opt.map(String::as_str),
         new_boot_image_configuration_opt.map(String::as_str),
         new_runtime_configuration_opt.map(String::as_str),

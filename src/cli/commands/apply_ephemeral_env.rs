@@ -1,5 +1,3 @@
-use crate::common::authentication;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use anyhow::{Context, Error, bail};
 use csm_rs::ims;
 
@@ -8,24 +6,22 @@ const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 
 /// Create an ephemeral CFS environment for testing.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
+  token: &str,
   image_id: &str,
 ) -> Result<(), Error> {
-  let shasta_token = authentication::get_api_token(backend, site_name).await?;
 
   // Take user name and check if there is an SSH public key with that name already in Alps
   let user_public_key_name =
-    csm_rs::common::jwt_ops::get_preferred_username(&shasta_token)
+    csm_rs::common::jwt_ops::get_preferred_username(token)
       .context("claim 'preferred_user' not found in JWT token")?;
 
   log::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
   let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
     ims::public_keys::http_client::v3::get_single(
-      &shasta_token,
+      token,
       shasta_base_url,
       shasta_root_cert,
       &user_public_key_name,
@@ -53,7 +49,7 @@ pub async fn exec(
     image_id
   );
   let resp_json = ims::job::http_client::post_customize(
-    &shasta_token,
+    token,
     shasta_base_url,
     shasta_root_cert,
     EPHEMERAL_IMAGE_NAME,
