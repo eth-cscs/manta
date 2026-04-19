@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.62.3] - 2026-04-19
+
+### Miscellaneous Tasks
+
+- Try to fix github workflow to build artifacts
+
 ## [1.62.2] - 2026-04-19
 
 ### Miscellaneous Tasks
 
 - Try newest version of rdkafka crate
+- Release manta-cli version 1.62.2
 
 ## [1.62.1] - 2026-04-19
 
