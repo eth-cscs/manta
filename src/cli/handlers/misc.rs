@@ -2,6 +2,7 @@ use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups, validate_local_repo,
 };
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -37,9 +38,10 @@ pub async fn handle_misc(
       .get_one::<String>("group")
       .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
+    let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     add_nodes_to_hsm_groups::exec(
-      ctx.infra.backend,
-      ctx.infra.site_name,
+      ctx,
+      &token,
       target_hsm_name,
       hosts_expression,
       dryrun,

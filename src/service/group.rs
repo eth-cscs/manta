@@ -149,3 +149,63 @@ pub async fn create_group(
   infra.backend.add_group(token, group).await?;
   Ok(())
 }
+
+/// Resolve hosts expression, validate target group exists,
+/// and add nodes to the HSM group.
+///
+/// Returns `(xnames_resolved, updated_member_list)`.
+pub async fn add_nodes_to_group(
+  infra: &InfraContext<'_>,
+  token: &str,
+  target_hsm_name: &str,
+  hosts_expression: &str,
+) -> Result<(Vec<String>, Vec<String>), Error> {
+  // Convert user input to xnames
+  let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
+    infra.backend,
+    token,
+    hosts_expression,
+    false,
+  )
+  .await?;
+
+  if xname_to_move_vec.is_empty() {
+    bail!(
+      "The list of nodes to move is empty. \
+       Nothing to do",
+    );
+  }
+
+  // Validate target group exists
+  let target_hsm_group =
+    infra.backend.get_group(token, target_hsm_name).await;
+
+  if target_hsm_group.is_err() {
+    bail!(
+      "Target HSM group '{}' does not exist. \
+       Nothing to do",
+      target_hsm_name
+    );
+  }
+
+  let xnames_to_move: Vec<&str> = xname_to_move_vec
+    .iter()
+    .map(|xname| xname.as_str())
+    .collect();
+
+  let mut updated_members = infra
+    .backend
+    .add_members_to_group(token, target_hsm_name, &xnames_to_move)
+    .await
+    .with_context(|| {
+      format!(
+        "Could not add nodes {:?} \
+         to HSM group '{}'",
+        xnames_to_move, target_hsm_name
+      )
+    })?;
+
+  updated_members.sort();
+
+  Ok((xname_to_move_vec, updated_members))
+}

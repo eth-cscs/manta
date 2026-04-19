@@ -178,6 +178,11 @@ pub async fn handle_apply(
 
     commands::apply_template::exec(
       ctx,
+      &crate::common::authentication::get_api_token(
+        ctx.infra.backend,
+        ctx.infra.site_name,
+      )
+      .await?,
       bos_session_name_opt.map(String::as_str),
       bos_sessiontemplate_name,
       bos_session_operation,
@@ -281,8 +286,15 @@ pub async fn handle_apply(
 
       let dry_run = cli_apply_boot_nodes.get_flag("dry-run");
 
+      let boot_token = crate::common::authentication::get_api_token(
+        ctx.infra.backend,
+        ctx.infra.site_name,
+      )
+      .await?;
+
       commands::apply_boot_node::exec(
         ctx,
+        &boot_token,
         new_boot_image_id_opt.map(String::as_str),
         new_boot_image_configuration_opt.map(String::as_str),
         new_runtime_configuration_opt.map(String::as_str),
@@ -318,8 +330,15 @@ pub async fn handle_apply(
 
       let dry_run = cli_apply_boot_cluster.get_flag("dry-run");
 
+      let boot_cluster_token = crate::common::authentication::get_api_token(
+        ctx.infra.backend,
+        ctx.infra.site_name,
+      )
+      .await?;
+
       commands::apply_boot_cluster::exec(
         ctx,
+        &boot_cluster_token,
         new_boot_image_id_opt.map(String::as_str),
         new_boot_image_configuration_opt.map(String::as_str),
         new_runtime_configuration_opt.map(String::as_str),

@@ -1,24 +1,14 @@
-use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::{
-  interfaces::{
-    bos::{ClusterSessionTrait, ClusterTemplateTrait},
-    hsm::group::GroupTrait,
-  },
-  types::bos::{
-    session::{BosSession, Operation},
-    session_template::BosSessionTemplate,
-  },
-};
+use anyhow::{Error, bail};
 
-use crate::common::{
-  self, app_context::AppContext, authorization::validate_target_hsm_members,
-  node_ops::validate_xname_format,
-};
+use crate::common::{self, app_context::AppContext};
+use crate::service;
+use crate::service::template::ApplyTemplateParams;
 
 /// Create a BOS session template and optionally boot.
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   bos_session_name_opt: Option<&str>,
   bos_sessiontemplate_name: &str,
   bos_session_operation: &str,
@@ -27,152 +17,23 @@ pub async fn exec(
   assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
-  let shasta_base_url = ctx.infra.shasta_base_url;
-  let shasta_root_cert = ctx.infra.shasta_root_cert;
+  let params = ApplyTemplateParams {
+    bos_session_name: bos_session_name_opt.map(str::to_string),
+    bos_sessiontemplate_name: bos_sessiontemplate_name.to_string(),
+    bos_session_operation: bos_session_operation.to_string(),
+    limit: limit.to_string(),
+    include_disabled,
+  };
 
-  let shasta_token =
-    crate::common::authentication::get_api_token(backend, site_name).await?;
-
-  //***************************************************
-  // GET DATA
-  //
-  // Get BOS sessiontemplate
-  //
-  //
-  let bos_sessiontemplate_vec_rslt = backend
-    .get_and_filter_templates(
-      &shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      &[],
-      &[],
-      Some(bos_sessiontemplate_name),
-      None,
+  let (bos_session, limit_vec) =
+    service::template::validate_and_prepare_template_session(
+      &ctx.infra,
+      token,
+      &params,
     )
-    .await;
-
-  let bos_sessiontemplate_vec: Vec<BosSessionTemplate> =
-    match bos_sessiontemplate_vec_rslt {
-      Ok(bos_sessiontemplate_vec) => bos_sessiontemplate_vec,
-      Err(e) => {
-        bail!(
-          "Could not fetch BOS \
-           sessiontemplate list. \
-           Reason:\n{:#?}",
-          e
-        );
-      }
-    };
-
-  let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
-    bail!(
-      "No BOS sessiontemplate '{}' \
-         found",
-      bos_sessiontemplate_name
-    );
-  } else {
-    bos_sessiontemplate_vec
-      .first()
-      .context("BOS sessiontemplate list unexpectedly empty")?
-  };
-
-  // END GET DATA
-  //***************************************************
-
-  //***************************************************
-  // VALIDATION
-  //
-  log::info!("Start BOS sessiontemplate validation");
-
-  // Validate user has access to the BOS sessiontemplate
-  // targets (either HSM groups or xnames)
-  log::info!(
-    "Validate user has access to HSM group in \
-     BOS sessiontemplate"
-  );
-  let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
-  let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
-    backend
-      .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_vec)
-      .await
-      .unwrap_or_default()
-  } else {
-    bos_sessiontemplate.get_target_xname()
-  };
-
-  validate_target_hsm_members(backend, &shasta_token, &target_xname_vec)
     .await?;
 
-  // Validate user has access to the xnames defined in
-  // `limit` argument
-  log::info!(
-    "Validate user has access to xnames in \
-     BOS sessiontemplate"
-  );
-
-  let limit_vec: Vec<String> = limit.split(',').map(str::to_string).collect();
-
-  let mut xnames_to_validate_access_vec = Vec::new();
-
-  for limit_value in &limit_vec {
-    log::info!("Check if limit value '{}', is an xname", limit_value);
-    if validate_xname_format(limit_value) {
-      // limit_value is an xname
-      log::info!("limit value '{}' is an xname", limit_value);
-      xnames_to_validate_access_vec.push(limit_value.to_string());
-    } else {
-      let hsm_members_vec_rslt = backend
-        .get_member_vec_from_group_name_vec(
-          &shasta_token,
-          std::slice::from_ref(limit_value),
-        )
-        .await;
-
-      if let Ok(mut hsm_members_vec) = hsm_members_vec_rslt {
-        // limit_value is an HSM group
-        log::info!(
-          "Check if limit value '{}', is an \
-           HSM group name",
-          limit_value
-        );
-
-        xnames_to_validate_access_vec.append(&mut hsm_members_vec);
-      } else {
-        // limit_value neither is an xname nor
-        // an HSM group
-        bail!(
-          "Value '{}' in 'limit' argument does \
-           not match an xname or a HSM group \
-           name.",
-          limit_value
-        );
-      }
-    }
-  }
-
-  log::info!(
-    "Validate list of xnames translated from \
-     'limit argument'"
-  );
-
-  validate_target_hsm_members(
-    backend,
-    &shasta_token,
-    &xnames_to_validate_access_vec,
-  )
-  .await?;
-
-  log::info!("Access to '{}' granted. Continue.", limit);
-
-  // END VALIDATION
-  //***************************************************
-
-  //***************************************************
-  // ASK USER FOR CONFIRMATION
-  //
-
+  // Ask user for confirmation
   let operation = if bos_session_operation.to_lowercase() == "boot" {
     "reboot (if necessary)"
   } else {
@@ -191,65 +52,29 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  //***************************************************
-  // CREATE BOS SESSION
-  //
-  // Create BOS session request payload
-  //
-  let bos_session = BosSession {
-    name: bos_session_name_opt.map(str::to_string),
-    tenant: None,
-    operation: Some(
-      Operation::from_str(bos_session_operation).map_err(|_| {
-        Error::msg(format!(
-          "Invalid BOS session operation '{}'",
-          bos_session_operation
-        ))
-      })?,
-    ),
-    template_name: bos_sessiontemplate_name.to_string(),
-    limit: Some(limit_vec.join(",")),
-    stage: Some(false),
-    components: None,
-    include_disabled: Some(include_disabled),
-    status: None,
-  };
-
   if dry_run {
     println!(
       "Dry-run enabled. No changes persisted \
        into the system"
     );
     println!("BOS session info:\n{:#?}", bos_session);
-
     Ok(())
   } else {
-    let create_bos_session_rslt = backend
-      .post_template_session(
-        &shasta_token,
-        shasta_base_url,
-        shasta_root_cert,
-        bos_session,
-      )
-      .await;
+    let created = service::template::create_bos_session(
+      &ctx.infra,
+      token,
+      bos_session,
+    )
+    .await?;
 
-    match create_bos_session_rslt {
-      Ok(bos_session) => {
-        println!(
-          "BOS session '{}' for BOS \
-           sessiontemplate '{}' created.\n\
-           Please wait a few minutes for BOS \
-           session to start.",
-          bos_session.name.unwrap_or_default(),
-          bos_sessiontemplate_name
-        );
-        Ok(())
-      }
-      Err(e) => bail!(
-        "Could not create BOS session. \
-         Reason:\n{:#?}",
-        e
-      ),
-    }
+    println!(
+      "BOS session '{}' for BOS \
+       sessiontemplate '{}' created.\n\
+       Please wait a few minutes for BOS \
+       session to start.",
+      created.name.unwrap_or_default(),
+      bos_sessiontemplate_name
+    );
+    Ok(())
   }
 }

@@ -123,7 +123,7 @@ pub async fn handle_delete(
     let dry_run: bool = cli_delete_session.get_flag("dry-run");
 
     let result =
-      delete_and_cancel_session::exec(ctx, session_name, dry_run, assume_yes)
+      delete_and_cancel_session::exec(ctx, &token, session_name, dry_run, assume_yes)
         .await;
 
     if let Err(e) = result {
@@ -170,6 +170,7 @@ pub async fn handle_delete(
 
     let result = delete_configurations_and_derivatives::exec(
       ctx,
+      &token,
       cfs_configuration_name_pattern.map(String::as_str),
       since_opt,
       until_opt,
@@ -193,7 +194,7 @@ pub async fn handle_delete(
       .collect();
     let dry_run: bool = cli_delete_images.get_flag("dry-run");
 
-    match delete_images::command::exec(ctx, image_id_vec.as_slice(), dry_run)
+    match delete_images::command::exec(ctx, &token, image_id_vec.as_slice(), dry_run)
       .await
     {
       Ok(_) => {

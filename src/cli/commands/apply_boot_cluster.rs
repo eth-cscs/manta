@@ -7,6 +7,7 @@ use crate::{cli::commands::apply_boot_node, common::app_context::AppContext};
 #[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   new_boot_image_id_opt: Option<&str>,
   new_boot_image_configuration_opt: Option<&str>,
   new_runtime_configuration_opt: Option<&str>,
@@ -16,17 +17,11 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), anyhow::Error> {
-  let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
-
-  let shasta_token =
-    crate::common::authentication::get_api_token(backend, site_name)
-      .await
-      .context("Failed to get API token")?;
-
-  let xname_vec = backend
+  let xname_vec = ctx
+    .infra
+    .backend
     .get_member_vec_from_group_name_vec(
-      &shasta_token,
+      token,
       &[hsm_group_name.to_string()],
     )
     .await
@@ -34,6 +29,7 @@ pub async fn exec(
 
   apply_boot_node::exec(
     ctx,
+    token,
     new_boot_image_id_opt,
     new_boot_image_configuration_opt,
     new_runtime_configuration_opt,

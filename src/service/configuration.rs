@@ -1,6 +1,7 @@
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, bail};
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
+use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_details::{
   ConfigurationDetails, LayerDetails,
 };
@@ -121,4 +122,106 @@ pub async fn get_configuration_details(
     bos_sessiontemplate_vec_opt,
     image_vec_opt,
   ))
+}
+
+/// Data gathered for deletion review and execution.
+pub struct DeletionCandidates {
+  pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
+  pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
+  pub image_ids: Vec<String>,
+  pub configuration_names: Vec<String>,
+  pub cfs_session_tuples: Vec<(String, String, String)>,
+  pub configurations: Vec<CfsConfigurationResponse>,
+}
+
+/// Fetch deletion candidates (no side effects).
+pub async fn get_deletion_candidates(
+  infra: &InfraContext<'_>,
+  token: &str,
+  settings_hsm_group_name_opt: Option<&str>,
+  configuration_name_pattern: Option<&str>,
+  since: Option<NaiveDateTime>,
+  until: Option<NaiveDateTime>,
+) -> Result<DeletionCandidates, Error> {
+  if let (Some(s), Some(u)) = (since, until) {
+    if s > u {
+      bail!("'since' date can't be after 'until' date");
+    }
+  }
+
+  let target_hsm_group_vec =
+    if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
+      vec![settings_hsm_group_name.to_string()]
+    } else {
+      get_groups_names_available(
+        infra.backend,
+        token,
+        None,
+        settings_hsm_group_name_opt,
+      )
+      .await?
+    };
+
+  let (
+    cfs_sessions_to_delete,
+    bos_sessiontemplate_tuples,
+    image_ids,
+    configuration_names,
+    cfs_session_tuples,
+    configurations,
+  ) = infra
+    .backend
+    .get_data_to_delete(
+      token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      &target_hsm_group_vec,
+      configuration_name_pattern,
+      since,
+      until,
+    )
+    .await?;
+
+  Ok(DeletionCandidates {
+    cfs_sessions_to_delete,
+    bos_sessiontemplate_tuples,
+    image_ids,
+    configuration_names,
+    cfs_session_tuples,
+    configurations,
+  })
+}
+
+/// Execute the deletion of configurations and derivatives.
+pub async fn delete_configurations_and_derivatives(
+  infra: &InfraContext<'_>,
+  token: &str,
+  candidates: &DeletionCandidates,
+) -> Result<(), Error> {
+  let cfs_session_name_vec: Vec<String> = candidates
+    .cfs_session_tuples
+    .iter()
+    .map(|(session, _, _)| session.clone())
+    .collect();
+
+  let bos_sessiontemplate_name_vec: Vec<String> = candidates
+    .bos_sessiontemplate_tuples
+    .iter()
+    .map(|(sessiontemplate, _, _)| sessiontemplate.clone())
+    .collect();
+
+  infra
+    .backend
+    .delete(
+      token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      &candidates.configuration_names,
+      &candidates.image_ids,
+      &cfs_session_name_vec,
+      &bos_sessiontemplate_name_vec,
+    )
+    .await?;
+
+  Ok(())
 }
