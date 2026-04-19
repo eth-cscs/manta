@@ -18,8 +18,8 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend.clone();
-  let kafka_audit_opt = ctx.kafka_audit_opt;
+  let backend = ctx.infra.backend.clone();
+  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
   let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
     Some(hosts_expression) => {
       // Convert user input to xname

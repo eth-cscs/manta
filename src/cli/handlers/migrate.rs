@@ -15,7 +15,7 @@ pub async fn handle_migrate(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_migrate_nodes) = cli_migrate.subcommand_matches("nodes") {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let dry_run: bool = cli_migrate_nodes.get_flag("dry-run");
     let from_opt = cli_migrate_nodes
       .get_one::<String>("from")
@@ -28,10 +28,10 @@ pub async fn handle_migrate(
       .get_one("XNAMES")
       .context("The 'XNAMES' argument must have a value")?;
     let from_rslt = get_groups_names_available(
-      ctx.backend,
+      ctx.infra.backend,
       &shasta_token,
       from_opt,
-      ctx.settings_hsm_group_name_opt,
+      ctx.cli.settings_hsm_group_name_opt,
     )
     .await;
     let from = match from_rslt {
@@ -41,10 +41,10 @@ pub async fn handle_migrate(
       }
     };
     let to_rslt = get_groups_names_available(
-      ctx.backend,
+      ctx.infra.backend,
       &shasta_token,
       Some(to),
-      ctx.settings_hsm_group_name_opt,
+      ctx.cli.settings_hsm_group_name_opt,
     )
     .await;
     let to = match to_rslt {

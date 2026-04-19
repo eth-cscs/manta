@@ -27,7 +27,7 @@ pub async fn exec(
   let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
   let result =
-    hardware::get_hardware_node(ctx.backend, token, &params).await?;
+    hardware::get_hardware_node(&ctx.infra, token, &params).await?;
 
   if output_opt.is_some_and(|o| o.eq("json")) {
     println!(

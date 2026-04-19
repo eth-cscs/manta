@@ -22,11 +22,11 @@ pub async fn exec(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let shasta_base_url = ctx.infra.shasta_base_url;
+  let shasta_root_cert = ctx.infra.shasta_root_cert;
+  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
   let shasta_token = get_api_token(backend, site_name).await?;
   let _hsm_name_available_vec = get_groups_names_available(
     backend,

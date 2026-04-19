@@ -2,8 +2,8 @@ use anyhow::{Context, Error};
 use manta_backend_dispatcher::interfaces::ims::GetImagesAndDetailsTrait;
 use manta_backend_dispatcher::types::ims::Image;
 
+use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Typed parameters for fetching IMS images.
 pub struct GetImagesParams {
@@ -17,14 +17,12 @@ pub struct GetImagesParams {
 ///
 /// Returns tuples of (Image, CFS config name, HSM groups string, bool).
 pub async fn get_images(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   params: &GetImagesParams,
 ) -> Result<Vec<(Image, String, String, bool)>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    backend,
+    infra.backend,
     token,
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
@@ -34,11 +32,11 @@ pub async fn get_images(
 
   let limit_ref = params.limit.as_ref();
 
-  let image_detail_vec = backend
+  let image_detail_vec = infra.backend
     .get_images_and_details(
       token,
-      shasta_base_url,
-      shasta_root_cert,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
       &target_hsm_group_vec,
       params.id.as_deref(),
       limit_ref,

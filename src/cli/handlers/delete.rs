@@ -23,18 +23,18 @@ pub async fn handle_delete(
       .get_one("force")
       .context("'force' argument must have a value")?;
     delete_group::exec(
-      ctx.backend,
-      ctx.site_name,
+      ctx.infra.backend,
+      ctx.infra.site_name,
       label,
       force,
-      ctx.kafka_audit_opt,
+      ctx.cli.kafka_audit_opt,
     )
     .await?;
   } else if let Some(cli_delete_node) = cli_delete.subcommand_matches("node") {
     let id: &String = cli_delete_node
       .get_one("VALUE")
       .context("Group name argument is mandatory")?;
-    delete_node::exec(ctx.backend, ctx.site_name, id).await?;
+    delete_node::exec(ctx.infra.backend, ctx.infra.site_name, id).await?;
   } else if let Some(cli_delete_hw_configuration) =
     cli_delete.subcommand_matches("hardware")
   {
@@ -70,7 +70,7 @@ pub async fn handle_delete(
       .split(',')
       .map(String::from)
       .collect();
-    delete_boot_parameters::exec(ctx.backend, ctx.site_name, hosts).await?;
+    delete_boot_parameters::exec(ctx.infra.backend, ctx.infra.site_name, hosts).await?;
   } else if let Some(cli_delete_redfish_endpoint) =
     cli_delete.subcommand_matches("redfish-endpoint")
   {
@@ -78,7 +78,7 @@ pub async fn handle_delete(
       "Host argument is mandatory. \
          Please provide the host to delete",
     )?;
-    delete_redfish_endpoint::exec(ctx.backend, ctx.site_name, id).await?;
+    delete_redfish_endpoint::exec(ctx.infra.backend, ctx.infra.site_name, id).await?;
   } else if let Some(cli_delete_kernel_parameters) =
     cli_delete.subcommand_matches("kernel-parameters")
   {

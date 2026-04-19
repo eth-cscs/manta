@@ -15,16 +15,16 @@ pub async fn exec(
   dry_run: bool,
 ) -> Result<(), Error> {
   let shasta_token =
-    common::authentication::get_api_token(ctx.backend, ctx.site_name)
+    common::authentication::get_api_token(ctx.infra.backend, ctx.infra.site_name)
       .await?;
 
   // Resolve target nodes from hosts expression, HSM group, or settings
   let xname_vec = kernel_parameters_common::resolve_target_nodes(
-    ctx.backend,
+    ctx.infra.backend,
     &shasta_token,
     hosts_expression,
     hsm_group_name_arg_opt,
-    ctx.settings_hsm_group_name_opt,
+    ctx.cli.settings_hsm_group_name_opt,
   )
   .await?;
 

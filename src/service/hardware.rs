@@ -9,8 +9,8 @@ use manta_backend_dispatcher::types::NodeSummary;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
+use crate::common::app_context::InfraContext;
 use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Maximum number of concurrent hardware inventory requests.
 const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
@@ -36,16 +36,16 @@ pub struct HardwareNodeResult {
 
 /// Fetch hardware inventory for a single node.
 pub async fn get_hardware_node(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   params: &GetHardwareNodeParams,
 ) -> Result<HardwareNodeResult, Error> {
   let xname_vec: Vec<String> =
     params.xnames.split(',').map(str::to_string).collect();
 
-  validate_target_hsm_members(backend, token, &xname_vec).await?;
+  validate_target_hsm_members(infra.backend, token, &xname_vec).await?;
 
-  let mut node_hw_inventory = &backend
+  let mut node_hw_inventory = &infra.backend
     .get_inventory_hardware_query(
       token,
       &params.xnames,
@@ -124,15 +124,14 @@ pub struct HardwareClusterResult {
 /// Fetch hardware inventory for all nodes in a cluster (HSM group).
 ///
 /// Concurrently queries hardware inventory for each node, rate-limited
-/// by a semaphore. Takes owned `StaticBackendDispatcher` since clones
-/// are sent into concurrent tasks.
+/// by a semaphore.
 pub async fn get_hardware_cluster(
-  backend: StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   params: &GetHardwareClusterParams,
 ) -> Result<HardwareClusterResult, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    &backend,
+    infra.backend,
     token,
     params.hsm_group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
@@ -144,7 +143,7 @@ pub async fn get_hardware_cluster(
     .context("No HSM groups available for this user")?
     .clone();
 
-  let hsm_group = backend
+  let hsm_group = infra.backend
     .get_group(token, &hsm_group_name)
     .await
     .context("Failed to get HSM group")?;
@@ -178,7 +177,7 @@ pub async fn get_hardware_cluster(
       i + 1
     );
 
-    let backend_cp = backend.clone();
+    let backend_cp = infra.backend.clone();
     let shasta_token_string = token.to_string();
     let hsm_member_string = hsm_member.to_string();
 

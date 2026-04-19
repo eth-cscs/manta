@@ -2,7 +2,7 @@ use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
 use manta_backend_dispatcher::types::hsm::inventory::RedfishEndpointArray;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::common::app_context::InfraContext;
 
 /// Typed parameters for fetching Redfish endpoints.
 pub struct GetRedfishEndpointsParams {
@@ -15,13 +15,13 @@ pub struct GetRedfishEndpointsParams {
 
 /// Fetch Redfish endpoint registrations from the backend.
 pub async fn get_redfish_endpoints(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   params: &GetRedfishEndpointsParams,
 ) -> Result<RedfishEndpointArray, Error> {
   log::info!("Get Redfish endpoints");
 
-  let result = backend
+  let result = infra.backend
     .get_redfish_endpoints(
       token,
       params.id.as_deref(),

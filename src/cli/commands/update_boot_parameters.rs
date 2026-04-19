@@ -17,9 +17,9 @@ pub async fn exec(
   kernel: Option<&str>,
   initrd: Option<&str>,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let kafka_audit_opt = ctx.kafka_audit_opt;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
 
   println!("Update boot parameters");
 

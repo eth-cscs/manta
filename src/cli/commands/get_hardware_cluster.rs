@@ -25,11 +25,11 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_hardware_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_hardware_cluster_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
   let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
   let result =
-    hardware::get_hardware_cluster(ctx.backend.clone(), token, &params)
+    hardware::get_hardware_cluster(&ctx.infra, token, &params)
       .await?;
 
   if output_opt.is_some_and(|o| o.eq("json")) {

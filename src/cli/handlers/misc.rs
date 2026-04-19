@@ -18,11 +18,11 @@ pub async fn handle_misc(
       .get_one::<String>("repo-path")
       .context("The 'repo-path' argument must have a value")?;
     validate_local_repo::exec(
-      ctx.backend,
-      ctx.site_name,
-      ctx.shasta_root_cert,
-      ctx.vault_base_url,
-      ctx.gitea_base_url,
+      ctx.infra.backend,
+      ctx.infra.site_name,
+      ctx.infra.shasta_root_cert,
+      ctx.infra.vault_base_url,
+      ctx.infra.gitea_base_url,
       repo_path,
     )
     .await?;
@@ -38,12 +38,12 @@ pub async fn handle_misc(
       .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
     add_nodes_to_hsm_groups::exec(
-      ctx.backend,
-      ctx.site_name,
+      ctx.infra.backend,
+      ctx.infra.site_name,
       target_hsm_name,
       hosts_expression,
       dryrun,
-      ctx.kafka_audit_opt,
+      ctx.cli.kafka_audit_opt,
     )
     .await?;
   } else if let Some(cli_remove_nodes) =
@@ -58,12 +58,12 @@ pub async fn handle_misc(
       .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
     remove_nodes_from_hsm_groups::exec(
-      ctx.backend,
-      ctx.site_name,
+      ctx.infra.backend,
+      ctx.infra.site_name,
       target_hsm_name,
       nodes,
       dryrun,
-      ctx.kafka_audit_opt,
+      ctx.cli.kafka_audit_opt,
     )
     .await?;
   } else if cli_root.subcommand_matches("download-boot-image").is_some() {

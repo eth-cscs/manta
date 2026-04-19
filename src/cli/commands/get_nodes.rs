@@ -30,10 +30,8 @@ pub async fn exec(
   let status_summary = cli_args.get_flag("summary-status");
 
   let node_details_list = node::get_nodes(
-    ctx.backend,
+    &ctx.infra,
     token,
-    ctx.shasta_base_url,
-    ctx.shasta_root_cert,
     &params,
   )
   .await?;

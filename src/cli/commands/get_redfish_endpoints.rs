@@ -23,7 +23,7 @@ pub async fn exec(
   let params = parse_redfish_endpoints_params(cli_args);
 
   let endpoints =
-    redfish_endpoints::get_redfish_endpoints(ctx.backend, token, &params).await?;
+    redfish_endpoints::get_redfish_endpoints(&ctx.infra, token, &params).await?;
 
   println!("{}", serde_json::to_string_pretty(&endpoints)?);
 

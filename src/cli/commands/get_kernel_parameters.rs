@@ -23,10 +23,10 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_kernel_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_kernel_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
   let boot_parameters =
-    kernel_parameters::get_kernel_parameters(ctx.backend, token, &params)
+    kernel_parameters::get_kernel_parameters(&ctx.infra, token, &params)
       .await?;
 
   let output: &String = cli_args

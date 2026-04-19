@@ -5,7 +5,7 @@ use manta_backend_dispatcher::{
 };
 
 use crate::common;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::common::app_context::InfraContext;
 
 /// Typed parameters for fetching boot parameters.
 pub struct GetBootParametersParams {
@@ -19,12 +19,12 @@ pub struct GetBootParametersParams {
 /// Resolves target nodes from HSM group or node list, then
 /// fetches their BSS boot parameters.
 pub async fn get_boot_parameters(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   params: &GetBootParametersParams,
 ) -> Result<Vec<BootParameters>, Error> {
   let xname_vec = common::node_ops::resolve_target_nodes(
-    backend,
+    infra.backend,
     token,
     params.nodes.as_deref(),
     params.hsm_group.as_deref(),
@@ -34,7 +34,7 @@ pub async fn get_boot_parameters(
 
   log::info!("Get boot parameters");
 
-  backend
+  infra.backend
     .get_bootparameters(token, &xname_vec)
     .await
     .map_err(|e| anyhow::anyhow!(e))

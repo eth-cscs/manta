@@ -21,7 +21,7 @@ pub async fn handle_apply(
   } else if let Some(cli_apply_session) =
     cli_apply.subcommand_matches("session")
   {
-    let vault_base_url = ctx
+    let vault_base_url = ctx.infra
       .vault_base_url
       .context("vault_base_url is required for apply session")?;
     commands::apply_session::exec(cli_apply_session, ctx, vault_base_url)
@@ -29,10 +29,10 @@ pub async fn handle_apply(
   } else if let Some(cli_apply_sat_file) =
     cli_apply.subcommand_matches("sat-file")
   {
-    let vault_base_url = ctx
+    let vault_base_url = ctx.infra
       .vault_base_url
       .context("vault_base_url is required for apply sat-file")?;
-    let k8s_api_url = ctx
+    let k8s_api_url = ctx.infra
       .k8s_api_url
       .context("k8s_api_url is required for apply sat-file")?;
 
@@ -78,7 +78,7 @@ pub async fn handle_apply(
     })?;
 
     let ansible_passthrough_env: Option<String> =
-      ctx.settings.get("ansible-passthrough").ok();
+      ctx.cli.settings.get("ansible-passthrough").ok();
     let ansible_passthrough_cli_arg = cli_apply_sat_file
       .get_one::<String>("ansible-passthrough")
       .cloned();
@@ -115,10 +115,10 @@ pub async fn handle_apply(
 
     let values_cli_opt: Option<&[String]> = cli_value_vec_opt.as_deref();
 
-    let site = ctx
+    let site = ctx.cli
       .configuration
       .sites
-      .get(&ctx.configuration.site)
+      .get(&ctx.cli.configuration.site)
       .ok_or_else(|| Error::msg("Site not valid"))?;
 
     let k8s_details = site
@@ -198,10 +198,10 @@ pub async fn handle_apply(
     }
 
     commands::apply_ephemeral_env::exec(
-      ctx.backend,
-      ctx.site_name,
-      ctx.shasta_base_url,
-      ctx.shasta_root_cert,
+      ctx.infra.backend,
+      ctx.infra.site_name,
+      ctx.infra.shasta_base_url,
+      ctx.infra.shasta_root_cert,
       cli_apply_ephemeral_environment
         .get_one::<String>("image-id")
         .context("'image-id' argument is mandatory")?,

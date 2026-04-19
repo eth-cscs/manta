@@ -33,13 +33,11 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_template_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_template_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
   let templates = template::get_templates(
-    ctx.backend,
+    &ctx.infra,
     token,
-    ctx.shasta_base_url,
-    ctx.shasta_root_cert,
     &params,
   )
   .await?;

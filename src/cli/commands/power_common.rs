@@ -68,8 +68,8 @@ pub async fn exec_nodes(
   assume_yes: bool,
   output: &str,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let shasta_token = get_api_token(backend, ctx.site_name).await?;
+  let backend = ctx.infra.backend;
+  let shasta_token = get_api_token(backend, ctx.infra.site_name).await?;
 
   // Convert user input to xnames
   let xname_vec = common::node_ops::resolve_hosts_expression(
@@ -114,7 +114,7 @@ pub async fn exec_nodes(
 
   // Audit
   audit::maybe_send_audit_with_group_lookup(
-    ctx.kafka_audit_opt,
+    ctx.cli.kafka_audit_opt,
     backend,
     &shasta_token,
     action.to_string(),
@@ -135,14 +135,14 @@ pub async fn exec_cluster(
   assume_yes: bool,
   output: &str,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let shasta_token = get_api_token(backend, ctx.site_name).await?;
+  let backend = ctx.infra.backend;
+  let shasta_token = get_api_token(backend, ctx.infra.site_name).await?;
 
   let target_hsm_group_vec = get_groups_names_available(
     backend,
     &shasta_token,
     Some(hsm_group_name_arg),
-    ctx.settings_hsm_group_name_opt,
+    ctx.cli.settings_hsm_group_name_opt,
   )
   .await?;
 
@@ -185,7 +185,7 @@ pub async fn exec_cluster(
 
   // Audit
   audit::maybe_send_audit(
-    ctx.kafka_audit_opt,
+    ctx.cli.kafka_audit_opt,
     &shasta_token,
     action.to_string(),
     None,

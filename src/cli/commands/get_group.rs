@@ -21,9 +21,9 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_group_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_group_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let groups = group::get_groups(ctx.backend, token, &params).await?;
+  let groups = group::get_groups(&ctx.infra, token, &params).await?;
 
   let output: &String = cli_args
     .get_one("output")

@@ -16,7 +16,7 @@ pub async fn handle_get(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   // Resolve auth token once for all subcommands.
-  let token = get_api_token(ctx.backend, ctx.site_name).await?;
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
 
   if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
     get_group::exec(ctx, &token, cli_get_groups).await?;

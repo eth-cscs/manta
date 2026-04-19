@@ -35,7 +35,7 @@ pub async fn exec(
   create_target_hsm_group: bool,
   delete_empty_parent_hsm_group: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
+  let backend = ctx.infra.backend;
 
   // Parse user input
   let (user_defined_hw_component_vec, user_defined_hw_component_count_hashmap) =

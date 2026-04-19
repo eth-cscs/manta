@@ -26,10 +26,10 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   vault_base_url: &str,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
-  let configuration = ctx.configuration;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
+  let configuration = ctx.cli.configuration;
 
   let shasta_token = get_api_token(backend, site_name).await?;
 
@@ -147,12 +147,12 @@ async fn apply_session(
   timestamps: bool,
   k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
-  let backend = ctx.backend.clone();
-  let site = ctx.site_name;
-  let gitea_base_url = ctx.gitea_base_url;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
-  let kafka_audit_opt = ctx.kafka_audit_opt;
+  let backend = ctx.infra.backend.clone();
+  let site = ctx.infra.site_name;
+  let gitea_base_url = ctx.infra.gitea_base_url;
+  let shasta_base_url = ctx.infra.shasta_base_url;
+  let shasta_root_cert = ctx.infra.shasta_root_cert;
+  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
     // Convert user input to xname
     let xname_vec = common::node_ops::resolve_hosts_expression(

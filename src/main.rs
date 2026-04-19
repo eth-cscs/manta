@@ -175,17 +175,21 @@ async fn run(
 
   // Process input params
   let app_context = AppContext {
-    backend: &backend,
-    site_name: &site_name,
-    shasta_base_url: &shasta_api_url,
-    shasta_root_cert: &shasta_root_cert,
-    vault_base_url: vault_base_url.map(String::as_str),
-    gitea_base_url: &gitea_base_url,
-    k8s_api_url: k8s_api_url.map(String::as_str),
-    settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
-    kafka_audit_opt: audit_kafka_opt.as_ref(),
-    settings: &settings,
-    configuration: &configuration,
+    infra: crate::common::app_context::InfraContext {
+      backend: &backend,
+      site_name: &site_name,
+      shasta_base_url: &shasta_api_url,
+      shasta_root_cert: &shasta_root_cert,
+      vault_base_url: vault_base_url.map(String::as_str),
+      gitea_base_url: &gitea_base_url,
+      k8s_api_url: k8s_api_url.map(String::as_str),
+    },
+    cli: crate::common::app_context::CliConfig {
+      settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
+      kafka_audit_opt: audit_kafka_opt.as_ref(),
+      settings: &settings,
+      configuration: &configuration,
+    },
   };
 
   let cli_result =

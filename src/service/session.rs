@@ -2,7 +2,7 @@ use anyhow::Error;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::common::app_context::InfraContext;
 
 /// Typed parameters for fetching CFS sessions.
 pub struct GetSessionParams {
@@ -21,19 +21,17 @@ pub struct GetSessionParams {
 /// Queries the backend for sessions matching the given
 /// parameters and returns the filtered results.
 pub async fn get_sessions(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   params: &GetSessionParams,
 ) -> Result<Vec<CfsSessionGetResponse>, Error> {
   log::info!("Get CFS sessions");
 
-  backend
+  infra.backend
     .get_and_filter_sessions(
       token,
-      shasta_base_url,
-      shasta_root_cert,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
       params
         .hsm_group
         .as_ref()

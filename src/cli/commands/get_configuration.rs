@@ -37,13 +37,11 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_configuration_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_configuration_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
   let cfs_configuration_vec = configuration::get_configurations(
-    ctx.backend,
+    &ctx.infra,
     token,
-    ctx.shasta_base_url,
-    ctx.shasta_root_cert,
     &params,
   )
   .await?;
@@ -65,19 +63,10 @@ pub async fn exec(
       .first()
       .context("CFS configuration list unexpectedly empty")?;
 
-    let vault_base_url = ctx
-      .vault_base_url
-      .context("vault base url is mandatory")?;
-
     let (details, cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
       configuration::get_configuration_details(
-        ctx.backend,
+        &ctx.infra,
         token,
-        ctx.shasta_base_url,
-        ctx.shasta_root_cert,
-        ctx.gitea_base_url,
-        vault_base_url,
-        ctx.site_name,
         config,
       )
       .await?;

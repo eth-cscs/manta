@@ -3,7 +3,7 @@ use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::types::bss::BootParameters;
 
 use crate::common;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::common::app_context::InfraContext;
 
 /// Typed parameters for fetching kernel boot parameters.
 pub struct GetKernelParametersParams {
@@ -17,12 +17,12 @@ pub struct GetKernelParametersParams {
 /// Resolves target nodes from HSM group or node list, then
 /// fetches their BSS boot parameters.
 pub async fn get_kernel_parameters(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   params: &GetKernelParametersParams,
 ) -> Result<Vec<BootParameters>, Error> {
   let xname_vec = common::node_ops::resolve_target_nodes(
-    backend,
+    infra.backend,
     token,
     params.nodes.as_deref(),
     params.hsm_group.as_deref(),
@@ -30,7 +30,7 @@ pub async fn get_kernel_parameters(
   )
   .await?;
 
-  let boot_parameter_vec = backend
+  let boot_parameter_vec = infra.backend
     .get_bootparameters(token, &xname_vec)
     .await
     .context("Could not get boot parameters")?;

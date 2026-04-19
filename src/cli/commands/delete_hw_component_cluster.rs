@@ -28,9 +28,9 @@ pub async fn exec(
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
   let shasta_token = get_api_token(backend, site_name).await?;
   let target_hsm_group_vec = get_groups_names_available(
     backend,

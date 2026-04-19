@@ -33,13 +33,11 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_images_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_images_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
   let images = image::get_images(
-    ctx.backend,
+    &ctx.infra,
     token,
-    ctx.shasta_base_url,
-    ctx.shasta_root_cert,
     &params,
   )
   .await?;

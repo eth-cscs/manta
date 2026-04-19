@@ -16,11 +16,11 @@ pub async fn exec(
   until_opt: Option<NaiveDateTime>,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let shasta_base_url = ctx.infra.shasta_base_url;
+  let shasta_root_cert = ctx.infra.shasta_root_cert;
+  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
 
   if let (Some(since), Some(until)) = (since_opt, until_opt)
     && since > until

@@ -16,10 +16,10 @@ pub async fn exec(
   posthook: Option<&str>,
   overwrite: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let shasta_base_url = ctx.infra.shasta_base_url;
+  let shasta_root_cert = ctx.infra.shasta_root_cert;
 
   let shasta_token = get_api_token(backend, site_name).await?;
 

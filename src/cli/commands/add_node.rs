@@ -25,8 +25,8 @@ pub async fn exec(
   arch_opt: Option<String>,
   hardware_file_path: Option<&PathBuf>,
 ) -> Result<()> {
-  let backend = ctx.backend;
-  let kafka_audit_opt = ctx.kafka_audit_opt;
+  let backend = ctx.infra.backend;
+  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
   // Create node api payload
   let component: ComponentCreate = ComponentCreate {
     id: id.to_string(),

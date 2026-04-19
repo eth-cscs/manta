@@ -3,8 +3,8 @@ use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
+use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Typed parameters for fetching BOS session templates.
 pub struct GetTemplateParams {
@@ -15,25 +15,20 @@ pub struct GetTemplateParams {
 }
 
 /// Fetch and filter BOS session templates from the backend.
-///
-/// Resolves available HSM groups, fetches their members, then
-/// queries and filters templates accordingly.
 pub async fn get_templates(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   params: &GetTemplateParams,
 ) -> Result<Vec<BosSessionTemplate>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    backend,
+    infra.backend,
     token,
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
   .await?;
 
-  let hsm_member_vec = backend
+  let hsm_member_vec = infra.backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
     .await?;
 
@@ -44,11 +39,11 @@ pub async fn get_templates(
     target_hsm_group_vec
   );
 
-  let mut bos_sessiontemplate_vec = backend
+  let mut bos_sessiontemplate_vec = infra.backend
     .get_and_filter_templates(
       token,
-      shasta_base_url,
-      shasta_root_cert,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
       &target_hsm_group_vec,
       &hsm_member_vec,
       params.name.as_deref(),

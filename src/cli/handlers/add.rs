@@ -25,7 +25,7 @@ pub async fn handle_add(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(cli_add_node) = cli_add.subcommand_matches("node") {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let id = cli_add_node
       .get_one::<String>("id")
       .context("'id' argument is mandatory")?;
@@ -51,7 +51,7 @@ pub async fn handle_add(
     )
     .await?;
   } else if let Some(cli_add_group) = cli_add.subcommand_matches("group") {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let label = cli_add_group
       .get_one::<String>("label")
       .context("'label' argument is mandatory")?;
@@ -73,25 +73,25 @@ pub async fn handle_add(
   } else if let Some(cli_add_hw_configuration) =
     cli_add.subcommand_matches("hardware")
   {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let target_hsm_group_name_arg_opt = cli_add_hw_configuration
       .get_one::<String>("target-cluster")
       .map(String::as_str);
     let target_hsm_group_vec = get_groups_names_available(
-      ctx.backend,
+      ctx.infra.backend,
       &shasta_token,
       target_hsm_group_name_arg_opt,
-      ctx.settings_hsm_group_name_opt,
+      ctx.cli.settings_hsm_group_name_opt,
     )
     .await?;
     let parent_hsm_group_name_arg_opt = cli_add_hw_configuration
       .get_one::<String>("parent-cluster")
       .map(String::as_str);
     let parent_hsm_group_vec = get_groups_names_available(
-      ctx.backend,
+      ctx.infra.backend,
       &shasta_token,
       parent_hsm_group_name_arg_opt,
-      ctx.settings_hsm_group_name_opt,
+      ctx.cli.settings_hsm_group_name_opt,
     )
     .await?;
     let dryrun = cli_add_hw_configuration.get_flag("dry-run");
@@ -99,7 +99,7 @@ pub async fn handle_add(
       .get_one::<bool>("create-hsm-group")
       .unwrap_or(&false);
     add_hw_component_cluster::exec(
-      ctx.backend,
+      ctx.infra.backend,
       &shasta_token,
       target_hsm_group_vec
         .first()
@@ -117,7 +117,7 @@ pub async fn handle_add(
   } else if let Some(cli_add_boot_parameters) =
     cli_add.subcommand_matches("boot-parameters")
   {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let hosts = cli_add_boot_parameters
       .get_one::<String>("hosts")
       .context("'hosts' argument is mandatory")?;
@@ -170,7 +170,7 @@ pub async fn handle_add(
       initrd,
       cloud_init,
     };
-    ctx
+    ctx.infra
       .backend
       .add_bootparameters(&shasta_token, &boot_parameters)
       .await?;
@@ -210,7 +210,7 @@ pub async fn handle_add(
   } else if let Some(cli_add_redfish_endpoint) =
     cli_add.subcommand_matches("redfish-endpoint")
   {
-    let shasta_token = get_api_token(ctx.backend, ctx.site_name).await?;
+    let shasta_token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     let id = cli_add_redfish_endpoint
       .get_one::<String>("id")
       .context("'id' argument is mandatory")?
@@ -266,7 +266,7 @@ pub async fn handle_add(
     let redfish_endpoint_array = RedfishEndpointArray {
       redfish_endpoints: Some(vec![redfish_endpoint]),
     };
-    ctx
+    ctx.infra
       .backend
       .add_redfish_endpoint(&shasta_token, &redfish_endpoint_array)
       .await?;

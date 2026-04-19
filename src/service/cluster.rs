@@ -2,8 +2,8 @@ use anyhow::{Context, Error};
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Typed parameters for fetching cluster node details.
 pub struct GetClusterParams {
@@ -13,26 +13,20 @@ pub struct GetClusterParams {
 }
 
 /// Fetch node details for all nodes in the specified HSM groups.
-///
-/// Resolves available HSM groups, fetches their members, queries
-/// node details, applies optional status filtering, and returns
-/// sorted results.
 pub async fn get_cluster_nodes(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   params: &GetClusterParams,
 ) -> Result<Vec<NodeDetails>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    backend,
+    infra.backend,
     token,
     params.hsm_group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
   .await?;
 
-  let mut hsm_groups_node_list = backend
+  let mut hsm_groups_node_list = infra.backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
     .await
     .context("Failed to get HSM group members")?;
@@ -41,8 +35,8 @@ pub async fn get_cluster_nodes(
 
   let mut node_details_list = csm_rs::node::utils::get_node_details(
     token,
-    shasta_base_url,
-    shasta_root_cert,
+    infra.shasta_base_url,
+    infra.shasta_root_cert,
     hsm_groups_node_list,
   )
   .await?;

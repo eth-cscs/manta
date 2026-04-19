@@ -10,14 +10,14 @@ pub async fn handle_config(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-    commands::config_show::exec(ctx.backend, ctx.site_name, ctx.settings)
+    commands::config_show::exec(ctx.infra.backend, ctx.infra.site_name, ctx.cli.settings)
       .await?
   } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
     if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
       commands::config_set_hsm::exec(
         cli_config_set_hsm,
-        ctx.backend,
-        ctx.site_name,
+        ctx.infra.backend,
+        ctx.infra.site_name,
       )
       .await?
     }
@@ -26,8 +26,8 @@ pub async fn handle_config(
     {
       commands::config_set_parent_hsm::exec(
         cli_config_set_parent_hsm,
-        ctx.backend,
-        ctx.site_name,
+        ctx.infra.backend,
+        ctx.infra.site_name,
       )
       .await?;
     }
@@ -48,7 +48,7 @@ pub async fn handle_config(
     if let Some(_cli_config_unset_parent_hsm) =
       cli_config_unset.subcommand_matches("parent-hsm")
     {
-      commands::config_unset_parent_hsm::exec(ctx.backend, ctx.site_name)
+      commands::config_unset_parent_hsm::exec(ctx.infra.backend, ctx.infra.site_name)
         .await?;
     }
     if let Some(_cli_config_unset_auth) =

@@ -75,11 +75,11 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
-  let gitea_base_url = ctx.gitea_base_url;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let shasta_base_url = ctx.infra.shasta_base_url;
+  let shasta_root_cert = ctx.infra.shasta_root_cert;
+  let gitea_base_url = ctx.infra.gitea_base_url;
 
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name).await?;

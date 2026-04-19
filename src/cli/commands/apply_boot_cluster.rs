@@ -16,8 +16,8 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), anyhow::Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
 
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name)

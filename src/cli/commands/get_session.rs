@@ -45,10 +45,8 @@ pub async fn exec(
   let params = parse_session_params(cli_args);
 
   let sessions = session::get_sessions(
-    ctx.backend,
+    &ctx.infra,
     token,
-    ctx.shasta_base_url,
-    ctx.shasta_root_cert,
     &params,
   )
   .await?;

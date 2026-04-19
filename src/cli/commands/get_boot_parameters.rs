@@ -25,10 +25,10 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_boot_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_boot_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
   let boot_parameters =
-    boot_parameters::get_boot_parameters(ctx.backend, token, &params).await?;
+    boot_parameters::get_boot_parameters(&ctx.infra, token, &params).await?;
 
   output::boot_parameters::print(&boot_parameters, None)?;
 

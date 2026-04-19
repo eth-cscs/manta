@@ -16,10 +16,10 @@ pub async fn handle_console(
     if !std::io::stdout().is_terminal() {
       bail!("This command needs to run in interactive mode");
     }
-    let site = ctx
+    let site = ctx.cli
       .configuration
       .sites
-      .get(&ctx.configuration.site)
+      .get(&ctx.cli.configuration.site)
       .context("Site not found in configuration")?;
     let xname = cli_console_node
       .get_one::<String>("XNAME")
@@ -28,17 +28,17 @@ pub async fn handle_console(
       .k8s
       .as_ref()
       .context("k8s section not found in configuration")?;
-    console_node::exec(ctx.backend, ctx.site_name, xname, k8s_details).await?;
+    console_node::exec(ctx.infra.backend, ctx.infra.site_name, xname, k8s_details).await?;
   } else if let Some(cli_console_target_ansible) =
     cli_console.subcommand_matches("target-ansible")
   {
     if !std::io::stdout().is_terminal() {
       bail!("This command needs to run in interactive mode");
     }
-    let site = ctx
+    let site = ctx.cli
       .configuration
       .sites
-      .get(&ctx.configuration.site)
+      .get(&ctx.cli.configuration.site)
       .context("Site not found in configuration")?;
     let session_name = cli_console_target_ansible
       .get_one::<String>("SESSION_NAME")
@@ -48,11 +48,11 @@ pub async fn handle_console(
       .as_ref()
       .context("k8s section not found in configuration")?;
     console_cfs_session_image_target_ansible::exec(
-      ctx.backend,
-      ctx.site_name,
-      ctx.settings_hsm_group_name_opt,
-      ctx.shasta_base_url,
-      ctx.shasta_root_cert,
+      ctx.infra.backend,
+      ctx.infra.site_name,
+      ctx.cli.settings_hsm_group_name_opt,
+      ctx.infra.shasta_base_url,
+      ctx.infra.shasta_root_cert,
       session_name,
       k8s_details,
     )

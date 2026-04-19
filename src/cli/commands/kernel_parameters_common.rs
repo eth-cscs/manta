@@ -102,9 +102,9 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let kafka_audit_opt = ctx.kafka_audit_opt;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
+  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
 
   let shasta_token =
     crate::common::authentication::get_api_token(backend, site_name)

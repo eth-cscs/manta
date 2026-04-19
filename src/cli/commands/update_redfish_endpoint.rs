@@ -25,8 +25,8 @@ pub async fn exec(
   rediscover_on_update: bool,
   template_id: Option<String>,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
+  let backend = ctx.infra.backend;
+  let site_name = ctx.infra.site_name;
 
   let shasta_token = get_api_token(backend, site_name).await?;
 

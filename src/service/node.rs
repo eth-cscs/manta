@@ -2,7 +2,7 @@ use anyhow::{Error, bail};
 use csm_rs::node::types::NodeDetails;
 
 use crate::common;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::common::app_context::InfraContext;
 
 /// Typed parameters for fetching node details.
 pub struct GetNodesParams {
@@ -12,18 +12,13 @@ pub struct GetNodesParams {
 }
 
 /// Fetch node details for the given xname expression.
-///
-/// Resolves hosts from the expression, fetches node details from
-/// CSM, applies optional status filtering, and returns sorted results.
 pub async fn get_nodes(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   params: &GetNodesParams,
 ) -> Result<Vec<NodeDetails>, Error> {
   let node_list = common::node_ops::resolve_hosts_expression(
-    backend,
+    infra.backend,
     token,
     &params.xname,
     params.include_siblings,
@@ -36,8 +31,8 @@ pub async fn get_nodes(
 
   let mut node_details_list = csm_rs::node::utils::get_node_details(
     token,
-    shasta_base_url,
-    shasta_root_cert,
+    infra.shasta_base_url,
+    infra.shasta_root_cert,
     node_list.to_vec(),
   )
   .await
