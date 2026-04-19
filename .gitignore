@@ -2,6 +2,7 @@
 /.vscode
 /sat-file
 /cfr_semantic_files
+/.opencode
 #Cargo.lock
 *.code-workspace
 *.log
