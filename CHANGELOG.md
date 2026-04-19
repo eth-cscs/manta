@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.62.1] - 2026-04-19
+
+### Miscellaneous Tasks
+
+- Update cargo dist
+
 ## [1.62.0] - 2026-04-19
 
 ### Bug Fixes
@@ -47,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - Update .gitignore file
 - Update Cargo.toml
 - Update .gitignore file
+- Release manta-cli version 1.62.0
 
 ### Refactor
 
