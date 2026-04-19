@@ -90,14 +90,6 @@ jobs:
   # Build and packages all the platform-specific things
   build-local-artifacts:
     name: build-local-artifacts (${{ join(matrix.targets, ', ') }})
-    # 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
-    run: |
-      sudo apt-get update
-      if [ "${{ matrix.dist-target }}" = "aarch64-unknown-linux-gnu" ]; then
-        sudo apt-get install -y gcc-aarch64-linux-gnu
-      elif [ "${{ matrix.dist-target }}" = "x86_64-unknown-linux-gnu" ]; then
-        sudo apt-get install -y build-essential pkg-config libssl-dev
-      fi
     # Let the initial task tell us to not run (currently very blunt)
     needs:
       - plan

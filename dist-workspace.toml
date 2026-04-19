@@ -19,3 +19,8 @@ install-path = "CARGO_HOME"
 publish-jobs = ["homebrew"]
 # Whether to install an updater program
 install-updater = false
+
+# 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
+[dist.dependencies.apt]
+cmake = '*'
+curl = '*'
