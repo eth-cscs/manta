@@ -2,11 +2,167 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.62.0] - 2026-04-19
+
+### Bug Fixes
+
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Code review priorities 1-3 — bugs, robustness, and code quality
+
+### Features
+
+- Add --site flag for per-invocation site selection
+- Add --site flag for per-invocation site selection
+- Add --site flag for per-invocation site selection
+- Add --site flag for per-invocation site selection
+
+### Miscellaneous Tasks
+
+- Code review priorities 1-3 — bugs, robustness, and code quality
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add unit tests and refactor kernel_parameters_ops for testability
+- Add unit tests and refactor kernel_parameters_ops for testability
+- Migrate all 12 get commands to service layer with auth centralization
+- Split AppContext into InfraContext + CliConfig
+- Update .gitignore file
+- Update Cargo.toml
+- Update .gitignore file
+
+### Refactor
+
+- Code review priority 4 — structural refactoring
+- Deduplicate kernel parameter commands (add/apply/delete) into a
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Extract helper functions to eliminate copy-paste patterns:
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 4 — structural refactoring
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Audit sending helpers (11 call sites)
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- HSM-or-nodes resolution helper (4 inline duplications)
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 5 — DRY helper extraction for audit and node resolution
+- Code review priority 6 — named constants, Display formatting, path constants, and typo fix
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Migrate all 12 get commands to service layer with auth centralization
+- Split AppContext into InfraContext + CliConfig
+- Split AppContext into InfraContext + CliConfig
+- Split AppContext into InfraContext + CliConfig
+- Split AppContext into InfraContext + CliConfig
+- Split AppContext into InfraContext + CliConfig
+- Split AppContext into InfraContext + CliConfig
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 1 write commands (10 commands) to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 2 kernel parameter commands to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 3 moderate write commands (7 commands) to service layer pattern
+- Migrate Batch 4 migrate commands (3 commands) to service layer pattern
+- Migrate Batch 4 migrate commands (3 commands) to service layer pattern
+- Migrate Batch 4 migrate commands (3 commands) to service layer pattern
+- Migrate Batch 4 migrate commands (3 commands) to service layer pattern
+- Migrate Batch 4 migrate commands (3 commands) to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Migrate Batch 5+6 complex commands to service layer pattern
+- Centralize get_api_token in all remaining handlers (Batch 7)
+- Centralize get_api_token in all remaining handlers (Batch 7)
+- Centralize get_api_token in all remaining handlers (Batch 7)
+- Centralize get_api_token in all remaining handlers (Batch 7)
+- Centralize get_api_token in all remaining handlers (Batch 7)
+- Centralize get_api_token in all remaining handlers (Batch 7)
+
+### Testing
+
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add 62 unit tests across 7 modules (73 -> 135 total)
+- Add unit tests and refactor kernel_parameters_ops for testability
+- Add unit tests and refactor kernel_parameters_ops for testability
+- Add unit tests and refactor kernel_parameters_ops for testability
+- Add unit tests and refactor kernel_parameters_ops for testability
+
 ## [1.61.2] - 2026-04-06
 
 ### Miscellaneous Tasks
 
 - Update Cargo.lock
+- Release manta-cli version 1.61.2
 
 ### Refactor
 
