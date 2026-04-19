@@ -101,6 +101,7 @@ pub async fn handle_delete(
 
     delete_kernel_parameters::exec(
       ctx,
+      &token,
       hsm_group_name_arg_opt,
       nodes,
       kernel_parameters,

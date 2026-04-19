@@ -1,4 +1,4 @@
-use crate::common::{self, app_context::AppContext};
+use crate::common::app_context::AppContext;
 use anyhow::Error;
 
 use super::kernel_parameters_common::{self, KernelParamOperation};
@@ -7,6 +7,7 @@ use super::kernel_parameters_common::{self, KernelParamOperation};
 /// Reboots the nodes whose kernel params have changed.
 pub async fn exec(
   ctx: &AppContext<'_>,
+  token: &str,
   kernel_params: &str,
   hosts_expression: Option<&str>,
   hsm_group_name_arg_opt: Option<&str>,
@@ -14,14 +15,10 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let shasta_token =
-    common::authentication::get_api_token(ctx.infra.backend, ctx.infra.site_name)
-      .await?;
-
   // Resolve target nodes from hosts expression, HSM group, or settings
   let xname_vec = kernel_parameters_common::resolve_target_nodes(
     ctx.infra.backend,
-    &shasta_token,
+    token,
     hosts_expression,
     hsm_group_name_arg_opt,
     ctx.cli.settings_hsm_group_name_opt,
@@ -30,6 +27,7 @@ pub async fn exec(
 
   kernel_parameters_common::exec(
     ctx,
+    token,
     &xname_vec,
     &KernelParamOperation::Apply {
       params: kernel_params,

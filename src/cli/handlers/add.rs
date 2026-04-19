@@ -133,6 +133,7 @@ pub async fn handle_add(
     let dryrun = cli_add_kernel_parameters.get_flag("dry-run");
     add_kernel_parameters::exec(
       ctx,
+      &token,
       kernel_parameters,
       nodes_opt,
       hsm_group_name_arg_opt,

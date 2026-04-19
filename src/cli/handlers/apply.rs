@@ -230,8 +230,15 @@ pub async fn handle_apply(
     let do_not_reboot: bool =
       cli_apply_kernel_parameters.get_flag("do-not-reboot");
 
+    let token = crate::common::authentication::get_api_token(
+      ctx.infra.backend,
+      ctx.infra.site_name,
+    )
+    .await?;
+
     commands::apply_kernel_parameters::exec(
       ctx,
+      &token,
       kernel_parameters,
       nodes_opt.map(|x| x.as_str()),
       hsm_group_name_arg_opt.map(|x| x.as_str()),
