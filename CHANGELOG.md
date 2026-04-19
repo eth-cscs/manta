@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.62.6] - 2026-04-19
+
+### Miscellaneous Tasks
+
+- Try to fix github workflow to build artifacts
+
 ## [1.62.5] - 2026-04-19
 
 ### Miscellaneous Tasks
 
 - Try to fix github workflow to build artifacts
+- Release manta-cli version 1.62.5
 
 ## [1.62.4] - 2026-04-19
 
