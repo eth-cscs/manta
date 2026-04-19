@@ -72,7 +72,8 @@ crossterm = { version = "0.29.0", default-features = false }               # ter
 execute = "0.2.13"
 is_executable = "1.0.1"
 minijinja = { version = "2.4.0", features = ["custom_syntax"] }
-rdkafka = { version = "0.37", features = ["cmake-build"] }
+rdkafka = { version = "0.39" }
+# rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
 
