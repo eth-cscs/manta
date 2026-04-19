@@ -2,21 +2,16 @@ use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
-  common::{
-    authentication::get_api_token,
-    config::{read_config_toml, write_config_toml},
-  },
+  common::config::{read_config_toml, write_config_toml},
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Remove the parent HSM group from configuration.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  site_name: &str,
+  token: &str,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  unset_parent_hsm(backend, &shasta_token).await
+  unset_parent_hsm(backend, token).await
 }
 
 pub async fn unset_parent_hsm(

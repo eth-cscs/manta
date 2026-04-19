@@ -7,7 +7,7 @@ use manta_backend_dispatcher::interfaces::{
 use nodeset::NodeSet;
 
 use crate::common::{
-  self, app_context::AppContext, audit, authentication::get_api_token,
+  self, app_context::AppContext, audit,
   authorization::get_groups_names_available,
 };
 
@@ -67,14 +67,14 @@ pub async fn exec_nodes(
   force: bool,
   assume_yes: bool,
   output: &str,
+  token: &str,
 ) -> Result<(), Error> {
   let backend = ctx.infra.backend;
-  let shasta_token = get_api_token(backend, ctx.infra.site_name).await?;
 
   // Convert user input to xnames
   let xname_vec = common::node_ops::resolve_hosts_expression(
     backend,
-    &shasta_token,
+    token,
     hosts_expression,
     false,
   )
@@ -104,7 +104,7 @@ pub async fn exec_nodes(
   }
 
   let power_mgmt_summary =
-    call_backend(backend, &shasta_token, &xname_vec, action, force)
+    call_backend(backend, token, &xname_vec, action, force)
       .await
       .with_context(|| {
         format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
@@ -116,7 +116,7 @@ pub async fn exec_nodes(
   audit::maybe_send_audit_with_group_lookup(
     ctx.cli.kafka_audit_opt,
     backend,
-    &shasta_token,
+    token,
     action.to_string(),
     &xname_vec,
   )
@@ -134,13 +134,13 @@ pub async fn exec_cluster(
   force: bool,
   assume_yes: bool,
   output: &str,
+  token: &str,
 ) -> Result<(), Error> {
   let backend = ctx.infra.backend;
-  let shasta_token = get_api_token(backend, ctx.infra.site_name).await?;
 
   let target_hsm_group_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     Some(hsm_group_name_arg),
     ctx.cli.settings_hsm_group_name_opt,
   )
@@ -152,7 +152,7 @@ pub async fn exec_cluster(
 
   let xname_vec = backend
     .get_member_vec_from_group_name_vec(
-      &shasta_token,
+      token,
       &[target_hsm_group.to_string()],
     )
     .await
@@ -175,7 +175,7 @@ pub async fn exec_cluster(
   }
 
   let power_mgmt_summary =
-    call_backend(backend, &shasta_token, &xname_vec, action, force)
+    call_backend(backend, token, &xname_vec, action, force)
       .await
       .with_context(|| {
         format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
@@ -186,7 +186,7 @@ pub async fn exec_cluster(
   // Audit
   audit::maybe_send_audit(
     ctx.cli.kafka_audit_opt,
-    &shasta_token,
+    token,
     action.to_string(),
     None,
     Some(serde_json::json!(hsm_group_name_arg)),

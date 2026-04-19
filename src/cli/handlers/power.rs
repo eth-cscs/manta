@@ -1,5 +1,6 @@
 use crate::cli::commands::power_common::{self, PowerAction};
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -9,6 +10,8 @@ pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_power_on) = cli_power.subcommand_matches("on") {
     if let Some(cli_power_on_cluster) =
       cli_power_on.subcommand_matches("cluster")
@@ -27,6 +30,7 @@ pub async fn handle_power(
         false,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else if let Some(cli_power_on_node) =
@@ -46,6 +50,7 @@ pub async fn handle_power(
         false,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else {
@@ -72,6 +77,7 @@ pub async fn handle_power(
         *force,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else if let Some(cli_power_off_node) =
@@ -94,6 +100,7 @@ pub async fn handle_power(
         *force,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else {
@@ -123,6 +130,7 @@ pub async fn handle_power(
         *force,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else if let Some(cli_power_reset_node) =
@@ -145,6 +153,7 @@ pub async fn handle_power(
         *force,
         assume_yes,
         output,
+        &token,
       )
       .await?;
     } else {

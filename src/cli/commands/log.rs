@@ -9,7 +9,7 @@ use manta_backend_dispatcher::{
 
 use crate::{
   common::{
-    self, authentication::get_api_token,
+    self,
     cfs_session_utils::check_cfs_session_against_groups_available,
   },
   manta_backend_dispatcher::StaticBackendDispatcher,
@@ -21,18 +21,18 @@ use futures::{AsyncBufReadExt, TryStreamExt};
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
+  token: &str,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   hosts_expression: &str,
   timestamps: bool,
   k8s: &K8sDetails,
 ) -> Result<(), anyhow::Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
   let group_available_vec =
-    backend.get_group_name_available(&shasta_token).await?;
+    backend.get_group_name_available(token).await?;
 
   let node_metadata_available_vec = backend
-    .get_node_metadata_available(&shasta_token)
+    .get_node_metadata_available(token)
     .await
     .context("Could not get node metadata")?;
 
@@ -54,7 +54,7 @@ pub async fn exec(
       // Check if user input is a CFS session name
       backend
         .get_sessions(
-          &shasta_token,
+          token,
           shasta_base_url,
           shasta_root_cert,
           Some(&hosts_expression.to_string()),
@@ -75,7 +75,7 @@ pub async fn exec(
 
       backend
         .get_and_filter_sessions(
-          &shasta_token,
+          token,
           shasta_base_url,
           shasta_root_cert,
           group_available_vec.clone(),
@@ -127,7 +127,7 @@ pub async fn exec(
 
   print_cfs_session_logs(
     backend,
-    &shasta_token,
+    token,
     site_name,
     cfs_session.name.as_str(),
     timestamps,

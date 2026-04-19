@@ -1,6 +1,6 @@
 use crate::{
   cli::commands::console_common,
-  common::{self, authentication::get_api_token},
+  common,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -13,15 +13,14 @@ use manta_backend_dispatcher::{
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
+  token: &str,
   xname: &str,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
   // Convert user input to xname
   let xname_vec = common::node_ops::resolve_hosts_expression(
     backend,
-    &shasta_token,
+    token,
     xname,
     false,
   )
@@ -42,7 +41,7 @@ pub async fn exec(
 
   let (a_input, a_output) = backend
     .attach_to_node_console(
-      &shasta_token,
+      token,
       site_name,
       &xname.to_string(),
       width,

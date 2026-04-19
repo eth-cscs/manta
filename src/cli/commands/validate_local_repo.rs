@@ -3,7 +3,7 @@ use chrono::DateTime;
 use serde_json::Value;
 
 use crate::common::{
-  authentication::get_api_token, local_git_repo,
+  local_git_repo,
   vault::http_client::fetch_shasta_vcs_token,
 };
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -12,15 +12,14 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
+  token: &str,
   shasta_root_cert: &[u8],
   vault_base_url: Option<&str>,
   gitea_base_url: &str,
   repo_path: &str,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
   let gitea_token = fetch_shasta_vcs_token(
-    &shasta_token,
+    token,
     vault_base_url.context("vault base url is mandatory")?,
     site_name,
   )

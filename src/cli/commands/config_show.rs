@@ -5,19 +5,17 @@ use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
-  common::{authentication::get_api_token, config::get_config_file_path},
+  common::config::get_config_file_path,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
 /// Display the current manta configuration.
 pub async fn exec(
   backend: &StaticBackendDispatcher,
-  site_name: &str,
+  token: &str,
   settings: &Config,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  show(backend, Some(shasta_token), settings).await
+  show(backend, Some(token.to_string()), settings).await
 }
 
 async fn show(

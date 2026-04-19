@@ -1,5 +1,6 @@
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -10,24 +11,27 @@ pub async fn handle_config(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-    commands::config_show::exec(ctx.infra.backend, ctx.infra.site_name, ctx.cli.settings)
+    let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+    commands::config_show::exec(ctx.infra.backend, &token, ctx.cli.settings)
       .await?
   } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
     if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
+      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
       commands::config_set_hsm::exec(
         cli_config_set_hsm,
         ctx.infra.backend,
-        ctx.infra.site_name,
+        &token,
       )
       .await?
     }
     if let Some(cli_config_set_parent_hsm) =
       cli_config_set.subcommand_matches("parent-hsm")
     {
+      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
       commands::config_set_parent_hsm::exec(
         cli_config_set_parent_hsm,
         ctx.infra.backend,
-        ctx.infra.site_name,
+        &token,
       )
       .await?;
     }
@@ -48,7 +52,8 @@ pub async fn handle_config(
     if let Some(_cli_config_unset_parent_hsm) =
       cli_config_unset.subcommand_matches("parent-hsm")
     {
-      commands::config_unset_parent_hsm::exec(ctx.infra.backend, ctx.infra.site_name)
+      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+      commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
         .await?;
     }
     if let Some(_cli_config_unset_auth) =

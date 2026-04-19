@@ -1,5 +1,6 @@
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -9,6 +10,8 @@ pub async fn handle_log(
   cli_log: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   let user_input = cli_log
     .get_one::<String>("VALUE")
     .context("The 'VALUE' argument is mandatory")?;
@@ -25,6 +28,7 @@ pub async fn handle_log(
   match commands::log::exec(
     ctx.infra.backend,
     ctx.infra.site_name,
+    &token,
     ctx.infra.shasta_base_url,
     ctx.infra.shasta_root_cert,
     user_input,

@@ -12,6 +12,8 @@ pub async fn handle_misc(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_validate_local_repo) =
     cli_root.subcommand_matches("validate-local-repo")
   {
@@ -21,6 +23,7 @@ pub async fn handle_misc(
     validate_local_repo::exec(
       ctx.infra.backend,
       ctx.infra.site_name,
+      &token,
       ctx.infra.shasta_root_cert,
       ctx.infra.vault_base_url,
       ctx.infra.gitea_base_url,
@@ -38,7 +41,6 @@ pub async fn handle_misc(
       .get_one::<String>("group")
       .map(String::as_str)
       .context("The 'group' argument is mandatory")?;
-    let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
     add_nodes_to_hsm_groups::exec(
       ctx,
       &token,
@@ -61,7 +63,7 @@ pub async fn handle_misc(
       .context("The 'group' argument is mandatory")?;
     remove_nodes_from_hsm_groups::exec(
       ctx.infra.backend,
-      ctx.infra.site_name,
+      &token,
       target_hsm_name,
       nodes,
       dryrun,

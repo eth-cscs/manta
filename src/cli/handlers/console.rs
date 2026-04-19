@@ -2,6 +2,7 @@ use crate::cli::commands::{
   console_cfs_session_image_target_ansible, console_node,
 };
 use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::io::IsTerminal;
@@ -12,6 +13,8 @@ pub async fn handle_console(
   cli_console: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+
   if let Some(cli_console_node) = cli_console.subcommand_matches("node") {
     if !std::io::stdout().is_terminal() {
       bail!("This command needs to run in interactive mode");
@@ -28,7 +31,7 @@ pub async fn handle_console(
       .k8s
       .as_ref()
       .context("k8s section not found in configuration")?;
-    console_node::exec(ctx.infra.backend, ctx.infra.site_name, xname, k8s_details).await?;
+    console_node::exec(ctx.infra.backend, ctx.infra.site_name, &token, xname, k8s_details).await?;
   } else if let Some(cli_console_target_ansible) =
     cli_console.subcommand_matches("target-ansible")
   {
@@ -50,6 +53,7 @@ pub async fn handle_console(
     console_cfs_session_image_target_ansible::exec(
       ctx.infra.backend,
       ctx.infra.site_name,
+      &token,
       ctx.cli.settings_hsm_group_name_opt,
       ctx.infra.shasta_base_url,
       ctx.infra.shasta_root_cert,

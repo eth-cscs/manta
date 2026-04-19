@@ -6,9 +6,7 @@ use manta_backend_dispatcher::{
 
 use crate::{
   cli::commands::console_common,
-  common::{
-    authentication::get_api_token, authorization::get_groups_names_available,
-  },
+  common::authorization::get_groups_names_available,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -16,17 +14,16 @@ use crate::{
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   site_name: &str,
+  token: &str,
   settings_hsm_group_name_opt: Option<&str>,
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
   session_name: &str,
   k8s: &K8sDetails,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-
   let hsm_group_name_vec = get_groups_names_available(
     backend,
-    &shasta_token,
+    token,
     None,
     settings_hsm_group_name_opt,
   )
@@ -34,7 +31,7 @@ pub async fn exec(
 
   let cfs_session_vec = backend
     .get_and_filter_sessions(
-      &shasta_token,
+      token,
       shasta_base_url,
       shasta_root_cert,
       Vec::new(),
@@ -114,7 +111,7 @@ pub async fn exec(
 
   let (a_input, a_output) = backend
     .attach_to_session_console(
-      &shasta_token,
+      token,
       site_name,
       session_name,
       width,

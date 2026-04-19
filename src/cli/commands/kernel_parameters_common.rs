@@ -136,6 +136,7 @@ pub async fn exec(
       true,
       assume_yes,
       "table",
+      token,
     )
     .await?;
   }
