@@ -1,43 +1,40 @@
-use crate::common::{
-  authentication::get_api_token, authorization::get_groups_names_available,
-};
 use anyhow::{Context, Error, bail};
-use comfy_table::{ContentArrangement, Table};
-use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Group,
-};
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use nodeset::NodeSet;
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::group::{self, GetGroupParams};
 
-/// List HSM groups and their members.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  group_name_arg_opt: Option<&str>,
+/// Parse CLI arguments into typed [`GetGroupParams`].
+fn parse_group_params(
+  cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
-  output: &str,
+) -> GetGroupParams {
+  GetGroupParams {
+    group_name: cli_args.get_one::<String>("VALUE").cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+  }
+}
+
+/// CLI adapter for `manta get groups`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
+  let params = parse_group_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    &shasta_token,
-    group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
+  let groups = group::get_groups(ctx.backend, token, &params).await?;
 
-  let group_vec: Vec<Group> = backend
-    .get_groups(&shasta_token, Some(&target_hsm_group_vec))
-    .await?;
+  let output: &String = cli_args
+    .get_one("output")
+    .context("The 'output' argument is mandatory")?;
 
-  match output {
-    "table" => print_table(&group_vec),
+  match output.as_str() {
+    "table" => output::group::print_table(&groups),
     "json" => println!(
       "{}",
       serde_json::to_string_pretty(
-        &serde_json::to_value(group_vec)
+        &serde_json::to_value(&groups)
           .context("Failed to convert groups to JSON value")?
       )
       .context("Failed to serialize groups to JSON")?
@@ -50,34 +47,40 @@ pub async fn exec(
   Ok(())
 }
 
-fn print_table(group_vec: &[Group]) {
-  let mut table = Table::new();
-  table.set_content_arrangement(ContentArrangement::Dynamic);
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
 
-  table.set_header(vec![
-    "Group Name",
-    "Description",
-    "# members",
-    "Members",
-    "Tags",
-  ]);
-
-  for group in group_vec {
-    let mut group_members = group.get_members();
-    group_members.sort();
-    let node_group: NodeSet =
-      group_members.join(", ").parse().unwrap_or_default();
-
-    table.add_row(vec![
-      group.label.clone(),
-      group.description.clone().unwrap_or_default(),
-      group_members.len().to_string(),
-      node_group.to_string(),
-      group.tags.clone().unwrap_or_default().join("\n"),
-    ]);
+  fn group_cmd() -> clap::Command {
+    clap::Command::new("groups")
+      .arg(arg!([VALUE] "group name"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .default_value("table")
+          .value_parser(["json", "table"]),
+      )
   }
 
-  table.column_mut(3).map(|c| c.set_delimiter(','));
+  #[test]
+  fn parse_no_args() {
+    let matches = group_cmd().get_matches_from(["groups"]);
+    let params = parse_group_params(&matches, None);
+    assert!(params.group_name.is_none());
+    assert!(params.settings_hsm_group_name.is_none());
+  }
 
-  println!("{table}");
+  #[test]
+  fn parse_group_name() {
+    let matches = group_cmd().get_matches_from(["groups", "compute"]);
+    let params = parse_group_params(&matches, None);
+    assert_eq!(params.group_name.as_deref(), Some("compute"));
+  }
+
+  #[test]
+  fn parse_settings_hsm_group() {
+    let matches = group_cmd().get_matches_from(["groups"]);
+    let params = parse_group_params(&matches, Some("default-group"));
+    assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default-group"));
+  }
 }

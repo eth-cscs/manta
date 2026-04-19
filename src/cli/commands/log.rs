@@ -104,7 +104,7 @@ pub async fn exec(
 
   log::info!(
     "Get logs for CFS session:\n{}",
-    common::cfs_session_utils::get_table_struct(&cfs_sessions_vec)
+    crate::cli::output::session::get_table_struct(&cfs_sessions_vec)
   );
 
   let cfs_session_backend: CfsSessionGetResponse = cfs_session.clone();

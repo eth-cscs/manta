@@ -1,140 +1,127 @@
 use anyhow::{Context, Error, bail};
 
-use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::node::{self, GetNodesParams};
 
-/// Get nodes status/configuration for some nodes filtered by a HSM group.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  cli_get_nodes: &clap::ArgMatches,
-) -> Result<(), Error> {
-  let shasta_token =
-    common::authentication::get_api_token(backend, site_name).await?;
-
-  let xname_requested: &str = cli_get_nodes
+/// Parse CLI arguments into typed [`GetNodesParams`].
+fn parse_nodes_params(cli_args: &clap::ArgMatches) -> Result<GetNodesParams, Error> {
+  let xname = cli_args
     .get_one::<String>("VALUE")
-    .context("The 'xnames' argument must have values")?;
-  let is_include_siblings = cli_get_nodes.get_flag("include-siblings");
-  let nids_only = cli_get_nodes.get_flag("nids-only-one-line");
-  let status: Option<&String> = cli_get_nodes.get_one("status");
-  let output_opt: Option<&String> = cli_get_nodes.get_one("output");
-  let status_summary = cli_get_nodes.get_flag("summary-status");
+    .context("The 'xnames' argument must have values")?
+    .clone();
 
-  // Convert user input to xname
-  let node_list = common::node_ops::resolve_hosts_expression(
-    backend,
-    &shasta_token,
-    xname_requested,
-    is_include_siblings,
+  Ok(GetNodesParams {
+    xname,
+    include_siblings: cli_args.get_flag("include-siblings"),
+    status_filter: cli_args.get_one::<String>("status").cloned(),
+  })
+}
+
+/// CLI adapter for `manta get nodes`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
+) -> Result<(), Error> {
+  let params = parse_nodes_params(cli_args)?;
+  let nids_only = cli_args.get_flag("nids-only-one-line");
+  let output_opt: Option<&String> = cli_args.get_one("output");
+  let status_summary = cli_args.get_flag("summary-status");
+
+  let node_details_list = node::get_nodes(
+    ctx.backend,
+    token,
+    ctx.shasta_base_url,
+    ctx.shasta_root_cert,
+    &params,
   )
   .await?;
 
-  if node_list.is_empty() {
-    bail!(
-      "The list of nodes to operate is empty. \
-       Nothing to do",
-    );
-  }
-
-  let node_details_list_rslt = csm_rs::node::utils::get_node_details(
-    &shasta_token,
-    shasta_base_url,
-    shasta_root_cert,
-    node_list.to_vec(),
-  )
-  .await;
-
-  let mut node_details_list = match node_details_list_rslt {
-    Err(e) => {
-      bail!("{e}");
-    }
-    Ok(node_details_list) => node_details_list,
-  };
-
-  node_details_list.retain(|node_details| {
-    if let Some(status) = status {
-      node_details.power_status.eq_ignore_ascii_case(status)
-        || node_details
-          .configuration_status
-          .eq_ignore_ascii_case(status)
-    } else {
-      true
-    }
-  });
-
-  node_details_list.sort_by(|a, b| a.xname.cmp(&b.xname));
-
   if status_summary {
-    let status_output = if node_details_list.iter().any(|node_details| {
-      node_details
-        .configuration_status
-        .eq_ignore_ascii_case("failed")
-    }) {
-      "FAILED"
-    } else if node_details_list
-      .iter()
-      .any(|node_detail| node_detail.power_status.eq_ignore_ascii_case("OFF"))
-    {
-      "OFF"
-    } else if node_details_list
-      .iter()
-      .any(|node_details| node_details.power_status.eq_ignore_ascii_case("on"))
-    {
-      "ON"
-    } else if node_details_list.iter().any(|node_details| {
-      node_details.power_status.eq_ignore_ascii_case("standby")
-    }) {
-      "STANDBY"
-    } else if node_details_list.iter().any(|node_details| {
-      !node_details
-        .configuration_status
-        .eq_ignore_ascii_case("configured")
-    }) {
-      "UNCONFIGURED"
-    } else {
-      "OK"
-    };
-
-    println!("{}", status_output);
+    println!("{}", node::compute_summary_status(&node_details_list));
   } else if nids_only {
-    let node_nid_list = node_details_list
+    let node_nid_list: Vec<String> = node_details_list
       .iter()
-      .map(|node_details| node_details.nid.clone())
-      .collect::<Vec<String>>();
+      .map(|nd| nd.nid.clone())
+      .collect();
 
     if output_opt.is_some_and(|v| v == "json") {
-      let json = serde_json::to_string(&node_nid_list)
-        .context("Failed to serialize node NID list")?;
-      println!("{}", json);
+      println!(
+        "{}",
+        serde_json::to_string(&node_nid_list)
+          .context("Failed to serialize node NID list")?
+      );
     } else {
       println!("{}", node_nid_list.join(","));
     }
   } else {
     match output_opt.map(String::as_str) {
       Some("json") => {
-        let json = serde_json::to_string_pretty(&node_details_list)
-          .context("Failed to serialize node details list")?;
-        println!("{}", json);
+        println!(
+          "{}",
+          serde_json::to_string_pretty(&node_details_list)
+            .context("Failed to serialize node details list")?
+        );
       }
       Some("summary") => {
-        common::node_ops::print_summary(node_details_list);
+        output::node::print_summary(node_details_list);
       }
       Some("table-wide") => {
-        common::node_ops::print_table(node_details_list, true);
+        output::node::print_table(node_details_list, true);
       }
       Some("table") => {
-        common::node_ops::print_table(node_details_list, false);
+        output::node::print_table(node_details_list, false);
       }
       _ => {
-        bail!(
-          "Output value not recognized \
-           or missing",
-        );
+        bail!("Output value not recognized or missing");
       }
     }
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
+
+  fn nodes_cmd() -> clap::Command {
+    clap::Command::new("nodes")
+      .arg(arg!(<VALUE> "xname"))
+      .arg(arg!(-s --status <STATUS> "status filter"))
+      .arg(arg!(--"include-siblings" "include siblings"))
+      .arg(arg!(--"nids-only-one-line" "nids only"))
+      .arg(arg!(--"summary-status" "summary status"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .value_parser(["json", "table", "table-wide", "summary"]),
+      )
+  }
+
+  #[test]
+  fn parse_xname_only() {
+    let matches = nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0"]);
+    let params = parse_nodes_params(&matches).unwrap();
+    assert_eq!(params.xname, "x1000c0s0b0n0");
+    assert!(!params.include_siblings);
+    assert!(params.status_filter.is_none());
+  }
+
+  #[test]
+  fn parse_with_siblings() {
+    let matches = nodes_cmd()
+      .get_matches_from(["nodes", "x1000c0s0b0n0", "--include-siblings"]);
+    let params = parse_nodes_params(&matches).unwrap();
+    assert!(params.include_siblings);
+  }
+
+  #[test]
+  fn parse_with_status() {
+    let matches = nodes_cmd()
+      .get_matches_from(["nodes", "x1000c0s0b0n0", "--status", "ON"]);
+    let params = parse_nodes_params(&matches).unwrap();
+    assert_eq!(params.status_filter.as_deref(), Some("ON"));
+  }
 }

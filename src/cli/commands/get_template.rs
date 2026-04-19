@@ -1,82 +1,113 @@
-use crate::common::authentication::get_api_token;
-use crate::common::authorization::get_groups_names_available;
 use anyhow::{Context, Error};
-use manta_backend_dispatcher::interfaces::bos::ClusterTemplateTrait;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::template::{self, GetTemplateParams};
 
-/// List or show BOS session templates.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  cli_get_template: &clap::ArgMatches,
+/// Parse CLI arguments into typed [`GetTemplateParams`].
+fn parse_template_params(
+  cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
-) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-  let name: Option<&String> = cli_get_template.get_one::<String>("name");
-  let hsm_group_name_arg_opt: Option<&str> = cli_get_template
-    .try_get_one::<String>("hsm-group")
-    .ok()
-    .flatten()
-    .map(String::as_str);
-  let output: &String = cli_get_template
-    .get_one("output")
-    .context("output must be a valid value")?;
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    &shasta_token,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
-  let hsm_member_vec = backend
-    .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_group_vec)
-    .await?;
-  let limit_number_opt = if let Some(limit) = cli_get_template.get_one("limit")
-  {
-    Some(limit)
-  } else if let Some(true) = cli_get_template.get_one("most-recent") {
-    Some(&1)
+) -> GetTemplateParams {
+  let limit = if let Some(true) = cli_args.get_one("most-recent") {
+    Some(1u8)
   } else {
-    None
+    cli_args.get_one::<u8>("limit").copied()
   };
 
-  log::info!(
-    "Get BOS sessiontemplates for HSM groups: {:?}",
-    target_hsm_group_vec
-  );
+  GetTemplateParams {
+    name: cli_args.get_one::<String>("name").cloned(),
+    hsm_group: cli_args
+      .try_get_one::<String>("hsm-group")
+      .ok()
+      .flatten()
+      .cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    limit,
+  }
+}
 
-  let mut bos_sessiontemplate_vec = backend
-    .get_and_filter_templates(
-      &shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      &target_hsm_group_vec,
-      &hsm_member_vec,
-      name.map(String::as_str),
-      limit_number_opt,
-    )
-    .await
-    .context("Could not get BOS sessiontemplate list")?;
+/// CLI adapter for `manta get templates`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
+) -> Result<(), Error> {
+  let params = parse_template_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
+  let templates = template::get_templates(
+    ctx.backend,
+    token,
+    ctx.shasta_base_url,
+    ctx.shasta_root_cert,
+    &params,
+  )
+  .await?;
 
-  if bos_sessiontemplate_vec.is_empty() {
+  let output_opt: &String = cli_args
+    .get_one("output")
+    .context("output must be a valid value")?;
+
+  if templates.is_empty() {
     println!("No BOS template found!");
-  } else if output == "table" {
-    crate::common::bos_sessiontemplate_utils::print_table_struct(
-      bos_sessiontemplate_vec,
-    );
-  } else if output == "json" {
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&bos_sessiontemplate_vec)
-        .context("Failed to serialize BOS sessiontemplates")?
-    );
+  } else {
+    output::template::print(&templates, output_opt)?;
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::{arg, value_parser};
+
+  fn template_cmd() -> clap::Command {
+    clap::Command::new("templates")
+      .arg(arg!(-n --name <NAME> "template name"))
+      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .default_value("table")
+          .value_parser(["json", "table"]),
+      )
+      .arg(arg!(-m --"most-recent" "most recent"))
+      .arg(
+        arg!(-l --limit <VALUE> "limit")
+          .value_parser(value_parser!(u8).range(1..)),
+      )
+  }
+
+  #[test]
+  fn parse_no_args() {
+    let matches = template_cmd().get_matches_from(["templates"]);
+    let params = parse_template_params(&matches, None);
+    assert!(params.name.is_none());
+    assert!(params.hsm_group.is_none());
+    assert!(params.limit.is_none());
+  }
+
+  #[test]
+  fn parse_most_recent_sets_limit_to_one() {
+    let matches =
+      template_cmd().get_matches_from(["templates", "--most-recent"]);
+    let params = parse_template_params(&matches, None);
+    assert_eq!(params.limit, Some(1));
+  }
+
+  #[test]
+  fn parse_name_filter() {
+    let matches =
+      template_cmd().get_matches_from(["templates", "--name", "my-template"]);
+    let params = parse_template_params(&matches, None);
+    assert_eq!(params.name.as_deref(), Some("my-template"));
+  }
+
+  #[test]
+  fn parse_limit() {
+    let matches =
+      template_cmd().get_matches_from(["templates", "--limit", "5"]);
+    let params = parse_template_params(&matches, None);
+    assert_eq!(params.limit, Some(5));
+  }
 }

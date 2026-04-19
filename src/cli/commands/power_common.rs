@@ -110,7 +110,7 @@ pub async fn exec_nodes(
         format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
       })?;
 
-  common::pcs_utils::print_summary_table(power_mgmt_summary, output);
+  crate::cli::output::power::print_summary_table(power_mgmt_summary, output);
 
   // Audit
   audit::maybe_send_audit_with_group_lookup(
@@ -181,7 +181,7 @@ pub async fn exec_cluster(
         format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
       })?;
 
-  common::pcs_utils::print_summary_table(power_mgmt_summary, output);
+  crate::cli::output::power::print_summary_table(power_mgmt_summary, output);
 
   // Audit
   audit::maybe_send_audit(

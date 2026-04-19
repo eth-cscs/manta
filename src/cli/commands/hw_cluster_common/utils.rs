@@ -692,7 +692,7 @@ pub fn show_solution_and_confirm(
     node_hw_component_count_vec
   );
 
-  let table = crate::cli::commands::get_hardware_cluster::get_table(
+  let table = crate::cli::output::hardware::get_table(
     hw_component_vec,
     node_hw_component_count_vec,
   );

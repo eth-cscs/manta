@@ -1,74 +1,58 @@
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::{
-  interfaces::cfs::CfsTrait,
-  types::cfs::{
-    cfs_configuration_details::{ConfigurationDetails, LayerDetails},
-    cfs_configuration_response::CfsConfigurationResponse,
-  },
-};
 
-use crate::common::{
-  app_context::AppContext, authentication::get_api_token,
-  authorization::get_groups_names_available,
-  cfs_configuration_utils::print_table_struct,
-};
-use chrono::NaiveDateTime;
+use crate::cli::output::configuration::{print_table_details_struct, print_table_struct};
+use crate::common::app_context::AppContext;
+use crate::service::configuration::{self, GetConfigurationParams};
 
-/// List or show CFS configuration details.
-#[allow(clippy::too_many_arguments)]
+/// Parse CLI arguments into typed [`GetConfigurationParams`].
+fn parse_configuration_params(
+  cli_args: &clap::ArgMatches,
+  settings_hsm_group_name_opt: Option<&str>,
+) -> GetConfigurationParams {
+  let limit = if let Some(true) = cli_args.get_one("most-recent") {
+    Some(1u8)
+  } else {
+    cli_args.get_one::<u8>("limit").copied()
+  };
+
+  GetConfigurationParams {
+    name: cli_args.get_one::<String>("name").cloned(),
+    pattern: cli_args.get_one::<String>("pattern").cloned(),
+    hsm_group: cli_args
+      .try_get_one::<String>("hsm-group")
+      .ok()
+      .flatten()
+      .cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    since: None,
+    until: None,
+    limit,
+  }
+}
+
+/// CLI adapter for `manta get configurations`.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  configuration_name_opt: Option<&str>,
-  configuration_name_pattern_opt: Option<&str>,
-  hsm_group_name_arg_opt: Option<&str>,
-  since_opt: Option<NaiveDateTime>,
-  until_opt: Option<NaiveDateTime>,
-  limit: Option<&u8>,
-  output_opt: Option<&str>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let backend = ctx.backend;
-  let site_name = ctx.site_name;
-  let shasta_base_url = ctx.shasta_base_url;
-  let shasta_root_cert = ctx.shasta_root_cert;
-  let vault_base_url = ctx.vault_base_url;
-  let gitea_base_url = ctx.gitea_base_url;
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let params =
+    parse_configuration_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let shasta_token = get_api_token(backend, site_name).await?;
-
-  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-    &shasta_token,
-    vault_base_url.context("vault base url is mandatory")?,
-    site_name,
-  )
-  .await
-  .context("Failed to fetch VCS token from vault")?;
-
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    &shasta_token,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
+  let cfs_configuration_vec = configuration::get_configurations(
+    ctx.backend,
+    token,
+    ctx.shasta_base_url,
+    ctx.shasta_root_cert,
+    &params,
   )
   .await?;
-
-  let cfs_configuration_vec: Vec<CfsConfigurationResponse> = backend
-    .get_and_filter_configuration(
-      &shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      configuration_name_opt,
-      configuration_name_pattern_opt,
-      &target_hsm_group_vec,
-      since_opt,
-      until_opt,
-      limit,
-    )
-    .await?;
 
   if cfs_configuration_vec.is_empty() {
     bail!("No CFS configuration found!");
   }
+
+  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
   if output_opt.is_some_and(|o| o.eq("json")) {
     println!(
@@ -77,46 +61,29 @@ pub async fn exec(
         .context("Failed to serialize CFS configurations to JSON")?
     );
   } else if cfs_configuration_vec.len() == 1 {
-    // Get CFS configuration details with data from VCS/Gitea
-    let most_recent_cfs_configuration: &CfsConfigurationResponse =
-      cfs_configuration_vec
-        .first()
-        .context("CFS configuration list unexpectedly empty")?;
+    let config = cfs_configuration_vec
+      .first()
+      .context("CFS configuration list unexpectedly empty")?;
 
-    let mut layer_details_vec: Vec<LayerDetails> = vec![];
+    let vault_base_url = ctx
+      .vault_base_url
+      .context("vault base url is mandatory")?;
 
-    for layer in &most_recent_cfs_configuration.layers {
-      let layer_details: LayerDetails = backend
-        .get_configuration_layer_details(
-          shasta_root_cert,
-          gitea_base_url,
-          &gitea_token,
-          layer.clone(),
-          site_name,
-        )
-        .await
-        .context("Could not fetch configuration layer details")?;
+    let (details, cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
+      configuration::get_configuration_details(
+        ctx.backend,
+        token,
+        ctx.shasta_base_url,
+        ctx.shasta_root_cert,
+        ctx.gitea_base_url,
+        vault_base_url,
+        ctx.site_name,
+        config,
+      )
+      .await?;
 
-      layer_details_vec.push(layer_details);
-    }
-
-    let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
-      backend
-        .get_derivatives(
-          &shasta_token,
-          shasta_base_url,
-          shasta_root_cert,
-          &most_recent_cfs_configuration.name,
-        )
-        .await
-        .context("Could not fetch configuration derivatives")?;
-
-    crate::common::cfs_configuration_utils::print_table_details_struct(
-      ConfigurationDetails::new(
-        &most_recent_cfs_configuration.name,
-        &most_recent_cfs_configuration.last_updated,
-        layer_details_vec,
-      ),
+    print_table_details_struct(
+      details,
       cfs_session_vec_opt,
       bos_sessiontemplate_vec_opt,
       image_vec_opt,
@@ -126,4 +93,60 @@ pub async fn exec(
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::{arg, value_parser};
+
+  fn config_cmd() -> clap::Command {
+    clap::Command::new("configurations")
+      .arg(arg!(-n --name <NAME> "config name"))
+      .arg(arg!(-p --pattern <PATTERN> "name pattern"))
+      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-m --"most-recent" "most recent"))
+      .arg(
+        arg!(-l --limit <VALUE> "limit")
+          .value_parser(value_parser!(u8).range(1..)),
+      )
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .value_parser(["json", "table"]),
+      )
+  }
+
+  #[test]
+  fn parse_no_args() {
+    let matches = config_cmd().get_matches_from(["configurations"]);
+    let params = parse_configuration_params(&matches, None);
+    assert!(params.name.is_none());
+    assert!(params.pattern.is_none());
+    assert!(params.hsm_group.is_none());
+    assert!(params.limit.is_none());
+  }
+
+  #[test]
+  fn parse_name() {
+    let matches =
+      config_cmd().get_matches_from(["configurations", "--name", "my-config"]);
+    let params = parse_configuration_params(&matches, None);
+    assert_eq!(params.name.as_deref(), Some("my-config"));
+  }
+
+  #[test]
+  fn parse_most_recent_sets_limit_to_one() {
+    let matches =
+      config_cmd().get_matches_from(["configurations", "--most-recent"]);
+    let params = parse_configuration_params(&matches, None);
+    assert_eq!(params.limit, Some(1));
+  }
+
+  #[test]
+  fn parse_pattern() {
+    let matches = config_cmd()
+      .get_matches_from(["configurations", "--pattern", "compute-*"]);
+    let params = parse_configuration_params(&matches, None);
+    assert_eq!(params.pattern.as_deref(), Some("compute-*"));
+  }
 }

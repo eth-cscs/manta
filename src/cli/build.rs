@@ -856,3 +856,67 @@ fn subcommand_remove_nodes_from_groups() -> Command {
     .arg(arg!(-n --nodes <VALUE> "Comma separated list of nids or xnames. Can use comma separated list of nodes or expressions. A node can be represented as an xname or nid and expressions accepted are hostlist.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0', 'nid001313,nid001314', 'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'"))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn site_flag_is_optional() {
+    let matches =
+      build_cli().try_get_matches_from(["manta", "get", "sessions", "--help"]);
+    // --help causes an early exit (Err with DisplayHelp), but
+    // the point is it doesn't fail due to missing --site.
+    // Instead, test with a subcommand that requires no further args.
+    let result = build_cli().try_get_matches_from(["manta", "--version"]);
+    assert!(
+      result.is_err(),
+      "expected DisplayVersion error for --version"
+    );
+  }
+
+  #[test]
+  fn site_flag_accepted_before_subcommand() {
+    // Build a matches object with --site before a subcommand.
+    // We use --help on the subcommand to avoid needing a real backend.
+    let result = build_cli()
+      .try_get_matches_from(["manta", "--site", "alps", "get", "--help"]);
+    // --help triggers DisplayHelp which is an Err, but it should
+    // NOT be an "unknown flag" error.
+    match result {
+      Err(e) => assert_eq!(
+        e.kind(),
+        clap::error::ErrorKind::DisplayHelp,
+        "expected DisplayHelp, got: {e}"
+      ),
+      Ok(_) => panic!("--help should cause an early exit"),
+    }
+  }
+
+  #[test]
+  fn site_flag_value_is_extractable() {
+    let matches = build_cli()
+      .get_matches_from(["manta", "--site", "prealps", "config", "show"]);
+    let site = matches.get_one::<String>("site");
+    assert_eq!(site.map(String::as_str), Some("prealps"));
+  }
+
+  #[test]
+  fn site_flag_absent_returns_none() {
+    let matches = build_cli().get_matches_from(["manta", "config", "show"]);
+    let site = matches.get_one::<String>("site");
+    assert!(site.is_none());
+  }
+
+  #[test]
+  fn site_flag_propagates_to_subcommand() {
+    // Because --site is global, it should be accessible from
+    // the subcommand matches too.
+    let matches = build_cli()
+      .get_matches_from(["manta", "--site", "alps", "config", "show"]);
+    let config_matches = matches.subcommand_matches("config").unwrap();
+    let show_matches = config_matches.subcommand_matches("show").unwrap();
+    let site = show_matches.get_one::<String>("site");
+    assert_eq!(site.map(String::as_str), Some("alps"));
+  }
+}

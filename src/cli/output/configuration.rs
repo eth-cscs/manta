@@ -7,7 +7,7 @@ use manta_backend_dispatcher::types::{
   cfs::session::CfsSessionGetResponse, ims::Image,
 };
 
-use super::DATETIME_FORMAT;
+use crate::common::DATETIME_FORMAT;
 
 /// Print CFS configurations as a formatted table.
 pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {

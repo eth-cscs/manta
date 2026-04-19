@@ -1,7 +1,25 @@
+use anyhow::{Context, Error};
 use comfy_table::Table;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::common;
+
+/// Print BOS session templates in the requested format.
+pub fn print(
+  templates: &[BosSessionTemplate],
+  output: &str,
+) -> Result<(), Error> {
+  match output {
+    "table" => print_table_struct(templates.to_vec()),
+    "json" => println!(
+      "{}",
+      serde_json::to_string_pretty(templates)
+        .context("Failed to serialize BOS sessiontemplates")?
+    ),
+    _ => {}
+  }
+  Ok(())
+}
 
 /// Print BOS session templates as a formatted table.
 pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {

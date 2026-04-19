@@ -1,107 +1,51 @@
-use crate::common::authentication::get_api_token;
-use crate::common::authorization::get_groups_names_available;
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::{
-  common::node_ops, manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::cluster::{self, GetClusterParams};
+use crate::service::node;
 
-/// Get nodes status/configuration for some nodes filtered by a HSM group.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
-  cli_get_cluster: &clap::ArgMatches,
+/// Parse CLI arguments into typed [`GetClusterParams`].
+fn parse_cluster_params(
+  cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
+) -> GetClusterParams {
+  GetClusterParams {
+    hsm_group_name: cli_args.get_one::<String>("HSM_GROUP_NAME").cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    status_filter: cli_args.get_one::<String>("status").cloned(),
+  }
+}
+
+/// CLI adapter for `manta get cluster`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let shasta_token = get_api_token(backend, site_name).await?;
-  let hsm_group_name_arg_opt: Option<&str> = cli_get_cluster
-    .get_one::<String>("HSM_GROUP_NAME")
-    .map(String::as_str);
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    &shasta_token,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
+  let params =
+    parse_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let nids_only = cli_args.get_flag("nids-only-one-line");
+  let xnames_only = cli_args.get_flag("xnames-only-one-line");
+  let output_opt: Option<&String> = cli_args.get_one("output");
+  let summary_status = cli_args.get_flag("summary-status");
+
+  let node_details_list = cluster::get_cluster_nodes(
+    ctx.backend,
+    token,
+    ctx.shasta_base_url,
+    ctx.shasta_root_cert,
+    &params,
   )
   .await?;
 
-  let status: Option<&String> = cli_get_cluster.get_one("status");
-  let nids_only = cli_get_cluster.get_flag("nids-only-one-line");
-  let xnames_only = cli_get_cluster.get_flag("xnames-only-one-line");
-  let output_opt: Option<&String> = cli_get_cluster.get_one("output");
-  let summary_status = cli_get_cluster.get_flag("summary-status");
-
-  // Take all nodes for all hsm_groups found and put them in a Vec
-  let mut hsm_groups_node_list: Vec<String> = backend
-    .get_member_vec_from_group_name_vec(&shasta_token, &target_hsm_group_vec)
-    .await
-    .context("Failed to get HSM group members")?;
-
-  hsm_groups_node_list.sort();
-
-  let node_details_list_rslt = csm_rs::node::utils::get_node_details(
-    &shasta_token,
-    shasta_base_url,
-    shasta_root_cert,
-    hsm_groups_node_list,
-  )
-  .await;
-
-  let mut node_details_list = node_details_list_rslt?;
-
-  node_details_list.retain(|node_details| {
-    if let Some(status) = status {
-      node_details.power_status.eq_ignore_ascii_case(status)
-        || node_details
-          .configuration_status
-          .eq_ignore_ascii_case(status)
-    } else {
-      true
-    }
-  });
-
-  node_details_list.sort_by(|a, b| a.xname.cmp(&b.xname));
-
   if summary_status {
-    let status_output = if node_details_list.iter().any(|node_details| {
-      node_details
-        .configuration_status
-        .eq_ignore_ascii_case("failed")
-    }) {
-      "FAILED"
-    } else if node_details_list
-      .iter()
-      .any(|node_detail| node_detail.power_status.eq_ignore_ascii_case("OFF"))
-    {
-      "OFF"
-    } else if node_details_list
-      .iter()
-      .any(|node_details| node_details.power_status.eq_ignore_ascii_case("on"))
-    {
-      "ON"
-    } else if node_details_list.iter().any(|node_details| {
-      node_details.power_status.eq_ignore_ascii_case("standby")
-    }) {
-      "STANDBY"
-    } else if node_details_list.iter().any(|node_details| {
-      !node_details
-        .configuration_status
-        .eq_ignore_ascii_case("configured")
-    }) {
-      "UNCONFIGURED"
-    } else {
-      "OK"
-    };
-
-    println!("{}", status_output);
+    println!("{}", node::compute_summary_status(&node_details_list));
   } else if nids_only {
-    let node_nid_list = node_details_list
+    let node_nid_list: Vec<String> = node_details_list
       .iter()
-      .map(|node_details| node_details.nid.clone())
-      .collect::<Vec<String>>();
+      .map(|nd| nd.nid.clone())
+      .collect();
 
     if let Some(output) = output_opt
       && output.eq("json")
@@ -115,10 +59,10 @@ pub async fn exec(
       println!("{}", node_nid_list.join(","));
     }
   } else if xnames_only {
-    let node_xname_list = node_details_list
+    let node_xname_list: Vec<String> = node_details_list
       .iter()
-      .map(|node_details| node_details.xname.clone())
-      .collect::<Vec<String>>();
+      .map(|nd| nd.xname.clone())
+      .collect();
 
     if let Some(output) = output_opt
       && output.eq("json")
@@ -142,18 +86,70 @@ pub async fn exec(
   } else if let Some(output) = output_opt
     && output.eq("summary")
   {
-    node_ops::print_summary(node_details_list);
+    output::node::print_summary(node_details_list);
   } else if let Some(output) = output_opt
     && output.eq("table-wide")
   {
-    node_ops::print_table(node_details_list, true);
+    output::node::print_table(node_details_list, true);
   } else if let Some(output) = output_opt
     && output.eq("table")
   {
-    node_ops::print_table(node_details_list, false);
+    output::node::print_table(node_details_list, false);
   } else {
-    bail!("Output value not recognized or missing",);
+    bail!("Output value not recognized or missing");
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
+
+  fn cluster_cmd() -> clap::Command {
+    clap::Command::new("cluster")
+      .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
+      .arg(arg!(-s --status <STATUS> "status filter"))
+      .arg(arg!(--"nids-only-one-line" "nids only"))
+      .arg(arg!(--"xnames-only-one-line" "xnames only"))
+      .arg(arg!(--"summary-status" "summary status"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .value_parser(["json", "table", "table-wide", "summary"]),
+      )
+  }
+
+  #[test]
+  fn parse_no_args() {
+    let matches = cluster_cmd().get_matches_from(["cluster"]);
+    let params = parse_cluster_params(&matches, None);
+    assert!(params.hsm_group_name.is_none());
+    assert!(params.status_filter.is_none());
+  }
+
+  #[test]
+  fn parse_hsm_group() {
+    let matches = cluster_cmd().get_matches_from(["cluster", "compute"]);
+    let params = parse_cluster_params(&matches, None);
+    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
+  }
+
+  #[test]
+  fn parse_status_filter() {
+    let matches =
+      cluster_cmd().get_matches_from(["cluster", "--status", "ON"]);
+    let params = parse_cluster_params(&matches, None);
+    assert_eq!(params.status_filter.as_deref(), Some("ON"));
+  }
+
+  #[test]
+  fn parse_settings_hsm_group() {
+    let matches = cluster_cmd().get_matches_from(["cluster"]);
+    let params = parse_cluster_params(&matches, Some("default-group"));
+    assert_eq!(
+      params.settings_hsm_group_name.as_deref(),
+      Some("default-group")
+    );
+  }
 }

@@ -1,61 +1,47 @@
-use anyhow::{Context, bail};
+use anyhow::{Context, Error, bail};
 
-use manta_backend_dispatcher::{
-  interfaces::bss::BootParametersTrait,
-  types::bss::BootParameters,
-};
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::kernel_parameters::{self, GetKernelParametersParams};
 
-use crate::{
-  common::{self},
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
-
-/// Display kernel boot parameters for nodes.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  cli_get_kernel_parameters: &clap::ArgMatches,
+/// Parse CLI arguments into typed [`GetKernelParametersParams`].
+fn parse_kernel_parameters_params(
+  cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
-) -> Result<(), anyhow::Error> {
-  let shasta_token =
-    common::authentication::get_api_token(backend, site_name).await?;
+) -> GetKernelParametersParams {
+  GetKernelParametersParams {
+    hsm_group: cli_args.get_one::<String>("hsm-group").cloned(),
+    nodes: cli_args.get_one::<String>("nodes").cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+  }
+}
 
-  let hsm_group_name_arg_opt: Option<&str> = cli_get_kernel_parameters
-    .get_one::<String>("hsm-group")
-    .map(String::as_str);
-  let filter_opt: Option<&str> = cli_get_kernel_parameters
-    .get_one::<String>("filter")
-    .map(String::as_str);
-  let output: &String = cli_get_kernel_parameters
+/// CLI adapter for `manta get kernel-parameters`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
+) -> Result<(), Error> {
+  let params =
+    parse_kernel_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
+
+  let boot_parameters =
+    kernel_parameters::get_kernel_parameters(ctx.backend, token, &params)
+      .await?;
+
+  let output: &String = cli_args
     .get_one("output")
-    .ok_or_else(|| anyhow::anyhow!("output value missing"))?;
-
-  let nodes_arg: Option<&str> = cli_get_kernel_parameters
-    .get_one::<String>("nodes")
-    .map(String::as_str);
-
-  let xname_vec = common::node_ops::resolve_target_nodes(
-    backend,
-    &shasta_token,
-    nodes_arg,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
-
-  let boot_parameter_vec: Vec<BootParameters> = backend
-    .get_bootparameters(&shasta_token, &xname_vec)
-    .await
-    .context("Could not get boot parameters")?;
+    .context("output value missing")?;
+  let filter_opt = cli_args.get_one::<String>("filter").map(String::as_str);
 
   match output.as_str() {
     "json" => println!(
       "{}",
-      serde_json::to_string_pretty(&boot_parameter_vec)
-        .context("Failed to serialize boot parameters to JSON",)?
+      serde_json::to_string_pretty(&boot_parameters)
+        .context("Failed to serialize boot parameters to JSON")?
     ),
     "table" => {
-      common::kernel_parameters_ops::print_table(boot_parameter_vec, filter_opt)
+      output::kernel_parameters::print_table(boot_parameters, filter_opt)
     }
     _ => {
       bail!("'output' argument value missing or not supported");
@@ -63,4 +49,46 @@ pub async fn exec(
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
+
+  fn kernel_params_cmd() -> clap::Command {
+    clap::Command::new("kernel-parameters")
+      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-n --nodes <NODES> "nodes"))
+      .arg(arg!(-f --filter <FILTER> "filter"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .default_value("table")
+          .value_parser(["json", "table"]),
+      )
+  }
+
+  #[test]
+  fn parse_no_args() {
+    let matches = kernel_params_cmd().get_matches_from(["kernel-parameters"]);
+    let params = parse_kernel_parameters_params(&matches, None);
+    assert!(params.hsm_group.is_none());
+    assert!(params.nodes.is_none());
+  }
+
+  #[test]
+  fn parse_hsm_group() {
+    let matches = kernel_params_cmd()
+      .get_matches_from(["kernel-parameters", "--hsm-group", "compute"]);
+    let params = parse_kernel_parameters_params(&matches, None);
+    assert_eq!(params.hsm_group.as_deref(), Some("compute"));
+  }
+
+  #[test]
+  fn parse_nodes() {
+    let matches = kernel_params_cmd()
+      .get_matches_from(["kernel-parameters", "--nodes", "x1000c0s0b0n0"]);
+    let params = parse_kernel_parameters_params(&matches, None);
+    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
+  }
 }

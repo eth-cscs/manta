@@ -1,43 +1,80 @@
-use manta_backend_dispatcher::{
-  interfaces::bss::BootParametersTrait,
-  types::bss::BootParameters,
-};
+use anyhow::Error;
 
-use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::boot_parameters::{self, GetBootParametersParams};
 
-/// Display boot parameters for specified nodes.
-pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  cli_get_boot_parameters: &clap::ArgMatches,
+/// Parse CLI arguments into typed [`GetBootParametersParams`].
+fn parse_boot_parameters_params(
+  cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
-) -> Result<Vec<BootParameters>, anyhow::Error> {
-  let shasta_token =
-    common::authentication::get_api_token(backend, site_name).await?;
+) -> GetBootParametersParams {
+  GetBootParametersParams {
+    hsm_group: cli_args.get_one::<String>("hsm-group").cloned(),
+    nodes: cli_args.get_one::<String>("nodes").cloned(),
+    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+  }
+}
 
-  let hsm_group_name_arg_opt: Option<&str> = cli_get_boot_parameters
-    .get_one::<String>("hsm-group")
-    .map(String::as_str);
+/// CLI adapter for `manta get boot-parameters`.
+///
+/// Parses CLI arguments into typed parameters, delegates to
+/// the service layer, and formats the output.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
+) -> Result<(), Error> {
+  let params = parse_boot_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let nodes_arg: Option<&str> = cli_get_boot_parameters
-    .get_one::<String>("nodes")
-    .map(String::as_str);
+  let boot_parameters =
+    boot_parameters::get_boot_parameters(ctx.backend, token, &params).await?;
 
-  let xname_vec = common::node_ops::resolve_target_nodes(
-    backend,
-    &shasta_token,
-    nodes_arg,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
+  output::boot_parameters::print(&boot_parameters, None)?;
 
-  // Get BSS boot parameters
-  println!("Get boot parameters");
+  Ok(())
+}
 
-  Ok(
-    backend
-      .get_bootparameters(&shasta_token, &xname_vec)
-      .await?,
-  )
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
+
+  fn boot_params_cmd() -> clap::Command {
+    clap::Command::new("boot-parameters")
+      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-n --nodes <NODES> "nodes"))
+  }
+
+  #[test]
+  fn parse_no_args() {
+    let matches = boot_params_cmd().get_matches_from(["boot-parameters"]);
+    let params = parse_boot_parameters_params(&matches, None);
+    assert!(params.hsm_group.is_none());
+    assert!(params.nodes.is_none());
+    assert!(params.settings_hsm_group_name.is_none());
+  }
+
+  #[test]
+  fn parse_hsm_group() {
+    let matches = boot_params_cmd()
+      .get_matches_from(["boot-parameters", "--hsm-group", "compute"]);
+    let params = parse_boot_parameters_params(&matches, None);
+    assert_eq!(params.hsm_group.as_deref(), Some("compute"));
+  }
+
+  #[test]
+  fn parse_nodes() {
+    let matches = boot_params_cmd()
+      .get_matches_from(["boot-parameters", "--nodes", "x1000c0s0b0n0"]);
+    let params = parse_boot_parameters_params(&matches, None);
+    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
+  }
+
+  #[test]
+  fn parse_settings_hsm_group() {
+    let matches = boot_params_cmd().get_matches_from(["boot-parameters"]);
+    let params = parse_boot_parameters_params(&matches, Some("default-group"));
+    assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default-group"));
+  }
 }

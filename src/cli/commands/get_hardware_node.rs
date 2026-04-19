@@ -1,158 +1,72 @@
-use crate::common;
-use crate::common::authorization::validate_target_hsm_members;
 use anyhow::{Context, Error};
-use comfy_table::{Cell, Table};
-use manta_backend_dispatcher::{
-  interfaces::hsm::hardware_inventory::HardwareInventory, types::NodeSummary,
-};
-use serde_json::Value;
-use std::string::ToString;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::hardware::{self, GetHardwareNodeParams};
 
-/// Get nodes status/configuration for some nodes filtered by a HSM group.
+/// Parse CLI arguments into typed [`GetHardwareNodeParams`].
+fn parse_hardware_node_params(cli_args: &clap::ArgMatches) -> Result<GetHardwareNodeParams, Error> {
+  let xnames = cli_args
+    .get_one::<String>("XNAMES")
+    .context("The 'XNAMES' argument must have a value")?
+    .clone();
+
+  Ok(GetHardwareNodeParams {
+    xnames,
+    type_artifact: cli_args.get_one::<String>("type").cloned(),
+  })
+}
+
+/// CLI adapter for `manta get hardware node`.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-  xnames: &str,
-  type_artifact_opt: Option<&str>,
-  output_opt: Option<&str>,
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let shasta_token =
-    common::authentication::get_api_token(backend, site_name).await?;
+  let params = parse_hardware_node_params(cli_args)?;
+  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
-  let xname_vec: Vec<String> = xnames.split(',').map(str::to_string).collect();
-
-  validate_target_hsm_members(backend, &shasta_token, &xname_vec).await?;
-
-  let mut node_hw_inventory = &backend
-    .get_inventory_hardware_query(
-      &shasta_token,
-      xnames,
-      None,
-      None,
-      None,
-      None,
-      None,
-    )
-    .await
-    .context("Failed to query hardware inventory")?;
-
-  node_hw_inventory =
-    node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
-      Error::msg(format!(
-        "JSON section '/Nodes' missing in json response API for node '{}'",
-        xnames
-      ))
-    })?;
-
-  if let Some(type_artifact) = type_artifact_opt {
-    let nodes_array = node_hw_inventory
-      .as_array()
-      .context("Expected Nodes to be a JSON array")?;
-    let matching_node = nodes_array
-      .iter()
-      .find(|&node| {
-        node
-          .get("ID")
-          .and_then(Value::as_str)
-          .is_some_and(|id| id.eq(xnames))
-      })
-      .ok_or_else(|| {
-        Error::msg(format!("Node '{}' not found in hardware inventory", xnames))
-      })?;
-    node_hw_inventory = matching_node
-      .get(type_artifact)
-      .ok_or_else(|| {
-        Error::msg(format!(
-          "Artifact type '{}' not found in node '{}'",
-          type_artifact, xnames
-        ))
-      })?;
-  }
-
-  let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
+  let result =
+    hardware::get_hardware_node(ctx.backend, token, &params).await?;
 
   if output_opt.is_some_and(|o| o.eq("json")) {
     println!(
       "{}",
-      serde_json::to_string_pretty(&node_summary)
+      serde_json::to_string_pretty(&result.node_summary)
         .context("Failed to serialize node summary")?
     );
   } else {
-    print_table(&[node_summary]);
+    output::hardware::print_node_table(&[result.node_summary]);
   }
 
   Ok(())
 }
 
-fn print_table(node_summary_vec: &[NodeSummary]) {
-  let mut table = Table::new();
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
 
-  table.set_header(vec![
-    "Node XName",
-    "Component XName",
-    "Component Type",
-    "Component Info",
-  ]);
-
-  for node_summary in node_summary_vec {
-    for processor in &node_summary.processors {
-      table.add_row(vec![
-        Cell::new(node_summary.xname.clone()),
-        Cell::new(processor.xname.clone()),
-        Cell::new(processor.r#type.clone()),
-        Cell::new(
-          processor
-            .info
-            .clone()
-            .unwrap_or_else(|| "*** Missing info".to_string()),
-        ),
-      ]);
-    }
-
-    for memory in &node_summary.memory {
-      table.add_row(vec![
-        Cell::new(node_summary.xname.clone()),
-        Cell::new(memory.xname.clone()),
-        Cell::new(memory.r#type.clone()),
-        Cell::new(
-          memory
-            .info
-            .clone()
-            .unwrap_or_else(|| "*** Missing info".to_string()),
-        ),
-      ]);
-    }
-
-    for node_accel in &node_summary.node_accels {
-      table.add_row(vec![
-        Cell::new(node_summary.xname.clone()),
-        Cell::new(node_accel.xname.clone()),
-        Cell::new(node_accel.r#type.clone()),
-        Cell::new(
-          node_accel
-            .info
-            .clone()
-            .unwrap_or_else(|| "*** Missing info".to_string()),
-        ),
-      ]);
-    }
-
-    for node_hsn_nic in &node_summary.node_hsn_nics {
-      table.add_row(vec![
-        Cell::new(node_summary.xname.clone()),
-        Cell::new(node_hsn_nic.xname.clone()),
-        Cell::new(node_hsn_nic.r#type.clone()),
-        Cell::new(
-          node_hsn_nic
-            .info
-            .clone()
-            .unwrap_or_else(|| "*** Missing info".to_string()),
-        ),
-      ]);
-    }
+  fn hw_node_cmd() -> clap::Command {
+    clap::Command::new("node")
+      .arg(arg!(<XNAMES> "xnames"))
+      .arg(arg!(-t --type <TYPE> "artifact type"))
+      .arg(arg!(-o --output <FORMAT> "output format"))
   }
 
-  println!("{table}");
+  #[test]
+  fn parse_xnames_only() {
+    let matches = hw_node_cmd().get_matches_from(["node", "x1000c0s0b0n0"]);
+    let params = parse_hardware_node_params(&matches).unwrap();
+    assert_eq!(params.xnames, "x1000c0s0b0n0");
+    assert!(params.type_artifact.is_none());
+  }
+
+  #[test]
+  fn parse_with_type() {
+    let matches = hw_node_cmd()
+      .get_matches_from(["node", "x1000c0s0b0n0", "--type", "Processors"]);
+    let params = parse_hardware_node_params(&matches).unwrap();
+    assert_eq!(params.type_artifact.as_deref(), Some("Processors"));
+  }
 }
