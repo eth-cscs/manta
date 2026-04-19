@@ -2,6 +2,7 @@ mod backend_dispatcher;
 mod cli;
 mod common;
 mod manta_backend_dispatcher;
+mod server;
 mod service;
 
 use ::manta_backend_dispatcher::types::K8sAuth;
@@ -172,6 +173,42 @@ async fn run(
     &shasta_api_url,
     &shasta_root_cert,
   )?;
+
+  // Check if we're in server mode
+  if let Some(serve_matches) = cli_matches.subcommand_matches("serve") {
+    let port: u16 = *serve_matches
+      .get_one::<u16>("port")
+      .expect("port has a default value");
+    let cert_path: &str = serve_matches
+      .get_one::<String>("cert")
+      .expect("cert is required");
+    let key_path: &str = serve_matches
+      .get_one::<String>("key")
+      .expect("key is required");
+    let listen_addr: &str = serve_matches
+      .get_one::<String>("listen-address")
+      .expect("listen-address has a default value");
+
+    let server_backend = StaticBackendDispatcher::new(
+      backend_tech,
+      &shasta_api_url,
+      &shasta_root_cert,
+    )?;
+
+    let server_state = std::sync::Arc::new(server::ServerState {
+      backend: server_backend,
+      site_name: site_name.clone(),
+      shasta_base_url: shasta_api_url.clone(),
+      shasta_root_cert: shasta_root_cert.clone(),
+      vault_base_url: vault_base_url.map(String::to_owned),
+      gitea_base_url: gitea_base_url.clone(),
+      k8s_api_url: k8s_api_url.map(String::to_owned),
+    });
+
+    return server::start_server(server_state, listen_addr, port, cert_path, key_path)
+      .await
+      .map_err(|e| e.into());
+  }
 
   // Process input params
   let app_context = AppContext {

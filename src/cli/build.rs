@@ -31,6 +31,31 @@ pub fn build_cli() -> Command {
     .subcommand(subcommand_validate_local_repo())
     .subcommand(subcommand_add_nodes_to_groups())
     .subcommand(subcommand_remove_nodes_from_groups())
+    .subcommand(subcommand_serve())
+}
+
+fn subcommand_serve() -> Command {
+  Command::new("serve")
+    .about("Run manta as an HTTPS API server")
+    .arg(
+      arg!(--port <PORT> "Port to listen on")
+        .default_value("8443")
+        .value_parser(value_parser!(u16)),
+    )
+    .arg(
+      arg!(--cert <CERT_FILE> "Path to TLS certificate PEM file")
+        .required(true)
+        .value_hint(ValueHint::FilePath),
+    )
+    .arg(
+      arg!(--key <KEY_FILE> "Path to TLS private key PEM file")
+        .required(true)
+        .value_hint(ValueHint::FilePath),
+    )
+    .arg(
+      arg!(--"listen-address" <ADDRESS> "Address to bind to")
+        .default_value("0.0.0.0"),
+    )
 }
 
 fn subcommand_config() -> Command {
