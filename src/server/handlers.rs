@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
   Json,
-  extract::{Query, State},
+  extract::{Path, Query, State},
   http::{HeaderMap, StatusCode},
   response::IntoResponse,
 };
@@ -496,4 +496,410 @@ pub async fn get_hardware_nodes(
   Ok(Json(serde_json::json!({
     "node_summary": result.node_summary,
   })))
+}
+
+// ===========================================================================
+// WRITE ENDPOINTS
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/nodes/{id}
+// ---------------------------------------------------------------------------
+
+pub async fn delete_node(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::node::delete_node(&infra, &token, &id)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/nodes
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct AddNodeRequest {
+  pub id: String,
+  pub group: String,
+  #[serde(default)]
+  pub enabled: bool,
+  pub arch: Option<String>,
+}
+
+pub async fn add_node(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<AddNodeRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::node::add_node(
+    &infra,
+    &token,
+    &body.id,
+    &body.group,
+    body.enabled,
+    body.arch,
+    None, // hardware_file_path not applicable via HTTP
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "id": body.id }))))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/groups/{label}
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteGroupQuery {
+  #[serde(default)]
+  pub force: bool,
+}
+
+pub async fn delete_group(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(label): Path<String>,
+  Query(q): Query<DeleteGroupQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::group::delete_group(&infra, &token, &label, q.force)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/groups
+// ---------------------------------------------------------------------------
+
+pub async fn create_group(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(group): Json<::manta_backend_dispatcher::types::Group>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::group::create_group(&infra, &token, group)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::CREATED)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/groups/{name}/members
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct AddNodesToGroupRequest {
+  pub hosts_expression: String,
+}
+
+#[derive(Serialize)]
+pub struct AddNodesToGroupResponse {
+  pub added: Vec<String>,
+  pub removed: Vec<String>,
+}
+
+pub async fn add_nodes_to_group(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(name): Path<String>,
+  Json(body): Json<AddNodesToGroupRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let (added, removed) =
+    service::group::add_nodes_to_group(&infra, &token, &name, &body.hosts_expression)
+      .await
+      .map_err(internal_error)?;
+
+  Ok(Json(AddNodesToGroupResponse { added, removed }))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/boot-parameters
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteBootParametersRequest {
+  pub hosts: Vec<String>,
+}
+
+pub async fn delete_boot_parameters(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<DeleteBootParametersRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/boot-parameters
+// ---------------------------------------------------------------------------
+
+pub async fn add_boot_parameters(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(boot_params): Json<::manta_backend_dispatcher::types::bss::BootParameters>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::CREATED)
+}
+
+// ---------------------------------------------------------------------------
+// PUT /api/v1/boot-parameters
+// ---------------------------------------------------------------------------
+
+pub async fn update_boot_parameters(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::boot_parameters::update_boot_parameters(&infra, &token, params)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/redfish-endpoints/{id}
+// ---------------------------------------------------------------------------
+
+pub async fn delete_redfish_endpoint(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/redfish-endpoints
+// ---------------------------------------------------------------------------
+
+pub async fn add_redfish_endpoint(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::CREATED)
+}
+
+// ---------------------------------------------------------------------------
+// PUT /api/v1/redfish-endpoints
+// ---------------------------------------------------------------------------
+
+pub async fn update_redfish_endpoint(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
+    .await
+    .map_err(internal_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/sessions/{name} — with ?dry_run=true support
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteSessionQuery {
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_session(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(name): Path<String>,
+  Query(q): Query<DeleteSessionQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let deletion_ctx =
+    service::session::prepare_session_deletion(&infra, &token, &name, None)
+      .await
+      .map_err(internal_error)?;
+
+  if q.dry_run {
+    return Ok((StatusCode::OK, Json(serde_json::to_value(&deletion_ctx).unwrap_or_default())));
+  }
+
+  service::session::execute_session_deletion(&infra, &token, &deletion_ctx, false)
+    .await
+    .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": name }))))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/images — with ?ids=id1,id2&dry_run=true
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteImagesQuery {
+  pub ids: String,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_images_handler(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Query(q): Query<DeleteImagesQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let id_strings: Vec<String> = q.ids.split(',').map(|s| s.trim().to_string()).collect();
+  let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
+
+  // Validate first
+  service::image::validate_image_deletion(&infra, &token, &id_refs, None)
+    .await
+    .map_err(internal_error)?;
+
+  if q.dry_run {
+    return Ok((StatusCode::OK, Json(serde_json::json!({ "validated_ids": id_strings }))));
+  }
+
+  let deleted = service::image::delete_images(&infra, &token, &id_refs, None)
+    .await
+    .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": deleted }))))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/configurations — with ?pattern=...&since=...&until=...&dry_run=true
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteConfigurationsQuery {
+  pub pattern: Option<String>,
+  pub since: Option<String>,
+  pub until: Option<String>,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_configurations_handler(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Query(q): Query<DeleteConfigurationsQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let since = q
+    .since
+    .as_deref()
+    .map(|s| {
+      chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
+        .map_err(|e| {
+          (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+              error: format!("Invalid 'since' datetime: {}", e),
+            }),
+          )
+        })
+    })
+    .transpose()?;
+
+  let until = q
+    .until
+    .as_deref()
+    .map(|s| {
+      chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
+        .map_err(|e| {
+          (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+              error: format!("Invalid 'until' datetime: {}", e),
+            }),
+          )
+        })
+    })
+    .transpose()?;
+
+  let candidates = service::configuration::get_deletion_candidates(
+    &infra,
+    &token,
+    None,
+    q.pattern.as_deref(),
+    since,
+    until,
+  )
+  .await
+  .map_err(internal_error)?;
+
+  if q.dry_run {
+    return Ok((StatusCode::OK, Json(serde_json::to_value(&candidates).unwrap_or_default())));
+  }
+
+  service::configuration::delete_configurations_and_derivatives(&infra, &token, &candidates)
+    .await
+    .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({
+    "deleted_configurations": candidates.configuration_names,
+    "deleted_images": candidates.image_ids,
+  }))))
 }

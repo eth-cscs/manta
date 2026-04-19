@@ -90,6 +90,7 @@ pub async fn add_boot_parameters(
 }
 
 /// Typed parameters for updating boot parameters.
+#[derive(serde::Deserialize)]
 pub struct UpdateBootParametersParams {
   pub hosts: Vec<String>,
   pub nids: Option<Vec<u32>>,

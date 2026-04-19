@@ -56,6 +56,7 @@ pub async fn delete_redfish_endpoint(
 }
 
 /// Typed parameters for updating/adding a Redfish endpoint.
+#[derive(serde::Deserialize)]
 pub struct UpdateRedfishEndpointParams {
   pub id: String,
   pub name: Option<String>,

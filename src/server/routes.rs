@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use axum::{routing::get, Router};
+use axum::{
+  routing::{delete, get, post},
+  Router,
+};
 
 use super::handlers;
 use super::ServerState;
@@ -21,6 +24,40 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/clusters", get(handlers::get_clusters))
     .route("/hardware-clusters", get(handlers::get_hardware_clusters))
     .route("/hardware-nodes", get(handlers::get_hardware_nodes))
+    // --- Write endpoints ---
+    // Nodes
+    .route("/nodes", post(handlers::add_node))
+    .route("/nodes/{id}", delete(handlers::delete_node))
+    // Groups
+    .route("/groups", post(handlers::create_group))
+    .route("/groups/{label}", delete(handlers::delete_group))
+    .route("/groups/{name}/members", post(handlers::add_nodes_to_group))
+    // Boot parameters
+    .route(
+      "/boot-parameters",
+      post(handlers::add_boot_parameters)
+        .put(handlers::update_boot_parameters)
+        .delete(handlers::delete_boot_parameters),
+    )
+    // Redfish endpoints
+    .route(
+      "/redfish-endpoints",
+      post(handlers::add_redfish_endpoint)
+        .put(handlers::update_redfish_endpoint),
+    )
+    .route(
+      "/redfish-endpoints/{id}",
+      delete(handlers::delete_redfish_endpoint),
+    )
+    // Sessions (delete with dry_run)
+    .route("/sessions/{name}", delete(handlers::delete_session))
+    // Images (delete with dry_run)
+    .route("/images", delete(handlers::delete_images_handler))
+    // Configurations (delete with dry_run)
+    .route(
+      "/configurations",
+      delete(handlers::delete_configurations_handler),
+    )
     // Health check
     .route("/health", get(handlers::health));
 

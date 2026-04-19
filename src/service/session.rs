@@ -58,6 +58,7 @@ pub async fn get_sessions(
 }
 
 /// Data needed to delete/cancel a session.
+#[derive(serde::Serialize)]
 pub struct SessionDeletionContext {
   pub session: CfsSessionGetResponse,
   pub image_ids: Vec<String>,

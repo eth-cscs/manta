@@ -125,6 +125,7 @@ pub async fn get_configuration_details(
 }
 
 /// Data gathered for deletion review and execution.
+#[derive(serde::Serialize)]
 pub struct DeletionCandidates {
   pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
   pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
