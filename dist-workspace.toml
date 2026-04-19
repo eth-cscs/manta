@@ -21,6 +21,9 @@ publish-jobs = ["homebrew"]
 install-updater = false
 
 # 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
+package-libraries = ["libcurl4-openssl-dev"]
+
+# 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
 [dist.dependencies.apt]
 cmake = '*'
 libcurl4-openssl-dev = '*'
