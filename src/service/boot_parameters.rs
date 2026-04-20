@@ -131,6 +131,7 @@ pub async fn update_boot_parameters(
 }
 
 /// Result of preparing boot configuration changes.
+#[derive(serde::Serialize)]
 pub struct BootConfigChangeset {
   pub xname_vec: Vec<String>,
   pub boot_param_vec: Vec<BootParameters>,

@@ -61,6 +61,7 @@ pub async fn migrate_restore(
 }
 
 /// Result of migrating nodes for a single parent→target pair.
+#[derive(serde::Serialize)]
 pub struct NodeMigrationResult {
     pub target_hsm_name: String,
     pub parent_hsm_name: String,

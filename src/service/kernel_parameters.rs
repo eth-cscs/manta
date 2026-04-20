@@ -117,6 +117,7 @@ impl<'a> KernelParamOperation<'a> {
 }
 
 /// Result of preparing kernel parameter mutations (before persistence).
+#[derive(serde::Serialize)]
 pub struct KernelParamsChangeset {
   /// The mutated boot parameters ready to persist.
   pub boot_params: Vec<BootParameters>,

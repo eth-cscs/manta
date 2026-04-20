@@ -31,7 +31,11 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // Groups
     .route("/groups", post(handlers::create_group))
     .route("/groups/{label}", delete(handlers::delete_group))
-    .route("/groups/{name}/members", post(handlers::add_nodes_to_group))
+    .route(
+      "/groups/{name}/members",
+      post(handlers::add_nodes_to_group)
+        .delete(handlers::delete_group_members),
+    )
     // Boot parameters
     .route(
       "/boot-parameters",
@@ -51,6 +55,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     // Sessions (delete with dry_run)
     .route("/sessions/{name}", delete(handlers::delete_session))
+    // Sessions (create)
+    .route("/sessions", post(handlers::create_session))
     // Images (delete with dry_run)
     .route("/images", delete(handlers::delete_images_handler))
     // Configurations (delete with dry_run)
@@ -58,6 +64,27 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       "/configurations",
       delete(handlers::delete_configurations_handler),
     )
+    // Boot config (apply with dry_run)
+    .route("/boot-config", post(handlers::apply_boot_config))
+    // Kernel parameters (apply with dry_run)
+    .route(
+      "/kernel-parameters/apply",
+      post(handlers::apply_kernel_parameters),
+    )
+    // Migrate
+    .route("/migrate/nodes", post(handlers::migrate_nodes))
+    .route("/migrate/backup", post(handlers::migrate_backup))
+    .route("/migrate/restore", post(handlers::migrate_restore))
+    // Ephemeral environment
+    .route("/ephemeral-env", post(handlers::create_ephemeral_env))
+    // Power management
+    .route("/power", post(handlers::post_power))
+    // BOS session from template
+    .route("/templates/{name}/sessions", post(handlers::post_template_session))
+    // CFS session logs (SSE)
+    .route("/sessions/{name}/logs", get(handlers::get_session_logs))
+    // SAT file apply
+    .route("/sat-file", post(handlers::post_sat_file))
     // Health check
     .route("/health", get(handlers::health));
 

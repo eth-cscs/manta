@@ -1,10 +1,24 @@
 use std::sync::Arc;
+use std::convert::Infallible;
 
 use axum::{
   Json,
   extract::{Path, Query, State},
   http::{HeaderMap, StatusCode},
-  response::IntoResponse,
+  response::{
+    IntoResponse,
+    sse::{Event, KeepAlive, Sse},
+  },
+};
+use futures::{AsyncBufReadExt, StreamExt};
+use manta_backend_dispatcher::{
+  interfaces::{
+    apply_sat_file::SatTrait,
+    cfs::CfsTrait,
+    hsm::group::GroupTrait,
+    pcs::PCSTrait,
+  },
+  types::{K8sAuth, K8sDetails},
 };
 use serde::{Deserialize, Serialize};
 
@@ -902,4 +916,738 @@ pub async fn delete_configurations_handler(
     "deleted_configurations": candidates.configuration_names,
     "deleted_images": candidates.image_ids,
   }))))
+}
+
+// ===========================================================================
+// BATCH A — MEDIUM-COMPLEXITY WRITE ENDPOINTS
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sessions — Create CFS session
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct CreateSessionRequest {
+  pub cfs_conf_sess_name: Option<String>,
+  pub playbook_yaml_file_name: Option<String>,
+  pub hsm_group: Option<String>,
+  pub repo_names: Vec<String>,
+  pub repo_last_commit_ids: Vec<String>,
+  pub ansible_limit: Option<String>,
+  pub ansible_verbosity: Option<String>,
+  pub ansible_passthrough: Option<String>,
+}
+
+pub async fn create_session(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<CreateSessionRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let vault_base_url = state.vault_base_url.as_deref().ok_or_else(|| {
+    (
+      StatusCode::INTERNAL_SERVER_ERROR,
+      Json(ErrorResponse {
+        error: "Vault URL not configured — cannot fetch gitea token".to_string(),
+      }),
+    )
+  })?;
+
+  let gitea_token =
+    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
+      .await
+      .map_err(|e| internal_error(e.into()))?;
+
+  let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
+  let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
+
+  let (session_name, config_name) = service::session::create_cfs_session(
+    &infra,
+    &token,
+    &gitea_token,
+    body.cfs_conf_sess_name.as_deref(),
+    body.playbook_yaml_file_name.as_deref(),
+    body.hsm_group.as_deref(),
+    &repo_name_refs,
+    &repo_commit_refs,
+    body.ansible_limit.as_deref(),
+    body.ansible_verbosity.as_deref(),
+    body.ansible_passthrough.as_deref(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({
+      "session_name": session_name,
+      "configuration_name": config_name,
+    })),
+  ))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/boot-config — Apply boot configuration (with ?dry_run=true)
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct ApplyBootConfigRequest {
+  pub hosts_expression: String,
+  pub boot_image_id: Option<String>,
+  pub boot_image_configuration: Option<String>,
+  pub kernel_parameters: Option<String>,
+  pub runtime_configuration: Option<String>,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn apply_boot_config(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<ApplyBootConfigRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let changeset = service::boot_parameters::prepare_boot_config(
+    &infra,
+    &token,
+    &body.hosts_expression,
+    body.boot_image_id.as_deref(),
+    body.boot_image_configuration.as_deref(),
+    body.kernel_parameters.as_deref(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  if body.dry_run {
+    return Ok((StatusCode::OK, Json(serde_json::to_value(&changeset).unwrap_or_default())));
+  }
+
+  service::boot_parameters::persist_boot_config(
+    &infra,
+    &token,
+    &changeset,
+    body.runtime_configuration.as_deref(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({
+    "applied": true,
+    "nodes": changeset.xname_vec,
+    "need_restart": changeset.need_restart,
+  }))))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/kernel-parameters/apply — Apply kernel parameter changes
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct ApplyKernelParametersRequest {
+  pub xnames: Vec<String>,
+  /// One of: "add", "apply", "delete"
+  pub operation: String,
+  pub params: String,
+  /// Only relevant for "add" operation
+  #[serde(default)]
+  pub overwrite: bool,
+  /// Whether to project SBPS images (default true)
+  #[serde(default = "default_true")]
+  pub project_sbps: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+fn default_true() -> bool {
+  true
+}
+
+pub async fn apply_kernel_parameters(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<ApplyKernelParametersRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let operation = match body.operation.as_str() {
+    "add" => service::kernel_parameters::KernelParamOperation::Add {
+      params: &body.params,
+      overwrite: body.overwrite,
+    },
+    "apply" => service::kernel_parameters::KernelParamOperation::Apply {
+      params: &body.params,
+    },
+    "delete" => service::kernel_parameters::KernelParamOperation::Delete {
+      params: &body.params,
+    },
+    other => {
+      return Err((
+        StatusCode::BAD_REQUEST,
+        Json(ErrorResponse {
+          error: format!("Invalid operation '{}'. Must be one of: add, apply, delete", other),
+        }),
+      ));
+    }
+  };
+
+  let changeset =
+    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &body.xnames, &operation)
+      .await
+      .map_err(internal_error)?;
+
+  if body.dry_run {
+    return Ok((StatusCode::OK, Json(serde_json::to_value(&changeset).unwrap_or_default())));
+  }
+
+  // Build images_to_project from SBPS candidates
+  let mut images_to_project = std::collections::HashMap::new();
+  if body.project_sbps {
+    for (image_id, mut image) in changeset.sbps_candidates.clone() {
+      image.set_boot_image_iscsi_ready();
+      images_to_project.insert(image_id, image);
+    }
+  }
+
+  service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
+    .await
+    .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({
+    "applied": true,
+    "has_changes": changeset.has_changes,
+    "xnames_to_reboot": changeset.xnames_to_reboot,
+  }))))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/migrate/nodes — Migrate nodes between HSM groups
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct MigrateNodesRequest {
+  pub target_hsm_names: Vec<String>,
+  pub parent_hsm_names: Vec<String>,
+  pub hosts_expression: String,
+  #[serde(default)]
+  pub dry_run: bool,
+  #[serde(default)]
+  pub create_hsm_group: bool,
+}
+
+pub async fn migrate_nodes(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<MigrateNodesRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let (xnames, results) = service::migrate::migrate_nodes(
+    &infra,
+    &token,
+    &body.target_hsm_names,
+    &body.parent_hsm_names,
+    &body.hosts_expression,
+    body.dry_run,
+    body.create_hsm_group,
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({
+    "xnames": xnames,
+    "results": results,
+  })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/migrate/backup — Backup BOS session templates
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct MigrateBackupRequest {
+  pub bos: Option<String>,
+  pub destination: Option<String>,
+}
+
+pub async fn migrate_backup(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<MigrateBackupRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::migrate::migrate_backup(
+    &infra,
+    &token,
+    body.bos.as_deref(),
+    body.destination.as_deref(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({ "status": "backup completed" })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/migrate/restore — Restore from backup files
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct MigrateRestoreRequest {
+  pub bos_file: Option<String>,
+  pub cfs_file: Option<String>,
+  pub hsm_file: Option<String>,
+  pub ims_file: Option<String>,
+  pub image_dir: Option<String>,
+  #[serde(default)]
+  pub overwrite: bool,
+}
+
+pub async fn migrate_restore(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<MigrateRestoreRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  service::migrate::migrate_restore(
+    &infra,
+    &token,
+    body.bos_file.as_deref(),
+    body.cfs_file.as_deref(),
+    body.hsm_file.as_deref(),
+    body.ims_file.as_deref(),
+    body.image_dir.as_deref(),
+    body.overwrite,
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({ "status": "restore completed" })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/ephemeral-env — Create ephemeral CFS environment
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct CreateEphemeralEnvRequest {
+  pub image_id: String,
+}
+
+pub async fn create_ephemeral_env(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<CreateEphemeralEnvRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+
+  crate::cli::commands::apply_ephemeral_env::exec(
+    &state.shasta_base_url,
+    &state.shasta_root_cert,
+    &token,
+    &body.image_id,
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "status": "ephemeral environment created" }))))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/groups/{name}/members — Remove nodes from HSM group
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteGroupMembersRequest {
+  pub xnames: Vec<String>,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_group_members(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(name): Path<String>,
+  Json(body): Json<DeleteGroupMembersRequest>,
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  if !body.dry_run {
+    for xname in &body.xnames {
+      infra
+        .backend
+        .delete_member_from_group(&token, &name, xname)
+        .await
+        .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+    }
+  }
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/power — Power on/off/reset nodes or cluster
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct PowerRequest {
+  pub action: String,
+  pub targets: Vec<String>,
+  pub target_type: String,
+  #[serde(default)]
+  pub force: bool,
+}
+
+pub async fn post_power(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<PowerRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let xnames: Vec<String> = if body.target_type == "cluster" {
+    let group_name = body.targets.first().ok_or_else(|| {
+      (
+        StatusCode::BAD_REQUEST,
+        Json(ErrorResponse {
+          error: "targets must contain at least one cluster name".into(),
+        }),
+      )
+    })?;
+    infra
+      .backend
+      .get_member_vec_from_group_name_vec(&token, &[group_name.clone()])
+      .await
+      .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?
+  } else {
+    body.targets.clone()
+  };
+
+  if xnames.is_empty() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: "No nodes to operate on".into(),
+      }),
+    ));
+  }
+
+  let result = match body.action.as_str() {
+    "on" => infra.backend.power_on_sync(&token, &xnames).await,
+    "off" => {
+      infra
+        .backend
+        .power_off_sync(&token, &xnames, body.force)
+        .await
+    }
+    "reset" => {
+      infra
+        .backend
+        .power_reset_sync(&token, &xnames, body.force)
+        .await
+    }
+    other => {
+      return Err((
+        StatusCode::BAD_REQUEST,
+        Json(ErrorResponse {
+          error: format!(
+            "Unknown action '{}': must be 'on', 'off', or 'reset'",
+            other
+          ),
+        }),
+      ))
+    }
+  }
+  .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+
+  Ok(Json(result))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/templates/{name}/sessions — Create BOS session from template
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct PostTemplateSessionRequest {
+  pub operation: String,
+  pub limit: String,
+  pub session_name: Option<String>,
+  #[serde(default)]
+  pub include_disabled: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn post_template_session(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(name): Path<String>,
+  Json(body): Json<PostTemplateSessionRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let params = service::template::ApplyTemplateParams {
+    bos_session_name: body.session_name,
+    bos_sessiontemplate_name: name,
+    bos_session_operation: body.operation,
+    limit: body.limit,
+    include_disabled: body.include_disabled,
+  };
+
+  let (bos_session, _) =
+    service::template::validate_and_prepare_template_session(
+      &infra, &token, &params,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  if body.dry_run {
+    return Ok((
+      StatusCode::OK,
+      Json(
+        serde_json::to_value(&bos_session)
+          .unwrap_or(serde_json::json!({})),
+      ),
+    ));
+  }
+
+  let created =
+    service::template::create_bos_session(&infra, &token, bos_session)
+      .await
+      .map_err(internal_error)?;
+
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::to_value(&created).unwrap_or(serde_json::json!({}))),
+  ))
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/sessions/{name}/logs — Stream CFS session logs via SSE
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct SessionLogsQuery {
+  #[serde(default)]
+  pub timestamps: bool,
+}
+
+pub async fn get_session_logs(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Path(name): Path<String>,
+  Query(q): Query<SessionLogsQuery>,
+) -> Result<
+  Sse<impl futures::Stream<Item = Result<Event, Infallible>>>,
+  (StatusCode, Json<ErrorResponse>),
+> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let k8s_api_url = infra.k8s_api_url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "k8s_api_url not configured on this server".into(),
+      }),
+    )
+  })?;
+
+  let vault_base_url = infra.vault_base_url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "vault_base_url not configured on this server".into(),
+      }),
+    )
+  })?;
+
+  let k8s = K8sDetails {
+    api_url: k8s_api_url.to_string(),
+    authentication: K8sAuth::Vault {
+      base_url: vault_base_url.to_string(),
+    },
+  };
+
+  let logs_stream = infra
+    .backend
+    .get_session_logs_stream(&token, infra.site_name, &name, q.timestamps, &k8s)
+    .await
+    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+
+  let sse_stream = logs_stream.lines().map(|result| {
+    Ok::<Event, Infallible>(Event::default().data(
+      result.unwrap_or_else(|e| format!("error: {}", e)),
+    ))
+  });
+
+  Ok(Sse::new(sse_stream).keep_alive(KeepAlive::default()))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file — Apply a SAT file
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct PostSatFileRequest {
+  pub sat_file_content: String,
+  pub values: Option<serde_json::Value>,
+  pub values_file_content: Option<String>,
+  pub ansible_verbosity: Option<u8>,
+  pub ansible_passthrough: Option<String>,
+  #[serde(default)]
+  pub reboot: bool,
+  #[serde(default)]
+  pub watch_logs: bool,
+  #[serde(default)]
+  pub timestamps: bool,
+  #[serde(default)]
+  pub image_only: bool,
+  #[serde(default)]
+  pub session_template_only: bool,
+  #[serde(default)]
+  pub overwrite: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn post_sat_file(
+  State(state): State<Arc<ServerState>>,
+  headers: HeaderMap,
+  Json(body): Json<PostSatFileRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let token = extract_bearer_token(&headers)?;
+  let infra = state.infra_context();
+
+  let vault_base_url = infra.vault_base_url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "vault_base_url not configured on this server".into(),
+      }),
+    )
+  })?;
+
+  let k8s_api_url = infra.k8s_api_url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "k8s_api_url not configured on this server".into(),
+      }),
+    )
+  })?;
+
+  let gitea_token =
+    crate::common::vault::http_client::fetch_shasta_vcs_token(
+      &token,
+      vault_base_url,
+      infra.site_name,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  let hsm_group_available_vec = infra
+    .backend
+    .get_group_name_available(&token)
+    .await
+    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+
+  let values_cli_vec: Vec<String> = body
+    .values
+    .as_ref()
+    .and_then(|v| v.as_object())
+    .map(|map| {
+      map
+        .iter()
+        .map(|(k, v)| {
+          format!("{}={}", k, v.as_str().unwrap_or(&v.to_string()))
+        })
+        .collect()
+    })
+    .unwrap_or_default();
+
+  let sat_template_yaml =
+    crate::cli::commands::apply_sat_file::utils::render_jinja2_sat_file_yaml(
+      &body.sat_file_content,
+      body.values_file_content.as_deref(),
+      if values_cli_vec.is_empty() {
+        None
+      } else {
+        Some(&values_cli_vec)
+      },
+    )
+    .map_err(internal_error)?;
+
+  let sat_template_string =
+    serde_yaml::to_string(&sat_template_yaml).map_err(|e| {
+      internal_error(anyhow::anyhow!(
+        "Failed to serialize SAT template: {}",
+        e
+      ))
+    })?;
+
+  let mut sat_file: crate::cli::commands::apply_sat_file::utils::SatFile =
+    serde_yaml::from_str(&sat_template_string).map_err(|e| {
+      internal_error(anyhow::anyhow!("Failed to parse SAT file: {}", e))
+    })?;
+
+  sat_file
+    .filter(body.image_only, body.session_template_only)
+    .map_err(internal_error)?;
+
+  let sat_file_yaml = serde_yaml::to_value(sat_file).map_err(|e| {
+    internal_error(anyhow::anyhow!(
+      "Failed to convert SAT file to YAML: {}",
+      e
+    ))
+  })?;
+
+  let shasta_k8s_secrets =
+    crate::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
+      vault_base_url,
+      infra.site_name,
+      &token,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  infra
+    .backend
+    .apply_sat_file(
+      &token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      vault_base_url,
+      infra.site_name,
+      k8s_api_url,
+      shasta_k8s_secrets,
+      sat_file_yaml,
+      &hsm_group_available_vec,
+      body.ansible_verbosity,
+      body.ansible_passthrough.as_deref(),
+      infra.gitea_base_url,
+      &gitea_token,
+      body.reboot,
+      body.watch_logs,
+      body.timestamps,
+      true,
+      body.overwrite,
+      body.dry_run,
+    )
+    .await
+    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+
+  Ok(Json(serde_json::json!({ "status": "SAT file applied successfully" })))
 }
