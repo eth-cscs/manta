@@ -58,11 +58,11 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // Sessions (create)
     .route("/sessions", post(handlers::create_session))
     // Images (delete with dry_run)
-    .route("/images", delete(handlers::delete_images_handler))
+    .route("/images", delete(handlers::delete_images))
     // Configurations (delete with dry_run)
     .route(
       "/configurations",
-      delete(handlers::delete_configurations_handler),
+      delete(handlers::delete_configurations),
     )
     // Boot config (apply with dry_run)
     .route("/boot-config", post(handlers::apply_boot_config))

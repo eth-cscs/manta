@@ -29,9 +29,6 @@ pub struct GetHardwareNodeParams {
 /// Result of a hardware node query.
 pub struct HardwareNodeResult {
   pub node_summary: NodeSummary,
-  /// Raw JSON for a specific artifact type, if requested.
-  #[allow(dead_code)]
-  pub artifact_json: Option<Value>,
 }
 
 /// Fetch hardware inventory for a single node.
@@ -94,17 +91,11 @@ pub async fn get_hardware_node(
       })?;
 
     let node_summary = NodeSummary::from_csm_value(artifact_value.clone());
-    return Ok(HardwareNodeResult {
-      node_summary,
-      artifact_json: Some(artifact_value.clone()),
-    });
+    return Ok(HardwareNodeResult { node_summary });
   }
 
   let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
-  Ok(HardwareNodeResult {
-    node_summary,
-    artifact_json: None,
-  })
+  Ok(HardwareNodeResult { node_summary })
 }
 
 // ── Hardware Cluster ──

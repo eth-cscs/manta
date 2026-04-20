@@ -3,8 +3,8 @@ use std::convert::Infallible;
 
 use axum::{
   Json,
-  extract::{Path, Query, State},
-  http::{HeaderMap, StatusCode},
+  extract::{FromRequestParts, Path, Query, State},
+  http::{StatusCode, request::Parts},
   response::{
     IntoResponse,
     sse::{Event, KeepAlive, Sse},
@@ -26,35 +26,45 @@ use super::ServerState;
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// Helper: extract bearer token from Authorization header
+// Bearer-token extractor — eliminates token-extraction boilerplate
 // ---------------------------------------------------------------------------
 
-fn extract_bearer_token(headers: &HeaderMap) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
-  let auth_header = headers
-    .get("authorization")
-    .and_then(|v| v.to_str().ok())
-    .ok_or_else(|| {
-      (
-        StatusCode::UNAUTHORIZED,
-        Json(ErrorResponse {
-          error: "Missing Authorization header".to_string(),
-        }),
-      )
-    })?;
+pub struct BearerToken(pub String);
 
-  let token = auth_header
-    .strip_prefix("Bearer ")
-    .or_else(|| auth_header.strip_prefix("bearer "))
-    .ok_or_else(|| {
-      (
-        StatusCode::UNAUTHORIZED,
-        Json(ErrorResponse {
-          error: "Authorization header must use Bearer scheme".to_string(),
-        }),
-      )
-    })?;
+impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
+  type Rejection = (StatusCode, Json<ErrorResponse>);
 
-  Ok(token.to_string())
+  async fn from_request_parts(
+    parts: &mut Parts,
+    _state: &S,
+  ) -> Result<Self, Self::Rejection> {
+    let auth_header = parts
+      .headers
+      .get("authorization")
+      .and_then(|v| v.to_str().ok())
+      .ok_or_else(|| {
+        (
+          StatusCode::UNAUTHORIZED,
+          Json(ErrorResponse {
+            error: "Missing Authorization header".to_string(),
+          }),
+        )
+      })?;
+
+    let token = auth_header
+      .strip_prefix("Bearer ")
+      .or_else(|| auth_header.strip_prefix("bearer "))
+      .ok_or_else(|| {
+        (
+          StatusCode::UNAUTHORIZED,
+          Json(ErrorResponse {
+            error: "Authorization header must use Bearer scheme".to_string(),
+          }),
+        )
+      })?;
+
+    Ok(BearerToken(token.to_string()))
+  }
 }
 
 /// Convert an `anyhow::Error` into a 500 response.
@@ -103,10 +113,9 @@ pub struct SessionQuery {
 
 pub async fn get_sessions(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<SessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::session::GetSessionParams {
@@ -144,10 +153,9 @@ pub struct ConfigurationQuery {
 
 pub async fn get_configurations(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<ConfigurationQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::configuration::GetConfigurationParams {
@@ -181,10 +189,9 @@ pub struct NodesQuery {
 
 pub async fn get_nodes(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::node::GetNodesParams {
@@ -211,10 +218,9 @@ pub struct GroupQuery {
 
 pub async fn get_groups(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<GroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::group::GetGroupParams {
@@ -251,10 +257,9 @@ pub struct ImageEntry {
 
 pub async fn get_images(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<ImageQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::image::GetImagesParams {
@@ -268,16 +273,17 @@ pub async fn get_images(
     .await
     .map_err(internal_error)?;
 
-  // Convert tuples to named struct for clean JSON
-  let entries: Vec<ImageEntry> = images
-    .into_iter()
-    .map(|(img, config_name, image_id, linked)| ImageEntry {
-      image: serde_json::to_value(img).unwrap_or_default(),
+  let mut entries = Vec::with_capacity(images.len());
+  for (img, config_name, image_id, linked) in images {
+    let image = serde_json::to_value(img)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize image: {}", e)))?;
+    entries.push(ImageEntry {
+      image,
       configuration_name: config_name,
       image_id,
       is_linked: linked,
-    })
-    .collect();
+    });
+  }
 
   Ok(Json(entries))
 }
@@ -295,10 +301,9 @@ pub struct TemplateQuery {
 
 pub async fn get_templates(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<TemplateQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::template::GetTemplateParams {
@@ -327,10 +332,9 @@ pub struct BootParametersQuery {
 
 pub async fn get_boot_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<BootParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::boot_parameters::GetBootParametersParams {
@@ -359,10 +363,9 @@ pub struct KernelParametersQuery {
 
 pub async fn get_kernel_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<KernelParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::kernel_parameters::GetKernelParametersParams {
@@ -394,10 +397,9 @@ pub struct RedfishEndpointsQuery {
 
 pub async fn get_redfish_endpoints(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<RedfishEndpointsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::redfish_endpoints::GetRedfishEndpointsParams {
@@ -428,10 +430,9 @@ pub struct ClusterQuery {
 
 pub async fn get_clusters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::cluster::GetClusterParams {
@@ -458,10 +459,9 @@ pub struct HardwareClusterQuery {
 
 pub async fn get_hardware_clusters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::hardware::GetHardwareClusterParams {
@@ -473,7 +473,6 @@ pub async fn get_hardware_clusters(
     .await
     .map_err(internal_error)?;
 
-  // Serialize the result into a clean JSON structure
   Ok(Json(serde_json::json!({
     "hsm_group_name": result.hsm_group_name,
     "node_summaries": result.node_summaries,
@@ -492,10 +491,9 @@ pub struct HardwareNodeQuery {
 
 pub async fn get_hardware_nodes(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<HardwareNodeQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let params = service::hardware::GetHardwareNodeParams {
@@ -522,10 +520,10 @@ pub async fn get_hardware_nodes(
 
 pub async fn delete_node(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_node id={}", id);
   let infra = state.infra_context();
 
   service::node::delete_node(&infra, &token, &id)
@@ -550,10 +548,10 @@ pub struct AddNodeRequest {
 
 pub async fn add_node(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("add_node id={} group={}", body.id, body.group);
   let infra = state.infra_context();
 
   service::node::add_node(
@@ -583,11 +581,11 @@ pub struct DeleteGroupQuery {
 
 pub async fn delete_group(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(label): Path<String>,
   Query(q): Query<DeleteGroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_group label={} force={}", label, q.force);
   let infra = state.infra_context();
 
   service::group::delete_group(&infra, &token, &label, q.force)
@@ -603,10 +601,10 @@ pub async fn delete_group(
 
 pub async fn create_group(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(group): Json<::manta_backend_dispatcher::types::Group>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("create_group");
   let infra = state.infra_context();
 
   service::group::create_group(&infra, &token, group)
@@ -633,11 +631,15 @@ pub struct AddNodesToGroupResponse {
 
 pub async fn add_nodes_to_group(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<AddNodesToGroupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!(
+    "add_nodes_to_group group={} hosts={}",
+    name,
+    body.hosts_expression
+  );
   let infra = state.infra_context();
 
   let (added, removed) =
@@ -659,10 +661,18 @@ pub struct DeleteBootParametersRequest {
 
 pub async fn delete_boot_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<DeleteBootParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  if body.hosts.is_empty() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: "hosts list must not be empty".to_string(),
+      }),
+    ));
+  }
+  log::info!("delete_boot_parameters hosts={:?}", body.hosts);
   let infra = state.infra_context();
 
   service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
@@ -678,10 +688,10 @@ pub async fn delete_boot_parameters(
 
 pub async fn add_boot_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(boot_params): Json<::manta_backend_dispatcher::types::bss::BootParameters>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("add_boot_parameters");
   let infra = state.infra_context();
 
   service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
@@ -697,10 +707,10 @@ pub async fn add_boot_parameters(
 
 pub async fn update_boot_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("update_boot_parameters");
   let infra = state.infra_context();
 
   service::boot_parameters::update_boot_parameters(&infra, &token, params)
@@ -716,10 +726,10 @@ pub async fn update_boot_parameters(
 
 pub async fn delete_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_redfish_endpoint id={}", id);
   let infra = state.infra_context();
 
   service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
@@ -735,10 +745,10 @@ pub async fn delete_redfish_endpoint(
 
 pub async fn add_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("add_redfish_endpoint");
   let infra = state.infra_context();
 
   service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
@@ -754,10 +764,10 @@ pub async fn add_redfish_endpoint(
 
 pub async fn update_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("update_redfish_endpoint");
   let infra = state.infra_context();
 
   service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
@@ -779,11 +789,11 @@ pub struct DeleteSessionQuery {
 
 pub async fn delete_session(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Query(q): Query<DeleteSessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_session name={} dry_run={}", name, q.dry_run);
   let infra = state.infra_context();
 
   let deletion_ctx =
@@ -792,7 +802,9 @@ pub async fn delete_session(
       .map_err(internal_error)?;
 
   if q.dry_run {
-    return Ok((StatusCode::OK, Json(serde_json::to_value(&deletion_ctx).unwrap_or_default())));
+    let body = serde_json::to_value(&deletion_ctx)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+    return Ok((StatusCode::OK, Json(body)));
   }
 
   service::session::execute_session_deletion(&infra, &token, &deletion_ctx, false)
@@ -813,18 +825,17 @@ pub struct DeleteImagesQuery {
   pub dry_run: bool,
 }
 
-pub async fn delete_images_handler(
+pub async fn delete_images(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<DeleteImagesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
   let infra = state.infra_context();
 
   let id_strings: Vec<String> = q.ids.split(',').map(|s| s.trim().to_string()).collect();
   let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
 
-  // Validate first
   service::image::validate_image_deletion(&infra, &token, &id_refs, None)
     .await
     .map_err(internal_error)?;
@@ -853,12 +864,12 @@ pub struct DeleteConfigurationsQuery {
   pub dry_run: bool,
 }
 
-pub async fn delete_configurations_handler(
+pub async fn delete_configurations(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Query(q): Query<DeleteConfigurationsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("delete_configurations dry_run={}", q.dry_run);
   let infra = state.infra_context();
 
   let since = q
@@ -905,7 +916,9 @@ pub async fn delete_configurations_handler(
   .map_err(internal_error)?;
 
   if q.dry_run {
-    return Ok((StatusCode::OK, Json(serde_json::to_value(&candidates).unwrap_or_default())));
+    let body = serde_json::to_value(&candidates)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+    return Ok((StatusCode::OK, Json(body)));
   }
 
   service::configuration::delete_configurations_and_derivatives(&infra, &token, &candidates)
@@ -940,15 +953,27 @@ pub struct CreateSessionRequest {
 
 pub async fn create_session(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<CreateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  if body.repo_names.len() != body.repo_last_commit_ids.len() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: format!(
+          "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
+          body.repo_names.len(),
+          body.repo_last_commit_ids.len()
+        ),
+      }),
+    ));
+  }
+  log::info!("create_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
 
   let vault_base_url = state.vault_base_url.as_deref().ok_or_else(|| {
     (
-      StatusCode::INTERNAL_SERVER_ERROR,
+      StatusCode::NOT_IMPLEMENTED,
       Json(ErrorResponse {
         error: "Vault URL not configured — cannot fetch gitea token".to_string(),
       }),
@@ -1005,10 +1030,14 @@ pub struct ApplyBootConfigRequest {
 
 pub async fn apply_boot_config(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<ApplyBootConfigRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!(
+    "apply_boot_config hosts={} dry_run={}",
+    body.hosts_expression,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
   let changeset = service::boot_parameters::prepare_boot_config(
@@ -1023,7 +1052,9 @@ pub async fn apply_boot_config(
   .map_err(internal_error)?;
 
   if body.dry_run {
-    return Ok((StatusCode::OK, Json(serde_json::to_value(&changeset).unwrap_or_default())));
+    let body_val = serde_json::to_value(&changeset)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+    return Ok((StatusCode::OK, Json(body_val)));
   }
 
   service::boot_parameters::persist_boot_config(
@@ -1046,16 +1077,24 @@ pub async fn apply_boot_config(
 // POST /api/v1/kernel-parameters/apply — Apply kernel parameter changes
 // ---------------------------------------------------------------------------
 
+/// "add" | "apply" | "delete"
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum KernelParamOp {
+  Add,
+  Apply,
+  Delete,
+}
+
 #[derive(Deserialize)]
 pub struct ApplyKernelParametersRequest {
   pub xnames: Vec<String>,
-  /// One of: "add", "apply", "delete"
-  pub operation: String,
+  pub operation: KernelParamOp,
   pub params: String,
-  /// Only relevant for "add" operation
+  /// Only relevant for the `add` operation.
   #[serde(default)]
   pub overwrite: bool,
-  /// Whether to project SBPS images (default true)
+  /// Whether to project SBPS images (default true).
   #[serde(default = "default_true")]
   pub project_sbps: bool,
   #[serde(default)]
@@ -1068,31 +1107,36 @@ fn default_true() -> bool {
 
 pub async fn apply_kernel_parameters(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  if body.xnames.is_empty() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: "xnames list must not be empty".to_string(),
+      }),
+    ));
+  }
+  log::info!(
+    "apply_kernel_parameters xnames={:?} op={:?} dry_run={}",
+    body.xnames,
+    body.operation,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
-  let operation = match body.operation.as_str() {
-    "add" => service::kernel_parameters::KernelParamOperation::Add {
+  let operation = match body.operation {
+    KernelParamOp::Add => service::kernel_parameters::KernelParamOperation::Add {
       params: &body.params,
       overwrite: body.overwrite,
     },
-    "apply" => service::kernel_parameters::KernelParamOperation::Apply {
+    KernelParamOp::Apply => service::kernel_parameters::KernelParamOperation::Apply {
       params: &body.params,
     },
-    "delete" => service::kernel_parameters::KernelParamOperation::Delete {
+    KernelParamOp::Delete => service::kernel_parameters::KernelParamOperation::Delete {
       params: &body.params,
     },
-    other => {
-      return Err((
-        StatusCode::BAD_REQUEST,
-        Json(ErrorResponse {
-          error: format!("Invalid operation '{}'. Must be one of: add, apply, delete", other),
-        }),
-      ));
-    }
   };
 
   let changeset =
@@ -1101,10 +1145,11 @@ pub async fn apply_kernel_parameters(
       .map_err(internal_error)?;
 
   if body.dry_run {
-    return Ok((StatusCode::OK, Json(serde_json::to_value(&changeset).unwrap_or_default())));
+    let body_val = serde_json::to_value(&changeset)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+    return Ok((StatusCode::OK, Json(body_val)));
   }
 
-  // Build images_to_project from SBPS candidates
   let mut images_to_project = std::collections::HashMap::new();
   if body.project_sbps {
     for (image_id, mut image) in changeset.sbps_candidates.clone() {
@@ -1141,10 +1186,10 @@ pub struct MigrateNodesRequest {
 
 pub async fn migrate_nodes(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("migrate_nodes dry_run={}", body.dry_run);
   let infra = state.infra_context();
 
   let (xnames, results) = service::migrate::migrate_nodes(
@@ -1177,10 +1222,10 @@ pub struct MigrateBackupRequest {
 
 pub async fn migrate_backup(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<MigrateBackupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("migrate_backup");
   let infra = state.infra_context();
 
   service::migrate::migrate_backup(
@@ -1212,10 +1257,10 @@ pub struct MigrateRestoreRequest {
 
 pub async fn migrate_restore(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<MigrateRestoreRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("migrate_restore overwrite={}", body.overwrite);
   let infra = state.infra_context();
 
   service::migrate::migrate_restore(
@@ -1245,10 +1290,10 @@ pub struct CreateEphemeralEnvRequest {
 
 pub async fn create_ephemeral_env(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<CreateEphemeralEnvRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("create_ephemeral_env image_id={}", body.image_id);
 
   crate::cli::commands::apply_ephemeral_env::exec(
     &state.shasta_base_url,
@@ -1275,11 +1320,16 @@ pub struct DeleteGroupMembersRequest {
 
 pub async fn delete_group_members(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<DeleteGroupMembersRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!(
+    "delete_group_members group={} xnames={:?} dry_run={}",
+    name,
+    body.xnames,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
   if !body.dry_run {
@@ -1299,39 +1349,61 @@ pub async fn delete_group_members(
 // POST /api/v1/power — Power on/off/reset nodes or cluster
 // ---------------------------------------------------------------------------
 
+/// "on" | "off" | "reset"
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PowerAction {
+  On,
+  Off,
+  Reset,
+}
+
+/// "nodes" | "cluster"
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PowerTargetType {
+  Nodes,
+  Cluster,
+}
+
 #[derive(Deserialize)]
 pub struct PowerRequest {
-  pub action: String,
+  pub action: PowerAction,
   pub targets: Vec<String>,
-  pub target_type: String,
+  pub target_type: PowerTargetType,
   #[serde(default)]
   pub force: bool,
 }
 
 pub async fn post_power(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!(
+    "post_power action={:?} target_type={:?}",
+    body.action,
+    body.target_type
+  );
   let infra = state.infra_context();
 
-  let xnames: Vec<String> = if body.target_type == "cluster" {
-    let group_name = body.targets.first().ok_or_else(|| {
-      (
-        StatusCode::BAD_REQUEST,
-        Json(ErrorResponse {
-          error: "targets must contain at least one cluster name".into(),
-        }),
-      )
-    })?;
-    infra
-      .backend
-      .get_member_vec_from_group_name_vec(&token, &[group_name.clone()])
-      .await
-      .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?
-  } else {
-    body.targets.clone()
+  let xnames: Vec<String> = match body.target_type {
+    PowerTargetType::Cluster => {
+      let group_name = body.targets.first().ok_or_else(|| {
+        (
+          StatusCode::BAD_REQUEST,
+          Json(ErrorResponse {
+            error: "targets must contain at least one cluster name".into(),
+          }),
+        )
+      })?;
+      infra
+        .backend
+        .get_member_vec_from_group_name_vec(&token, &[group_name.clone()])
+        .await
+        .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?
+    }
+    PowerTargetType::Nodes => body.targets.clone(),
   };
 
   if xnames.is_empty() {
@@ -1343,31 +1415,10 @@ pub async fn post_power(
     ));
   }
 
-  let result = match body.action.as_str() {
-    "on" => infra.backend.power_on_sync(&token, &xnames).await,
-    "off" => {
-      infra
-        .backend
-        .power_off_sync(&token, &xnames, body.force)
-        .await
-    }
-    "reset" => {
-      infra
-        .backend
-        .power_reset_sync(&token, &xnames, body.force)
-        .await
-    }
-    other => {
-      return Err((
-        StatusCode::BAD_REQUEST,
-        Json(ErrorResponse {
-          error: format!(
-            "Unknown action '{}': must be 'on', 'off', or 'reset'",
-            other
-          ),
-        }),
-      ))
-    }
+  let result = match body.action {
+    PowerAction::On => infra.backend.power_on_sync(&token, &xnames).await,
+    PowerAction::Off => infra.backend.power_off_sync(&token, &xnames, body.force).await,
+    PowerAction::Reset => infra.backend.power_reset_sync(&token, &xnames, body.force).await,
   }
   .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
 
@@ -1378,9 +1429,28 @@ pub async fn post_power(
 // POST /api/v1/templates/{name}/sessions — Create BOS session from template
 // ---------------------------------------------------------------------------
 
+/// "boot" | "reboot" | "shutdown"
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BosOperation {
+  Boot,
+  Reboot,
+  Shutdown,
+}
+
+impl BosOperation {
+  fn as_str(&self) -> &'static str {
+    match self {
+      Self::Boot => "boot",
+      Self::Reboot => "reboot",
+      Self::Shutdown => "shutdown",
+    }
+  }
+}
+
 #[derive(Deserialize)]
 pub struct PostTemplateSessionRequest {
-  pub operation: String,
+  pub operation: BosOperation,
   pub limit: String,
   pub session_name: Option<String>,
   #[serde(default)]
@@ -1391,36 +1461,35 @@ pub struct PostTemplateSessionRequest {
 
 pub async fn post_template_session(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<PostTemplateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!(
+    "post_template_session template={} op={:?} dry_run={}",
+    name,
+    body.operation,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
   let params = service::template::ApplyTemplateParams {
     bos_session_name: body.session_name,
     bos_sessiontemplate_name: name,
-    bos_session_operation: body.operation,
+    bos_session_operation: body.operation.as_str().to_string(),
     limit: body.limit,
     include_disabled: body.include_disabled,
   };
 
   let (bos_session, _) =
-    service::template::validate_and_prepare_template_session(
-      &infra, &token, &params,
-    )
-    .await
-    .map_err(internal_error)?;
+    service::template::validate_and_prepare_template_session(&infra, &token, &params)
+      .await
+      .map_err(internal_error)?;
 
   if body.dry_run {
-    return Ok((
-      StatusCode::OK,
-      Json(
-        serde_json::to_value(&bos_session)
-          .unwrap_or(serde_json::json!({})),
-      ),
-    ));
+    let body_val = serde_json::to_value(&bos_session)
+      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+    return Ok((StatusCode::OK, Json(body_val)));
   }
 
   let created =
@@ -1428,10 +1497,9 @@ pub async fn post_template_session(
       .await
       .map_err(internal_error)?;
 
-  Ok((
-    StatusCode::CREATED,
-    Json(serde_json::to_value(&created).unwrap_or(serde_json::json!({}))),
-  ))
+  let body_val = serde_json::to_value(&created)
+    .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
+  Ok((StatusCode::CREATED, Json(body_val)))
 }
 
 // ---------------------------------------------------------------------------
@@ -1446,14 +1514,13 @@ pub struct SessionLogsQuery {
 
 pub async fn get_session_logs(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Query(q): Query<SessionLogsQuery>,
 ) -> Result<
   Sse<impl futures::Stream<Item = Result<Event, Infallible>>>,
   (StatusCode, Json<ErrorResponse>),
 > {
-  let token = extract_bearer_token(&headers)?;
   let infra = state.infra_context();
 
   let k8s_api_url = infra.k8s_api_url.ok_or_else(|| {
@@ -1525,10 +1592,10 @@ pub struct PostSatFileRequest {
 
 pub async fn post_sat_file(
   State(state): State<Arc<ServerState>>,
-  headers: HeaderMap,
+  BearerToken(token): BearerToken,
   Json(body): Json<PostSatFileRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let token = extract_bearer_token(&headers)?;
+  log::info!("post_sat_file dry_run={}", body.dry_run);
   let infra = state.infra_context();
 
   let vault_base_url = infra.vault_base_url.ok_or_else(|| {

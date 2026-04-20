@@ -348,7 +348,8 @@ async fn post_ephemeral_env_missing_image_id_returns_422() {
 }
 
 #[tokio::test]
-async fn post_power_unknown_action_returns_400() {
+async fn post_power_unknown_action_returns_422() {
+  // "fly" is not a valid PowerAction enum variant — serde rejects it with 422.
   let resp = router()
     .oneshot(post_json(
       "/api/v1/power",
@@ -356,7 +357,7 @@ async fn post_power_unknown_action_returns_400() {
     ))
     .await
     .unwrap();
-  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[tokio::test]
@@ -396,14 +397,13 @@ async fn post_sat_file_missing_content_returns_422() {
 // Missing required query parameters
 //
 // GET /nodes and GET /hardware-nodes have a required `xname`/`xnames`
-// query parameter. Axum's Query extractor rejects the request with
-// 400 Bad Request before auth is checked.
+// query parameter. Authenticated requests that omit it get 400 Bad Request.
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
 async fn get_nodes_without_xname_returns_400() {
   let resp = router()
-    .oneshot(get("/api/v1/nodes"))
+    .oneshot(get_auth("/api/v1/nodes"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
@@ -412,7 +412,7 @@ async fn get_nodes_without_xname_returns_400() {
 #[tokio::test]
 async fn get_hardware_nodes_without_xnames_returns_400() {
   let resp = router()
-    .oneshot(get("/api/v1/hardware-nodes"))
+    .oneshot(get_auth("/api/v1/hardware-nodes"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
