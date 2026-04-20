@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
@@ -54,7 +54,7 @@ pub async fn get_sessions(
       None,
     )
     .await
-    .map_err(|e| anyhow::anyhow!(e))
+    .context("Failed to get and filter sessions")
 }
 
 /// Data needed to delete/cancel a session.

@@ -7,7 +7,9 @@ mod service;
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
-  app_context::AppContext, config::types::MantaConfiguration, kafka::Kafka,
+  app_context::AppContext,
+  config::types::{BackendTechnology, MantaConfiguration},
+  kafka::Kafka,
 };
 use manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -115,19 +117,13 @@ async fn run(
   // Extract backend technology and URLs
   let backend_tech = &site_details_value.backend;
   let shasta_base_url = &site_details_value.shasta_base_url;
-  let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
-    // old configuration file. TODO: remove this when needed in the future and all users are
-    // using the right configuration file
+  let shasta_barebone_url = shasta_base_url // HACK: strip /apis suffix if present for
+    // compatibility with old configuration files. Remove once all users have migrated.
     .strip_suffix(API_URL_SUFFIX)
     .unwrap_or(shasta_base_url);
-  let shasta_api_url = match backend_tech.as_str() {
-    "csm" => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
-    "ochami" => shasta_barebone_url.to_owned(),
-    _ => {
-      return Err(
-        format!("Invalid backend technology: {}", backend_tech).into(),
-      );
-    }
+  let shasta_api_url = match backend_tech {
+    BackendTechnology::Csm => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
+    BackendTechnology::Ochami => shasta_barebone_url.to_owned(),
   };
   let gitea_base_url = shasta_barebone_url.to_owned() + VCS_URL_SUFFIX;
   let k8s_api_url: Option<&String> = site_details_value
@@ -169,7 +165,7 @@ async fn run(
   };
 
   let backend = StaticBackendDispatcher::new(
-    backend_tech,
+    backend_tech.as_str(),
     &shasta_api_url,
     &shasta_root_cert,
   )?;
@@ -190,7 +186,7 @@ async fn run(
       .expect("listen-address has a default value");
 
     let server_backend = StaticBackendDispatcher::new(
-      backend_tech,
+      backend_tech.as_str(),
       &shasta_api_url,
       &shasta_root_cert,
     )?;

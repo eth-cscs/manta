@@ -5,11 +5,28 @@ use crate::common::audit::Auditor;
 use manta_backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
+/// Which backend API this site speaks.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum BackendTechnology {
+  Csm,
+  Ochami,
+}
+
+impl BackendTechnology {
+  /// Return the lowercase string expected by `StaticBackendDispatcher::new`.
+  pub fn as_str(&self) -> &'static str {
+    match self {
+      Self::Csm => "csm",
+      Self::Ochami => "ochami",
+    }
+  }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
-/// Connection details for a single ALPS site (CSM or
-/// OCHAMI instance).
+/// Connection details for a single ALPS site (CSM or OCHAMI instance).
 pub struct Site {
-  pub backend: String,
+  pub backend: BackendTechnology,
   pub socks5_proxy: Option<String>,
   pub shasta_base_url: String,
   pub k8s: Option<K8sDetails>,
@@ -37,7 +54,7 @@ mod tests {
 
   fn make_minimal_config() -> MantaConfiguration {
     let site = Site {
-      backend: "csm".to_string(),
+      backend: BackendTechnology::Csm,
       socks5_proxy: None,
       shasta_base_url: "https://api.example.com".to_string(),
       k8s: None,
@@ -69,7 +86,7 @@ mod tests {
     assert_eq!(parsed.site, "alps");
     assert!(parsed.auditor.is_none());
     let site = parsed.sites.get("alps").unwrap();
-    assert_eq!(site.backend, "csm");
+    assert_eq!(site.backend, BackendTechnology::Csm);
     assert_eq!(site.shasta_base_url, "https://api.example.com");
     assert!(site.socks5_proxy.is_none());
     assert!(site.k8s.is_none());
@@ -93,13 +110,10 @@ mod tests {
 
     let k8s = parsed.sites.get("alps").unwrap().k8s.as_ref().unwrap();
     assert_eq!(k8s.api_url, "https://10.0.0.1:6443");
-    match &k8s.authentication {
-      K8sAuth::Native {
-        certificate_authority_data,
-        ..
-      } => assert_eq!(certificate_authority_data, "ca-data"),
-      _ => panic!("Expected Native K8sAuth"),
-    }
+    let K8sAuth::Native { certificate_authority_data, .. } = &k8s.authentication else {
+      panic!("expected K8sAuth::Native, got a different variant");
+    };
+    assert_eq!(certificate_authority_data, "ca-data");
   }
 
   #[test]
@@ -141,7 +155,7 @@ mod tests {
     config.sites.insert(
       "eiger".to_string(),
       Site {
-        backend: "ochami".to_string(),
+        backend: BackendTechnology::Ochami,
         socks5_proxy: None,
         shasta_base_url: "https://api.eiger.example.com".to_string(),
         k8s: None,
@@ -155,7 +169,10 @@ mod tests {
     let parsed: MantaConfiguration = toml::from_str(&toml_str).unwrap();
 
     assert_eq!(parsed.sites.len(), 2);
-    assert_eq!(parsed.sites.get("eiger").unwrap().backend, "ochami");
+    assert_eq!(
+      parsed.sites.get("eiger").unwrap().backend,
+      BackendTechnology::Ochami
+    );
   }
 
   #[test]
@@ -185,5 +202,25 @@ mod tests {
     "#;
     let result = toml::from_str::<Site>(bad_toml);
     assert!(result.is_err());
+  }
+
+  #[test]
+  fn backend_technology_as_str() {
+    assert_eq!(BackendTechnology::Csm.as_str(), "csm");
+    assert_eq!(BackendTechnology::Ochami.as_str(), "ochami");
+  }
+
+  #[test]
+  fn backend_technology_roundtrip_toml() {
+    // Verify TOML serializes as lowercase "csm" / "ochami"
+    #[derive(Serialize, Deserialize)]
+    struct Wrapper {
+      backend: BackendTechnology,
+    }
+    let w = Wrapper { backend: BackendTechnology::Csm };
+    let s = toml::to_string(&w).unwrap();
+    assert!(s.contains("\"csm\"") || s.contains("csm"));
+    let parsed: Wrapper = toml::from_str(&s).unwrap();
+    assert_eq!(parsed.backend, BackendTechnology::Csm);
   }
 }

@@ -87,22 +87,29 @@ pub async fn get_configuration_details(
     .await
     .context("Failed to fetch VCS token from vault")?;
 
-  let mut layer_details_vec: Vec<LayerDetails> = vec![];
-
-  for layer in &config.layers {
-    let layer_details = infra.backend
-      .get_configuration_layer_details(
-        infra.shasta_root_cert,
-        infra.gitea_base_url,
-        &gitea_token,
-        layer.clone(),
-        infra.site_name,
-      )
-      .await
-      .context("Could not fetch configuration layer details")?;
-
-    layer_details_vec.push(layer_details);
-  }
+  // Fetch all layer details concurrently instead of sequentially.
+  let layer_details_vec: Vec<LayerDetails> =
+    futures::future::try_join_all(config.layers.iter().map(|layer| {
+      let backend = infra.backend.clone();
+      let root_cert = infra.shasta_root_cert.to_vec();
+      let gitea_base_url = infra.gitea_base_url.to_string();
+      let gitea_token = gitea_token.clone();
+      let site_name = infra.site_name.to_string();
+      let layer = layer.clone();
+      async move {
+        backend
+          .get_configuration_layer_details(
+            &root_cert,
+            &gitea_base_url,
+            &gitea_token,
+            layer,
+            &site_name,
+          )
+          .await
+          .context("Could not fetch configuration layer details")
+      }
+    }))
+    .await?;
 
   let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
     infra.backend

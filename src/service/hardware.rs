@@ -145,6 +145,10 @@ pub async fn get_hardware_cluster(
     .ids
     .unwrap_or_default();
 
+  if hsm_group_target_members.is_empty() {
+    log::warn!("HSM group '{}' has no members", hsm_group.label);
+  }
+
   log::debug!(
     "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
     hsm_group.label,
@@ -201,9 +205,7 @@ pub async fn get_hardware_cluster(
       };
 
       match node_hw_inventory_value_opt {
-        Some(node_hw_inventory) => {
-          NodeSummary::from_csm_value(node_hw_inventory.clone())
-        }
+        Some(node_hw_inventory) => NodeSummary::from_csm_value(node_hw_inventory),
         None => NodeSummary {
           xname: hsm_member_string,
           ..Default::default()

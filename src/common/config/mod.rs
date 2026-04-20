@@ -13,7 +13,7 @@ use dialoguer::{Input, Select};
 use directories::ProjectDirs;
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use toml_edit::DocumentMut;
-use types::{MantaConfiguration, Site};
+use types::{BackendTechnology, MantaConfiguration, Site};
 
 use crate::common::{
   audit::Auditor,
@@ -279,16 +279,17 @@ async fn create_new_config_file(
       .to_string(),
   )?;
 
-  let backend_options = vec!["csm", "ochami"];
+  let backend_options = [BackendTechnology::Csm, BackendTechnology::Ochami];
+  let backend_option_labels = ["csm", "ochami"];
 
   let backend_selection = Select::new()
     .with_prompt("Please select 'backend' technology from the list below")
-    .items(&backend_options)
+    .items(&backend_option_labels)
     .default(0)
     .interact()
     .context("Failed to read backend selection")?;
 
-  let backend = backend_options[backend_selection].to_string();
+  let backend = backend_options[backend_selection].clone();
 
   // Broker is optional value
   let audit_kafka_brokers: String = prompt_string_allow_empty(
