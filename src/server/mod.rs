@@ -1,5 +1,7 @@
 pub mod handlers;
 pub mod routes;
+#[cfg(test)]
+mod tests;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
