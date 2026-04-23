@@ -44,6 +44,17 @@ impl ServerState {
   }
 }
 
+async fn log_requests(
+  request: axum::extract::Request,
+  next: axum::middleware::Next,
+) -> axum::response::Response {
+  let method = request.method().clone();
+  let uri = request.uri().clone();
+  let response = next.run(request).await;
+  log::info!("{} {} → {}", method, uri, response.status());
+  response
+}
+
 /// Start the HTTPS server.
 pub async fn start_server(
   state: Arc<ServerState>,
@@ -52,7 +63,8 @@ pub async fn start_server(
   cert_path: &str,
   key_path: &str,
 ) -> Result<(), Error> {
-  let app = routes::build_router(state);
+  let app = routes::build_router(state)
+    .layer(axum::middleware::from_fn(log_requests));
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)
     .parse()

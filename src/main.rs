@@ -185,14 +185,8 @@ async fn run(
       .get_one::<String>("listen-address")
       .expect("listen-address has a default value");
 
-    let server_backend = StaticBackendDispatcher::new(
-      backend_tech.as_str(),
-      &shasta_api_url,
-      &shasta_root_cert,
-    )?;
-
     let server_state = std::sync::Arc::new(server::ServerState {
-      backend: server_backend,
+      backend,
       site_name: site_name.clone(),
       shasta_base_url: shasta_api_url.clone(),
       shasta_root_cert: shasta_root_cert.clone(),
