@@ -86,7 +86,26 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // SAT file apply
     .route("/sat-file", post(handlers::post_sat_file))
     // Health check
-    .route("/health", get(handlers::health));
+    .route("/health", get(handlers::health))
+    // Kernel parameters — add and delete
+    .route("/kernel-parameters/add", post(handlers::add_kernel_parameters))
+    .route(
+      "/kernel-parameters",
+      delete(handlers::delete_kernel_parameters),
+    )
+    // Hardware cluster member management
+    .route(
+      "/hardware-clusters/{target}/members",
+      post(handlers::add_hw_component)
+        .delete(handlers::delete_hw_component),
+    )
+    // Hardware cluster configuration (pin/unpin)
+    .route(
+      "/hardware-clusters/{target}/configuration",
+      post(handlers::apply_hw_configuration),
+    )
+    // CFS session from pre-resolved repos with HSM validation
+    .route("/sessions/apply", post(handlers::apply_session));
 
   Router::new().nest("/api/v1", api).with_state(state)
 }

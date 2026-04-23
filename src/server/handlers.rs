@@ -4,7 +4,7 @@ use std::convert::Infallible;
 use axum::{
   Json,
   extract::{FromRequestParts, Path, Query, State},
-  http::{StatusCode, request::Parts},
+  http::{StatusCode, header, request::Parts},
   response::{
     IntoResponse,
     sse::{Event, KeepAlive, Sse},
@@ -40,7 +40,7 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
   ) -> Result<Self, Self::Rejection> {
     let auth_header = parts
       .headers
-      .get("authorization")
+      .get(header::AUTHORIZATION)
       .and_then(|v| v.to_str().ok())
       .ok_or_else(|| {
         (
@@ -76,6 +76,18 @@ fn internal_error(e: anyhow::Error) -> (StatusCode, Json<ErrorResponse>) {
       error: format!("{:#}", e),
     }),
   )
+}
+
+fn serialize_or_500<T: Serialize>(v: &T) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
+  serde_json::to_value(v).map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))
+}
+
+fn require_vault(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
+  url.ok_or_else(|| (StatusCode::NOT_IMPLEMENTED, Json(ErrorResponse { error: "vault_base_url not configured on this server".into() })))
+}
+
+fn require_k8s_url(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
+  url.ok_or_else(|| (StatusCode::NOT_IMPLEMENTED, Json(ErrorResponse { error: "k8s_api_url not configured on this server".into() })))
 }
 
 // ---------------------------------------------------------------------------
@@ -275,8 +287,7 @@ pub async fn get_images(
 
   let mut entries = Vec::with_capacity(images.len());
   for (img, config_name, image_id, linked) in images {
-    let image = serde_json::to_value(img)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize image: {}", e)))?;
+    let image = serialize_or_500(&img)?;
     entries.push(ImageEntry {
       image,
       configuration_name: config_name,
@@ -802,9 +813,7 @@ pub async fn delete_session(
       .map_err(internal_error)?;
 
   if q.dry_run {
-    let body = serde_json::to_value(&deletion_ctx)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-    return Ok((StatusCode::OK, Json(body)));
+    return Ok((StatusCode::OK, Json(serialize_or_500(&deletion_ctx)?)));
   }
 
   service::session::execute_session_deletion(&infra, &token, &deletion_ctx, false)
@@ -836,11 +845,10 @@ pub async fn delete_images(
   let id_strings: Vec<String> = q.ids.split(',').map(|s| s.trim().to_string()).collect();
   let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
 
-  service::image::validate_image_deletion(&infra, &token, &id_refs, None)
-    .await
-    .map_err(internal_error)?;
-
   if q.dry_run {
+    service::image::validate_image_deletion(&infra, &token, &id_refs, None)
+      .await
+      .map_err(internal_error)?;
     return Ok((StatusCode::OK, Json(serde_json::json!({ "validated_ids": id_strings }))));
   }
 
@@ -916,9 +924,7 @@ pub async fn delete_configurations(
   .map_err(internal_error)?;
 
   if q.dry_run {
-    let body = serde_json::to_value(&candidates)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-    return Ok((StatusCode::OK, Json(body)));
+    return Ok((StatusCode::OK, Json(serialize_or_500(&candidates)?)));
   }
 
   service::configuration::delete_configurations_and_derivatives(&infra, &token, &candidates)
@@ -971,14 +977,7 @@ pub async fn create_session(
   log::info!("create_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
 
-  let vault_base_url = state.vault_base_url.as_deref().ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "Vault URL not configured — cannot fetch gitea token".to_string(),
-      }),
-    )
-  })?;
+  let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
@@ -1052,9 +1051,7 @@ pub async fn apply_boot_config(
   .map_err(internal_error)?;
 
   if body.dry_run {
-    let body_val = serde_json::to_value(&changeset)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-    return Ok((StatusCode::OK, Json(body_val)));
+    return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
   service::boot_parameters::persist_boot_config(
@@ -1145,9 +1142,7 @@ pub async fn apply_kernel_parameters(
       .map_err(internal_error)?;
 
   if body.dry_run {
-    let body_val = serde_json::to_value(&changeset)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-    return Ok((StatusCode::OK, Json(body_val)));
+    return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
   let mut images_to_project = std::collections::HashMap::new();
@@ -1487,9 +1482,7 @@ pub async fn post_template_session(
       .map_err(internal_error)?;
 
   if body.dry_run {
-    let body_val = serde_json::to_value(&bos_session)
-      .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-    return Ok((StatusCode::OK, Json(body_val)));
+    return Ok((StatusCode::OK, Json(serialize_or_500(&bos_session)?)));
   }
 
   let created =
@@ -1497,9 +1490,7 @@ pub async fn post_template_session(
       .await
       .map_err(internal_error)?;
 
-  let body_val = serde_json::to_value(&created)
-    .map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))?;
-  Ok((StatusCode::CREATED, Json(body_val)))
+  Ok((StatusCode::CREATED, Json(serialize_or_500(&created)?)))
 }
 
 // ---------------------------------------------------------------------------
@@ -1523,23 +1514,8 @@ pub async fn get_session_logs(
 > {
   let infra = state.infra_context();
 
-  let k8s_api_url = infra.k8s_api_url.ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "k8s_api_url not configured on this server".into(),
-      }),
-    )
-  })?;
-
-  let vault_base_url = infra.vault_base_url.ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "vault_base_url not configured on this server".into(),
-      }),
-    )
-  })?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
+  let vault_base_url = require_vault(infra.vault_base_url)?;
 
   let k8s = K8sDetails {
     api_url: k8s_api_url.to_string(),
@@ -1598,23 +1574,8 @@ pub async fn post_sat_file(
   log::info!("post_sat_file dry_run={}", body.dry_run);
   let infra = state.infra_context();
 
-  let vault_base_url = infra.vault_base_url.ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "vault_base_url not configured on this server".into(),
-      }),
-    )
-  })?;
-
-  let k8s_api_url = infra.k8s_api_url.ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "k8s_api_url not configured on this server".into(),
-      }),
-    )
-  })?;
+  let vault_base_url = require_vault(infra.vault_base_url)?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(
@@ -1657,16 +1618,8 @@ pub async fn post_sat_file(
     )
     .map_err(internal_error)?;
 
-  let sat_template_string =
-    serde_yaml::to_string(&sat_template_yaml).map_err(|e| {
-      internal_error(anyhow::anyhow!(
-        "Failed to serialize SAT template: {}",
-        e
-      ))
-    })?;
-
   let mut sat_file: crate::cli::commands::apply_sat_file::utils::SatFile =
-    serde_yaml::from_str(&sat_template_string).map_err(|e| {
+    serde_yaml::from_value(sat_template_yaml).map_err(|e| {
       internal_error(anyhow::anyhow!("Failed to parse SAT file: {}", e))
     })?;
 
@@ -1717,4 +1670,411 @@ pub async fn post_sat_file(
     .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
 
   Ok(Json(serde_json::json!({ "status": "SAT file applied successfully" })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/kernel-parameters/add
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct AddKernelParametersRequest {
+  pub params: String,
+  pub xnames: Option<Vec<String>>,
+  pub hsm_group: Option<String>,
+  #[serde(default)]
+  pub overwrite: bool,
+  #[serde(default = "default_true")]
+  pub project_sbps: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn add_kernel_parameters(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Json(body): Json<AddKernelParametersRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let xnames = resolve_xnames_from_request(
+    &state,
+    &token,
+    body.xnames.as_deref(),
+    body.hsm_group.as_deref(),
+  )
+  .await?;
+
+  log::info!("add_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  let infra = state.infra_context();
+
+  let operation = service::kernel_parameters::KernelParamOperation::Add {
+    params: &body.params,
+    overwrite: body.overwrite,
+  };
+
+  let changeset =
+    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
+      .await
+      .map_err(internal_error)?;
+
+  if body.dry_run {
+    return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
+  }
+
+  let images_to_project = build_images_to_project(&changeset, body.project_sbps);
+
+  service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
+    .await
+    .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({
+    "applied": true,
+    "has_changes": changeset.has_changes,
+    "xnames_to_reboot": changeset.xnames_to_reboot,
+  }))))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/kernel-parameters
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteKernelParametersRequest {
+  pub params: String,
+  pub xnames: Option<Vec<String>>,
+  pub hsm_group: Option<String>,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_kernel_parameters(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Json(body): Json<DeleteKernelParametersRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let xnames = resolve_xnames_from_request(
+    &state,
+    &token,
+    body.xnames.as_deref(),
+    body.hsm_group.as_deref(),
+  )
+  .await?;
+
+  log::info!("delete_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  let infra = state.infra_context();
+
+  let operation = service::kernel_parameters::KernelParamOperation::Delete {
+    params: &body.params,
+  };
+
+  let changeset =
+    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
+      .await
+      .map_err(internal_error)?;
+
+  if body.dry_run {
+    return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
+  }
+
+  service::kernel_parameters::apply_kernel_params_changes(
+    &infra,
+    &token,
+    &changeset,
+    &std::collections::HashMap::new(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((StatusCode::OK, Json(serde_json::json!({
+    "applied": true,
+    "has_changes": changeset.has_changes,
+    "xnames_to_reboot": changeset.xnames_to_reboot,
+  }))))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/hardware-clusters/{target}/members
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct AddHwComponentRequest {
+  pub parent_cluster: String,
+  pub pattern: String,
+  #[serde(default)]
+  pub create_hsm_group: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn add_hw_component(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Path(target): Path<String>,
+  Json(body): Json<AddHwComponentRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  log::info!("add_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+
+  let result =
+    crate::cli::commands::add_hw_component_cluster::run(
+      &state.backend,
+      &token,
+      &target,
+      &body.parent_cluster,
+      &body.pattern,
+      body.dry_run,
+      body.create_hsm_group,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({
+    "dry_run": body.dry_run,
+    "nodes_moved": result.nodes_moved,
+    "target_cluster": target,
+    "target_nodes": result.target_nodes,
+    "parent_cluster": body.parent_cluster,
+    "parent_nodes": result.parent_nodes,
+  })))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/hardware-clusters/{target}/members
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct DeleteHwComponentRequest {
+  pub parent_cluster: String,
+  pub pattern: String,
+  #[serde(default)]
+  pub delete_hsm_group: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn delete_hw_component(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Path(target): Path<String>,
+  Json(body): Json<DeleteHwComponentRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  log::info!("delete_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+
+  let result =
+    crate::cli::commands::delete_hw_component_cluster::run(
+      &state.backend,
+      &token,
+      &target,
+      &body.parent_cluster,
+      &body.pattern,
+      body.dry_run,
+      body.delete_hsm_group,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({
+    "dry_run": body.dry_run,
+    "nodes_moved": result.nodes_moved,
+    "target_cluster": target,
+    "target_nodes": result.target_nodes,
+    "parent_cluster": body.parent_cluster,
+    "parent_nodes": result.parent_nodes,
+  })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/hardware-clusters/{target}/configuration
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum HwClusterMode {
+  #[default]
+  Pin,
+  Unpin,
+}
+
+#[derive(Deserialize)]
+pub struct ApplyHwConfigurationRequest {
+  pub parent_cluster: String,
+  pub pattern: String,
+  #[serde(default)]
+  pub mode: HwClusterMode,
+  #[serde(default = "default_true")]
+  pub create_target_hsm_group: bool,
+  #[serde(default = "default_true")]
+  pub delete_empty_parent_hsm_group: bool,
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+pub async fn apply_hw_configuration(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Path(target): Path<String>,
+  Json(body): Json<ApplyHwConfigurationRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  log::info!("apply_hw_configuration target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+
+  let mode = match body.mode {
+    HwClusterMode::Pin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Pin,
+    HwClusterMode::Unpin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Unpin,
+  };
+
+  let result =
+    crate::cli::commands::hw_cluster_common::command::exec_with_backend(
+      &state.backend,
+      mode,
+      &token,
+      &target,
+      &body.parent_cluster,
+      &body.pattern,
+      body.dry_run,
+      body.create_target_hsm_group,
+      body.delete_empty_parent_hsm_group,
+    )
+    .await
+    .map_err(internal_error)?;
+
+  Ok(Json(serde_json::json!({
+    "dry_run": body.dry_run,
+    "target_cluster": target,
+    "target_nodes": result.target_nodes,
+    "parent_cluster": body.parent_cluster,
+    "parent_nodes": result.parent_nodes,
+  })))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sessions/apply
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct ApplySessionRequest {
+  pub repo_names: Vec<String>,
+  pub repo_last_commit_ids: Vec<String>,
+  pub cfs_conf_sess_name: Option<String>,
+  pub playbook_yaml_file_name: Option<String>,
+  pub hsm_group: Option<String>,
+  pub ansible_limit: Option<String>,
+  pub ansible_verbosity: Option<String>,
+  pub ansible_passthrough: Option<String>,
+}
+
+pub async fn apply_session(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  Json(body): Json<ApplySessionRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  if body.repo_names.len() != body.repo_last_commit_ids.len() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: format!(
+          "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
+          body.repo_names.len(),
+          body.repo_last_commit_ids.len()
+        ),
+      }),
+    ));
+  }
+
+  log::info!("apply_session repos={:?}", body.repo_names);
+  let infra = state.infra_context();
+  let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
+
+  if let Some(ref ansible_limit) = body.ansible_limit {
+    let xnames: Vec<String> = ansible_limit
+      .split(',')
+      .map(|s| s.trim().to_string())
+      .collect();
+    crate::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
+      .await
+      .map_err(internal_error)?;
+  }
+
+  let gitea_token =
+    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
+      .await
+      .map_err(|e| internal_error(e.into()))?;
+
+  let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
+  let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
+
+  let (session_name, config_name) = service::session::create_cfs_session(
+    &infra,
+    &token,
+    &gitea_token,
+    body.cfs_conf_sess_name.as_deref(),
+    body.playbook_yaml_file_name.as_deref(),
+    body.hsm_group.as_deref(),
+    &repo_name_refs,
+    &repo_commit_refs,
+    body.ansible_limit.as_deref(),
+    body.ansible_verbosity.as_deref(),
+    body.ansible_passthrough.as_deref(),
+  )
+  .await
+  .map_err(internal_error)?;
+
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({
+      "session_name": session_name,
+      "configuration_name": config_name,
+    })),
+  ))
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+/// Resolve target xnames from an explicit list or an HSM group name.
+/// Returns 400 if neither is provided.
+async fn resolve_xnames_from_request(
+  state: &ServerState,
+  token: &str,
+  xnames: Option<&[String]>,
+  hsm_group: Option<&str>,
+) -> Result<Vec<String>, (StatusCode, Json<ErrorResponse>)> {
+  if let Some(xnames) = xnames {
+    if !xnames.is_empty() {
+      return Ok(xnames.to_vec());
+    }
+  }
+  if let Some(group) = hsm_group {
+    return crate::common::node_ops::resolve_target_nodes(
+      &state.backend,
+      token,
+      None,
+      Some(group),
+      None,
+    )
+    .await
+    .map_err(internal_error);
+  }
+  Err((
+    StatusCode::BAD_REQUEST,
+    Json(ErrorResponse {
+      error: "At least one of 'xnames' or 'hsm_group' must be provided".to_string(),
+    }),
+  ))
+}
+
+/// Build the SBPS images-to-project map from a kernel params changeset.
+fn build_images_to_project(
+  changeset: &service::kernel_parameters::KernelParamsChangeset,
+  project_sbps: bool,
+) -> std::collections::HashMap<String, manta_backend_dispatcher::types::ims::Image> {
+  if !project_sbps {
+    return std::collections::HashMap::new();
+  }
+  changeset
+    .sbps_candidates
+    .iter()
+    .map(|(id, img)| {
+      let mut img = img.clone();
+      img.set_boot_image_iscsi_ready();
+      (id.clone(), img)
+    })
+    .collect()
 }

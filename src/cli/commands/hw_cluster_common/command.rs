@@ -21,12 +21,17 @@ pub enum HwClusterMode {
   Unpin,
 }
 
-/// Execute a hardware cluster pin or unpin operation,
-/// moving nodes between target and parent HSM groups.
+/// Result of an `apply hw-configuration` operation.
+pub struct ApplyHwResult {
+  pub target_nodes: Vec<String>,
+  pub parent_nodes: Vec<String>,
+}
+
+/// Core logic for hardware cluster pin/unpin — no terminal interaction.
 #[allow(clippy::too_many_arguments)]
-pub async fn exec(
+pub async fn exec_with_backend(
+  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
   mode: HwClusterMode,
-  ctx: &AppContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
@@ -34,16 +39,12 @@ pub async fn exec(
   dryrun: bool,
   create_target_hsm_group: bool,
   delete_empty_parent_hsm_group: bool,
-) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-
-  // Parse user input
+) -> Result<ApplyHwResult, Error> {
   let (user_defined_hw_component_vec, user_defined_hw_component_count_hashmap) =
     parse_hw_pattern_usize(target_hsm_group_name, pattern)?;
 
   let mem_lcm = super::MEMORY_CAPACITY_LCM;
 
-  // Ensure target group exists (create if requested)
   ensure_target_group_exists(
     backend,
     shasta_token,
@@ -53,7 +54,6 @@ pub async fn exec(
   )
   .await?;
 
-  // Fetch target HSM inventory
   let (
     target_hsm_group_member_vec,
     target_hsm_node_hw_component_count_vec,
@@ -73,7 +73,6 @@ pub async fn exec(
     target_hsm_hw_component_summary
   );
 
-  // Fetch parent HSM inventory
   let (
     parent_hsm_group_member_vec,
     parent_hsm_node_hw_component_count_vec,
@@ -87,14 +86,12 @@ pub async fn exec(
   )
   .await?;
 
-  // Validate resource sufficiency
   validate_resource_sufficiency(
     &target_hsm_node_hw_component_count_vec,
     &parent_hsm_node_hw_component_count_vec,
     &user_defined_hw_component_count_hashmap,
   )?;
 
-  // Resolve hw description to xname sets
   let (
     target_hsm_node_hw_component_count_vec,
     parent_hsm_node_hw_component_count_vec,
@@ -106,12 +103,6 @@ pub async fn exec(
   )
   .await?;
 
-  let target_hsm_hw_component_summary =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
-
-  let parent_hsm_hw_component_summary =
-    calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
-
   let target_hsm_node_vec: Vec<String> = target_hsm_node_hw_component_count_vec
     .into_iter()
     .map(|(xname, _)| xname)
@@ -122,7 +113,6 @@ pub async fn exec(
     .map(|(xname, _)| xname)
     .collect();
 
-  // Apply changes
   apply_group_updates(
     backend,
     shasta_token,
@@ -137,22 +127,41 @@ pub async fn exec(
   )
   .await?;
 
-  // Print results
-  log::info!(
-    "HSM '{}' hw component summary: {:?}",
+  Ok(ApplyHwResult {
+    target_nodes: target_hsm_node_vec,
+    parent_nodes: parent_hsm_node_vec,
+  })
+}
+
+/// Execute a hardware cluster pin or unpin operation,
+/// moving nodes between target and parent HSM groups.
+#[allow(clippy::too_many_arguments)]
+pub async fn exec(
+  mode: HwClusterMode,
+  ctx: &AppContext<'_>,
+  shasta_token: &str,
+  target_hsm_group_name: &str,
+  parent_hsm_group_name: &str,
+  pattern: &str,
+  dryrun: bool,
+  create_target_hsm_group: bool,
+  delete_empty_parent_hsm_group: bool,
+) -> Result<(), Error> {
+  let result = exec_with_backend(
+    ctx.infra.backend,
+    mode,
+    shasta_token,
     target_hsm_group_name,
-    target_hsm_hw_component_summary
-  );
-
-  print_hsm_group_json(target_hsm_group_name, &target_hsm_node_vec)?;
-
-  log::info!(
-    "HSM '{}' hw component summary: {:?}",
     parent_hsm_group_name,
-    parent_hsm_hw_component_summary
-  );
+    pattern,
+    dryrun,
+    create_target_hsm_group,
+    delete_empty_parent_hsm_group,
+  )
+  .await?;
 
-  print_hsm_group_json(parent_hsm_group_name, &parent_hsm_node_vec)?;
+  print_hsm_group_json(target_hsm_group_name, &result.target_nodes)?;
+  print_hsm_group_json(parent_hsm_group_name, &result.parent_nodes)?;
 
   Ok(())
 }

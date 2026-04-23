@@ -19,7 +19,127 @@ use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
-/// Add hardware components to a cluster group.
+/// Result of an `add hw-component` operation.
+pub struct AddHwResult {
+  pub nodes_moved: Vec<String>,
+  pub target_nodes: Vec<String>,
+  pub parent_nodes: Vec<String>,
+}
+
+/// Core logic for adding hardware components to a cluster group.
+/// No terminal interaction — suitable for both CLI and HTTP callers.
+pub async fn run(
+  backend: &StaticBackendDispatcher,
+  shasta_token: &str,
+  target_hsm_group_name: &str,
+  parent_hsm_group_name: &str,
+  pattern: &str,
+  dryrun: bool,
+  create_hsm_group: bool,
+) -> Result<AddHwResult, Error> {
+  ensure_target_group_exists(
+    backend,
+    shasta_token,
+    target_hsm_group_name,
+    dryrun,
+    create_hsm_group,
+  )
+  .await?;
+
+  let pattern_str = format!("{}:{}", target_hsm_group_name, pattern);
+  let pattern_lowercase = pattern_str.to_lowercase();
+  let mut pattern_element_vec: Vec<&str> =
+    pattern_lowercase.split(':').collect();
+  let target_name = pattern_element_vec.remove(0);
+
+  let (
+    user_defined_delta_hw_component_vec,
+    user_defined_delta_hw_component_count_hashmap,
+  ) = parse_hw_pattern(&pattern_element_vec)?;
+
+  let mem_lcm = MEMORY_CAPACITY_LCM;
+  let (
+    _parent_member_vec,
+    mut parent_hsm_node_hw_component_count_vec,
+    parent_hsm_hw_component_summary,
+  ) = fetch_hsm_hw_inventory(
+    backend,
+    shasta_token,
+    &user_defined_delta_hw_component_vec,
+    parent_hsm_group_name,
+    mem_lcm,
+  )
+  .await?;
+
+  let final_parent_hsm_hw_component_summary = compute_final_parent_summary(
+    &parent_hsm_hw_component_summary,
+    &user_defined_delta_hw_component_count_hashmap,
+    parent_hsm_group_name,
+  )?;
+
+  let scarcity_scores = calculate_hw_component_scarcity_scores(
+    &parent_hsm_node_hw_component_count_vec,
+  )
+  .await;
+
+  let hw_counters_to_move =
+    crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
+      &final_parent_hsm_hw_component_summary,
+      &final_parent_hsm_hw_component_summary
+        .keys()
+        .cloned()
+        .collect::<Vec<String>>(),
+      &mut parent_hsm_node_hw_component_count_vec,
+      &scarcity_scores,
+    )?;
+
+  let nodes_to_move: Vec<String> = hw_counters_to_move
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
+
+  let mut target_hsm_node_vec: Vec<String> = backend
+    .get_member_vec_from_group_name_vec(
+      shasta_token,
+      &[target_name.to_string()],
+    )
+    .await
+    .context("Failed to get member vec from target HSM group")?;
+
+  target_hsm_node_vec.extend(nodes_to_move.clone());
+  target_hsm_node_vec.sort();
+
+  if !dryrun {
+    for xname in &nodes_to_move {
+      backend
+        .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
+        .await
+        .context("Failed to delete member from parent group")?;
+
+      let _ = backend
+        .add_members_to_group(
+          shasta_token,
+          target_name,
+          &[xname.as_str()],
+        )
+        .await
+        .context("Failed to add member to target group")?;
+    }
+  }
+
+  let parent_nodes: Vec<String> = parent_hsm_node_hw_component_count_vec
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
+
+  Ok(AddHwResult {
+    nodes_moved: nodes_to_move,
+    target_nodes: target_hsm_node_vec,
+    parent_nodes,
+  })
+}
+
+/// Add hardware components to a cluster group (CLI entry point).
 pub async fn exec(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,
@@ -38,7 +158,6 @@ pub async fn exec(
   )
   .await?;
 
-  // Parse the hardware pattern
   let pattern = format!("{}:{}", target_hsm_group_name, pattern);
   let pattern_lowercase = pattern.to_lowercase();
   let mut pattern_element_vec: Vec<&str> =
@@ -55,7 +174,6 @@ pub async fn exec(
     user_defined_delta_hw_component_count_hashmap
   );
 
-  // Fetch parent HSM inventory
   let mem_lcm = MEMORY_CAPACITY_LCM;
   let (
     _parent_member_vec,
@@ -76,21 +194,17 @@ pub async fn exec(
     parent_hsm_hw_component_summary
   );
 
-  // Calculate final parent summary after removing
-  // the requested hw components
   let final_parent_hsm_hw_component_summary = compute_final_parent_summary(
     &parent_hsm_hw_component_summary,
     &user_defined_delta_hw_component_count_hashmap,
     parent_hsm_group_name,
   )?;
 
-  // Calculate scarcity scores
   let scarcity_scores = calculate_hw_component_scarcity_scores(
     &parent_hsm_node_hw_component_count_vec,
   )
   .await;
 
-  // Find nodes to move from parent to target
   let hw_counters_to_move =
     crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
       &final_parent_hsm_hw_component_summary,
@@ -107,7 +221,6 @@ pub async fn exec(
     .map(|(xname, _)| xname.clone())
     .collect();
 
-  // Build final target node list
   let mut target_hsm_node_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
@@ -119,7 +232,6 @@ pub async fn exec(
   target_hsm_node_vec.extend(nodes_to_move.clone());
   target_hsm_node_vec.sort();
 
-  // Get hw component counters for the combined target
   let mut target_hsm_node_hw_component_count_vec =
     get_hsm_node_hw_component_counter(
       backend,
@@ -135,7 +247,6 @@ pub async fn exec(
   let target_hsm_hw_component_summary =
     calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
 
-  // Show solution and confirm
   show_solution_and_confirm(
     target_hsm_group_name,
     &user_defined_delta_hw_component_vec,
@@ -143,7 +254,6 @@ pub async fn exec(
     &target_hsm_hw_component_summary,
   )?;
 
-  // Apply changes
   if dryrun {
     log::info!(
       "Dryrun enabled, not modifying the groups \
@@ -167,7 +277,6 @@ pub async fn exec(
     }
   }
 
-  // Build parent node list for display
   let parent_hsm_node_vec: Vec<String> = parent_hsm_node_hw_component_count_vec
     .iter()
     .map(|(xname, _)| xname.clone())

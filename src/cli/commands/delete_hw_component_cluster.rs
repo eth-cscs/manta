@@ -19,6 +19,137 @@ use crate::{
   },
 };
 
+/// Result of a `delete hw-component` operation.
+pub struct DeleteHwResult {
+  pub nodes_moved: Vec<String>,
+  pub target_nodes: Vec<String>,
+  pub parent_nodes: Vec<String>,
+}
+
+/// Core logic for removing hardware components from a cluster group.
+/// No terminal interaction — suitable for both CLI and HTTP callers.
+pub async fn run(
+  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
+  token: &str,
+  target_hsm_group_name: &str,
+  parent_hsm_group_name: &str,
+  pattern: &str,
+  dryrun: bool,
+  delete_hsm_group: bool,
+) -> Result<DeleteHwResult, Error> {
+  use crate::cli::commands::hw_cluster_common::{
+    MEMORY_CAPACITY_LCM,
+    utils::{
+      calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
+      fetch_hsm_hw_inventory, parse_hw_pattern,
+    },
+  };
+
+  match backend.get_group(token, target_hsm_group_name).await {
+    Ok(_) => {}
+    Err(_) => {
+      anyhow::bail!(
+        "HSM group {} does not exist, cannot remove hw from it.",
+        target_hsm_group_name
+      );
+    }
+  }
+
+  let pattern_str = format!("{}:{}", target_hsm_group_name, pattern);
+  let pattern_lowercase = pattern_str.to_lowercase();
+  let mut pattern_element_vec: Vec<&str> =
+    pattern_lowercase.split(':').collect();
+  let target_name = pattern_element_vec.remove(0);
+
+  let (
+    user_defined_delta_hw_component_vec,
+    user_defined_delta_hw_component_count_hashmap,
+  ) = parse_hw_pattern(&pattern_element_vec)?;
+
+  let mem_lcm = MEMORY_CAPACITY_LCM;
+  let (
+    target_hsm_group_member_vec,
+    mut target_hsm_node_hw_component_count_vec,
+    target_hsm_hw_component_summary,
+  ) = fetch_hsm_hw_inventory(
+    backend,
+    token,
+    &user_defined_delta_hw_component_vec,
+    target_name,
+    mem_lcm,
+  )
+  .await?;
+
+  if target_hsm_node_hw_component_count_vec.is_empty() {
+    handle_empty_target(backend, token, target_name, dryrun, delete_hsm_group).await?;
+    return Ok(DeleteHwResult {
+      nodes_moved: vec![],
+      target_nodes: vec![],
+      parent_nodes: vec![],
+    });
+  }
+
+  let (
+    parent_hsm_group_member_vec,
+    parent_hsm_node_hw_component_count_vec,
+    _parent_summary,
+  ) = fetch_hsm_hw_inventory(
+    backend,
+    token,
+    &user_defined_delta_hw_component_vec,
+    parent_hsm_group_name,
+    mem_lcm,
+  )
+  .await?;
+
+  let combined = [
+    target_hsm_node_hw_component_count_vec.clone(),
+    parent_hsm_node_hw_component_count_vec.clone(),
+  ]
+  .concat();
+  let scarcity_scores = calculate_hw_component_scarcity_scores(&combined).await;
+
+  let final_target_summary =
+    compute_final_summary(&target_hsm_hw_component_summary, &user_defined_delta_hw_component_count_hashmap)?;
+
+  let hw_counters_to_move =
+    crate::cli::commands::apply_hw_cluster_unpin::utils::calculate_target_hsm_unpin(
+      &final_target_summary,
+      &final_target_summary.keys().cloned().collect::<Vec<String>>(),
+      &mut target_hsm_node_hw_component_count_vec,
+      &scarcity_scores,
+    )?;
+
+  let nodes_to_move: Vec<String> = hw_counters_to_move
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
+
+  let mut parent_nodes: Vec<String> = parent_hsm_group_member_vec;
+  parent_nodes.extend(nodes_to_move.clone());
+  parent_nodes.sort();
+
+  let target_nodes: Vec<String> = target_hsm_node_hw_component_count_vec
+    .iter()
+    .map(|(xname, _)| xname.clone())
+    .collect();
+
+  if !dryrun {
+    apply_node_moves(
+      backend,
+      token,
+      target_name,
+      parent_hsm_group_name,
+      &nodes_to_move,
+      target_hsm_group_member_vec.len() == nodes_to_move.len(),
+      delete_hsm_group,
+    )
+    .await?;
+  }
+
+  Ok(DeleteHwResult { nodes_moved: nodes_to_move, target_nodes, parent_nodes })
+}
+
 /// Remove hardware components from a cluster group.
 pub async fn exec(
   ctx: &AppContext<'_>,

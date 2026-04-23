@@ -517,6 +517,7 @@ async fn all_get_routes_are_registered() {
 async fn all_post_routes_are_registered() {
   for uri in &[
     "/api/v1/sessions",
+    "/api/v1/sessions/apply",
     "/api/v1/nodes",
     "/api/v1/groups",
     "/api/v1/groups/test/members",
@@ -524,6 +525,7 @@ async fn all_post_routes_are_registered() {
     "/api/v1/redfish-endpoints",
     "/api/v1/boot-config",
     "/api/v1/kernel-parameters/apply",
+    "/api/v1/kernel-parameters/add",
     "/api/v1/migrate/nodes",
     "/api/v1/migrate/backup",
     "/api/v1/migrate/restore",
@@ -531,6 +533,8 @@ async fn all_post_routes_are_registered() {
     "/api/v1/power",
     "/api/v1/templates/my-template/sessions",
     "/api/v1/sat-file",
+    "/api/v1/hardware-clusters/my-cluster/members",
+    "/api/v1/hardware-clusters/my-cluster/configuration",
   ] {
     assert_route_exists(Method::POST, uri).await;
   }
@@ -543,11 +547,184 @@ async fn all_delete_routes_are_registered() {
     "/api/v1/groups/my-group",
     "/api/v1/groups/my-group/members",
     "/api/v1/boot-parameters",
+    "/api/v1/kernel-parameters",
     "/api/v1/redfish-endpoints/x3000c0s1b0",
     "/api/v1/sessions/my-session",
     "/api/v1/images",
     "/api/v1/configurations",
+    "/api/v1/hardware-clusters/my-cluster/members",
   ] {
     assert_route_exists(Method::DELETE, uri).await;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Auth enforcement for the 6 new endpoints
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn add_kernel_parameters_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/kernel-parameters/add")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"params":"quiet"}"#))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn delete_kernel_parameters_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::DELETE)
+        .uri("/api/v1/kernel-parameters")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"params":"quiet"}"#))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn add_hw_component_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hardware-clusters/my-cluster/members")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn delete_hw_component_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::DELETE)
+        .uri("/api/v1/hardware-clusters/my-cluster/members")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn apply_hw_configuration_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hardware-clusters/my-cluster/configuration")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn apply_session_requires_auth() {
+  let resp = router()
+    .oneshot(
+      Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/sessions/apply")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+          r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc"]}"#,
+        ))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+// ---------------------------------------------------------------------------
+// Body validation (422) for new endpoints
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn add_kernel_parameters_missing_params_returns_422() {
+  let resp = router()
+    .oneshot(post_json("/api/v1/kernel-parameters/add", "{}"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn delete_kernel_parameters_missing_params_returns_422() {
+  let resp = router()
+    .oneshot(post_json("/api/v1/kernel-parameters", "{}"))
+    .await
+    .unwrap();
+  // DELETE /kernel-parameters — wrong method from post_json (POST), expect 405
+  assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+}
+
+#[tokio::test]
+async fn add_hw_component_missing_body_returns_422() {
+  let resp = router()
+    .oneshot(post_json("/api/v1/hardware-clusters/my-cluster/members", "{}"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn apply_hw_configuration_missing_body_returns_422() {
+  let resp = router()
+    .oneshot(post_json(
+      "/api/v1/hardware-clusters/my-cluster/configuration",
+      "{}",
+    ))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn apply_session_missing_repo_fields_returns_422() {
+  let resp = router()
+    .oneshot(post_json("/api/v1/sessions/apply", "{}"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+// ---------------------------------------------------------------------------
+// apply_session — 501 when vault not configured
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn apply_session_without_vault_returns_501() {
+  let resp = router()
+    .oneshot(post_json(
+      "/api/v1/sessions/apply",
+      r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc123"]}"#,
+    ))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
 }
