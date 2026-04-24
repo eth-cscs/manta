@@ -67,19 +67,42 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
   }
 }
 
-/// Convert an `anyhow::Error` into a 500 response.
+/// Map an error message to the most appropriate HTTP status code.
+///
+/// Inspects well-known phrases from the service layer to avoid returning
+/// 500 for conditions that are actually 404 or 409.
+pub(crate) fn classify_status(msg: &str) -> StatusCode {
+  let lower = msg.to_lowercase();
+  if lower.contains("not found") || lower.contains("does not exist") {
+    StatusCode::NOT_FOUND
+  } else if lower.contains("already exists") {
+    StatusCode::CONFLICT
+  } else {
+    StatusCode::INTERNAL_SERVER_ERROR
+  }
+}
+
+/// Convert an `anyhow::Error` into the best-fitting HTTP error response.
+///
+/// Returns 404, 409, or 500 depending on `classify_status`. Only 500s
+/// are logged as errors; lower-severity failures are logged at debug.
 fn internal_error(e: anyhow::Error) -> (StatusCode, Json<ErrorResponse>) {
-  log::error!("Request failed: {:#}", e);
-  (
-    StatusCode::INTERNAL_SERVER_ERROR,
-    Json(ErrorResponse {
-      error: format!("{:#}", e),
-    }),
-  )
+  let msg = format!("{:#}", e);
+  let status = classify_status(&msg);
+  if status == StatusCode::INTERNAL_SERVER_ERROR {
+    log::error!("Internal error: {}", msg);
+  } else {
+    log::debug!("Service error {}: {}", status, msg);
+  }
+  (status, Json(ErrorResponse { error: msg }))
 }
 
 fn serialize_or_500<T: Serialize>(v: &T) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
-  serde_json::to_value(v).map_err(|e| internal_error(anyhow::anyhow!("Failed to serialize: {}", e)))
+  serde_json::to_value(v).map_err(|e| {
+    let msg = format!("Failed to serialize: {}", e);
+    log::error!("{}", msg);
+    (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: msg }))
+  })
 }
 
 fn require_vault(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {

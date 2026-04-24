@@ -728,3 +728,35 @@ async fn apply_session_without_vault_returns_501() {
     .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
 }
+
+// ---------------------------------------------------------------------------
+// Error classification unit tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn classify_status_not_found_phrases() {
+  use crate::server::handlers::classify_status;
+  use axum::http::StatusCode;
+
+  assert_eq!(classify_status("CFS session 'foo' not found"), StatusCode::NOT_FOUND);
+  assert_eq!(classify_status("Node 'x3000c0s1b0n0' Not Found in inventory"), StatusCode::NOT_FOUND);
+  assert_eq!(classify_status("HSM group 'bar' does not exist"), StatusCode::NOT_FOUND);
+  assert_eq!(classify_status("boot image id 'abc' not found"), StatusCode::NOT_FOUND);
+}
+
+#[test]
+fn classify_status_conflict_phrase() {
+  use crate::server::handlers::classify_status;
+  use axum::http::StatusCode;
+
+  assert_eq!(classify_status("Group 'foo' already exists"), StatusCode::CONFLICT);
+}
+
+#[test]
+fn classify_status_internal_fallback() {
+  use crate::server::handlers::classify_status;
+  use axum::http::StatusCode;
+
+  assert_eq!(classify_status("connection refused"), StatusCode::INTERNAL_SERVER_ERROR);
+  assert_eq!(classify_status("unexpected EOF"), StatusCode::INTERNAL_SERVER_ERROR);
+}
