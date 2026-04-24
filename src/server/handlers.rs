@@ -622,7 +622,7 @@ pub async fn create_group(
     .await
     .map_err(internal_error)?;
 
-  Ok(StatusCode::CREATED)
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
 
 // ---------------------------------------------------------------------------
@@ -709,7 +709,7 @@ pub async fn add_boot_parameters(
     .await
     .map_err(internal_error)?;
 
-  Ok(StatusCode::CREATED)
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
 
 // ---------------------------------------------------------------------------
@@ -766,7 +766,7 @@ pub async fn add_redfish_endpoint(
     .await
     .map_err(internal_error)?;
 
-  Ok(StatusCode::CREATED)
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
 
 // ---------------------------------------------------------------------------
@@ -1232,7 +1232,7 @@ pub async fn migrate_backup(
   .await
   .map_err(internal_error)?;
 
-  Ok(Json(serde_json::json!({ "status": "backup completed" })))
+  Ok(Json(serde_json::json!({ "completed": true })))
 }
 
 // ---------------------------------------------------------------------------
@@ -1271,7 +1271,7 @@ pub async fn migrate_restore(
   .await
   .map_err(internal_error)?;
 
-  Ok(Json(serde_json::json!({ "status": "restore completed" })))
+  Ok(Json(serde_json::json!({ "completed": true })))
 }
 
 // ---------------------------------------------------------------------------
@@ -1299,7 +1299,7 @@ pub async fn create_ephemeral_env(
   .await
   .map_err(internal_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "status": "ephemeral environment created" }))))
+  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
 
 // ---------------------------------------------------------------------------
@@ -1669,7 +1669,7 @@ pub async fn post_sat_file(
     .await
     .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
 
-  Ok(Json(serde_json::json!({ "status": "SAT file applied successfully" })))
+  Ok(Json(serde_json::json!({ "applied": true })))
 }
 
 // ---------------------------------------------------------------------------
