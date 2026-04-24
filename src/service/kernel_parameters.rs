@@ -220,3 +220,68 @@ pub async fn apply_kernel_params_changes(
 
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn add(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Add { params, overwrite: false }
+  }
+  fn add_overwrite(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Add { params, overwrite: true }
+  }
+  fn apply(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Apply { params }
+  }
+  fn delete(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Delete { params }
+  }
+
+  #[test]
+  fn verb_returns_correct_string() {
+    assert_eq!(add("quiet").verb(), "Add");
+    assert_eq!(apply("quiet").verb(), "Apply");
+    assert_eq!(delete("quiet").verb(), "Delete");
+  }
+
+  #[test]
+  fn params_returns_the_string() {
+    assert_eq!(add("quiet crashkernel=auto").params(), "quiet crashkernel=auto");
+    assert_eq!(apply("console=ttyS0").params(), "console=ttyS0");
+    assert_eq!(delete("splash").params(), "splash");
+  }
+
+  #[test]
+  fn overwrite_flag_preserved() {
+    match add_overwrite("x") {
+      KernelParamOperation::Add { overwrite, .. } => assert!(overwrite),
+      _ => panic!("wrong variant"),
+    }
+    match add("x") {
+      KernelParamOperation::Add { overwrite, .. } => assert!(!overwrite),
+      _ => panic!("wrong variant"),
+    }
+  }
+
+  #[test]
+  fn handles_sbps_images_only_for_add_and_apply() {
+    assert!(add("quiet").handles_sbps_images());
+    assert!(apply("quiet").handles_sbps_images());
+    assert!(!delete("quiet").handles_sbps_images());
+  }
+
+  #[test]
+  fn confirm_messages_are_nonempty() {
+    assert!(!add("x").confirm_message().is_empty());
+    assert!(!apply("x").confirm_message().is_empty());
+    assert!(!delete("x").confirm_message().is_empty());
+  }
+
+  #[test]
+  fn confirm_messages_are_distinct() {
+    assert_ne!(add("x").confirm_message(), apply("x").confirm_message());
+    assert_ne!(add("x").confirm_message(), delete("x").confirm_message());
+    assert_ne!(apply("x").confirm_message(), delete("x").confirm_message());
+  }
+}

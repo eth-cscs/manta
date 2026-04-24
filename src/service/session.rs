@@ -32,7 +32,7 @@ pub async fn get_sessions(
   token: &str,
   params: &GetSessionParams,
 ) -> Result<Vec<CfsSessionGetResponse>, Error> {
-  log::info!("Get CFS sessions");
+  tracing::info!("Get CFS sessions");
 
   infra.backend
     .get_and_filter_sessions(
@@ -84,7 +84,7 @@ pub async fn prepare_session_deletion(
   )
   .await?;
 
-  log::info!("Fetching data from the backend...");
+  tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();
 
   let (
@@ -120,7 +120,7 @@ pub async fn prepare_session_deletion(
   )?;
 
   let duration = start.elapsed();
-  log::info!(
+  tracing::info!(
     "Time elapsed to fetch information from backend: {:?}",
     duration
   );

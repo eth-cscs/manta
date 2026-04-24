@@ -105,7 +105,7 @@ pub async fn exec(
     );
   }
 
-  log::info!("session: {}", session_name);
+  tracing::info!("session: {}", session_name);
 
   let (width, height) = crossterm::terminal::size()?;
 

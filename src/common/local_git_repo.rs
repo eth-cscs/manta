@@ -8,7 +8,7 @@ use git2::{Commit, ObjectType, Repository};
 pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
   let repo_root = PathBuf::from(repo_path);
 
-  log::debug!("Checking repo on {}", repo_root.display());
+  tracing::debug!("Checking repo on {}", repo_root.display());
 
   Repository::open(repo_root.as_os_str())
 }
@@ -28,7 +28,7 @@ pub fn untracked_changed_local_files(
 ) -> Result<bool, Box<dyn std::error::Error>> {
   let mut index = repo.index()?;
 
-  log::debug!("Checking git index...");
+  tracing::debug!("Checking git index...");
 
   match index.add_all(
         ["."],
@@ -40,7 +40,7 @@ pub fn untracked_changed_local_files(
             };
 
             if status.contains(git2::Status::WT_MODIFIED) || status.contains(git2::Status::WT_NEW) {
-                log::debug!(
+                tracing::debug!(
                     "File not included in git index. Aborting process.\
                             Please run 'git status' to get list of file to work on"
                 );

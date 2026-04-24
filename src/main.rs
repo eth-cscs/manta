@@ -108,9 +108,9 @@ async fn run(
 
   if let Some(socks_proxy) = &site_details_value.socks5_proxy {
     if !socks_proxy.is_empty() {
-      log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
+      tracing::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
     } else {
-      log::debug!("config - socks_proxy:  Not defined");
+      tracing::debug!("config - socks_proxy:  Not defined");
     }
   }
 
@@ -143,7 +143,7 @@ async fn run(
     if let Some(auditor) = &configuration.auditor {
       Some(auditor.kafka.clone())
     } else {
-      log::warn!("config - Auditor not defined");
+      tracing::warn!("config - Auditor not defined");
       None
     };
 
@@ -157,7 +157,7 @@ async fn run(
   let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
     shasta_root_cert
   } else {
-    log::warn!(
+    tracing::warn!(
       "CA public root file '{}' not found. Proceeding without it.",
       root_ca_cert_file
     );

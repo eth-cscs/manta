@@ -65,7 +65,7 @@ fn run_hook_if_present(
   if let Some(hook) = hook_opt {
     println!("Running the {}-hook '{}'", label, hook);
     let code = crate::common::hooks::run_hook(hook_opt)?;
-    log::debug!("{}-hook script completed ok. RT={}", label, code);
+    tracing::debug!("{}-hook script completed ok. RT={}", label, code);
   }
   Ok(())
 }
@@ -96,7 +96,7 @@ pub async fn exec(
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 
-  log::info!("Render SAT template file");
+  tracing::info!("Render SAT template file");
   let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
     opts.sat_file_content,
     opts.values_file_content_opt,

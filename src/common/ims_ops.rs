@@ -16,7 +16,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
   shasta_root_cert: &[u8],
   cfs_configuration_name: String,
 ) -> Result<Vec<Image>, Error> {
-  log::info!(
+  tracing::info!(
     "Searching in CFS sessions for image ID related to CFS configuration '{}'",
     cfs_configuration_name
   );
@@ -63,7 +63,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
     let cfs_session_name = cfs_session.name.clone();
 
     for image_id in cfs_session.get_result_id_vec() {
-      log::info!(
+      tracing::info!(
         "Checking if result_id {} in CFS session {} exists",
         image_id,
         cfs_session_name
@@ -75,7 +75,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
 
       match image_vec_rslt {
         Ok(mut image_vec) => {
-          log::info!(
+          tracing::info!(
             "Found the image ID '{}' related to CFS sesison '{}'",
             image_id,
             cfs_session_name,
@@ -84,7 +84,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
           boot_image_id_vec.append(&mut image_vec);
         }
         Err(e) => {
-          log::warn!(
+          tracing::warn!(
             "Failed to fetch image '{}' for CFS session '{}': {}",
             image_id,
             cfs_session_name,

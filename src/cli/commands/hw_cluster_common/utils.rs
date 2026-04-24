@@ -57,7 +57,7 @@ pub async fn calculate_hw_component_scarcity_scores(
     );
   }
 
-  log::info!(
+  tracing::info!(
     "Hw component scarcity scores: {:?}",
     hw_component_scarcity_score_hashmap
   );
@@ -166,7 +166,7 @@ async fn get_node_hw_component_count(
   {
     Ok(value) => value,
     Err(e) => {
-      log::error!("Failed to get hw inventory for '{}': {}", hsm_member, e);
+      tracing::error!("Failed to get hw inventory for '{}': {}", hsm_member, e);
       return (hsm_member.to_string(), Vec::new(), Vec::new());
     }
   };
@@ -335,7 +335,7 @@ pub fn print_table_f32_score(
     table.add_row(row);
   }
 
-  log::info!("\n{table}\n");
+  tracing::info!("\n{table}\n");
 }
 
 /// Fetch hardware inventory for HSM group members and
@@ -414,12 +414,12 @@ pub async fn get_hsm_node_hw_component_counter(
         node_hw_component_count_hashmap,
       ));
     } else {
-      log::error!("Failed processing/fetching node hw information");
+      tracing::error!("Failed processing/fetching node hw information");
     }
   }
 
   let duration = start.elapsed();
-  log::info!("Time elapsed to calculate hw components is: {:?}", duration);
+  tracing::info!("Time elapsed to calculate hw components is: {:?}", duration);
 
   target_hsm_node_hw_component_count_vec
 }
@@ -684,9 +684,9 @@ pub fn show_solution_and_confirm(
 ) -> Result<(), Error> {
   use anyhow::bail;
 
-  log::info!("----- SOLUTION -----");
-  log::info!("Hw components in HSM '{}'", group_name);
-  log::info!(
+  tracing::info!("----- SOLUTION -----");
+  tracing::info!("Hw components in HSM '{}'", group_name);
+  tracing::info!(
     "hsm '{}' hw component counters: {:?}",
     group_name,
     node_hw_component_count_vec
@@ -697,7 +697,7 @@ pub fn show_solution_and_confirm(
     node_hw_component_count_vec,
   );
 
-  log::info!("\n{table}");
+  tracing::info!("\n{table}");
 
   let confirm_message = format!(
     "Please check and confirm new hw summary for \

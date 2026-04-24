@@ -16,7 +16,7 @@ pub fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
 fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
   let (path, mut doc) = read_config_toml()?;
 
-  log::info!("Changing log verbosity level to {}", new_log_level_opt);
+  tracing::info!("Changing log verbosity level to {}", new_log_level_opt);
 
   doc["log"] = value(new_log_level_opt);
 
@@ -26,7 +26,7 @@ fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
     Some(log_level) => {
       println!("log verbosity set to {log_level}")
     }
-    None => log::error!(
+    None => tracing::error!(
       "'log' key missing from config after \
        writing — this should not happen"
     ),

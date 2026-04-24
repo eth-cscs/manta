@@ -189,7 +189,7 @@ pub async fn exec(
     .await
   {
     Ok(_) => {
-      log::debug!("The HSM group {} exists, good.", target_hsm_group_name)
+      tracing::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
     Err(_) => {
       bail!(
@@ -212,7 +212,7 @@ pub async fn exec(
     user_defined_delta_hw_component_count_hashmap,
   ) = parse_hw_pattern(&pattern_element_vec)?;
 
-  log::info!(
+  tracing::info!(
     "User defined hw components with counters: {:?}",
     user_defined_delta_hw_component_count_hashmap
   );
@@ -243,7 +243,7 @@ pub async fn exec(
     .await;
   }
 
-  log::info!(
+  tracing::info!(
     "HSM group '{}' hw component summary: {:?}",
     target_hsm_group_name,
     target_hsm_hw_component_summary
@@ -318,7 +318,7 @@ pub async fn exec(
 
   // Apply changes
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dry run enabled, not modifying the HSM groups \
        on the system."
     )
@@ -349,14 +349,14 @@ async fn handle_empty_target(
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  log::info!(
+  tracing::info!(
     "The target HSM group {} is already empty, cannot \
      remove hardware from it.",
     target_hsm_group_name
   );
 
   if dryrun || !delete_hsm_group {
-    log::info!(
+    tracing::info!(
       "The option to delete empty groups has NOT been \
        selected, or the dryrun has been enabled. We \
        are done with this action."
@@ -364,7 +364,7 @@ async fn handle_empty_target(
     return Ok(());
   }
 
-  log::info!(
+  tracing::info!(
     "The option to delete empty groups has been \
      selected, removing it."
   );
@@ -373,12 +373,12 @@ async fn handle_empty_target(
     .await
   {
     Ok(_) => {
-      log::info!(
+      tracing::info!(
         "HSM group removed successfully, we are \
          done with this action."
       );
     }
-    Err(e) => log::debug!(
+    Err(e) => tracing::debug!(
       "Error removing the HSM group. This always \
        fails, ignore please. Reported: {}",
       e
@@ -434,7 +434,7 @@ async fn apply_node_moves(
 
   if target_will_be_empty {
     if delete_hsm_group {
-      log::info!(
+      tracing::info!(
         "HSM group {} is now empty and the option to \
          delete empty groups has been selected, \
          removing it.",
@@ -442,16 +442,16 @@ async fn apply_node_moves(
       );
       match backend.delete_group(shasta_token, target_group).await {
         Ok(_) => {
-          log::info!("HSM group removed successfully.")
+          tracing::info!("HSM group removed successfully.")
         }
-        Err(e) => log::debug!(
+        Err(e) => tracing::debug!(
           "Error removing the HSM group. This always \
            fails, ignore please. Reported: {}",
           e
         ),
       };
     } else {
-      log::debug!(
+      tracing::debug!(
         "HSM group {} is now empty and the option to \
          delete empty groups has NOT been selected, \
          will not remove it.",

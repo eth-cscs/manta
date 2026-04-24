@@ -141,11 +141,11 @@ pub async fn delete_images(
 
     match del_rslt {
       Ok(_) => {
-        log::info!("Image {} deleted successfully", image_id);
+        tracing::info!("Image {} deleted successfully", image_id);
         deleted.push(image_id.to_string());
       }
       Err(e) => {
-        log::error!("Failed to delete image {}: {}. Continuing", image_id, e);
+        tracing::error!("Failed to delete image {}: {}. Continuing", image_id, e);
       }
     }
   }

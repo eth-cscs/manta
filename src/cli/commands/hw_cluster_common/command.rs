@@ -67,7 +67,7 @@ pub async fn exec_with_backend(
   )
   .await?;
 
-  log::info!(
+  tracing::info!(
     "HSM group '{}' hw component summary: {:?}",
     target_hsm_group_name,
     target_hsm_hw_component_summary
@@ -173,7 +173,7 @@ fn parse_hw_pattern_usize(
   pattern: &str,
 ) -> Result<(Vec<String>, HashMap<String, usize>), Error> {
   let pattern = format!("{}:{}", target_hsm_group_name, pattern);
-  log::info!("pattern: {}", pattern);
+  tracing::info!("pattern: {}", pattern);
 
   let pattern_lowercase = pattern.to_lowercase();
 
@@ -208,7 +208,7 @@ fn parse_hw_pattern_usize(
     }
   }
 
-  log::info!(
+  tracing::info!(
     "User defined hw components with counters: {:?}",
     hw_component_count
   );
@@ -231,7 +231,7 @@ async fn ensure_target_group_exists(
 ) -> Result<(), Error> {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
-      log::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name);
+      tracing::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name);
       Ok(())
     }
     Err(_) => {
@@ -243,7 +243,7 @@ async fn ensure_target_group_exists(
           target_hsm_group_name,
         );
       }
-      log::info!(
+      tracing::info!(
         "Target HSM group '{}' does not exist, \
          but the option to create the group has \
          been selected, creating it now.",
@@ -319,9 +319,9 @@ async fn apply_group_updates(
   delete_empty_parent: bool,
 ) -> Result<(), Error> {
   // Update target group
-  log::info!("Updating target HSM group '{}' members", target_group);
+  tracing::info!("Updating target HSM group '{}' members", target_group);
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
     );
@@ -344,9 +344,9 @@ async fn apply_group_updates(
   }
 
   // Update parent group
-  log::info!("Updating parent HSM group '{}' members", parent_group);
+  tracing::info!("Updating parent HSM group '{}' members", parent_group);
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
     );
@@ -370,7 +370,7 @@ async fn apply_group_updates(
       .context("Failed to update parent HSM group members")?;
 
     if parent_will_be_empty && delete_empty_parent {
-      log::info!(
+      tracing::info!(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          been selected, removing it.",
@@ -378,9 +378,9 @@ async fn apply_group_updates(
       );
       match backend.delete_group(shasta_token, parent_group).await {
         Ok(_) => {
-          log::info!("HSM group removed successfully.")
+          tracing::info!("HSM group removed successfully.")
         }
-        Err(e) => log::debug!(
+        Err(e) => tracing::debug!(
           "Error removing the HSM group. \
            This always fails, ignore please. \
            Reported: {}",
@@ -388,7 +388,7 @@ async fn apply_group_updates(
         ),
       };
     } else if parent_will_be_empty {
-      log::debug!(
+      tracing::debug!(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          NOT been selected, will not remove it.",

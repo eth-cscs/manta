@@ -30,7 +30,7 @@ pub async fn exec(
   )
   .await?;
 
-  log::debug!(
+  tracing::debug!(
     "boot params to update vec:\n{:#?}",
     changeset.boot_param_vec
   );
@@ -44,7 +44,7 @@ pub async fn exec(
       ),
       assume_yes,
     ) {
-      log::info!("Continue",);
+      tracing::info!("Continue",);
     } else {
       bail!("Operation cancelled by user");
     }
@@ -78,7 +78,7 @@ pub async fn exec(
     .await?;
 
     if !do_not_reboot && changeset.need_restart {
-      log::info!("Restarting nodes");
+      tracing::info!("Restarting nodes");
       let nodes = changeset.xname_vec;
       power_common::exec_nodes(
         ctx,

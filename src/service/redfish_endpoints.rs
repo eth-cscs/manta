@@ -21,7 +21,7 @@ pub async fn get_redfish_endpoints(
   token: &str,
   params: &GetRedfishEndpointsParams,
 ) -> Result<RedfishEndpointArray, Error> {
-  log::info!("Get Redfish endpoints");
+  tracing::info!("Get Redfish endpoints");
 
   let result = infra.backend
     .get_redfish_endpoints(

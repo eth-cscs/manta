@@ -31,7 +31,7 @@ pub async fn exec(
   let verb = operation.verb();
   let params = operation.params();
 
-  log::info!("{} kernel parameters", verb);
+  tracing::info!("{} kernel parameters", verb);
 
   // Phase 1: Prepare changeset via service layer
   let changeset = kernel_parameters::prepare_kernel_params_changes(
@@ -55,16 +55,16 @@ pub async fn exec(
        through SBPS?",
       assume_yes,
     ) {
-      log::info!(
+      tracing::info!(
         "Setting 'sbps-project' metadata to \
          'true' for image id '{}'",
         image_id
       );
       image.set_boot_image_iscsi_ready();
-      log::debug!("Image:\n{:#?}", image);
+      tracing::debug!("Image:\n{:#?}", image);
       images_to_project.insert(image_id, image);
     } else {
-      log::info!("User chose to not project the image through SBPS");
+      tracing::info!("User chose to not project the image through SBPS");
     }
   }
 
@@ -104,7 +104,7 @@ pub async fn exec(
       );
     }
   } else {
-    log::info!("Persist changes");
+    tracing::info!("Persist changes");
 
     kernel_parameters::apply_kernel_params_changes(
       &ctx.infra,
@@ -127,7 +127,7 @@ pub async fn exec(
 
   // Phase 6: Reboot if needed
   if !do_not_reboot && changeset.has_changes && !dry_run {
-    log::info!("Restarting nodes");
+    tracing::info!("Restarting nodes");
 
     crate::cli::commands::power_common::exec_nodes(
       ctx,

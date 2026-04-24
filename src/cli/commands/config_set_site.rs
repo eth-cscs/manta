@@ -32,7 +32,7 @@ fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
 
   let new_site = new_site_opt.context("Site name argument is required")?;
 
-  log::info!("Changing configuration to use 'site' {}", new_site);
+  tracing::info!("Changing configuration to use 'site' {}", new_site);
 
   doc["site"] = value(new_site);
 
@@ -40,7 +40,7 @@ fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
 
   match doc.get("site") {
     Some(hsm_value) => println!("site set to {hsm_value}"),
-    None => log::error!(
+    None => tracing::error!(
       "'site' key missing from config after \
        writing — this should not happen"
     ),

@@ -52,7 +52,7 @@ async fn log_requests(
   let method = request.method().clone();
   let uri = request.uri().clone();
   let response = next.run(request).await;
-  log::info!("{} {} → {}", method, uri, response.status());
+  tracing::info!("{} {} → {}", method, uri, response.status());
   response
 }
 
@@ -76,7 +76,7 @@ pub async fn start_server(
     .await
     .context("Failed to load TLS certificate/key")?;
 
-  log::info!("Starting HTTPS server on https://{}", addr);
+  tracing::info!("Starting HTTPS server on https://{}", addr);
 
   axum_server::bind_rustls(addr, tls_config)
     .serve(app.into_make_service())

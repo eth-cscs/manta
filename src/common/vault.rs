@@ -30,7 +30,7 @@ pub mod http_client {
     let api_url =
       format!("{}{}/auth/jwt-manta-{}/login", vault_base_url, VAULT_API_PREFIX, site_name);
 
-    log::debug!("Accessing/login to {}", api_url);
+    tracing::debug!("Accessing/login to {}", api_url);
 
     let request_payload = json!({ "jwt": shasta_token, "role": role });
 
@@ -63,7 +63,7 @@ pub mod http_client {
 
     let api_url = vault_base_url.to_owned() + secret_path;
 
-    log::debug!("Vault url to fetch VCS secrets is '{}'", api_url);
+    tracing::debug!("Vault url to fetch VCS secrets is '{}'", api_url);
 
     let resp = client
       .get(api_url)

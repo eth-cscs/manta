@@ -35,7 +35,7 @@ pub async fn exec(
 
   let xname = xname_vec.first().context("xname list unexpectedly empty")?;
 
-  log::info!("xname: {}", xname);
+  tracing::info!("xname: {}", xname);
 
   let (width, height) = crossterm::terminal::size()?;
 

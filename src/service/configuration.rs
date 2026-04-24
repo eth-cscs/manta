@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use anyhow::{Context, Error};
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
@@ -151,11 +151,7 @@ pub async fn get_deletion_candidates(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
 ) -> Result<DeletionCandidates, Error> {
-  if let (Some(s), Some(u)) = (since, until) {
-    if s > u {
-      bail!("'since' date can't be after 'until' date");
-    }
-  }
+  validate_date_range(since, until)?;
 
   let target_hsm_group_vec =
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
@@ -200,6 +196,22 @@ pub async fn get_deletion_candidates(
   })
 }
 
+/// Validate that a `(since, until)` date range is well-ordered.
+///
+/// Extracted so the HTTP handler and CLI can share the check without
+/// constructing a full backend context.
+pub fn validate_date_range(
+  since: Option<NaiveDateTime>,
+  until: Option<NaiveDateTime>,
+) -> Result<(), anyhow::Error> {
+  if let (Some(s), Some(u)) = (since, until) {
+    if s > u {
+      anyhow::bail!("'since' date can't be after 'until' date");
+    }
+  }
+  Ok(())
+}
+
 /// Execute the deletion of configurations and derivatives.
 pub async fn delete_configurations_and_derivatives(
   infra: &InfraContext<'_>,
@@ -232,4 +244,40 @@ pub async fn delete_configurations_and_derivatives(
     .await?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use chrono::NaiveDateTime;
+
+  fn dt(s: &str) -> NaiveDateTime {
+    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S").unwrap()
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_since_before_until() {
+    assert!(validate_date_range(Some(dt("2024-01-01T00:00:00")), Some(dt("2024-01-02T00:00:00"))).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_equal() {
+    let d = dt("2024-01-01T00:00:00");
+    assert!(validate_date_range(Some(d), Some(d)).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_either_none() {
+    let d = dt("2024-01-01T00:00:00");
+    assert!(validate_date_range(Some(d), None).is_ok());
+    assert!(validate_date_range(None, Some(d)).is_ok());
+    assert!(validate_date_range(None, None).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_err_when_since_after_until() {
+    let result = validate_date_range(Some(dt("2024-01-02T00:00:00")), Some(dt("2024-01-01T00:00:00")));
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("'since' date can't be after 'until' date"));
+  }
 }

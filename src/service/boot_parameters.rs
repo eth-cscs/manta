@@ -43,7 +43,7 @@ pub async fn get_boot_parameters(
   )
   .await?;
 
-  log::info!("Get boot parameters");
+  tracing::info!("Get boot parameters");
 
   infra.backend
     .get_bootparameters(token, &xname_vec)
@@ -120,7 +120,7 @@ pub async fn update_boot_parameters(
     cloud_init: None,
   };
 
-  log::debug!("new boot params: {:#?}", boot_parameters);
+  tracing::debug!("new boot params: {:#?}", boot_parameters);
 
   infra
     .backend
@@ -223,16 +223,16 @@ pub async fn persist_boot_config(
   changeset: &BootConfigChangeset,
   new_runtime_configuration_opt: Option<&str>,
 ) -> Result<(), Error> {
-  log::info!("Persist changes");
+  tracing::info!("Persist changes");
 
   // Update boot params
   for boot_parameter in &changeset.boot_param_vec {
-    log::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
+    tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
     let component_patch_rep = infra
       .backend
       .update_bootparameters(token, boot_parameter)
       .await;
-    log::debug!(
+    tracing::debug!(
       "Component boot parameters resp:\n{:#?}",
       component_patch_rep
     );
@@ -268,7 +268,7 @@ pub async fn persist_boot_config(
         .await?;
     }
   } else {
-    log::info!("Runtime configuration does not change.");
+    tracing::info!("Runtime configuration does not change.");
   }
 
   Ok(())
@@ -285,7 +285,7 @@ async fn get_new_boot_image(
   let new_boot_image = if let Some(new_boot_image_configuration) =
     new_boot_image_configuration_opt
   {
-    log::info!(
+    tracing::info!(
       "Boot configuration '{}' provided",
       new_boot_image_configuration
     );
@@ -313,7 +313,7 @@ async fn get_new_boot_image(
       .last()
       .context("No image found for configuration")?;
 
-    log::debug!(
+    tracing::debug!(
       "Boot image id related to configuration \
        '{}' found:\n{:#?}",
       new_boot_image_configuration,
@@ -322,7 +322,7 @@ async fn get_new_boot_image(
 
     Some(most_recent_image.clone())
   } else if let Some(boot_image_id) = new_boot_image_id_opt {
-    log::info!("Boot image id '{}' provided", boot_image_id);
+    tracing::info!("Boot image id '{}' provided", boot_image_id);
     let image_in_csm_vec = backend
       .get_images(shasta_token, new_boot_image_id_opt)
       .await?;
@@ -348,7 +348,7 @@ fn apply_kernel_params(
   let mut any_changed = false;
 
   for boot_parameter in boot_param_vec.iter_mut() {
-    log::info!(
+    tracing::info!(
       "Updating '{:?}' kernel parameters to '{}'",
       boot_parameter.hosts,
       new_kernel_parameters
@@ -357,7 +357,7 @@ fn apply_kernel_params(
     let changed = boot_parameter.apply_kernel_params(new_kernel_parameters);
     any_changed = changed || any_changed;
 
-    log::info!("need restart? {}", any_changed);
+    tracing::info!("need restart? {}", any_changed);
 
     let image_id = boot_parameter.try_get_boot_image_id().ok_or_else(|| {
       Error::msg(format!(
@@ -407,7 +407,7 @@ async fn collect_boot_images(
 
     if any_differ {
       for boot_parameter in boot_param_vec.iter_mut() {
-        log::info!(
+        tracing::info!(
           "Updating '{:?}' boot image to '{}'",
           boot_parameter.hosts,
           new_boot_image_id

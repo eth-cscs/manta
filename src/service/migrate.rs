@@ -106,15 +106,15 @@ pub async fn migrate_nodes(
     hsm_group_summary
         .retain(|hsm_name, _| parent_hsm_name_vec.contains(hsm_name));
 
-    log::debug!("xnames to move: {:?}", xname_to_move_vec);
+    tracing::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     let mut results = Vec::new();
 
     for target_hsm_name in target_hsm_name_vec {
         if backend.get_group(token, target_hsm_name).await.is_ok() {
-            log::debug!("The HSM group {} exists, good.", target_hsm_name);
+            tracing::debug!("The HSM group {} exists, good.", target_hsm_name);
         } else if create_hsm_group {
-            log::info!(
+            tracing::info!(
                 "HSM group {} does not exist, it will be created",
                 target_hsm_name
             );

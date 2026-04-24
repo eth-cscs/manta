@@ -67,7 +67,7 @@ pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), anyhow::Error
 {
   let path = get_default_manta_config_file_path()?;
 
-  log::debug!(
+  tracing::debug!(
     "Reading manta configuration from {}",
     path.to_string_lossy()
   );
@@ -167,7 +167,7 @@ pub async fn get_configuration() -> Result<Config, anyhow::Error> {
   // file
   if !config_file_path.exists() {
     // Configuration file does not exists --> create a new configuration file
-    log::info!(
+    tracing::info!(
       "Configuration file '{}' not found. Creating a new one.",
       config_file_path.to_string_lossy()
     );
@@ -408,7 +408,7 @@ async fn create_new_config_file(
       )
     })?;
 
-  log::info!(
+  tracing::info!(
     "Configuration file '{}' created",
     config_file_path.to_string_lossy()
   );

@@ -101,7 +101,7 @@ impl Audit for Kafka {
 
     match delivery_status {
       Ok(_) => {
-        log::info!("Delivery status for message received");
+        tracing::info!("Delivery status for message received");
       }
       Err(e) => {
         return Err(anyhow::anyhow!(

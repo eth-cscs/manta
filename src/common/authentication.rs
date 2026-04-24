@@ -31,11 +31,11 @@ pub async fn get_api_token(
 
   match auth_token_rslt {
     Ok(token) => {
-      log::info!("Authentication successful using env var");
+      tracing::info!("Authentication successful using env var");
       return Ok(token);
     }
     Err(err) => {
-      log::warn!(
+      tracing::warn!(
         "{:#?}. Falling back to next authentication method",
         err.to_string()
       );
@@ -46,20 +46,20 @@ pub async fn get_api_token(
 
   match auth_token_rslt {
     Ok(token) => {
-      log::info!("Authentication successful using local file");
+      tracing::info!("Authentication successful using local file");
       return Ok(token);
     }
     Err(err) => {
-      log::warn!("{:#?}", err.to_string());
+      tracing::warn!("{:#?}", err.to_string());
       // Stop execution if not running in a terminal or fallback to next method
       let stdin = io::stdin();
       if !stdin.is_terminal() {
-        log::info!(
+        tracing::info!(
           "Running in non-interactive method. Give up authentication."
         );
         return Err(err);
       } else {
-        log::info!(
+        tracing::info!(
           "Running in interactive mode. Falling back to next authentication method"
         );
       }
@@ -67,7 +67,7 @@ pub async fn get_api_token(
   }
 
   // Get authentication token from API interactively
-  log::info!("Getting CSM authentication token interactively");
+  tracing::info!("Getting CSM authentication token interactively");
   let shasta_token = get_token_interactively(backend).await?;
 
   store_token_in_local_file(site_name, &shasta_token)?;
@@ -80,7 +80,7 @@ async fn get_token_from_env(
   let auth_token_env_name = AUTH_TOKEN_ENV_VAR;
 
   // Look for authentication token in env vars
-  log::info!(
+  tracing::info!(
     "Looking for authentication token in env var '{}'",
     auth_token_env_name
   );
@@ -88,7 +88,7 @@ async fn get_token_from_env(
   let shasta_token_rslt = std::env::var(auth_token_env_name);
 
   if let Ok(shasta_token) = shasta_token_rslt {
-    log::info!(
+    tracing::info!(
       "Authentication token found in env var '{}'. Check if it is valid",
       auth_token_env_name
     );
@@ -113,7 +113,7 @@ async fn get_token_from_local_file(
 
   path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
 
-  log::info!(
+  tracing::info!(
     "Looking for authentication token in filesystem file '{}'",
     path.display()
   );
@@ -121,14 +121,14 @@ async fn get_token_from_local_file(
   let mut shasta_token = String::new();
   File::open(&path)
     .inspect_err(|e| {
-      log::debug!("Could not open token file '{}': {}", path.display(), e);
+      tracing::debug!("Could not open token file '{}': {}", path.display(), e);
     })
     .with_context(|| {
       format!("Authentication token not found in '{}'", path.display())
     })?
     .read_to_string(&mut shasta_token)?;
 
-  log::info!(
+  tracing::info!(
     "Authentication token found in filesystem. Check if it is still valid",
   );
 
@@ -142,7 +142,7 @@ fn store_token_in_local_file(
   shasta_token: &str,
 ) -> Result<(), anyhow::Error> {
   // Store authentication token in filesystem
-  log::info!("Store authentication token in filesystem file");
+  tracing::info!("Store authentication token in filesystem file");
 
   let mut path = get_default_cache_path()?;
 
@@ -150,7 +150,7 @@ fn store_token_in_local_file(
 
   path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX); // ~/.cache/manta/<site name>_http is the file containing the Shasta authentication
 
-  log::info!("Cache file: {:?}", path);
+  tracing::info!("Cache file: {:?}", path);
 
   let mut file: File = File::options()
     .write(true)
@@ -275,7 +275,7 @@ async fn get_token_interactively(
 
   while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
     if let Err(ref err) = shasta_token_rslt {
-      log::info!(
+      tracing::info!(
         "Authentication attempt {} failed. Reason: {}",
         attempts + 1,
         err

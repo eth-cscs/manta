@@ -90,9 +90,9 @@ fn internal_error(e: anyhow::Error) -> (StatusCode, Json<ErrorResponse>) {
   let msg = format!("{:#}", e);
   let status = classify_status(&msg);
   if status == StatusCode::INTERNAL_SERVER_ERROR {
-    log::error!("Internal error: {}", msg);
+    tracing::error!("Internal error: {}", msg);
   } else {
-    log::debug!("Service error {}: {}", status, msg);
+    tracing::debug!("Service error {}: {}", status, msg);
   }
   (status, Json(ErrorResponse { error: msg }))
 }
@@ -100,7 +100,7 @@ fn internal_error(e: anyhow::Error) -> (StatusCode, Json<ErrorResponse>) {
 fn serialize_or_500<T: Serialize>(v: &T) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
   serde_json::to_value(v).map_err(|e| {
     let msg = format!("Failed to serialize: {}", e);
-    log::error!("{}", msg);
+    tracing::error!("{}", msg);
     (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: msg }))
   })
 }
@@ -126,6 +126,7 @@ pub struct ErrorResponse {
 // Health check
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn health() -> impl IntoResponse {
   Json(serde_json::json!({ "status": "ok" }))
 }
@@ -146,6 +147,7 @@ pub struct SessionQuery {
   pub limit: Option<u8>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_sessions(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -186,6 +188,7 @@ pub struct ConfigurationQuery {
   pub limit: Option<u8>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_configurations(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -222,6 +225,7 @@ pub struct NodesQuery {
   pub status: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_nodes(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -251,6 +255,7 @@ pub struct GroupQuery {
   pub name: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_groups(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -290,6 +295,7 @@ pub struct ImageEntry {
   pub is_linked: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_images(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -333,6 +339,7 @@ pub struct TemplateQuery {
   pub limit: Option<u8>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_templates(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -364,6 +371,7 @@ pub struct BootParametersQuery {
   pub nodes: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -395,6 +403,7 @@ pub struct KernelParametersQuery {
   pub nodes: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_kernel_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -429,6 +438,7 @@ pub struct RedfishEndpointsQuery {
   pub ipaddress: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_redfish_endpoints(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -462,6 +472,7 @@ pub struct ClusterQuery {
   pub status: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_clusters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -491,6 +502,7 @@ pub struct HardwareClusterQuery {
   pub hsm_group: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_hardware_clusters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -523,6 +535,7 @@ pub struct HardwareNodeQuery {
   pub type_artifact: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_hardware_nodes(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -552,12 +565,13 @@ pub async fn get_hardware_nodes(
 // DELETE /api/v1/nodes/{id}
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_node(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_node id={}", id);
+  tracing::info!("delete_node id={}", id);
   let infra = state.infra_context();
 
   service::node::delete_node(&infra, &token, &id)
@@ -580,12 +594,13 @@ pub struct AddNodeRequest {
   pub arch: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_node(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("add_node id={} group={}", body.id, body.group);
+  tracing::info!("add_node id={} group={}", body.id, body.group);
   let infra = state.infra_context();
 
   service::node::add_node(
@@ -613,13 +628,14 @@ pub struct DeleteGroupQuery {
   pub force: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_group(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(label): Path<String>,
   Query(q): Query<DeleteGroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_group label={} force={}", label, q.force);
+  tracing::info!("delete_group label={} force={}", label, q.force);
   let infra = state.infra_context();
 
   service::group::delete_group(&infra, &token, &label, q.force)
@@ -633,12 +649,13 @@ pub async fn delete_group(
 // POST /api/v1/groups
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn create_group(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(group): Json<::manta_backend_dispatcher::types::Group>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("create_group");
+  tracing::info!("create_group");
   let infra = state.infra_context();
 
   service::group::create_group(&infra, &token, group)
@@ -663,13 +680,14 @@ pub struct AddNodesToGroupResponse {
   pub removed: Vec<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<AddNodesToGroupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!(
+  tracing::info!(
     "add_nodes_to_group group={} hosts={}",
     name,
     body.hosts_expression
@@ -693,6 +711,7 @@ pub struct DeleteBootParametersRequest {
   pub hosts: Vec<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -706,7 +725,7 @@ pub async fn delete_boot_parameters(
       }),
     ));
   }
-  log::info!("delete_boot_parameters hosts={:?}", body.hosts);
+  tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);
   let infra = state.infra_context();
 
   service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
@@ -720,12 +739,13 @@ pub async fn delete_boot_parameters(
 // POST /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(boot_params): Json<::manta_backend_dispatcher::types::bss::BootParameters>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("add_boot_parameters");
+  tracing::info!("add_boot_parameters");
   let infra = state.infra_context();
 
   service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
@@ -739,12 +759,13 @@ pub async fn add_boot_parameters(
 // PUT /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("update_boot_parameters");
+  tracing::info!("update_boot_parameters");
   let infra = state.infra_context();
 
   service::boot_parameters::update_boot_parameters(&infra, &token, params)
@@ -758,12 +779,13 @@ pub async fn update_boot_parameters(
 // DELETE /api/v1/redfish-endpoints/{id}
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_redfish_endpoint id={}", id);
+  tracing::info!("delete_redfish_endpoint id={}", id);
   let infra = state.infra_context();
 
   service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
@@ -777,12 +799,13 @@ pub async fn delete_redfish_endpoint(
 // POST /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("add_redfish_endpoint");
+  tracing::info!("add_redfish_endpoint");
   let infra = state.infra_context();
 
   service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
@@ -796,12 +819,13 @@ pub async fn add_redfish_endpoint(
 // PUT /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
+#[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("update_redfish_endpoint");
+  tracing::info!("update_redfish_endpoint");
   let infra = state.infra_context();
 
   service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
@@ -821,13 +845,14 @@ pub struct DeleteSessionQuery {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_session(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Query(q): Query<DeleteSessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_session name={} dry_run={}", name, q.dry_run);
+  tracing::info!("delete_session name={} dry_run={}", name, q.dry_run);
   let infra = state.infra_context();
 
   let deletion_ctx =
@@ -857,12 +882,13 @@ pub struct DeleteImagesQuery {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_images(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Query(q): Query<DeleteImagesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
+  tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
   let infra = state.infra_context();
 
   let id_strings: Vec<String> = q.ids.split(',').map(|s| s.trim().to_string()).collect();
@@ -895,12 +921,13 @@ pub struct DeleteConfigurationsQuery {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_configurations(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Query(q): Query<DeleteConfigurationsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_configurations dry_run={}", q.dry_run);
+  tracing::info!("delete_configurations dry_run={}", q.dry_run);
   let infra = state.infra_context();
 
   let since = q
@@ -980,6 +1007,7 @@ pub struct CreateSessionRequest {
   pub ansible_passthrough: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_session(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -997,7 +1025,7 @@ pub async fn create_session(
       }),
     ));
   }
-  log::info!("create_session repos={:?}", body.repo_names);
+  tracing::info!("create_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
 
   let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
@@ -1050,12 +1078,13 @@ pub struct ApplyBootConfigRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<ApplyBootConfigRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!(
+  tracing::info!(
     "apply_boot_config hosts={} dry_run={}",
     body.hosts_expression,
     body.dry_run
@@ -1125,6 +1154,7 @@ fn default_true() -> bool {
   true
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -1138,7 +1168,7 @@ pub async fn apply_kernel_parameters(
       }),
     ));
   }
-  log::info!(
+  tracing::info!(
     "apply_kernel_parameters xnames={:?} op={:?} dry_run={}",
     body.xnames,
     body.operation,
@@ -1202,12 +1232,13 @@ pub struct MigrateNodesRequest {
   pub create_hsm_group: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("migrate_nodes dry_run={}", body.dry_run);
+  tracing::info!("migrate_nodes dry_run={}", body.dry_run);
   let infra = state.infra_context();
 
   let (xnames, results) = service::migrate::migrate_nodes(
@@ -1238,12 +1269,13 @@ pub struct MigrateBackupRequest {
   pub destination: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn migrate_backup(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<MigrateBackupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("migrate_backup");
+  tracing::info!("migrate_backup");
   let infra = state.infra_context();
 
   service::migrate::migrate_backup(
@@ -1273,12 +1305,13 @@ pub struct MigrateRestoreRequest {
   pub overwrite: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn migrate_restore(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<MigrateRestoreRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("migrate_restore overwrite={}", body.overwrite);
+  tracing::info!("migrate_restore overwrite={}", body.overwrite);
   let infra = state.infra_context();
 
   service::migrate::migrate_restore(
@@ -1306,12 +1339,13 @@ pub struct CreateEphemeralEnvRequest {
   pub image_id: String,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn create_ephemeral_env(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<CreateEphemeralEnvRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("create_ephemeral_env image_id={}", body.image_id);
+  tracing::info!("create_ephemeral_env image_id={}", body.image_id);
 
   crate::cli::commands::apply_ephemeral_env::exec(
     &state.shasta_base_url,
@@ -1336,13 +1370,14 @@ pub struct DeleteGroupMembersRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<DeleteGroupMembersRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-  log::info!(
+  tracing::info!(
     "delete_group_members group={} xnames={:?} dry_run={}",
     name,
     body.xnames,
@@ -1393,12 +1428,13 @@ pub struct PowerRequest {
   pub force: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn post_power(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!(
+  tracing::info!(
     "post_power action={:?} target_type={:?}",
     body.action,
     body.target_type
@@ -1477,13 +1513,14 @@ pub struct PostTemplateSessionRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn post_template_session(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(name): Path<String>,
   Json(body): Json<PostTemplateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!(
+  tracing::info!(
     "post_template_session template={} op={:?} dry_run={}",
     name,
     body.operation,
@@ -1526,6 +1563,7 @@ pub struct SessionLogsQuery {
   pub timestamps: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn get_session_logs(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -1589,12 +1627,13 @@ pub struct PostSatFileRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn post_sat_file(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Json(body): Json<PostSatFileRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("post_sat_file dry_run={}", body.dry_run);
+  tracing::info!("post_sat_file dry_run={}", body.dry_run);
   let infra = state.infra_context();
 
   let vault_base_url = require_vault(infra.vault_base_url)?;
@@ -1712,6 +1751,7 @@ pub struct AddKernelParametersRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -1725,7 +1765,7 @@ pub async fn add_kernel_parameters(
   )
   .await?;
 
-  log::info!("add_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  tracing::info!("add_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
   let infra = state.infra_context();
 
   let operation = service::kernel_parameters::KernelParamOperation::Add {
@@ -1768,6 +1808,7 @@ pub struct DeleteKernelParametersRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -1781,7 +1822,7 @@ pub async fn delete_kernel_parameters(
   )
   .await?;
 
-  log::info!("delete_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  tracing::info!("delete_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
   let infra = state.infra_context();
 
   let operation = service::kernel_parameters::KernelParamOperation::Delete {
@@ -1827,13 +1868,14 @@ pub struct AddHwComponentRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(target): Path<String>,
   Json(body): Json<AddHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("add_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!("add_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
 
   let result =
     crate::cli::commands::add_hw_component_cluster::run(
@@ -1872,13 +1914,14 @@ pub struct DeleteHwComponentRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(target): Path<String>,
   Json(body): Json<DeleteHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("delete_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!("delete_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
 
   let result =
     crate::cli::commands::delete_hw_component_cluster::run(
@@ -1929,13 +1972,14 @@ pub struct ApplyHwConfigurationRequest {
   pub dry_run: bool,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
   Path(target): Path<String>,
   Json(body): Json<ApplyHwConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  log::info!("apply_hw_configuration target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!("apply_hw_configuration target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
 
   let mode = match body.mode {
     HwClusterMode::Pin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Pin,
@@ -1982,6 +2026,7 @@ pub struct ApplySessionRequest {
   pub ansible_passthrough: Option<String>,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn apply_session(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
@@ -2000,7 +2045,7 @@ pub async fn apply_session(
     ));
   }
 
-  log::info!("apply_session repos={:?}", body.repo_names);
+  tracing::info!("apply_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
   let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
 

@@ -169,7 +169,7 @@ pub async fn exec(
     user_defined_delta_hw_component_count_hashmap,
   ) = parse_hw_pattern(&pattern_element_vec)?;
 
-  log::info!(
+  tracing::info!(
     "User defined hw components with counters: {:?}",
     user_defined_delta_hw_component_count_hashmap
   );
@@ -188,7 +188,7 @@ pub async fn exec(
   )
   .await?;
 
-  log::info!(
+  tracing::info!(
     "Parent group '{}' hw component summary: {:?}",
     parent_hsm_group_name,
     parent_hsm_hw_component_summary
@@ -255,7 +255,7 @@ pub async fn exec(
   )?;
 
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dryrun enabled, not modifying the groups \
        on the system."
     )
@@ -299,7 +299,7 @@ async fn ensure_target_group_exists(
 ) -> Result<(), Error> {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
-      log::debug!("The group '{}' exists, good.", target_hsm_group_name);
+      tracing::debug!("The group '{}' exists, good.", target_hsm_group_name);
       Ok(())
     }
     Err(_) => {
@@ -311,7 +311,7 @@ async fn ensure_target_group_exists(
           target_hsm_group_name
         );
       }
-      log::info!(
+      tracing::info!(
         "Group '{}' does not exist, but the option \
          to create the group has been selected, \
          creating it now.",

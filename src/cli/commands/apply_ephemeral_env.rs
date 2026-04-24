@@ -17,7 +17,7 @@ pub async fn exec(
     csm_rs::common::jwt_ops::get_preferred_username(token)
       .context("claim 'preferred_user' not found in JWT token")?;
 
-  log::info!("Looking for user '{}' public SSH key", user_public_key_name);
+  tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
   let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
     ims::public_keys::http_client::v3::get_single(
@@ -38,13 +38,13 @@ pub async fn exec(
     );
   };
 
-  log::info!("SSH key found with ID {}", user_public_ssh_id_value);
+  tracing::info!("SSH key found with ID {}", user_public_ssh_id_value);
 
   // If public ssh key not found, then pompt user to provide public key
   // NOT YET. At this stage just throw an erro because the key was not found
 
   // Create IMS Job
-  log::info!(
+  tracing::info!(
     "Creating ephemeral environment based on image ID {}",
     image_id
   );
@@ -74,7 +74,7 @@ pub async fn exec(
        from ephemeral env response",
     )?;
 
-  log::info!(
+  tracing::info!(
     "Ephemeral environment successfully created! \
      hostname with ssh enabled: {}",
     hostname_value.as_str().unwrap_or("unknown")

@@ -26,7 +26,7 @@ pub fn print_summary_table(transition: TransitionResponse, output: &str) {
     match serde_json::to_string_pretty(&transition) {
       Ok(json) => println!("{}", json),
       Err(e) => {
-        log::error!("Failed to serialize transition to JSON: {}", e);
+        tracing::error!("Failed to serialize transition to JSON: {}", e);
       }
     }
   }

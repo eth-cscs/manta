@@ -33,13 +33,13 @@ pub async fn exec(
   let repo = local_git_repo::get_repo(repo_path)
     .with_context(|| format!("Could not open git repo in {}", repo_path))?;
 
-  log::info!("Repo '{}' found", repo_path);
+  tracing::info!("Repo '{}' found", repo_path);
 
   // Get last (most recent) commit
   let local_last_commit = local_git_repo::get_last_commit(&repo)
     .context("Failed to get last commit")?;
 
-  log::info!("Checking local repo status ({})", &repo.path().display());
+  tracing::info!("Checking local repo status ({})", &repo.path().display());
 
   // Get repo name from 'origin' remote URL
   let repo_name = local_git_repo::parse_repo_name_from_remote(&repo)?;
@@ -95,7 +95,7 @@ pub async fn exec(
     let (branch, _) = match branch_rslt {
       Ok(b) => b,
       Err(e) => {
-        log::warn!("Failed to read branch: {}", e);
+        tracing::warn!("Failed to read branch: {}", e);
         continue;
       }
     };
@@ -104,7 +104,7 @@ pub async fn exec(
       let branch_name = match branch.name() {
         Ok(Some(name)) => name,
         _ => {
-          log::warn!("Failed to read branch name");
+          tracing::warn!("Failed to read branch name");
           continue;
         }
       };
@@ -145,7 +145,7 @@ pub async fn exec(
     let tag = match local_tag_rslt {
       Some(t) => t,
       None => {
-        log::warn!("Failed to read tag name");
+        tracing::warn!("Failed to read tag name");
         continue;
       }
     };

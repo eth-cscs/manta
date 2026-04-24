@@ -28,7 +28,7 @@ pub async fn unset_parent_hsm(
   settings_hsm_available_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
-  log::info!("Unset parent HSM group");
+  tracing::info!("Unset parent HSM group");
   doc.remove("parent_hsm_group");
 
   write_config_toml(&path, &doc)?;

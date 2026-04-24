@@ -68,17 +68,17 @@ pub fn calculate_target_hsm_unpin(
   let mut iter = 0;
 
   while work_to_do {
-    log::info!("----- ITERATION {} -----", iter);
+    tracing::info!("----- ITERATION {} -----", iter);
 
-    log::info!(
+    tracing::info!(
       "HSM group hw component counters: {:?}",
       combination_target_parent_hsm_hw_component_summary_hashmap
     );
-    log::info!(
+    tracing::info!(
       "Final hw component counters the user wants: {:?}",
       user_defined_hsm_hw_components_count_hashmap
     );
-    log::info!(
+    tracing::info!(
       "Best candidate is '{}' with score {} and hw \
        component counters {:?}",
       best_candidate.0,
@@ -147,9 +147,9 @@ pub fn calculate_target_hsm_unpin(
     iter += 1;
   }
 
-  log::info!("----- FINAL RESULT -----");
+  tracing::info!("----- FINAL RESULT -----");
 
-  log::info!("No candidates found");
+  tracing::info!("No candidates found");
 
   // Print target hsm group hw configuration in table
   print_table_f32_score(

@@ -10,7 +10,7 @@ pub async fn exec(
   image_id_vec: &[&str],
   dry_run: bool,
 ) -> Result<(), Error> {
-  log::info!(
+  tracing::info!(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );

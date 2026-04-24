@@ -142,7 +142,7 @@ pub async fn add_node(
     return Err(error.into());
   }
 
-  log::info!("Node saved '{}'", id);
+  tracing::info!("Node saved '{}'", id);
 
   // Parse and add hardware inventory if provided
   let hw_inventory_opt: Option<HWInventoryByLocationList> =
@@ -179,7 +179,7 @@ pub async fn add_node(
     };
 
   if let Some(hw_inventory) = hw_inventory_opt {
-    log::info!("Adding hardware inventory for '{}'", id);
+    tracing::info!("Adding hardware inventory for '{}'", id);
     if let Err(error) = backend
       .post_inventory_hardware(token, hw_inventory)
       .await
@@ -204,9 +204,9 @@ async fn rollback_node(
   token: &str,
   id: &str,
 ) {
-  log::warn!("Rolling back: attempting to delete node '{}'", id);
+  tracing::warn!("Rolling back: attempting to delete node '{}'", id);
   let delete_node_rslt = backend.delete_node(token, id).await;
   if delete_node_rslt.is_ok() {
-    log::info!("Rollback: node '{}' deleted", id);
+    tracing::info!("Rollback: node '{}' deleted", id);
   }
 }

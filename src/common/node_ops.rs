@@ -64,7 +64,7 @@ pub async fn get_xname_from_nid_hostlist(
     .map(|nid_long| get_short_nid(nid_long))
     .collect::<Result<Vec<_>, _>>()?;
 
-  log::debug!("short Nid list expanded: {:?}", short_nid_vec);
+  tracing::debug!("short Nid list expanded: {:?}", short_nid_vec);
 
   let xname_vec: Vec<String> = node_metadata_available_vec
     .iter()
@@ -89,7 +89,7 @@ pub async fn get_xname_from_xname_hostlist(
 ) -> Result<Vec<String>, anyhow::Error> {
   // If hostlist of XNAMEs, return hostlist expanded xnames
   // Validate XNAMEs
-  log::debug!("XNAME format are valid");
+  tracing::debug!("XNAME format are valid");
 
   let xname_vec: Vec<String> = node_metadata_available_vec
     .iter()
@@ -159,23 +159,23 @@ pub async fn from_hosts_expression_to_xname_vec(
 
   let xname_vec = match hostlist_expanded_vec_rslt {
     Ok(node_vec) => {
-    log::debug!("Hostlist format is valid");
+    tracing::debug!("Hostlist format is valid");
     // If hostlist, expand hostlist
     let xname_vec: Vec<String> = if validate_nid_format_vec(&node_vec) {
       // If hostlist of NIDs, convert to xname
       // Validate NIDs
-      log::debug!("NID format is valid");
-      log::debug!("hostlist Nids: {}", user_input);
-      log::debug!("hostlist Nids expanded: {:?}", node_vec);
+      tracing::debug!("NID format is valid");
+      tracing::debug!("hostlist Nids: {}", user_input);
+      tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
 
       get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)
         .await?
     } else if validate_xname_format_vec(&node_vec) {
       // If hostlist of XNAMEs, return hostlist expanded xnames
       // Validate XNAMEs
-      log::debug!("NID format is valid");
-      log::debug!("hostlist Nids: {}", user_input);
-      log::debug!("hostlist Nids expanded: {:?}", node_vec);
+      tracing::debug!("NID format is valid");
+      tracing::debug!("hostlist Nids: {}", user_input);
+      tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
 
       get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)
         .await?
@@ -202,13 +202,13 @@ pub async fn from_hosts_expression_to_xname_vec(
 
   // Include siblings if requested
   let xname_vec: Vec<String> = if is_include_siblings {
-    log::debug!("Include siblings");
+    tracing::debug!("Include siblings");
     let xname_blade_vec: Vec<String> = xname_vec
       .iter()
       .map(|xname| xname.get(0..XNAME_BLADE_PREFIX_LEN).unwrap_or(xname).to_string())
       .collect();
 
-    log::debug!("XNAME blades:\n{:?}", xname_blade_vec);
+    tracing::debug!("XNAME blades:\n{:?}", xname_blade_vec);
 
     // Filter xnames to the ones the user has access to
 

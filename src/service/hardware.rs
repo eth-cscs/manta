@@ -146,10 +146,10 @@ pub async fn get_hardware_cluster(
     .unwrap_or_default();
 
   if hsm_group_target_members.is_empty() {
-    log::warn!("HSM group '{}' has no members", hsm_group.label);
+    tracing::warn!("HSM group '{}' has no members", hsm_group.label);
   }
 
-  log::debug!(
+  tracing::debug!(
     "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
     hsm_group.label,
     hsm_group_target_members
@@ -167,7 +167,7 @@ pub async fn get_hardware_cluster(
   let mut i = 1;
 
   for hsm_member in hsm_group_target_members.iter() {
-    log::info!(
+    tracing::info!(
       "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
       i + 1
     );
@@ -195,7 +195,7 @@ pub async fn get_hardware_cluster(
       let node_hw_inventory_value_opt = match hw_inventory_value {
         Ok(value) => value.pointer("/Nodes/0").cloned(),
         Err(e) => {
-          log::error!(
+          tracing::error!(
             "Failed to get HW inventory for '{}': {}",
             hsm_member_string,
             e
@@ -221,13 +221,13 @@ pub async fn get_hardware_cluster(
       Ok(node_hw_inventory) => {
         hsm_summary.push(node_hw_inventory);
       }
-      Err(e) => log::error!("Failed fetching node hardware information: {}", e),
+      Err(e) => tracing::error!("Failed fetching node hardware information: {}", e),
     }
   }
 
   let duration = start_total.elapsed();
 
-  log::info!(
+  tracing::info!(
     "Time elapsed in http calls to get hw inventory for HSM '{}' is: {:?}",
     hsm_group_name,
     duration

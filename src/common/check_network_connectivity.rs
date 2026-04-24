@@ -20,7 +20,7 @@ pub async fn check_network_connectivity_to_backend(
 
   let api_url = shasta_base_url;
 
-  log::info!("Validate CSM token against {}", api_url);
+  tracing::info!("Validate CSM token against {}", api_url);
 
   client
     .get(api_url)
