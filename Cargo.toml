@@ -78,7 +78,7 @@ rdkafka = { version = "0.39" }
 # rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
-axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
+axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 tower-http = { version = "0.6", features = ["trace", "cors", "timeout"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }

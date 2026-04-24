@@ -3,7 +3,7 @@ use std::convert::Infallible;
 
 use axum::{
   Json,
-  extract::{FromRequestParts, Path, Query, State},
+  extract::{FromRequestParts, Path, Query, State, ws::{Message, WebSocket, WebSocketUpgrade}},
   http::{StatusCode, header, request::Parts},
   response::{
     IntoResponse,
@@ -15,11 +15,13 @@ use manta_backend_dispatcher::{
   interfaces::{
     apply_sat_file::SatTrait,
     cfs::CfsTrait,
+    console::ConsoleTrait,
     hsm::group::GroupTrait,
     pcs::PCSTrait,
   },
   types::{K8sAuth, K8sDetails},
 };
+use tokio::io::AsyncWriteExt;
 use serde::{Deserialize, Serialize};
 
 use super::ServerState;
@@ -2090,6 +2092,192 @@ pub async fn apply_session(
       "configuration_name": config_name,
     })),
   ))
+}
+
+// ---------------------------------------------------------------------------
+// WS /api/v1/nodes/{xname}/console — Interactive node console
+// ---------------------------------------------------------------------------
+
+#[derive(Deserialize)]
+pub struct ConsoleQuery {
+  /// Bearer token (passed as query param because WS handshake cannot
+  /// carry an Authorization header in most WebSocket clients).
+  pub token: String,
+  #[serde(default = "default_cols")]
+  pub cols: u16,
+  #[serde(default = "default_rows")]
+  pub rows: u16,
+}
+
+fn default_cols() -> u16 { 80 }
+fn default_rows() -> u16 { 24 }
+
+#[tracing::instrument(skip_all, fields(xname = %xname))]
+pub async fn console_node_ws(
+  ws: WebSocketUpgrade,
+  State(state): State<Arc<ServerState>>,
+  Path(xname): Path<String>,
+  Query(q): Query<ConsoleQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let k8s_api_url = require_k8s_url(state.k8s_api_url.as_deref())?;
+  let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
+
+  let k8s = K8sDetails {
+    api_url: k8s_api_url.to_string(),
+    authentication: K8sAuth::Vault {
+      base_url: vault_base_url.to_string(),
+    },
+  };
+
+  Ok(ws.on_upgrade(move |socket| async move {
+    tracing::info!("WebSocket console opened for node {xname}");
+    match state.backend
+      .attach_to_node_console(&q.token, &state.site_name, &xname, q.cols, q.rows, &k8s)
+      .await
+    {
+      Ok((console_in, console_out)) => {
+        run_console_bridge(socket, console_in, console_out).await;
+        tracing::info!("WebSocket console closed for node {xname}");
+      }
+      Err(e) => {
+        tracing::error!("Failed to attach to node console {xname}: {e:#}");
+      }
+    }
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// WS /api/v1/sessions/{name}/console — Interactive CFS session console
+// ---------------------------------------------------------------------------
+
+#[tracing::instrument(skip_all, fields(session = %name))]
+pub async fn console_session_ws(
+  ws: WebSocketUpgrade,
+  State(state): State<Arc<ServerState>>,
+  Path(name): Path<String>,
+  Query(q): Query<ConsoleQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let k8s_api_url = require_k8s_url(state.k8s_api_url.as_deref())?;
+  let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
+
+  let infra = state.infra_context();
+
+  let sessions = infra.backend
+    .get_and_filter_sessions(
+      &q.token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      Vec::new(),
+      Vec::new(),
+      None, None, None, None,
+      Some(&name),
+      None, None,
+    )
+    .await
+    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+
+  let session = sessions.first().ok_or_else(|| {
+    (
+      StatusCode::NOT_FOUND,
+      Json(ErrorResponse { error: format!("CFS session '{name}' not found") }),
+    )
+  })?;
+
+  let target_def = session
+    .target.as_ref().and_then(|t| t.definition.as_ref())
+    .ok_or_else(|| {
+      (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "CFS session has no target definition".into() }))
+    })?;
+  if target_def != "image" {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse { error: format!("CFS session '{name}' is not an image-type session (got '{target_def}')") }),
+    ));
+  }
+
+  let status = session
+    .status.as_ref()
+    .and_then(|s| s.session.as_ref())
+    .and_then(|s| s.status.as_ref())
+    .ok_or_else(|| {
+      (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "CFS session has no status".into() }))
+    })?;
+  if status != "running" {
+    return Err((
+      StatusCode::CONFLICT,
+      Json(ErrorResponse { error: format!("CFS session '{name}' is not running (status: '{status}')") }),
+    ));
+  }
+
+  let k8s = K8sDetails {
+    api_url: k8s_api_url.to_string(),
+    authentication: K8sAuth::Vault {
+      base_url: vault_base_url.to_string(),
+    },
+  };
+
+  Ok(ws.on_upgrade(move |socket| async move {
+    tracing::info!("WebSocket console opened for session {name}");
+    match state.backend
+      .attach_to_session_console(&q.token, &state.site_name, &name, q.cols, q.rows, &k8s)
+      .await
+    {
+      Ok((console_in, console_out)) => {
+        run_console_bridge(socket, console_in, console_out).await;
+        tracing::info!("WebSocket console closed for session {name}");
+      }
+      Err(e) => {
+        tracing::error!("Failed to attach to session console {name}: {e:#}");
+      }
+    }
+  }))
+}
+
+/// Bridge a WebSocket connection to a console's stdin/stdout streams.
+///
+/// - Binary and text WS frames are forwarded as raw bytes to console stdin.
+/// - Text frames matching `{"type":"resize","cols":N,"rows":N}` are silently
+///   consumed (dynamic resize is not yet supported by the ConsoleTrait).
+/// - Console stdout is forwarded as Binary WS frames.
+/// - Either side closing or erroring terminates the bridge.
+async fn run_console_bridge(
+  mut socket: WebSocket,
+  mut console_in: Box<dyn tokio::io::AsyncWrite + Unpin + Send>,
+  console_out: Box<dyn tokio::io::AsyncRead + Unpin + Send>,
+) {
+  let mut out_stream = tokio_util::io::ReaderStream::new(console_out);
+
+  loop {
+    tokio::select! {
+      msg = socket.recv() => {
+        match msg {
+          Some(Ok(Message::Binary(data))) => {
+            if console_in.write_all(&data).await.is_err() { break; }
+          }
+          Some(Ok(Message::Text(text))) => {
+            // Consume resize control messages silently; forward everything else.
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+              if v.get("type").and_then(|t| t.as_str()) == Some("resize") {
+                continue;
+              }
+            }
+            if console_in.write_all(text.as_bytes()).await.is_err() { break; }
+          }
+          Some(Ok(Message::Close(_))) | None => break,
+          Some(Ok(_)) => {} // Ping/Pong handled by axum automatically
+          Some(Err(_)) => break,
+        }
+      }
+      chunk = out_stream.next() => {
+        match chunk {
+          Some(Ok(data)) => {
+            if socket.send(Message::Binary(data)).await.is_err() { break; }
+          }
+          Some(Err(_)) | None => break,
+        }
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

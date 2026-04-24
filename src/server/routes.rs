@@ -105,7 +105,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       post(handlers::apply_hw_configuration),
     )
     // CFS session from pre-resolved repos with HSM validation
-    .route("/sessions/apply", post(handlers::apply_session));
+    .route("/sessions/apply", post(handlers::apply_session))
+    // WebSocket consoles
+    .route("/nodes/{xname}/console", get(handlers::console_node_ws))
+    .route("/sessions/{name}/console", get(handlers::console_session_ws));
 
   Router::new().nest("/api/v1", api).with_state(state)
 }

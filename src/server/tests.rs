@@ -508,6 +508,8 @@ async fn all_get_routes_are_registered() {
     "/api/v1/clusters",
     "/api/v1/hardware-clusters",
     "/api/v1/health",
+    "/api/v1/nodes/x3000c0s1b0n0/console",
+    "/api/v1/sessions/my-session/console",
   ] {
     assert_route_exists(Method::GET, uri).await;
   }
