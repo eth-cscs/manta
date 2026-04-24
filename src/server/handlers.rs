@@ -115,6 +115,39 @@ fn require_k8s_url(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorRes
   url.ok_or_else(|| (StatusCode::NOT_IMPLEMENTED, Json(ErrorResponse { error: "k8s_api_url not configured on this server".into() })))
 }
 
+fn validate_repo_list_lengths(
+  repo_names: &[String],
+  repo_last_commit_ids: &[String],
+) -> Result<(), (StatusCode, Json<ErrorResponse>)> {
+  if repo_names.len() != repo_last_commit_ids.len() {
+    return Err((
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: format!(
+          "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
+          repo_names.len(),
+          repo_last_commit_ids.len()
+        ),
+      }),
+    ));
+  }
+  Ok(())
+}
+
+fn parse_iso_datetime(
+  field: &str,
+  value: &str,
+) -> Result<chrono::NaiveDateTime, (StatusCode, Json<ErrorResponse>)> {
+  chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S").map_err(|e| {
+    (
+      StatusCode::BAD_REQUEST,
+      Json(ErrorResponse {
+        error: format!("Invalid '{}' datetime '{}': {}", field, value, e),
+      }),
+    )
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Shared response types
 // ---------------------------------------------------------------------------
@@ -932,37 +965,8 @@ pub async fn delete_configurations(
   tracing::info!("delete_configurations dry_run={}", q.dry_run);
   let infra = state.infra_context();
 
-  let since = q
-    .since
-    .as_deref()
-    .map(|s| {
-      chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| {
-          (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-              error: format!("Invalid 'since' datetime: {}", e),
-            }),
-          )
-        })
-    })
-    .transpose()?;
-
-  let until = q
-    .until
-    .as_deref()
-    .map(|s| {
-      chrono::NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
-        .map_err(|e| {
-          (
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-              error: format!("Invalid 'until' datetime: {}", e),
-            }),
-          )
-        })
-    })
-    .transpose()?;
+  let since = q.since.as_deref().map(|s| parse_iso_datetime("since", s)).transpose()?;
+  let until = q.until.as_deref().map(|s| parse_iso_datetime("until", s)).transpose()?;
 
   let candidates = service::configuration::get_deletion_candidates(
     &infra,
@@ -1015,18 +1019,7 @@ pub async fn create_session(
   BearerToken(token): BearerToken,
   Json(body): Json<CreateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  if body.repo_names.len() != body.repo_last_commit_ids.len() {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: format!(
-          "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
-          body.repo_names.len(),
-          body.repo_last_commit_ids.len()
-        ),
-      }),
-    ));
-  }
+  validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
   tracing::info!("create_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
 
@@ -1200,13 +1193,8 @@ pub async fn apply_kernel_parameters(
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
-  let mut images_to_project = std::collections::HashMap::new();
-  if body.project_sbps {
-    for (image_id, mut image) in changeset.sbps_candidates.clone() {
-      image.set_boot_image_iscsi_ready();
-      images_to_project.insert(image_id, image);
-    }
-  }
+  let images_to_project =
+    service::kernel_parameters::build_images_to_project(&changeset, body.project_sbps);
 
   service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
     .await
@@ -1784,7 +1772,8 @@ pub async fn add_kernel_parameters(
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
-  let images_to_project = build_images_to_project(&changeset, body.project_sbps);
+  let images_to_project =
+    service::kernel_parameters::build_images_to_project(&changeset, body.project_sbps);
 
   service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
     .await
@@ -2034,18 +2023,7 @@ pub async fn apply_session(
   BearerToken(token): BearerToken,
   Json(body): Json<ApplySessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  if body.repo_names.len() != body.repo_last_commit_ids.len() {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: format!(
-          "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
-          body.repo_names.len(),
-          body.repo_last_commit_ids.len()
-        ),
-      }),
-    ));
-  }
+  validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
 
   tracing::info!("apply_session repos={:?}", body.repo_names);
   let infra = state.infra_context();
@@ -2316,21 +2294,3 @@ async fn resolve_xnames_from_request(
   ))
 }
 
-/// Build the SBPS images-to-project map from a kernel params changeset.
-fn build_images_to_project(
-  changeset: &service::kernel_parameters::KernelParamsChangeset,
-  project_sbps: bool,
-) -> std::collections::HashMap<String, manta_backend_dispatcher::types::ims::Image> {
-  if !project_sbps {
-    return std::collections::HashMap::new();
-  }
-  changeset
-    .sbps_candidates
-    .iter()
-    .map(|(id, img)| {
-      let mut img = img.clone();
-      img.set_boot_image_iscsi_ready();
-      (id.clone(), img)
-    })
-    .collect()
-}

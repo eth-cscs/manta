@@ -66,11 +66,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     // Boot config (apply with dry_run)
     .route("/boot-config", post(handlers::apply_boot_config))
-    // Kernel parameters (apply with dry_run)
-    .route(
-      "/kernel-parameters/apply",
-      post(handlers::apply_kernel_parameters),
-    )
+    // Kernel parameters (apply, add, delete)
+    .route("/kernel-parameters/apply", post(handlers::apply_kernel_parameters))
+    .route("/kernel-parameters/add", post(handlers::add_kernel_parameters))
+    .route("/kernel-parameters", delete(handlers::delete_kernel_parameters))
     // Migrate
     .route("/migrate/nodes", post(handlers::migrate_nodes))
     .route("/migrate/backup", post(handlers::migrate_backup))
@@ -87,12 +86,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/sat-file", post(handlers::post_sat_file))
     // Health check
     .route("/health", get(handlers::health))
-    // Kernel parameters — add and delete
-    .route("/kernel-parameters/add", post(handlers::add_kernel_parameters))
-    .route(
-      "/kernel-parameters",
-      delete(handlers::delete_kernel_parameters),
-    )
     // Hardware cluster member management
     .route(
       "/hardware-clusters/{target}/members",
@@ -106,9 +99,15 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     // CFS session from pre-resolved repos with HSM validation
     .route("/sessions/apply", post(handlers::apply_session))
-    // WebSocket consoles
-    .route("/nodes/{xname}/console", get(handlers::console_node_ws))
-    .route("/sessions/{name}/console", get(handlers::console_session_ws));
+    .merge(build_ws_routes());
 
   Router::new().nest("/api/v1", api).with_state(state)
+}
+
+/// WebSocket upgrade routes — kept separate so they're easy to identify
+/// and so the upgrade protocol is not mixed with plain HTTP routes.
+fn build_ws_routes() -> Router<Arc<ServerState>> {
+  Router::new()
+    .route("/nodes/{xname}/console", get(handlers::console_node_ws))
+    .route("/sessions/{name}/console", get(handlers::console_session_ws))
 }

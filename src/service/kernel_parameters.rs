@@ -221,6 +221,28 @@ pub async fn apply_kernel_params_changes(
   Ok(())
 }
 
+/// Build the SBPS images-to-project map from a kernel params changeset.
+///
+/// Marks each candidate image as iSCSI-ready and returns the projection
+/// map. Returns an empty map when `project_sbps` is false.
+pub fn build_images_to_project(
+  changeset: &KernelParamsChangeset,
+  project_sbps: bool,
+) -> HashMap<String, Image> {
+  if !project_sbps {
+    return HashMap::new();
+  }
+  changeset
+    .sbps_candidates
+    .iter()
+    .map(|(id, img)| {
+      let mut img = img.clone();
+      img.set_boot_image_iscsi_ready();
+      (id.clone(), img)
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

@@ -40,6 +40,11 @@ pub async fn migrate_restore(
     image_dir: Option<&str>,
     overwrite: bool,
 ) -> Result<(), Error> {
+    // The backend trait exposes four independent overwrite flags
+    // (overwrite_bos, overwrite_cfs, overwrite_hsm, overwrite_ims).
+    // The HTTP/CLI APIs currently expose a single `overwrite` knob that
+    // fans out to all four. Expose them individually if callers need
+    // per-resource control in the future.
     infra
         .backend
         .migrate_restore(
@@ -51,10 +56,10 @@ pub async fn migrate_restore(
             hsm_file,
             ims_file,
             image_dir,
-            overwrite,
-            overwrite,
-            overwrite,
-            overwrite,
+            overwrite, // overwrite_bos
+            overwrite, // overwrite_cfs
+            overwrite, // overwrite_hsm
+            overwrite, // overwrite_ims
         )
         .await?;
     Ok(())
