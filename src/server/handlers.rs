@@ -2078,9 +2078,6 @@ pub async fn apply_session(
 
 #[derive(Deserialize)]
 pub struct ConsoleQuery {
-  /// Bearer token (passed as query param because WS handshake cannot
-  /// carry an Authorization header in most WebSocket clients).
-  pub token: String,
   #[serde(default = "default_cols")]
   pub cols: u16,
   #[serde(default = "default_rows")]
@@ -2092,10 +2089,11 @@ fn default_rows() -> u16 { 24 }
 
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
-  ws: WebSocketUpgrade,
+  BearerToken(token): BearerToken,
   State(state): State<Arc<ServerState>>,
   Path(xname): Path<String>,
   Query(q): Query<ConsoleQuery>,
+  ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let k8s_api_url = require_k8s_url(state.k8s_api_url.as_deref())?;
   let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
@@ -2110,7 +2108,7 @@ pub async fn console_node_ws(
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
     match state.backend
-      .attach_to_node_console(&q.token, &state.site_name, &xname, q.cols, q.rows, &k8s)
+      .attach_to_node_console(&token, &state.site_name, &xname, q.cols, q.rows, &k8s)
       .await
     {
       Ok((console_in, console_out)) => {
@@ -2130,10 +2128,11 @@ pub async fn console_node_ws(
 
 #[tracing::instrument(skip_all, fields(session = %name))]
 pub async fn console_session_ws(
-  ws: WebSocketUpgrade,
+  BearerToken(token): BearerToken,
   State(state): State<Arc<ServerState>>,
   Path(name): Path<String>,
   Query(q): Query<ConsoleQuery>,
+  ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let k8s_api_url = require_k8s_url(state.k8s_api_url.as_deref())?;
   let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
@@ -2142,7 +2141,7 @@ pub async fn console_session_ws(
 
   let sessions = infra.backend
     .get_and_filter_sessions(
-      &q.token,
+      &token,
       infra.shasta_base_url,
       infra.shasta_root_cert,
       Vec::new(),
@@ -2197,7 +2196,7 @@ pub async fn console_session_ws(
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
     match state.backend
-      .attach_to_session_console(&q.token, &state.site_name, &name, q.cols, q.rows, &k8s)
+      .attach_to_session_console(&token, &state.site_name, &name, q.cols, q.rows, &k8s)
       .await
     {
       Ok((console_in, console_out)) => {

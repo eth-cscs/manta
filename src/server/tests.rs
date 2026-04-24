@@ -732,6 +732,45 @@ async fn apply_session_without_vault_returns_501() {
 }
 
 // ---------------------------------------------------------------------------
+// WebSocket console auth tests
+// ---------------------------------------------------------------------------
+
+/// Build a minimal WebSocket upgrade GET request (no actual TCP connection).
+/// `WebSocketUpgrade` requires these headers to extract successfully, which
+/// lets handler-body checks (auth, 501 guards) run and return HTTP errors.
+fn ws_upgrade(uri: &str) -> Request<Body> {
+  Request::builder()
+    .method(Method::GET)
+    .uri(uri)
+    .header(header::CONNECTION, "Upgrade")
+    .header(header::UPGRADE, "websocket")
+    .header("Sec-WebSocket-Version", "13")
+    .header("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
+    .body(Body::empty())
+    .unwrap()
+}
+
+
+#[tokio::test]
+async fn console_node_without_auth_returns_401() {
+  let resp = router()
+    .oneshot(ws_upgrade("/api/v1/nodes/x3000c0s1b0n0/console"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn console_session_without_auth_returns_401() {
+  let resp = router()
+    .oneshot(ws_upgrade("/api/v1/sessions/my-session/console"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+
+// ---------------------------------------------------------------------------
 // Error classification unit tests
 // ---------------------------------------------------------------------------
 
