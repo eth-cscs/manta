@@ -7,6 +7,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::{Context, Error};
+use std::time::Duration;
 use axum_server::tls_rustls::RustlsConfig;
 
 use crate::common::app_context::InfraContext;
@@ -64,6 +65,7 @@ pub async fn start_server(
   key_path: &str,
 ) -> Result<(), Error> {
   let app = routes::build_router(state)
+    .layer(tower_http::timeout::TimeoutLayer::new(Duration::from_secs(60)))
     .layer(axum::middleware::from_fn(log_requests));
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)
