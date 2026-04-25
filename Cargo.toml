@@ -56,7 +56,6 @@ serde_yaml = "0.9.34"
 log = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-log = "0.2"
 tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "time"] }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }

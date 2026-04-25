@@ -96,6 +96,41 @@ docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN mant
 > exit status 101
 > ```
 
+### HTTP server mode
+
+Manta can run as an HTTPS server, exposing all CLI operations as a REST + WebSocket API. This is useful for automation, scripting, and integration with other tools without requiring direct CLI access.
+
+**Start the server**
+
+```bash
+manta serve --cert /path/to/cert.pem --key /path/to/key.pem
+```
+
+Optional flags:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--port` | `8443` | Port to listen on |
+| `--listen-addr` | `0.0.0.0` | Bind address |
+
+**Example — list CFS sessions**
+
+```bash
+curl -sk -H "Authorization: Bearer $TOKEN" \
+  https://localhost:8443/api/v1/sessions | jq .
+```
+
+**Example — open a node console (WebSocket)**
+
+```bash
+wscat -H "Authorization: Bearer $TOKEN" \
+  --connect wss://localhost:8443/api/v1/nodes/x3000c0s1b0n0/console
+```
+
+See [API.md](API.md) for the full endpoint reference.
+
+---
+
 ### Build from sources
 
 Install Rust toolchain https://www.rust-lang.org/tools/install

@@ -12,8 +12,8 @@ use axum::{
 };
 use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::{
+  error::Error as BackendError,
   interfaces::{
-    apply_sat_file::SatTrait,
     cfs::CfsTrait,
     console::ConsoleTrait,
     hsm::group::GroupTrait,
@@ -69,34 +69,29 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
   }
 }
 
-/// Map an error message to the most appropriate HTTP status code.
-///
-/// Inspects well-known phrases from the service layer to avoid returning
-/// 500 for conditions that are actually 404 or 409.
-pub(crate) fn classify_status(msg: &str) -> StatusCode {
-  let lower = msg.to_lowercase();
-  if lower.contains("not found") || lower.contains("does not exist") {
-    StatusCode::NOT_FOUND
-  } else if lower.contains("already exists") {
-    StatusCode::CONFLICT
+/// Convert a `BackendError` into the best-fitting HTTP error response.
+pub(crate) fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
+  let status = match &e {
+    BackendError::NotFound(_)
+    | BackendError::SessionNotFound
+    | BackendError::ConfigurationNotFound => StatusCode::NOT_FOUND,
+    BackendError::Conflict(_)
+    | BackendError::ConfigurationAlreadyExistsError(_) => StatusCode::CONFLICT,
+    BackendError::BadRequest(_) => StatusCode::BAD_REQUEST,
+    BackendError::AuthenticationTokenNotFound(_) => StatusCode::UNAUTHORIZED,
+    _ => StatusCode::INTERNAL_SERVER_ERROR,
+  };
+  if status == StatusCode::INTERNAL_SERVER_ERROR {
+    tracing::error!("Internal error: {}", e);
   } else {
-    StatusCode::INTERNAL_SERVER_ERROR
+    tracing::debug!("Service error {}: {}", status, e);
   }
+  (status, Json(ErrorResponse { error: e.to_string() }))
 }
 
-/// Convert an `anyhow::Error` into the best-fitting HTTP error response.
-///
-/// Returns 404, 409, or 500 depending on `classify_status`. Only 500s
-/// are logged as errors; lower-severity failures are logged at debug.
-fn internal_error(e: anyhow::Error) -> (StatusCode, Json<ErrorResponse>) {
-  let msg = format!("{:#}", e);
-  let status = classify_status(&msg);
-  if status == StatusCode::INTERNAL_SERVER_ERROR {
-    tracing::error!("Internal error: {}", msg);
-  } else {
-    tracing::debug!("Service error {}: {}", status, msg);
-  }
-  (status, Json(ErrorResponse { error: msg }))
+/// Convert any `Display` error (e.g. anyhow) into an HTTP error response.
+fn display_error<E: std::fmt::Display>(e: E) -> (StatusCode, Json<ErrorResponse>) {
+  to_handler_error(BackendError::Message(e.to_string()))
 }
 
 fn serialize_or_500<T: Serialize>(v: &T) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
@@ -206,7 +201,7 @@ pub async fn get_sessions(
 
   let sessions = service::session::get_sessions(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(sessions))
 }
@@ -244,7 +239,7 @@ pub async fn get_configurations(
   let configs =
     service::configuration::get_configurations(&infra, &token, &params)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok(Json(configs))
 }
@@ -276,7 +271,7 @@ pub async fn get_nodes(
 
   let nodes = service::node::get_nodes(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(nodes))
 }
@@ -305,7 +300,7 @@ pub async fn get_groups(
 
   let groups = service::group::get_groups(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(groups))
 }
@@ -347,7 +342,7 @@ pub async fn get_images(
 
   let images = service::image::get_images(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   let mut entries = Vec::with_capacity(images.len());
   for (img, config_name, image_id, linked) in images {
@@ -391,7 +386,7 @@ pub async fn get_templates(
 
   let templates = service::template::get_templates(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(templates))
 }
@@ -423,7 +418,7 @@ pub async fn get_boot_parameters(
   let boot_params =
     service::boot_parameters::get_boot_parameters(&infra, &token, &params)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok(Json(boot_params))
 }
@@ -455,7 +450,7 @@ pub async fn get_kernel_parameters(
   let kernel_params =
     service::kernel_parameters::get_kernel_parameters(&infra, &token, &params)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok(Json(kernel_params))
 }
@@ -492,7 +487,7 @@ pub async fn get_redfish_endpoints(
   let endpoints =
     service::redfish_endpoints::get_redfish_endpoints(&infra, &token, &params)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok(Json(endpoints))
 }
@@ -523,7 +518,7 @@ pub async fn get_clusters(
 
   let nodes = service::cluster::get_cluster_nodes(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(nodes))
 }
@@ -552,7 +547,7 @@ pub async fn get_hardware_clusters(
 
   let result = service::hardware::get_hardware_cluster(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "hsm_group_name": result.hsm_group_name,
@@ -585,7 +580,7 @@ pub async fn get_hardware_nodes(
 
   let result = service::hardware::get_hardware_node(&infra, &token, &params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "node_summary": result.node_summary,
@@ -611,7 +606,7 @@ pub async fn delete_node(
 
   service::node::delete_node(&infra, &token, &id)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -648,7 +643,7 @@ pub async fn add_node(
     None, // hardware_file_path not applicable via HTTP
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json(serde_json::json!({ "id": body.id }))))
 }
@@ -675,7 +670,7 @@ pub async fn delete_group(
 
   service::group::delete_group(&infra, &token, &label, q.force)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -695,7 +690,7 @@ pub async fn create_group(
 
   service::group::create_group(&infra, &token, group)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
@@ -732,7 +727,7 @@ pub async fn add_nodes_to_group(
   let (added, removed) =
     service::group::add_nodes_to_group(&infra, &token, &name, &body.hosts_expression)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok(Json(AddNodesToGroupResponse { added, removed }))
 }
@@ -765,7 +760,7 @@ pub async fn delete_boot_parameters(
 
   service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -785,7 +780,7 @@ pub async fn add_boot_parameters(
 
   service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
@@ -805,7 +800,7 @@ pub async fn update_boot_parameters(
 
   service::boot_parameters::update_boot_parameters(&infra, &token, params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -825,7 +820,7 @@ pub async fn delete_redfish_endpoint(
 
   service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -845,7 +840,7 @@ pub async fn add_redfish_endpoint(
 
   service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
@@ -865,7 +860,7 @@ pub async fn update_redfish_endpoint(
 
   service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -893,7 +888,7 @@ pub async fn delete_session(
   let deletion_ctx =
     service::session::prepare_session_deletion(&infra, &token, &name, None)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   if q.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&deletion_ctx)?)));
@@ -901,7 +896,7 @@ pub async fn delete_session(
 
   service::session::execute_session_deletion(&infra, &token, &deletion_ctx, false)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": name }))))
 }
@@ -932,13 +927,13 @@ pub async fn delete_images(
   if q.dry_run {
     service::image::validate_image_deletion(&infra, &token, &id_refs, None)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
     return Ok((StatusCode::OK, Json(serde_json::json!({ "validated_ids": id_strings }))));
   }
 
   let deleted = service::image::delete_images(&infra, &token, &id_refs, None)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": deleted }))))
 }
@@ -977,7 +972,7 @@ pub async fn delete_configurations(
     until,
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   if q.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&candidates)?)));
@@ -985,7 +980,7 @@ pub async fn delete_configurations(
 
   service::configuration::delete_configurations_and_derivatives(&infra, &token, &candidates)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({
     "deleted_configurations": candidates.configuration_names,
@@ -1028,7 +1023,7 @@ pub async fn create_session(
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
       .await
-      .map_err(|e| internal_error(e.into()))?;
+      .map_err(|e| to_handler_error(BackendError::Message(e.to_string())))?;
 
   let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
   let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
@@ -1047,7 +1042,7 @@ pub async fn create_session(
     body.ansible_passthrough.as_deref(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok((
     StatusCode::CREATED,
@@ -1095,7 +1090,7 @@ pub async fn apply_boot_config(
     body.kernel_parameters.as_deref(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
@@ -1108,7 +1103,7 @@ pub async fn apply_boot_config(
     body.runtime_configuration.as_deref(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({
     "applied": true,
@@ -1187,7 +1182,7 @@ pub async fn apply_kernel_parameters(
   let changeset =
     service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &body.xnames, &operation)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
@@ -1198,7 +1193,7 @@ pub async fn apply_kernel_parameters(
 
   service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({
     "applied": true,
@@ -1241,7 +1236,7 @@ pub async fn migrate_nodes(
     body.create_hsm_group,
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "xnames": xnames,
@@ -1275,7 +1270,7 @@ pub async fn migrate_backup(
     body.destination.as_deref(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({ "completed": true })))
 }
@@ -1315,7 +1310,7 @@ pub async fn migrate_restore(
     body.overwrite,
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({ "completed": true })))
 }
@@ -1344,7 +1339,7 @@ pub async fn create_ephemeral_env(
     &body.image_id,
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(display_error)?;
 
   Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
 }
@@ -1381,7 +1376,7 @@ pub async fn delete_group_members(
         .backend
         .delete_member_from_group(&token, &name, xname)
         .await
-        .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+        .map_err(to_handler_error)?;
     }
   }
 
@@ -1445,7 +1440,7 @@ pub async fn post_power(
         .backend
         .get_member_vec_from_group_name_vec(&token, &[group_name.clone()])
         .await
-        .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?
+        .map_err(to_handler_error)?
     }
     PowerTargetType::Nodes => body.targets.clone(),
   };
@@ -1464,7 +1459,7 @@ pub async fn post_power(
     PowerAction::Off => infra.backend.power_off_sync(&token, &xnames, body.force).await,
     PowerAction::Reset => infra.backend.power_reset_sync(&token, &xnames, body.force).await,
   }
-  .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(result))
 }
@@ -1529,7 +1524,7 @@ pub async fn post_template_session(
   let (bos_session, _) =
     service::template::validate_and_prepare_template_session(&infra, &token, &params)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&bos_session)?)));
@@ -1538,7 +1533,7 @@ pub async fn post_template_session(
   let created =
     service::template::create_bos_session(&infra, &token, bos_session)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json(serialize_or_500(&created)?)))
 }
@@ -1579,7 +1574,7 @@ pub async fn get_session_logs(
     .backend
     .get_session_logs_stream(&token, infra.site_name, &name, q.timestamps, &k8s)
     .await
-    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+    .map_err(to_handler_error)?;
 
   let sse_stream = logs_stream.lines().map(|result| {
     Ok::<Event, Infallible>(Event::default().data(
@@ -1636,90 +1631,31 @@ pub async fn post_sat_file(
       infra.site_name,
     )
     .await
-    .map_err(internal_error)?;
+    .map_err(display_error)?;
 
-  let hsm_group_available_vec = infra
-    .backend
-    .get_group_name_available(&token)
-    .await
-    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
-
-  let values_cli_vec: Vec<String> = body
-    .values
-    .as_ref()
-    .and_then(|v| v.as_object())
-    .map(|map| {
-      map
-        .iter()
-        .map(|(k, v)| {
-          format!("{}={}", k, v.as_str().unwrap_or(&v.to_string()))
-        })
-        .collect()
-    })
-    .unwrap_or_default();
-
-  let sat_template_yaml =
-    crate::cli::commands::apply_sat_file::utils::render_jinja2_sat_file_yaml(
-      &body.sat_file_content,
-      body.values_file_content.as_deref(),
-      if values_cli_vec.is_empty() {
-        None
-      } else {
-        Some(&values_cli_vec)
-      },
-    )
-    .map_err(internal_error)?;
-
-  let mut sat_file: crate::cli::commands::apply_sat_file::utils::SatFile =
-    serde_yaml::from_value(sat_template_yaml).map_err(|e| {
-      internal_error(anyhow::anyhow!("Failed to parse SAT file: {}", e))
-    })?;
-
-  sat_file
-    .filter(body.image_only, body.session_template_only)
-    .map_err(internal_error)?;
-
-  let sat_file_yaml = serde_yaml::to_value(sat_file).map_err(|e| {
-    internal_error(anyhow::anyhow!(
-      "Failed to convert SAT file to YAML: {}",
-      e
-    ))
-  })?;
-
-  let shasta_k8s_secrets =
-    crate::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
-      vault_base_url,
-      infra.site_name,
-      &token,
-    )
-    .await
-    .map_err(internal_error)?;
-
-  infra
-    .backend
-    .apply_sat_file(
-      &token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      vault_base_url,
-      infra.site_name,
-      k8s_api_url,
-      shasta_k8s_secrets,
-      sat_file_yaml,
-      &hsm_group_available_vec,
-      body.ansible_verbosity,
-      body.ansible_passthrough.as_deref(),
-      infra.gitea_base_url,
-      &gitea_token,
-      body.reboot,
-      body.watch_logs,
-      body.timestamps,
-      true,
-      body.overwrite,
-      body.dry_run,
-    )
-    .await
-    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
+  service::sat_file::apply_sat_file(
+    &infra,
+    &token,
+    &gitea_token,
+    vault_base_url,
+    k8s_api_url,
+    service::sat_file::ApplySatFileParams {
+      sat_file_content: &body.sat_file_content,
+      values: body.values.as_ref(),
+      values_file_content: body.values_file_content.as_deref(),
+      ansible_verbosity: body.ansible_verbosity,
+      ansible_passthrough: body.ansible_passthrough.as_deref(),
+      reboot: body.reboot,
+      watch_logs: body.watch_logs,
+      timestamps: body.timestamps,
+      image_only: body.image_only,
+      session_template_only: body.session_template_only,
+      overwrite: body.overwrite,
+      dry_run: body.dry_run,
+    },
+  )
+  .await
+  .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({ "applied": true })))
 }
@@ -1766,7 +1702,7 @@ pub async fn add_kernel_parameters(
   let changeset =
     service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
@@ -1777,7 +1713,7 @@ pub async fn add_kernel_parameters(
 
   service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
     .await
-    .map_err(internal_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({
     "applied": true,
@@ -1823,7 +1759,7 @@ pub async fn delete_kernel_parameters(
   let changeset =
     service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
       .await
-      .map_err(internal_error)?;
+      .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
@@ -1836,7 +1772,7 @@ pub async fn delete_kernel_parameters(
     &std::collections::HashMap::new(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({
     "applied": true,
@@ -1879,7 +1815,7 @@ pub async fn add_hw_component(
       body.create_hsm_group,
     )
     .await
-    .map_err(internal_error)?;
+    .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -1925,7 +1861,7 @@ pub async fn delete_hw_component(
       body.delete_hsm_group,
     )
     .await
-    .map_err(internal_error)?;
+    .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -1990,7 +1926,7 @@ pub async fn apply_hw_configuration(
       body.delete_empty_parent_hsm_group,
     )
     .await
-    .map_err(internal_error)?;
+    .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -2036,13 +1972,13 @@ pub async fn apply_session(
       .collect();
     crate::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
       .await
-      .map_err(internal_error)?;
+      .map_err(display_error)?;
   }
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
       .await
-      .map_err(|e| internal_error(e.into()))?;
+      .map_err(|e| to_handler_error(BackendError::Message(e.to_string())))?;
 
   let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
   let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
@@ -2061,7 +1997,7 @@ pub async fn apply_session(
     body.ansible_passthrough.as_deref(),
   )
   .await
-  .map_err(internal_error)?;
+  .map_err(to_handler_error)?;
 
   Ok((
     StatusCode::CREATED,
@@ -2105,6 +2041,7 @@ pub async fn console_node_ws(
     },
   };
 
+  let timeout = state.console_inactivity_timeout;
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
     match state.backend
@@ -2112,7 +2049,7 @@ pub async fn console_node_ws(
       .await
     {
       Ok((console_in, console_out)) => {
-        run_console_bridge(socket, console_in, console_out).await;
+        run_console_bridge(socket, console_in, console_out, timeout).await;
         tracing::info!("WebSocket console closed for node {xname}");
       }
       Err(e) => {
@@ -2139,52 +2076,9 @@ pub async fn console_session_ws(
 
   let infra = state.infra_context();
 
-  let sessions = infra.backend
-    .get_and_filter_sessions(
-      &token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      Vec::new(),
-      Vec::new(),
-      None, None, None, None,
-      Some(&name),
-      None, None,
-    )
+  service::session::validate_console_session(&infra, &token, &name)
     .await
-    .map_err(|e| internal_error(anyhow::anyhow!("{:#}", e)))?;
-
-  let session = sessions.first().ok_or_else(|| {
-    (
-      StatusCode::NOT_FOUND,
-      Json(ErrorResponse { error: format!("CFS session '{name}' not found") }),
-    )
-  })?;
-
-  let target_def = session
-    .target.as_ref().and_then(|t| t.definition.as_ref())
-    .ok_or_else(|| {
-      (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "CFS session has no target definition".into() }))
-    })?;
-  if target_def != "image" {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse { error: format!("CFS session '{name}' is not an image-type session (got '{target_def}')") }),
-    ));
-  }
-
-  let status = session
-    .status.as_ref()
-    .and_then(|s| s.session.as_ref())
-    .and_then(|s| s.status.as_ref())
-    .ok_or_else(|| {
-      (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "CFS session has no status".into() }))
-    })?;
-  if status != "running" {
-    return Err((
-      StatusCode::CONFLICT,
-      Json(ErrorResponse { error: format!("CFS session '{name}' is not running (status: '{status}')") }),
-    ));
-  }
+    .map_err(to_handler_error)?;
 
   let k8s = K8sDetails {
     api_url: k8s_api_url.to_string(),
@@ -2193,6 +2087,7 @@ pub async fn console_session_ws(
     },
   };
 
+  let timeout = state.console_inactivity_timeout;
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
     match state.backend
@@ -2200,7 +2095,7 @@ pub async fn console_session_ws(
       .await
     {
       Ok((console_in, console_out)) => {
-        run_console_bridge(socket, console_in, console_out).await;
+        run_console_bridge(socket, console_in, console_out, timeout).await;
         tracing::info!("WebSocket console closed for session {name}");
       }
       Err(e) => {
@@ -2217,21 +2112,27 @@ pub async fn console_session_ws(
 ///   consumed (dynamic resize is not yet supported by the ConsoleTrait).
 /// - Console stdout is forwarded as Binary WS frames.
 /// - Either side closing or erroring terminates the bridge.
+/// - The bridge closes automatically after `inactivity_timeout` of silence
+///   from the client, releasing the Kubernetes pod attachment.
 async fn run_console_bridge(
   mut socket: WebSocket,
   mut console_in: Box<dyn tokio::io::AsyncWrite + Unpin + Send>,
   console_out: Box<dyn tokio::io::AsyncRead + Unpin + Send>,
+  inactivity_timeout: std::time::Duration,
 ) {
   let mut out_stream = tokio_util::io::ReaderStream::new(console_out);
+  let mut deadline = tokio::time::Instant::now() + inactivity_timeout;
 
   loop {
     tokio::select! {
       msg = socket.recv() => {
         match msg {
           Some(Ok(Message::Binary(data))) => {
+            deadline = tokio::time::Instant::now() + inactivity_timeout;
             if console_in.write_all(&data).await.is_err() { break; }
           }
           Some(Ok(Message::Text(text))) => {
+            deadline = tokio::time::Instant::now() + inactivity_timeout;
             // Consume resize control messages silently; forward everything else.
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
               if v.get("type").and_then(|t| t.as_str()) == Some("resize") {
@@ -2252,6 +2153,10 @@ async fn run_console_bridge(
           }
           Some(Err(_)) | None => break,
         }
+      }
+      _ = tokio::time::sleep_until(deadline) => {
+        tracing::warn!("Console session idle for {:?}, closing", inactivity_timeout);
+        break;
       }
     }
   }
@@ -2283,7 +2188,7 @@ async fn resolve_xnames_from_request(
       None,
     )
     .await
-    .map_err(internal_error);
+    .map_err(display_error);
   }
   Err((
     StatusCode::BAD_REQUEST,

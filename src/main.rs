@@ -99,7 +99,7 @@ async fn run(
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
 
-  log_ops::configure(log_level)?;
+  log_ops::configure(log_level);
 
   let site_details_value =
     configuration.sites.get(&site_name).ok_or_else(|| {
@@ -193,6 +193,7 @@ async fn run(
       vault_base_url: vault_base_url.map(String::to_owned),
       gitea_base_url: gitea_base_url.clone(),
       k8s_api_url: k8s_api_url.map(String::to_owned),
+      console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
     });
 
     return server::start_server(server_state, listen_addr, port, cert_path, key_path)

@@ -34,6 +34,9 @@ All errors return JSON with an `error` field:
 |--------|---------|
 | `400` | Bad request — invalid parameters or body |
 | `401` | Missing or malformed `Authorization` header |
+| `404` | Resource not found |
+| `409` | Conflict — resource already exists |
+| `422` | Unprocessable entity — required field missing or wrong type |
 | `500` | Backend call failed |
 | `501` | Feature requires server config not set (`vault_base_url`, `k8s_api_url`) |
 
@@ -59,6 +62,51 @@ List CFS sessions, optionally filtered.
 | `limit` | u8 | no | Maximum number of results |
 
 **Response `200`** — array of CFS session objects.
+
+---
+
+### POST /sessions/apply
+
+Create a CFS configuration and session with HSM membership validation.
+
+Identical to `POST /sessions` but also validates that every node in `ansible_limit` belongs to an HSM group the token has access to before creating the session.
+
+> Requires `vault_base_url` configured on the server.
+
+**Request body**
+
+```json
+{
+  "repo_names": ["csm-config"],
+  "repo_last_commit_ids": ["abc123def456"],
+  "cfs_conf_sess_name": "my-session",
+  "playbook_yaml_file_name": "site.yaml",
+  "hsm_group": "compute",
+  "ansible_limit": "x3000c0s1b0n0,x3000c0s2b0n0",
+  "ansible_verbosity": "1",
+  "ansible_passthrough": ""
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `repo_names` | string[] | **yes** | Gitea repository names |
+| `repo_last_commit_ids` | string[] | **yes** | Commit SHA for each repo (same order as `repo_names`) |
+| `cfs_conf_sess_name` | string | no | Name for the config and session (auto-generated if omitted) |
+| `playbook_yaml_file_name` | string | no | Ansible playbook file (default: `site.yaml`) |
+| `hsm_group` | string | no | Target HSM group |
+| `ansible_limit` | string | no | Comma-separated xnames to limit execution; each must belong to an accessible HSM group |
+| `ansible_verbosity` | string | no | Ansible verbosity level (`0`–`4`) |
+| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
+
+**Response `201`**
+
+```json
+{
+  "session_name": "my-session-20240101",
+  "configuration_name": "my-session-20240101-config"
+}
+```
 
 ---
 
@@ -502,6 +550,44 @@ Get kernel parameters for nodes.
 
 ---
 
+### POST /kernel-parameters/add
+
+Append kernel parameters to a set of nodes without replacing existing ones.
+
+**Request body**
+
+```json
+{
+  "params": "console=ttyS0,115200n8",
+  "xnames": ["x3000c0s1b0n0"],
+  "hsm_group": null,
+  "overwrite": false,
+  "project_sbps": true,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `params` | string | **yes** | Space-separated kernel parameters to add |
+| `xnames` | string[] | no | Target nodes (use instead of `hsm_group`) |
+| `hsm_group` | string | no | Target HSM group (use instead of `xnames`) |
+| `overwrite` | bool | no | Overwrite a parameter if it already exists (default: `false`) |
+| `project_sbps` | bool | no | Project SBPS images (default: `true`) |
+| `dry_run` | bool | no | Preview without persisting (default: `false`) |
+
+**Response `200`**
+
+```json
+{
+  "applied": true,
+  "has_changes": true,
+  "xnames_to_reboot": ["x3000c0s1b0n0"]
+}
+```
+
+---
+
 ### POST /kernel-parameters/apply
 
 Add, replace, or delete kernel parameters for a set of nodes.
@@ -526,6 +612,40 @@ Add, replace, or delete kernel parameters for a set of nodes.
 | `params` | string | **yes** | Space-separated kernel parameters |
 | `overwrite` | bool | no | For `add`: overwrite existing params (default: `false`) |
 | `project_sbps` | bool | no | Project SBPS images (default: `true`) |
+| `dry_run` | bool | no | Preview without persisting (default: `false`) |
+
+**Response `200`**
+
+```json
+{
+  "applied": true,
+  "has_changes": true,
+  "xnames_to_reboot": ["x3000c0s1b0n0"]
+}
+```
+
+---
+
+### DELETE /kernel-parameters
+
+Remove specific kernel parameters from a set of nodes.
+
+**Request body**
+
+```json
+{
+  "params": "console=ttyS0,115200n8",
+  "xnames": ["x3000c0s1b0n0"],
+  "hsm_group": null,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `params` | string | **yes** | Space-separated kernel parameters to remove |
+| `xnames` | string[] | no | Target nodes (use instead of `hsm_group`) |
+| `hsm_group` | string | no | Target HSM group (use instead of `xnames`) |
 | `dry_run` | bool | no | Preview without persisting (default: `false`) |
 
 **Response `200`**
@@ -704,6 +824,117 @@ Get hardware component details for specific nodes.
 
 ---
 
+## Hardware cluster management
+
+### POST /hardware-clusters/{target}/members
+
+Add hardware components (nodes) to a target cluster, sourcing them from a parent cluster.
+
+**Path parameters:** `target` — destination HSM group name.
+
+**Request body**
+
+```json
+{
+  "parent_cluster": "nodes_free",
+  "pattern": "Memory=512:Processors=2",
+  "create_hsm_group": false,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `parent_cluster` | string | **yes** | Source HSM group to draw nodes from |
+| `pattern` | string | **yes** | Hardware component pattern to match (e.g. `Memory=512:Processors=2`) |
+| `create_hsm_group` | bool | no | Create the target group if it doesn't exist (default: `false`) |
+| `dry_run` | bool | no | Preview without moving nodes (default: `false`) |
+
+**Response `200`**
+
+```json
+{
+  "dry_run": false,
+  "nodes_moved": ["x3000c0s1b0n0"],
+  "target_cluster": "my-cluster",
+  "target_nodes": ["x3000c0s1b0n0"],
+  "parent_cluster": "nodes_free",
+  "parent_nodes": ["x3000c0s2b0n0"]
+}
+```
+
+---
+
+### DELETE /hardware-clusters/{target}/members
+
+Remove hardware components from a target cluster and return them to a parent cluster.
+
+**Path parameters:** `target` — source HSM group name.
+
+**Request body**
+
+```json
+{
+  "parent_cluster": "nodes_free",
+  "pattern": "Memory=512:Processors=2",
+  "delete_hsm_group": false,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `parent_cluster` | string | **yes** | Destination HSM group for returned nodes |
+| `pattern` | string | **yes** | Hardware component pattern to match |
+| `delete_hsm_group` | bool | no | Delete the target group if it becomes empty (default: `false`) |
+| `dry_run` | bool | no | Preview without moving nodes (default: `false`) |
+
+**Response `200`** — same shape as `POST /hardware-clusters/{target}/members`.
+
+---
+
+### POST /hardware-clusters/{target}/configuration
+
+Pin or unpin a hardware cluster configuration by moving nodes between the target and parent cluster according to a hardware component pattern.
+
+**Path parameters:** `target` — target HSM group name.
+
+**Request body**
+
+```json
+{
+  "parent_cluster": "nodes_free",
+  "pattern": "Memory=512:Processors=2",
+  "mode": "pin",
+  "create_target_hsm_group": true,
+  "delete_empty_parent_hsm_group": true,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `parent_cluster` | string | **yes** | Source/destination HSM group |
+| `pattern` | string | **yes** | Hardware component pattern to match |
+| `mode` | string | no | `"pin"` (move nodes into target) or `"unpin"` (move nodes back to parent) — default: `"pin"` |
+| `create_target_hsm_group` | bool | no | Create the target group if it doesn't exist (default: `true`) |
+| `delete_empty_parent_hsm_group` | bool | no | Delete the parent group if it becomes empty (default: `true`) |
+| `dry_run` | bool | no | Preview without moving nodes (default: `false`) |
+
+**Response `200`**
+
+```json
+{
+  "dry_run": false,
+  "target_cluster": "my-cluster",
+  "target_nodes": ["x3000c0s1b0n0"],
+  "parent_cluster": "nodes_free",
+  "parent_nodes": []
+}
+```
+
+---
+
 ## Migration
 
 ### POST /migrate/nodes
@@ -836,6 +1067,59 @@ Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds im
 
 ---
 
+## Interactive consoles (WebSocket)
+
+Both console endpoints use the standard WebSocket upgrade handshake. Authentication is checked during the HTTP upgrade — a missing or invalid `Authorization` header returns `401` before the WebSocket connection is established. The server closes the connection after **30 minutes of inactivity**.
+
+Once connected, the WebSocket carries raw terminal I/O:
+- **Text or binary frames sent by the client** are forwarded as stdin to the console.
+- **Binary frames sent by the server** are stdout from the console.
+
+```
+wscat -H "Authorization: Bearer $TOKEN" \
+  --connect wss://host:8443/api/v1/nodes/x3000c0s1b0n0/console
+```
+
+---
+
+### WS /nodes/{xname}/console
+
+Open an interactive console to a node.
+
+> Requires `k8s_api_url` and `vault_base_url` configured on the server.
+
+**Path parameters:** `xname` — node xname (e.g. `x3000c0s1b0n0`).
+
+**Query parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `cols` | u16 | no | Terminal width in columns (default: `80`) |
+| `rows` | u16 | no | Terminal height in rows (default: `24`) |
+
+**Upgrade response `101`** — WebSocket connection established.
+
+---
+
+### WS /sessions/{name}/console
+
+Open an interactive console to the Ansible container of a running image-type CFS session.
+
+> Requires `k8s_api_url` and `vault_base_url` configured on the server. The session must exist, be of type `image`, and have status `running`. Returns `409` if those conditions are not met.
+
+**Path parameters:** `name` — CFS session name.
+
+**Query parameters**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `cols` | u16 | no | Terminal width in columns (default: `80`) |
+| `rows` | u16 | no | Terminal height in rows (default: `24`) |
+
+**Upgrade response `101`** — WebSocket connection established.
+
+---
+
 ## Health check
 
 ### GET /health
@@ -852,5 +1136,5 @@ Some endpoints require optional fields to be set in the server configuration (`~
 
 | Config field | Required by |
 |---|---|
-| `vault_base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file` |
-| `k8s_api_url` | `GET /sessions/{name}/logs`, `POST /sat-file` |
+| `vault_base_url` | `POST /sessions`, `POST /sessions/apply`, `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `k8s_api_url` | `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |

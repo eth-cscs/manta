@@ -1,4 +1,4 @@
-use anyhow::{Error, bail};
+use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
@@ -30,10 +30,13 @@ pub async fn get_nodes(
     &params.xname,
     params.include_siblings,
   )
-  .await?;
+  .await
+  .map_err(|e| Error::Message(e.to_string()))?;
 
   if node_list.is_empty() {
-    bail!("The list of nodes to operate is empty. Nothing to do");
+    return Err(Error::BadRequest(
+      "The list of nodes to operate is empty. Nothing to do".to_string(),
+    ));
   }
 
   let mut node_details_list = csm_rs::node::utils::get_node_details(
@@ -43,7 +46,7 @@ pub async fn get_nodes(
     node_list.to_vec(),
   )
   .await
-  .map_err(|e| anyhow::anyhow!("{e}"))?;
+  .map_err(|e: csm_rs::error::Error| Error::Message(e.to_string()))?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {
@@ -98,8 +101,7 @@ pub async fn delete_node(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  infra.backend.delete_node(token, id).await?;
-  Ok(())
+  infra.backend.delete_node(token, id).await.map(|_| ())
 }
 
 /// Register a new node, optionally add hardware inventory,

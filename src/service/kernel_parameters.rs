@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::bss::BootParameters;
@@ -31,12 +31,12 @@ pub async fn get_kernel_parameters(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await?;
+  .await
+  .map_err(|e| Error::Message(e.to_string()))?;
 
   let boot_parameter_vec = infra.backend
     .get_bootparameters(token, &xname_vec)
-    .await
-    .context("Could not get boot parameters")?;
+    .await?;
 
   Ok(boot_parameter_vec)
 }
@@ -142,8 +142,7 @@ pub async fn prepare_kernel_params_changes(
   let mut boot_params: Vec<BootParameters> = infra
     .backend
     .get_bootparameters(token, xname_vec)
-    .await
-    .context("Failed to get boot parameters")?;
+    .await?;
 
   let mut has_changes = false;
   let mut xnames_to_reboot: Vec<String> = Vec::new();
@@ -168,7 +167,7 @@ pub async fn prepare_kernel_params_changes(
             .get_images(token, Some(&image_id))
             .await?
             .first()
-            .context("No image found for the given image id")?
+            .ok_or_else(|| Error::Message("No image found for the given image id".to_string()))?
             .clone();
 
           if bp.is_root_kernel_param_iscsi_ready() {
@@ -211,7 +210,7 @@ pub async fn apply_kernel_params_changes(
         image
           .id
           .clone()
-          .context("Image has no id")?
+          .ok_or_else(|| Error::Message("Image has no id".to_string()))?
           .as_str(),
         &image.clone().into(),
       )

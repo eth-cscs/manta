@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
 use manta_backend_dispatcher::types::hsm::inventory::{
   RedfishEndpoint, RedfishEndpointArray,
@@ -49,10 +49,7 @@ pub async fn delete_redfish_endpoint(
     .backend
     .delete_redfish_endpoint(token, id)
     .await
-    .with_context(|| {
-      format!("Failed to delete redfish endpoint for id '{}'", id)
-    })?;
-  Ok(())
+    .map(|_| ())
 }
 
 /// Typed parameters for updating/adding a Redfish endpoint.

@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
@@ -24,9 +24,6 @@ pub struct GetSessionParams {
 }
 
 /// Fetch and filter CFS sessions from the backend.
-///
-/// Queries the backend for sessions matching the given
-/// parameters and returns the filtered results.
 pub async fn get_sessions(
   infra: &InfraContext<'_>,
   token: &str,
@@ -54,7 +51,6 @@ pub async fn get_sessions(
       None,
     )
     .await
-    .context("Failed to get and filter sessions")
 }
 
 /// Data needed to delete/cancel a session.
@@ -68,8 +64,6 @@ pub struct SessionDeletionContext {
 }
 
 /// Fetch session and related data, validate session exists.
-///
-/// Returns context needed for user confirmation and deletion.
 pub async fn prepare_session_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -82,7 +76,8 @@ pub async fn prepare_session_deletion(
     None,
     settings_hsm_group_name_opt,
   )
-  .await?;
+  .await
+  .map_err(|e| Error::Message(e.to_string()))?;
 
   tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();
@@ -119,18 +114,15 @@ pub async fn prepare_session_deletion(
     infra.backend.get_all_bootparameters(token),
   )?;
 
-  let duration = start.elapsed();
   tracing::info!(
     "Time elapsed to fetch information from backend: {:?}",
-    duration
+    start.elapsed()
   );
 
   let session = cfs_session_vec
     .into_iter()
     .find(|s| s.name == session_name)
-    .ok_or_else(|| {
-      Error::msg(format!("CFS session '{}' not found", session_name))
-    })?;
+    .ok_or_else(|| Error::NotFound(format!("CFS session '{session_name}'")))?;
 
   let image_ids = session.get_result_id_vec();
 
@@ -162,62 +154,113 @@ pub async fn execute_session_deletion(
       &deletion_ctx.bss_bootparameters_vec,
       dry_run,
     )
-    .await?;
-
-  Ok(())
+    .await
 }
 
-/// Resolve ansible-limit hosts to xnames and create a CFS
-/// session via the backend.
+/// Resolve ansible-limit hosts to xnames and create a CFS session.
 ///
 /// Returns `(cfs_configuration_name, cfs_session_name)`.
 #[allow(clippy::too_many_arguments)]
 pub async fn create_cfs_session(
-    infra: &InfraContext<'_>,
-    token: &str,
-    gitea_token: &str,
-    cfs_conf_sess_name: Option<&str>,
-    playbook_yaml_file_name_opt: Option<&str>,
-    hsm_group_opt: Option<&str>,
-    repo_name_vec: &[&str],
-    repo_last_commit_id_vec: &[&str],
-    ansible_limit_opt: Option<&str>,
-    ansible_verbosity: Option<&str>,
-    ansible_passthrough: Option<&str>,
+  infra: &InfraContext<'_>,
+  token: &str,
+  gitea_token: &str,
+  cfs_conf_sess_name: Option<&str>,
+  playbook_yaml_file_name_opt: Option<&str>,
+  hsm_group_opt: Option<&str>,
+  repo_name_vec: &[&str],
+  repo_last_commit_id_vec: &[&str],
+  ansible_limit_opt: Option<&str>,
+  ansible_verbosity: Option<&str>,
+  ansible_passthrough: Option<&str>,
 ) -> Result<(String, String), Error> {
-    let backend = infra.backend;
+  let backend = infra.backend;
 
-    // Resolve ansible-limit to xnames if provided
-    let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
-        let xname_vec = crate::common::node_ops::resolve_hosts_expression(
-            backend,
-            token,
-            ansible_limit,
-            false,
-        )
-        .await?;
-        Some(xname_vec.join(","))
-    } else {
-        None
-    };
+  let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
+    let xname_vec = crate::common::node_ops::resolve_hosts_expression(
+      backend,
+      token,
+      ansible_limit,
+      false,
+    )
+    .await
+    .map_err(|e| Error::Message(e.to_string()))?;
+    Some(xname_vec.join(","))
+  } else {
+    None
+  };
 
-    let (cfs_configuration_name, cfs_session_name) = backend
-        .apply_session(
-            gitea_token,
-            infra.gitea_base_url,
-            token,
-            infra.shasta_base_url,
-            infra.shasta_root_cert,
-            cfs_conf_sess_name,
-            playbook_yaml_file_name_opt,
-            hsm_group_opt,
-            repo_name_vec,
-            repo_last_commit_id_vec,
-            ansible_limit.as_deref(),
-            ansible_verbosity,
-            ansible_passthrough,
-        )
-        .await?;
+  backend
+    .apply_session(
+      gitea_token,
+      infra.gitea_base_url,
+      token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      cfs_conf_sess_name,
+      playbook_yaml_file_name_opt,
+      hsm_group_opt,
+      repo_name_vec,
+      repo_last_commit_id_vec,
+      ansible_limit.as_deref(),
+      ansible_verbosity,
+      ansible_passthrough,
+    )
+    .await
+}
 
-    Ok((cfs_configuration_name, cfs_session_name))
+/// Validate that a CFS session is suitable for attaching a console.
+///
+/// Returns `NotFound` if the session doesn't exist, `BadRequest` if the
+/// session is not image-type or has missing internal state, and `Conflict`
+/// if it is not running.
+pub async fn validate_console_session(
+  infra: &InfraContext<'_>,
+  token: &str,
+  name: &str,
+) -> Result<(), Error> {
+  let sessions = infra
+    .backend
+    .get_and_filter_sessions(
+      token,
+      infra.shasta_base_url,
+      infra.shasta_root_cert,
+      Vec::new(),
+      Vec::new(),
+      None, None, None, None,
+      Some(&name.to_string()),
+      None, None,
+    )
+    .await?;
+
+  let session = sessions
+    .first()
+    .ok_or_else(|| Error::NotFound(format!("CFS session '{name}'")))?;
+
+  let target_def = session
+    .target
+    .as_ref()
+    .and_then(|t| t.definition.as_ref())
+    .ok_or_else(|| Error::BadRequest(format!("CFS session '{name}' has no target definition")))?;
+
+  if target_def != "image" {
+    return Err(Error::BadRequest(format!(
+      "CFS session '{name}' is not an image-type session (got '{target_def}')"
+    )));
+  }
+
+  let status = session
+    .status
+    .as_ref()
+    .and_then(|s| s.session.as_ref())
+    .and_then(|s| s.status.as_ref())
+    .ok_or_else(|| Error::BadRequest(format!("CFS session '{name}' has no status")))?;
+
+  if status != "running" {
+    return Err(Error::Conflict(format!(
+      "CFS session '{name}' is not running (status: '{status}')"
+    )));
+  }
+
+  Ok(())
 }

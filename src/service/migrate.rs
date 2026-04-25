@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Error, bail};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::{
     hsm::group::GroupTrait, migrate_backup::MigrateBackupTrait,
     migrate_restore::MigrateRestoreTrait,
@@ -24,8 +24,7 @@ pub async fn migrate_backup(
             bos,
             destination,
         )
-        .await?;
-    Ok(())
+        .await
 }
 
 /// Execute a migrate-restore operation against the backend.
@@ -61,8 +60,7 @@ pub async fn migrate_restore(
             overwrite, // overwrite_hsm
             overwrite, // overwrite_ims
         )
-        .await?;
-    Ok(())
+        .await
 }
 
 /// Result of migrating nodes for a single parent→target pair.
@@ -93,20 +91,23 @@ pub async fn migrate_nodes(
     // Resolve hosts expression to xnames
     let xname_to_move_vec =
         node_ops::resolve_hosts_expression(backend, token, hosts_expression, false)
-            .await?;
+            .await
+            .map_err(|e| Error::Message(e.to_string()))?;
 
     if xname_to_move_vec.is_empty() {
-        bail!("The list of nodes to operate is empty. Nothing to do");
+        return Err(Error::BadRequest(
+            "The list of nodes to operate is empty. Nothing to do".to_string(),
+        ));
     }
 
-    // Get curated HSM groups filtered to parent groups
     let mut hsm_group_summary: HashMap<String, Vec<String>> =
         node_ops::get_curated_hsm_group_from_xname_hostlist(
             backend,
             token,
             &xname_to_move_vec,
         )
-        .await?;
+        .await
+        .map_err(|e| Error::Message(e.to_string()))?;
 
     hsm_group_summary
         .retain(|hsm_name, _| parent_hsm_name_vec.contains(hsm_name));
@@ -124,16 +125,15 @@ pub async fn migrate_nodes(
                 target_hsm_name
             );
             if dry_run {
-                bail!(
-                    "Dry-run selected, cannot create the new group continue.",
-                );
+                return Err(Error::BadRequest(
+                    "Dry-run selected, cannot create the new group to continue".to_string(),
+                ));
             }
         } else {
-            bail!(
-                "HSM group {} does not exist, but the option \
-                 to create the group was NOT specified, cannot continue.",
-                target_hsm_name
-            );
+            return Err(Error::NotFound(format!(
+                "HSM group '{target_hsm_name}' does not exist and the option \
+                 to create the group was not specified"
+            )));
         }
 
         for (parent_hsm_name, xnames) in &hsm_group_summary {

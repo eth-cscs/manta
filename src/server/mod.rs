@@ -25,6 +25,9 @@ pub struct ServerState {
   pub vault_base_url: Option<String>,
   pub gitea_base_url: String,
   pub k8s_api_url: Option<String>,
+  /// How long a WebSocket console session may be idle before the server
+  /// closes it. Protects against leaked Kubernetes pod attachments.
+  pub console_inactivity_timeout: std::time::Duration,
 }
 
 impl ServerState {

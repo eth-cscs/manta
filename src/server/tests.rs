@@ -44,6 +44,7 @@ fn router() -> axum::Router {
     vault_base_url: None,
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None,
+    console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   build_router(state)
 }
@@ -61,6 +62,7 @@ fn router_with_vault() -> axum::Router {
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: Some("http://k8s.stub.invalid".to_string()),
+    console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   build_router(state)
 }
@@ -456,6 +458,7 @@ async fn post_sat_file_without_k8s_config_returns_501() {
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None, // k8s not set
+    console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   let resp = build_router(state)
     .oneshot(post_json(
@@ -771,33 +774,36 @@ async fn console_session_without_auth_returns_401() {
 
 
 // ---------------------------------------------------------------------------
-// Error classification unit tests
+// Error mapping unit tests
 // ---------------------------------------------------------------------------
 
 #[test]
-fn classify_status_not_found_phrases() {
-  use crate::server::handlers::classify_status;
+fn to_handler_error_not_found_variants() {
+  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
+  use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(classify_status("CFS session 'foo' not found"), StatusCode::NOT_FOUND);
-  assert_eq!(classify_status("Node 'x3000c0s1b0n0' Not Found in inventory"), StatusCode::NOT_FOUND);
-  assert_eq!(classify_status("HSM group 'bar' does not exist"), StatusCode::NOT_FOUND);
-  assert_eq!(classify_status("boot image id 'abc' not found"), StatusCode::NOT_FOUND);
+  assert_eq!(to_handler_error(Error::NotFound("session foo".into())).0, StatusCode::NOT_FOUND);
+  assert_eq!(to_handler_error(Error::SessionNotFound).0, StatusCode::NOT_FOUND);
+  assert_eq!(to_handler_error(Error::ConfigurationNotFound).0, StatusCode::NOT_FOUND);
 }
 
 #[test]
-fn classify_status_conflict_phrase() {
-  use crate::server::handlers::classify_status;
+fn to_handler_error_conflict_variants() {
+  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
+  use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(classify_status("Group 'foo' already exists"), StatusCode::CONFLICT);
+  assert_eq!(to_handler_error(Error::Conflict("group foo".into())).0, StatusCode::CONFLICT);
+  assert_eq!(to_handler_error(Error::ConfigurationAlreadyExistsError("cfg".into())).0, StatusCode::CONFLICT);
 }
 
 #[test]
-fn classify_status_internal_fallback() {
-  use crate::server::handlers::classify_status;
+fn to_handler_error_bad_request_and_internal() {
+  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
+  use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(classify_status("connection refused"), StatusCode::INTERNAL_SERVER_ERROR);
-  assert_eq!(classify_status("unexpected EOF"), StatusCode::INTERNAL_SERVER_ERROR);
+  assert_eq!(to_handler_error(Error::BadRequest("bad input".into())).0, StatusCode::BAD_REQUEST);
+  assert_eq!(to_handler_error(Error::Message("something broke".into())).0, StatusCode::INTERNAL_SERVER_ERROR);
 }

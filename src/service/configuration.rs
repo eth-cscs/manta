@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
@@ -36,7 +36,8 @@ pub async fn get_configurations(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await?;
+  .await
+  .map_err(|e| Error::Message(e.to_string()))?;
 
   let limit_ref = params.limit.as_ref();
 
@@ -76,7 +77,7 @@ pub async fn get_configuration_details(
 > {
   let vault_base_url = infra
     .vault_base_url
-    .context("vault_base_url is required for configuration details")?;
+    .ok_or_else(|| Error::Message("vault_base_url is required for configuration details".to_string()))?;
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(
@@ -85,9 +86,8 @@ pub async fn get_configuration_details(
       infra.site_name,
     )
     .await
-    .context("Failed to fetch VCS token from vault")?;
+    .map_err(|e| Error::Message(e.to_string()))?;
 
-  // Fetch all layer details concurrently instead of sequentially.
   let layer_details_vec: Vec<LayerDetails> =
     futures::future::try_join_all(config.layers.iter().map(|layer| {
       let backend = infra.backend.clone();
@@ -106,7 +106,6 @@ pub async fn get_configuration_details(
             &site_name,
           )
           .await
-          .context("Could not fetch configuration layer details")
       }
     }))
     .await?;
@@ -114,8 +113,7 @@ pub async fn get_configuration_details(
   let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
     infra.backend
       .get_derivatives(token, infra.shasta_base_url, infra.shasta_root_cert, &config.name)
-      .await
-      .context("Could not fetch configuration derivatives")?;
+      .await?;
 
   let details = ConfigurationDetails::new(
     &config.name,
@@ -163,7 +161,8 @@ pub async fn get_deletion_candidates(
         None,
         settings_hsm_group_name_opt,
       )
-      .await?
+      .await
+      .map_err(|e| Error::Message(e.to_string()))?
     };
 
   let (
@@ -203,10 +202,12 @@ pub async fn get_deletion_candidates(
 pub fn validate_date_range(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), Error> {
   if let (Some(s), Some(u)) = (since, until) {
     if s > u {
-      anyhow::bail!("'since' date can't be after 'until' date");
+      return Err(Error::BadRequest(
+        "'since' date can't be after 'until' date".to_string(),
+      ));
     }
   }
   Ok(())
