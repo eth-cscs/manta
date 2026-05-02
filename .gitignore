@@ -3,6 +3,7 @@
 /sat-file
 /cfr_semantic_files
 /.opencode
+/.claude
 #Cargo.lock
 *.code-workspace
 *.log
