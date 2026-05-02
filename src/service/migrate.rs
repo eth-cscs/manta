@@ -91,8 +91,7 @@ pub async fn migrate_nodes(
     // Resolve hosts expression to xnames
     let xname_to_move_vec =
         node_ops::resolve_hosts_expression(backend, token, hosts_expression, false)
-            .await
-            .map_err(|e| Error::Message(e.to_string()))?;
+            .await?;
 
     if xname_to_move_vec.is_empty() {
         return Err(Error::BadRequest(
@@ -106,8 +105,7 @@ pub async fn migrate_nodes(
             token,
             &xname_to_move_vec,
         )
-        .await
-        .map_err(|e| Error::Message(e.to_string()))?;
+        .await?;
 
     hsm_group_summary
         .retain(|hsm_name, _| parent_hsm_name_vec.contains(hsm_name));

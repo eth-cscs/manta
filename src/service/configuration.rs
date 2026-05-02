@@ -36,8 +36,7 @@ pub async fn get_configurations(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let limit_ref = params.limit.as_ref();
 
@@ -85,8 +84,7 @@ pub async fn get_configuration_details(
       vault_base_url,
       infra.site_name,
     )
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
   let layer_details_vec: Vec<LayerDetails> =
     futures::future::try_join_all(config.layers.iter().map(|layer| {
@@ -161,8 +159,7 @@ pub async fn get_deletion_candidates(
         None,
         settings_hsm_group_name_opt,
       )
-      .await
-      .map_err(|e| Error::Message(e.to_string()))?
+      .await?
     };
 
   let (

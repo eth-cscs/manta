@@ -1,8 +1,8 @@
 // Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use git2::{Commit, ObjectType, Repository};
+use manta_backend_dispatcher::error::Error;
 
 /// Open a local Git repository at the given path.
 pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
@@ -69,14 +69,15 @@ pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
 /// path segment, and strips any trailing `.git` suffix.
 pub fn parse_repo_name_from_remote(
   repo: &Repository,
-) -> Result<String, anyhow::Error> {
-  let remote = repo
-    .find_remote("origin")
-    .context("Failed to find remote 'origin'")?;
-  let url = remote
-    .url()
-    .context("Remote 'origin' URL is not valid UTF-8")?;
-  parse_repo_name_from_url(url).context("Remote URL has no '/' separator")
+) -> Result<String, Error> {
+  let remote = repo.find_remote("origin").map_err(|e| {
+    Error::Message(format!("Failed to find remote 'origin': {}", e))
+  })?;
+  let url = remote.url().ok_or_else(|| {
+    Error::Message("Remote 'origin' URL is not valid UTF-8".to_string())
+  })?;
+  parse_repo_name_from_url(url)
+    .ok_or_else(|| Error::Message("Remote URL has no '/' separator".to_string()))
 }
 
 #[cfg(test)]

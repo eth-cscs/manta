@@ -89,6 +89,7 @@ predicates = "3"
 tempfile = "3"
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+wiremock = "0.6"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

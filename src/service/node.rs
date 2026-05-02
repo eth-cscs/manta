@@ -30,8 +30,7 @@ pub async fn get_nodes(
     &params.xname,
     params.include_siblings,
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   if node_list.is_empty() {
     return Err(Error::BadRequest(
@@ -46,7 +45,7 @@ pub async fn get_nodes(
     node_list.to_vec(),
   )
   .await
-  .map_err(|e: csm_rs::error::Error| Error::Message(e.to_string()))?;
+  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {

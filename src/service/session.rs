@@ -76,8 +76,7 @@ pub async fn prepare_session_deletion(
     None,
     settings_hsm_group_name_opt,
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();
@@ -183,8 +182,7 @@ pub async fn create_cfs_session(
       ansible_limit,
       false,
     )
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
     Some(xname_vec.join(","))
   } else {
     None

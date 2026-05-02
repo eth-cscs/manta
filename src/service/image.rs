@@ -33,8 +33,7 @@ pub async fn get_images(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let limit_ref = params.limit.as_ref();
 
@@ -63,8 +62,7 @@ pub async fn validate_image_deletion(
   let backend = infra.backend;
 
   get_groups_names_available(backend, token, None, settings_hsm_group_name_opt)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
   let (group_available_vec, boot_parameter_vec) = tokio::try_join!(
     backend.get_group_available(token),

@@ -2,11 +2,13 @@ pub mod handlers;
 pub mod routes;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod integration_tests;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
 use axum_server::tls_rustls::RustlsConfig;
 
@@ -73,18 +75,16 @@ pub async fn start_server(
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)
     .parse()
-    .context("Invalid listen address")?;
+    .map_err(|e| Error::Message(format!("Invalid listen address: {e}")))?;
 
   let tls_config = RustlsConfig::from_pem_file(cert_path, key_path)
-    .await
-    .context("Failed to load TLS certificate/key")?;
+    .await?;
 
   tracing::info!("Starting HTTPS server on https://{}", addr);
 
   axum_server::bind_rustls(addr, tls_config)
     .serve(app.into_make_service())
-    .await
-    .context("Server error")?;
+    .await?;
 
   Ok(())
 }

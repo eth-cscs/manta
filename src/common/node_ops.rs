@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use anyhow::Context;
 use hostlist_parser::parse;
 use manta_backend_dispatcher::{
+  error::Error,
   interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
   types::Component,
 };
@@ -25,30 +25,24 @@ const NID_STRING_LENGTH: usize = 9;
 const XNAME_BLADE_PREFIX_LEN: usize = 10;
 
 // Validate and get short nid
-fn get_short_nid(long_nid: &str) -> Result<usize, anyhow::Error> {
-  // Validate nid has the right length
+fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
   if long_nid.len() != NID_STRING_LENGTH {
-    anyhow::bail!(
+    return Err(Error::Message(format!(
       "Nid '{}' not valid, Nid does not have {} characters",
-      long_nid,
-      NID_STRING_LENGTH
-    );
+      long_nid, NID_STRING_LENGTH
+    )));
   }
 
-  long_nid
-    .strip_prefix("nid")
-    .ok_or_else(|| {
-      anyhow::anyhow!("Nid '{}' not valid, 'nid' prefix missing", long_nid)
-    })
-    .and_then(|nid_number| {
-      nid_number.to_string().parse::<usize>().with_context(|| {
-        format!(
-          "Could not convert Nid '{}' from long to \
-             short format",
-          nid_number
-        )
-      })
-    })
+  let nid_number = long_nid.strip_prefix("nid").ok_or_else(|| {
+    Error::Message(format!("Nid '{}' not valid, 'nid' prefix missing", long_nid))
+  })?;
+
+  nid_number.parse::<usize>().map_err(|e| {
+    Error::Message(format!(
+      "Could not convert Nid '{}' from long to short format: {}",
+      nid_number, e
+    ))
+  })
 }
 
 /// Resolve a NID hostlist expression to xnames by
@@ -56,7 +50,7 @@ fn get_short_nid(long_nid: &str) -> Result<usize, anyhow::Error> {
 pub async fn get_xname_from_nid_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<String>, Error> {
   // Convert long nids to short nids
   // Get xnames from short nids
   let short_nid_vec: Vec<usize> = node_vec
@@ -86,7 +80,7 @@ pub async fn get_xname_from_nid_hostlist(
 pub async fn get_xname_from_xname_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<String>, Error> {
   // If hostlist of XNAMEs, return hostlist expanded xnames
   // Validate XNAMEs
   tracing::debug!("XNAME format are valid");
@@ -124,19 +118,17 @@ pub async fn resolve_hosts_expression(
   shasta_token: &str,
   hosts_expression: &str,
   is_include_siblings: bool,
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<String>, Error> {
   let node_metadata_available_vec = backend
     .get_node_metadata_available(shasta_token)
-    .await
-    .context("Could not get node metadata")?;
+    .await?;
 
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,
     is_include_siblings,
     node_metadata_available_vec,
   )
-  .await
-  .context("Could not convert user input to list of xnames")?;
+  .await?;
 
   xname_vec.sort();
   xname_vec.dedup();
@@ -151,53 +143,48 @@ pub async fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,
   node_metadata_available_vec: Vec<Component>,
-) -> Result<Vec<String>, anyhow::Error> {
-  // Check if hostlist
-  // Expand user input to list of nids
+) -> Result<Vec<String>, Error> {
   let hostlist_expanded_vec_rslt =
-    parse(user_input).map_err(|e| anyhow::anyhow!(e.to_string()));
+    parse(user_input).map_err(|e| Error::Message(e.to_string()));
 
   let xname_vec = match hostlist_expanded_vec_rslt {
     Ok(node_vec) => {
-    tracing::debug!("Hostlist format is valid");
-    // If hostlist, expand hostlist
-    let xname_vec: Vec<String> = if validate_nid_format_vec(&node_vec) {
-      // If hostlist of NIDs, convert to xname
-      // Validate NIDs
-      tracing::debug!("NID format is valid");
-      tracing::debug!("hostlist Nids: {}", user_input);
-      tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
+      tracing::debug!("Hostlist format is valid");
+      let xname_vec: Vec<String> = if validate_nid_format_vec(&node_vec) {
+        tracing::debug!("NID format is valid");
+        tracing::debug!("hostlist Nids: {}", user_input);
+        tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
 
-      get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)
-        .await?
-    } else if validate_xname_format_vec(&node_vec) {
-      // If hostlist of XNAMEs, return hostlist expanded xnames
-      // Validate XNAMEs
-      tracing::debug!("NID format is valid");
-      tracing::debug!("hostlist Nids: {}", user_input);
-      tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
+        get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)
+          .await?
+      } else if validate_xname_format_vec(&node_vec) {
+        tracing::debug!("XNAME format is valid");
+        tracing::debug!("hostlist XNAMEs: {}", user_input);
+        tracing::debug!("hostlist XNAMEs expanded: {:?}", node_vec);
 
-      get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)
-        .await?
-    } else {
-      anyhow::bail!(
-        "Could not parse user input as a list of nodes from a hostlist expression."
-      );
-    };
+        get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)
+          .await?
+      } else {
+        return Err(Error::BadRequest(
+          "Could not parse user input as a list of nodes from a hostlist expression."
+            .to_string(),
+        ));
+      };
 
-    xname_vec
+      xname_vec
     }
     Err(e) => {
-      anyhow::bail!(
+      return Err(Error::BadRequest(format!(
         "Could not parse user input as a list of nodes from a hostlist or regex expression: {e}"
-      );
+      )));
     }
   };
 
   if xname_vec.is_empty() {
-    anyhow::bail!(
+    return Err(Error::BadRequest(
       "Could not parse user input as a list of nodes from a hostlist or regex expression."
-    );
+        .to_string(),
+    ));
   }
 
   // Include siblings if requested
@@ -236,17 +223,12 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
   xname_vec: &[String],
-) -> Result<HashMap<String, Vec<String>>, anyhow::Error> {
-  // Create a summary of HSM groups and the list of members filtered by the list of nodes the
-  // user is targeting
+) -> Result<HashMap<String, Vec<String>>, Error> {
   let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
-  let hsm_name_available_vec = backend
-    .get_group_name_available(auth_token)
-    .await
-    .context("Failed to get available HSM group names")?;
+  let hsm_name_available_vec =
+    backend.get_group_name_available(auth_token).await?;
 
-  // Get HSM group user has access to
   let hsm_group_available_map = backend
     .get_group_map_and_filter_by_group_vec(
       auth_token,
@@ -255,8 +237,7 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
         .map(String::as_str)
         .collect::<Vec<&str>>(),
     )
-    .await
-    .context("Failed to get HSM group summary")?;
+    .await?;
 
   // Filter hsm group members
   for (hsm_name, hsm_members) in hsm_group_available_map {
@@ -353,7 +334,7 @@ pub async fn resolve_target_nodes(
   hosts_expression: Option<&str>,
   hsm_group_name_arg_opt: Option<&str>,
   settings_hsm_group_name_opt: Option<&str>,
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<String>, Error> {
   if let Some(hosts_expr) = hosts_expression {
     resolve_hosts_expression(backend, shasta_token, hosts_expr, false).await
   } else if hsm_group_name_arg_opt.is_some()
@@ -366,13 +347,11 @@ pub async fn resolve_target_nodes(
         hsm_group_name_arg_opt,
         settings_hsm_group_name_opt,
       )
-      .await
-      .context("Failed to get available HSM group names")?;
+      .await?;
 
     let hsm_members: Vec<String> = backend
       .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
-      .await
-      .context("Could not fetch HSM group members")?;
+      .await?;
 
     resolve_hosts_expression(
       backend,
@@ -382,10 +361,11 @@ pub async fn resolve_target_nodes(
     )
     .await
   } else {
-    anyhow::bail!(
+    Err(Error::BadRequest(
       "No nodes provided. Please provide either a list of nodes \
-       via --nodes or an HSM group via --hsm-group",
-    )
+       via --nodes or an HSM group via --hsm-group"
+        .to_string(),
+    ))
   }
 }
 

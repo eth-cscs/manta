@@ -26,8 +26,7 @@ pub async fn get_groups(
     params.group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   infra.backend
     .get_groups(token, Some(&target_hsm_group_vec))
@@ -103,8 +102,7 @@ pub async fn prepare_add_group(
         hosts_expression,
         false,
       )
-      .await
-      .map_err(|e| Error::Message(e.to_string()))?;
+      .await?;
       Some(xname_vec)
     }
     None => None,
@@ -112,8 +110,7 @@ pub async fn prepare_add_group(
 
   if let Some(xname_vec) = &xname_vec_opt {
     validate_target_hsm_members(infra.backend, token, xname_vec)
-      .await
-      .map_err(|e| Error::Message(e.to_string()))?;
+      .await?;
   }
 
   let group = Group::new(
@@ -152,8 +149,7 @@ pub async fn add_nodes_to_group(
     hosts_expression,
     false,
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::BadRequest(

@@ -1,5 +1,4 @@
-use anyhow::{Context, Result};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 use serde::{Deserialize, Serialize};
 
 use super::{jwt_ops, kafka::Kafka};
@@ -13,7 +12,7 @@ pub struct Auditor {
 
 /// Trait for producing audit messages to a message broker.
 pub trait Audit {
-  async fn produce_message(&self, data: &[u8]) -> Result<()>;
+  async fn produce_message(&self, data: &[u8]) -> Result<(), Error>;
 }
 
 /// Serialize a JSON audit message and send it to Kafka.
@@ -104,15 +103,14 @@ pub async fn maybe_send_audit_with_group_lookup(
   token: &str,
   message: impl Into<String>,
   xnames: &[String],
-) -> Result<()> {
+) -> Result<(), Error> {
   if let Some(kafka) = kafka_opt {
     let xname_refs: Vec<&str> =
       xnames.iter().map(String::as_str).collect();
 
     let group_map = backend
       .get_group_map_and_filter_by_member_vec(token, &xname_refs)
-      .await
-      .context("Failed to get group map for audit")?;
+      .await?;
 
     send_audit(
       kafka,

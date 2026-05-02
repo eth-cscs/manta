@@ -7,11 +7,10 @@ use std::{
   path::PathBuf,
 };
 
-use anyhow::Context;
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
+use manta_backend_dispatcher::{error::Error, types::{K8sAuth, K8sDetails}};
 use toml_edit::DocumentMut;
 use types::{BackendTechnology, MantaConfiguration, Site};
 
@@ -26,28 +25,30 @@ use crate::common::{
 /// All path helpers in this module delegate to this function
 /// so the qualifier/organization/application triple is defined
 /// in exactly one place.
-fn get_project_dirs() -> Result<ProjectDirs, anyhow::Error> {
+fn get_project_dirs() -> Result<ProjectDirs, Error> {
   ProjectDirs::from(
     "local", /*qualifier*/
     "cscs",  /*organization*/
     "manta", /*application*/
   )
-  .context(
-    "Could not determine project directories \
-     (home directory may not be set)",
-  )
+  .ok_or_else(|| {
+    Error::Message(
+      "Could not determine project directories \
+       (home directory may not be set)"
+        .to_string(),
+    )
+  })
 }
 
 /// Returns the default manta config directory path
 /// (e.g. `~/.config/manta/`).
-pub(crate) fn get_default_config_path() -> Result<PathBuf, anyhow::Error> {
+pub(crate) fn get_default_config_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.config_dir()))
 }
 
 /// Returns the default manta config file path
 /// (e.g. `~/.config/manta/config.toml`).
-pub(crate) fn get_default_manta_config_file_path()
--> Result<PathBuf, anyhow::Error> {
+pub(crate) fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
   let mut path = get_default_config_path()?;
   path.push("config.toml");
   Ok(path)
@@ -55,7 +56,7 @@ pub(crate) fn get_default_manta_config_file_path()
 
 /// Returns the default manta cache directory path
 /// (e.g. `~/.cache/manta/`).
-pub(crate) fn get_default_cache_path() -> Result<PathBuf, anyhow::Error> {
+pub(crate) fn get_default_cache_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.cache_dir()))
 }
 
@@ -63,8 +64,7 @@ pub(crate) fn get_default_cache_path() -> Result<PathBuf, anyhow::Error> {
 ///
 /// Returns both the file path (for later writing) and the
 /// parsed `DocumentMut`.
-pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), anyhow::Error>
-{
+pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
   let path = get_default_manta_config_file_path()?;
 
   tracing::debug!(
@@ -72,12 +72,9 @@ pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), anyhow::Error
     path.to_string_lossy()
   );
 
-  let content =
-    fs::read_to_string(&path).context("Error reading configuration file")?;
+  let content = fs::read_to_string(&path)?;
 
-  let doc = content
-    .parse::<DocumentMut>()
-    .context("Could not parse configuration file as TOML")?;
+  let doc = content.parse::<DocumentMut>()?;
 
   Ok((path, doc))
 }
@@ -86,17 +83,14 @@ pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), anyhow::Error
 pub(crate) fn write_config_toml(
   path: &std::path::Path,
   doc: &DocumentMut,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), Error> {
   let mut file = std::fs::OpenOptions::new()
     .write(true)
     .truncate(true)
-    .open(path)
-    .context("Failed to open configuration file for writing")?;
+    .open(path)?;
 
-  file
-    .write_all(doc.to_string().as_bytes())
-    .context("Failed to write configuration file")?;
-  file.flush().context("Failed to flush configuration file")?;
+  file.write_all(doc.to_string().as_bytes())?;
+  file.flush()?;
 
   Ok(())
 }
@@ -106,7 +100,7 @@ pub(crate) fn write_config_toml(
 /// relative.
 pub fn get_csm_root_cert_content(
   file_path: &str,
-) -> Result<Vec<u8>, anyhow::Error> {
+) -> Result<Vec<u8>, Error> {
   let mut buf = Vec::new();
   let root_cert_file_rslt = File::open(file_path);
 
@@ -120,24 +114,22 @@ pub fn get_csm_root_cert_content(
 
   match file_rslt {
     Ok(mut file) => {
-      file
-        .read_to_end(&mut buf)
-        .context("Failed to read CA root certificate file")?;
-
+      file.read_to_end(&mut buf)?;
       Ok(buf)
     }
-    Err(_) => Err(anyhow::anyhow!("CA public root file could not be found")),
+    Err(_) => Err(Error::Message(
+      "CA public root file could not be found".to_string(),
+    )),
   }
 }
 
-fn get_default_manta_audit_file_path() -> Result<PathBuf, anyhow::Error> {
+fn get_default_manta_audit_file_path() -> Result<PathBuf, Error> {
   let mut log_file_path = PathBuf::from(get_project_dirs()?.data_dir());
   log_file_path.push("manta.log");
   Ok(log_file_path)
 }
 
-fn get_default_mgmt_plane_ca_cert_file_path() -> Result<PathBuf, anyhow::Error>
-{
+fn get_default_mgmt_plane_ca_cert_file_path() -> Result<PathBuf, Error> {
   let mut ca_cert_file_path = get_default_config_path()?;
   ca_cert_file_path.push("alps_root_cert.pem");
   Ok(ca_cert_file_path)
@@ -145,28 +137,22 @@ fn get_default_mgmt_plane_ca_cert_file_path() -> Result<PathBuf, anyhow::Error>
 
 /// Get Manta configuration full path. Configuration may be the default one or specified by user.
 /// This function also validates if the config file is TOML format
-pub async fn get_config_file_path() -> Result<PathBuf, anyhow::Error> {
-  // Get config file path from ENV var
+pub async fn get_config_file_path() -> Result<PathBuf, Error> {
   if let Ok(env_config_file_name) = std::env::var("MANTA_CONFIG") {
     let mut env_config_file = std::path::PathBuf::new();
     env_config_file.push(env_config_file_name);
     Ok(env_config_file)
   } else {
-    // Get default config file path ($XDG_CONFIG/manta/config.toml
     get_default_manta_config_file_path()
   }
 }
 
 /// Reads configuration parameters related to manta from environment variables or file. If both
 /// defiend, then environment variables takes preference
-pub async fn get_configuration() -> Result<Config, anyhow::Error> {
-  // Get config file path
+pub async fn get_configuration() -> Result<Config, Error> {
   let config_file_path = get_config_file_path().await?;
 
-  // If config file does not exists, then use config file generator to create a default config
-  // file
   if !config_file_path.exists() {
-    // Configuration file does not exists --> create a new configuration file
     tracing::info!(
       "Configuration file '{}' not found. Creating a new one.",
       config_file_path.to_string_lossy()
@@ -174,15 +160,15 @@ pub async fn get_configuration() -> Result<Config, anyhow::Error> {
     create_new_config_file(Some(&config_file_path)).await?;
   };
 
-  // Process config file and check format (toml) is correct
   let config_file_path_str = config_file_path.to_str().ok_or_else(|| {
-    anyhow::anyhow!("Configuration file path contains invalid UTF-8")
+    Error::Message(
+      "Configuration file path contains invalid UTF-8".to_string(),
+    )
   })?;
 
   let config_file =
     config::File::new(config_file_path_str, config::FileFormat::Toml);
 
-  // Process config file
   ::config::Config::builder()
     .add_source(config_file)
     .add_source(
@@ -191,20 +177,18 @@ pub async fn get_configuration() -> Result<Config, anyhow::Error> {
         .prefix_separator("_"),
     )
     .build()
-    .context("Could not process manta configuration file")
+    .map_err(Error::ConfigError)
 }
 
 /// Prompt the user for a string value with a default.
-fn prompt_string(
-  prompt: &str,
-  default: &str,
-) -> Result<String, anyhow::Error> {
-  Input::new()
-    .with_prompt(prompt)
-    .default(default.to_string())
-    .show_default(true)
-    .interact_text()
-    .with_context(|| format!("Failed to read: {}", prompt))
+fn prompt_string(prompt: &str, default: &str) -> Result<String, Error> {
+  Ok(
+    Input::new()
+      .with_prompt(prompt)
+      .default(default.to_string())
+      .show_default(true)
+      .interact_text()?,
+  )
 }
 
 /// Prompt the user for a string value with a default,
@@ -212,19 +196,20 @@ fn prompt_string(
 fn prompt_string_allow_empty(
   prompt: &str,
   default: &str,
-) -> Result<String, anyhow::Error> {
-  Input::new()
-    .with_prompt(prompt)
-    .default(default.to_string())
-    .show_default(true)
-    .allow_empty(true)
-    .interact_text()
-    .with_context(|| format!("Failed to read: {}", prompt))
+) -> Result<String, Error> {
+  Ok(
+    Input::new()
+      .with_prompt(prompt)
+      .default(default.to_string())
+      .show_default(true)
+      .allow_empty(true)
+      .interact_text()?,
+  )
 }
 
 async fn create_new_config_file(
   config_file_path_opt: Option<&PathBuf>,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), Error> {
   eprintln!("Configuration file not found. Please introduce values below:");
 
   let log_level_values = vec!["error", "info", "warn", "debug", "trace"];
@@ -233,8 +218,7 @@ async fn create_new_config_file(
     .with_prompt("Please select 'log verbosity' level from the list below")
     .items(&log_level_values)
     .default(0)
-    .interact()
-    .context("Failed to read log level selection")?;
+    .interact()?;
 
   let log = log_level_values[log_selection].to_string();
 
@@ -247,10 +231,7 @@ async fn create_new_config_file(
       .to_string(),
   )?;
 
-  let site: String = prompt_string(
-    "Please type site name",
-    "alps",
-  )?;
+  let site: String = prompt_string("Please type site name", "alps")?;
 
   let shasta_base_url: String = prompt_string(
     "Please type site management plane URL",
@@ -286,12 +267,10 @@ async fn create_new_config_file(
     .with_prompt("Please select 'backend' technology from the list below")
     .items(&backend_option_labels)
     .default(0)
-    .interact()
-    .context("Failed to read backend selection")?;
+    .interact()?;
 
   let backend = backend_options[backend_selection].clone();
 
-  // Broker is optional value
   let audit_kafka_brokers: String = prompt_string_allow_empty(
     "Please type kafka broker to send audit logs",
     "kafka.o11y.cscs.ch:9095",
@@ -308,11 +287,9 @@ async fn create_new_config_file(
     String::new()
   };
 
-  // Create auditor only when both broker and topic are provided
   let auditor =
     if !audit_kafka_brokers.is_empty() && !audit_kafka_topic.is_empty() {
       let kafka = Kafka::new(vec![audit_kafka_brokers], audit_kafka_topic);
-
       Some(Auditor { kafka })
     } else {
       None
@@ -328,8 +305,6 @@ async fn create_new_config_file(
     None
   } else {
     println!("This machine cannot access CSM API, configuring SOCKS5 proxy");
-
-    // Get the right socks5 proxy value based on if client can reach backend api or not
     Some(prompt_string_allow_empty(
       "Please type socks5 proxy URL",
       "socks5h://127.0.0.1:1080",
@@ -369,43 +344,43 @@ async fn create_new_config_file(
     auditor,
   };
 
-  let config_file_content = toml::to_string(&config_toml)
-    .context("Failed to serialize configuration to TOML")?;
+  let config_file_content = toml::to_string(&config_toml)?;
 
-  // Create configuration file on user's location, otherwise use default path
-  //
-  // Create PathBuf to store the manta config file specified by user or get default one
   let config_file_path = if let Some(config_file_path) = config_file_path_opt {
     PathBuf::from(config_file_path)
   } else {
     get_default_manta_config_file_path()?
   };
 
-  // Create directories if needed
-  let parent_dir = config_file_path
-    .parent()
-    .context("Configuration file path has no parent directory")?;
-  std::fs::create_dir_all(parent_dir).with_context(|| {
-    format!(
-      "Failed to create config directory '{}'",
-      parent_dir.display()
+  let parent_dir = config_file_path.parent().ok_or_else(|| {
+    Error::Message(
+      "Configuration file path has no parent directory".to_string(),
     )
+  })?;
+  std::fs::create_dir_all(parent_dir).map_err(|e| {
+    Error::Message(format!(
+      "Failed to create config directory '{}': {}",
+      parent_dir.display(),
+      e
+    ))
   })?;
 
-  // Create manta config file
-  let mut config_file = File::create(&config_file_path).with_context(|| {
-    format!(
-      "Failed to create config file '{}'",
-      config_file_path.display()
-    )
-  })?;
+  let mut config_file =
+    File::create(&config_file_path).map_err(|e| {
+      Error::Message(format!(
+        "Failed to create config file '{}': {}",
+        config_file_path.display(),
+        e
+      ))
+    })?;
   config_file
     .write_all(config_file_content.as_bytes())
-    .with_context(|| {
-      format!(
-        "Failed to write config file '{}'",
-        config_file_path.display()
-      )
+    .map_err(|e| {
+      Error::Message(format!(
+        "Failed to write config file '{}': {}",
+        config_file_path.display(),
+        e
+      ))
     })?;
 
   tracing::info!(

@@ -38,8 +38,7 @@ pub async fn get_boot_parameters(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   tracing::info!("Get boot parameters");
 
@@ -92,8 +91,7 @@ pub async fn update_boot_parameters(
   params: UpdateBootParametersParams,
 ) -> Result<(), Error> {
   validate_target_hsm_members(infra.backend, token, &params.hosts)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
   let boot_parameters = BootParameters {
     hosts: params.hosts,
@@ -138,8 +136,7 @@ pub async fn prepare_boot_config(
     hosts_expression,
     false,
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> =
     backend.get_bootparameters(token, &xname_vec).await?;
@@ -265,8 +262,7 @@ async fn get_new_boot_image(
       shasta_root_cert,
       new_boot_image_configuration.to_string(),
     )
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
     if image_vec.is_empty() {
       return Err(Error::NotFound(format!(

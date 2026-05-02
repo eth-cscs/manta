@@ -31,8 +31,7 @@ pub async fn get_kernel_parameters(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let boot_parameter_vec = infra.backend
     .get_bootparameters(token, &xname_vec)

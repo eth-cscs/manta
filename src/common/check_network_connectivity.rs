@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use manta_backend_dispatcher::error::Error;
 
 /// Timeout in seconds for the backend connectivity check.
 const BACKEND_CONNECT_TIMEOUT_SECS: u64 = 3;
@@ -9,21 +9,15 @@ const BACKEND_CONNECT_TIMEOUT_SECS: u64 = 3;
 /// (3-second connect timeout).
 pub async fn check_network_connectivity_to_backend(
   shasta_base_url: &str,
-) -> Result<()> {
-  let client_builder =
-    reqwest::Client::builder().connect_timeout(Duration::from_secs(BACKEND_CONNECT_TIMEOUT_SECS));
+) -> Result<(), Error> {
+  let client = reqwest::Client::builder()
+    .connect_timeout(Duration::from_secs(BACKEND_CONNECT_TIMEOUT_SECS))
+    .build()?;
 
-  // Build client
-  let client = client_builder
-    .build()
-    .context("Failed to build HTTP client")?;
-
-  let api_url = shasta_base_url;
-
-  tracing::info!("Validate CSM token against {}", api_url);
+  tracing::info!("Validate CSM token against {}", shasta_base_url);
 
   client
-    .get(api_url)
+    .get(shasta_base_url)
     .send()
     .await?
     .error_for_status()

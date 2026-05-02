@@ -33,8 +33,7 @@ pub async fn get_templates(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let hsm_member_vec = infra.backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
@@ -121,8 +120,7 @@ pub async fn validate_and_prepare_template_session(
   };
 
   validate_target_hsm_members(backend, token, &target_xname_vec)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
   // Validate user has access to xnames in `limit` argument
   tracing::info!("Validate user has access to xnames in BOS sessiontemplate");
@@ -166,8 +164,7 @@ pub async fn validate_and_prepare_template_session(
     token,
     &xnames_to_validate_access_vec,
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   tracing::info!("Access to '{}' granted. Continue.", params.limit);
 

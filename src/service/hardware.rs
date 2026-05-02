@@ -41,8 +41,7 @@ pub async fn get_hardware_node(
     params.xnames.split(',').map(str::to_string).collect();
 
   validate_target_hsm_members(infra.backend, token, &xname_vec)
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
 
   let mut node_hw_inventory = &infra.backend
     .get_inventory_hardware_query(
@@ -128,8 +127,7 @@ pub async fn get_hardware_cluster(
     params.hsm_group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let hsm_group_name = target_hsm_group_vec
     .first()

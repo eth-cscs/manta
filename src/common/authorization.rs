@@ -1,5 +1,4 @@
-use anyhow::{Error, bail};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -13,20 +12,15 @@ pub async fn get_groups_names_available(
   group_cli_arg_opt: Option<&str>,
   group_env_or_config_file_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
-  // Get list of groups the user has access to
   let hsm_name_available_vec =
     backend.get_group_name_available(auth_token).await?;
 
-  // Get the group name the user is trying to work with, this value can be in 2 different places:
-  //  - command argument
-  //  - configuration (environment variable or config file)
   let target_hsm_group_opt = if group_cli_arg_opt.is_some() {
     group_cli_arg_opt
   } else {
     group_env_or_config_file_opt
   };
 
-  // Validate the user has access to the HSM group is requested
   if let Some(target_hsm_group) = target_hsm_group_opt {
     if !hsm_name_available_vec
       .iter()
@@ -34,12 +28,12 @@ pub async fn get_groups_names_available(
     {
       let mut hsm_name_available_vec = hsm_name_available_vec;
       hsm_name_available_vec.sort();
-      bail!(
+      return Err(Error::BadRequest(format!(
         "Can't access HSM group '{}'.\nPlease choose one \
          from the list below:\n{}",
         target_hsm_group,
         hsm_name_available_vec.join(", ")
-      );
+      )));
     }
 
     Ok(vec![target_hsm_group.to_string()])
@@ -67,19 +61,18 @@ pub async fn validate_target_hsm_members(
     )
     .await?;
 
-  // Check user has access to all xnames he is requesting
   if hsm_group_members_opt
     .iter()
     .all(|hsm_member| all_xnames_user_has_access.contains(hsm_member))
   {
     Ok(hsm_group_members_opt.to_vec())
   } else {
-    bail!(
+    Err(Error::BadRequest(format!(
       "Can't access all or any of the HSM members \
        '{}'.\nPlease choose members form the list \
        of HSM groups below:\n{}",
       hsm_group_members_opt.join(", "),
       hsm_groups_user_has_access.join(", ")
-    );
+    )))
   }
 }

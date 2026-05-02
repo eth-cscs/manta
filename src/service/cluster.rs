@@ -24,8 +24,7 @@ pub async fn get_cluster_nodes(
     params.hsm_group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .map_err(|e| Error::Message(e.to_string()))?;
+  .await?;
 
   let mut hsm_groups_node_list = infra.backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
@@ -40,7 +39,7 @@ pub async fn get_cluster_nodes(
     hsm_groups_node_list,
   )
   .await
-  .map_err(|e: csm_rs::error::Error| Error::Message(e.to_string()))?;
+  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {
