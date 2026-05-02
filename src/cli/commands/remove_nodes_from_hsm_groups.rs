@@ -40,7 +40,7 @@ pub async fn exec(
     ),
     false,
   ) {
-    log::info!("Continue",);
+    tracing::info!("Continue",);
   } else {
     bail!("Operation cancelled by user");
   }
@@ -50,7 +50,7 @@ pub async fn exec(
     .await
     .is_ok()
   {
-    log::debug!("The HSM group {} exists, good.", target_hsm_name);
+    tracing::debug!("The HSM group {} exists, good.", target_hsm_name);
   }
 
   if dryrun {

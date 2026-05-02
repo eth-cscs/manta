@@ -9,4 +9,5 @@ pub mod node;
 pub mod redfish_endpoints;
 pub mod session;
 pub mod migrate;
+pub mod sat_file;
 pub mod template;

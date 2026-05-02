@@ -15,60 +15,37 @@ pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  // Resolve auth token once for all subcommands.
   let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
 
-  if let Some(cli_get_groups) = cli_get.subcommand_matches("groups") {
-    get_group::exec(ctx, &token, cli_get_groups).await?;
-  } else if let Some(cli_get_hardware) = cli_get.subcommand_matches("hardware")
-  {
-    if let Some(cli_get_hardware_cluster) =
-      cli_get_hardware.subcommand_matches("cluster")
-    {
-      get_hardware_cluster::exec(ctx, &token, cli_get_hardware_cluster)
-        .await?;
-    } else if let Some(cli_get_hardware_node) =
-      cli_get_hardware.subcommand_matches("node")
-    {
-      get_hardware_node::exec(ctx, &token, cli_get_hardware_node).await?;
-    } else {
-      bail!("Unknown 'get hardware' subcommand");
+  match cli_get.subcommand() {
+    Some(("groups", m)) => get_group::exec(ctx, &token, m).await?,
+    Some(("hardware", m)) => match m.subcommand() {
+      Some(("cluster", m)) => {
+        get_hardware_cluster::exec(ctx, &token, m).await?
+      }
+      Some(("node", m)) => get_hardware_node::exec(ctx, &token, m).await?,
+      Some((other, _)) => bail!("Unknown 'get hardware' subcommand: {other}"),
+      None => bail!("No 'get hardware' subcommand provided"),
+    },
+    Some(("configurations", m)) => {
+      get_configuration::exec(ctx, &token, m).await?
     }
-  } else if let Some(cli_get_configuration) =
-    cli_get.subcommand_matches("configurations")
-  {
-    get_configuration::exec(ctx, &token, cli_get_configuration).await?;
-  } else if let Some(cli_get_session) = cli_get.subcommand_matches("sessions") {
-    get_session::exec(ctx, &token, cli_get_session).await?;
-  } else if let Some(cli_get_template) = cli_get.subcommand_matches("templates")
-  {
-    get_template::exec(ctx, &token, cli_get_template).await?;
-  } else if let Some(cli_get_cluster) = cli_get.subcommand_matches("cluster") {
-    get_cluster::exec(ctx, &token, cli_get_cluster).await?;
-  } else if let Some(cli_get_nodes) = cli_get.subcommand_matches("nodes") {
-    get_nodes::exec(ctx, &token, cli_get_nodes).await?;
-  } else if let Some(cli_get_images) = cli_get.subcommand_matches("images") {
-    get_images::exec(ctx, &token, cli_get_images).await?;
-  } else if let Some(cli_get_boot_parameters) =
-    cli_get.subcommand_matches("boot-parameters")
-  {
-    get_boot_parameters::exec(ctx, &token, cli_get_boot_parameters).await?;
-  } else if let Some(cli_get_kernel_parameters) =
-    cli_get.subcommand_matches("kernel-parameters")
-  {
-    get_kernel_parameters::exec(ctx, &token, cli_get_kernel_parameters)
-      .await?;
-  } else if let Some(cli_get_redfish_endpoints) =
-    cli_get.subcommand_matches("redfish-endpoints")
-  {
-    crate::cli::commands::get_redfish_endpoints::exec(
-      ctx,
-      &token,
-      cli_get_redfish_endpoints,
-    )
-    .await?;
-  } else {
-    bail!("Unknown 'get' subcommand");
+    Some(("sessions", m)) => get_session::exec(ctx, &token, m).await?,
+    Some(("templates", m)) => get_template::exec(ctx, &token, m).await?,
+    Some(("cluster", m)) => get_cluster::exec(ctx, &token, m).await?,
+    Some(("nodes", m)) => get_nodes::exec(ctx, &token, m).await?,
+    Some(("images", m)) => get_images::exec(ctx, &token, m).await?,
+    Some(("boot-parameters", m)) => {
+      get_boot_parameters::exec(ctx, &token, m).await?
+    }
+    Some(("kernel-parameters", m)) => {
+      get_kernel_parameters::exec(ctx, &token, m).await?
+    }
+    Some(("redfish-endpoints", m)) => {
+      crate::cli::commands::get_redfish_endpoints::exec(ctx, &token, m).await?
+    }
+    Some((other, _)) => bail!("Unknown 'get' subcommand: {other}"),
+    None => bail!("No 'get' subcommand provided"),
   }
   Ok(())
 }

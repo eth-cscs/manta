@@ -35,7 +35,7 @@ async fn show(
     match backend.get_group_name_available(&shasta_token).await {
       Ok(groups) => Some(groups),
       Err(e) => {
-        log::warn!("Failed to fetch available HSM groups: {}", e);
+        tracing::warn!("Failed to fetch available HSM groups: {}", e);
         None
       }
     }

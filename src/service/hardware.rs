@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::types::NodeSummary;
@@ -29,9 +29,6 @@ pub struct GetHardwareNodeParams {
 /// Result of a hardware node query.
 pub struct HardwareNodeResult {
   pub node_summary: NodeSummary,
-  /// Raw JSON for a specific artifact type, if requested.
-  #[allow(dead_code)]
-  pub artifact_json: Option<Value>,
 }
 
 /// Fetch hardware inventory for a single node.
@@ -43,7 +40,8 @@ pub async fn get_hardware_node(
   let xname_vec: Vec<String> =
     params.xnames.split(',').map(str::to_string).collect();
 
-  validate_target_hsm_members(infra.backend, token, &xname_vec).await?;
+  validate_target_hsm_members(infra.backend, token, &xname_vec)
+    .await?;
 
   let mut node_hw_inventory = &infra.backend
     .get_inventory_hardware_query(
@@ -55,13 +53,12 @@ pub async fn get_hardware_node(
       None,
       None,
     )
-    .await
-    .context("Failed to query hardware inventory")?;
+    .await?;
 
   node_hw_inventory =
     node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
-      Error::msg(format!(
-        "JSON section '/Nodes' missing in json response API for node '{}'",
+      Error::NotFound(format!(
+        "JSON section '/Nodes' missing in hardware inventory for node '{}'",
         params.xnames
       ))
     })?;
@@ -69,7 +66,7 @@ pub async fn get_hardware_node(
   if let Some(ref type_artifact) = params.type_artifact {
     let nodes_array = node_hw_inventory
       .as_array()
-      .context("Expected Nodes to be a JSON array")?;
+      .ok_or_else(|| Error::Message("Expected Nodes to be a JSON array".to_string()))?;
     let matching_node = nodes_array
       .iter()
       .find(|&node| {
@@ -79,7 +76,7 @@ pub async fn get_hardware_node(
           .is_some_and(|id| id.eq(&params.xnames))
       })
       .ok_or_else(|| {
-        Error::msg(format!(
+        Error::NotFound(format!(
           "Node '{}' not found in hardware inventory",
           params.xnames
         ))
@@ -87,24 +84,18 @@ pub async fn get_hardware_node(
     let artifact_value = matching_node
       .get(type_artifact.as_str())
       .ok_or_else(|| {
-        Error::msg(format!(
+        Error::NotFound(format!(
           "Artifact type '{}' not found in node '{}'",
           type_artifact, params.xnames
         ))
       })?;
 
     let node_summary = NodeSummary::from_csm_value(artifact_value.clone());
-    return Ok(HardwareNodeResult {
-      node_summary,
-      artifact_json: Some(artifact_value.clone()),
-    });
+    return Ok(HardwareNodeResult { node_summary });
   }
 
   let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
-  Ok(HardwareNodeResult {
-    node_summary,
-    artifact_json: None,
-  })
+  Ok(HardwareNodeResult { node_summary })
 }
 
 // ── Hardware Cluster ──
@@ -140,13 +131,12 @@ pub async fn get_hardware_cluster(
 
   let hsm_group_name = target_hsm_group_vec
     .first()
-    .context("No HSM groups available for this user")?
+    .ok_or_else(|| Error::Message("No HSM groups available for this user".to_string()))?
     .clone();
 
   let hsm_group = infra.backend
     .get_group(token, &hsm_group_name)
-    .await
-    .context("Failed to get HSM group")?;
+    .await?;
 
   let hsm_group_target_members = hsm_group
     .members
@@ -154,7 +144,11 @@ pub async fn get_hardware_cluster(
     .ids
     .unwrap_or_default();
 
-  log::debug!(
+  if hsm_group_target_members.is_empty() {
+    tracing::warn!("HSM group '{}' has no members", hsm_group.label);
+  }
+
+  tracing::debug!(
     "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
     hsm_group.label,
     hsm_group_target_members
@@ -172,7 +166,7 @@ pub async fn get_hardware_cluster(
   let mut i = 1;
 
   for hsm_member in hsm_group_target_members.iter() {
-    log::info!(
+    tracing::info!(
       "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
       i + 1
     );
@@ -200,7 +194,7 @@ pub async fn get_hardware_cluster(
       let node_hw_inventory_value_opt = match hw_inventory_value {
         Ok(value) => value.pointer("/Nodes/0").cloned(),
         Err(e) => {
-          log::error!(
+          tracing::error!(
             "Failed to get HW inventory for '{}': {}",
             hsm_member_string,
             e
@@ -210,9 +204,7 @@ pub async fn get_hardware_cluster(
       };
 
       match node_hw_inventory_value_opt {
-        Some(node_hw_inventory) => {
-          NodeSummary::from_csm_value(node_hw_inventory.clone())
-        }
+        Some(node_hw_inventory) => NodeSummary::from_csm_value(node_hw_inventory),
         None => NodeSummary {
           xname: hsm_member_string,
           ..Default::default()
@@ -228,13 +220,13 @@ pub async fn get_hardware_cluster(
       Ok(node_hw_inventory) => {
         hsm_summary.push(node_hw_inventory);
       }
-      Err(e) => log::error!("Failed fetching node hardware information: {}", e),
+      Err(e) => tracing::error!("Failed fetching node hardware information: {}", e),
     }
   }
 
   let duration = start_total.elapsed();
 
-  log::info!(
+  tracing::info!(
     "Time elapsed in http calls to get hw inventory for HSM '{}' is: {:?}",
     hsm_group_name,
     duration

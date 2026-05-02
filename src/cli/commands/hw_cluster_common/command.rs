@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Group,
+  error::Error,
+  interfaces::hsm::group::GroupTrait,
+  types::Group,
 };
 
 use crate::{
@@ -21,12 +22,17 @@ pub enum HwClusterMode {
   Unpin,
 }
 
-/// Execute a hardware cluster pin or unpin operation,
-/// moving nodes between target and parent HSM groups.
+/// Result of an `apply hw-configuration` operation.
+pub struct ApplyHwResult {
+  pub target_nodes: Vec<String>,
+  pub parent_nodes: Vec<String>,
+}
+
+/// Core logic for hardware cluster pin/unpin — no terminal interaction.
 #[allow(clippy::too_many_arguments)]
-pub async fn exec(
+pub async fn exec_with_backend(
+  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
   mode: HwClusterMode,
-  ctx: &AppContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
@@ -34,16 +40,12 @@ pub async fn exec(
   dryrun: bool,
   create_target_hsm_group: bool,
   delete_empty_parent_hsm_group: bool,
-) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-
-  // Parse user input
+) -> Result<ApplyHwResult, Error> {
   let (user_defined_hw_component_vec, user_defined_hw_component_count_hashmap) =
     parse_hw_pattern_usize(target_hsm_group_name, pattern)?;
 
   let mem_lcm = super::MEMORY_CAPACITY_LCM;
 
-  // Ensure target group exists (create if requested)
   ensure_target_group_exists(
     backend,
     shasta_token,
@@ -53,7 +55,6 @@ pub async fn exec(
   )
   .await?;
 
-  // Fetch target HSM inventory
   let (
     target_hsm_group_member_vec,
     target_hsm_node_hw_component_count_vec,
@@ -67,13 +68,12 @@ pub async fn exec(
   )
   .await?;
 
-  log::info!(
+  tracing::info!(
     "HSM group '{}' hw component summary: {:?}",
     target_hsm_group_name,
     target_hsm_hw_component_summary
   );
 
-  // Fetch parent HSM inventory
   let (
     parent_hsm_group_member_vec,
     parent_hsm_node_hw_component_count_vec,
@@ -87,14 +87,12 @@ pub async fn exec(
   )
   .await?;
 
-  // Validate resource sufficiency
   validate_resource_sufficiency(
     &target_hsm_node_hw_component_count_vec,
     &parent_hsm_node_hw_component_count_vec,
     &user_defined_hw_component_count_hashmap,
   )?;
 
-  // Resolve hw description to xname sets
   let (
     target_hsm_node_hw_component_count_vec,
     parent_hsm_node_hw_component_count_vec,
@@ -106,12 +104,6 @@ pub async fn exec(
   )
   .await?;
 
-  let target_hsm_hw_component_summary =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
-
-  let parent_hsm_hw_component_summary =
-    calculate_hsm_hw_component_summary(&parent_hsm_node_hw_component_count_vec);
-
   let target_hsm_node_vec: Vec<String> = target_hsm_node_hw_component_count_vec
     .into_iter()
     .map(|(xname, _)| xname)
@@ -122,7 +114,6 @@ pub async fn exec(
     .map(|(xname, _)| xname)
     .collect();
 
-  // Apply changes
   apply_group_updates(
     backend,
     shasta_token,
@@ -137,22 +128,41 @@ pub async fn exec(
   )
   .await?;
 
-  // Print results
-  log::info!(
-    "HSM '{}' hw component summary: {:?}",
+  Ok(ApplyHwResult {
+    target_nodes: target_hsm_node_vec,
+    parent_nodes: parent_hsm_node_vec,
+  })
+}
+
+/// Execute a hardware cluster pin or unpin operation,
+/// moving nodes between target and parent HSM groups.
+#[allow(clippy::too_many_arguments)]
+pub async fn exec(
+  mode: HwClusterMode,
+  ctx: &AppContext<'_>,
+  shasta_token: &str,
+  target_hsm_group_name: &str,
+  parent_hsm_group_name: &str,
+  pattern: &str,
+  dryrun: bool,
+  create_target_hsm_group: bool,
+  delete_empty_parent_hsm_group: bool,
+) -> Result<(), Error> {
+  let result = exec_with_backend(
+    ctx.infra.backend,
+    mode,
+    shasta_token,
     target_hsm_group_name,
-    target_hsm_hw_component_summary
-  );
-
-  print_hsm_group_json(target_hsm_group_name, &target_hsm_node_vec)?;
-
-  log::info!(
-    "HSM '{}' hw component summary: {:?}",
     parent_hsm_group_name,
-    parent_hsm_hw_component_summary
-  );
+    pattern,
+    dryrun,
+    create_target_hsm_group,
+    delete_empty_parent_hsm_group,
+  )
+  .await?;
 
-  print_hsm_group_json(parent_hsm_group_name, &parent_hsm_node_vec)?;
+  print_hsm_group_json(target_hsm_group_name, &result.target_nodes)?;
+  print_hsm_group_json(parent_hsm_group_name, &result.parent_nodes)?;
 
   Ok(())
 }
@@ -164,25 +174,29 @@ fn parse_hw_pattern_usize(
   pattern: &str,
 ) -> Result<(Vec<String>, HashMap<String, usize>), Error> {
   let pattern = format!("{}:{}", target_hsm_group_name, pattern);
-  log::info!("pattern: {}", pattern);
+  tracing::info!("pattern: {}", pattern);
 
   let pattern_lowercase = pattern.to_lowercase();
 
   let (_group_name, pattern_hw_component) =
-    pattern_lowercase.split_once(':').context(
-      "Invalid pattern format: \
-       expected 'group:component:count'",
-    )?;
+    pattern_lowercase.split_once(':').ok_or_else(|| {
+      Error::Message(
+        "Invalid pattern format: \
+         expected 'group:component:count'"
+          .to_string(),
+      )
+    })?;
 
   let pattern_element_vec: Vec<&str> =
     pattern_hw_component.split(':').collect();
 
   if !pattern_element_vec.len().is_multiple_of(2) {
-    bail!(
+    return Err(Error::Message(
       "Error in pattern: odd number of elements. \
        Expected pairs of <hw component>:<count>. \
-       eg a100:4:epyc:10:instinct:8",
-    );
+       eg a100:4:epyc:10:instinct:8"
+        .to_string(),
+    ));
   }
 
   let mut hw_component_count: HashMap<String, usize> = HashMap::new();
@@ -191,15 +205,16 @@ fn parse_hw_pattern_usize(
     if let Ok(count) = chunk[1].parse::<usize>() {
       hw_component_count.insert(chunk[0].to_string(), count);
     } else {
-      bail!(
+      return Err(Error::Message(
         "Error in pattern. Please make sure to follow \
          <hsm name>:<hw component>:<counter>:... \
-         eg <tasna>:a100:4:epyc:10:instinct:8",
-      );
+         eg <tasna>:a100:4:epyc:10:instinct:8"
+          .to_string(),
+      ));
     }
   }
 
-  log::info!(
+  tracing::info!(
     "User defined hw components with counters: {:?}",
     hw_component_count
   );
@@ -222,29 +237,30 @@ async fn ensure_target_group_exists(
 ) -> Result<(), Error> {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
-      log::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name);
+      tracing::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name);
       Ok(())
     }
     Err(_) => {
       if !create_target_hsm_group {
-        bail!(
+        return Err(Error::Message(format!(
           "Target HSM group '{}' does not exist, \
            but the option to create the group was \
            NOT specified, cannot continue.",
           target_hsm_group_name,
-        );
+        )));
       }
-      log::info!(
+      tracing::info!(
         "Target HSM group '{}' does not exist, \
          but the option to create the group has \
          been selected, creating it now.",
         target_hsm_group_name
       );
       if dryrun {
-        bail!(
+        return Err(Error::Message(
           "Dryrun selected, cannot create the \
-           new group and continue.",
-        );
+           new group and continue."
+            .to_string(),
+        ));
       }
       let group = Group {
         label: target_hsm_group_name.to_string(),
@@ -256,7 +272,11 @@ async fn ensure_target_group_exists(
       let _ = backend
         .add_group(shasta_token, group)
         .await
-        .context("Unable to create new target HSM group")?;
+        .map_err(|e| {
+          Error::Message(format!(
+            "Unable to create new target HSM group: {e}"
+          ))
+        })?;
       Ok(())
     }
   }
@@ -283,10 +303,11 @@ fn validate_resource_sufficiency(
       .get(hw_component)
       .is_none_or(|value| value < qty)
     {
-      bail!(
+      return Err(Error::Message(
         "There are not enough resources \
-         to fulfill user request.",
-      );
+         to fulfill user request."
+          .to_string(),
+      ));
     }
   }
 
@@ -310,9 +331,9 @@ async fn apply_group_updates(
   delete_empty_parent: bool,
 ) -> Result<(), Error> {
   // Update target group
-  log::info!("Updating target HSM group '{}' members", target_group);
+  tracing::info!("Updating target HSM group '{}' members", target_group);
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
     );
@@ -331,13 +352,17 @@ async fn apply_group_updates(
           .collect::<Vec<&str>>(),
       )
       .await
-      .context("Failed to update target HSM group members")?;
+      .map_err(|e| {
+        Error::Message(format!(
+          "Failed to update target HSM group members: {e}"
+        ))
+      })?;
   }
 
   // Update parent group
-  log::info!("Updating parent HSM group '{}' members", parent_group);
+  tracing::info!("Updating parent HSM group '{}' members", parent_group);
   if dryrun {
-    log::info!(
+    tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
     );
@@ -358,10 +383,14 @@ async fn apply_group_updates(
           .collect::<Vec<&str>>(),
       )
       .await
-      .context("Failed to update parent HSM group members")?;
+      .map_err(|e| {
+        Error::Message(format!(
+          "Failed to update parent HSM group members: {e}"
+        ))
+      })?;
 
     if parent_will_be_empty && delete_empty_parent {
-      log::info!(
+      tracing::info!(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          been selected, removing it.",
@@ -369,9 +398,9 @@ async fn apply_group_updates(
       );
       match backend.delete_group(shasta_token, parent_group).await {
         Ok(_) => {
-          log::info!("HSM group removed successfully.")
+          tracing::info!("HSM group removed successfully.")
         }
-        Err(e) => log::debug!(
+        Err(e) => tracing::debug!(
           "Error removing the HSM group. \
            This always fails, ignore please. \
            Reported: {}",
@@ -379,7 +408,7 @@ async fn apply_group_updates(
         ),
       };
     } else if parent_will_be_empty {
-      log::debug!(
+      tracing::debug!(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          NOT been selected, will not remove it.",

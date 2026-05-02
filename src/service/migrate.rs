@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Error, bail};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::{
     hsm::group::GroupTrait, migrate_backup::MigrateBackupTrait,
     migrate_restore::MigrateRestoreTrait,
@@ -24,8 +24,7 @@ pub async fn migrate_backup(
             bos,
             destination,
         )
-        .await?;
-    Ok(())
+        .await
 }
 
 /// Execute a migrate-restore operation against the backend.
@@ -40,6 +39,11 @@ pub async fn migrate_restore(
     image_dir: Option<&str>,
     overwrite: bool,
 ) -> Result<(), Error> {
+    // The backend trait exposes four independent overwrite flags
+    // (overwrite_bos, overwrite_cfs, overwrite_hsm, overwrite_ims).
+    // The HTTP/CLI APIs currently expose a single `overwrite` knob that
+    // fans out to all four. Expose them individually if callers need
+    // per-resource control in the future.
     infra
         .backend
         .migrate_restore(
@@ -51,16 +55,16 @@ pub async fn migrate_restore(
             hsm_file,
             ims_file,
             image_dir,
-            overwrite,
-            overwrite,
-            overwrite,
-            overwrite,
+            overwrite, // overwrite_bos
+            overwrite, // overwrite_cfs
+            overwrite, // overwrite_hsm
+            overwrite, // overwrite_ims
         )
-        .await?;
-    Ok(())
+        .await
 }
 
 /// Result of migrating nodes for a single parent→target pair.
+#[derive(serde::Serialize)]
 pub struct NodeMigrationResult {
     pub target_hsm_name: String,
     pub parent_hsm_name: String,
@@ -90,10 +94,11 @@ pub async fn migrate_nodes(
             .await?;
 
     if xname_to_move_vec.is_empty() {
-        bail!("The list of nodes to operate is empty. Nothing to do");
+        return Err(Error::BadRequest(
+            "The list of nodes to operate is empty. Nothing to do".to_string(),
+        ));
     }
 
-    // Get curated HSM groups filtered to parent groups
     let mut hsm_group_summary: HashMap<String, Vec<String>> =
         node_ops::get_curated_hsm_group_from_xname_hostlist(
             backend,
@@ -105,29 +110,28 @@ pub async fn migrate_nodes(
     hsm_group_summary
         .retain(|hsm_name, _| parent_hsm_name_vec.contains(hsm_name));
 
-    log::debug!("xnames to move: {:?}", xname_to_move_vec);
+    tracing::debug!("xnames to move: {:?}", xname_to_move_vec);
 
     let mut results = Vec::new();
 
     for target_hsm_name in target_hsm_name_vec {
         if backend.get_group(token, target_hsm_name).await.is_ok() {
-            log::debug!("The HSM group {} exists, good.", target_hsm_name);
+            tracing::debug!("The HSM group {} exists, good.", target_hsm_name);
         } else if create_hsm_group {
-            log::info!(
+            tracing::info!(
                 "HSM group {} does not exist, it will be created",
                 target_hsm_name
             );
             if dry_run {
-                bail!(
-                    "Dry-run selected, cannot create the new group continue.",
-                );
+                return Err(Error::BadRequest(
+                    "Dry-run selected, cannot create the new group to continue".to_string(),
+                ));
             }
         } else {
-            bail!(
-                "HSM group {} does not exist, but the option \
-                 to create the group was NOT specified, cannot continue.",
-                target_hsm_name
-            );
+            return Err(Error::NotFound(format!(
+                "HSM group '{target_hsm_name}' does not exist and the option \
+                 to create the group was not specified"
+            )));
         }
 
         for (parent_hsm_name, xnames) in &hsm_group_summary {

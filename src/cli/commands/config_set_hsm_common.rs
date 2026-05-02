@@ -48,7 +48,7 @@ pub async fn set_hsm_config_value(
 
   validate_hsm_in_available(new_hsm, &hsm_available_vec)?;
 
-  log::info!("Changing configuration to use {} '{}'", label, new_hsm);
+  tracing::info!("Changing configuration to use {} '{}'", label, new_hsm);
 
   doc[toml_key] = value(new_hsm);
 

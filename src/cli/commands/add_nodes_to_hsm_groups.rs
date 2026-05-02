@@ -38,7 +38,7 @@ pub async fn exec(
     ),
     false,
   ) {
-    log::info!("Continue",);
+    tracing::info!("Continue",);
   } else {
     bail!("Operation cancelled by user");
   }

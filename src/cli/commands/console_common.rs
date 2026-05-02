@@ -29,7 +29,7 @@ pub async fn run_console_loop(
                 },
                 Some(Err(message)) => {
                    crossterm::terminal::disable_raw_mode()?;
-                   log::error!(
+                   tracing::error!(
                        "Console stdin {:?}",
                        &message
                    );
@@ -37,7 +37,7 @@ pub async fn run_console_loop(
                 },
                 None => {
                     crossterm::terminal::disable_raw_mode()?;
-                    log::info!(
+                    tracing::info!(
                         "NONE (No input): Console stdin"
                     );
                     break
@@ -53,7 +53,7 @@ pub async fn run_console_loop(
                 },
                 Some(Err(message)) => {
                    crossterm::terminal::disable_raw_mode()?;
-                   log::error!(
+                   tracing::error!(
                        "Console stdout: {:?}",
                        &message
                    );
@@ -61,7 +61,7 @@ pub async fn run_console_loop(
                 },
                 None => {
                     crossterm::terminal::disable_raw_mode()?;
-                    log::info!("Exit console");
+                    tracing::info!("Exit console");
                     break
                 },
             }
@@ -80,15 +80,15 @@ pub fn handle_console_result(result: Result<(), anyhow::Error>) {
   match result {
     Ok(()) => {
       if let Err(e) = crossterm::terminal::disable_raw_mode() {
-        log::warn!("Failed to disable terminal raw mode: {}", e);
+        tracing::warn!("Failed to disable terminal raw mode: {}", e);
       }
-      log::info!("Console closed");
+      tracing::info!("Console closed");
     }
     Err(error) => {
       if let Err(e) = crossterm::terminal::disable_raw_mode() {
-        log::warn!("Failed to disable terminal raw mode: {}", e);
+        tracing::warn!("Failed to disable terminal raw mode: {}", e);
       }
-      log::error!("{:?}", error);
+      tracing::error!("{:?}", error);
     }
   }
 }

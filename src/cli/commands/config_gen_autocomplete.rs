@@ -53,7 +53,7 @@ fn gen_autocomplete(
 
   if let Some(path) = path_opt {
     // Destination path defined
-    log::info!(
+    tracing::info!(
       "Generating shell autocomplete for '{}' to '{}'",
       shell,
       path.display()
@@ -62,7 +62,7 @@ fn gen_autocomplete(
     generate_to(shell_gen, &mut cli, env!("CARGO_PKG_NAME"), path)?;
   } else {
     // Destination path not defined - print to stdout
-    log::info!("Generating shell autocomplete for '{}'", shell);
+    tracing::info!("Generating shell autocomplete for '{}'", shell);
 
     generate(
       shell_gen,

@@ -2,11 +2,14 @@ mod backend_dispatcher;
 mod cli;
 mod common;
 mod manta_backend_dispatcher;
+mod server;
 mod service;
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
-  app_context::AppContext, config::types::MantaConfiguration, kafka::Kafka,
+  app_context::AppContext,
+  config::types::{BackendTechnology, MantaConfiguration},
+  kafka::Kafka,
 };
 use manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -96,7 +99,7 @@ async fn run(
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
 
-  log_ops::configure(log_level)?;
+  log_ops::configure(log_level);
 
   let site_details_value =
     configuration.sites.get(&site_name).ok_or_else(|| {
@@ -105,28 +108,22 @@ async fn run(
 
   if let Some(socks_proxy) = &site_details_value.socks5_proxy {
     if !socks_proxy.is_empty() {
-      log::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
+      tracing::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
     } else {
-      log::debug!("config - socks_proxy:  Not defined");
+      tracing::debug!("config - socks_proxy:  Not defined");
     }
   }
 
   // Extract backend technology and URLs
   let backend_tech = &site_details_value.backend;
   let shasta_base_url = &site_details_value.shasta_base_url;
-  let shasta_barebone_url = shasta_base_url // HACK to not break compatibility with
-    // old configuration file. TODO: remove this when needed in the future and all users are
-    // using the right configuration file
+  let shasta_barebone_url = shasta_base_url // HACK: strip /apis suffix if present for
+    // compatibility with old configuration files. Remove once all users have migrated.
     .strip_suffix(API_URL_SUFFIX)
     .unwrap_or(shasta_base_url);
-  let shasta_api_url = match backend_tech.as_str() {
-    "csm" => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
-    "ochami" => shasta_barebone_url.to_owned(),
-    _ => {
-      return Err(
-        format!("Invalid backend technology: {}", backend_tech).into(),
-      );
-    }
+  let shasta_api_url = match backend_tech {
+    BackendTechnology::Csm => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
+    BackendTechnology::Ochami => shasta_barebone_url.to_owned(),
   };
   let gitea_base_url = shasta_barebone_url.to_owned() + VCS_URL_SUFFIX;
   let k8s_api_url: Option<&String> = site_details_value
@@ -146,7 +143,7 @@ async fn run(
     if let Some(auditor) = &configuration.auditor {
       Some(auditor.kafka.clone())
     } else {
-      log::warn!("config - Auditor not defined");
+      tracing::warn!("config - Auditor not defined");
       None
     };
 
@@ -160,7 +157,7 @@ async fn run(
   let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
     shasta_root_cert
   } else {
-    log::warn!(
+    tracing::warn!(
       "CA public root file '{}' not found. Proceeding without it.",
       root_ca_cert_file
     );
@@ -168,10 +165,41 @@ async fn run(
   };
 
   let backend = StaticBackendDispatcher::new(
-    backend_tech,
+    backend_tech.as_str(),
     &shasta_api_url,
     &shasta_root_cert,
   )?;
+
+  // Check if we're in server mode
+  if let Some(serve_matches) = cli_matches.subcommand_matches("serve") {
+    let port: u16 = *serve_matches
+      .get_one::<u16>("port")
+      .expect("port has a default value");
+    let cert_path: &str = serve_matches
+      .get_one::<String>("cert")
+      .expect("cert is required");
+    let key_path: &str = serve_matches
+      .get_one::<String>("key")
+      .expect("key is required");
+    let listen_addr: &str = serve_matches
+      .get_one::<String>("listen-address")
+      .expect("listen-address has a default value");
+
+    let server_state = std::sync::Arc::new(server::ServerState {
+      backend,
+      site_name: site_name.clone(),
+      shasta_base_url: shasta_api_url.clone(),
+      shasta_root_cert: shasta_root_cert.clone(),
+      vault_base_url: vault_base_url.map(String::to_owned),
+      gitea_base_url: gitea_base_url.clone(),
+      k8s_api_url: k8s_api_url.map(String::to_owned),
+      console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
+    });
+
+    return server::start_server(server_state, listen_addr, port, cert_path, key_path)
+      .await
+      .map_err(|e| e.into());
+  }
 
   // Process input params
   let app_context = AppContext {

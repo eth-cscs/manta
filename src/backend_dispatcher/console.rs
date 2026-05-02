@@ -8,8 +8,8 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 impl ConsoleTrait for StaticBackendDispatcher {
-  type T = Box<dyn AsyncWrite + Unpin>;
-  type U = Box<dyn AsyncRead + Unpin>;
+  type T = Box<dyn AsyncWrite + Unpin + Send>;
+  type U = Box<dyn AsyncRead + Unpin + Send>;
 
   async fn attach_to_node_console(
     &self,
@@ -19,7 +19,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
     width: u16,
     height: u16,
     k8s: &K8sDetails,
-  ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error>
+  ) -> Result<(Box<dyn AsyncWrite + Unpin + Send>, Box<dyn AsyncRead + Unpin + Send>), Error>
   {
     dispatch!(
       self,
@@ -41,7 +41,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
     width: u16,
     height: u16,
     k8s: &K8sDetails,
-  ) -> Result<(Box<dyn AsyncWrite + Unpin>, Box<dyn AsyncRead + Unpin>), Error>
+  ) -> Result<(Box<dyn AsyncWrite + Unpin + Send>, Box<dyn AsyncRead + Unpin + Send>), Error>
   {
     dispatch!(
       self,

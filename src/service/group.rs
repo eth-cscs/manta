@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
@@ -15,8 +15,6 @@ pub struct GetGroupParams {
 }
 
 /// Fetch HSM groups from the backend.
-///
-/// Resolves available group names, then fetches their details.
 pub async fn get_groups(
   infra: &InfraContext<'_>,
   token: &str,
@@ -30,17 +28,12 @@ pub async fn get_groups(
   )
   .await?;
 
-  let group_vec = infra.backend
+  infra.backend
     .get_groups(token, Some(&target_hsm_group_vec))
     .await
-    .context("Failed to fetch HSM groups")?;
-
-  Ok(group_vec)
 }
 
 /// Validate that deleting a group will not orphan any nodes.
-///
-/// A node is orphan if it belongs to no group after the deletion.
 pub async fn validate_group_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -65,16 +58,14 @@ pub async fn validate_group_deletion(
 
   let mut members_orphan_if_group_deleted: Vec<String> =
     xname_map.into_keys().collect();
-
   members_orphan_if_group_deleted.sort();
 
   if !members_orphan_if_group_deleted.is_empty() {
-    bail!(
-      "The hosts below will become orphan if group '{}' \
-       gets deleted.\n{}",
+    return Err(Error::Conflict(format!(
+      "The hosts below will become orphan if group '{}' gets deleted: {}",
       label,
       members_orphan_if_group_deleted.join(", ")
-    );
+    )));
   }
 
   Ok(())
@@ -90,14 +81,7 @@ pub async fn delete_group(
   if !force {
     validate_group_deletion(infra, token, label).await?;
   }
-
-  infra
-    .backend
-    .delete_group(token, label)
-    .await
-    .with_context(|| format!("Could not delete group '{}'", label))?;
-
-  Ok(())
+  infra.backend.delete_group(token, label).await.map(|_| ())
 }
 
 /// Resolve hosts and build a Group ready for creation.
@@ -124,9 +108,9 @@ pub async fn prepare_add_group(
     None => None,
   };
 
-  // Validate user has access to the list of xnames requested
   if let Some(xname_vec) = &xname_vec_opt {
-    validate_target_hsm_members(infra.backend, token, xname_vec).await?;
+    validate_target_hsm_members(infra.backend, token, xname_vec)
+      .await?;
   }
 
   let group = Group::new(
@@ -146,8 +130,7 @@ pub async fn create_group(
   token: &str,
   group: Group,
 ) -> Result<(), Error> {
-  infra.backend.add_group(token, group).await?;
-  Ok(())
+  infra.backend.add_group(token, group).await.map(|_| ())
 }
 
 /// Resolve hosts expression, validate target group exists,
@@ -160,7 +143,6 @@ pub async fn add_nodes_to_group(
   target_hsm_name: &str,
   hosts_expression: &str,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
-  // Convert user input to xnames
   let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
     infra.backend,
     token,
@@ -170,40 +152,24 @@ pub async fn add_nodes_to_group(
   .await?;
 
   if xname_to_move_vec.is_empty() {
-    bail!(
-      "The list of nodes to move is empty. \
-       Nothing to do",
-    );
+    return Err(Error::BadRequest(
+      "The list of nodes to move is empty. Nothing to do".to_string(),
+    ));
   }
 
-  // Validate target group exists
-  let target_hsm_group =
-    infra.backend.get_group(token, target_hsm_name).await;
-
-  if target_hsm_group.is_err() {
-    bail!(
-      "Target HSM group '{}' does not exist. \
-       Nothing to do",
-      target_hsm_name
-    );
+  if infra.backend.get_group(token, target_hsm_name).await.is_err() {
+    return Err(Error::NotFound(format!(
+      "Target HSM group '{target_hsm_name}' does not exist"
+    )));
   }
 
-  let xnames_to_move: Vec<&str> = xname_to_move_vec
-    .iter()
-    .map(|xname| xname.as_str())
-    .collect();
+  let xnames_to_move: Vec<&str> =
+    xname_to_move_vec.iter().map(String::as_str).collect();
 
   let mut updated_members = infra
     .backend
     .add_members_to_group(token, target_hsm_name, &xnames_to_move)
-    .await
-    .with_context(|| {
-      format!(
-        "Could not add nodes {:?} \
-         to HSM group '{}'",
-        xnames_to_move, target_hsm_name
-      )
-    })?;
+    .await?;
 
   updated_members.sort();
 

@@ -1,5 +1,4 @@
-use anyhow::{Context, Result};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 use serde::{Deserialize, Serialize};
 
 use super::{jwt_ops, kafka::Kafka};
@@ -13,7 +12,7 @@ pub struct Auditor {
 
 /// Trait for producing audit messages to a message broker.
 pub trait Audit {
-  async fn produce_message(&self, data: &[u8]) -> Result<()>;
+  async fn produce_message(&self, data: &[u8]) -> Result<(), Error>;
 }
 
 /// Serialize a JSON audit message and send it to Kafka.
@@ -25,13 +24,13 @@ async fn send_audit_message(kafka: &Kafka, msg_json: serde_json::Value) {
   let msg_data = match serde_json::to_string(&msg_json) {
     Ok(data) => data,
     Err(e) => {
-      log::warn!("Failed serializing audit message: {}", e);
+      tracing::warn!("Failed serializing audit message: {}", e);
       return;
     }
   };
 
   if let Err(e) = kafka.produce_message(msg_data.as_bytes()).await {
-    log::warn!("Failed producing audit message: {}", e);
+    tracing::warn!("Failed producing audit message: {}", e);
   }
 }
 
@@ -51,12 +50,12 @@ pub async fn send_audit(
   group: Option<serde_json::Value>,
 ) {
   let username = jwt_ops::get_name(token).unwrap_or_else(|e| {
-    log::warn!("Failed to extract user name from JWT for audit: {}", e);
+    tracing::warn!("Failed to extract user name from JWT for audit: {}", e);
     String::new()
   });
   let user_id =
     jwt_ops::get_preferred_username(token).unwrap_or_else(|e| {
-      log::warn!("Failed to extract user ID from JWT for audit: {}", e);
+      tracing::warn!("Failed to extract user ID from JWT for audit: {}", e);
       String::new()
     });
 
@@ -104,15 +103,14 @@ pub async fn maybe_send_audit_with_group_lookup(
   token: &str,
   message: impl Into<String>,
   xnames: &[String],
-) -> Result<()> {
+) -> Result<(), Error> {
   if let Some(kafka) = kafka_opt {
     let xname_refs: Vec<&str> =
       xnames.iter().map(String::as_str).collect();
 
     let group_map = backend
       .get_group_map_and_filter_by_member_vec(token, &xname_refs)
-      .await
-      .context("Failed to get group map for audit")?;
+      .await?;
 
     send_audit(
       kafka,

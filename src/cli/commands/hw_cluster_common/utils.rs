@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-use anyhow::Error;
+use manta_backend_dispatcher::error::Error;
 use comfy_table::Color;
 use manta_backend_dispatcher::interfaces::hsm::{
   group::GroupTrait, hardware_inventory::HardwareInventory,
@@ -57,7 +57,7 @@ pub async fn calculate_hw_component_scarcity_scores(
     );
   }
 
-  log::info!(
+  tracing::info!(
     "Hw component scarcity scores: {:?}",
     hw_component_scarcity_score_hashmap
   );
@@ -166,7 +166,7 @@ async fn get_node_hw_component_count(
   {
     Ok(value) => value,
     Err(e) => {
-      log::error!("Failed to get hw inventory for '{}': {}", hsm_member, e);
+      tracing::error!("Failed to get hw inventory for '{}': {}", hsm_member, e);
       return (hsm_member.to_string(), Vec::new(), Vec::new());
     }
   };
@@ -335,7 +335,7 @@ pub fn print_table_f32_score(
     table.add_row(row);
   }
 
-  log::info!("\n{table}\n");
+  tracing::info!("\n{table}\n");
 }
 
 /// Fetch hardware inventory for HSM group members and
@@ -414,12 +414,12 @@ pub async fn get_hsm_node_hw_component_counter(
         node_hw_component_count_hashmap,
       ));
     } else {
-      log::error!("Failed processing/fetching node hw information");
+      tracing::error!("Failed processing/fetching node hw information");
     }
   }
 
   let duration = start.elapsed();
-  log::info!("Time elapsed to calculate hw components is: {:?}", duration);
+  tracing::info!("Time elapsed to calculate hw components is: {:?}", duration);
 
   target_hsm_node_hw_component_count_vec
 }
@@ -606,15 +606,14 @@ pub async fn resolve_hw_description_to_xnames(
 pub fn parse_hw_pattern(
   pattern_elements: &[&str],
 ) -> Result<(Vec<String>, HashMap<String, isize>), Error> {
-  use anyhow::bail;
-
   if !pattern_elements.len().is_multiple_of(2) {
-    bail!(
+    return Err(Error::Message(
       "Error in pattern: odd number of elements \
        after group name. Expected pairs of \
        <hw component>:<count>. \
-       eg tasna:a100:4:epyc:10:instinct:8",
-    );
+       eg tasna:a100:4:epyc:10:instinct:8"
+        .to_string(),
+    ));
   }
 
   let mut hw_component_count: HashMap<String, isize> = HashMap::new();
@@ -623,12 +622,13 @@ pub fn parse_hw_pattern(
     if let Ok(count) = chunk[1].parse::<isize>() {
       hw_component_count.insert(chunk[0].to_string(), count);
     } else {
-      bail!(
+      return Err(Error::Message(
         "Error in pattern. Please make sure to \
          follow <hsm name>:<hw component>:\
          <counter>:... \
-         eg <tasna>:a100:4:epyc:10:instinct:8",
-      );
+         eg <tasna>:a100:4:epyc:10:instinct:8"
+          .to_string(),
+      ));
     }
   }
 
@@ -649,13 +649,14 @@ pub async fn fetch_hsm_hw_inventory(
   group_name: &str,
   mem_lcm: u64,
 ) -> Result<(Vec<String>, NodeHwCountVec, HashMap<String, usize>), Error> {
-  use anyhow::Context;
-
   let member_vec: Vec<String> = backend
     .get_member_vec_from_group_name_vec(shasta_token, &[group_name.to_string()])
     .await
-    .with_context(|| {
-      format!("Failed to get members from HSM group '{}'", group_name)
+    .map_err(|e| {
+      Error::Message(format!(
+        "Failed to get members from HSM group '{}': {e}",
+        group_name
+      ))
     })?;
 
   let mut node_hw_count_vec = get_hsm_node_hw_component_counter(
@@ -682,11 +683,9 @@ pub fn show_solution_and_confirm(
   node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
   hw_component_summary: &HashMap<String, usize>,
 ) -> Result<(), Error> {
-  use anyhow::bail;
-
-  log::info!("----- SOLUTION -----");
-  log::info!("Hw components in HSM '{}'", group_name);
-  log::info!(
+  tracing::info!("----- SOLUTION -----");
+  tracing::info!("Hw components in HSM '{}'", group_name);
+  tracing::info!(
     "hsm '{}' hw component counters: {:?}",
     group_name,
     node_hw_component_count_vec
@@ -697,7 +696,7 @@ pub fn show_solution_and_confirm(
     node_hw_component_count_vec,
   );
 
-  log::info!("\n{table}");
+  tracing::info!("\n{table}");
 
   let confirm_message = format!(
     "Please check and confirm new hw summary for \
@@ -711,7 +710,7 @@ pub fn show_solution_and_confirm(
   );
 
   if !crate::common::user_interaction::confirm(&confirm_message, false) {
-    bail!("Operation cancelled by user");
+    return Err(Error::Message("Operation cancelled by user".to_string()));
   }
 
   Ok(())
@@ -722,8 +721,6 @@ pub fn print_hsm_group_json(
   label: &str,
   members: &[String],
 ) -> Result<(), Error> {
-  use anyhow::Context;
-
   let value = serde_json::json!({
     "label": label,
     "description": "",
@@ -733,10 +730,12 @@ pub fn print_hsm_group_json(
 
   println!(
     "{}",
-    serde_json::to_string_pretty(&value).with_context(|| format!(
-      "Failed to serialize HSM group '{}' to JSON",
-      label
-    ))?
+    serde_json::to_string_pretty(&value).map_err(|e| {
+      Error::Message(format!(
+        "Failed to serialize HSM group '{}' to JSON: {e}",
+        label
+      ))
+    })?
   );
 
   Ok(())

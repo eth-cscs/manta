@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use manta_backend_dispatcher::error::Error;
 use csm_rs::ims;
 
 /// Name used for ephemeral IMS images created during environment setup.
@@ -15,9 +15,13 @@ pub async fn exec(
   // Take user name and check if there is an SSH public key with that name already in Alps
   let user_public_key_name =
     csm_rs::common::jwt_ops::get_preferred_username(token)
-      .context("claim 'preferred_user' not found in JWT token")?;
+      .map_err(|e| {
+        Error::Message(format!(
+          "claim 'preferred_user' not found in JWT token: {e}"
+        ))
+      })?;
 
-  log::info!("Looking for user '{}' public SSH key", user_public_key_name);
+  tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
   let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
     ims::public_keys::http_client::v3::get_single(
@@ -30,21 +34,21 @@ pub async fn exec(
   {
     user_public_ssh_value["id"].clone()
   } else {
-    bail!(
+    return Err(Error::Message(format!(
       "User '{}' does not have an SSH public \
        key in Alps, Please contact platform \
        sys admins.",
       user_public_key_name
-    );
+    )));
   };
 
-  log::info!("SSH key found with ID {}", user_public_ssh_id_value);
+  tracing::info!("SSH key found with ID {}", user_public_ssh_id_value);
 
   // If public ssh key not found, then pompt user to provide public key
   // NOT YET. At this stage just throw an erro because the key was not found
 
   // Create IMS Job
-  log::info!(
+  tracing::info!(
     "Creating ephemeral environment based on image ID {}",
     image_id
   );
@@ -56,25 +60,28 @@ pub async fn exec(
     image_id,
     user_public_ssh_id_value
       .as_str()
-      .context("SSH key ID is not a string")?,
+      .ok_or_else(|| Error::Message("SSH key ID is not a string".to_string()))?,
   )
   .await
-  .with_context(|| {
-    format!(
+  .map_err(|e| {
+    Error::Message(format!(
       "Could not create ephemeral environment \
-       based on image ID {image_id}"
-    )
+       based on image ID {image_id}: {e}"
+    ))
   })?;
 
   let hostname_value = resp_json
     .pointer("/ssh_containers/0/connection_info/customer_access/host")
     .cloned()
-    .context(
-      "Failed to get SSH container hostname \
-       from ephemeral env response",
-    )?;
+    .ok_or_else(|| {
+      Error::Message(
+        "Failed to get SSH container hostname \
+         from ephemeral env response"
+          .to_string(),
+      )
+    })?;
 
-  log::info!(
+  tracing::info!(
     "Ephemeral environment successfully created! \
      hostname with ssh enabled: {}",
     hostname_value.as_str().unwrap_or("unknown")

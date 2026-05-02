@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::bss::BootParameters;
@@ -35,8 +35,7 @@ pub async fn get_kernel_parameters(
 
   let boot_parameter_vec = infra.backend
     .get_bootparameters(token, &xname_vec)
-    .await
-    .context("Could not get boot parameters")?;
+    .await?;
 
   Ok(boot_parameter_vec)
 }
@@ -117,6 +116,7 @@ impl<'a> KernelParamOperation<'a> {
 }
 
 /// Result of preparing kernel parameter mutations (before persistence).
+#[derive(serde::Serialize)]
 pub struct KernelParamsChangeset {
   /// The mutated boot parameters ready to persist.
   pub boot_params: Vec<BootParameters>,
@@ -141,8 +141,7 @@ pub async fn prepare_kernel_params_changes(
   let mut boot_params: Vec<BootParameters> = infra
     .backend
     .get_bootparameters(token, xname_vec)
-    .await
-    .context("Failed to get boot parameters")?;
+    .await?;
 
   let mut has_changes = false;
   let mut xnames_to_reboot: Vec<String> = Vec::new();
@@ -167,7 +166,7 @@ pub async fn prepare_kernel_params_changes(
             .get_images(token, Some(&image_id))
             .await?
             .first()
-            .context("No image found for the given image id")?
+            .ok_or_else(|| Error::Message("No image found for the given image id".to_string()))?
             .clone();
 
           if bp.is_root_kernel_param_iscsi_ready() {
@@ -210,7 +209,7 @@ pub async fn apply_kernel_params_changes(
         image
           .id
           .clone()
-          .context("Image has no id")?
+          .ok_or_else(|| Error::Message("Image has no id".to_string()))?
           .as_str(),
         &image.clone().into(),
       )
@@ -218,4 +217,91 @@ pub async fn apply_kernel_params_changes(
   }
 
   Ok(())
+}
+
+/// Build the SBPS images-to-project map from a kernel params changeset.
+///
+/// Marks each candidate image as iSCSI-ready and returns the projection
+/// map. Returns an empty map when `project_sbps` is false.
+pub fn build_images_to_project(
+  changeset: &KernelParamsChangeset,
+  project_sbps: bool,
+) -> HashMap<String, Image> {
+  if !project_sbps {
+    return HashMap::new();
+  }
+  changeset
+    .sbps_candidates
+    .iter()
+    .map(|(id, img)| {
+      let mut img = img.clone();
+      img.set_boot_image_iscsi_ready();
+      (id.clone(), img)
+    })
+    .collect()
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn add(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Add { params, overwrite: false }
+  }
+  fn add_overwrite(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Add { params, overwrite: true }
+  }
+  fn apply(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Apply { params }
+  }
+  fn delete(params: &str) -> KernelParamOperation<'_> {
+    KernelParamOperation::Delete { params }
+  }
+
+  #[test]
+  fn verb_returns_correct_string() {
+    assert_eq!(add("quiet").verb(), "Add");
+    assert_eq!(apply("quiet").verb(), "Apply");
+    assert_eq!(delete("quiet").verb(), "Delete");
+  }
+
+  #[test]
+  fn params_returns_the_string() {
+    assert_eq!(add("quiet crashkernel=auto").params(), "quiet crashkernel=auto");
+    assert_eq!(apply("console=ttyS0").params(), "console=ttyS0");
+    assert_eq!(delete("splash").params(), "splash");
+  }
+
+  #[test]
+  fn overwrite_flag_preserved() {
+    match add_overwrite("x") {
+      KernelParamOperation::Add { overwrite, .. } => assert!(overwrite),
+      _ => panic!("wrong variant"),
+    }
+    match add("x") {
+      KernelParamOperation::Add { overwrite, .. } => assert!(!overwrite),
+      _ => panic!("wrong variant"),
+    }
+  }
+
+  #[test]
+  fn handles_sbps_images_only_for_add_and_apply() {
+    assert!(add("quiet").handles_sbps_images());
+    assert!(apply("quiet").handles_sbps_images());
+    assert!(!delete("quiet").handles_sbps_images());
+  }
+
+  #[test]
+  fn confirm_messages_are_nonempty() {
+    assert!(!add("x").confirm_message().is_empty());
+    assert!(!apply("x").confirm_message().is_empty());
+    assert!(!delete("x").confirm_message().is_empty());
+  }
+
+  #[test]
+  fn confirm_messages_are_distinct() {
+    assert_ne!(add("x").confirm_message(), apply("x").confirm_message());
+    assert_ne!(add("x").confirm_message(), delete("x").confirm_message());
+    assert_ne!(apply("x").confirm_message(), delete("x").confirm_message());
+  }
 }

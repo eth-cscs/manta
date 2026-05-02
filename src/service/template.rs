@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bos::{
   ClusterSessionTrait, ClusterTemplateTrait,
 };
@@ -41,7 +41,7 @@ pub async fn get_templates(
 
   let limit_ref = params.limit.as_ref();
 
-  log::info!(
+  tracing::info!(
     "Get BOS sessiontemplates for HSM groups: {:?}",
     target_hsm_group_vec
   );
@@ -56,8 +56,7 @@ pub async fn get_templates(
       params.name.as_deref(),
       limit_ref,
     )
-    .await
-    .context("Could not get BOS sessiontemplate list")?;
+    .await?;
 
   bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 
@@ -95,27 +94,21 @@ pub async fn validate_and_prepare_template_session(
       Some(&params.bos_sessiontemplate_name),
       None,
     )
-    .await
-    .with_context(|| {
-      format!(
-        "Could not fetch BOS sessiontemplate '{}'",
-        params.bos_sessiontemplate_name
-      )
-    })?;
+    .await?;
 
   let bos_sessiontemplate = if bos_sessiontemplate_vec.is_empty() {
-    bail!(
+    return Err(Error::NotFound(format!(
       "No BOS sessiontemplate '{}' found",
       params.bos_sessiontemplate_name
-    );
+    )));
   } else {
     bos_sessiontemplate_vec
       .first()
-      .context("BOS sessiontemplate list unexpectedly empty")?
+      .ok_or_else(|| Error::Message("BOS sessiontemplate list unexpectedly empty".to_string()))?
   };
 
   // Validate user has access to the BOS sessiontemplate targets
-  log::info!("Validate user has access to HSM group in BOS sessiontemplate");
+  tracing::info!("Validate user has access to HSM group in BOS sessiontemplate");
   let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
   let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
     backend
@@ -126,19 +119,20 @@ pub async fn validate_and_prepare_template_session(
     bos_sessiontemplate.get_target_xname()
   };
 
-  validate_target_hsm_members(backend, token, &target_xname_vec).await?;
+  validate_target_hsm_members(backend, token, &target_xname_vec)
+    .await?;
 
   // Validate user has access to xnames in `limit` argument
-  log::info!("Validate user has access to xnames in BOS sessiontemplate");
+  tracing::info!("Validate user has access to xnames in BOS sessiontemplate");
   let limit_vec: Vec<String> =
     params.limit.split(',').map(str::to_string).collect();
 
   let mut xnames_to_validate_access_vec = Vec::new();
 
   for limit_value in &limit_vec {
-    log::info!("Check if limit value '{}', is an xname", limit_value);
+    tracing::info!("Check if limit value '{}', is an xname", limit_value);
     if validate_xname_format(limit_value) {
-      log::info!("limit value '{}' is an xname", limit_value);
+      tracing::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
     } else {
       let hsm_members_vec_rslt = backend
@@ -149,22 +143,22 @@ pub async fn validate_and_prepare_template_session(
         .await;
 
       if let Ok(mut hsm_members_vec) = hsm_members_vec_rslt {
-        log::info!(
+        tracing::info!(
           "Check if limit value '{}', is an HSM group name",
           limit_value
         );
         xnames_to_validate_access_vec.append(&mut hsm_members_vec);
       } else {
-        bail!(
+        return Err(Error::BadRequest(format!(
           "Value '{}' in 'limit' argument does not match \
            an xname or a HSM group name.",
           limit_value
-        );
+        )));
       }
     }
   }
 
-  log::info!("Validate list of xnames translated from 'limit argument'");
+  tracing::info!("Validate list of xnames translated from 'limit argument'");
   validate_target_hsm_members(
     backend,
     token,
@@ -172,7 +166,7 @@ pub async fn validate_and_prepare_template_session(
   )
   .await?;
 
-  log::info!("Access to '{}' granted. Continue.", params.limit);
+  tracing::info!("Access to '{}' granted. Continue.", params.limit);
 
   // Build BOS session
   let bos_session = BosSession {
@@ -180,7 +174,7 @@ pub async fn validate_and_prepare_template_session(
     tenant: None,
     operation: Some(
       Operation::from_str(&params.bos_session_operation).map_err(|_| {
-        Error::msg(format!(
+        Error::Message(format!(
           "Invalid BOS session operation '{}'",
           params.bos_session_operation
         ))
@@ -212,5 +206,4 @@ pub async fn create_bos_session(
       bos_session,
     )
     .await
-    .context("Could not create BOS session")
 }

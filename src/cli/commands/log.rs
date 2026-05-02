@@ -48,7 +48,7 @@ pub async fn exec(
   let cfs_sessions_vec = match xname_vec_rslt.as_deref() {
     Ok([]) | Err(_) => {
       // Failed to convert user input to xname, try user input is either a group name or CFS session name
-      log::debug!(
+      tracing::debug!(
         "User input is not a node. Checking user input as CFS session name"
       );
       // Check if user input is a CFS session name
@@ -71,7 +71,7 @@ pub async fn exec(
     }
     Ok([xname]) => {
       // Get most recent CFS session for node or group the node belongs to
-      log::debug!("User input is a single node");
+      tracing::debug!("User input is a single node");
 
       backend
         .get_and_filter_sessions(
@@ -92,7 +92,7 @@ pub async fn exec(
     }
     Ok([_, ..]) => {
       // User input is an expression that expands to multiple nodes
-      log::debug!("User input is a list of nodes");
+      tracing::debug!("User input is a list of nodes");
       bail!("Can only operate a single node");
     }
   }
@@ -102,7 +102,7 @@ pub async fn exec(
     anyhow::anyhow!("No CFS session found for the given input")
   })?;
 
-  log::info!(
+  tracing::info!(
     "Get logs for CFS session:\n{}",
     crate::cli::output::session::get_table_struct(&cfs_sessions_vec)
   );

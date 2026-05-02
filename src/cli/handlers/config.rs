@@ -10,69 +10,44 @@ pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  if let Some(_cli_config_show) = cli_config.subcommand_matches("show") {
-    let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-    commands::config_show::exec(ctx.infra.backend, &token, ctx.cli.settings)
-      .await?
-  } else if let Some(cli_config_set) = cli_config.subcommand_matches("set") {
-    if let Some(cli_config_set_hsm) = cli_config_set.subcommand_matches("hsm") {
+  match cli_config.subcommand() {
+    Some(("show", _)) => {
       let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-      commands::config_set_hsm::exec(
-        cli_config_set_hsm,
-        ctx.infra.backend,
-        &token,
-      )
-      .await?
-    }
-    if let Some(cli_config_set_parent_hsm) =
-      cli_config_set.subcommand_matches("parent-hsm")
-    {
-      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-      commands::config_set_parent_hsm::exec(
-        cli_config_set_parent_hsm,
-        ctx.infra.backend,
-        &token,
-      )
-      .await?;
-    }
-    if let Some(cli_config_set_site) = cli_config_set.subcommand_matches("site")
-    {
-      commands::config_set_site::exec(cli_config_set_site)?;
-    }
-    if let Some(cli_config_set_log) = cli_config_set.subcommand_matches("log") {
-      commands::config_set_log::exec(cli_config_set_log)?;
-    }
-  } else if let Some(cli_config_unset) = cli_config.subcommand_matches("unset")
-  {
-    if let Some(_cli_config_unset_hsm) =
-      cli_config_unset.subcommand_matches("hsm")
-    {
-      commands::config_unset_hsm::exec()?;
-    }
-    if let Some(_cli_config_unset_parent_hsm) =
-      cli_config_unset.subcommand_matches("parent-hsm")
-    {
-      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
-      commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
+      commands::config_show::exec(ctx.infra.backend, &token, ctx.cli.settings)
         .await?;
     }
-    if let Some(_cli_config_unset_auth) =
-      cli_config_unset.subcommand_matches("auth")
-    {
-      commands::config_unset_auth::exec()?;
+    Some(("set", m)) => match m.subcommand() {
+      Some(("hsm", m)) => {
+        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        commands::config_set_hsm::exec(m, ctx.infra.backend, &token).await?;
+      }
+      Some(("parent-hsm", m)) => {
+        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        commands::config_set_parent_hsm::exec(m, ctx.infra.backend, &token)
+          .await?;
+      }
+      Some(("site", m)) => commands::config_set_site::exec(m)?,
+      Some(("log", m)) => commands::config_set_log::exec(m)?,
+      Some((other, _)) => bail!("Unknown 'config set' subcommand: {other}"),
+      None => bail!("No 'config set' subcommand provided"),
+    },
+    Some(("unset", m)) => match m.subcommand() {
+      Some(("hsm", _)) => commands::config_unset_hsm::exec()?,
+      Some(("parent-hsm", _)) => {
+        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
+          .await?;
+      }
+      Some(("auth", _)) => commands::config_unset_auth::exec()?,
+      Some((other, _)) => bail!("Unknown 'config unset' subcommand: {other}"),
+      None => bail!("No 'config unset' subcommand provided"),
+    },
+    Some(("gen-autocomplete", m)) => {
+      let cli = crate::cli::build::build_cli();
+      commands::config_gen_autocomplete::exec(cli, m)?;
     }
-  } else if let Some(cli_config_generate_autocomplete) =
-    cli_config.subcommand_matches("gen-autocomplete")
-  {
-    // Rebuild CLI tree only when actually needed for
-    // shell completion generation
-    let cli = crate::cli::build::build_cli();
-    commands::config_gen_autocomplete::exec(
-      cli,
-      cli_config_generate_autocomplete,
-    )?;
-  } else {
-    bail!("Unknown 'config' subcommand");
+    Some((other, _)) => bail!("Unknown 'config' subcommand: {other}"),
+    None => bail!("No 'config' subcommand provided"),
   }
   Ok(())
 }

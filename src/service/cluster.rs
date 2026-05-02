@@ -1,4 +1,4 @@
-use anyhow::{Context, Error};
+use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -28,8 +28,7 @@ pub async fn get_cluster_nodes(
 
   let mut hsm_groups_node_list = infra.backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
-    .await
-    .context("Failed to get HSM group members")?;
+    .await?;
 
   hsm_groups_node_list.sort();
 
@@ -39,7 +38,8 @@ pub async fn get_cluster_nodes(
     infra.shasta_root_cert,
     hsm_groups_node_list,
   )
-  .await?;
+  .await
+  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {

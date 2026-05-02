@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
@@ -76,7 +76,7 @@ pub async fn get_configuration_details(
 > {
   let vault_base_url = infra
     .vault_base_url
-    .context("vault_base_url is required for configuration details")?;
+    .ok_or_else(|| Error::Message("vault_base_url is required for configuration details".to_string()))?;
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(
@@ -84,31 +84,34 @@ pub async fn get_configuration_details(
       vault_base_url,
       infra.site_name,
     )
-    .await
-    .context("Failed to fetch VCS token from vault")?;
+    .await?;
 
-  let mut layer_details_vec: Vec<LayerDetails> = vec![];
-
-  for layer in &config.layers {
-    let layer_details = infra.backend
-      .get_configuration_layer_details(
-        infra.shasta_root_cert,
-        infra.gitea_base_url,
-        &gitea_token,
-        layer.clone(),
-        infra.site_name,
-      )
-      .await
-      .context("Could not fetch configuration layer details")?;
-
-    layer_details_vec.push(layer_details);
-  }
+  let layer_details_vec: Vec<LayerDetails> =
+    futures::future::try_join_all(config.layers.iter().map(|layer| {
+      let backend = infra.backend.clone();
+      let root_cert = infra.shasta_root_cert.to_vec();
+      let gitea_base_url = infra.gitea_base_url.to_string();
+      let gitea_token = gitea_token.clone();
+      let site_name = infra.site_name.to_string();
+      let layer = layer.clone();
+      async move {
+        backend
+          .get_configuration_layer_details(
+            &root_cert,
+            &gitea_base_url,
+            &gitea_token,
+            layer,
+            &site_name,
+          )
+          .await
+      }
+    }))
+    .await?;
 
   let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
     infra.backend
       .get_derivatives(token, infra.shasta_base_url, infra.shasta_root_cert, &config.name)
-      .await
-      .context("Could not fetch configuration derivatives")?;
+      .await?;
 
   let details = ConfigurationDetails::new(
     &config.name,
@@ -125,6 +128,7 @@ pub async fn get_configuration_details(
 }
 
 /// Data gathered for deletion review and execution.
+#[derive(serde::Serialize)]
 pub struct DeletionCandidates {
   pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
   pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
@@ -143,11 +147,7 @@ pub async fn get_deletion_candidates(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
 ) -> Result<DeletionCandidates, Error> {
-  if let (Some(s), Some(u)) = (since, until) {
-    if s > u {
-      bail!("'since' date can't be after 'until' date");
-    }
-  }
+  validate_date_range(since, until)?;
 
   let target_hsm_group_vec =
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
@@ -192,6 +192,24 @@ pub async fn get_deletion_candidates(
   })
 }
 
+/// Validate that a `(since, until)` date range is well-ordered.
+///
+/// Extracted so the HTTP handler and CLI can share the check without
+/// constructing a full backend context.
+pub fn validate_date_range(
+  since: Option<NaiveDateTime>,
+  until: Option<NaiveDateTime>,
+) -> Result<(), Error> {
+  if let (Some(s), Some(u)) = (since, until) {
+    if s > u {
+      return Err(Error::BadRequest(
+        "'since' date can't be after 'until' date".to_string(),
+      ));
+    }
+  }
+  Ok(())
+}
+
 /// Execute the deletion of configurations and derivatives.
 pub async fn delete_configurations_and_derivatives(
   infra: &InfraContext<'_>,
@@ -224,4 +242,40 @@ pub async fn delete_configurations_and_derivatives(
     .await?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use chrono::NaiveDateTime;
+
+  fn dt(s: &str) -> NaiveDateTime {
+    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S").unwrap()
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_since_before_until() {
+    assert!(validate_date_range(Some(dt("2024-01-01T00:00:00")), Some(dt("2024-01-02T00:00:00"))).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_equal() {
+    let d = dt("2024-01-01T00:00:00");
+    assert!(validate_date_range(Some(d), Some(d)).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_ok_when_either_none() {
+    let d = dt("2024-01-01T00:00:00");
+    assert!(validate_date_range(Some(d), None).is_ok());
+    assert!(validate_date_range(None, Some(d)).is_ok());
+    assert!(validate_date_range(None, None).is_ok());
+  }
+
+  #[test]
+  fn validate_date_range_err_when_since_after_until() {
+    let result = validate_date_range(Some(dt("2024-01-02T00:00:00")), Some(dt("2024-01-01T00:00:00")));
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("'since' date can't be after 'until' date"));
+  }
 }

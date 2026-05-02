@@ -1,5 +1,5 @@
-use anyhow::{Context, Error};
 use manta_backend_dispatcher::{
+  error::Error,
   interfaces::{cfs::CfsTrait, ims::ImsTrait},
   types::ims::Image,
 };
@@ -16,15 +16,11 @@ pub async fn get_image_vec_related_cfs_configuration_name(
   shasta_root_cert: &[u8],
   cfs_configuration_name: String,
 ) -> Result<Vec<Image>, Error> {
-  log::info!(
+  tracing::info!(
     "Searching in CFS sessions for image ID related to CFS configuration '{}'",
     cfs_configuration_name
   );
 
-  // Get all CFS sessions related which has succeeded and built an image related to CFS
-  // configuration
-
-  // Get all CFS sessions which has succeeded
   let cfs_session_vec = backend
     .get_sessions(
       shasta_token,
@@ -40,11 +36,9 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       Some(true),
       None,
     )
-    .await
-    .context("Failed to get CFS sessions from backend")?;
+    .await?;
 
-  // Filter CFS sessions to the ones related to CFS configuration and built an image (target
-  // definition is 'image' and it actually has at least one artifact)
+  // Filter to sessions related to the CFS configuration that built an image
   let cfs_session_image_succeeded_vec =
     cfs_session_vec.iter().filter(|cfs_session| {
       cfs_session
@@ -58,24 +52,22 @@ pub async fn get_image_vec_related_cfs_configuration_name(
 
   let mut boot_image_id_vec = Vec::new();
 
-  // Find image in CFS sessions
   for cfs_session in cfs_session_image_succeeded_vec {
     let cfs_session_name = cfs_session.name.clone();
 
     for image_id in cfs_session.get_result_id_vec() {
-      log::info!(
+      tracing::info!(
         "Checking if result_id {} in CFS session {} exists",
         image_id,
         cfs_session_name
       );
 
-      // Get IMS image related to the CFS session
       let image_vec_rslt =
         backend.get_images(shasta_token, Some(&image_id)).await;
 
       match image_vec_rslt {
         Ok(mut image_vec) => {
-          log::info!(
+          tracing::info!(
             "Found the image ID '{}' related to CFS sesison '{}'",
             image_id,
             cfs_session_name,
@@ -84,7 +76,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
           boot_image_id_vec.append(&mut image_vec);
         }
         Err(e) => {
-          log::warn!(
+          tracing::warn!(
             "Failed to fetch image '{}' for CFS session '{}': {}",
             image_id,
             cfs_session_name,

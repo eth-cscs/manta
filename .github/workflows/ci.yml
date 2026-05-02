@@ -26,3 +26,9 @@ jobs:
       run: cargo fmt -- --check
     - name: Run clippy
       run: cargo clippy -- -D warnings
+    - name: Enforce anyhow boundary
+      run: |
+        if grep -r 'use anyhow' src/server/ src/service/ src/common/ src/manta_backend_dispatcher.rs 2>/dev/null; then
+          echo "ERROR: anyhow found outside src/cli/ — only src/cli/ may use anyhow"
+          exit 1
+        fi

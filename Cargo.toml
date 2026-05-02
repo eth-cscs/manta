@@ -31,15 +31,15 @@ publish = true
 
 # PROD
 
-manta-backend-dispatcher = "0.22.0"
-csm-rs = "0.102.3"
-ochami-rs = "0.11.3"
+# manta-backend-dispatcher = "0.22.0"
+# csm-rs = "0.102.3"
+# ochami-rs = "0.11.3"
 
 # DEV - Only for development purposes
 
-# manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-# ochami-rs = { path = "../ochami-rs" }
-# csm-rs = { path = "../csm-rs" }
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+ochami-rs = { path = "../ochami-rs" }
+csm-rs = { path = "../csm-rs" }
 
 # --- END MANTA DEPENDENCIES ---
 
@@ -53,8 +53,9 @@ reqwest = { version = "0.12.15", default-features = false, features = ["blocking
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.34"
-log = "0.4.27"
-log4rs = { version = "1.4.0", default-features = false }
+log = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "time"] }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
@@ -76,11 +77,19 @@ rdkafka = { version = "0.39" }
 # rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
+axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "timeout"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+rustls-pemfile = "2"
 
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+wiremock = "0.6"
 
 [profile.release]
 opt-level = "s" # Tell `rustc` to optimize for small code size.

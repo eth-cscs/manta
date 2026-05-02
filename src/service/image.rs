@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, bail};
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::ims::GetImagesAndDetailsTrait;
@@ -33,8 +33,7 @@ pub async fn get_images(
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
-  .await
-  .context("Failed to get available HSM group names")?;
+  .await?;
 
   let limit_ref = params.limit.as_ref();
 
@@ -62,23 +61,20 @@ pub async fn validate_image_deletion(
 ) -> Result<(), Error> {
   let backend = infra.backend;
 
-  let _hsm_name_available_vec = get_groups_names_available(
-    backend,
-    token,
-    None,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
+  get_groups_names_available(backend, token, None, settings_hsm_group_name_opt)
+    .await?;
 
-  let group_available_vec = backend.get_group_available(token).await?;
-  let boot_parameter_vec = backend.get_all_bootparameters(token).await?;
+  let (group_available_vec, boot_parameter_vec) = tokio::try_join!(
+    backend.get_group_available(token),
+    backend.get_all_bootparameters(token),
+  )?;
 
   // Check if any requested image is used to boot nodes
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
     .iter()
     .map(|boot_param| boot_param.try_get_boot_image_id())
     .collect::<Option<Vec<String>>>()
-    .ok_or_else(|| Error::msg("Could not get image ids used to boot nodes"))?;
+    .ok_or_else(|| Error::Message("Could not get image ids used to boot nodes".to_string()))?;
 
   let image_xnames_boot_map: Vec<&&str> = image_id_vec
     .iter()
@@ -86,7 +82,7 @@ pub async fn validate_image_deletion(
     .collect();
 
   if !image_xnames_boot_map.is_empty() {
-    bail!(
+    return Err(Error::BadRequest(format!(
       "The following images could not be deleted \
        since they boot nodes.\n{}",
       image_xnames_boot_map
@@ -94,23 +90,23 @@ pub async fn validate_image_deletion(
         .map(|id| id.to_string())
         .collect::<Vec<_>>()
         .join(", ")
-    );
+    )));
   }
 
   // Check restricted images
   let image_restricted_vec =
     get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
       .ok_or_else(|| {
-        Error::msg("Could not get restricted image ids used by boot parameters")
+        Error::Message("Could not get restricted image ids used by boot parameters".to_string())
       })?;
 
   if !image_restricted_vec.is_empty() {
-    bail!(
+    return Err(Error::BadRequest(format!(
       "The following image ids are not deletable \
        because they are used by hosts that are not part \
        of the groups available to the user:\n{}",
       image_restricted_vec.join(", ")
-    );
+    )));
   }
 
   Ok(())
@@ -141,11 +137,11 @@ pub async fn delete_images(
 
     match del_rslt {
       Ok(_) => {
-        log::info!("Image {} deleted successfully", image_id);
+        tracing::info!("Image {} deleted successfully", image_id);
         deleted.push(image_id.to_string());
       }
       Err(e) => {
-        log::error!("Failed to delete image {}: {}. Continuing", image_id, e);
+        tracing::error!("Failed to delete image {}: {}. Continuing", image_id, e);
       }
     }
   }

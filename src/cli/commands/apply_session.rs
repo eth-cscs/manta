@@ -174,7 +174,7 @@ async fn apply_session(
 
     // Watch logs (CLI concern: println)
     if watch_logs {
-        log::info!("Fetching logs ...");
+        tracing::info!("Fetching logs ...");
 
         let mut cfs_session_log_stream = backend
             .get_session_logs_stream(
@@ -235,7 +235,7 @@ fn check_local_repos(
                 )
             })?;
 
-        log::info!(
+        tracing::info!(
             "Checking local repo status ({})",
             &repo.path().display()
         );
@@ -277,7 +277,7 @@ fn check_local_repos(
         let tm = chrono::DateTime::from_timestamp(timestamp, 0)
             .context("Could not parse commit timestamp")?;
 
-        log::debug!(
+        tracing::debug!(
             "\n\nCommit details to apply to CFS layer:\nCommit  {}\nAuthor: {}\nDate:   {}\n\n    {}\n",
             local_last_commit.id(),
             local_last_commit.author(),
