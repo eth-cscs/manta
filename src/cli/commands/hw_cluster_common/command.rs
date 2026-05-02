@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Group,
+  error::Error,
+  interfaces::hsm::group::GroupTrait,
+  types::Group,
 };
 
 use crate::{
@@ -178,20 +179,24 @@ fn parse_hw_pattern_usize(
   let pattern_lowercase = pattern.to_lowercase();
 
   let (_group_name, pattern_hw_component) =
-    pattern_lowercase.split_once(':').context(
-      "Invalid pattern format: \
-       expected 'group:component:count'",
-    )?;
+    pattern_lowercase.split_once(':').ok_or_else(|| {
+      Error::Message(
+        "Invalid pattern format: \
+         expected 'group:component:count'"
+          .to_string(),
+      )
+    })?;
 
   let pattern_element_vec: Vec<&str> =
     pattern_hw_component.split(':').collect();
 
   if !pattern_element_vec.len().is_multiple_of(2) {
-    bail!(
+    return Err(Error::Message(
       "Error in pattern: odd number of elements. \
        Expected pairs of <hw component>:<count>. \
-       eg a100:4:epyc:10:instinct:8",
-    );
+       eg a100:4:epyc:10:instinct:8"
+        .to_string(),
+    ));
   }
 
   let mut hw_component_count: HashMap<String, usize> = HashMap::new();
@@ -200,11 +205,12 @@ fn parse_hw_pattern_usize(
     if let Ok(count) = chunk[1].parse::<usize>() {
       hw_component_count.insert(chunk[0].to_string(), count);
     } else {
-      bail!(
+      return Err(Error::Message(
         "Error in pattern. Please make sure to follow \
          <hsm name>:<hw component>:<counter>:... \
-         eg <tasna>:a100:4:epyc:10:instinct:8",
-      );
+         eg <tasna>:a100:4:epyc:10:instinct:8"
+          .to_string(),
+      ));
     }
   }
 
@@ -236,12 +242,12 @@ async fn ensure_target_group_exists(
     }
     Err(_) => {
       if !create_target_hsm_group {
-        bail!(
+        return Err(Error::Message(format!(
           "Target HSM group '{}' does not exist, \
            but the option to create the group was \
            NOT specified, cannot continue.",
           target_hsm_group_name,
-        );
+        )));
       }
       tracing::info!(
         "Target HSM group '{}' does not exist, \
@@ -250,10 +256,11 @@ async fn ensure_target_group_exists(
         target_hsm_group_name
       );
       if dryrun {
-        bail!(
+        return Err(Error::Message(
           "Dryrun selected, cannot create the \
-           new group and continue.",
-        );
+           new group and continue."
+            .to_string(),
+        ));
       }
       let group = Group {
         label: target_hsm_group_name.to_string(),
@@ -265,7 +272,11 @@ async fn ensure_target_group_exists(
       let _ = backend
         .add_group(shasta_token, group)
         .await
-        .context("Unable to create new target HSM group")?;
+        .map_err(|e| {
+          Error::Message(format!(
+            "Unable to create new target HSM group: {e}"
+          ))
+        })?;
       Ok(())
     }
   }
@@ -292,10 +303,11 @@ fn validate_resource_sufficiency(
       .get(hw_component)
       .is_none_or(|value| value < qty)
     {
-      bail!(
+      return Err(Error::Message(
         "There are not enough resources \
-         to fulfill user request.",
-      );
+         to fulfill user request."
+          .to_string(),
+      ));
     }
   }
 
@@ -340,7 +352,11 @@ async fn apply_group_updates(
           .collect::<Vec<&str>>(),
       )
       .await
-      .context("Failed to update target HSM group members")?;
+      .map_err(|e| {
+        Error::Message(format!(
+          "Failed to update target HSM group members: {e}"
+        ))
+      })?;
   }
 
   // Update parent group
@@ -367,7 +383,11 @@ async fn apply_group_updates(
           .collect::<Vec<&str>>(),
       )
       .await
-      .context("Failed to update parent HSM group members")?;
+      .map_err(|e| {
+        Error::Message(format!(
+          "Failed to update parent HSM group members: {e}"
+        ))
+      })?;
 
     if parent_will_be_empty && delete_empty_parent {
       tracing::info!(

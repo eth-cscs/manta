@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Error, bail};
-
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
 use crate::{
   cli::commands::hw_cluster_common::{
@@ -40,7 +38,7 @@ pub async fn run(
   use crate::cli::commands::hw_cluster_common::{
     MEMORY_CAPACITY_LCM,
     utils::{
-      calculate_hsm_hw_component_summary, calculate_hw_component_scarcity_scores,
+      calculate_hw_component_scarcity_scores,
       fetch_hsm_hw_inventory, parse_hw_pattern,
     },
   };
@@ -48,10 +46,10 @@ pub async fn run(
   match backend.get_group(token, target_hsm_group_name).await {
     Ok(_) => {}
     Err(_) => {
-      anyhow::bail!(
+      return Err(Error::Message(format!(
         "HSM group {} does not exist, cannot remove hw from it.",
         target_hsm_group_name
-      );
+      )));
     }
   }
 
@@ -179,10 +177,10 @@ pub async fn exec(
 
   let target_hsm_group_name = target_hsm_group_vec
     .first()
-    .context("Target HSM group vec is empty")?;
+    .ok_or_else(|| Error::Message("Target HSM group vec is empty".to_string()))?;
   let parent_hsm_group_name = parent_hsm_group_vec
     .first()
-    .context("Parent HSM group vec is empty")?;
+    .ok_or_else(|| Error::Message("Parent HSM group vec is empty".to_string()))?;
 
   match backend
     .get_group(token, target_hsm_group_name)
@@ -192,11 +190,11 @@ pub async fn exec(
       tracing::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
     Err(_) => {
-      bail!(
+      return Err(Error::Message(format!(
         "HSM group {} does not exist, cannot remove hw \
          from it and cannot continue.",
         target_hsm_group_name
-      );
+      )));
     }
   }
 
@@ -397,7 +395,7 @@ fn compute_final_summary(
 
   for (hw_component, counter) in deltas {
     let current = *current_summary.get(hw_component).ok_or_else(|| {
-      Error::msg(format!(
+      Error::Message(format!(
         "hw component '{}' not found in target HSM \
            hw component summary",
         hw_component
@@ -429,7 +427,9 @@ async fn apply_node_moves(
     backend
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
       .await
-      .context("Failed to add node to parent group")?;
+      .map_err(|e| {
+        Error::Message(format!("Failed to add node to parent group: {e}"))
+      })?;
   }
 
   if target_will_be_empty {

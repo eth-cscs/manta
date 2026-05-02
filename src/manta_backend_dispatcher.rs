@@ -1,4 +1,4 @@
-use anyhow::{Error, bail};
+use manta_backend_dispatcher::error::Error;
 use csm_rs::backend_connector::Csm;
 use ochami_rs::backend_connector::Ochami;
 
@@ -27,7 +27,10 @@ impl StaticBackendDispatcher {
     match backend_type {
       "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert))),
       "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
-      _ => bail!("Backend '{}' not supported", backend_type),
+      _ => Err(Error::Message(format!(
+        "Backend '{}' not supported",
+        backend_type
+      ))),
     }
   }
 }

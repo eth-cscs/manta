@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Error;
+use manta_backend_dispatcher::error::Error;
 
 use crate::cli::commands::hw_cluster_common::utils::{
   NodeHwCountVec, calculate_hsm_hw_component_summary,
@@ -54,7 +54,7 @@ pub fn calculate_target_hsm_unpin(
       &mut combination_target_parent_hsm_node_score_tuple_vec,
       combination_target_parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::msg("No best candidate found."))?;
+    .ok_or_else(|| Error::Message("No best candidate found.".to_string()))?;
 
   // Check if we need to keep iterating
   let mut work_to_do = keep_iterating_final_hsm(
@@ -136,7 +136,7 @@ pub fn calculate_target_hsm_unpin(
       &mut target_hsm_node_score_tuple_vec,
       combination_target_parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::msg("No best candidate found."))?;
+    .ok_or_else(|| Error::Message("No best candidate found.".to_string()))?;
 
     // Check if we need to keep iterating
     work_to_do = keep_iterating_final_hsm(

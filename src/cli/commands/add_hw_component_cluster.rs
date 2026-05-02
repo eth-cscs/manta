@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Error, bail};
-
 use manta_backend_dispatcher::{
-  interfaces::hsm::group::GroupTrait, types::Group,
+  error::Error,
+  interfaces::hsm::group::GroupTrait,
+  types::Group,
 };
 
 use crate::{
@@ -104,7 +104,11 @@ pub async fn run(
       &[target_name.to_string()],
     )
     .await
-    .context("Failed to get member vec from target HSM group")?;
+    .map_err(|e| {
+      Error::Message(format!(
+        "Failed to get member vec from target HSM group: {e}"
+      ))
+    })?;
 
   target_hsm_node_vec.extend(nodes_to_move.clone());
   target_hsm_node_vec.sort();
@@ -114,7 +118,11 @@ pub async fn run(
       backend
         .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
         .await
-        .context("Failed to delete member from parent group")?;
+        .map_err(|e| {
+          Error::Message(format!(
+            "Failed to delete member from parent group: {e}"
+          ))
+        })?;
 
       let _ = backend
         .add_members_to_group(
@@ -123,7 +131,9 @@ pub async fn run(
           &[xname.as_str()],
         )
         .await
-        .context("Failed to add member to target group")?;
+        .map_err(|e| {
+          Error::Message(format!("Failed to add member to target group: {e}"))
+        })?;
     }
   }
 
@@ -227,7 +237,11 @@ pub async fn exec(
       &[target_hsm_group_name.to_string()],
     )
     .await
-    .context("Failed to get member vec from target HSM group")?;
+    .map_err(|e| {
+      Error::Message(format!(
+        "Failed to get member vec from target HSM group: {e}"
+      ))
+    })?;
 
   target_hsm_node_vec.extend(nodes_to_move.clone());
   target_hsm_node_vec.sort();
@@ -264,7 +278,11 @@ pub async fn exec(
       backend
         .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
         .await
-        .context("Failed to delete member from parent group")?;
+        .map_err(|e| {
+          Error::Message(format!(
+            "Failed to delete member from parent group: {e}"
+          ))
+        })?;
 
       let _ = backend
         .add_members_to_group(
@@ -273,7 +291,9 @@ pub async fn exec(
           &[xname.as_str()],
         )
         .await
-        .context("Failed to add member to target group")?;
+        .map_err(|e| {
+          Error::Message(format!("Failed to add member to target group: {e}"))
+        })?;
     }
   }
 
@@ -304,12 +324,12 @@ async fn ensure_target_group_exists(
     }
     Err(_) => {
       if !create_hsm_group {
-        bail!(
+        return Err(Error::Message(format!(
           "Group '{}' does not exist, but the \
            option to create the group was NOT \
            specified, cannot continue.",
           target_hsm_group_name
-        );
+        )));
       }
       tracing::info!(
         "Group '{}' does not exist, but the option \
@@ -318,10 +338,11 @@ async fn ensure_target_group_exists(
         target_hsm_group_name
       );
       if dryrun {
-        bail!(
+        return Err(Error::Message(
           "Dryrun selected, cannot create \
-           the new group and continue.",
-        );
+           the new group and continue."
+            .to_string(),
+        ));
       }
       let group = Group {
         label: target_hsm_group_name.to_string(),
@@ -333,7 +354,9 @@ async fn ensure_target_group_exists(
       backend
         .add_group(shasta_token, group)
         .await
-        .context("Unable to create new group")?;
+        .map_err(|e| {
+          Error::Message(format!("Unable to create new group: {e}"))
+        })?;
       Ok(())
     }
   }
@@ -352,15 +375,12 @@ fn compute_final_parent_summary(
   for (hw_component, counter) in deltas {
     let current = *current_summary.get(hw_component).unwrap_or(&0);
     if *counter > current as isize {
-      bail!(
+      return Err(Error::Message(format!(
         "Cannot remove more hw component '{}' \
          ({}) than available in parent group \
          '{}' ({})",
-        hw_component,
-        *counter,
-        parent_group_name,
-        current
-      );
+        hw_component, *counter, parent_group_name, current
+      )));
     }
     let new_counter = current - *counter as usize;
     final_summary.insert(hw_component.to_string(), new_counter);
