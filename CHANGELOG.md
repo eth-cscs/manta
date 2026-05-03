@@ -2,11 +2,284 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.63.0] - 2026-05-03
+
+### Bug Fixes
+
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+- Use BearerToken extractor for WebSocket console endpoints
+
+### Documentation
+
+- Add HTTP API reference (API.md)
+- Add HTTP API reference (API.md)
+- Add HTTP API reference (API.md)
+
+### Features
+
+- Add HTTPS server mode with 12 GET API endpoints
+- Add HTTPS server mode with 12 GET API endpoints
+- Add HTTPS server mode with 12 GET API endpoints
+- Add HTTPS server mode with 12 GET API endpoints
+- Add HTTPS server mode with 12 GET API endpoints
+- Sessions, configurations, nodes, groups, images, templates,
+- Add HTTPS server mode with 12 GET API endpoints
+- Add HTTPS server mode with 12 GET API endpoints
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 14 write API endpoints (CRUD + deletion with dry_run)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 5 HTTP endpoints (power, template sessions, SSE logs, group member removal, SAT file)
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 6 remaining HTTP endpoints and code quality improvements
+- 22 new smoke tests added (auth, 422 validation, route registration,
+- Add 6 remaining HTTP endpoints and code quality improvements
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Add 60-second request timeout to HTTP server
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Classify service errors into 404/409 instead of always returning 500
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- Add WebSocket console endpoints for nodes and CFS sessions
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+
+### Miscellaneous Tasks
+
+- Switch to local path dependencies for development
+- Apply code quality improvements across config, service, and main
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+- Ignore .claude session directory
+- HTTP server, WebSocket console, error type cleanup, and test coverage
+- Replace Error::Message with typed error variants
+- Update backend
+
+### Refactor
+
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements to HTTP server layer
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Apply code quality improvements across config, service, and main
+- Remove duplicate backend construction and add request logging middleware
+- Remove duplicate backend construction and add request logging middleware
+- Remove duplicate backend construction and add request logging middleware
+- Remove duplicate backend construction and add request logging middleware
+- Remove duplicate backend construction and add request logging middleware
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Normalize HTTP response status codes and shapes
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Replace if/else-if dispatch chains with match cli.subcommand()
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Phase 1 quick fixes (helpers, dedup, route grouping)
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Propagate manta_backend_dispatcher::error::Error through service layer
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Remove anyhow from common layer and add HTTP integration tests
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- :Error to manta_backend_dispatcher::error::Error.
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Enforce anyhow/BackendError boundary in CLI and add CI gate
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+- Replace Error::Message with typed error variants
+
+### Testing
+
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Add HTTP server smoke tests (35 tests, no real backend needed)
+- Migrate log→tracing and add service-layer unit tests (#10, #1)
+
 ## [1.62.9] - 2026-04-19
 
 ### Miscellaneous Tasks
 
 - Try to fix github workflow to build artifacts
+- Release manta-cli version 1.62.9
 
 ## [1.62.8] - 2026-04-19
 
