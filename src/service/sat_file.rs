@@ -49,13 +49,11 @@ pub async fn apply_sat_file(
     )?;
 
   let mut sat_file: crate::cli::commands::apply_sat_file::utils::SatFile =
-    serde_yaml::from_value(sat_template_yaml)
-      .map_err(|e| Error::Message(format!("Failed to parse SAT file: {e}")))?;
+    serde_yaml::from_value(sat_template_yaml)?;
 
   sat_file.filter(params.image_only, params.session_template_only)?;
 
-  let sat_file_yaml = serde_yaml::to_value(sat_file)
-    .map_err(|e| Error::Message(format!("Failed to convert SAT file to YAML: {e}")))?;
+  let sat_file_yaml = serde_yaml::to_value(sat_file)?;
 
   let shasta_k8s_secrets =
     crate::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(

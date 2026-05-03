@@ -104,7 +104,7 @@ pub async fn validate_and_prepare_template_session(
   } else {
     bos_sessiontemplate_vec
       .first()
-      .ok_or_else(|| Error::Message("BOS sessiontemplate list unexpectedly empty".to_string()))?
+      .ok_or_else(|| Error::NotFound("BOS sessiontemplate list unexpectedly empty".to_string()))?
   };
 
   // Validate user has access to the BOS sessiontemplate targets
@@ -174,7 +174,7 @@ pub async fn validate_and_prepare_template_session(
     tenant: None,
     operation: Some(
       Operation::from_str(&params.bos_session_operation).map_err(|_| {
-        Error::Message(format!(
+        Error::BadRequest(format!(
           "Invalid BOS session operation '{}'",
           params.bos_session_operation
         ))

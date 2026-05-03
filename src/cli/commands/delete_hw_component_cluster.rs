@@ -46,7 +46,7 @@ pub async fn run(
   match backend.get_group(token, target_hsm_group_name).await {
     Ok(_) => {}
     Err(_) => {
-      return Err(Error::Message(format!(
+      return Err(Error::NotFound(format!(
         "HSM group {} does not exist, cannot remove hw from it.",
         target_hsm_group_name
       )));
@@ -177,10 +177,10 @@ pub async fn exec(
 
   let target_hsm_group_name = target_hsm_group_vec
     .first()
-    .ok_or_else(|| Error::Message("Target HSM group vec is empty".to_string()))?;
+    .ok_or_else(|| Error::NotFound("Target HSM group vec is empty".to_string()))?;
   let parent_hsm_group_name = parent_hsm_group_vec
     .first()
-    .ok_or_else(|| Error::Message("Parent HSM group vec is empty".to_string()))?;
+    .ok_or_else(|| Error::NotFound("Parent HSM group vec is empty".to_string()))?;
 
   match backend
     .get_group(token, target_hsm_group_name)
@@ -190,7 +190,7 @@ pub async fn exec(
       tracing::debug!("The HSM group {} exists, good.", target_hsm_group_name)
     }
     Err(_) => {
-      return Err(Error::Message(format!(
+      return Err(Error::NotFound(format!(
         "HSM group {} does not exist, cannot remove hw \
          from it and cannot continue.",
         target_hsm_group_name
@@ -395,7 +395,7 @@ fn compute_final_summary(
 
   for (hw_component, counter) in deltas {
     let current = *current_summary.get(hw_component).ok_or_else(|| {
-      Error::Message(format!(
+      Error::NotFound(format!(
         "hw component '{}' not found in target HSM \
            hw component summary",
         hw_component
@@ -426,10 +426,7 @@ async fn apply_node_moves(
 
     backend
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
-      .await
-      .map_err(|e| {
-        Error::Message(format!("Failed to add node to parent group: {e}"))
-      })?;
+      .await?;
   }
 
   if target_will_be_empty {

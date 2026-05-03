@@ -43,7 +43,7 @@ pub mod http_client {
       .get("client_token")
       .and_then(Value::as_str)
       .ok_or_else(|| {
-        Error::Message(
+        Error::MissingField(
           "Vault auth response missing 'client_token' field".to_string(),
         )
       })?;
@@ -95,7 +95,7 @@ pub mod http_client {
       .get("token")
       .and_then(Value::as_str)
       .ok_or_else(|| {
-        Error::Message(
+        Error::MissingField(
           "Vault secret response missing 'token' field".to_string(),
         )
       })?;

@@ -76,7 +76,7 @@ pub async fn get_configuration_details(
 > {
   let vault_base_url = infra
     .vault_base_url
-    .ok_or_else(|| Error::Message("vault_base_url is required for configuration details".to_string()))?;
+    .ok_or_else(|| Error::MissingField("vault_base_url is required for configuration details".to_string()))?;
 
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(

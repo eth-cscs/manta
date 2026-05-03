@@ -27,18 +27,18 @@ const XNAME_BLADE_PREFIX_LEN: usize = 10;
 // Validate and get short nid
 fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
   if long_nid.len() != NID_STRING_LENGTH {
-    return Err(Error::Message(format!(
+    return Err(Error::InvalidNodeId(format!(
       "Nid '{}' not valid, Nid does not have {} characters",
       long_nid, NID_STRING_LENGTH
     )));
   }
 
   let nid_number = long_nid.strip_prefix("nid").ok_or_else(|| {
-    Error::Message(format!("Nid '{}' not valid, 'nid' prefix missing", long_nid))
+    Error::InvalidNodeId(format!("Nid '{}' not valid, 'nid' prefix missing", long_nid))
   })?;
 
   nid_number.parse::<usize>().map_err(|e| {
-    Error::Message(format!(
+    Error::InvalidNodeId(format!(
       "Could not convert Nid '{}' from long to short format: {}",
       nid_number, e
     ))
@@ -145,7 +145,7 @@ pub async fn from_hosts_expression_to_xname_vec(
   node_metadata_available_vec: Vec<Component>,
 ) -> Result<Vec<String>, Error> {
   let hostlist_expanded_vec_rslt =
-    parse(user_input).map_err(|e| Error::Message(e.to_string()));
+    parse(user_input).map_err(|e| Error::InvalidNodeId(e.to_string()));
 
   let xname_vec = match hostlist_expanded_vec_rslt {
     Ok(node_vec) => {

@@ -39,7 +39,7 @@ impl SatFile {
           })
           .collect(),
         None => {
-          return Err(Error::Message(
+          return Err(Error::MissingField(
             "'images' section missing in SAT file".to_string(),
           ));
         }
@@ -98,7 +98,7 @@ impl SatFile {
             })
             .collect(),
           None => {
-            return Err(Error::Message(
+            return Err(Error::MissingField(
               "'session_templates' section not defined \
                in SAT file"
                 .to_string(),
@@ -469,7 +469,7 @@ fn dot_notation_to_yaml(
 ) -> Result<serde_yaml::Value, Error> {
   let parts: Vec<&str> = dot_notation.split('=').collect();
   if parts.len() != 2 {
-    return Err(Error::Message("Invalid format".to_string()));
+    return Err(Error::InvalidPattern("Invalid format".to_string()));
   }
 
   let keys: Vec<&str> = parts[0].trim().split('.').collect();
@@ -491,7 +491,7 @@ fn dot_notation_to_yaml(
         if map.contains_key(Value::String(key.to_string())) {
           // Use existing map
           map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::Message(
+            Error::TemplateError(
               "Failed to get mutable reference to \
                existing YAML map entry"
                 .to_string(),
@@ -504,7 +504,7 @@ fn dot_notation_to_yaml(
             Value::Mapping(Mapping::new()),
           );
           map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::Message(
+            Error::TemplateError(
               "Failed to get mutable reference to \
                newly inserted YAML map entry"
                 .to_string(),
@@ -512,7 +512,7 @@ fn dot_notation_to_yaml(
           })?
         }
       } else {
-        return Err(Error::Message("Unexpected structure encountered".to_string()));
+        return Err(Error::TemplateError("Unexpected structure encountered".to_string()));
       };
       current_level = next_level;
     }
@@ -538,7 +538,7 @@ pub fn render_jinja2_sat_file_yaml(
     minijinja::syntax::SyntaxConfig::builder()
       .line_comment_prefix("#")
       .build()
-      .map_err(|e| Error::Message(format!("Failed to build jinja2 syntax config: {e}")))?,
+      .map_err(|e| Error::TemplateError(format!("Failed to build jinja2 syntax config: {e}")))?,
   );
   // Set 'String' as undefined behaviour meaning, missing values won't pass the template
   // rendering
@@ -553,18 +553,16 @@ pub fn render_jinja2_sat_file_yaml(
     );
     tracing::info!("Expand variables in 'session vars' file");
     // Read sesson vars file and parse it to YAML
-    let values_file_yaml: Value = serde_yaml::from_str(values_file_content)
-      .map_err(|e| Error::Message(format!("Failed to parse values file as YAML: {e}")))?;
+    let values_file_yaml: Value = serde_yaml::from_str(values_file_content)?;
     // Render session vars file with itself (copying ansible behaviour where the ansible vars
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .map_err(|e| Error::Message(format!("Error parsing values file to YAML: {e}")))?;
+      .map_err(|e| Error::TemplateError(format!("Error parsing values file to YAML: {e}")))?;
     serde_yaml::from_str(&values_file_rendered)
-      .map_err(|e| Error::Message(format!("Failed to parse rendered values file: {e}")))?
+      ?
   } else {
-    serde_yaml::from_str(sat_file_content)
-      .map_err(|e| Error::Message(format!("Failed to parse SAT file as YAML: {e}")))?
+    serde_yaml::from_str(sat_file_content)?
   };
 
   // Convert variable values sent by cli argument from dot notation to yaml format
@@ -577,7 +575,7 @@ pub fn render_jinja2_sat_file_yaml(
 
       values_file_yaml =
         merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).ok_or_else(|| {
-          Error::Message(
+          Error::TemplateError(
             "Failed to merge CLI variable values into \
              SAT file YAML"
               .to_string(),
@@ -590,13 +588,12 @@ pub fn render_jinja2_sat_file_yaml(
   tracing::info!("Expand variables in 'SAT file'");
   let sat_file_rendered = env
     .render_str(sat_file_content, values_file_yaml)
-    .map_err(|e| Error::Message(format!("Failed to render SAT file template: {e}")))?;
+    .map_err(|e| Error::TemplateError(format!("Failed to render SAT file template: {e}")))?;
 
   // Disable debug
   env.set_debug(false);
 
-  serde_yaml::from_str(&sat_file_rendered)
-    .map_err(|e| Error::Message(format!("Failed to parse rendered SAT file: {e}")))
+  Ok(serde_yaml::from_str(&sat_file_rendered)?)
 }
 
 #[cfg(test)]

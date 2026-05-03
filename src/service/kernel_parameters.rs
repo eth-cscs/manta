@@ -166,7 +166,7 @@ pub async fn prepare_kernel_params_changes(
             .get_images(token, Some(&image_id))
             .await?
             .first()
-            .ok_or_else(|| Error::Message("No image found for the given image id".to_string()))?
+            .ok_or_else(|| Error::NotFound("No image found for the given image id".to_string()))?
             .clone();
 
           if bp.is_root_kernel_param_iscsi_ready() {
@@ -209,7 +209,7 @@ pub async fn apply_kernel_params_changes(
         image
           .id
           .clone()
-          .ok_or_else(|| Error::Message("Image has no id".to_string()))?
+          .ok_or_else(|| Error::MissingField("Image has no id".to_string()))?
           .as_str(),
         &image.clone().into(),
       )

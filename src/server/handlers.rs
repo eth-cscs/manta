@@ -77,8 +77,13 @@ pub(crate) fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorRespon
     | BackendError::ConfigurationNotFound => StatusCode::NOT_FOUND,
     BackendError::Conflict(_)
     | BackendError::ConfigurationAlreadyExistsError(_) => StatusCode::CONFLICT,
-    BackendError::BadRequest(_) => StatusCode::BAD_REQUEST,
-    BackendError::AuthenticationTokenNotFound(_) => StatusCode::UNAUTHORIZED,
+    BackendError::BadRequest(_)
+    | BackendError::InvalidPattern(_)
+    | BackendError::UnsupportedBackend(_)
+    | BackendError::InvalidNodeId(_) => StatusCode::BAD_REQUEST,
+    BackendError::AuthenticationTokenNotFound(_)
+    | BackendError::JwtMalformed(_) => StatusCode::UNAUTHORIZED,
+    BackendError::InsufficientResources(_) => StatusCode::UNPROCESSABLE_ENTITY,
     _ => StatusCode::INTERNAL_SERVER_ERROR,
   };
   if status == StatusCode::INTERNAL_SERVER_ERROR {
@@ -1023,7 +1028,7 @@ pub async fn create_session(
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
       .await
-      .map_err(|e| to_handler_error(BackendError::Message(e.to_string())))?;
+      .map_err(to_handler_error)?;
 
   let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
   let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
@@ -1978,7 +1983,7 @@ pub async fn apply_session(
   let gitea_token =
     crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
       .await
-      .map_err(|e| to_handler_error(BackendError::Message(e.to_string())))?;
+      .map_err(to_handler_error)?;
 
   let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
   let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();

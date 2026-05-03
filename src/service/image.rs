@@ -74,7 +74,7 @@ pub async fn validate_image_deletion(
     .iter()
     .map(|boot_param| boot_param.try_get_boot_image_id())
     .collect::<Option<Vec<String>>>()
-    .ok_or_else(|| Error::Message("Could not get image ids used to boot nodes".to_string()))?;
+    .ok_or_else(|| Error::MissingField("Could not get image ids used to boot nodes".to_string()))?;
 
   let image_xnames_boot_map: Vec<&&str> = image_id_vec
     .iter()
@@ -97,7 +97,7 @@ pub async fn validate_image_deletion(
   let image_restricted_vec =
     get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
       .ok_or_else(|| {
-        Error::Message("Could not get restricted image ids used by boot parameters".to_string())
+        Error::MissingField("Could not get restricted image ids used by boot parameters".to_string())
       })?;
 
   if !image_restricted_vec.is_empty() {

@@ -32,7 +32,7 @@ fn get_project_dirs() -> Result<ProjectDirs, Error> {
     "manta", /*application*/
   )
   .ok_or_else(|| {
-    Error::Message(
+    Error::MissingField(
       "Could not determine project directories \
        (home directory may not be set)"
         .to_string(),
@@ -117,7 +117,7 @@ pub fn get_csm_root_cert_content(
       file.read_to_end(&mut buf)?;
       Ok(buf)
     }
-    Err(_) => Err(Error::Message(
+    Err(_) => Err(Error::NotFound(
       "CA public root file could not be found".to_string(),
     )),
   }
@@ -161,7 +161,7 @@ pub async fn get_configuration() -> Result<Config, Error> {
   };
 
   let config_file_path_str = config_file_path.to_str().ok_or_else(|| {
-    Error::Message(
+    Error::MissingField(
       "Configuration file path contains invalid UTF-8".to_string(),
     )
   })?;
@@ -353,35 +353,14 @@ async fn create_new_config_file(
   };
 
   let parent_dir = config_file_path.parent().ok_or_else(|| {
-    Error::Message(
+    Error::MissingField(
       "Configuration file path has no parent directory".to_string(),
     )
   })?;
-  std::fs::create_dir_all(parent_dir).map_err(|e| {
-    Error::Message(format!(
-      "Failed to create config directory '{}': {}",
-      parent_dir.display(),
-      e
-    ))
-  })?;
+  std::fs::create_dir_all(parent_dir)?;
 
-  let mut config_file =
-    File::create(&config_file_path).map_err(|e| {
-      Error::Message(format!(
-        "Failed to create config file '{}': {}",
-        config_file_path.display(),
-        e
-      ))
-    })?;
-  config_file
-    .write_all(config_file_content.as_bytes())
-    .map_err(|e| {
-      Error::Message(format!(
-        "Failed to write config file '{}': {}",
-        config_file_path.display(),
-        e
-      ))
-    })?;
+  let mut config_file = File::create(&config_file_path)?;
+  config_file.write_all(config_file_content.as_bytes())?;
 
   tracing::info!(
     "Configuration file '{}' created",

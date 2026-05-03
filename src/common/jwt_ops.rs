@@ -7,10 +7,8 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
   let jwt_body = token.split(' ').nth(1).unwrap_or(token);
 
   let base64_claims = jwt_body.split('.').nth(1).ok_or_else(|| {
-    Error::Message(
-      "JWT token is malformed: expected \
-       header.payload.signature format"
-        .to_string(),
+    Error::JwtMalformed(
+      "expected header.payload.signature format".to_string(),
     )
   })?;
 
@@ -18,11 +16,11 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
     .decode(base64_claims)
     .or_else(|_| BASE64_STANDARD.decode(base64_claims))
     .map_err(|e| {
-      Error::Message(format!("Could not get claims in JWT token: {}", e))
+      Error::JwtMalformed(format!("could not decode claims: {}", e))
     })?;
 
   let claims_str = std::str::from_utf8(&claims_u8).map_err(|e| {
-    Error::Message(format!("Could not convert JWT claims to string: {}", e))
+    Error::JwtMalformed(format!("claims are not valid UTF-8: {}", e))
   })?;
 
   Ok(serde_json::from_str::<Value>(claims_str)?)

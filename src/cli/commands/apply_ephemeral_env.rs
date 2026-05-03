@@ -16,7 +16,7 @@ pub async fn exec(
   let user_public_key_name =
     csm_rs::common::jwt_ops::get_preferred_username(token)
       .map_err(|e| {
-        Error::Message(format!(
+        Error::JwtMalformed(format!(
           "claim 'preferred_user' not found in JWT token: {e}"
         ))
       })?;
@@ -34,7 +34,7 @@ pub async fn exec(
   {
     user_public_ssh_value["id"].clone()
   } else {
-    return Err(Error::Message(format!(
+    return Err(Error::NotFound(format!(
       "User '{}' does not have an SSH public \
        key in Alps, Please contact platform \
        sys admins.",
@@ -60,11 +60,11 @@ pub async fn exec(
     image_id,
     user_public_ssh_id_value
       .as_str()
-      .ok_or_else(|| Error::Message("SSH key ID is not a string".to_string()))?,
+      .ok_or_else(|| Error::MissingField("SSH key ID is not a string".to_string()))?,
   )
   .await
   .map_err(|e| {
-    Error::Message(format!(
+    Error::BadRequest(format!(
       "Could not create ephemeral environment \
        based on image ID {image_id}: {e}"
     ))
@@ -74,7 +74,7 @@ pub async fn exec(
     .pointer("/ssh_containers/0/connection_info/customer_access/host")
     .cloned()
     .ok_or_else(|| {
-      Error::Message(
+      Error::MissingField(
         "Failed to get SSH container hostname \
          from ephemeral env response"
           .to_string(),

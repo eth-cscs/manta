@@ -170,7 +170,7 @@ pub async fn prepare_boot_config(
 
   if current_node_boot_param_vec
     .first()
-    .ok_or_else(|| Error::Message("No boot parameters found".to_string()))?
+    .ok_or_else(|| Error::NotFound("No boot parameters found".to_string()))?
     .is_root_kernel_param_iscsi_ready()
   {
     for image in image_vec.values_mut() {
@@ -229,7 +229,7 @@ pub async fn persist_boot_config(
       let image_id = image
         .id
         .clone()
-        .ok_or_else(|| Error::Message("Image id is missing".to_string()))?;
+        .ok_or_else(|| Error::MissingField("Image id is missing".to_string()))?;
       let patch_image: PatchImage = image.clone().into();
       infra.backend.update_image(token, &image_id, &patch_image).await?;
     }
@@ -275,7 +275,7 @@ async fn get_new_boot_image(
     let most_recent_image = image_vec
       .iter()
       .last()
-      .ok_or_else(|| Error::Message("No image found for configuration".to_string()))?;
+      .ok_or_else(|| Error::NotFound("No image found for configuration".to_string()))?;
 
     tracing::debug!(
       "Boot image id related to configuration '{}' found:\n{:#?}",
@@ -323,7 +323,7 @@ fn apply_kernel_params(
     tracing::info!("need restart? {}", any_changed);
 
     let image_id = boot_parameter.try_get_boot_image_id().ok_or_else(|| {
-      Error::Message(format!(
+      Error::MissingField(format!(
         "Could not get boot image id from boot parameters for hosts: {:?}",
         boot_parameter.hosts
       ))
@@ -349,14 +349,14 @@ async fn collect_boot_images(
     let new_boot_image_id = new_boot_image
       .id
       .as_ref()
-      .ok_or_else(|| Error::Message("New boot image id is missing".to_string()))?
+      .ok_or_else(|| Error::MissingField("New boot image id is missing".to_string()))?
       .clone();
 
     let new_boot_image_etag = new_boot_image
       .link
       .as_ref()
       .and_then(|link| link.etag.as_ref())
-      .ok_or_else(|| Error::Message("New boot image etag is missing".to_string()))?;
+      .ok_or_else(|| Error::MissingField("New boot image etag is missing".to_string()))?;
 
     image_vec.insert(new_boot_image_id.clone(), new_boot_image.clone());
 
@@ -379,7 +379,7 @@ async fn collect_boot_images(
     for boot_parameter in boot_param_vec.iter() {
       let boot_image_id =
         boot_parameter.try_get_boot_image_id().ok_or_else(|| {
-          Error::Message(format!(
+          Error::MissingField(format!(
             "Could not get boot image id from boot parameters for hosts: {:?}",
             boot_parameter.hosts
           ))
@@ -389,7 +389,7 @@ async fn collect_boot_images(
         .get_images(shasta_token, Some(boot_image_id.as_str()))
         .await?
         .first()
-        .ok_or_else(|| Error::Message("No image found for boot image id".to_string()))?
+        .ok_or_else(|| Error::NotFound("No image found for boot image id".to_string()))?
         .clone();
 
       image_vec.insert(boot_image_id, boot_image);

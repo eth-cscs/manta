@@ -71,13 +71,13 @@ pub fn parse_repo_name_from_remote(
   repo: &Repository,
 ) -> Result<String, Error> {
   let remote = repo.find_remote("origin").map_err(|e| {
-    Error::Message(format!("Failed to find remote 'origin': {}", e))
+    Error::LocalGitError(format!("Failed to find remote 'origin': {}", e))
   })?;
   let url = remote.url().ok_or_else(|| {
-    Error::Message("Remote 'origin' URL is not valid UTF-8".to_string())
+    Error::LocalGitError("Remote 'origin' URL is not valid UTF-8".to_string())
   })?;
   parse_repo_name_from_url(url)
-    .ok_or_else(|| Error::Message("Remote URL has no '/' separator".to_string()))
+    .ok_or_else(|| Error::LocalGitError("Remote URL has no '/' separator".to_string()))
 }
 
 #[cfg(test)]

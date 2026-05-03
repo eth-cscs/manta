@@ -75,7 +75,7 @@ pub async fn start_server(
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)
     .parse()
-    .map_err(|e| Error::Message(format!("Invalid listen address: {e}")))?;
+    .map_err(|e| Error::BadRequest(format!("Invalid listen address: {e}")))?;
 
   let tls_config = RustlsConfig::from_pem_file(cert_path, key_path)
     .await?;

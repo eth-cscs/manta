@@ -180,7 +180,7 @@ fn parse_hw_pattern_usize(
 
   let (_group_name, pattern_hw_component) =
     pattern_lowercase.split_once(':').ok_or_else(|| {
-      Error::Message(
+      Error::InvalidPattern(
         "Invalid pattern format: \
          expected 'group:component:count'"
           .to_string(),
@@ -191,7 +191,7 @@ fn parse_hw_pattern_usize(
     pattern_hw_component.split(':').collect();
 
   if !pattern_element_vec.len().is_multiple_of(2) {
-    return Err(Error::Message(
+    return Err(Error::InvalidPattern(
       "Error in pattern: odd number of elements. \
        Expected pairs of <hw component>:<count>. \
        eg a100:4:epyc:10:instinct:8"
@@ -205,7 +205,7 @@ fn parse_hw_pattern_usize(
     if let Ok(count) = chunk[1].parse::<usize>() {
       hw_component_count.insert(chunk[0].to_string(), count);
     } else {
-      return Err(Error::Message(
+      return Err(Error::InvalidPattern(
         "Error in pattern. Please make sure to follow \
          <hsm name>:<hw component>:<counter>:... \
          eg <tasna>:a100:4:epyc:10:instinct:8"
@@ -242,7 +242,7 @@ async fn ensure_target_group_exists(
     }
     Err(_) => {
       if !create_target_hsm_group {
-        return Err(Error::Message(format!(
+        return Err(Error::NotFound(format!(
           "Target HSM group '{}' does not exist, \
            but the option to create the group was \
            NOT specified, cannot continue.",
@@ -256,7 +256,7 @@ async fn ensure_target_group_exists(
         target_hsm_group_name
       );
       if dryrun {
-        return Err(Error::Message(
+        return Err(Error::BadRequest(
           "Dryrun selected, cannot create the \
            new group and continue."
             .to_string(),
@@ -273,7 +273,7 @@ async fn ensure_target_group_exists(
         .add_group(shasta_token, group)
         .await
         .map_err(|e| {
-          Error::Message(format!(
+          Error::BadRequest(format!(
             "Unable to create new target HSM group: {e}"
           ))
         })?;
@@ -303,7 +303,7 @@ fn validate_resource_sufficiency(
       .get(hw_component)
       .is_none_or(|value| value < qty)
     {
-      return Err(Error::Message(
+      return Err(Error::InsufficientResources(
         "There are not enough resources \
          to fulfill user request."
           .to_string(),
@@ -353,7 +353,7 @@ async fn apply_group_updates(
       )
       .await
       .map_err(|e| {
-        Error::Message(format!(
+        Error::BadRequest(format!(
           "Failed to update target HSM group members: {e}"
         ))
       })?;
@@ -384,7 +384,7 @@ async fn apply_group_updates(
       )
       .await
       .map_err(|e| {
-        Error::Message(format!(
+        Error::BadRequest(format!(
           "Failed to update parent HSM group members: {e}"
         ))
       })?;

@@ -607,7 +607,7 @@ pub fn parse_hw_pattern(
   pattern_elements: &[&str],
 ) -> Result<(Vec<String>, HashMap<String, isize>), Error> {
   if !pattern_elements.len().is_multiple_of(2) {
-    return Err(Error::Message(
+    return Err(Error::InvalidPattern(
       "Error in pattern: odd number of elements \
        after group name. Expected pairs of \
        <hw component>:<count>. \
@@ -622,7 +622,7 @@ pub fn parse_hw_pattern(
     if let Ok(count) = chunk[1].parse::<isize>() {
       hw_component_count.insert(chunk[0].to_string(), count);
     } else {
-      return Err(Error::Message(
+      return Err(Error::InvalidPattern(
         "Error in pattern. Please make sure to \
          follow <hsm name>:<hw component>:\
          <counter>:... \
@@ -653,7 +653,7 @@ pub async fn fetch_hsm_hw_inventory(
     .get_member_vec_from_group_name_vec(shasta_token, &[group_name.to_string()])
     .await
     .map_err(|e| {
-      Error::Message(format!(
+      Error::NotFound(format!(
         "Failed to get members from HSM group '{}': {e}",
         group_name
       ))
@@ -710,7 +710,7 @@ pub fn show_solution_and_confirm(
   );
 
   if !crate::common::user_interaction::confirm(&confirm_message, false) {
-    return Err(Error::Message("Operation cancelled by user".to_string()));
+    return Err(Error::BadRequest("Operation cancelled by user".to_string()));
   }
 
   Ok(())
@@ -730,12 +730,7 @@ pub fn print_hsm_group_json(
 
   println!(
     "{}",
-    serde_json::to_string_pretty(&value).map_err(|e| {
-      Error::Message(format!(
-        "Failed to serialize HSM group '{}' to JSON: {e}",
-        label
-      ))
-    })?
+    serde_json::to_string_pretty(&value)?
   );
 
   Ok(())

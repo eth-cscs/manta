@@ -81,7 +81,7 @@ impl Kafka {
       .set("message.timeout.ms", KAFKA_MESSAGE_TIMEOUT_MS)
       .create()
       .map_err(|e| {
-        Error::Message(format!("Failed to create Kafka producer: {}", e))
+        Error::KafkaError(format!("Failed to create Kafka producer: {}", e))
       })?;
     // Another thread may have raced us; either value is
     // fine since they are configured identically.
@@ -105,7 +105,7 @@ impl Audit for Kafka {
         tracing::info!("Delivery status for message received");
       }
       Err(e) => {
-        return Err(Error::Message(format!(
+        return Err(Error::KafkaError(format!(
           "Delivery status for message failed: {:?}",
           e.0
         )));

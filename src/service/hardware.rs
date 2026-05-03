@@ -66,7 +66,7 @@ pub async fn get_hardware_node(
   if let Some(ref type_artifact) = params.type_artifact {
     let nodes_array = node_hw_inventory
       .as_array()
-      .ok_or_else(|| Error::Message("Expected Nodes to be a JSON array".to_string()))?;
+      .ok_or_else(|| Error::MissingField("Expected Nodes to be a JSON array".to_string()))?;
     let matching_node = nodes_array
       .iter()
       .find(|&node| {
@@ -131,7 +131,7 @@ pub async fn get_hardware_cluster(
 
   let hsm_group_name = target_hsm_group_vec
     .first()
-    .ok_or_else(|| Error::Message("No HSM groups available for this user".to_string()))?
+    .ok_or_else(|| Error::NotFound("No HSM groups available for this user".to_string()))?
     .clone();
 
   let hsm_group = infra.backend
