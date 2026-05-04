@@ -1,3 +1,5 @@
+//! BSS boot parameter queries, changeset preparation, and persistence.
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{

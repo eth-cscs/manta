@@ -254,12 +254,10 @@ pub async fn get_curated_hsm_group_from_xname_hostlist(
   Ok(hsm_group_summary)
 }
 
-/// Check if input is a NID
 fn validate_nid_format_vec(node_vec: &[String]) -> bool {
   node_vec.iter().all(|nid| validate_nid_format(nid))
 }
 
-/// Check if input is a NID
 fn validate_nid_format(nid: &str) -> bool {
   nid.to_lowercase().starts_with("nid")
     && nid.len() == 9
@@ -268,12 +266,11 @@ fn validate_nid_format(nid: &str) -> bool {
       .is_some_and(|nid_number| nid_number.chars().all(char::is_numeric))
 }
 
-/// Validate xname is correct (it uses regex taken from HPE Cray CSM docs)
 fn validate_xname_format_vec(node_vec: &[String]) -> bool {
   node_vec.iter().all(|nid| validate_xname_format(nid))
 }
 
-/// Validate xname is correct (it uses regex taken from HPE Cray CSM docs)
+/// Return `true` if `xname` matches the HPE Cray xname regex.
 pub fn validate_xname_format(xname: &str) -> bool {
   XNAME_RE.is_match(xname)
 }

@@ -1,3 +1,5 @@
+//! HSM group CRUD operations and membership management.
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;

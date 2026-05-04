@@ -1,3 +1,5 @@
+//! BOS session template queries and BOS session creation with access validation.
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bos::{
   ClusterSessionTrait, ClusterTemplateTrait,

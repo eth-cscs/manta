@@ -4,6 +4,15 @@
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [GUIDE.md](GUIDE.md) | User guide — common workflows and practical examples |
+| [CLI.md](CLI.md) | Full CLI command reference — every command, subcommand, and flag |
+| [API.md](API.md) | HTTP API reference — REST and WebSocket endpoints |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Codebase architecture — for contributors |
+
 Manta is a frontend cli to interact with CSM and OCHAMI.
 
 ## Deployment

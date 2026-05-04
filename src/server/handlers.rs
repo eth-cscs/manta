@@ -1,3 +1,6 @@
+//! Axum handler functions for every HTTP and WebSocket endpoint, plus shared
+//! request/response types and the bearer-token extractor.
+
 use std::sync::Arc;
 use std::convert::Infallible;
 
@@ -31,6 +34,7 @@ use crate::service;
 // Bearer-token extractor — eliminates token-extraction boilerplate
 // ---------------------------------------------------------------------------
 
+/// Axum extractor that pulls the token from `Authorization: Bearer <token>`.
 pub struct BearerToken(pub String);
 
 impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
@@ -152,6 +156,7 @@ fn parse_iso_datetime(
 // Shared response types
 // ---------------------------------------------------------------------------
 
+/// Standard JSON error body returned by all failed endpoints.
 #[derive(Serialize)]
 pub struct ErrorResponse {
   pub error: String,
@@ -1121,12 +1126,15 @@ pub async fn apply_boot_config(
 // POST /api/v1/kernel-parameters/apply — Apply kernel parameter changes
 // ---------------------------------------------------------------------------
 
-/// "add" | "apply" | "delete"
+/// Which kernel-parameter mutation to perform (`add`, `apply`, or `delete`).
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum KernelParamOp {
+  /// Merge new parameters into the existing set.
   Add,
+  /// Replace the entire parameter set.
   Apply,
+  /// Remove named parameters from the existing set.
   Delete,
 }
 
@@ -1392,7 +1400,7 @@ pub async fn delete_group_members(
 // POST /api/v1/power — Power on/off/reset nodes or cluster
 // ---------------------------------------------------------------------------
 
-/// "on" | "off" | "reset"
+/// Power action to apply to the target nodes or cluster.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerAction {
@@ -1401,7 +1409,7 @@ pub enum PowerAction {
   Reset,
 }
 
-/// "nodes" | "cluster"
+/// Whether `targets` contains xnames (`nodes`) or a single cluster name (`cluster`).
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerTargetType {
@@ -1473,7 +1481,7 @@ pub async fn post_power(
 // POST /api/v1/templates/{name}/sessions — Create BOS session from template
 // ---------------------------------------------------------------------------
 
-/// "boot" | "reboot" | "shutdown"
+/// BOS session operation to run against the template's node list.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BosOperation {
@@ -1882,6 +1890,7 @@ pub async fn delete_hw_component(
 // POST /api/v1/hardware-clusters/{target}/configuration
 // ---------------------------------------------------------------------------
 
+/// Whether to pin nodes to the target cluster or unpin them back to the parent.
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum HwClusterMode {

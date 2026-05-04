@@ -1,3 +1,5 @@
+//! HSM node queries, registration, and deletion, with rollback on partial failure.
+
 use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;

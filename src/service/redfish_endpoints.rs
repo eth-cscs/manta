@@ -1,3 +1,5 @@
+//! Redfish endpoint CRUD operations (BMC registration and discovery management).
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
 use manta_backend_dispatcher::types::hsm::inventory::{

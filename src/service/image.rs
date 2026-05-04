@@ -1,3 +1,5 @@
+//! IMS image queries and safety-checked deletion (rejects images that boot live nodes).
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;

@@ -1,3 +1,5 @@
+//! CFS session queries, creation, deletion, and console-readiness validation.
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;

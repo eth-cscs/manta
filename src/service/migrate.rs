@@ -1,3 +1,5 @@
+//! vCluster backup/restore and node migration between HSM groups.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;

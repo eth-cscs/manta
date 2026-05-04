@@ -1,3 +1,5 @@
+//! Axum router registration: maps every `/api/v1/` path to its handler.
+
 use std::sync::Arc;
 
 use axum::{

@@ -1,3 +1,5 @@
+//! Audit trail helpers: build and send structured JSON messages to Kafka.
+
 use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 use serde::{Deserialize, Serialize};
 

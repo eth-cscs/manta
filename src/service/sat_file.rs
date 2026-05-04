@@ -1,3 +1,5 @@
+//! SAT file rendering (Jinja2) and application through the backend.
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{apply_sat_file::SatTrait, hsm::group::GroupTrait},

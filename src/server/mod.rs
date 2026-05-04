@@ -1,3 +1,6 @@
+//! HTTPS server setup: shared state, request-logging middleware, and the
+//! TLS server entry point.
+
 pub mod handlers;
 pub mod routes;
 #[cfg(test)]
@@ -20,12 +23,19 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 /// Unlike `InfraContext` (which borrows), this struct owns all
 /// data so it can be shared safely across async tasks.
 pub struct ServerState {
+  /// Dispatches API calls to the configured CSM or OpenCHAMI backend.
   pub backend: StaticBackendDispatcher,
+  /// Active site name from the config file (used for vault and Gitea calls).
   pub site_name: String,
+  /// Base URL for the CSM/OpenCHAMI API (e.g. `https://api.cluster/apis`).
   pub shasta_base_url: String,
+  /// PEM-encoded root CA certificate for the backend; empty vec skips verification.
   pub shasta_root_cert: Vec<u8>,
+  /// HashiCorp Vault base URL; `None` means features requiring vault return 501.
   pub vault_base_url: Option<String>,
+  /// Gitea VCS base URL derived from the site base URL.
   pub gitea_base_url: String,
+  /// Kubernetes API URL; `None` means console and log-streaming endpoints return 501.
   pub k8s_api_url: Option<String>,
   /// How long a WebSocket console session may be idle before the server
   /// closes it. Protects against leaked Kubernetes pod attachments.

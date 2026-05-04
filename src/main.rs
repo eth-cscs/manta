@@ -1,3 +1,6 @@
+//! Application entry point: parses CLI args, loads configuration, and
+//! launches either the HTTPS server or the CLI command handler.
+
 mod backend_dispatcher;
 mod cli;
 mod common;

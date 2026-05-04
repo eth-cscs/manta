@@ -1,11 +1,10 @@
+//! Authorization helpers: validate user access to HSM groups and their members.
+
 use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-/// Returns a curated list of 'groups' the user has access to.
-/// This function validates the list of groups and returns an error if user tries to access a
-/// group he does not have access to
-/// If the user did not request any HSM group, then it will return all groups available
+/// Return the accessible HSM groups for the token; errors if the requested group is not accessible.
 pub async fn get_groups_names_available(
   backend: &StaticBackendDispatcher,
   auth_token: &str,
@@ -42,10 +41,7 @@ pub async fn get_groups_names_available(
   }
 }
 
-/// Validate user has access to a list of HSM group members provided.
-/// HSM members user is asking for are taken from cli command
-/// Exit if user does not have access to any of the members provided. By not having access to a HSM
-/// members means, the node belongs to an HSM group which the user does not have access
+/// Validate that every requested xname belongs to a group the token has access to.
 pub async fn validate_target_hsm_members(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,

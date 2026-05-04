@@ -1,3 +1,5 @@
+//! Cluster-scoped node detail queries using HSM group membership.
+
 use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;

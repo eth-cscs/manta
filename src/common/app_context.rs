@@ -1,3 +1,5 @@
+//! Context structs threaded through the call stack in CLI and server modes.
+
 use crate::common::config::types::MantaConfiguration;
 use crate::common::kafka::Kafka;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;

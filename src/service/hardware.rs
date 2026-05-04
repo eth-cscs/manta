@@ -1,3 +1,5 @@
+//! Hardware inventory queries for individual nodes and clusters, with concurrent fetching.
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;

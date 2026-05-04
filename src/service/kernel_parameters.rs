@@ -1,3 +1,5 @@
+//! Kernel boot parameter mutations (add, apply, delete) with SBPS iSCSI image projection.
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
