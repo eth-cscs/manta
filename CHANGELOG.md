@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.63.1] - 2026-05-05
+
+### Documentation
+
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Add rustdoc to service, common, and server layers
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+- Complete rustdoc coverage for handlers, service structs, and CLI modules
+
 ## [1.63.0] - 2026-05-03
 
 ### Bug Fixes
@@ -134,6 +162,7 @@ All notable changes to this project will be documented in this file.
 - HTTP server, WebSocket console, error type cleanup, and test coverage
 - Replace Error::Message with typed error variants
 - Update backend
+- Release manta-cli version 1.63.0
 
 ### Refactor
 
