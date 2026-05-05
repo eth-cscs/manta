@@ -1,3 +1,5 @@
+//! Implements the `manta get configurations` command.
+
 use anyhow::{Context, Error, bail};
 
 use crate::cli::output::configuration::{print_table_details_struct, print_table_struct};

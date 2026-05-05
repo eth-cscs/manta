@@ -1,3 +1,5 @@
+//! Implements the `manta migrate nodes` command.
+
 use anyhow::Error;
 
 use crate::common::{app_context::AppContext, audit};

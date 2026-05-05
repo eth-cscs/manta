@@ -1,3 +1,5 @@
+//! Implements the `manta apply hardware cluster` command.
+
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 

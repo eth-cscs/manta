@@ -1,3 +1,5 @@
+//! Table and JSON renderers for hardware inventory output.
+
 use std::collections::{HashMap, HashSet};
 
 use comfy_table::{Cell, Color, Table};

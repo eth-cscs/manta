@@ -1,3 +1,5 @@
+//! Dispatches `GroupTrait` methods to csm-rs or ochami-rs.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{

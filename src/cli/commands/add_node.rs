@@ -1,3 +1,5 @@
+//! Implements the `manta add node` command.
+
 use anyhow::Result;
 use std::path::PathBuf;
 

@@ -1,3 +1,5 @@
+//! `StaticBackendDispatcher` implementation modules and the `dispatch!` macro.
+
 /// Dispatches a method call to the underlying backend variant.
 ///
 /// Both `CSM` and `OCHAMI` variants always delegate to the

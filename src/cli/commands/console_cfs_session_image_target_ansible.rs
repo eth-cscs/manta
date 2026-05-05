@@ -1,3 +1,5 @@
+//! Implements the `manta console target-ansible` command.
+
 use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::{
   interfaces::{cfs::CfsTrait, console::ConsoleTrait},

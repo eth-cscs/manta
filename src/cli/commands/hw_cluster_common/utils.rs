@@ -1,3 +1,5 @@
+//! Helper functions for hardware cluster node selection and summary display.
+
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use manta_backend_dispatcher::error::Error;

@@ -1,3 +1,5 @@
+//! Dispatches `DeleteConfigurationsAndDataRelatedTrait` methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait,

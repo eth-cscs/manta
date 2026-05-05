@@ -1,3 +1,5 @@
+//! Routes `manta add *` subcommands to their exec functions.
+
 use crate::cli::commands::{
   add_boot_parameters, add_group, add_hw_component_cluster,
   add_kernel_parameters, add_node, add_redfish_endpoint,

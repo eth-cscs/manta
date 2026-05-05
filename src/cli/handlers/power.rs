@@ -1,3 +1,5 @@
+//! Routes `manta power *` subcommands to their exec functions.
+
 use crate::cli::commands::power_common::{self, PowerAction};
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;

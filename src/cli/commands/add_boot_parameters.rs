@@ -1,3 +1,5 @@
+//! Implements the `manta add boot-parameters` command.
+
 use anyhow::{Context, Error};
 use manta_backend_dispatcher::types::bss::BootParameters;
 use serde_json::Value;

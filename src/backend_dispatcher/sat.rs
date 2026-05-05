@@ -1,3 +1,5 @@
+//! Dispatches `SatTrait` (SAT file application) methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error, interfaces::apply_sat_file::SatTrait,
 };

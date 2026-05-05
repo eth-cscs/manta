@@ -1,3 +1,5 @@
+//! Implements the `manta config unset parent-hsm` command.
+
 use anyhow::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
@@ -14,6 +16,7 @@ pub async fn exec(
   unset_parent_hsm(backend, token).await
 }
 
+/// Remove the `parent_hsm_group` key from the active config file.
 pub async fn unset_parent_hsm(
   backend: &StaticBackendDispatcher,
   shasta_token: &str,

@@ -1,3 +1,5 @@
+//! Routes `manta delete *` subcommands to their exec functions.
+
 use crate::cli::commands::{
   delete_and_cancel_session, delete_boot_parameters,
   delete_configurations_and_derivatives, delete_group,

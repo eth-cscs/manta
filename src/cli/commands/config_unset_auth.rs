@@ -1,3 +1,5 @@
+//! Implements the `manta config unset auth` command.
+
 use std::fs;
 
 use anyhow::{Context, Error};

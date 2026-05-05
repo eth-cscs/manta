@@ -1,3 +1,5 @@
+//! Table and JSON renderers for CFS session output.
+
 use anyhow::{Context, Error};
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};

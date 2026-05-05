@@ -1,3 +1,5 @@
+//! Implements the `manta get redfish-endpoints` command.
+
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;

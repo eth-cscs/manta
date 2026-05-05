@@ -166,6 +166,7 @@ pub struct ErrorResponse {
 // Health check
 // ---------------------------------------------------------------------------
 
+/// GET /health — liveness probe; returns `{"status":"ok"}`.
 #[tracing::instrument(skip_all)]
 pub async fn health() -> impl IntoResponse {
   Json(serde_json::json!({ "status": "ok" }))
@@ -175,6 +176,7 @@ pub async fn health() -> impl IntoResponse {
 // GET /api/v1/sessions
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /sessions`.
 #[derive(Deserialize)]
 pub struct SessionQuery {
   pub hsm_group: Option<String>,
@@ -187,6 +189,7 @@ pub struct SessionQuery {
   pub limit: Option<u8>,
 }
 
+/// GET /sessions — list CFS sessions with optional filters.
 #[tracing::instrument(skip_all)]
 pub async fn get_sessions(
   State(state): State<Arc<ServerState>>,
@@ -220,6 +223,7 @@ pub async fn get_sessions(
 // GET /api/v1/configurations
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /configurations`.
 #[derive(Deserialize)]
 pub struct ConfigurationQuery {
   pub name: Option<String>,
@@ -228,6 +232,7 @@ pub struct ConfigurationQuery {
   pub limit: Option<u8>,
 }
 
+/// GET /configurations — list CFS configurations with optional name/pattern/group filters.
 #[tracing::instrument(skip_all)]
 pub async fn get_configurations(
   State(state): State<Arc<ServerState>>,
@@ -258,13 +263,16 @@ pub async fn get_configurations(
 // GET /api/v1/nodes
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /nodes`.
 #[derive(Deserialize)]
 pub struct NodesQuery {
   pub xname: String,
+  /// Expand results to include nodes sharing the same power supply.
   pub include_siblings: Option<bool>,
   pub status: Option<String>,
 }
 
+/// GET /nodes — fetch node details for a given xname expression.
 #[tracing::instrument(skip_all)]
 pub async fn get_nodes(
   State(state): State<Arc<ServerState>>,
@@ -290,11 +298,13 @@ pub async fn get_nodes(
 // GET /api/v1/groups
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /groups`.
 #[derive(Deserialize)]
 pub struct GroupQuery {
   pub name: Option<String>,
 }
 
+/// GET /groups — list HSM groups, optionally filtered by name.
 #[tracing::instrument(skip_all)]
 pub async fn get_groups(
   State(state): State<Arc<ServerState>>,
@@ -319,6 +329,7 @@ pub async fn get_groups(
 // GET /api/v1/images
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /images`.
 #[derive(Deserialize)]
 pub struct ImageQuery {
   pub id: Option<String>,
@@ -335,6 +346,7 @@ pub struct ImageEntry {
   pub is_linked: bool,
 }
 
+/// GET /images — list IMS images with their associated CFS configuration names.
 #[tracing::instrument(skip_all)]
 pub async fn get_images(
   State(state): State<Arc<ServerState>>,
@@ -372,6 +384,7 @@ pub async fn get_images(
 // GET /api/v1/templates
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /templates`.
 #[derive(Deserialize)]
 pub struct TemplateQuery {
   pub name: Option<String>,
@@ -379,6 +392,7 @@ pub struct TemplateQuery {
   pub limit: Option<u8>,
 }
 
+/// GET /templates — list BOS session templates with optional filters.
 #[tracing::instrument(skip_all)]
 pub async fn get_templates(
   State(state): State<Arc<ServerState>>,
@@ -405,12 +419,14 @@ pub async fn get_templates(
 // GET /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /boot-parameters`.
 #[derive(Deserialize)]
 pub struct BootParametersQuery {
   pub hsm_group: Option<String>,
   pub nodes: Option<String>,
 }
 
+/// GET /boot-parameters — fetch BSS boot parameters for a group or node list.
 #[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -437,12 +453,14 @@ pub async fn get_boot_parameters(
 // GET /api/v1/kernel-parameters
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /kernel-parameters`.
 #[derive(Deserialize)]
 pub struct KernelParametersQuery {
   pub hsm_group: Option<String>,
   pub nodes: Option<String>,
 }
 
+/// GET /kernel-parameters — fetch BSS kernel parameters for a group or node list.
 #[tracing::instrument(skip_all)]
 pub async fn get_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -469,6 +487,7 @@ pub async fn get_kernel_parameters(
 // GET /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /redfish-endpoints`.
 #[derive(Deserialize)]
 pub struct RedfishEndpointsQuery {
   pub id: Option<String>,
@@ -478,6 +497,7 @@ pub struct RedfishEndpointsQuery {
   pub ipaddress: Option<String>,
 }
 
+/// GET /redfish-endpoints — list HSM Redfish endpoints with optional filters.
 #[tracing::instrument(skip_all)]
 pub async fn get_redfish_endpoints(
   State(state): State<Arc<ServerState>>,
@@ -506,12 +526,14 @@ pub async fn get_redfish_endpoints(
 // GET /api/v1/clusters
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /clusters`.
 #[derive(Deserialize)]
 pub struct ClusterQuery {
   pub hsm_group: Option<String>,
   pub status: Option<String>,
 }
 
+/// GET /clusters — list cluster nodes with optional group/status filters.
 #[tracing::instrument(skip_all)]
 pub async fn get_clusters(
   State(state): State<Arc<ServerState>>,
@@ -537,11 +559,13 @@ pub async fn get_clusters(
 // GET /api/v1/hardware-clusters
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /hardware-clusters`.
 #[derive(Deserialize)]
 pub struct HardwareClusterQuery {
   pub hsm_group: Option<String>,
 }
 
+/// GET /hardware-clusters — summarize hardware components per node for a cluster.
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_clusters(
   State(state): State<Arc<ServerState>>,
@@ -569,12 +593,15 @@ pub async fn get_hardware_clusters(
 // GET /api/v1/hardware-nodes
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /hardware-nodes`.
 #[derive(Deserialize)]
 pub struct HardwareNodeQuery {
   pub xnames: String,
+  /// Hardware component type to filter on (e.g. `"Memory"`, `"Processor"`).
   pub type_artifact: Option<String>,
 }
 
+/// GET /hardware-nodes — list hardware components for a set of xnames.
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_nodes(
   State(state): State<Arc<ServerState>>,
@@ -605,6 +632,7 @@ pub async fn get_hardware_nodes(
 // DELETE /api/v1/nodes/{id}
 // ---------------------------------------------------------------------------
 
+/// DELETE /nodes/{id} — remove a node from HSM by xname or NID.
 #[tracing::instrument(skip_all)]
 pub async fn delete_node(
   State(state): State<Arc<ServerState>>,
@@ -625,6 +653,7 @@ pub async fn delete_node(
 // POST /api/v1/nodes
 // ---------------------------------------------------------------------------
 
+/// Body for `POST /nodes`.
 #[derive(Deserialize)]
 pub struct AddNodeRequest {
   pub id: String,
@@ -634,6 +663,7 @@ pub struct AddNodeRequest {
   pub arch: Option<String>,
 }
 
+/// POST /nodes — register a new node in HSM and add it to a group.
 #[tracing::instrument(skip_all)]
 pub async fn add_node(
   State(state): State<Arc<ServerState>>,
@@ -662,12 +692,15 @@ pub async fn add_node(
 // DELETE /api/v1/groups/{label}
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `DELETE /groups/{label}`.
 #[derive(Deserialize)]
 pub struct DeleteGroupQuery {
+  /// Delete even if the group still has members (default: false).
   #[serde(default)]
   pub force: bool,
 }
 
+/// DELETE /groups/{label} — remove an HSM group.
 #[tracing::instrument(skip_all)]
 pub async fn delete_group(
   State(state): State<Arc<ServerState>>,
@@ -689,6 +722,7 @@ pub async fn delete_group(
 // POST /api/v1/groups
 // ---------------------------------------------------------------------------
 
+/// POST /groups — create a new HSM group.
 #[tracing::instrument(skip_all)]
 pub async fn create_group(
   State(state): State<Arc<ServerState>>,
@@ -709,17 +743,20 @@ pub async fn create_group(
 // POST /api/v1/groups/{name}/members
 // ---------------------------------------------------------------------------
 
+/// Body for `POST /groups/{name}/members`.
 #[derive(Deserialize)]
 pub struct AddNodesToGroupRequest {
   pub hosts_expression: String,
 }
 
+/// Response for `POST /groups/{name}/members`.
 #[derive(Serialize)]
 pub struct AddNodesToGroupResponse {
   pub added: Vec<String>,
   pub removed: Vec<String>,
 }
 
+/// POST /groups/{name}/members — replace a group's member list from a host expression.
 #[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
   State(state): State<Arc<ServerState>>,
@@ -746,11 +783,13 @@ pub async fn add_nodes_to_group(
 // DELETE /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+/// Body for `DELETE /boot-parameters`.
 #[derive(Deserialize)]
 pub struct DeleteBootParametersRequest {
   pub hosts: Vec<String>,
 }
 
+/// DELETE /boot-parameters — remove BSS boot parameter entries for specified hosts.
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -779,6 +818,7 @@ pub async fn delete_boot_parameters(
 // POST /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+/// POST /boot-parameters — create a new BSS boot parameters entry.
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -799,6 +839,7 @@ pub async fn add_boot_parameters(
 // PUT /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
+/// PUT /boot-parameters — update boot image, kernel params, or runtime config for nodes.
 #[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -819,6 +860,7 @@ pub async fn update_boot_parameters(
 // DELETE /api/v1/redfish-endpoints/{id}
 // ---------------------------------------------------------------------------
 
+/// DELETE /redfish-endpoints/{id} — remove a Redfish endpoint from HSM.
 #[tracing::instrument(skip_all)]
 pub async fn delete_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -839,6 +881,7 @@ pub async fn delete_redfish_endpoint(
 // POST /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
+/// POST /redfish-endpoints — register a new Redfish endpoint in HSM.
 #[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -859,6 +902,7 @@ pub async fn add_redfish_endpoint(
 // PUT /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
+/// PUT /redfish-endpoints — update an existing Redfish endpoint's properties.
 #[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -879,12 +923,15 @@ pub async fn update_redfish_endpoint(
 // DELETE /api/v1/sessions/{name} — with ?dry_run=true support
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `DELETE /sessions/{name}`.
 #[derive(Deserialize)]
 pub struct DeleteSessionQuery {
+  /// When true, return deletion context without actually deleting (default: false).
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.
 #[tracing::instrument(skip_all)]
 pub async fn delete_session(
   State(state): State<Arc<ServerState>>,
@@ -915,13 +962,17 @@ pub async fn delete_session(
 // DELETE /api/v1/images — with ?ids=id1,id2&dry_run=true
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `DELETE /images`.
 #[derive(Deserialize)]
 pub struct DeleteImagesQuery {
+  /// Comma-separated list of IMS image IDs to delete.
   pub ids: String,
+  /// When true, validates deletion eligibility without removing anything.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.
 #[tracing::instrument(skip_all)]
 pub async fn delete_images(
   State(state): State<Arc<ServerState>>,
@@ -952,15 +1003,21 @@ pub async fn delete_images(
 // DELETE /api/v1/configurations — with ?pattern=...&since=...&until=...&dry_run=true
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `DELETE /configurations`.
 #[derive(Deserialize)]
 pub struct DeleteConfigurationsQuery {
+  /// Glob pattern to match configuration names.
   pub pattern: Option<String>,
+  /// ISO-8601 lower bound — only delete configurations created after this date.
   pub since: Option<String>,
+  /// ISO-8601 upper bound — only delete configurations created before this date.
   pub until: Option<String>,
+  /// When true, returns deletion candidates without removing anything.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `DELETE /api/v1/configurations` — delete CFS configurations and all derived artifacts.
 #[tracing::instrument(skip_all)]
 pub async fn delete_configurations(
   State(state): State<Arc<ServerState>>,
@@ -1006,18 +1063,28 @@ pub async fn delete_configurations(
 // POST /api/v1/sessions — Create CFS session
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /sessions`.
 #[derive(Deserialize)]
 pub struct CreateSessionRequest {
+  /// Explicit name for the CFS session and configuration; auto-generated when absent.
   pub cfs_conf_sess_name: Option<String>,
+  /// Ansible playbook filename inside the repository.
   pub playbook_yaml_file_name: Option<String>,
+  /// Target HSM group name.
   pub hsm_group: Option<String>,
+  /// Git repository names (parallel-indexed with `repo_last_commit_ids`).
   pub repo_names: Vec<String>,
+  /// Git commit SHAs matching each entry in `repo_names`.
   pub repo_last_commit_ids: Vec<String>,
+  /// Ansible `--limit` expression to restrict which hosts are targeted.
   pub ansible_limit: Option<String>,
+  /// Ansible verbosity level (e.g. `"-v"`, `"-vvv"`).
   pub ansible_verbosity: Option<String>,
+  /// Extra arguments forwarded verbatim to `ansible-playbook`.
   pub ansible_passthrough: Option<String>,
 }
 
+/// `POST /api/v1/sessions` — create a CFS session from one or more git repositories.
 #[tracing::instrument(skip_all)]
 pub async fn create_session(
   State(state): State<Arc<ServerState>>,
@@ -1067,17 +1134,25 @@ pub async fn create_session(
 // POST /api/v1/boot-config — Apply boot configuration (with ?dry_run=true)
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /boot-config`.
 #[derive(Deserialize)]
 pub struct ApplyBootConfigRequest {
+  /// Node-set expression (xnames, HSM group, or nodeset) identifying the target nodes.
   pub hosts_expression: String,
+  /// IMS image ID to set as the boot image.
   pub boot_image_id: Option<String>,
+  /// CFS configuration name associated with the boot image.
   pub boot_image_configuration: Option<String>,
+  /// Kernel command-line parameters to apply.
   pub kernel_parameters: Option<String>,
+  /// CFS configuration to assign as the runtime desired-config.
   pub runtime_configuration: Option<String>,
+  /// When true, returns the computed changeset without persisting it.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.
 #[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
   State(state): State<Arc<ServerState>>,
@@ -1138,10 +1213,14 @@ pub enum KernelParamOp {
   Delete,
 }
 
+/// Request body for `POST /kernel-parameters/apply`.
 #[derive(Deserialize)]
 pub struct ApplyKernelParametersRequest {
+  /// Target node xnames.
   pub xnames: Vec<String>,
+  /// Which mutation to perform: add, apply (replace), or delete.
   pub operation: KernelParamOp,
+  /// Space-separated kernel parameter key=value pairs.
   pub params: String,
   /// Only relevant for the `add` operation.
   #[serde(default)]
@@ -1149,6 +1228,7 @@ pub struct ApplyKernelParametersRequest {
   /// Whether to project SBPS images (default true).
   #[serde(default = "default_true")]
   pub project_sbps: bool,
+  /// When true, returns the computed changeset without applying it.
   #[serde(default)]
   pub dry_run: bool,
 }
@@ -1157,6 +1237,7 @@ fn default_true() -> bool {
   true
 }
 
+/// `POST /api/v1/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -1219,17 +1300,24 @@ pub async fn apply_kernel_parameters(
 // POST /api/v1/migrate/nodes — Migrate nodes between HSM groups
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /migrate/nodes`.
 #[derive(Deserialize)]
 pub struct MigrateNodesRequest {
+  /// Destination HSM group names to move nodes into.
   pub target_hsm_names: Vec<String>,
+  /// Source HSM group names the nodes currently belong to.
   pub parent_hsm_names: Vec<String>,
+  /// Node-set expression selecting which nodes to migrate.
   pub hosts_expression: String,
+  /// When true, validates the migration plan without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
+  /// Create the target HSM group if it does not already exist.
   #[serde(default)]
   pub create_hsm_group: bool,
 }
 
+/// `POST /api/v1/migrate/nodes` — move nodes between HSM groups.
 #[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
   State(state): State<Arc<ServerState>>,
@@ -1261,12 +1349,16 @@ pub async fn migrate_nodes(
 // POST /api/v1/migrate/backup — Backup BOS session templates
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /migrate/backup`.
 #[derive(Deserialize)]
 pub struct MigrateBackupRequest {
+  /// BOS session template name (or filter) to back up.
   pub bos: Option<String>,
+  /// Filesystem path where backup files will be written.
   pub destination: Option<String>,
 }
 
+/// `POST /api/v1/migrate/backup` — export BOS session templates to backup files.
 #[tracing::instrument(skip_all)]
 pub async fn migrate_backup(
   State(state): State<Arc<ServerState>>,
@@ -1292,17 +1384,25 @@ pub async fn migrate_backup(
 // POST /api/v1/migrate/restore — Restore from backup files
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /migrate/restore`.
 #[derive(Deserialize)]
 pub struct MigrateRestoreRequest {
+  /// Path to the BOS session template backup file.
   pub bos_file: Option<String>,
+  /// Path to the CFS configuration backup file.
   pub cfs_file: Option<String>,
+  /// Path to the HSM group backup file.
   pub hsm_file: Option<String>,
+  /// Path to the IMS image metadata backup file.
   pub ims_file: Option<String>,
+  /// Directory containing the image layer tarballs.
   pub image_dir: Option<String>,
+  /// When true, overwrite existing resources that conflict with the backup.
   #[serde(default)]
   pub overwrite: bool,
 }
 
+/// `POST /api/v1/migrate/restore` — import BOS session templates and related artifacts from backup.
 #[tracing::instrument(skip_all)]
 pub async fn migrate_restore(
   State(state): State<Arc<ServerState>>,
@@ -1332,11 +1432,14 @@ pub async fn migrate_restore(
 // POST /api/v1/ephemeral-env — Create ephemeral CFS environment
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /ephemeral-env`.
 #[derive(Deserialize)]
 pub struct CreateEphemeralEnvRequest {
+  /// IMS image ID to boot the ephemeral environment from.
   pub image_id: String,
 }
 
+/// `POST /api/v1/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.
 #[tracing::instrument(skip_all)]
 pub async fn create_ephemeral_env(
   State(state): State<Arc<ServerState>>,
@@ -1361,13 +1464,17 @@ pub async fn create_ephemeral_env(
 // DELETE /api/v1/groups/{name}/members — Remove nodes from HSM group
 // ---------------------------------------------------------------------------
 
+/// Request body for `DELETE /groups/{name}/members`.
 #[derive(Deserialize)]
 pub struct DeleteGroupMembersRequest {
+  /// xnames to remove from the HSM group.
   pub xnames: Vec<String>,
+  /// When true, validates the request without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `DELETE /api/v1/groups/{name}/members` — remove nodes from an HSM group.
 #[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
   State(state): State<Arc<ServerState>>,
@@ -1404,8 +1511,11 @@ pub async fn delete_group_members(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerAction {
+  /// Power on the nodes.
   On,
+  /// Power off the nodes.
   Off,
+  /// Power-cycle (reset) the nodes.
   Reset,
 }
 
@@ -1413,19 +1523,27 @@ pub enum PowerAction {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerTargetType {
+  /// `targets` is a list of xnames.
   Nodes,
+  /// `targets` contains a single HSM group name whose members will be targeted.
   Cluster,
 }
 
+/// Request body for `POST /power`.
 #[derive(Deserialize)]
 pub struct PowerRequest {
+  /// Power operation to perform.
   pub action: PowerAction,
+  /// xnames or cluster name, depending on `target_type`.
   pub targets: Vec<String>,
+  /// Indicates whether `targets` contains node xnames or a cluster name.
   pub target_type: PowerTargetType,
+  /// Pass `--force` to the underlying power operation (forceful shutdown/reset).
   #[serde(default)]
   pub force: bool,
 }
 
+/// `POST /api/v1/power` — power on, off, or reset nodes or all members of a cluster.
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
   State(state): State<Arc<ServerState>>,
@@ -1485,8 +1603,11 @@ pub async fn post_power(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BosOperation {
+  /// Boot nodes that are currently off.
   Boot,
+  /// Reboot (power-cycle) nodes.
   Reboot,
+  /// Shut down nodes.
   Shutdown,
 }
 
@@ -1500,17 +1621,24 @@ impl BosOperation {
   }
 }
 
+/// Request body for `POST /templates/{name}/sessions`.
 #[derive(Deserialize)]
 pub struct PostTemplateSessionRequest {
+  /// BOS operation to run (boot, reboot, or shutdown).
   pub operation: BosOperation,
+  /// Ansible limit expression restricting which template nodes are targeted.
   pub limit: String,
+  /// Optional explicit name for the BOS session.
   pub session_name: Option<String>,
+  /// When true, include nodes marked as disabled.
   #[serde(default)]
   pub include_disabled: bool,
+  /// When true, validates the session parameters without creating a BOS session.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/templates/{name}/sessions` — create a BOS session from a session template.
 #[tracing::instrument(skip_all)]
 pub async fn post_template_session(
   State(state): State<Arc<ServerState>>,
@@ -1555,12 +1683,15 @@ pub async fn post_template_session(
 // GET /api/v1/sessions/{name}/logs — Stream CFS session logs via SSE
 // ---------------------------------------------------------------------------
 
+/// Query parameters for `GET /sessions/{name}/logs`.
 #[derive(Deserialize)]
 pub struct SessionLogsQuery {
+  /// When true, prefix each log line with its timestamp.
   #[serde(default)]
   pub timestamps: bool,
 }
 
+/// `GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
 #[tracing::instrument(skip_all)]
 pub async fn get_session_logs(
   State(state): State<Arc<ServerState>>,
@@ -1602,29 +1733,43 @@ pub async fn get_session_logs(
 // POST /api/v1/sat-file — Apply a SAT file
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /sat-file`.
 #[derive(Deserialize)]
 pub struct PostSatFileRequest {
+  /// Raw YAML content of the SAT file to apply.
   pub sat_file_content: String,
+  /// Inline Jinja2 variable overrides (merged with `values_file_content`).
   pub values: Option<serde_json::Value>,
+  /// Raw YAML content of a values file supplying Jinja2 variable overrides.
   pub values_file_content: Option<String>,
+  /// Ansible verbosity level passed to any CFS sessions created.
   pub ansible_verbosity: Option<u8>,
+  /// Extra arguments forwarded verbatim to `ansible-playbook`.
   pub ansible_passthrough: Option<String>,
+  /// Reboot nodes after applying the SAT file.
   #[serde(default)]
   pub reboot: bool,
+  /// Stream CFS session logs after creation.
   #[serde(default)]
   pub watch_logs: bool,
+  /// Prefix log lines with timestamps when streaming logs.
   #[serde(default)]
   pub timestamps: bool,
+  /// Only process image sections; skip session templates.
   #[serde(default)]
   pub image_only: bool,
+  /// Only process session template sections; skip images.
   #[serde(default)]
   pub session_template_only: bool,
+  /// Overwrite existing IMS images or BOS session templates.
   #[serde(default)]
   pub overwrite: bool,
+  /// When true, validates the SAT file without creating any resources.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/sat-file` — apply a SAT file (images, session templates, and CFS sessions).
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_file(
   State(state): State<Arc<ServerState>>,
@@ -1677,19 +1822,27 @@ pub async fn post_sat_file(
 // POST /api/v1/kernel-parameters/add
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /kernel-parameters/add`.
 #[derive(Deserialize)]
 pub struct AddKernelParametersRequest {
+  /// Space-separated kernel parameter key=value pairs to add.
   pub params: String,
+  /// Explicit list of target xnames; mutually exclusive with `hsm_group`.
   pub xnames: Option<Vec<String>>,
+  /// Target HSM group; all members are resolved to xnames.
   pub hsm_group: Option<String>,
+  /// When true, overwrite parameters that already exist.
   #[serde(default)]
   pub overwrite: bool,
+  /// Whether to project SBPS images (default true).
   #[serde(default = "default_true")]
   pub project_sbps: bool,
+  /// When true, returns the computed changeset without applying it.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.
 #[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -1739,15 +1892,21 @@ pub async fn add_kernel_parameters(
 // DELETE /api/v1/kernel-parameters
 // ---------------------------------------------------------------------------
 
+/// Request body for `DELETE /kernel-parameters`.
 #[derive(Deserialize)]
 pub struct DeleteKernelParametersRequest {
+  /// Space-separated kernel parameter names (or key=value pairs) to remove.
   pub params: String,
+  /// Explicit list of target xnames; mutually exclusive with `hsm_group`.
   pub xnames: Option<Vec<String>>,
+  /// Target HSM group; all members are resolved to xnames.
   pub hsm_group: Option<String>,
+  /// When true, returns the computed changeset without applying it.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `DELETE /api/v1/kernel-parameters` — remove named kernel parameters from node BSS entries.
 #[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -1798,16 +1957,22 @@ pub async fn delete_kernel_parameters(
 // POST /api/v1/hardware-clusters/{target}/members
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /hardware-clusters/{target}/members`.
 #[derive(Deserialize)]
 pub struct AddHwComponentRequest {
+  /// Source HSM group that donates nodes matching `pattern`.
   pub parent_cluster: String,
+  /// Hardware component pattern used to select which nodes to move.
   pub pattern: String,
+  /// Create the target HSM group if it does not already exist.
   #[serde(default)]
   pub create_hsm_group: bool,
+  /// When true, returns the planned changes without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.
 #[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
   State(state): State<Arc<ServerState>>,
@@ -1844,16 +2009,22 @@ pub async fn add_hw_component(
 // DELETE /api/v1/hardware-clusters/{target}/members
 // ---------------------------------------------------------------------------
 
+/// Request body for `DELETE /hardware-clusters/{target}/members`.
 #[derive(Deserialize)]
 pub struct DeleteHwComponentRequest {
+  /// Destination HSM group that receives nodes moved out of the target cluster.
   pub parent_cluster: String,
+  /// Hardware component pattern used to select which nodes to move back.
   pub pattern: String,
+  /// Delete the target HSM group if it becomes empty after the operation.
   #[serde(default)]
   pub delete_hsm_group: bool,
+  /// When true, returns the planned changes without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `DELETE /api/v1/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.
 #[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
   State(state): State<Arc<ServerState>>,
@@ -1894,25 +2065,35 @@ pub async fn delete_hw_component(
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum HwClusterMode {
+  /// Move nodes from the parent cluster into the target cluster.
   #[default]
   Pin,
+  /// Move nodes back from the target cluster to the parent cluster.
   Unpin,
 }
 
+/// Request body for `POST /hardware-clusters/{target}/configuration`.
 #[derive(Deserialize)]
 pub struct ApplyHwConfigurationRequest {
+  /// Source (parent) HSM group supplying nodes.
   pub parent_cluster: String,
+  /// Hardware component pattern selecting which nodes to pin/unpin.
   pub pattern: String,
+  /// Whether to pin nodes into the target cluster or unpin back to parent (default: pin).
   #[serde(default)]
   pub mode: HwClusterMode,
+  /// Create the target HSM group if absent (default true).
   #[serde(default = "default_true")]
   pub create_target_hsm_group: bool,
+  /// Delete the parent HSM group if it becomes empty (default true).
   #[serde(default = "default_true")]
   pub delete_empty_parent_hsm_group: bool,
+  /// When true, returns the planned changes without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
 }
 
+/// `POST /api/v1/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.
 #[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
   State(state): State<Arc<ServerState>>,
@@ -1955,18 +2136,28 @@ pub async fn apply_hw_configuration(
 // POST /api/v1/sessions/apply
 // ---------------------------------------------------------------------------
 
+/// Request body for `POST /sessions/apply`.
 #[derive(Deserialize)]
 pub struct ApplySessionRequest {
+  /// Git repository names (parallel-indexed with `repo_last_commit_ids`).
   pub repo_names: Vec<String>,
+  /// Git commit SHAs matching each entry in `repo_names`.
   pub repo_last_commit_ids: Vec<String>,
+  /// Explicit name for the CFS session and configuration; auto-generated when absent.
   pub cfs_conf_sess_name: Option<String>,
+  /// Ansible playbook filename inside the repository.
   pub playbook_yaml_file_name: Option<String>,
+  /// Target HSM group name.
   pub hsm_group: Option<String>,
+  /// Ansible `--limit` expression to restrict which hosts are targeted.
   pub ansible_limit: Option<String>,
+  /// Ansible verbosity level (e.g. `"-v"`, `"-vvv"`).
   pub ansible_verbosity: Option<String>,
+  /// Extra arguments forwarded verbatim to `ansible-playbook`.
   pub ansible_passthrough: Option<String>,
 }
 
+/// `POST /api/v1/sessions/apply` — create a CFS configuration and session from git repositories.
 #[tracing::instrument(skip_all)]
 pub async fn apply_session(
   State(state): State<Arc<ServerState>>,
@@ -2026,10 +2217,13 @@ pub async fn apply_session(
 // WS /api/v1/nodes/{xname}/console — Interactive node console
 // ---------------------------------------------------------------------------
 
+/// Query parameters for WebSocket console endpoints (initial terminal size).
 #[derive(Deserialize)]
 pub struct ConsoleQuery {
+  /// Initial terminal width in columns (default 80).
   #[serde(default = "default_cols")]
   pub cols: u16,
+  /// Initial terminal height in rows (default 24).
   #[serde(default = "default_rows")]
   pub rows: u16,
 }
@@ -2037,6 +2231,7 @@ pub struct ConsoleQuery {
 fn default_cols() -> u16 { 80 }
 fn default_rows() -> u16 { 24 }
 
+/// `WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
   BearerToken(token): BearerToken,
@@ -2077,6 +2272,7 @@ pub async fn console_node_ws(
 // WS /api/v1/sessions/{name}/console — Interactive CFS session console
 // ---------------------------------------------------------------------------
 
+/// `WS /api/v1/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.
 #[tracing::instrument(skip_all, fields(session = %name))]
 pub async fn console_session_ws(
   BearerToken(token): BearerToken,

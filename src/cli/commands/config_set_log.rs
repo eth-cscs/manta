@@ -1,3 +1,5 @@
+//! Implements the `manta config set log` command.
+
 use anyhow::Error;
 use clap::ArgMatches;
 use toml_edit::value;

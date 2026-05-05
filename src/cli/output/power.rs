@@ -1,3 +1,5 @@
+//! Table and JSON renderers for power status output.
+
 use comfy_table::Table;
 use manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse;
 

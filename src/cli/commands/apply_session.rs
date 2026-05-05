@@ -1,3 +1,5 @@
+//! Implements the `manta apply session` command.
+
 use std::path::PathBuf;
 
 use anyhow::{Context, Error, bail};

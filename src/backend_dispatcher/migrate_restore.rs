@@ -1,3 +1,5 @@
+//! Dispatches `MigrateRestoreTrait` methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error, interfaces::migrate_restore::MigrateRestoreTrait,
 };

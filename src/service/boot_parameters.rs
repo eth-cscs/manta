@@ -78,11 +78,17 @@ pub async fn add_boot_parameters(
 /// Typed parameters for updating boot parameters.
 #[derive(serde::Deserialize)]
 pub struct UpdateBootParametersParams {
+  /// Target node xnames.
   pub hosts: Vec<String>,
+  /// Node IDs corresponding to `hosts` (optional alternate identifier).
   pub nids: Option<Vec<u32>>,
+  /// MAC addresses corresponding to `hosts` (optional alternate identifier).
   pub macs: Option<Vec<String>>,
+  /// Kernel command-line parameters string.
   pub params: String,
+  /// S3 path to the kernel image.
   pub kernel: String,
+  /// S3 path to the initrd image.
   pub initrd: String,
 }
 
@@ -113,9 +119,13 @@ pub async fn update_boot_parameters(
 /// Result of preparing boot configuration changes.
 #[derive(serde::Serialize)]
 pub struct BootConfigChangeset {
+  /// Resolved target xnames.
   pub xname_vec: Vec<String>,
+  /// Updated BSS boot parameter records, ready to persist.
   pub boot_param_vec: Vec<BootParameters>,
+  /// IMS images referenced by the new boot config, keyed by image ID.
   pub image_vec: HashMap<String, Image>,
+  /// Whether nodes need a reboot to apply the new parameters.
   pub need_restart: bool,
 }
 

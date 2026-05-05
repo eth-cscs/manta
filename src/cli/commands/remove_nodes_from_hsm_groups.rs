@@ -1,3 +1,5 @@
+//! Implements the `manta remove-nodes-from-groups` command.
+
 use anyhow::{Context, Error, bail};
 
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;

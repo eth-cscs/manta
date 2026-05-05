@@ -1,3 +1,5 @@
+//! Implements the `manta config unset hsm` command.
+
 use anyhow::Error;
 
 use crate::common::config::{read_config_toml, write_config_toml};

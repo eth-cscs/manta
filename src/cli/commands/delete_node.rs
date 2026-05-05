@@ -1,3 +1,5 @@
+//! Implements the `manta delete node` command.
+
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;

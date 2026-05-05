@@ -1,3 +1,5 @@
+//! Re-exports hardware cluster common utilities.
+
 /// LCM (Least Common Multiple) used to normalize memory
 /// capacity values reported by hardware inventory. Memory
 /// DIMMs come in multiples of 16 GiB (16384 MiB), so this

@@ -1,3 +1,5 @@
+//! Implements the `manta get templates` command.
+
 use anyhow::{Context, Error};
 
 use crate::cli::output;

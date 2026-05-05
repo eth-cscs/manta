@@ -1,3 +1,5 @@
+//! Implements the `manta config show` command.
+
 use std::collections::HashMap;
 
 use anyhow::{Context, Error};

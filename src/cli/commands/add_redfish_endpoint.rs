@@ -1,3 +1,5 @@
+//! Implements the `manta add redfish-endpoint` command.
+
 use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;

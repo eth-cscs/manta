@@ -58,10 +58,15 @@ pub async fn get_sessions(
 /// Data needed to delete/cancel a session.
 #[derive(serde::Serialize)]
 pub struct SessionDeletionContext {
+  /// The session to be deleted.
   pub session: CfsSessionGetResponse,
+  /// IMS image IDs produced by this session (empty for non-image sessions).
   pub image_ids: Vec<String>,
+  /// All HSM groups the token has access to (used for membership checks).
   pub group_available_vec: Vec<Group>,
+  /// CFS component states (used to clear desired-config references).
   pub cfs_component_vec: Vec<Component>,
+  /// BSS boot parameters (used to unset boot image refs pointing at session images).
   pub bss_bootparameters_vec: Vec<BootParameters>,
 }
 

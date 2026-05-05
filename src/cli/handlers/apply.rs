@@ -1,3 +1,5 @@
+//! Routes `manta apply *` subcommands to their exec functions.
+
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;

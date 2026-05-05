@@ -1,3 +1,5 @@
+//! Routes the `manta log` command to its exec function.
+
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;

@@ -1,3 +1,5 @@
+//! Re-exports all CLI command modules.
+
 pub mod add_boot_parameters;
 pub mod add_group;
 pub mod add_hw_component_cluster;

@@ -1,3 +1,5 @@
+//! Implements the `manta get groups` command.
+
 use anyhow::{Context, Error, bail};
 
 use crate::cli::output;

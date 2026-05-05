@@ -1,3 +1,5 @@
+//! Table and JSON renderers for BOS session template output.
+
 use anyhow::{Context, Error};
 use comfy_table::Table;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;

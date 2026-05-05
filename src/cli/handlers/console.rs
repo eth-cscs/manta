@@ -1,3 +1,5 @@
+//! Routes `manta console *` subcommands to their exec functions.
+
 use crate::cli::commands::{
   console_cfs_session_image_target_ansible, console_node,
 };

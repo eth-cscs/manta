@@ -1,3 +1,5 @@
+//! Utility functions for hardware cluster unpin operations.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;

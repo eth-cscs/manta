@@ -1,3 +1,5 @@
+//! Dispatches `BootParametersTrait` methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error, interfaces::bss::BootParametersTrait,
   types::bss::BootParameters,

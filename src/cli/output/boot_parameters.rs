@@ -1,3 +1,5 @@
+//! Table and JSON renderers for BSS boot parameter output.
+
 use anyhow::Error;
 use manta_backend_dispatcher::types::bss::BootParameters;
 

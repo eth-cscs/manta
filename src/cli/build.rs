@@ -1,3 +1,5 @@
+//! Clap command tree definition for the manta CLI.
+
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
 use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;

@@ -1,3 +1,5 @@
+//! Implements the `manta add hardware` command.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{

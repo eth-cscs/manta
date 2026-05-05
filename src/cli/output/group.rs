@@ -1,3 +1,5 @@
+//! Table and JSON renderers for HSM group output.
+
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::Group;
 use nodeset::NodeSet;

@@ -1,3 +1,5 @@
+//! Implements the `manta delete hardware` command.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};

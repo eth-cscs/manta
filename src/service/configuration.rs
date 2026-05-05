@@ -133,11 +133,17 @@ pub async fn get_configuration_details(
 /// Data gathered for deletion review and execution.
 #[derive(serde::Serialize)]
 pub struct DeletionCandidates {
+  /// CFS sessions whose desired-config matches a candidate configuration.
   pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
+  /// BOS session templates to delete: `(name, cfs_config, description)`.
   pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
+  /// IMS image IDs to delete (built by the matching sessions).
   pub image_ids: Vec<String>,
+  /// Names of the configurations selected for deletion.
   pub configuration_names: Vec<String>,
+  /// CFS sessions summary tuples: `(name, config_name, status)`.
   pub cfs_session_tuples: Vec<(String, String, String)>,
+  /// Full configuration objects selected for deletion.
   pub configurations: Vec<CfsConfigurationResponse>,
 }
 

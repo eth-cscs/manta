@@ -1,3 +1,5 @@
+//! Routes miscellaneous top-level commands (serve, validate-local-repo, etc.).
+
 use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups, validate_local_repo,
 };

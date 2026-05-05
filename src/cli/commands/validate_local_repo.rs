@@ -1,3 +1,5 @@
+//! Implements the `manta validate-local-repo` command.
+
 use anyhow::{Context, Error, bail};
 use chrono::DateTime;
 use serde_json::Value;

@@ -1,3 +1,5 @@
+//! Implements the `manta get boot-parameters` command.
+
 use anyhow::Error;
 
 use crate::cli::output;

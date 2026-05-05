@@ -1,3 +1,5 @@
+//! Shared argument types for power management commands.
+
 use std::fmt;
 
 use anyhow::{Context, Error, bail};
@@ -14,8 +16,11 @@ use crate::common::{
 /// The three power operations supported by the backend.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PowerAction {
+  /// Power nodes on.
   On,
+  /// Power nodes off.
   Off,
+  /// Power-cycle (reset) nodes.
   Reset,
 }
 

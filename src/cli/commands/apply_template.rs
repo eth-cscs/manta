@@ -1,3 +1,5 @@
+//! Implements the `manta apply template` command.
+
 use anyhow::{Error, bail};
 
 use crate::common::{self, app_context::AppContext};

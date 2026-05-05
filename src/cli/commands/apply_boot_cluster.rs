@@ -1,3 +1,5 @@
+//! Implements the `manta apply boot cluster` command.
+
 use anyhow::Context;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 

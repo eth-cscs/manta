@@ -1,3 +1,5 @@
+//! Implements the `manta delete kernel-parameters` command.
+
 use crate::common::app_context::AppContext;
 use anyhow::Error;
 

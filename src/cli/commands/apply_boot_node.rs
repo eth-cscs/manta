@@ -1,3 +1,5 @@
+//! Implements the `manta apply boot nodes` command.
+
 use crate::{
   cli::commands::power_common::{self, PowerAction},
   common::{self, app_context::AppContext},

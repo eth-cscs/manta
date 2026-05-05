@@ -1,3 +1,5 @@
+//! Implements the `manta config gen-autocomplete` command.
+
 use clap::{ArgMatches, Command};
 use clap_complete::{generate, generate_to};
 

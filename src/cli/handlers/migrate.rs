@@ -1,3 +1,5 @@
+//! Routes `manta migrate *` subcommands to their exec functions.
+
 use crate::cli::commands::{
     migrate_backup, migrate_nodes_between_hsm_groups, migrate_restore,
 };

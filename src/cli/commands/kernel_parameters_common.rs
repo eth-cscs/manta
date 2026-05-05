@@ -1,3 +1,5 @@
+//! Shared argument resolution for kernel parameter commands.
+
 use crate::common::{self, app_context::AppContext, audit};
 use crate::service::kernel_parameters;
 use anyhow::{Context, Error, bail};

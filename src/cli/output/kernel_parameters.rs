@@ -1,3 +1,5 @@
+//! Table and JSON renderers for kernel parameter output.
+
 use comfy_table::{Cell, ContentArrangement, Table};
 use manta_backend_dispatcher::types::bss::BootParameters;
 

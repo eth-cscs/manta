@@ -1,3 +1,5 @@
+//! Implements the `manta apply kernel-parameters` command.
+
 use crate::common::app_context::AppContext;
 use anyhow::Error;
 

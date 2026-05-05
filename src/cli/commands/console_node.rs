@@ -1,3 +1,5 @@
+//! Implements the `manta console node` command.
+
 use crate::{
   cli::commands::console_common,
   common,

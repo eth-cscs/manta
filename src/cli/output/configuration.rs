@@ -1,3 +1,5 @@
+//! Table and JSON renderers for CFS configuration output.
+
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::{

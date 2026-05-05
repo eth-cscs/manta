@@ -1,3 +1,5 @@
+//! Table and JSON renderers for IMS image output.
+
 use crate::common::DATETIME_FORMAT;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};

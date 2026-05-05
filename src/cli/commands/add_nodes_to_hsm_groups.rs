@@ -1,3 +1,5 @@
+//! Implements the `manta add-nodes-to-groups` command.
+
 use anyhow::{Error, bail};
 
 use crate::{

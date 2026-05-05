@@ -1,3 +1,5 @@
+//! Utility functions for hardware cluster pin operations.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;

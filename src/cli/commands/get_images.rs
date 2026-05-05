@@ -1,3 +1,5 @@
+//! Implements the `manta get images` command.
+
 use anyhow::Error;
 
 use crate::cli::output;

@@ -1,3 +1,5 @@
+//! Implements the `manta get nodes` command.
+
 use anyhow::{Context, Error, bail};
 
 use crate::cli::output;

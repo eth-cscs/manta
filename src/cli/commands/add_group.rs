@@ -1,3 +1,5 @@
+//! Implements the `manta add group` command.
+
 use anyhow::{Context, Error, bail};
 
 use crate::common::{self, app_context::AppContext, audit};

@@ -1,3 +1,5 @@
+//! Routes `manta get *` subcommands to their exec functions.
+
 use crate::cli::commands::{
   get_boot_parameters, get_cluster, get_configuration, get_group,
   get_hardware_cluster, get_hardware_node, get_images, get_kernel_parameters,

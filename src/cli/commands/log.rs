@@ -1,3 +1,5 @@
+//! Implements the `manta log` command (stream CFS session logs).
+
 use anyhow::{Context, bail};
 use manta_backend_dispatcher::{
   interfaces::{

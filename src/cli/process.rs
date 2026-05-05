@@ -1,3 +1,5 @@
+//! Top-level CLI dispatch: matches the parsed command tree and calls handlers.
+
 use crate::common::app_context::AppContext;
 use anyhow::Error;
 use clap::ArgMatches;

@@ -1,3 +1,5 @@
+//! Table and JSON renderers for HSM node output.
+
 use std::collections::HashMap;
 
 use comfy_table::{Cell, ContentArrangement, Table};

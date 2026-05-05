@@ -1,3 +1,5 @@
+//! Implements the `manta config set site` command.
+
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use toml_edit::{Table, value};

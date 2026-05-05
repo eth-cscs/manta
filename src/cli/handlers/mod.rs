@@ -1,3 +1,5 @@
+//! Re-exports all CLI handler modules.
+
 pub mod add;
 pub mod apply;
 pub mod config;

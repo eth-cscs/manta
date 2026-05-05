@@ -1,3 +1,5 @@
+//! Dispatches `ClusterSessionTrait` (BOS session) methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::bos::ClusterSessionTrait,

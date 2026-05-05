@@ -1,3 +1,5 @@
+//! Dispatches `ImsTrait` and `GetImagesAndDetailsTrait` methods to csm-rs or ochami-rs.
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::ims::{GetImagesAndDetailsTrait, ImsTrait},

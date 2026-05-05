@@ -1,3 +1,5 @@
+//! Deserialization types for HPE Cray SAT (System Admin Toolkit) YAML files.
+
 use manta_backend_dispatcher::error::Error;
 use image::Image;
 use serde::{Deserialize, Serialize};
@@ -5,15 +7,16 @@ use serde_yaml::{Mapping, Value};
 
 use self::sessiontemplate::SessionTemplate;
 
+/// Top-level representation of a SAT YAML file.
 #[derive(Deserialize, Serialize, Debug)]
-/// Top-level representation of a SAT (System Admin Toolkit)
-/// YAML file containing configurations, images, and session
-/// templates.
 pub struct SatFile {
+  /// CFS configurations to create or update.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub configurations: Option<Vec<configuration::Configuration>>,
+  /// IMS images to build.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub images: Option<Vec<image::Image>>,
+  /// BOS session templates to apply.
   #[serde(skip_serializing_if = "Option::is_none")]
   pub session_templates: Option<Vec<sessiontemplate::SessionTemplate>>,
 }
@@ -157,7 +160,9 @@ pub mod sessiontemplate {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImsDetails {
+    /// Reference by human-readable IMS image name.
     Name { name: String },
+    /// Reference by IMS image UUID.
     Id { id: String },
   }
 
@@ -166,7 +171,9 @@ pub mod sessiontemplate {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Image {
+    /// Directly identifies an IMS image via name or UUID.
     Ims { ims: ImsDetails },
+    /// Cross-references the `name` of another image in the SAT `images` section.
     ImageRef { image_ref: String },
   }
 
@@ -202,9 +209,13 @@ pub mod sessiontemplate {
   #[derive(Deserialize, Serialize, Debug, Display)]
   #[allow(clippy::upper_case_acronyms)]
   pub enum Arch {
+    /// x86-64 nodes.
     X86,
+    /// AArch64 / ARM nodes.
     ARM,
+    /// Any other architecture.
     Other,
+    /// Architecture could not be determined.
     Unknown,
   }
 }
@@ -216,17 +227,21 @@ pub mod image {
   /// Processor architecture for an IMS image build.
   #[derive(Deserialize, Serialize, Debug)]
   pub enum Arch {
+    /// 64-bit ARM (serialized as `"aarch64"`).
     #[serde(rename(serialize = "aarch64", deserialize = "aarch64"))]
     Aarch64,
+    /// x86-64 (serialized as `"x86_64"`).
     #[serde(rename(serialize = "x86_64", deserialize = "x86_64"))]
     X86_64,
   }
 
-  /// Legacy IMS image reference with a recipe flag.
+  /// Legacy IMS image reference with a recipe flag (older SAT format).
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageIms {
+    /// Image identified by name; `is_recipe` indicates whether it is an IMS recipe.
     NameIsRecipe { name: String, is_recipe: bool },
+    /// Image identified by UUID; `is_recipe` indicates whether it is an IMS recipe.
     IdIsRecipe { id: String, is_recipe: bool },
   }
 
@@ -234,8 +249,11 @@ pub mod image {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageBaseIms {
+    /// Image identified by name and type string.
     NameType { name: String, r#type: String },
+    /// Image identified by UUID and type string.
     IdType { id: String, r#type: String },
+    /// Older format with UUID and optional `is_recipe` flag.
     BackwardCompatible { is_recipe: Option<bool>, id: String },
   }
 
@@ -243,8 +261,11 @@ pub mod image {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Filter {
+    /// Match images whose name starts with `prefix`.
     Prefix { prefix: String },
+    /// Match images whose name matches the `wildcard` glob.
     Wildcard { wildcard: String },
+    /// Match images built for the given architecture.
     Arch { arch: Arch },
   }
 
@@ -258,35 +279,43 @@ pub mod image {
     filter: Filter,
   }
 
-  /// Source for a base image — IMS, product catalog, or
-  /// cross-reference to another SAT image.
+  /// Source for a base image — IMS, product catalog, or cross-reference.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Base {
+    /// Directly references an IMS image by name, UUID, or type.
     Ims { ims: ImageBaseIms },
+    /// Pulls the latest matching image from the product catalog.
     Product { product: Product },
+    /// Cross-references the `name` of another image in the SAT `images` section.
     ImageRef { image_ref: String },
   }
 
-  /// Wrapper for backward compatibility between the older
-  /// `ims` key and the newer `base` key in SAT image entries.
+  /// Wrapper bridging the older `ims` key and the newer `base` key in SAT image entries.
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum BaseOrIms {
+    /// Newer format using the `base` key.
     Base { base: Base },
+    /// Legacy format using the `ims` key with a recipe flag.
     Ims { ims: ImageIms },
   }
 
   /// An image definition in the SAT file `images` section.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Image {
+    /// Unique name for this image; used as the cross-reference target for `image_ref`.
     pub name: String,
+    /// Optional alias used to reference this image from session templates.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ref_name: Option<String>,
+    /// Base image source (IMS or product catalog), in legacy or current format.
     #[serde(flatten)]
     pub base_or_ims: BaseOrIms,
+    /// CFS configuration to apply when building the image.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration: Option<String>,
+    /// HSM group names passed as Ansible group vars during the image build.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_group_names: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -305,16 +334,19 @@ pub mod configuration {
   // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   #[allow(clippy::enum_variant_names)]
   pub enum Product {
+    /// Product pinned to a specific branch (and optionally a version).
     ProductVersionBranch {
       name: String,
       version: Option<String>,
       branch: String,
     },
+    /// Product pinned to a specific commit (and optionally a version).
     ProductVersionCommit {
       name: String,
       version: Option<String>,
       commit: String,
     },
+    /// Product pinned by exact version string.
     ProductVersion {
       name: String,
       version: String,
@@ -328,8 +360,11 @@ pub mod configuration {
   // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   #[allow(clippy::enum_variant_names)]
   pub enum Git {
+    /// Layer pinned to an exact commit SHA.
     GitCommit { url: String, commit: String },
+    /// Layer pinned to a branch HEAD.
     GitBranch { url: String, branch: String },
+    /// Layer pinned to a tag.
     GitTag { url: String, tag: String },
   }
 
@@ -365,7 +400,9 @@ pub mod configuration {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Layer {
+    /// CFS configuration layer sourced from a Git repository.
     LayerGit(LayerGit),
+    /// CFS configuration layer sourced from a product catalog entry.
     LayerProduct(LayerProduct),
   }
 
@@ -374,12 +411,14 @@ pub mod configuration {
   #[derive(Deserialize, Serialize, Debug)]
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Inventory {
+    /// Inventory repository pinned to a specific commit SHA.
     InventoryCommit {
       #[serde(skip_serializing_if = "Option::is_none")]
       name: Option<String>,
       url: String,
       commit: String,
     },
+    /// Inventory repository pinned to a branch HEAD.
     InventoryBranch {
       #[serde(skip_serializing_if = "Option::is_none")]
       name: Option<String>,

@@ -25,6 +25,7 @@ const MIB_PER_GIB: usize = 1024;
 /// Typed parameters for fetching hardware node inventory.
 pub struct GetHardwareNodeParams {
   pub xnames: String,
+  /// Filter results to a specific hardware artifact type (e.g. `Processor`, `Memory`).
   pub type_artifact: Option<String>,
 }
 

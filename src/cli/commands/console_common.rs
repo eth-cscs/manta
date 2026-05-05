@@ -1,3 +1,5 @@
+//! Shared logic for console attachment commands.
+
 use futures::StreamExt;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 

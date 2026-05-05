@@ -1,3 +1,5 @@
+//! Implements the `manta delete configurations` command.
+
 use crate::common::{self, app_context::AppContext};
 use crate::service;
 use anyhow::bail;

@@ -1,3 +1,5 @@
+//! Dispatches `CfsTrait` methods to csm-rs or ochami-rs.
+
 use std::pin::Pin;
 
 use manta_backend_dispatcher::{

@@ -1,3 +1,5 @@
+//! Implements the `manta config set parent-hsm` command.
+
 use anyhow::Error;
 use clap::ArgMatches;
 

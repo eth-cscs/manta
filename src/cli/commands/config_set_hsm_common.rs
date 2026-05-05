@@ -1,3 +1,5 @@
+//! Shared logic for HSM group config set operations.
+
 use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::value;

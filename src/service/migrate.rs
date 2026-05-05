@@ -29,7 +29,7 @@ pub async fn migrate_backup(
         .await
 }
 
-/// Execute a migrate-restore operation against the backend.
+/// Restore a vCluster from backup files; `overwrite` applies to all resource types.
 #[allow(clippy::too_many_arguments)]
 pub async fn migrate_restore(
     infra: &InfraContext<'_>,
@@ -68,10 +68,14 @@ pub async fn migrate_restore(
 /// Result of migrating nodes for a single parent→target pair.
 #[derive(serde::Serialize)]
 pub struct NodeMigrationResult {
-    pub target_hsm_name: String,
-    pub parent_hsm_name: String,
-    pub target_members: Vec<String>,
-    pub parent_members: Vec<String>,
+  /// HSM group that received the nodes.
+  pub target_hsm_name: String,
+  /// HSM group that the nodes were moved out of.
+  pub parent_hsm_name: String,
+  /// Final member list of the target group after migration.
+  pub target_members: Vec<String>,
+  /// Remaining member list of the parent group after migration.
+  pub parent_members: Vec<String>,
 }
 
 /// Resolve hosts expression, curate HSM groups, validate targets,

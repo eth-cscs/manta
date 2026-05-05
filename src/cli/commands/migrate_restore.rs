@@ -1,3 +1,5 @@
+//! Implements the `manta migrate vCluster restore` command.
+
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;

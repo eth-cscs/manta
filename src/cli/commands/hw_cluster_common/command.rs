@@ -1,3 +1,5 @@
+//! Shared exec logic for `apply hardware cluster` pin and unpin modes.
+
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{

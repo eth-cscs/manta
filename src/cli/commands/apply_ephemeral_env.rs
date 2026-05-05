@@ -1,3 +1,5 @@
+//! Implements the `manta apply ephemeral-environment` command.
+
 use manta_backend_dispatcher::error::Error;
 use csm_rs::ims;
 
