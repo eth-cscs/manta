@@ -2,11 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.64.1] - 2026-05-08
+## [1.64.2] - 2026-05-08
 
 ### Features
 
 - Field 'name' in configuration layer is optional
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.64.1
 
 ## [1.64.0] - 2026-05-08
 
