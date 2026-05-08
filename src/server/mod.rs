@@ -83,7 +83,7 @@ pub async fn start_server(
   key_path: &str,
 ) -> Result<(), Error> {
   let app = routes::build_router(state)
-    .layer(tower_http::timeout::TimeoutLayer::new(Duration::from_secs(60)))
+    .layer(tower_http::timeout::TimeoutLayer::with_status_code(axum::http::StatusCode::REQUEST_TIMEOUT, Duration::from_secs(60)))
     .layer(axum::middleware::from_fn(log_requests));
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)

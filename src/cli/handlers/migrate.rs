@@ -9,7 +9,6 @@ use crate::common::{
 };
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 /// Dispatch `manta migrate` subcommands (nodes, vCluster backup/restore).
 pub async fn handle_migrate(
