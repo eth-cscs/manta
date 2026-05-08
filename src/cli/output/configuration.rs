@@ -25,7 +25,7 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
 
       layers = format!(
         "Name:     {}\nPlaybook: {}\nCommit:   {}",
-        first_layer.name,
+        first_layer.name.as_ref().unwrap_or(&String::new()),
         first_layer.playbook,
         first_layer.commit.as_deref().unwrap_or("Not defined"),
       );
@@ -34,7 +34,7 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
         layers = format!(
           "{}\n\nName:     {}\nPlaybook: {}\nCommit:   {}",
           layers,
-          layer.name,
+          layer.name.as_ref().unwrap_or(&String::new()),
           layer.playbook,
           layer.commit.as_deref().unwrap_or("Not defined"),
         );
@@ -80,7 +80,7 @@ pub fn print_table_details_struct(
     layers = format!(
       "{}\n\nName:     {}\nBranch:   {}\nTag:      {}\nDate:     {}\nAuthor:   {}\nCommit:   {}\nPlaybook: {}",
       layers,
-      layer.name,
+      layer.name.unwrap_or_default(),
       layer.branch,
       layer.tag,
       layer.commit_date,
