@@ -30,6 +30,13 @@ const VCS_URL_SUFFIX: &str = "/vcs";
 /// must happen before the multi-threaded tokio runtime is active)
 /// and then launches the async runtime.
 fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+  // Install ring as the rustls CryptoProvider before any TLS code runs.
+  // Required when multiple rustls backends are present in the dependency tree
+  // (e.g. kube enables aws-lc-rs while we use ring).
+  rustls::crypto::ring::default_provider()
+    .install_default()
+    .ok();
+
   // Parse CLI arguments early so we can extract --site before
   // starting the multi-threaded runtime.
   let cli_matches = crate::cli::build::build_cli().get_matches();
