@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.64.2] - 2026-05-08
+## [1.64.3] - 2026-05-08
 
 ### Features
 
@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous Tasks
 
 - Release manta-cli version 1.64.1
+- Release manta-cli version 1.64.2
+- Update Cargo.toml
 
 ## [1.64.0] - 2026-05-08
 
