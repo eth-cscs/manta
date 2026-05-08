@@ -26,6 +26,7 @@ pub async fn handle_misc(
         ctx.infra.site_name,
         &token,
         ctx.infra.shasta_root_cert,
+        ctx.infra.socks5_proxy,
         ctx.infra.vault_base_url,
         ctx.infra.gitea_base_url,
         repo_path,

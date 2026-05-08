@@ -97,6 +97,7 @@ impl TestFixture {
       "csm",
       &mock_server.uri(),
       TEST_ROOT_CERT,
+      None,
     )
     .unwrap();
 
@@ -105,6 +106,7 @@ impl TestFixture {
       site_name: "test".to_string(),
       shasta_base_url: mock_server.uri(),
       shasta_root_cert: TEST_ROOT_CERT.to_vec(),
+      socks5_proxy: None,
       vault_base_url: None,
       gitea_base_url: "http://stub.invalid".to_string(),
       k8s_api_url: None,

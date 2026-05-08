@@ -1451,6 +1451,7 @@ pub async fn create_ephemeral_env(
   crate::cli::commands::apply_ephemeral_env::exec(
     &state.shasta_base_url,
     &state.shasta_root_cert,
+    state.socks5_proxy.as_deref(),
     &token,
     &body.image_id,
   )

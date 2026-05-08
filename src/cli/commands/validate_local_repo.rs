@@ -16,6 +16,7 @@ pub async fn exec(
   site_name: &str,
   token: &str,
   shasta_root_cert: &[u8],
+  socks5_proxy: Option<&str>,
   vault_base_url: Option<&str>,
   gitea_base_url: &str,
   repo_path: &str,
@@ -78,6 +79,7 @@ pub async fn exec(
     &gitea_token,
     &repo_name,
     shasta_root_cert,
+    socks5_proxy,
   )
   .await
   .unwrap_or_default();
@@ -130,6 +132,7 @@ pub async fn exec(
       &head_commit_id.to_string(),
       &gitea_token,
       shasta_root_cert,
+      socks5_proxy,
     )
     .await;
 

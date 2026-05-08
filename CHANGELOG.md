@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Refactor
+
+- Thread SOCKS5 proxy as an explicit parameter through csm-rs, ochami-rs, and manta instead of reading from a process-global environment variable
+- `StaticBackendDispatcher::new` gains a `socks5_proxy: Option<&str>` argument forwarded to `Csm::new` and `Ochami::new`
+- `InfraContext` and `ServerState` carry `socks5_proxy` so service functions and CLI commands that call csm-rs http clients directly can forward the proxy
+- Every csm-rs and ochami-rs function that builds a `reqwest::Client` accepts `socks5_proxy: Option<&str>` immediately after `root_cert: &[u8]`
+- `apply_ephemeral_env::exec` and `validate_local_repo::exec` gain `socks5_proxy: Option<&str>`
+
 ## [1.63.1] - 2026-05-05
 
 ### Documentation

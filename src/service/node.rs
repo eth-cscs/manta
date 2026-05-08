@@ -44,6 +44,7 @@ pub async fn get_nodes(
     token,
     infra.shasta_base_url,
     infra.shasta_root_cert,
+    infra.socks5_proxy,
     node_list.to_vec(),
   )
   .await

@@ -38,6 +38,7 @@ pub async fn get_cluster_nodes(
     token,
     infra.shasta_base_url,
     infra.shasta_root_cert,
+    infra.socks5_proxy,
     hsm_groups_node_list,
   )
   .await

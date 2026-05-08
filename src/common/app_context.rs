@@ -12,6 +12,7 @@ pub struct InfraContext<'a> {
   pub site_name: &'a str,
   pub shasta_base_url: &'a str,
   pub shasta_root_cert: &'a [u8],
+  pub socks5_proxy: Option<&'a str>,
   pub vault_base_url: Option<&'a str>,
   pub gitea_base_url: &'a str,
   pub k8s_api_url: Option<&'a str>,

@@ -9,6 +9,7 @@ use crate::common::{
 };
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 /// Dispatch `manta migrate` subcommands (nodes, vCluster backup/restore).
 pub async fn handle_migrate(
@@ -35,6 +36,7 @@ pub async fn handle_migrate(
                 ctx.cli.settings_hsm_group_name_opt,
             )
             .await?;
+            // let from = ctx.infra.backend.get_group_name_available(jwt_token).await?;
             let to = get_groups_names_available(
                 ctx.infra.backend,
                 &token,

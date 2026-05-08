@@ -83,8 +83,6 @@ pub async fn get_xname_from_xname_hostlist(
 ) -> Result<Vec<String>, Error> {
   // If hostlist of XNAMEs, return hostlist expanded xnames
   // Validate XNAMEs
-  tracing::debug!("XNAME format are valid");
-
   let xname_vec: Vec<String> = node_metadata_available_vec
     .iter()
     .filter(|node_metadata_available| {

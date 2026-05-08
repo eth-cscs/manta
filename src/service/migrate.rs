@@ -122,20 +122,20 @@ pub async fn migrate_nodes(
 
     for target_hsm_name in target_hsm_name_vec {
         if backend.get_group(token, target_hsm_name).await.is_ok() {
-            tracing::debug!("The HSM group {} exists, good.", target_hsm_name);
+            tracing::debug!("The group '{target_hsm_name}' exists, good.");
         } else if create_hsm_group {
             tracing::info!(
-                "HSM group {} does not exist, it will be created",
+                "The group {} does not exist, it will be created",
                 target_hsm_name
             );
             if dry_run {
-                return Err(Error::BadRequest(
-                    "Dry-run selected, cannot create the new group to continue".to_string(),
+                return Err(Error::BadRequest(format!(
+                    "Dry-run selected, the group '{target_hsm_name}' created"),
                 ));
             }
         } else {
             return Err(Error::NotFound(format!(
-                "HSM group '{target_hsm_name}' does not exist and the option \
+                "The group '{target_hsm_name}' does not exist and the option \
                  to create the group was not specified"
             )));
         }
@@ -147,6 +147,7 @@ pub async fn migrate_nodes(
                     target_hsm_name,
                     parent_hsm_name,
                     &xnames.iter().map(String::as_str).collect::<Vec<&str>>(),
+                    dry_run
                 )
                 .await?;
 

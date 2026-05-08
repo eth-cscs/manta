@@ -182,6 +182,7 @@ pub async fn handle_apply(
       commands::apply_ephemeral_env::exec(
         ctx.infra.shasta_base_url,
         ctx.infra.shasta_root_cert,
+        ctx.infra.socks5_proxy,
         &token,
         m.get_one::<String>("image-id")
           .context("'image-id' argument is mandatory")?,

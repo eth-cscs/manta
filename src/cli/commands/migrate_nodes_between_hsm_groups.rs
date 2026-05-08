@@ -1,6 +1,9 @@
 //! Implements the `manta migrate nodes` command.
 
+use std::collections::HashMap;
+
 use anyhow::Error;
+use nodeset::NodeSet;
 
 use crate::common::{app_context::AppContext, audit};
 use crate::service::migrate;
@@ -27,14 +30,23 @@ pub async fn exec(
     .await?;
 
     // Display results
+    let mut group_map: HashMap<String, Vec<String>> = HashMap::new();
     for result in &results {
+        group_map.entry(result.target_hsm_name.clone()).and_modify(|members| members.extend(result.target_members.clone())).or_insert(result.target_members.clone());
+        group_map.entry(result.parent_hsm_name.clone()).and_modify(|members| members.extend(result.parent_members.clone())).or_insert(result.parent_members.clone());
+    }
+
+    if dry_run {
+        println!("dry-run enabled, changes not persisted.")
+    }
+    for (group_name, mut group_members) in group_map {
+        group_members.sort();
+        let group_members_nodeset: NodeSet =
+        group_members.join(", ").parse().unwrap_or_default();
+
         println!(
-            "HSM '{}' members: {:?}",
-            result.target_hsm_name, result.target_members
-        );
-        println!(
-            "HSM '{}' members: {:?}",
-            result.parent_hsm_name, result.parent_members
+            "Group '{}' members: {:?}",
+            group_name, group_members_nodeset.to_string()
         );
     }
 

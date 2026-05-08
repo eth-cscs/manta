@@ -167,10 +167,13 @@ async fn run(
     vec![]
   };
 
+  let socks5_proxy = site_details_value.socks5_proxy.as_deref();
+
   let backend = StaticBackendDispatcher::new(
     backend_tech.as_str(),
     &shasta_api_url,
     &shasta_root_cert,
+    socks5_proxy,
   )?;
 
   // Check if we're in server mode
@@ -193,6 +196,7 @@ async fn run(
       site_name: site_name.clone(),
       shasta_base_url: shasta_api_url.clone(),
       shasta_root_cert: shasta_root_cert.clone(),
+      socks5_proxy: socks5_proxy.map(str::to_owned),
       vault_base_url: vault_base_url.map(String::to_owned),
       gitea_base_url: gitea_base_url.clone(),
       k8s_api_url: k8s_api_url.map(String::to_owned),
@@ -211,6 +215,7 @@ async fn run(
       site_name: &site_name,
       shasta_base_url: &shasta_api_url,
       shasta_root_cert: &shasta_root_cert,
+      socks5_proxy,
       vault_base_url: vault_base_url.map(String::as_str),
       gitea_base_url: &gitea_base_url,
       k8s_api_url: k8s_api_url.map(String::as_str),

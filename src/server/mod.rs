@@ -31,6 +31,8 @@ pub struct ServerState {
   pub shasta_base_url: String,
   /// PEM-encoded root CA certificate for the backend; empty vec skips verification.
   pub shasta_root_cert: Vec<u8>,
+  /// SOCKS5 proxy URL; `None` means direct connections.
+  pub socks5_proxy: Option<String>,
   /// HashiCorp Vault base URL; `None` means features requiring vault return 501.
   pub vault_base_url: Option<String>,
   /// Gitea VCS base URL derived from the site base URL.
@@ -53,6 +55,7 @@ impl ServerState {
       site_name: &self.site_name,
       shasta_base_url: &self.shasta_base_url,
       shasta_root_cert: &self.shasta_root_cert,
+      socks5_proxy: self.socks5_proxy.as_deref(),
       vault_base_url: self.vault_base_url.as_deref(),
       gitea_base_url: &self.gitea_base_url,
       k8s_api_url: self.k8s_api_url.as_deref(),

@@ -10,6 +10,7 @@ const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 pub async fn exec(
   shasta_base_url: &str,
   shasta_root_cert: &[u8],
+  socks5_proxy: Option<&str>,
   token: &str,
   image_id: &str,
 ) -> Result<(), Error> {
@@ -30,6 +31,7 @@ pub async fn exec(
       token,
       shasta_base_url,
       shasta_root_cert,
+      socks5_proxy,
       &user_public_key_name,
     )
     .await
@@ -58,6 +60,7 @@ pub async fn exec(
     token,
     shasta_base_url,
     shasta_root_cert,
+    socks5_proxy,
     EPHEMERAL_IMAGE_NAME,
     image_id,
     user_public_ssh_id_value

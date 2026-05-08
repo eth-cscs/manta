@@ -30,8 +30,8 @@ Both modes share the `service` and `backend_dispatcher` layers. The CLI and serv
 
 Startup runs in two phases:
 
-1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/config.toml`, set `SOCKS5` proxy environment variable. This must complete before any threads spawn.
-2. **Multi-threaded phase** — start the tokio runtime, construct a `StaticBackendDispatcher`, then branch:
+1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/config.toml`. The SOCKS5 proxy URL is read from `site.socks5_proxy` in the config.
+2. **Multi-threaded phase** — start the tokio runtime, construct a `StaticBackendDispatcher` (passing `socks5_proxy`), then branch:
    - `manta serve ...` → start the HTTPS server
    - anything else → run the CLI command
 
@@ -77,7 +77,7 @@ pub enum StaticBackendDispatcher {
 }
 ```
 
-`StaticBackendDispatcher::new(backend_type, base_url, root_cert)` reads the `backend` field from the site config and constructs the appropriate variant.
+`StaticBackendDispatcher::new(backend_type, base_url, root_cert, socks5_proxy)` reads the `backend` field from the site config and constructs the appropriate variant, forwarding `socks5_proxy` to both `Csm::new` and `Ochami::new`.
 
 ### `src/common/`
 
@@ -111,7 +111,7 @@ Axum HTTPS server. Key files:
 
 | Type | Used by | Contents |
 |------|---------|---------|
-| `InfraContext<'_>` | Service layer | Backend dispatcher, base URLs, root CA cert, optional vault/k8s URLs |
+| `InfraContext<'_>` | Service layer | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
 | `AppContext` | CLI layer | Composes `InfraContext` + `CliConfig` (active HSM group, Kafka audit config, raw settings) |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
@@ -183,6 +183,37 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 | `reqwest` | HTTP client used by csm-rs and ochami-rs |
 
 ---
+
+## SOCKS5 proxy
+
+The SOCKS5 proxy URL is read from `site.socks5_proxy` in `config.toml` and threaded explicitly through the entire call stack — there is no global environment variable or implicit state.
+
+The propagation path:
+
+```
+config.toml  socks5_proxy
+  └─ main.rs             reads site_details_value.socks5_proxy.as_deref()
+       ├─ StaticBackendDispatcher::new(…, socks5_proxy)
+       │    ├─ Csm::new(…, socks5_proxy)   — stored as Option<String>
+       │    └─ Ochami::new(…, socks5_proxy) — stored as Option<String>
+       │         (every http_client call inside csm-rs/ochami-rs receives socks5_proxy
+       │          via the Csm/Ochami struct and builds reqwest::Proxy from it)
+       ├─ InfraContext { socks5_proxy, … }  — borrowed for the request lifetime
+       │    (service functions that call csm-rs directly — e.g. get_node_details —
+       │     pass infra.socks5_proxy to the http_client function)
+       └─ ServerState { socks5_proxy: Option<String>, … }
+            (server handlers that call CLI commands directly — e.g. apply_ephemeral_env —
+             pass state.socks5_proxy.as_deref())
+```
+
+Every function in csm-rs and ochami-rs that builds a `reqwest::Client` accepts `socks5_proxy: Option<&str>` as an explicit parameter placed immediately after `root_cert: &[u8]`. The client is built as:
+
+```rust
+let client = match socks5_proxy {
+    Some(proxy) => client_builder.proxy(reqwest::Proxy::all(proxy)?).build()?,
+    None => client_builder.build()?,
+};
+```
 
 ## Audit trail
 

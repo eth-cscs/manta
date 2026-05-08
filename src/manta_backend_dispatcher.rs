@@ -26,10 +26,11 @@ impl StaticBackendDispatcher {
     backend_type: &str,
     base_url: &str,
     root_cert: &[u8],
+    socks5_proxy: Option<&str>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert))),
-      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
+      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert, socks5_proxy))),
+      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy))),
       _ => Err(Error::UnsupportedBackend(format!(
         "Backend '{}' not supported",
         backend_type

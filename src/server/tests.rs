@@ -35,12 +35,13 @@ use crate::{
 /// either fail at auth or at Axum's request extraction layer first.
 fn router() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
   let state = Arc::new(ServerState {
     backend,
     site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
+    socks5_proxy: None,
     vault_base_url: None,
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None,
@@ -53,12 +54,13 @@ fn router() -> axum::Router {
 /// reach the "requires vault/k8s" code paths.
 fn router_with_vault() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
   let state = Arc::new(ServerState {
     backend,
     site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
+    socks5_proxy: None,
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: Some("http://k8s.stub.invalid".to_string()),
@@ -449,12 +451,13 @@ async fn post_sat_file_without_vault_config_returns_501() {
 #[tokio::test]
 async fn post_sat_file_without_k8s_config_returns_501() {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
   let state = Arc::new(ServerState {
     backend,
     site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
+    socks5_proxy: None,
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None, // k8s not set
