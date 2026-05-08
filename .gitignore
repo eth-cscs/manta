@@ -4,6 +4,7 @@
 /cfr_semantic_files
 /.opencode
 /.claude
+/docs
 #Cargo.lock
 *.code-workspace
 *.log
