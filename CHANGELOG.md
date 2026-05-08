@@ -2,15 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.64.0] - 2026-05-08
 
-### Refactor
+### Bug Fixes
 
-- Thread SOCKS5 proxy as an explicit parameter through csm-rs, ochami-rs, and manta instead of reading from a process-global environment variable
-- `StaticBackendDispatcher::new` gains a `socks5_proxy: Option<&str>` argument forwarded to `Csm::new` and `Ochami::new`
-- `InfraContext` and `ServerState` carry `socks5_proxy` so service functions and CLI commands that call csm-rs http clients directly can forward the proxy
-- Every csm-rs and ochami-rs function that builds a `reqwest::Client` accepts `socks5_proxy: Option<&str>` immediately after `root_cert: &[u8]`
-- `apply_ephemeral_env::exec` and `validate_local_repo::exec` gain `socks5_proxy: Option<&str>`
+- Command migrate nodes
+- Force rust-ls crypto provider to 'ring'
+
+### Miscellaneous Tasks
+
+- Update Cargo.toml
+- Update .gitignore file
 
 ## [1.63.1] - 2026-05-05
 
@@ -39,6 +41,10 @@ All notable changes to this project will be documented in this file.
 - Complete rustdoc coverage for handlers, service structs, and CLI modules
 - Complete rustdoc coverage for handlers, service structs, and CLI modules
 - Complete rustdoc coverage for handlers, service structs, and CLI modules
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.63.1
 
 ## [1.63.0] - 2026-05-03
 
