@@ -198,15 +198,45 @@ async fn run(
       .get_one::<String>("listen-address")
       .expect("listen-address has a default value");
 
+    let mut sites = std::collections::HashMap::new();
+    for (name, site) in &configuration.sites {
+      let barebone = site.shasta_base_url
+        .strip_suffix(API_URL_SUFFIX)
+        .unwrap_or(&site.shasta_base_url);
+      let api_url = match &site.backend {
+        BackendTechnology::Csm => barebone.to_owned() + API_URL_SUFFIX,
+        BackendTechnology::Ochami => barebone.to_owned(),
+      };
+      let gitea = barebone.to_owned() + VCS_URL_SUFFIX;
+      let k8s_url = site.k8s.as_ref().map(|k| k.api_url.clone());
+      let vault_url = site.k8s.as_ref().and_then(|k| match &k.authentication {
+        K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
+        K8sAuth::Native { .. } => None,
+      });
+      let root_cert = common::config::get_csm_root_cert_content(&site.root_ca_cert_file)
+        .unwrap_or_else(|_| {
+          tracing::warn!("CA cert for site '{}' not found, proceeding without it", name);
+          vec![]
+        });
+      let site_backend_dispatcher = StaticBackendDispatcher::new(
+        site.backend.as_str(),
+        &api_url,
+        &root_cert,
+        site.socks5_proxy.as_deref(),
+      )?;
+      sites.insert(name.clone(), server::SiteBackend {
+        backend: site_backend_dispatcher,
+        shasta_base_url: api_url,
+        shasta_root_cert: root_cert,
+        socks5_proxy: site.socks5_proxy.clone(),
+        vault_base_url: vault_url,
+        gitea_base_url: gitea,
+        k8s_api_url: k8s_url,
+      });
+    }
+
     let server_state = std::sync::Arc::new(server::ServerState {
-      backend,
-      site_name: site_name.clone(),
-      shasta_base_url: shasta_api_url.clone(),
-      shasta_root_cert: shasta_root_cert.clone(),
-      socks5_proxy: socks5_proxy.map(str::to_owned),
-      vault_base_url: vault_base_url.map(String::to_owned),
-      gitea_base_url: gitea_base_url.clone(),
-      k8s_api_url: k8s_api_url.map(String::to_owned),
+      sites,
       console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
     });
 

@@ -30,7 +30,7 @@ use wiremock::{
 
 use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
-  server::{ServerState, routes::build_router},
+  server::{ServerState, SiteBackend, routes::build_router},
 };
 
 // ---------------------------------------------------------------------------
@@ -101,15 +101,18 @@ impl TestFixture {
     )
     .unwrap();
 
-    let state = Arc::new(ServerState {
+    let mut sites = std::collections::HashMap::new();
+    sites.insert("test".to_string(), SiteBackend {
       backend,
-      site_name: "test".to_string(),
       shasta_base_url: mock_server.uri(),
       shasta_root_cert: TEST_ROOT_CERT.to_vec(),
       socks5_proxy: None,
       vault_base_url: None,
       gitea_base_url: "http://stub.invalid".to_string(),
       k8s_api_url: None,
+    });
+    let state = Arc::new(ServerState {
+      sites,
       console_inactivity_timeout: Duration::from_secs(1800),
     });
 
@@ -123,6 +126,7 @@ impl TestFixture {
       .method(Method::GET)
       .uri(uri)
       .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header("X-Manta-Site", "test")
       .body(Body::empty())
       .unwrap()
   }
@@ -142,6 +146,7 @@ impl TestFixture {
       .uri(uri)
       .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
       .header(header::CONTENT_TYPE, "application/json")
+      .header("X-Manta-Site", "test")
       .body(Body::from(serde_json::to_string(&body).unwrap()))
       .unwrap()
   }
@@ -151,6 +156,7 @@ impl TestFixture {
       .method(Method::DELETE)
       .uri(uri)
       .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header("X-Manta-Site", "test")
       .body(Body::empty())
       .unwrap()
   }
@@ -161,6 +167,7 @@ impl TestFixture {
       .uri(uri)
       .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
       .header(header::CONTENT_TYPE, "application/json")
+      .header("X-Manta-Site", "test")
       .body(Body::from(serde_json::to_string(&body).unwrap()))
       .unwrap()
   }

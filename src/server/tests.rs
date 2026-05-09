@@ -23,7 +23,7 @@ use tower::ServiceExt as _;
 
 use crate::{
   manta_backend_dispatcher::StaticBackendDispatcher,
-  server::{ServerState, routes::build_router},
+  server::{ServerState, SiteBackend, routes::build_router},
 };
 
 // ---------------------------------------------------------------------------
@@ -36,15 +36,18 @@ use crate::{
 fn router() -> axum::Router {
   let backend =
     StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
-  let state = Arc::new(ServerState {
+  let mut sites = std::collections::HashMap::new();
+  sites.insert("test".to_string(), SiteBackend {
     backend,
-    site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
     socks5_proxy: None,
     vault_base_url: None,
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None,
+  });
+  let state = Arc::new(ServerState {
+    sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   build_router(state)
@@ -55,15 +58,18 @@ fn router() -> axum::Router {
 fn router_with_vault() -> axum::Router {
   let backend =
     StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
-  let state = Arc::new(ServerState {
+  let mut sites = std::collections::HashMap::new();
+  sites.insert("test".to_string(), SiteBackend {
     backend,
-    site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
     socks5_proxy: None,
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: Some("http://k8s.stub.invalid".to_string()),
+  });
+  let state = Arc::new(ServerState {
+    sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   build_router(state)
@@ -87,6 +93,7 @@ fn get_auth(uri: &str) -> Request<Body> {
     .method(Method::GET)
     .uri(uri)
     .header(header::AUTHORIZATION, "Bearer test-token")
+    .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap()
 }
@@ -96,6 +103,7 @@ fn delete_auth(uri: &str) -> Request<Body> {
     .method(Method::DELETE)
     .uri(uri)
     .header(header::AUTHORIZATION, "Bearer test-token")
+    .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap()
 }
@@ -106,6 +114,7 @@ fn post_json(uri: &str, body: &str) -> Request<Body> {
     .uri(uri)
     .header(header::CONTENT_TYPE, "application/json")
     .header(header::AUTHORIZATION, "Bearer test-token")
+    .header("X-Manta-Site", "test")
     .body(Body::from(body.to_string()))
     .unwrap()
 }
@@ -452,15 +461,18 @@ async fn post_sat_file_without_vault_config_returns_501() {
 async fn post_sat_file_without_k8s_config_returns_501() {
   let backend =
     StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
-  let state = Arc::new(ServerState {
+  let mut sites = std::collections::HashMap::new();
+  sites.insert("test".to_string(), SiteBackend {
     backend,
-    site_name: "test".to_string(),
     shasta_base_url: "http://stub.invalid".to_string(),
     shasta_root_cert: vec![],
     socks5_proxy: None,
     vault_base_url: Some("http://vault.stub.invalid".to_string()),
     gitea_base_url: "http://stub.invalid".to_string(),
     k8s_api_url: None, // k8s not set
+  });
+  let state = Arc::new(ServerState {
+    sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
   });
   let resp = build_router(state)
@@ -483,6 +495,7 @@ async fn assert_route_exists(method: Method, uri: &str) {
     .uri(uri)
     .header(header::AUTHORIZATION, "Bearer test-token")
     .header(header::CONTENT_TYPE, "application/json")
+    .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap();
   let resp = router().oneshot(req).await.unwrap();

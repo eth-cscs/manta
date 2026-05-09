@@ -8,6 +8,7 @@ mod tests;
 #[cfg(test)]
 mod integration_tests;
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -18,15 +19,12 @@ use axum_server::tls_rustls::RustlsConfig;
 use crate::common::app_context::InfraContext;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
-/// Owned state shared across all HTTP handlers via `Arc`.
+/// All per-site connection data the server needs to talk to backend APIs.
 ///
-/// Unlike `InfraContext` (which borrows), this struct owns all
-/// data so it can be shared safely across async tasks.
-pub struct ServerState {
+/// Owned by `ServerState` inside a `HashMap` keyed by site name.
+pub struct SiteBackend {
   /// Dispatches API calls to the configured CSM or OpenCHAMI backend.
   pub backend: StaticBackendDispatcher,
-  /// Active site name from the config file (used for vault and Gitea calls).
-  pub site_name: String,
   /// Base URL for the CSM/OpenCHAMI API (e.g. `https://api.cluster/apis`).
   pub shasta_base_url: String,
   /// PEM-encoded root CA certificate for the backend; empty vec skips verification.
@@ -39,27 +37,45 @@ pub struct ServerState {
   pub gitea_base_url: String,
   /// Kubernetes API URL; `None` means console and log-streaming endpoints return 501.
   pub k8s_api_url: Option<String>,
+}
+
+/// Shared state for all HTTP handlers.
+///
+/// Holds one `SiteBackend` per configured site so that the server can serve
+/// multiple clusters.  Each request supplies the target site via the
+/// `X-Manta-Site` header; handlers call [`ServerState::infra_context`] to
+/// retrieve the per-site data.
+pub struct ServerState {
+  /// Per-site connection data, keyed by site name.
+  pub sites: HashMap<String, SiteBackend>,
   /// How long a WebSocket console session may be idle before the server
-  /// closes it. Protects against leaked Kubernetes pod attachments.
-  pub console_inactivity_timeout: std::time::Duration,
+  /// closes it.  Protects against leaked Kubernetes pod attachments.
+  pub console_inactivity_timeout: Duration,
 }
 
 impl ServerState {
-  /// Build a borrowed `InfraContext` from the owned state.
+  /// Build a borrowed `InfraContext` for the named site.
   ///
-  /// This is called per-request so the service layer can work
-  /// with its existing `&InfraContext<'_>` API.
-  pub fn infra_context(&self) -> InfraContext<'_> {
-    InfraContext {
-      backend: &self.backend,
-      site_name: &self.site_name,
-      shasta_base_url: &self.shasta_base_url,
-      shasta_root_cert: &self.shasta_root_cert,
-      socks5_proxy: self.socks5_proxy.as_deref(),
-      vault_base_url: self.vault_base_url.as_deref(),
-      gitea_base_url: &self.gitea_base_url,
-      k8s_api_url: self.k8s_api_url.as_deref(),
-    }
+  /// Returns `Err(Error::NotFound)` when `site_name` is not in the map.
+  /// Called per-request so the service layer can work with its existing
+  /// `&InfraContext<'_>` API.
+  pub fn infra_context<'a>(
+    &'a self,
+    site_name: &'a str,
+  ) -> Result<InfraContext<'a>, Error> {
+    let site = self.sites.get(site_name).ok_or_else(|| {
+      Error::NotFound(format!("site '{}' not found", site_name))
+    })?;
+    Ok(InfraContext {
+      backend: &site.backend,
+      site_name,
+      shasta_base_url: &site.shasta_base_url,
+      shasta_root_cert: &site.shasta_root_cert,
+      socks5_proxy: site.socks5_proxy.as_deref(),
+      vault_base_url: site.vault_base_url.as_deref(),
+      gitea_base_url: &site.gitea_base_url,
+      k8s_api_url: site.k8s_api_url.as_deref(),
+    })
   }
 }
 
