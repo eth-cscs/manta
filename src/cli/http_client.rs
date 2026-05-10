@@ -48,6 +48,7 @@ struct ImageEntry {
 }
 
 /// HTTP client that forwards CLI requests to a manta server.
+#[derive(Debug)]
 pub struct MantaClient {
   client: reqwest::Client,
   base_url: String,
@@ -56,13 +57,25 @@ pub struct MantaClient {
 
 impl MantaClient {
   /// Build a client pointing at `server_url` for the given `site_name`.
+  ///
+  /// If `server_url` has no scheme, `http://` is prepended. This lets users
+  /// write `manta_server_url = "localhost:8080"` in their config without
+  /// triggering a "URL scheme is not allowed" error from reqwest.
   pub fn new(server_url: &str, site_name: &str) -> anyhow::Result<Self> {
+    let normalized = if server_url.starts_with("http://")
+      || server_url.starts_with("https://")
+    {
+      server_url.to_owned()
+    } else {
+      format!("http://{}", server_url)
+    };
+
     let client = reqwest::Client::builder()
       .build()
       .context("Failed to build HTTP client")?;
     Ok(Self {
       client,
-      base_url: format!("{}/api/v1", server_url.trim_end_matches('/')),
+      base_url: format!("{}/api/v1", normalized.trim_end_matches('/')),
       site_name: site_name.to_owned(),
     })
   }

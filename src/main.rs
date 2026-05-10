@@ -256,7 +256,12 @@ async fn run_cli(
     socks5_proxy,
   )?;
 
-  let manta_server_url = settings.get_string("manta_server_url").ok();
+  // Prefer the per-site manta_server_url, fall back to the top-level
+  // flat key (or MANTA_SERVER_URL env var) for backwards compatibility.
+  let manta_server_url = site_details_value
+    .manta_server_url
+    .clone()
+    .or_else(|| settings.get_string("manta_server_url").ok());
   let app_context = AppContext {
     infra: crate::common::app_context::InfraContext {
       backend: &backend,
