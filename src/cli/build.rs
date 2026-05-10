@@ -250,8 +250,8 @@ fn subcommand_get_hardware() -> Command {
     .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
     .arg(
       arg!(-o --output <FORMAT> "Output format")
-        .value_parser(["json", "summary", "details"])
-        .default_value("summary"),
+        .value_parser(["table", "json"])
+        .default_value("table"),
     );
 
   let command_get_hw_configuration_node = Command::new("node")
