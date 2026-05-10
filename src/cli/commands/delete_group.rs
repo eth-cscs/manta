@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
 use crate::common::kafka::Kafka;
@@ -15,7 +16,13 @@ pub async fn exec(
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  group::delete_group(&ctx.infra, token, label, force).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_group(token, label, force)
+      .await?;
+  } else {
+    group::delete_group(&ctx.infra, token, label, force).await?;
+  }
 
   println!("Group '{}' deleted", label);
 

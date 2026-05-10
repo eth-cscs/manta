@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use anyhow::Error;
 use nodeset::NodeSet;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{app_context::AppContext, audit};
 use crate::service::migrate;
 
@@ -18,6 +19,27 @@ pub async fn exec(
     dry_run: bool,
     create_hsm_group: bool,
 ) -> Result<(), Error> {
+    if let Some(server_url) = ctx.infra.manta_server_url {
+        let result = MantaClient::new(server_url, ctx.infra.site_name)?
+            .migrate_nodes(token, target_hsm_name_vec, parent_hsm_name_vec, hosts_expression, dry_run, create_hsm_group)
+            .await?;
+        if dry_run {
+            println!("dry-run enabled, changes not persisted.");
+        }
+        println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+
+        audit::maybe_send_audit(
+            ctx.cli.kafka_audit_opt,
+            token,
+            format!("Migrate nodes from {:?} to {:?}", parent_hsm_name_vec, target_hsm_name_vec),
+            None,
+            Some(serde_json::json!(vec![parent_hsm_name_vec, target_hsm_name_vec])),
+        )
+        .await;
+
+        return Ok(());
+    }
+
     let (xname_to_move_vec, results) = migrate::migrate_nodes(
         &ctx.infra,
         token,

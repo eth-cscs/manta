@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::group::{self, GetGroupParams};
@@ -25,7 +26,13 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_group_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let groups = group::get_groups(&ctx.infra, token, &params).await?;
+  let groups = if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_groups(token, &params)
+      .await?
+  } else {
+    group::get_groups(&ctx.infra, token, &params).await?
+  };
 
   let output: &String = cli_args
     .get_one("output")

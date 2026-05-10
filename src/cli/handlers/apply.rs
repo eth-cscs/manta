@@ -1,6 +1,6 @@
 //! Routes `manta apply *` subcommands to their exec functions.
 
-use crate::cli::commands;
+use crate::cli::{commands, http_client::MantaClient};
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
@@ -179,15 +179,23 @@ pub async fn handle_apply(
       if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
         bail!("This command needs to run in interactive mode");
       }
-      commands::apply_ephemeral_env::exec(
-        ctx.infra.shasta_base_url,
-        ctx.infra.shasta_root_cert,
-        ctx.infra.socks5_proxy,
-        &token,
-        m.get_one::<String>("image-id")
-          .context("'image-id' argument is mandatory")?,
-      )
-      .await?;
+      let image_id = m
+        .get_one::<String>("image-id")
+        .context("'image-id' argument is mandatory")?;
+      if let Some(server_url) = ctx.infra.manta_server_url {
+        MantaClient::new(server_url, ctx.infra.site_name)?
+          .create_ephemeral_env(&token, image_id)
+          .await?;
+      } else {
+        commands::apply_ephemeral_env::exec(
+          ctx.infra.shasta_base_url,
+          ctx.infra.shasta_root_cert,
+          ctx.infra.socks5_proxy,
+          &token,
+          image_id,
+        )
+        .await?;
+      }
     }
 
     Some(("kernel-parameters", m)) => {

@@ -10,6 +10,7 @@ use manta_backend_dispatcher::{
     types::K8sDetails,
 };
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{
     self,
     app_context::AppContext,
@@ -151,28 +152,44 @@ async fn apply_session(
     let (repo_name_vec, repo_last_commit_id_vec) =
         check_local_repos(repos_paths)?;
 
-    // Delegate to service for ansible_limit resolution + CFS session creation
+    // Delegate to service or server for CFS session creation
     let (cfs_configuration_name, cfs_session_name) =
-        session::create_cfs_session(
-            &ctx.infra,
-            shasta_token,
-            gitea_token,
-            cfs_conf_sess_name,
-            playbook_yaml_file_name_opt,
-            hsm_group_opt,
-            &repo_name_vec
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<&str>>(),
-            &repo_last_commit_id_vec
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<&str>>(),
-            ansible_limit_opt,
-            ansible_verbosity,
-            ansible_passthrough,
-        )
-        .await?;
+        if let Some(server_url) = ctx.infra.manta_server_url {
+            MantaClient::new(server_url, ctx.infra.site_name)?
+                .create_session(
+                    shasta_token,
+                    cfs_conf_sess_name,
+                    playbook_yaml_file_name_opt,
+                    hsm_group_opt,
+                    &repo_name_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
+                    &repo_last_commit_id_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
+                    ansible_limit_opt,
+                    ansible_verbosity,
+                    ansible_passthrough,
+                )
+                .await?
+        } else {
+            session::create_cfs_session(
+                &ctx.infra,
+                shasta_token,
+                gitea_token,
+                cfs_conf_sess_name,
+                playbook_yaml_file_name_opt,
+                hsm_group_opt,
+                &repo_name_vec
+                    .iter()
+                    .map(|s| s.as_str())
+                    .collect::<Vec<&str>>(),
+                &repo_last_commit_id_vec
+                    .iter()
+                    .map(|s| s.as_str())
+                    .collect::<Vec<&str>>(),
+                ansible_limit_opt,
+                ansible_verbosity,
+                ansible_passthrough,
+            )
+            .await?
+        };
 
     // Watch logs (CLI concern: println)
     if watch_logs {

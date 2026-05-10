@@ -76,7 +76,7 @@ pub async fn add_boot_parameters(
 }
 
 /// Typed parameters for updating boot parameters.
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct UpdateBootParametersParams {
   /// Target node xnames.
   pub hosts: Vec<String>,

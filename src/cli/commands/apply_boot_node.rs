@@ -2,6 +2,7 @@
 
 use crate::{
   cli::commands::power_common::{self, PowerAction},
+  cli::http_client::MantaClient,
   common::{self, app_context::AppContext},
   service,
 };
@@ -22,6 +23,27 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .apply_boot_config(
+        token,
+        hosts_expression,
+        new_boot_image_id_opt,
+        new_boot_image_configuration_opt,
+        new_kernel_parameters_opt,
+        new_runtime_configuration_opt,
+        dry_run,
+      )
+      .await?;
+    if dry_run {
+      println!(
+        "Dry-run enabled. No changes persisted into the system\n{}",
+        serde_json::to_string_pretty(&result).unwrap_or_default()
+      );
+    }
+    return Ok(());
+  }
+
   let changeset = service::boot_parameters::prepare_boot_config(
     &ctx.infra,
     token,

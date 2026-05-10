@@ -8,9 +8,12 @@ use manta_backend_dispatcher::interfaces::{
 };
 use nodeset::NodeSet;
 
-use crate::common::{
-  self, app_context::AppContext, audit,
-  authorization::get_groups_names_available,
+use crate::{
+  cli::http_client::MantaClient,
+  common::{
+    self, app_context::AppContext, audit,
+    authorization::get_groups_names_available,
+  },
 };
 
 /// The three power operations supported by the backend.
@@ -74,6 +77,29 @@ pub async fn exec_nodes(
   output: &str,
   token: &str,
 ) -> Result<(), Error> {
+  let action_str = match action {
+    PowerAction::On => "on",
+    PowerAction::Off => "off",
+    PowerAction::Reset => "reset",
+  };
+
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let xnames: Vec<String> = hosts_expression
+      .split(',')
+      .map(str::trim)
+      .map(String::from)
+      .collect();
+    println!("Nodes: {}", xnames.join(", "));
+    if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
+      bail!("Operation cancelled by user");
+    }
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .power(token, action_str, &xnames, "nodes", force)
+      .await?;
+    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    return Ok(());
+  }
+
   let backend = ctx.infra.backend;
 
   // Convert user input to xnames
@@ -141,6 +167,30 @@ pub async fn exec_cluster(
   output: &str,
   token: &str,
 ) -> Result<(), Error> {
+  let action_str = match action {
+    PowerAction::On => "on",
+    PowerAction::Off => "off",
+    PowerAction::Reset => "reset",
+  };
+
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    println!("Cluster: {}", hsm_group_name_arg);
+    if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
+      bail!("Operation cancelled by user");
+    }
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .power(
+        token,
+        action_str,
+        &[hsm_group_name_arg.to_string()],
+        "cluster",
+        force,
+      )
+      .await?;
+    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    return Ok(());
+  }
+
   let backend = ctx.infra.backend;
 
   let target_hsm_group_vec = get_groups_names_available(

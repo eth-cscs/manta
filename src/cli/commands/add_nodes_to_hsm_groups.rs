@@ -2,6 +2,7 @@
 
 use anyhow::{Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::{
   common::{self, audit, kafka::Kafka},
   service,
@@ -17,6 +18,43 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    if !common::user_interaction::confirm(
+      &format!(
+        "Nodes matching '{}' will be added to HSM group '{}'. Do you want to proceed?",
+        hosts_expression, target_hsm_name
+      ),
+      false,
+    ) {
+      bail!("Operation cancelled by user");
+    }
+
+    if dryrun {
+      println!(
+        "dryrun - Add nodes matching '{}' to {}",
+        hosts_expression, target_hsm_name
+      );
+      return Ok(());
+    }
+
+    let (added, updated_members) = MantaClient::new(server_url, ctx.infra.site_name)?
+      .add_nodes_to_group(token, target_hsm_name, hosts_expression)
+      .await?;
+
+    println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
+
+    audit::maybe_send_audit(
+      kafka_audit_opt,
+      token,
+      format!("add nodes to group: {}", target_hsm_name),
+      Some(serde_json::json!(added)),
+      Some(serde_json::json!(vec![target_hsm_name])),
+    )
+    .await;
+
+    return Ok(());
+  }
+
   // Resolve hosts to validate input before confirmation
   let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
     ctx.infra.backend,

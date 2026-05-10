@@ -1273,8 +1273,10 @@ pub enum KernelParamOp {
 /// Request body for `POST /kernel-parameters/apply`.
 #[derive(Deserialize)]
 pub struct ApplyKernelParametersRequest {
-  /// Target node xnames.
-  pub xnames: Vec<String>,
+  /// Target node xnames; mutually exclusive with `hsm_group`.
+  pub xnames: Option<Vec<String>>,
+  /// Target HSM group; all members are resolved to xnames.
+  pub hsm_group: Option<String>,
   /// Which mutation to perform: add, apply (replace), or delete.
   pub operation: KernelParamOp,
   /// Space-separated kernel parameter key=value pairs.
@@ -1302,21 +1304,22 @@ pub async fn apply_kernel_parameters(
   SiteName(site_name): SiteName,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  if body.xnames.is_empty() {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: "xnames list must not be empty".to_string(),
-      }),
-    ));
-  }
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let xnames = resolve_xnames_from_request(
+    infra.backend,
+    &token,
+    body.xnames.as_deref(),
+    body.hsm_group.as_deref(),
+  )
+  .await?;
+
   tracing::info!(
     "apply_kernel_parameters xnames={:?} op={:?} dry_run={}",
-    body.xnames,
+    xnames,
     body.operation,
     body.dry_run
   );
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let operation = match body.operation {
     KernelParamOp::Add => service::kernel_parameters::KernelParamOperation::Add {
@@ -1332,7 +1335,7 @@ pub async fn apply_kernel_parameters(
   };
 
   let changeset =
-    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &body.xnames, &operation)
+    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
       .await
       .map_err(to_handler_error)?;
 

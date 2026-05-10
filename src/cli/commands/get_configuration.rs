@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::cli::output::configuration::{print_table_details_struct, print_table_struct};
 use crate::common::app_context::AppContext;
 use crate::service::configuration::{self, GetConfigurationParams};
@@ -41,12 +42,13 @@ pub async fn exec(
   let params =
     parse_configuration_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let cfs_configuration_vec = configuration::get_configurations(
-    &ctx.infra,
-    token,
-    &params,
-  )
-  .await?;
+  let cfs_configuration_vec = if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_configurations(token, &params)
+      .await?
+  } else {
+    configuration::get_configurations(&ctx.infra, token, &params).await?
+  };
 
   if cfs_configuration_vec.is_empty() {
     bail!("No CFS configuration found!");
@@ -60,7 +62,7 @@ pub async fn exec(
       serde_json::to_string_pretty(&cfs_configuration_vec)
         .context("Failed to serialize CFS configurations to JSON")?
     );
-  } else if cfs_configuration_vec.len() == 1 {
+  } else if ctx.infra.manta_server_url.is_none() && cfs_configuration_vec.len() == 1 {
     let config = cfs_configuration_vec
       .first()
       .context("CFS configuration list unexpectedly empty")?;

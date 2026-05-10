@@ -1,5 +1,6 @@
 //! Implements the `manta delete kernel-parameters` command.
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use anyhow::Error;
 
@@ -17,6 +18,30 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let xnames_vec: Option<Vec<String>> = if hsm_group_name_arg_opt.is_none() {
+      nodes.map(|e| e.split(',').map(str::trim).map(String::from).collect())
+    } else {
+      None
+    };
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_kernel_parameters(
+        token,
+        kernel_params,
+        xnames_vec.as_deref(),
+        hsm_group_name_arg_opt,
+        dry_run,
+      )
+      .await?;
+    if dry_run {
+      println!(
+        "Dry-run enabled. No changes persisted into the system\n{}",
+        serde_json::to_string_pretty(&result).unwrap_or_default()
+      );
+    }
+    return Ok(());
+  }
+
   // Resolve target nodes from hosts expression, HSM group, or settings
   let xname_vec =
     crate::common::node_ops::resolve_target_nodes(

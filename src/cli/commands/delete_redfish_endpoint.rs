@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service::redfish_endpoints;
 
@@ -11,7 +12,13 @@ pub async fn exec(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  redfish_endpoints::delete_redfish_endpoint(&ctx.infra, token, id).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_redfish_endpoint(token, id)
+      .await?;
+  } else {
+    redfish_endpoints::delete_redfish_endpoint(&ctx.infra, token, id).await?;
+  }
   println!("Redfish endpoint for id '{}' deleted successfully", id);
   Ok(())
 }

@@ -41,8 +41,7 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // starting the multi-threaded runtime.
   let cli_matches = crate::cli::build::build_cli().get_matches();
 
-  // Build a *single-threaded* runtime just to load the config
-  // file so we can read the SOCKS5 proxy value.
+  // Build a *single-threaded* runtime just to load the config file.
   let preliminary_rt = tokio::runtime::Builder::new_current_thread()
     .enable_all()
     .build()?;
@@ -62,7 +61,18 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // other threads are alive at this point.
   drop(preliminary_rt);
 
-  // Resolve the active site: --site flag overrides config file.
+  let rt = tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()?;
+
+  // Server mode: skip site resolution entirely — the server serves all
+  // configured sites and does not need a single "active" site.
+  if cli_matches.subcommand_matches("serve").is_some() {
+    return rt.block_on(run_server(settings, configuration, cli_matches));
+  }
+
+  // CLI mode: resolve the active site and set the SOCKS5 proxy env var
+  // while we are still single-threaded.
   let site_name: String = cli_matches
     .get_one::<String>("site")
     .cloned()
@@ -77,38 +87,104 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
       )
     })?;
 
-  // Set SOCKS5 proxy env var while we are still single-threaded.
   if let Some(socks_proxy) = &site_details_value.socks5_proxy
     && !socks_proxy.is_empty()
   {
-    // SAFETY: no other threads are running yet, so this is
-    // sound even though `set_var` is marked unsafe since
-    // Rust 1.66.
+    // SAFETY: no other threads are running yet.
     unsafe {
       std::env::set_var("SOCKS5", socks_proxy);
     }
   }
 
-  // Now spin up the full multi-threaded tokio runtime.
-  let rt = tokio::runtime::Builder::new_multi_thread()
-    .enable_all()
-    .build()?;
-  rt.block_on(run(settings, configuration, site_name, cli_matches))
+  rt.block_on(run_cli(settings, configuration, site_name, cli_matches))
 }
 
-/// Async entry point — runs on the multi-threaded tokio runtime
-/// after environment variables have been safely configured.
-async fn run(
+/// Server startup — does not require a valid `site` selection.
+/// Loads every site from the configuration and serves all of them.
+async fn run_server(
+  settings: config::Config,
+  configuration: MantaConfiguration,
+  cli_matches: ArgMatches,
+) -> core::result::Result<(), Box<dyn std::error::Error>> {
+  let log_level = settings
+    .get_string("log")
+    .unwrap_or_else(|_| "error".to_string());
+  log_ops::configure(log_level);
+
+  let serve_matches = cli_matches
+    .subcommand_matches("serve")
+    .expect("serve subcommand already confirmed");
+
+  let port: u16 = *serve_matches
+    .get_one::<u16>("port")
+    .expect("port has a default value");
+  let cert_path: &str = serve_matches
+    .get_one::<String>("cert")
+    .expect("cert is required");
+  let key_path: &str = serve_matches
+    .get_one::<String>("key")
+    .expect("key is required");
+  let listen_addr: &str = serve_matches
+    .get_one::<String>("listen-address")
+    .expect("listen-address has a default value");
+
+  let mut sites = std::collections::HashMap::new();
+  for (name, site) in &configuration.sites {
+    let barebone = site.shasta_base_url
+      .strip_suffix(API_URL_SUFFIX)
+      .unwrap_or(&site.shasta_base_url);
+    let api_url = match &site.backend {
+      BackendTechnology::Csm => barebone.to_owned() + API_URL_SUFFIX,
+      BackendTechnology::Ochami => barebone.to_owned(),
+    };
+    let gitea = barebone.to_owned() + VCS_URL_SUFFIX;
+    let k8s_url = site.k8s.as_ref().map(|k| k.api_url.clone());
+    let vault_url = site.k8s.as_ref().and_then(|k| match &k.authentication {
+      K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
+      K8sAuth::Native { .. } => None,
+    });
+    let root_cert = common::config::get_csm_root_cert_content(&site.root_ca_cert_file)
+      .unwrap_or_else(|_| {
+        tracing::warn!("CA cert for site '{}' not found, proceeding without it", name);
+        vec![]
+      });
+    let site_backend_dispatcher = StaticBackendDispatcher::new(
+      site.backend.as_str(),
+      &api_url,
+      &root_cert,
+      site.socks5_proxy.as_deref(),
+    )?;
+    sites.insert(name.clone(), server::SiteBackend {
+      backend: site_backend_dispatcher,
+      shasta_base_url: api_url,
+      shasta_root_cert: root_cert,
+      socks5_proxy: site.socks5_proxy.clone(),
+      vault_base_url: vault_url,
+      gitea_base_url: gitea,
+      k8s_api_url: k8s_url,
+    });
+  }
+
+  let server_state = std::sync::Arc::new(server::ServerState {
+    sites,
+    console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
+  });
+
+  server::start_server(server_state, listen_addr, port, cert_path, key_path)
+    .await
+    .map_err(|e| e.into())
+}
+
+/// CLI startup — requires a valid active site from the configuration.
+async fn run_cli(
   settings: config::Config,
   configuration: MantaConfiguration,
   site_name: String,
   cli_matches: ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-  // Configure logging
   let log_level = settings
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
-
   log_ops::configure(log_level);
 
   let site_details_value =
@@ -124,11 +200,9 @@ async fn run(
     }
   }
 
-  // Extract backend technology and URLs
   let backend_tech = &site_details_value.backend;
   let shasta_base_url = &site_details_value.shasta_base_url;
-  let shasta_barebone_url = shasta_base_url // HACK: strip /apis suffix if present for
-    // compatibility with old configuration files. Remove once all users have migrated.
+  let shasta_barebone_url = shasta_base_url
     .strip_suffix(API_URL_SUFFIX)
     .unwrap_or(shasta_base_url);
   let shasta_api_url = match backend_tech {
@@ -161,18 +235,17 @@ async fn run(
 
   let root_ca_cert_file = &site_details_value.root_ca_cert_file;
 
-  let shasta_root_cert_rslt =
-    common::config::get_csm_root_cert_content(root_ca_cert_file);
-
-  let shasta_root_cert = if let Ok(shasta_root_cert) = shasta_root_cert_rslt {
-    shasta_root_cert
-  } else {
-    tracing::warn!(
-      "CA public root file '{}' not found. Proceeding without it.",
-      root_ca_cert_file
-    );
-    vec![]
-  };
+  let shasta_root_cert =
+    match common::config::get_csm_root_cert_content(root_ca_cert_file) {
+      Ok(cert) => cert,
+      Err(_) => {
+        tracing::warn!(
+          "CA public root file '{}' not found. Proceeding without it.",
+          root_ca_cert_file
+        );
+        vec![]
+      }
+    };
 
   let socks5_proxy = site_details_value.socks5_proxy.as_deref();
 
@@ -183,69 +256,6 @@ async fn run(
     socks5_proxy,
   )?;
 
-  // Check if we're in server mode
-  if let Some(serve_matches) = cli_matches.subcommand_matches("serve") {
-    let port: u16 = *serve_matches
-      .get_one::<u16>("port")
-      .expect("port has a default value");
-    let cert_path: &str = serve_matches
-      .get_one::<String>("cert")
-      .expect("cert is required");
-    let key_path: &str = serve_matches
-      .get_one::<String>("key")
-      .expect("key is required");
-    let listen_addr: &str = serve_matches
-      .get_one::<String>("listen-address")
-      .expect("listen-address has a default value");
-
-    let mut sites = std::collections::HashMap::new();
-    for (name, site) in &configuration.sites {
-      let barebone = site.shasta_base_url
-        .strip_suffix(API_URL_SUFFIX)
-        .unwrap_or(&site.shasta_base_url);
-      let api_url = match &site.backend {
-        BackendTechnology::Csm => barebone.to_owned() + API_URL_SUFFIX,
-        BackendTechnology::Ochami => barebone.to_owned(),
-      };
-      let gitea = barebone.to_owned() + VCS_URL_SUFFIX;
-      let k8s_url = site.k8s.as_ref().map(|k| k.api_url.clone());
-      let vault_url = site.k8s.as_ref().and_then(|k| match &k.authentication {
-        K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
-        K8sAuth::Native { .. } => None,
-      });
-      let root_cert = common::config::get_csm_root_cert_content(&site.root_ca_cert_file)
-        .unwrap_or_else(|_| {
-          tracing::warn!("CA cert for site '{}' not found, proceeding without it", name);
-          vec![]
-        });
-      let site_backend_dispatcher = StaticBackendDispatcher::new(
-        site.backend.as_str(),
-        &api_url,
-        &root_cert,
-        site.socks5_proxy.as_deref(),
-      )?;
-      sites.insert(name.clone(), server::SiteBackend {
-        backend: site_backend_dispatcher,
-        shasta_base_url: api_url,
-        shasta_root_cert: root_cert,
-        socks5_proxy: site.socks5_proxy.clone(),
-        vault_base_url: vault_url,
-        gitea_base_url: gitea,
-        k8s_api_url: k8s_url,
-      });
-    }
-
-    let server_state = std::sync::Arc::new(server::ServerState {
-      sites,
-      console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
-    });
-
-    return server::start_server(server_state, listen_addr, port, cert_path, key_path)
-      .await
-      .map_err(|e| e.into());
-  }
-
-  // Process input params
   let app_context = AppContext {
     infra: crate::common::app_context::InfraContext {
       backend: &backend,
@@ -256,6 +266,7 @@ async fn run(
       vault_base_url: vault_base_url.map(String::as_str),
       gitea_base_url: &gitea_base_url,
       k8s_api_url: k8s_api_url.map(String::as_str),
+      manta_server_url: site_details_value.manta_server_url.as_deref(),
     },
     cli: crate::common::app_context::CliConfig {
       settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),

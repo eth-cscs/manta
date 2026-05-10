@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service::node;
 
@@ -11,7 +12,13 @@ pub async fn exec(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  node::delete_node(&ctx.infra, token, id).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_node(token, id)
+      .await?;
+  } else {
+    node::delete_node(&ctx.infra, token, id).await?;
+  }
   println!("Node deleted '{}'", id);
   Ok(())
 }

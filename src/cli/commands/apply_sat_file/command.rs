@@ -13,6 +13,7 @@ use serde_yaml::Value;
 
 use crate::{
   cli::commands::apply_sat_file::utils,
+  cli::http_client::MantaClient,
   common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
@@ -78,6 +79,45 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    validate_hook(opts.prehook_opt, "Pre")?;
+    validate_hook(opts.posthook_opt, "Post")?;
+
+    if !common::user_interaction::confirm(
+      "Apply SAT file to the system via manta server. Please confirm to proceed.",
+      opts.assume_yes,
+    ) {
+      bail!("Operation cancelled by user");
+    }
+
+    run_hook_if_present(opts.prehook_opt, "pre")?;
+
+    let values_json: Option<serde_json::Value> = opts.values_cli_opt.map(|vals| {
+      serde_json::Value::Array(vals.iter().map(|v| serde_json::Value::String(v.clone())).collect())
+    });
+
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .apply_sat_file(
+        token,
+        opts.sat_file_content,
+        values_json,
+        opts.values_file_content_opt,
+        opts.ansible_verbosity_opt,
+        opts.ansible_passthrough_opt,
+        opts.reboot,
+        opts.watch_logs,
+        opts.timestamps,
+        opts.image_only,
+        opts.session_template_only,
+        opts.overwrite,
+        opts.dry_run,
+      )
+      .await?;
+
+    run_hook_if_present(opts.posthook_opt, "post")?;
+    return Ok(());
+  }
+
   let backend = ctx.infra.backend;
   let site_name = ctx.infra.site_name;
   let shasta_base_url = ctx.infra.shasta_base_url;

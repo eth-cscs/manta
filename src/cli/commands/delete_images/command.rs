@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service;
 
@@ -16,6 +17,19 @@ pub async fn exec(
     "Executing command to delete images: {}",
     image_id_vec.join(", "),
   );
+
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_images(token, image_id_vec, dry_run)
+      .await?;
+    if dry_run {
+      eprintln!("Dry-run enabled. No changes persisted into the system");
+      println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    } else {
+      println!("Images deleted:\n{}", image_id_vec.join(", "));
+    }
+    return Ok(());
+  }
 
   if dry_run {
     // Validate only — no actual deletion

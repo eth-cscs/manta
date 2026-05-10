@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service::migrate;
 
@@ -59,7 +60,13 @@ pub async fn exec(
         };
     }
 
-    migrate::migrate_backup(&ctx.infra, token, bos, destination).await?;
+    if let Some(server_url) = ctx.infra.manta_server_url {
+        MantaClient::new(server_url, ctx.infra.site_name)?
+            .migrate_backup(token, bos, destination)
+            .await?;
+    } else {
+        migrate::migrate_backup(&ctx.infra, token, bos, destination).await?;
+    }
     tracing::debug!("Migrate backup completed successfully.");
 
     if let Some(posthook_path) = posthook {

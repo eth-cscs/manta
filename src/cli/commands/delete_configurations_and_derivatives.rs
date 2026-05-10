@@ -1,5 +1,6 @@
 //! Implements the `manta delete configurations` command.
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext};
 use crate::service;
 use anyhow::bail;
@@ -15,6 +16,25 @@ pub async fn exec(
   until_opt: Option<NaiveDateTime>,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let since_str = since_opt.map(|d| d.to_string());
+    let until_str = until_opt.map(|d| d.to_string());
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_configurations(
+        token,
+        configuration_name_pattern_opt,
+        since_str.as_deref(),
+        until_str.as_deref(),
+        false,
+      )
+      .await?;
+    println!(
+      "{}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
+    );
+    return Ok(());
+  }
+
   let candidates = service::configuration::get_deletion_candidates(
     &ctx.infra,
     token,

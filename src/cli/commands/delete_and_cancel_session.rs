@@ -1,5 +1,6 @@
 //! Implements the `manta delete session` command.
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext};
 use crate::service;
 
@@ -11,6 +12,23 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    if !common::user_interaction::confirm(
+      &format!(
+        "Session '{}' will get canceled:\nDo you want to continue?",
+        session_name,
+      ),
+      assume_yes,
+    ) {
+      println!("Operation cancelled by user");
+      return Ok(());
+    }
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .delete_session(token, session_name, dry_run)
+      .await?;
+    return Ok(());
+  }
+
   let deletion_ctx = service::session::prepare_session_deletion(
     &ctx.infra,
     token,

@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service::redfish_endpoints::{self, UpdateRedfishEndpointParams};
 
@@ -42,7 +43,13 @@ pub async fn exec(
     template_id,
   };
 
-  redfish_endpoints::update_redfish_endpoint(&ctx.infra, token, params).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .update_redfish_endpoint(token, &params)
+      .await?;
+  } else {
+    redfish_endpoints::update_redfish_endpoint(&ctx.infra, token, params).await?;
+  }
 
   Ok(())
 }

@@ -18,6 +18,8 @@ use crate::{
       print_hsm_group_json, show_solution_and_confirm,
     },
   },
+  cli::http_client::MantaClient,
+  common::app_context::AppContext,
   manta_backend_dispatcher::StaticBackendDispatcher,
 };
 
@@ -140,14 +142,27 @@ pub async fn run(
 
 /// Add hardware components to a cluster group (CLI entry point).
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
+  ctx: &AppContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
   pattern: &str,
   dryrun: bool,
   create_hsm_group: bool,
-) -> Result<(), Error> {
+) -> anyhow::Result<()> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .add_hw_component(shasta_token, target_hsm_group_name, parent_hsm_group_name, pattern, create_hsm_group, dryrun)
+      .await?;
+    if dryrun {
+      println!("Dryrun enabled, not modifying the groups on the system.");
+    }
+    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    return Ok(());
+  }
+
+  let backend = ctx.infra.backend;
+
   ensure_target_group_exists(
     backend,
     shasta_token,

@@ -2,6 +2,7 @@
 
 use anyhow::{Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext};
 use crate::service;
 use crate::service::template::ApplyTemplateParams;
@@ -19,6 +20,32 @@ pub async fn exec(
   assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .apply_template_session(
+        token,
+        bos_sessiontemplate_name,
+        bos_session_operation,
+        limit,
+        bos_session_name_opt,
+        include_disabled,
+        dry_run,
+      )
+      .await?;
+    if dry_run {
+      println!(
+        "Dry-run enabled. No changes persisted into the system\n{}",
+        serde_json::to_string_pretty(&result).unwrap_or_default()
+      );
+    } else {
+      println!(
+        "BOS session created: {}",
+        serde_json::to_string_pretty(&result).unwrap_or_default()
+      );
+    }
+    return Ok(());
+  }
+
   let params = ApplyTemplateParams {
     bos_session_name: bos_session_name_opt.map(str::to_string),
     bos_sessiontemplate_name: bos_sessiontemplate_name.to_string(),

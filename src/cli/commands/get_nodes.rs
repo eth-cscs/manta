@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::node::{self, GetNodesParams};
@@ -31,12 +32,13 @@ pub async fn exec(
   let output_opt: Option<&String> = cli_args.get_one("output");
   let status_summary = cli_args.get_flag("summary-status");
 
-  let node_details_list = node::get_nodes(
-    &ctx.infra,
-    token,
-    &params,
-  )
-  .await?;
+  let node_details_list = if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_nodes(token, &params)
+      .await?
+  } else {
+    node::get_nodes(&ctx.infra, token, &params).await?
+  };
 
   if status_summary {
     println!("{}", node::compute_summary_status(&node_details_list));

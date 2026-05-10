@@ -75,6 +75,7 @@ impl ServerState {
       vault_base_url: site.vault_base_url.as_deref(),
       gitea_base_url: &site.gitea_base_url,
       k8s_api_url: site.k8s_api_url.as_deref(),
+      manta_server_url: None,
     })
   }
 }

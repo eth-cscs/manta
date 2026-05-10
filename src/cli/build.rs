@@ -17,7 +17,6 @@ pub fn build_cli() -> Command {
     .arg_required_else_help(true)
     .arg(
       arg!(--site <SITE_NAME> "Override the active site for this invocation")
-        .global(true)
         .required(false),
     )
     .subcommand(subcommand_config())
@@ -890,7 +889,7 @@ mod tests {
 
   #[test]
   fn site_flag_is_optional() {
-    let matches =
+    let _matches =
       build_cli().try_get_matches_from(["manta", "get", "sessions", "--help"]);
     // --help causes an early exit (Err with DisplayHelp), but
     // the point is it doesn't fail due to missing --site.
@@ -936,14 +935,12 @@ mod tests {
   }
 
   #[test]
-  fn site_flag_propagates_to_subcommand() {
-    // Because --site is global, it should be accessible from
-    // the subcommand matches too.
+  fn site_flag_is_root_level_only() {
+    // --site is on the root command only (not global), so it must be
+    // provided before the subcommand and read from root matches.
     let matches = build_cli()
       .get_matches_from(["manta", "--site", "alps", "config", "show"]);
-    let config_matches = matches.subcommand_matches("config").unwrap();
-    let show_matches = config_matches.subcommand_matches("show").unwrap();
-    let site = show_matches.get_one::<String>("site");
+    let site = matches.get_one::<String>("site");
     assert_eq!(site.map(String::as_str), Some("alps"));
   }
 }

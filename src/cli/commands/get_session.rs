@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::session::{self, GetSessionParams};
@@ -46,12 +47,13 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_session_params(cli_args);
 
-  let sessions = session::get_sessions(
-    &ctx.infra,
-    token,
-    &params,
-  )
-  .await?;
+  let sessions = if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_sessions(token, &params)
+      .await?
+  } else {
+    session::get_sessions(&ctx.infra, token, &params).await?
+  };
 
   let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
   output::session::print(&sessions, output_opt)?;

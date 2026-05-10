@@ -4,6 +4,7 @@ use anyhow::{Context, Error};
 use manta_backend_dispatcher::types::bss::BootParameters;
 use serde_json::Value;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::service::boot_parameters;
 
@@ -66,7 +67,13 @@ pub async fn exec(
     cloud_init,
   };
 
-  boot_parameters::add_boot_parameters(&ctx.infra, token, &bp).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .add_boot_parameters(token, &bp)
+      .await?;
+  } else {
+    boot_parameters::add_boot_parameters(&ctx.infra, token, &bp).await?;
+  }
 
   println!("Boot parameters created successfully");
 

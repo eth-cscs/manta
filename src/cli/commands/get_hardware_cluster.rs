@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::hardware::{
@@ -29,6 +30,18 @@ pub async fn exec(
   let params =
     parse_hardware_cluster_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
   let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let json = MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_hardware_clusters(token, &params)
+      .await?;
+    println!(
+      "{}",
+      serde_json::to_string_pretty(&json)
+        .context("Failed to serialize hardware cluster result")?
+    );
+    return Ok(());
+  }
 
   let result =
     hardware::get_hardware_cluster(&ctx.infra, token, &params)

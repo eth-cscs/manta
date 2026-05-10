@@ -16,6 +16,9 @@ pub struct InfraContext<'a> {
   pub vault_base_url: Option<&'a str>,
   pub gitea_base_url: &'a str,
   pub k8s_api_url: Option<&'a str>,
+  /// When `Some`, CLI commands should route requests through the manta HTTP
+  /// server at this URL instead of calling the backend directly.
+  pub manta_server_url: Option<&'a str>,
 }
 
 /// CLI-specific configuration that stays in the presentation layer:

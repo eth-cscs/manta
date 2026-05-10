@@ -62,7 +62,7 @@ pub async fn handle_misc(
         .map(String::as_str)
         .context("The 'group' argument is mandatory")?;
       remove_nodes_from_hsm_groups::exec(
-        ctx.infra.backend,
+        ctx,
         &token,
         target_hsm_name,
         nodes,

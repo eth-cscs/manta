@@ -67,7 +67,7 @@ pub async fn handle_add(
       let create_hsm_group =
         *m.get_one::<bool>("create-hsm-group").unwrap_or(&false);
       add_hw_component_cluster::exec(
-        ctx.infra.backend,
+        ctx,
         &token,
         target_hsm_group_vec
           .first()

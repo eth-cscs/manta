@@ -330,6 +330,7 @@ async fn create_new_config_file(
     root_ca_cert_file,
     k8s: Some(k8s_details),
     backend,
+    manta_server_url: None,
   };
 
   let mut site_hashmap = HashMap::new();

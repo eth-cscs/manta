@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error};
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
 use crate::service::boot_parameters::{self, UpdateBootParametersParams};
@@ -43,7 +44,13 @@ pub async fn exec(
     initrd: initrd.unwrap_or_default().to_string(),
   };
 
-  boot_parameters::update_boot_parameters(&ctx.infra, token, params).await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .update_boot_parameters(token, &params)
+      .await?;
+  } else {
+    boot_parameters::update_boot_parameters(&ctx.infra, token, params).await?;
+  }
 
   // Audit
   audit::maybe_send_audit(

@@ -1,5 +1,6 @@
 //! Implements the `manta apply kernel-parameters` command.
 
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use anyhow::Error;
 
@@ -17,6 +18,33 @@ pub async fn exec(
   do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    let xnames_vec: Option<Vec<String>> = if hsm_group_name_arg_opt.is_none() {
+      hosts_expression.map(|e| e.split(',').map(str::trim).map(String::from).collect())
+    } else {
+      None
+    };
+    let result = MantaClient::new(server_url, ctx.infra.site_name)?
+      .apply_kernel_parameters(
+        token,
+        xnames_vec.as_deref(),
+        hsm_group_name_arg_opt,
+        "apply",
+        kernel_params,
+        false,
+        false,
+        dry_run,
+      )
+      .await?;
+    if dry_run {
+      println!(
+        "Dry-run enabled. No changes persisted into the system\n{}",
+        serde_json::to_string_pretty(&result).unwrap_or_default()
+      );
+    }
+    return Ok(());
+  }
+
   // Resolve target nodes from hosts expression, HSM group, or settings
   let xname_vec = kernel_parameters_common::resolve_target_nodes(
     ctx.infra.backend,

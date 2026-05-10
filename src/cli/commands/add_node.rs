@@ -3,6 +3,7 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::{app_context::AppContext, audit};
 use crate::service::node;
 
@@ -16,16 +17,22 @@ pub async fn exec(
   arch_opt: Option<String>,
   hardware_file_path: Option<&PathBuf>,
 ) -> Result<()> {
-  node::add_node(
-    &ctx.infra,
-    token,
-    id,
-    group,
-    enabled,
-    arch_opt,
-    hardware_file_path,
-  )
-  .await?;
+  if let Some(server_url) = ctx.infra.manta_server_url {
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .add_node(token, id, group, enabled, arch_opt)
+      .await?;
+  } else {
+    node::add_node(
+      &ctx.infra,
+      token,
+      id,
+      group,
+      enabled,
+      arch_opt,
+      hardware_file_path,
+    )
+    .await?;
+  }
 
   // Audit
   audit::maybe_send_audit(
