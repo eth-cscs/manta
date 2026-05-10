@@ -4,14 +4,9 @@ use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 use crate::{
-  cli::{
-    commands::hw_cluster_common::command::{self, HwClusterMode},
-    http_client::MantaClient,
-  },
-  common::{
-    app_context::AppContext,
-    authorization::get_groups_names_available,
-  },
+  cli::http_client::MantaClient,
+  common::app_context::AppContext,
+  service::hw_cluster::HwClusterMode,
 };
 
 /// Apply a hardware cluster configuration (pin or unpin).
@@ -47,68 +42,33 @@ pub async fn exec(
     .get_one::<String>("pattern")
     .context("pattern argument is required")?;
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let target = target_hsm_group_name_arg_opt
-      .or(settings_hsm_group_name_opt)
-      .context("No target HSM group specified")?;
-    let parent = parent_hsm_group_name_arg_opt
-      .or(settings_hsm_group_name_opt)
-      .context("No parent HSM group specified")?;
-    let mode_str = match mode {
-      HwClusterMode::Pin => "pin",
-      HwClusterMode::Unpin => "unpin",
-    };
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .apply_hw_configuration(
-        token,
-        target,
-        parent,
-        pattern,
-        mode_str,
-        dryrun,
-        create_target_hsm_group,
-        delete_empty_parent_hsm_group,
-      )
-      .await?;
-    if dryrun {
-      println!("Dry run enabled, not modifying the HSM groups on the system.");
-    }
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
-    return Ok(());
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let target = target_hsm_group_name_arg_opt
+    .or(settings_hsm_group_name_opt)
+    .context("No target HSM group specified")?;
+  let parent = parent_hsm_group_name_arg_opt
+    .or(settings_hsm_group_name_opt)
+    .context("No parent HSM group specified")?;
+  let mode_str = match mode {
+    HwClusterMode::Pin => "pin",
+    HwClusterMode::Unpin => "unpin",
+  };
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .apply_hw_configuration(
+      token,
+      target,
+      parent,
+      pattern,
+      mode_str,
+      dryrun,
+      create_target_hsm_group,
+      delete_empty_parent_hsm_group,
+    )
+    .await?;
+  if dryrun {
+    println!("Dry run enabled, not modifying the HSM groups on the system.");
   }
-
-  let backend = ctx.infra.backend;
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    token,
-    target_hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
-  let parent_hsm_group_vec = get_groups_names_available(
-    backend,
-    token,
-    parent_hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
-
-  command::exec(
-    mode,
-    ctx,
-    token,
-    target_hsm_group_vec
-      .first()
-      .context("No target HSM group found")?,
-    parent_hsm_group_vec
-      .first()
-      .context("No parent HSM group found")?,
-    pattern,
-    dryrun,
-    create_target_hsm_group,
-    delete_empty_parent_hsm_group,
-  )
-  .await?;
-
+  println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
   Ok(())
 }

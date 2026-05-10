@@ -7,6 +7,7 @@ use config::Config;
 
 /// Infrastructure context needed by the service layer: backend
 /// dispatcher, API endpoints, and TLS certificates.
+#[derive(Debug)]
 pub struct InfraContext<'a> {
   pub backend: &'a StaticBackendDispatcher,
   pub site_name: &'a str,
@@ -16,24 +17,26 @@ pub struct InfraContext<'a> {
   pub vault_base_url: Option<&'a str>,
   pub gitea_base_url: &'a str,
   pub k8s_api_url: Option<&'a str>,
-  /// When `Some`, CLI commands should route requests through the manta HTTP
-  /// server at this URL instead of calling the backend directly.
-  pub manta_server_url: Option<&'a str>,
 }
 
 /// CLI-specific configuration that stays in the presentation layer:
 /// user settings, HSM group filter, Kafka audit, etc.
+#[derive(Debug)]
 pub struct CliConfig<'a> {
   pub settings_hsm_group_name_opt: Option<&'a str>,
   pub kafka_audit_opt: Option<&'a Kafka>,
   pub settings: &'a Config,
   pub configuration: &'a MantaConfiguration,
+  /// When `Some`, CLI commands route requests through the manta HTTP server at
+  /// this URL instead of calling the backend directly.
+  pub manta_server_url: Option<&'a str>,
 }
 
 /// Top-level context that composes infrastructure and CLI config.
 ///
 /// Passed as `&AppContext` through CLI handlers and commands.
 /// Service-layer functions receive only `&InfraContext`.
+#[derive(Debug)]
 pub struct AppContext<'a> {
   pub infra: InfraContext<'a>,
   pub cli: CliConfig<'a>,

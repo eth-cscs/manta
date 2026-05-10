@@ -9,7 +9,7 @@ This project uses two error types:
 
 ## The boundary rule
 
-Any function in `src/cli/` that is called from `src/server/handlers.rs` **must** return `manta_backend_dispatcher::error::Error`, not `anyhow::Error`. The HTTP server handler converts these via `to_handler_error`.
+`src/server/handlers.rs` **must only call `src/service/` functions**, never `src/cli/` functions. The service layer uses `manta_backend_dispatcher::error::Error` throughout; handlers convert these to HTTP responses via `to_handler_error`.
 
 Functions called exclusively from CLI entrypoints may use `anyhow::Error`.
 

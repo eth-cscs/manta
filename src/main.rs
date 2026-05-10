@@ -256,6 +256,7 @@ async fn run_cli(
     socks5_proxy,
   )?;
 
+  let manta_server_url = settings.get_string("manta_server_url").ok();
   let app_context = AppContext {
     infra: crate::common::app_context::InfraContext {
       backend: &backend,
@@ -266,13 +267,13 @@ async fn run_cli(
       vault_base_url: vault_base_url.map(String::as_str),
       gitea_base_url: &gitea_base_url,
       k8s_api_url: k8s_api_url.map(String::as_str),
-      manta_server_url: site_details_value.manta_server_url.as_deref(),
     },
     cli: crate::common::app_context::CliConfig {
       settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
       kafka_audit_opt: audit_kafka_opt.as_ref(),
       settings: &settings,
       configuration: &configuration,
+      manta_server_url: manta_server_url.as_deref(),
     },
   };
 

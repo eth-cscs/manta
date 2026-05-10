@@ -75,7 +75,6 @@ impl ServerState {
       vault_base_url: site.vault_base_url.as_deref(),
       gitea_base_url: &site.gitea_base_url,
       k8s_api_url: site.k8s_api_url.as_deref(),
-      manta_server_url: None,
     })
   }
 }
@@ -113,14 +112,28 @@ pub async fn start_server(
   match (cert_path, key_path) {
     (Some(cert), Some(key)) => {
       let tls_config = RustlsConfig::from_pem_file(cert, key).await?;
-      tracing::info!("Starting HTTPS server on https://{}", addr);
+      let handle = axum_server::Handle::new();
+      let ready_handle = handle.clone();
+      tokio::spawn(async move {
+        ready_handle.listening().await;
+        tracing::info!("HTTPS server ready, accepting requests on https://{}", addr);
+        eprintln!("HTTPS server ready, accepting requests on https://{}", addr);
+      });
       axum_server::bind_rustls(addr, tls_config)
+        .handle(handle)
         .serve(app.into_make_service())
         .await?;
     }
     (None, None) => {
-      tracing::info!("Starting HTTP server on http://{}", addr);
+      let handle = axum_server::Handle::new();
+      let ready_handle = handle.clone();
+      tokio::spawn(async move {
+        ready_handle.listening().await;
+        tracing::info!("HTTP server ready, accepting requests on http://{}", addr);
+        eprintln!("HTTP server ready, accepting requests on http://{}", addr);
+      });
       axum_server::bind(addr)
+        .handle(handle)
         .serve(app.into_make_service())
         .await?;
     }

@@ -2,7 +2,9 @@
 //! for every resource type exposed by the CLI and HTTP server.
 
 pub mod boot_parameters;
+pub mod ephemeral_env;
 pub mod cluster;
+pub mod hw_cluster;
 pub mod configuration;
 pub mod group;
 pub mod hardware;

@@ -53,7 +53,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `src/service/`
 
-Business logic layer. Modules: `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `cluster`, `sat_file`, `migrate`, `redfish_endpoints`.
+Business logic layer. Modules: `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `redfish_endpoints`.
 
 Each module receives an `&InfraContext<'_>` plus a bearer token and typed parameters, and returns typed results. This layer:
 
@@ -98,7 +98,7 @@ Axum HTTPS server. Key files:
 
 | File | Purpose |
 |------|---------|
-| `mod.rs` | `start_server` — binds TLS, builds router, starts accepting connections |
+| `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
 | `routes.rs` | Registers ~40 REST endpoints + 2 WebSocket upgrades under `/api/v1/` |
 | `handlers.rs` | Per-endpoint functions: extract bearer token, deserialise params, call service, serialise response |
 | `middleware.rs` | JWT authentication middleware applied to all routes |
@@ -112,8 +112,10 @@ Axum HTTPS server. Key files:
 | Type | Used by | Contents |
 |------|---------|---------|
 | `InfraContext<'_>` | Service layer | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
-| `AppContext` | CLI layer | Composes `InfraContext` + `CliConfig` (active HSM group, Kafka audit config, raw settings) |
+| `AppContext` | CLI layer | Composes `InfraContext` + `CliConfig` (active HSM group, Kafka audit config, raw settings, `manta_server_url`) |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
+
+`manta_server_url` lives in `CliConfig`, not `InfraContext`, because it is a CLI routing decision (proxy requests through the manta HTTP server instead of calling the backend directly). It is not needed by the service layer or the HTTP server.
 
 ---
 
@@ -202,8 +204,8 @@ config.toml  socks5_proxy
        │    (service functions that call csm-rs directly — e.g. get_node_details —
        │     pass infra.socks5_proxy to the http_client function)
        └─ ServerState { socks5_proxy: Option<String>, … }
-            (server handlers that call CLI commands directly — e.g. apply_ephemeral_env —
-             pass state.socks5_proxy.as_deref())
+            (service functions called from server handlers receive socks5_proxy
+             via InfraContext, built from the matching SiteBackend in ServerState)
 ```
 
 Every function in csm-rs and ochami-rs that builds a `reqwest::Client` accepts `socks5_proxy: Option<&str>` as an explicit parameter placed immediately after `root_cert: &[u8]`. The client is built as:

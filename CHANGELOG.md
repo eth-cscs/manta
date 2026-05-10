@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Refactor
+
+- Move hardware-cluster business logic (`add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, `resolve_hw_description_to_xnames`, and supporting utilities) from `src/cli/commands/hw_cluster_common/` into `src/service/hw_cluster.rs`, eliminating the layer inversion where `src/server/handlers.rs` was calling CLI-layer code
+- Move `manta_server_url` from `InfraContext` to `CliConfig` — it is a CLI routing decision, not infrastructure
+
+### Features
+
+- Emit a log line (and stderr message) exactly when the HTTP server socket is bound and ready to accept connections
+
+### Tests
+
+- Consolidate all hw-cluster integration tests into `service::hw_cluster::tests`; add `test_hsm_hw_management_unpin_1` and `test_hsm_hw_management_unpin_2` covering `HwClusterMode::Unpin`; remove duplicate pin tests from the CLI module tree
+
+### Documentation
+
+- Update ARCHITECTURE.md: add `hw_cluster` and `ephemeral_env` to service module list, clarify `manta_server_url` placement in `CliConfig`, correct SOCKS5 propagation description, update server `mod.rs` entry to mention the ready log
+- Update CLAUDE.md: tighten the boundary rule to state that handlers must only call service functions, never CLI functions
+- Update API.md: correct default port from 8443 to 8080, document `X-Manta-Site` as a required header on every endpoint, fix curl/wscat examples to use the header instead of a `?site=` query parameter
+
 ## [1.64.3] - 2026-05-08
 
 ### Features

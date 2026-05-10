@@ -1,25 +1,33 @@
 # Manta HTTP API Reference
 
-The manta HTTP server exposes a REST API over HTTPS on port `8443` by default.
+The manta HTTP server exposes a REST API on port `8080` by default.
 
 ## Starting the server
 
 ```
-manta serve --cert <cert.pem> --key <key.pem> [--port 8443] [--listen-addr 0.0.0.0]
+manta serve [--cert <cert.pem> --key <key.pem>] [--port 8080] [--listen-addr 0.0.0.0]
 ```
 
-## Authentication
+Omit `--cert`/`--key` for plain HTTP (useful for local testing).
 
-Every endpoint (except `/health`) requires a Bearer token in the `Authorization` header:
+## Required headers
+
+Every endpoint requires two headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-Manta-Site` | Site name as configured in `config.toml` (e.g. `cscs_prod`) |
+| `Authorization` | `Bearer <shasta-token>` — **not** required for `/health` |
 
 ```
+X-Manta-Site: cscs_prod
 Authorization: Bearer <shasta-token>
 ```
 
 ## Base URL
 
 ```
-https://<host>:8443/api/v1
+http(s)://<host>:8080/api/v1
 ```
 
 ## Error responses
@@ -186,8 +194,10 @@ Stream CFS session logs as [Server-Sent Events](https://developer.mozilla.org/en
 **Response `200`** — `Content-Type: text/event-stream`. Each log line is delivered as an SSE `data:` event.
 
 ```
-curl --no-buffer -H "Authorization: Bearer $TOKEN" \
-  https://host:8443/api/v1/sessions/my-session/logs
+curl --no-buffer \
+  -H "X-Manta-Site: $SITE" \
+  -H "Authorization: Bearer $TOKEN" \
+  http://host:8080/api/v1/sessions/my-session/logs
 ```
 
 ---
@@ -1077,7 +1087,8 @@ Once connected, the WebSocket carries raw terminal I/O:
 
 ```
 wscat -H "Authorization: Bearer $TOKEN" \
-  --connect wss://host:8443/api/v1/nodes/x3000c0s1b0n0/console
+  -H "X-Manta-Site: $SITE" \
+  --connect ws://host:8080/api/v1/nodes/x3000c0s1b0n0/console
 ```
 
 ---

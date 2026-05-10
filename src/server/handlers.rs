@@ -1514,17 +1514,15 @@ pub async fn create_ephemeral_env(
   tracing::info!("create_ephemeral_env image_id={}", body.image_id);
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
-  crate::cli::commands::apply_ephemeral_env::exec(
-    infra.shasta_base_url,
-    infra.shasta_root_cert,
-    infra.socks5_proxy,
-    &token,
-    &body.image_id,
-  )
-  .await
-  .map_err(display_error)?;
+  let hostname =
+    crate::service::ephemeral_env::exec(&infra, &token, &body.image_id)
+      .await
+      .map_err(to_handler_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "hostname": hostname })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -2059,7 +2057,7 @@ pub async fn add_hw_component(
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let result =
-    crate::cli::commands::add_hw_component_cluster::run(
+    crate::service::hw_cluster::add_hw_component(
       infra.backend,
       &token,
       &target,
@@ -2113,7 +2111,7 @@ pub async fn delete_hw_component(
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let result =
-    crate::cli::commands::delete_hw_component_cluster::run(
+    crate::service::hw_cluster::delete_hw_component(
       infra.backend,
       &token,
       &target,
@@ -2184,12 +2182,12 @@ pub async fn apply_hw_configuration(
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let mode = match body.mode {
-    HwClusterMode::Pin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Pin,
-    HwClusterMode::Unpin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Unpin,
+    HwClusterMode::Pin => crate::service::hw_cluster::HwClusterMode::Pin,
+    HwClusterMode::Unpin => crate::service::hw_cluster::HwClusterMode::Unpin,
   };
 
   let result =
-    crate::cli::commands::hw_cluster_common::command::exec_with_backend(
+    crate::service::hw_cluster::apply_hw_configuration(
       infra.backend,
       mode,
       &token,
@@ -2495,4 +2493,3 @@ async fn resolve_xnames_from_request(
     }),
   ))
 }
-
