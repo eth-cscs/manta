@@ -4,11 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use futures::{AsyncBufReadExt, TryStreamExt};
-use manta_backend_dispatcher::{
-    interfaces::cfs::CfsTrait,
-    types::K8sDetails,
-};
+use manta_backend_dispatcher::types::K8sDetails;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::{
@@ -18,7 +14,6 @@ use crate::common::{
     authorization::{get_groups_names_available, validate_target_hsm_members},
     local_git_repo,
 };
-use crate::service::session;
 
 /// Gitea repository name prefix used by CFS.
 const GITEA_REPO_NAME_PREFIX: &str = "cray/";
@@ -131,7 +126,7 @@ pub async fn exec(
 #[allow(clippy::too_many_arguments)]
 async fn apply_session(
     ctx: &AppContext<'_>,
-    gitea_token: &str,
+    _gitea_token: &str,
     shasta_token: &str,
     cfs_conf_sess_name: Option<&str>,
     playbook_yaml_file_name_opt: Option<&str>,
@@ -142,93 +137,48 @@ async fn apply_session(
     ansible_passthrough: Option<&str>,
     watch_logs: bool,
     timestamps: bool,
-    k8s: &K8sDetails,
+    _k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
-    let backend = ctx.infra.backend;
-    let site = ctx.infra.site_name;
+    let server_url = ctx.cli.manta_server_url
+        .context("manta server URL must be configured")?;
     let kafka_audit_opt = ctx.cli.kafka_audit_opt;
 
     // Check local repos (user interaction: confirm dialogs)
     let (repo_name_vec, repo_last_commit_id_vec) =
         check_local_repos(repos_paths)?;
 
-    // Delegate to service or server for CFS session creation
+    // Create CFS session via server
     let (cfs_configuration_name, cfs_session_name) =
-        if let Some(server_url) = ctx.infra.manta_server_url {
-            MantaClient::new(server_url, ctx.infra.site_name)?
-                .create_session(
-                    shasta_token,
-                    cfs_conf_sess_name,
-                    playbook_yaml_file_name_opt,
-                    hsm_group_opt,
-                    &repo_name_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-                    &repo_last_commit_id_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-                    ansible_limit_opt,
-                    ansible_verbosity,
-                    ansible_passthrough,
-                )
-                .await?
-        } else {
-            session::create_cfs_session(
-                &ctx.infra,
+        MantaClient::new(server_url, ctx.infra.site_name)?
+            .create_session(
                 shasta_token,
-                gitea_token,
                 cfs_conf_sess_name,
                 playbook_yaml_file_name_opt,
                 hsm_group_opt,
-                &repo_name_vec
-                    .iter()
-                    .map(|s| s.as_str())
-                    .collect::<Vec<&str>>(),
-                &repo_last_commit_id_vec
-                    .iter()
-                    .map(|s| s.as_str())
-                    .collect::<Vec<&str>>(),
+                &repo_name_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
+                &repo_last_commit_id_vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
                 ansible_limit_opt,
                 ansible_verbosity,
                 ansible_passthrough,
             )
-            .await?
-        };
+            .await?;
 
     // Watch logs (CLI concern: println)
     if watch_logs {
         tracing::info!("Fetching logs ...");
 
-        if let Some(server_url) = ctx.infra.manta_server_url {
-            use tokio::io::AsyncBufReadExt as _;
-            let client = MantaClient::new(server_url, ctx.infra.site_name)?;
-            let reader = client
-                .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
-                .await
-                .context("Failed to get CFS session log stream from server")?;
-            let mut lines = reader.lines();
-            // SSE lines are prefixed with "data: "; strip and print.
-            // Empty keep-alive lines are silently skipped.
-            while let Some(raw) = lines.next_line().await.context(
-                "Failed to read CFS session log stream",
-            )? {
-                if let Some(content) = raw.strip_prefix("data: ") {
-                    println!("{}", content);
-                }
-            }
-        } else {
-            let mut cfs_session_log_stream = backend
-                .get_session_logs_stream(
-                    shasta_token,
-                    site,
-                    &cfs_session_name,
-                    timestamps,
-                    k8s,
-                )
-                .await
-                .context("Failed to get CFS session log stream")?
-                .lines();
-
-            while let Some(line) = cfs_session_log_stream.try_next().await.context(
-                "Failed to read CFS session log stream",
-            )? {
-                println!("{}", line);
+        use tokio::io::AsyncBufReadExt as _;
+        let client = MantaClient::new(server_url, ctx.infra.site_name)?;
+        let reader = client
+            .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
+            .await
+            .context("Failed to get CFS session log stream from server")?;
+        let mut lines = reader.lines();
+        while let Some(raw) = lines.next_line().await.context(
+            "Failed to read CFS session log stream",
+        )? {
+            if let Some(content) = raw.strip_prefix("data: ") {
+                println!("{}", content);
             }
         }
     }

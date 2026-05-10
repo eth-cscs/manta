@@ -1,10 +1,9 @@
 //! Implements the `manta delete boot-parameters` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::boot_parameters;
 
 /// CLI adapter for `manta delete boot-parameters`.
 pub async fn exec(
@@ -12,13 +11,11 @@ pub async fn exec(
   token: &str,
   hosts: Vec<String>,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .delete_boot_parameters(token, hosts)
-      .await?;
-  } else {
-    boot_parameters::delete_boot_parameters(&ctx.infra, token, hosts).await?;
-  }
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  MantaClient::new(server_url, ctx.infra.site_name)?
+    .delete_boot_parameters(token, hosts)
+    .await?;
   println!("Boot parameters deleted successfully");
   Ok(())
 }

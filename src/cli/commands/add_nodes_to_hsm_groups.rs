@@ -1,13 +1,9 @@
 //! Implements the `manta add-nodes-to-groups` command.
 
-use anyhow::{Error, bail};
+use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
-use crate::{
-  common::{self, audit, kafka::Kafka},
-  service,
-};
-use crate::common::app_context::AppContext;
+use crate::common::{self, audit, kafka::Kafka, app_context::AppContext};
 
 /// Add/assign a list of xnames to an HSM group.
 pub async fn exec(
@@ -18,99 +14,38 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    if !common::user_interaction::confirm(
-      &format!(
-        "Nodes matching '{}' will be added to HSM group '{}'. Do you want to proceed?",
-        hosts_expression, target_hsm_name
-      ),
-      false,
-    ) {
-      bail!("Operation cancelled by user");
-    }
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
 
-    if dryrun {
-      println!(
-        "dryrun - Add nodes matching '{}' to {}",
-        hosts_expression, target_hsm_name
-      );
-      return Ok(());
-    }
-
-    let (added, updated_members) = MantaClient::new(server_url, ctx.infra.site_name)?
-      .add_nodes_to_group(token, target_hsm_name, hosts_expression)
-      .await?;
-
-    println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
-
-    audit::maybe_send_audit(
-      kafka_audit_opt,
-      token,
-      format!("add nodes to group: {}", target_hsm_name),
-      Some(serde_json::json!(added)),
-      Some(serde_json::json!(vec![target_hsm_name])),
-    )
-    .await;
-
-    return Ok(());
-  }
-
-  // Resolve hosts to validate input before confirmation
-  let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
-    ctx.infra.backend,
-    token,
-    hosts_expression,
-    false,
-  )
-  .await?;
-
-  if xname_to_move_vec.is_empty() {
-    bail!(
-      "The list of nodes to move is empty. \
-       Nothing to do",
-    );
-  }
-
-  if common::user_interaction::confirm(
+  if !common::user_interaction::confirm(
     &format!(
-      "{}\nThe nodes above will be added to HSM group '{}'. Do you want to proceed?",
-      xname_to_move_vec.join(", "), target_hsm_name
+      "Nodes matching '{}' will be added to HSM group '{}'. Do you want to proceed?",
+      hosts_expression, target_hsm_name
     ),
     false,
   ) {
-    tracing::info!("Continue",);
-  } else {
     bail!("Operation cancelled by user");
   }
 
   if dryrun {
     println!(
-      "dryrun - Add nodes {:?} to {}",
-      xname_to_move_vec, target_hsm_name
+      "dryrun - Add nodes matching '{}' to {}",
+      hosts_expression, target_hsm_name
     );
-
     return Ok(());
   }
 
-  let (_xnames_added, updated_members) = service::group::add_nodes_to_group(
-    &ctx.infra,
-    token,
-    target_hsm_name,
-    hosts_expression,
-  )
-  .await?;
+  let (added, updated_members) = MantaClient::new(server_url, ctx.infra.site_name)?
+    .add_nodes_to_group(token, target_hsm_name, hosts_expression)
+    .await?;
 
-  println!(
-    "HSM '{}' members: {:?}",
-    target_hsm_name, updated_members
-  );
+  println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
 
-  // Audit
   audit::maybe_send_audit(
     kafka_audit_opt,
     token,
     format!("add nodes to group: {}", target_hsm_name),
-    Some(serde_json::json!(xname_to_move_vec)),
+    Some(serde_json::json!(added)),
     Some(serde_json::json!(vec![target_hsm_name])),
   )
   .await;

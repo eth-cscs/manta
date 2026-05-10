@@ -3,17 +3,10 @@
 use std::fmt;
 
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::interfaces::{
-  hsm::group::GroupTrait, pcs::PCSTrait,
-};
-use nodeset::NodeSet;
 
 use crate::{
   cli::http_client::MantaClient,
-  common::{
-    self, app_context::AppContext, audit,
-    authorization::get_groups_names_available,
-  },
+  common::{self, app_context::AppContext},
 };
 
 /// The three power operations supported by the backend.
@@ -74,7 +67,7 @@ pub async fn exec_nodes(
   hosts_expression: &str,
   force: bool,
   assume_yes: bool,
-  output: &str,
+  _output: &str,
   token: &str,
 ) -> Result<(), Error> {
   let action_str = match action {
@@ -83,76 +76,21 @@ pub async fn exec_nodes(
     PowerAction::Reset => "reset",
   };
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let xnames: Vec<String> = hosts_expression
-      .split(',')
-      .map(str::trim)
-      .map(String::from)
-      .collect();
-    println!("Nodes: {}", xnames.join(", "));
-    if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
-      bail!("Operation cancelled by user");
-    }
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .power(token, action_str, &xnames, "nodes", force)
-      .await?;
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
-    return Ok(());
-  }
-
-  let backend = ctx.infra.backend;
-
-  // Convert user input to xnames
-  let xname_vec = common::node_ops::resolve_hosts_expression(
-    backend,
-    token,
-    hosts_expression,
-    false,
-  )
-  .await?;
-
-  if xname_vec.is_empty() {
-    bail!(
-      "The list of nodes to operate is empty. \
-       Nothing to do.",
-    );
-  }
-
-  let node_group: NodeSet = xname_vec
-    .join(", ")
-    .parse()
-    .context("Failed to parse node list")?;
-
-  println!(
-    "Number of nodes: {}\nlist of nodes: {}",
-    node_group.len(),
-    node_group
-  );
-
-  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
-  {
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let xnames: Vec<String> = hosts_expression
+    .split(',')
+    .map(str::trim)
+    .map(String::from)
+    .collect();
+  println!("Nodes: {}", xnames.join(", "));
+  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
     bail!("Operation cancelled by user");
   }
-
-  let power_mgmt_summary =
-    call_backend(backend, token, &xname_vec, action, force)
-      .await
-      .with_context(|| {
-        format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
-      })?;
-
-  crate::cli::output::power::print_summary_table(power_mgmt_summary, output);
-
-  // Audit
-  audit::maybe_send_audit_with_group_lookup(
-    ctx.cli.kafka_audit_opt,
-    backend,
-    token,
-    action.to_string(),
-    &xname_vec,
-  )
-  .await?;
-
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .power(token, action_str, &xnames, "nodes", force)
+    .await?;
+  println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
   Ok(())
 }
 
@@ -164,7 +102,7 @@ pub async fn exec_cluster(
   hsm_group_name_arg: &str,
   force: bool,
   assume_yes: bool,
-  output: &str,
+  _output: &str,
   token: &str,
 ) -> Result<(), Error> {
   let action_str = match action {
@@ -173,105 +111,21 @@ pub async fn exec_cluster(
     PowerAction::Reset => "reset",
   };
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    println!("Cluster: {}", hsm_group_name_arg);
-    if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
-      bail!("Operation cancelled by user");
-    }
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .power(
-        token,
-        action_str,
-        &[hsm_group_name_arg.to_string()],
-        "cluster",
-        force,
-      )
-      .await?;
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
-    return Ok(());
-  }
-
-  let backend = ctx.infra.backend;
-
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    token,
-    Some(hsm_group_name_arg),
-    ctx.cli.settings_hsm_group_name_opt,
-  )
-  .await?;
-
-  let target_hsm_group = target_hsm_group_vec
-    .first()
-    .context("The 'cluster name' argument must have a value")?;
-
-  let xname_vec = backend
-    .get_member_vec_from_group_name_vec(
-      token,
-      &[target_hsm_group.to_string()],
-    )
-    .await
-    .context("Failed to get members from HSM group")?;
-
-  let node_group: NodeSet = xname_vec
-    .join(", ")
-    .parse()
-    .context("Failed to parse node list")?;
-
-  println!(
-    "Number of nodes: {}\nlist of nodes: {}",
-    node_group.len(),
-    node_group
-  );
-
-  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
-  {
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  println!("Cluster: {}", hsm_group_name_arg);
+  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
     bail!("Operation cancelled by user");
   }
-
-  let power_mgmt_summary =
-    call_backend(backend, token, &xname_vec, action, force)
-      .await
-      .with_context(|| {
-        format!("Could not {} node/s '{}'", action.error_verb(), xname_vec.join(", "),)
-      })?;
-
-  crate::cli::output::power::print_summary_table(power_mgmt_summary, output);
-
-  // Audit
-  audit::maybe_send_audit(
-    ctx.cli.kafka_audit_opt,
-    token,
-    action.to_string(),
-    None,
-    Some(serde_json::json!(hsm_group_name_arg)),
-  )
-  .await;
-
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .power(
+      token,
+      action_str,
+      &[hsm_group_name_arg.to_string()],
+      "cluster",
+      force,
+    )
+    .await?;
+  println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
   Ok(())
-}
-
-/// Dispatches the correct backend power method based on the
-/// action.
-async fn call_backend(
-  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
-  shasta_token: &str,
-  xname_vec: &[String],
-  action: PowerAction,
-  force: bool,
-) -> Result<
-  manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse,
-  anyhow::Error,
-> {
-  Ok(match action {
-    PowerAction::On => backend.power_on_sync(shasta_token, xname_vec).await,
-    PowerAction::Off => {
-      backend.power_off_sync(shasta_token, xname_vec, force).await
-    }
-    PowerAction::Reset => {
-      backend
-        .power_reset_sync(shasta_token, xname_vec, force)
-        .await
-    }
-  }?)
 }

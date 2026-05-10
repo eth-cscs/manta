@@ -1,8 +1,8 @@
 //! Implements the `manta delete session` command.
 
+use anyhow::Context;
 use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext};
-use crate::service;
 
 /// Delete or cancel a CFS session.
 pub async fn exec(
@@ -12,31 +12,8 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    if !common::user_interaction::confirm(
-      &format!(
-        "Session '{}' will get canceled:\nDo you want to continue?",
-        session_name,
-      ),
-      assume_yes,
-    ) {
-      println!("Operation cancelled by user");
-      return Ok(());
-    }
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .delete_session(token, session_name, dry_run)
-      .await?;
-    return Ok(());
-  }
-
-  let deletion_ctx = service::session::prepare_session_deletion(
-    &ctx.infra,
-    token,
-    session_name,
-    ctx.cli.settings_hsm_group_name_opt,
-  )
-  .await?;
-
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
   if !common::user_interaction::confirm(
     &format!(
       "Session '{}' will get canceled:\nDo you want to continue?",
@@ -47,27 +24,8 @@ pub async fn exec(
     println!("Operation cancelled by user");
     return Ok(());
   }
-
-  if !deletion_ctx.image_ids.is_empty()
-    && !common::user_interaction::confirm(
-      &format!(
-        "Images listed below which will get deleted:\n{}\nDo you want to continue?",
-        deletion_ctx.image_ids.join("\n"),
-      ),
-      assume_yes,
-    )
-  {
-    println!("Operation cancelled by user");
-    return Ok(());
-  }
-
-  service::session::execute_session_deletion(
-    &ctx.infra,
-    token,
-    &deletion_ctx,
-    dry_run,
-  )
-  .await?;
-
+  MantaClient::new(server_url, ctx.infra.site_name)?
+    .delete_session(token, session_name, dry_run)
+    .await?;
   Ok(())
 }

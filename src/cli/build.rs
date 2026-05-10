@@ -29,7 +29,6 @@ pub fn build_cli() -> Command {
     .subcommand(subcommand_power())
     .subcommand(subcommand_log())
     .subcommand(subcommand_console())
-    .subcommand(subcommand_validate_local_repo())
     .subcommand(subcommand_add_nodes_to_groups())
     .subcommand(subcommand_remove_nodes_from_groups())
     .subcommand(subcommand_serve())
@@ -637,12 +636,6 @@ fn subcommand_log() -> Command {
     .about("get cfs session logs")
     .arg(arg!(-t --timestamps "Show logs timestamps").action(ArgAction::SetTrue))
     .arg(arg!([VALUE] "Show logs related to a session name, group name, xname or nid. eg: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2a3"))
-}
-
-fn subcommand_validate_local_repo() -> Command {
-  Command::new("validate-local-repo")
-    .about("Check all tags and HEAD information related to a local repo exists in Gitea")
-    .arg(arg!(-r --"repo-path" <REPO_PATH> ... "Repo path. The path to a local a git repo related to a CFS configuration layer to test against Gitea").required(true))
 }
 
 fn subcommand_add_group() -> Command {

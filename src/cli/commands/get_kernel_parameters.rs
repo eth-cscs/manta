@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::kernel_parameters::{self, GetKernelParametersParams};
+use crate::service::kernel_parameters::GetKernelParametersParams;
 
 /// Parse CLI arguments into typed [`GetKernelParametersParams`].
 fn parse_kernel_parameters_params(
@@ -28,13 +28,11 @@ pub async fn exec(
   let params =
     parse_kernel_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let boot_parameters = if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_kernel_parameters(token, &params)
-      .await?
-  } else {
-    kernel_parameters::get_kernel_parameters(&ctx.infra, token, &params).await?
-  };
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let boot_parameters = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_kernel_parameters(token, &params)
+    .await?;
 
   let output: &String = cli_args
     .get_one("output")

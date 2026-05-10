@@ -1,15 +1,15 @@
-//! Routes miscellaneous top-level commands (serve, validate-local-repo, etc.).
+//! Routes miscellaneous top-level commands (add-nodes-to-groups, etc.).
 
 use crate::cli::commands::{
-  add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups, validate_local_repo,
+  add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
 };
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch top-level misc commands (validate-local-repo,
-/// add-nodes-to-groups, remove-nodes-from-groups).
+/// Dispatch top-level misc commands (add-nodes-to-groups,
+/// remove-nodes-from-groups).
 pub async fn handle_misc(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -17,22 +17,6 @@ pub async fn handle_misc(
   let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
 
   match cli_root.subcommand() {
-    Some(("validate-local-repo", m)) => {
-      let repo_path = m
-        .get_one::<String>("repo-path")
-        .context("The 'repo-path' argument must have a value")?;
-      validate_local_repo::exec(
-        ctx.infra.backend,
-        ctx.infra.site_name,
-        &token,
-        ctx.infra.shasta_root_cert,
-        ctx.infra.socks5_proxy,
-        ctx.infra.vault_base_url,
-        ctx.infra.gitea_base_url,
-        repo_path,
-      )
-      .await?;
-    }
     Some(("add-nodes-to-groups", m)) => {
       let dryrun = m.get_flag("dry-run");
       let hosts_expression = m

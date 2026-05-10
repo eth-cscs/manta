@@ -1,12 +1,11 @@
 //! Implements the `manta delete group` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
 use crate::common::kafka::Kafka;
-use crate::service::group;
 
 /// CLI adapter for `manta delete group`.
 pub async fn exec(
@@ -16,13 +15,11 @@ pub async fn exec(
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .delete_group(token, label, force)
-      .await?;
-  } else {
-    group::delete_group(&ctx.infra, token, label, force).await?;
-  }
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  MantaClient::new(server_url, ctx.infra.site_name)?
+    .delete_group(token, label, force)
+    .await?;
 
   println!("Group '{}' deleted", label);
 

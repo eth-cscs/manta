@@ -1,10 +1,10 @@
 //! Implements the `manta update redfish-endpoint` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::redfish_endpoints::{self, UpdateRedfishEndpointParams};
+use crate::service::redfish_endpoints::UpdateRedfishEndpointParams;
 
 /// CLI adapter for `manta update redfish-endpoint`.
 #[allow(clippy::too_many_arguments)]
@@ -43,13 +43,11 @@ pub async fn exec(
     template_id,
   };
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .update_redfish_endpoint(token, &params)
-      .await?;
-  } else {
-    redfish_endpoints::update_redfish_endpoint(&ctx.infra, token, params).await?;
-  }
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  MantaClient::new(server_url, ctx.infra.site_name)?
+    .update_redfish_endpoint(token, &params)
+    .await?;
 
   Ok(())
 }

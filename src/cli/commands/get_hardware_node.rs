@@ -3,9 +3,8 @@
 use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
-use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::hardware::{self, GetHardwareNodeParams};
+use crate::service::hardware::GetHardwareNodeParams;
 
 /// Parse CLI arguments into typed [`GetHardwareNodeParams`].
 fn parse_hardware_node_params(cli_args: &clap::ArgMatches) -> Result<GetHardwareNodeParams, Error> {
@@ -27,33 +26,18 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_hardware_node_params(cli_args)?;
-  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+  let _output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let json = MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_hardware_nodes(token, &params)
-      .await?;
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&json)
-        .context("Failed to serialize hardware node result")?
-    );
-    return Ok(());
-  }
-
-  let result =
-    hardware::get_hardware_node(&ctx.infra, token, &params).await?;
-
-  if output_opt.is_some_and(|o| o.eq("json")) {
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&result.node_summary)
-        .context("Failed to serialize node summary")?
-    );
-  } else {
-    output::hardware::print_node_table(&[result.node_summary]);
-  }
-
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let json = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_hardware_nodes(token, &params)
+    .await?;
+  println!(
+    "{}",
+    serde_json::to_string_pretty(&json)
+      .context("Failed to serialize hardware node result")?
+  );
   Ok(())
 }
 

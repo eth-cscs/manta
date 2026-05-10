@@ -1,14 +1,10 @@
 //! Implements the `manta get hardware cluster` command.
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
-use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::hardware::{
-  self, GetHardwareClusterParams,
-  calculate_hsm_hw_component_summary, get_cluster_hw_pattern,
-};
+use crate::service::hardware::GetHardwareClusterParams;
 
 /// Parse CLI arguments into typed [`GetHardwareClusterParams`].
 fn parse_hardware_cluster_params(
@@ -29,48 +25,18 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params =
     parse_hardware_cluster_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
-  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+  let _output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let json = MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_hardware_clusters(token, &params)
-      .await?;
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&json)
-        .context("Failed to serialize hardware cluster result")?
-    );
-    return Ok(());
-  }
-
-  let result =
-    hardware::get_hardware_cluster(&ctx.infra, token, &params)
-      .await?;
-
-  if output_opt.is_some_and(|o| o.eq("json")) {
-    for node_summary in &result.node_summaries {
-      println!(
-        "{}",
-        serde_json::to_string_pretty(node_summary)
-          .context("Failed to serialize node summary")?
-      );
-    }
-  } else if output_opt.is_some_and(|o| o.eq("pattern")) {
-    let pattern = get_cluster_hw_pattern(result.node_summaries);
-    output::hardware::print_to_terminal_cluster_hw_pattern(
-      &result.hsm_group_name,
-      pattern,
-    );
-  } else if output_opt.is_some_and(|o| o.eq("details")) {
-    output::hardware::print_table_details(&result.node_summaries);
-  } else if output_opt.is_some_and(|o| o.eq("summary")) {
-    let summary =
-      calculate_hsm_hw_component_summary(&result.node_summaries);
-    output::hardware::print_table_summary(&summary);
-  } else {
-    bail!("'output' value not valid");
-  }
-
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let json = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_hardware_clusters(token, &params)
+    .await?;
+  println!(
+    "{}",
+    serde_json::to_string_pretty(&json)
+      .context("Failed to serialize hardware cluster result")?
+  );
   Ok(())
 }
 

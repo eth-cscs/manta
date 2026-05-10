@@ -1,11 +1,9 @@
 //! Implements the `manta apply template` command.
 
-use anyhow::{Error, bail};
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
-use crate::common::{self, app_context::AppContext};
-use crate::service;
-use crate::service::template::ApplyTemplateParams;
+use crate::common::app_context::AppContext;
 
 /// Create a BOS session template and optionally boot.
 #[allow(clippy::too_many_arguments)]
@@ -17,93 +15,32 @@ pub async fn exec(
   bos_session_operation: &str,
   limit: &str,
   include_disabled: bool,
-  assume_yes: bool,
+  _assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .apply_template_session(
-        token,
-        bos_sessiontemplate_name,
-        bos_session_operation,
-        limit,
-        bos_session_name_opt,
-        include_disabled,
-        dry_run,
-      )
-      .await?;
-    if dry_run {
-      println!(
-        "Dry-run enabled. No changes persisted into the system\n{}",
-        serde_json::to_string_pretty(&result).unwrap_or_default()
-      );
-    } else {
-      println!(
-        "BOS session created: {}",
-        serde_json::to_string_pretty(&result).unwrap_or_default()
-      );
-    }
-    return Ok(());
-  }
-
-  let params = ApplyTemplateParams {
-    bos_session_name: bos_session_name_opt.map(str::to_string),
-    bos_sessiontemplate_name: bos_sessiontemplate_name.to_string(),
-    bos_session_operation: bos_session_operation.to_string(),
-    limit: limit.to_string(),
-    include_disabled,
-  };
-
-  let (bos_session, limit_vec) =
-    service::template::validate_and_prepare_template_session(
-      &ctx.infra,
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .apply_template_session(
       token,
-      &params,
+      bos_sessiontemplate_name,
+      bos_session_operation,
+      limit,
+      bos_session_name_opt,
+      include_disabled,
+      dry_run,
     )
     .await?;
-
-  // Ask user for confirmation
-  let operation = if bos_session_operation.to_lowercase() == "boot" {
-    "reboot (if necessary)"
-  } else {
-    bos_session_operation
-  };
-
-  if !common::user_interaction::confirm(
-    &format!(
-      "{}\nThe nodes above will {}. \
-       Please confirm to proceed?",
-      limit_vec.join(","),
-      operation
-    ),
-    assume_yes,
-  ) {
-    bail!("Operation cancelled by user");
-  }
-
   if dry_run {
     println!(
-      "Dry-run enabled. No changes persisted \
-       into the system"
+      "Dry-run enabled. No changes persisted into the system\n{}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
     );
-    println!("BOS session info:\n{:#?}", bos_session);
-    Ok(())
   } else {
-    let created = service::template::create_bos_session(
-      &ctx.infra,
-      token,
-      bos_session,
-    )
-    .await?;
-
     println!(
-      "BOS session '{}' for BOS \
-       sessiontemplate '{}' created.\n\
-       Please wait a few minutes for BOS \
-       session to start.",
-      created.name.unwrap_or_default(),
-      bos_sessiontemplate_name
+      "BOS session created: {}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
     );
-    Ok(())
   }
+  Ok(())
 }

@@ -1,13 +1,11 @@
 //! Implements the `manta apply boot nodes` command.
 
 use crate::{
-  cli::commands::power_common::{self, PowerAction},
   cli::http_client::MantaClient,
-  common::{self, app_context::AppContext},
-  service,
+  common::app_context::AppContext,
 };
 
-use anyhow::{Error, bail};
+use anyhow::{Context, Error};
 
 /// Apply a boot configuration to specific nodes.
 #[allow(clippy::too_many_arguments)]
@@ -19,103 +17,28 @@ pub async fn exec(
   new_runtime_configuration_opt: Option<&str>,
   new_kernel_parameters_opt: Option<&str>,
   hosts_expression: &str,
-  assume_yes: bool,
-  do_not_reboot: bool,
+  _assume_yes: bool,
+  _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .apply_boot_config(
-        token,
-        hosts_expression,
-        new_boot_image_id_opt,
-        new_boot_image_configuration_opt,
-        new_kernel_parameters_opt,
-        new_runtime_configuration_opt,
-        dry_run,
-      )
-      .await?;
-    if dry_run {
-      println!(
-        "Dry-run enabled. No changes persisted into the system\n{}",
-        serde_json::to_string_pretty(&result).unwrap_or_default()
-      );
-    }
-    return Ok(());
-  }
-
-  let changeset = service::boot_parameters::prepare_boot_config(
-    &ctx.infra,
-    token,
-    hosts_expression,
-    new_boot_image_id_opt,
-    new_boot_image_configuration_opt,
-    new_kernel_parameters_opt,
-  )
-  .await?;
-
-  tracing::debug!(
-    "boot params to update vec:\n{:#?}",
-    changeset.boot_param_vec
-  );
-
-  if changeset.need_restart {
-    if common::user_interaction::confirm(
-      &format!(
-        "This operation will modify the nodes \
-         below:\n{}\nDo you want to continue?",
-        changeset.xname_vec.join(", ")
-      ),
-      assume_yes,
-    ) {
-      tracing::info!("Continue",);
-    } else {
-      bail!("Operation cancelled by user");
-    }
-  } else {
-    bail!("No changes detected. Nothing to do");
-  }
-
-  if dry_run {
-    println!(
-      "Dry-run enabled. No changes persisted \
-       into the system"
-    );
-    println!(
-      "New boot parameters:\n{}",
-      serde_json::to_string_pretty(&changeset.boot_param_vec)
-        .unwrap_or_default()
-    );
-    println!(
-      "Images:\n{}",
-      serde_json::to_string_pretty(&changeset.image_vec)
-        .unwrap_or_default()
-    );
-    Ok(())
-  } else {
-    service::boot_parameters::persist_boot_config(
-      &ctx.infra,
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .apply_boot_config(
       token,
-      &changeset,
+      hosts_expression,
+      new_boot_image_id_opt,
+      new_boot_image_configuration_opt,
+      new_kernel_parameters_opt,
       new_runtime_configuration_opt,
+      dry_run,
     )
     .await?;
-
-    if !do_not_reboot && changeset.need_restart {
-      tracing::info!("Restarting nodes");
-      let nodes = changeset.xname_vec;
-      power_common::exec_nodes(
-        ctx,
-        PowerAction::Reset,
-        &nodes.join(","),
-        true,
-        assume_yes,
-        "table",
-        token,
-      )
-      .await?;
-    }
-
-    Ok(())
+  if dry_run {
+    println!(
+      "Dry-run enabled. No changes persisted into the system\n{}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
+    );
   }
+  Ok(())
 }

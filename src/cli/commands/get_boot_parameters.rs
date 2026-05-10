@@ -1,11 +1,11 @@
 //! Implements the `manta get boot-parameters` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::boot_parameters::{self, GetBootParametersParams};
+use crate::service::boot_parameters::GetBootParametersParams;
 
 /// Parse CLI arguments into typed [`GetBootParametersParams`].
 fn parse_boot_parameters_params(
@@ -30,13 +30,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_boot_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let boot_parameters = if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_boot_parameters(token, &params)
-      .await?
-  } else {
-    boot_parameters::get_boot_parameters(&ctx.infra, token, &params).await?
-  };
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let boot_parameters = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_boot_parameters(token, &params)
+    .await?;
 
   output::boot_parameters::print(&boot_parameters, None)?;
 

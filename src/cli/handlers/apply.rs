@@ -182,19 +182,17 @@ pub async fn handle_apply(
       let image_id = m
         .get_one::<String>("image-id")
         .context("'image-id' argument is mandatory")?;
-      if let Some(server_url) = ctx.infra.manta_server_url {
-        MantaClient::new(server_url, ctx.infra.site_name)?
-          .create_ephemeral_env(&token, image_id)
-          .await?;
-      } else {
-        commands::apply_ephemeral_env::exec(
-          ctx.infra.shasta_base_url,
-          ctx.infra.shasta_root_cert,
-          ctx.infra.socks5_proxy,
-          &token,
-          image_id,
-        )
+      let server_url = ctx
+        .cli
+        .manta_server_url
+        .context("manta_server_url is required for apply ephemeral-environment")?;
+      let response = MantaClient::new(server_url, ctx.infra.site_name)?
+        .create_ephemeral_env(&token, image_id)
         .await?;
+      if let Some(hostname) =
+        response.get("hostname").and_then(|v| v.as_str())
+      {
+        println!("{}", hostname);
       }
     }
 

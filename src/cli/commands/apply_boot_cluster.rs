@@ -1,10 +1,8 @@
 //! Implements the `manta apply boot cluster` command.
 
 use anyhow::Context;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::{
-  cli::commands::apply_boot_node,
   cli::http_client::MantaClient,
   common::app_context::AppContext,
 };
@@ -19,55 +17,28 @@ pub async fn exec(
   new_runtime_configuration_opt: Option<&str>,
   new_kernel_parameters_opt: Option<&str>,
   hsm_group_name: &str,
-  assume_yes: bool,
-  do_not_reboot: bool,
+  _assume_yes: bool,
+  _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), anyhow::Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    let result = MantaClient::new(server_url, ctx.infra.site_name)?
-      .apply_boot_config(
-        token,
-        hsm_group_name,
-        new_boot_image_id_opt,
-        new_boot_image_configuration_opt,
-        new_kernel_parameters_opt,
-        new_runtime_configuration_opt,
-        dry_run,
-      )
-      .await?;
-    if dry_run {
-      println!(
-        "Dry-run enabled. No changes persisted into the system\n{}",
-        serde_json::to_string_pretty(&result).unwrap_or_default()
-      );
-    }
-    return Ok(());
-  }
-
-  let xname_vec = ctx
-    .infra
-    .backend
-    .get_member_vec_from_group_name_vec(
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+    .apply_boot_config(
       token,
-      &[hsm_group_name.to_string()],
+      hsm_group_name,
+      new_boot_image_id_opt,
+      new_boot_image_configuration_opt,
+      new_kernel_parameters_opt,
+      new_runtime_configuration_opt,
+      dry_run,
     )
-    .await
-    .context("Failed to get xnames from HSM group")?;
-
-  apply_boot_node::exec(
-    ctx,
-    token,
-    new_boot_image_id_opt,
-    new_boot_image_configuration_opt,
-    new_runtime_configuration_opt,
-    new_kernel_parameters_opt,
-    &xname_vec.join(","),
-    assume_yes,
-    do_not_reboot,
-    dry_run,
-  )
-  .await
-  .context("Failed to apply boot configuration to cluster")?;
-
+    .await?;
+  if dry_run {
+    println!(
+      "Dry-run enabled. No changes persisted into the system\n{}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
+    );
+  }
   Ok(())
 }

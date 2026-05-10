@@ -1,10 +1,10 @@
 //! Implements the `manta get redfish-endpoints` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::redfish_endpoints::{self, GetRedfishEndpointsParams};
+use crate::service::redfish_endpoints::GetRedfishEndpointsParams;
 
 /// Parse CLI arguments into typed [`GetRedfishEndpointsParams`].
 fn parse_redfish_endpoints_params(cli_args: &clap::ArgMatches) -> GetRedfishEndpointsParams {
@@ -25,15 +25,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_redfish_endpoints_params(cli_args);
 
-  let endpoints = if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_redfish_endpoints(token, &params)
-      .await?
-  } else {
-    serde_json::to_value(
-      redfish_endpoints::get_redfish_endpoints(&ctx.infra, token, &params).await?,
-    )?
-  };
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let endpoints = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_redfish_endpoints(token, &params)
+    .await?;
 
   println!("{}", serde_json::to_string_pretty(&endpoints)?);
 

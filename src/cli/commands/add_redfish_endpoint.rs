@@ -4,7 +4,7 @@ use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::redfish_endpoints::{self, UpdateRedfishEndpointParams};
+use crate::service::redfish_endpoints::UpdateRedfishEndpointParams;
 
 /// CLI adapter for `manta add redfish-endpoint`.
 pub async fn exec(
@@ -48,13 +48,11 @@ pub async fn exec(
     template_id,
   };
 
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .add_redfish_endpoint(token, params)
-      .await?;
-  } else {
-    redfish_endpoints::add_redfish_endpoint(&ctx.infra, token, params).await?;
-  }
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  MantaClient::new(server_url, ctx.infra.site_name)?
+    .add_redfish_endpoint(token, params)
+    .await?;
 
   println!("Redfish endpoint for node '{}' added", id);
 

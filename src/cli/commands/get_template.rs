@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::template::{self, GetTemplateParams};
+use crate::service::template::GetTemplateParams;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
 fn parse_template_params(
@@ -38,13 +38,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_template_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let templates = if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_templates(token, &params)
-      .await?
-  } else {
-    template::get_templates(&ctx.infra, token, &params).await?
-  };
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let templates = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_templates(token, &params)
+    .await?;
 
   let output_opt: &String = cli_args
     .get_one("output")

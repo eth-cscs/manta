@@ -4,19 +4,9 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::{self, app_context::AppContext};
 
-use crossterm::style::Stylize;
-use manta_backend_dispatcher::{
-  interfaces::apply_sat_file::SatTrait,
-  types::{K8sAuth, K8sDetails},
-};
-use serde_yaml::Value;
+use manta_backend_dispatcher::types::K8sDetails;
 
-use crate::{
-  cli::commands::apply_sat_file::utils,
-  cli::http_client::MantaClient,
-  common::vault::http_client::fetch_shasta_k8s_secrets_from_vault,
-};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use crate::cli::http_client::MantaClient;
 
 /// Options for applying a SAT file.
 ///
@@ -79,177 +69,42 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  if let Some(server_url) = ctx.infra.manta_server_url {
-    validate_hook(opts.prehook_opt, "Pre")?;
-    validate_hook(opts.posthook_opt, "Post")?;
-
-    if !common::user_interaction::confirm(
-      "Apply SAT file to the system via manta server. Please confirm to proceed.",
-      opts.assume_yes,
-    ) {
-      bail!("Operation cancelled by user");
-    }
-
-    run_hook_if_present(opts.prehook_opt, "pre")?;
-
-    let values_json: Option<serde_json::Value> = opts.values_cli_opt.map(|vals| {
-      serde_json::Value::Array(vals.iter().map(|v| serde_json::Value::String(v.clone())).collect())
-    });
-
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .apply_sat_file(
-        token,
-        opts.sat_file_content,
-        values_json,
-        opts.values_file_content_opt,
-        opts.ansible_verbosity_opt,
-        opts.ansible_passthrough_opt,
-        opts.reboot,
-        opts.watch_logs,
-        opts.timestamps,
-        opts.image_only,
-        opts.session_template_only,
-        opts.overwrite,
-        opts.dry_run,
-      )
-      .await?;
-
-    run_hook_if_present(opts.posthook_opt, "post")?;
-    return Ok(());
-  }
-
-  let backend = ctx.infra.backend;
-  let site_name = ctx.infra.site_name;
-  let shasta_base_url = ctx.infra.shasta_base_url;
-  let shasta_root_cert = ctx.infra.shasta_root_cert;
-  let gitea_base_url = ctx.infra.gitea_base_url;
-
-  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-    token,
-    opts.vault_base_url,
-    site_name,
-  )
-  .await?;
-
-  let hsm_group_available_vec =
-    backend.get_group_name_available(token).await?;
-
-  // Validate hooks
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 
-  tracing::info!("Render SAT template file");
-  let sat_template_file_yaml: Value = utils::render_jinja2_sat_file_yaml(
-    opts.sat_file_content,
-    opts.values_file_content_opt,
-    opts.values_cli_opt,
-  )?;
-
-  let sat_template_file_string = serde_yaml::to_string(&sat_template_file_yaml)
-    .context(
-      "Failed to serialize SAT template file \
-         to YAML string",
-    )?;
-
-  let mut sat_template: utils::SatFile =
-    serde_yaml::from_str(&sat_template_file_string).context(
-      "Could not parse SAT template yaml \
-         file",
-    )?;
-
-  // Filter either images or session_templates
-  // section according to user request
-  sat_template.filter(opts.image_only, opts.session_template_only)?;
-
-  let sat_template_file_yaml: Value = serde_yaml::to_value(sat_template)
-    .context(
-      "Failed to convert SAT template to \
-       YAML value",
-    )?;
-
-  println!(
-    "{}\n{}",
-    "#### SAT file content ####".blue(),
-    serde_yaml::to_string(&sat_template_file_yaml).context(
-      "Failed to serialize SAT template to \
-         YAML for display",
-    )?,
-  );
-
   if !common::user_interaction::confirm(
-    "Please check the template above and \
-     confirm to proceed.",
+    "Apply SAT file to the system via manta server. Please confirm to proceed.",
     opts.assume_yes,
   ) {
     bail!("Operation cancelled by user");
   }
 
-  // Confirm reboot if session_templates are to be
-  // applied
-  if sat_template_file_yaml.get("session_templates").is_some()
-    && opts.reboot
-    && !common::user_interaction::confirm(
-      "This operation will reboot nodes. \
-       Please confirm to proceed.",
-      opts.assume_yes,
-    )
-  {
-    println!("Operation cancelled by user");
-    return Ok(());
-  }
-
-  // Run/process Pre-hook
   run_hook_if_present(opts.prehook_opt, "pre")?;
 
-  // Get K8s secrets
-  let shasta_k8s_secrets = match &opts.k8s.authentication {
-    K8sAuth::Native {
-      certificate_authority_data,
-      client_certificate_data,
-      client_key_data,
-    } => {
-      serde_json::json!({
-        "certificate-authority-data":
-          certificate_authority_data,
-        "client-certificate-data":
-          client_certificate_data,
-        "client-key-data":
-          client_key_data
-      })
-    }
-    K8sAuth::Vault { base_url } => {
-      fetch_shasta_k8s_secrets_from_vault(base_url, site_name, token)
-        .await
-        .context("Failed to fetch K8s secrets from Vault")?
-    }
-  };
+  let values_json: Option<serde_json::Value> = opts.values_cli_opt.map(|vals| {
+    serde_json::Value::Array(vals.iter().map(|v| serde_json::Value::String(v.clone())).collect())
+  });
 
-  backend
+  MantaClient::new(server_url, ctx.infra.site_name)?
     .apply_sat_file(
       token,
-      shasta_base_url,
-      shasta_root_cert,
-      opts.vault_base_url,
-      site_name,
-      opts.k8s_api_url,
-      shasta_k8s_secrets,
-      sat_template_file_yaml,
-      &hsm_group_available_vec,
+      opts.sat_file_content,
+      values_json,
+      opts.values_file_content_opt,
       opts.ansible_verbosity_opt,
       opts.ansible_passthrough_opt,
-      gitea_base_url,
-      &gitea_token,
       opts.reboot,
       opts.watch_logs,
       opts.timestamps,
-      opts.debug_on_failure,
+      opts.image_only,
+      opts.session_template_only,
       opts.overwrite,
       opts.dry_run,
     )
     .await?;
 
-  // Run/process Post-hook
   run_hook_if_present(opts.posthook_opt, "post")?;
-
   Ok(())
 }

@@ -12,6 +12,7 @@ use ochami_rs::backend_connector::Ochami;
 /// All backend-specific trait methods are dispatched via
 /// the [`dispatch!`] macro defined in the `backend_dispatcher`
 /// module.
+#[derive(Debug)]
 pub enum StaticBackendDispatcher {
   CSM(Csm),
   OCHAMI(Ochami),

@@ -1,11 +1,11 @@
 //! Implements the `manta get images` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::image::{self, GetImagesParams};
+use crate::service::image::GetImagesParams;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
 fn parse_images_params(
@@ -38,13 +38,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_images_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let images = if let Some(server_url) = ctx.infra.manta_server_url {
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .get_images(token, &params)
-      .await?
-  } else {
-    image::get_images(&ctx.infra, token, &params).await?
-  };
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let images = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_images(token, &params)
+    .await?;
 
   output::image::print(&images);
 

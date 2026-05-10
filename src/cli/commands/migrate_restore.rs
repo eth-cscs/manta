@@ -4,7 +4,6 @@ use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::migrate;
 
 /// Restore cluster configuration from a backup bundle.
 #[allow(clippy::too_many_arguments)]
@@ -69,23 +68,11 @@ pub async fn exec(
         };
     }
 
-    if let Some(server_url) = ctx.infra.manta_server_url {
-        MantaClient::new(server_url, ctx.infra.site_name)?
-            .migrate_restore(token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite)
-            .await?;
-    } else {
-        migrate::migrate_restore(
-            &ctx.infra,
-            token,
-            bos_file,
-            cfs_file,
-            hsm_file,
-            ims_file,
-            image_dir,
-            overwrite,
-        )
+    let server_url = ctx.cli.manta_server_url
+        .context("manta server URL must be configured")?;
+    MantaClient::new(server_url, ctx.infra.site_name)?
+        .migrate_restore(token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite)
         .await?;
-    }
 
     if let Some(posthook_path) = posthook {
         println!("Running the post-hook {}", posthook_path);

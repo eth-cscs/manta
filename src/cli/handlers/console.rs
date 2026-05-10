@@ -1,8 +1,6 @@
 //! Routes `manta console *` subcommands to their exec functions.
 
-use crate::cli::commands::{
-  console_cfs_session_image_target_ansible, console_common, console_node,
-};
+use crate::cli::commands::console_common;
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
@@ -26,33 +24,14 @@ pub async fn handle_console(
         .get_one::<String>("XNAME")
         .context("The 'XNAME' argument must have a value")?;
 
-      if let Some(server_url) = ctx.infra.manta_server_url {
-        let (cols, rows) = crossterm::terminal::size()?;
-        let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
-          .console_node(&token, xname, cols, rows)
-          .await?;
-        let result = console_common::run_console_loop(a_input, a_output).await;
-        console_common::handle_console_result(result);
-      } else {
-        let site = ctx
-          .cli
-          .configuration
-          .sites
-          .get(&ctx.cli.configuration.site)
-          .context("Site not found in configuration")?;
-        let k8s_details = site
-          .k8s
-          .as_ref()
-          .context("k8s section not found in configuration")?;
-        console_node::exec(
-          ctx.infra.backend,
-          ctx.infra.site_name,
-          &token,
-          xname,
-          k8s_details,
-        )
+      let server_url = ctx.cli.manta_server_url
+        .context("manta server URL must be configured")?;
+      let (cols, rows) = crossterm::terminal::size()?;
+      let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
+        .console_node(&token, xname, cols, rows)
         .await?;
-      }
+      let result = console_common::run_console_loop(a_input, a_output).await;
+      console_common::handle_console_result(result);
     }
     Some(("target-ansible", m)) => {
       if !std::io::stdout().is_terminal() {
@@ -62,36 +41,14 @@ pub async fn handle_console(
         .get_one::<String>("SESSION_NAME")
         .context("The 'SESSION_NAME' argument must have a value")?;
 
-      if let Some(server_url) = ctx.infra.manta_server_url {
-        let (cols, rows) = crossterm::terminal::size()?;
-        let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
-          .console_session(&token, session_name, cols, rows)
-          .await?;
-        let result = console_common::run_console_loop(a_input, a_output).await;
-        console_common::handle_console_result(result);
-      } else {
-        let site = ctx
-          .cli
-          .configuration
-          .sites
-          .get(&ctx.cli.configuration.site)
-          .context("Site not found in configuration")?;
-        let k8s_details = site
-          .k8s
-          .as_ref()
-          .context("k8s section not found in configuration")?;
-        console_cfs_session_image_target_ansible::exec(
-          ctx.infra.backend,
-          ctx.infra.site_name,
-          &token,
-          ctx.cli.settings_hsm_group_name_opt,
-          ctx.infra.shasta_base_url,
-          ctx.infra.shasta_root_cert,
-          session_name,
-          k8s_details,
-        )
+      let server_url = ctx.cli.manta_server_url
+        .context("manta server URL must be configured")?;
+      let (cols, rows) = crossterm::terminal::size()?;
+      let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
+        .console_session(&token, session_name, cols, rows)
         .await?;
-      }
+      let result = console_common::run_console_loop(a_input, a_output).await;
+      console_common::handle_console_result(result);
     }
     Some((other, _)) => bail!("Unknown 'console' subcommand: {other}"),
     None => bail!("No 'console' subcommand provided"),
