@@ -6,8 +6,11 @@
 //! `X-Manta-Site` + `Authorization: Bearer <token>`.
 
 use anyhow::{Context, bail};
+use futures::TryStreamExt;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use tokio::io::{AsyncBufRead, BufReader};
+use tokio_util::io::StreamReader;
 
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::types::{
@@ -971,5 +974,39 @@ impl MantaClient {
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({ "image_id": image_id });
     self.post_json(token, "/ephemeral-env", &body).await
+  }
+
+  /// Stream CFS session logs from `GET /sessions/{name}/logs` (SSE).
+  ///
+  /// Returns a buffered reader over the SSE byte stream.  The caller is
+  /// responsible for stripping the `data: ` prefix that the server wraps
+  /// around each log line.
+  pub async fn stream_session_logs(
+    &self,
+    token: &str,
+    session_name: &str,
+    timestamps: bool,
+  ) -> anyhow::Result<impl AsyncBufRead + Send + Unpin> {
+    let url = format!("{}/sessions/{}/logs", self.base_url, session_name);
+    let resp = self
+      .client
+      .get(&url)
+      .bearer_auth(token)
+      .header("X-Manta-Site", &self.site_name)
+      .query(&[("timestamps", timestamps.to_string())])
+      .send()
+      .await
+      .context("HTTP GET session logs failed")?;
+
+    if !resp.status().is_success() {
+      let status = resp.status();
+      let body = resp.text().await.unwrap_or_default();
+      bail!("GET session logs returned {}: {}", status, body);
+    }
+
+    let byte_stream = resp
+      .bytes_stream()
+      .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
+    Ok(BufReader::new(StreamReader::new(byte_stream)))
   }
 }

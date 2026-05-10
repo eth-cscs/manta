@@ -195,22 +195,41 @@ async fn apply_session(
     if watch_logs {
         tracing::info!("Fetching logs ...");
 
-        let mut cfs_session_log_stream = backend
-            .get_session_logs_stream(
-                shasta_token,
-                site,
-                &cfs_session_name,
-                timestamps,
-                k8s,
-            )
-            .await
-            .context("Failed to get CFS session log stream")?
-            .lines();
+        if let Some(server_url) = ctx.infra.manta_server_url {
+            use tokio::io::AsyncBufReadExt as _;
+            let client = MantaClient::new(server_url, ctx.infra.site_name)?;
+            let reader = client
+                .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
+                .await
+                .context("Failed to get CFS session log stream from server")?;
+            let mut lines = reader.lines();
+            // SSE lines are prefixed with "data: "; strip and print.
+            // Empty keep-alive lines are silently skipped.
+            while let Some(raw) = lines.next_line().await.context(
+                "Failed to read CFS session log stream",
+            )? {
+                if let Some(content) = raw.strip_prefix("data: ") {
+                    println!("{}", content);
+                }
+            }
+        } else {
+            let mut cfs_session_log_stream = backend
+                .get_session_logs_stream(
+                    shasta_token,
+                    site,
+                    &cfs_session_name,
+                    timestamps,
+                    k8s,
+                )
+                .await
+                .context("Failed to get CFS session log stream")?
+                .lines();
 
-        while let Some(line) = cfs_session_log_stream.try_next().await.context(
-            "Failed to read CFS session log stream",
-        )? {
-            println!("{}", line);
+            while let Some(line) = cfs_session_log_stream.try_next().await.context(
+                "Failed to read CFS session log stream",
+            )? {
+                println!("{}", line);
+            }
         }
     }
 
