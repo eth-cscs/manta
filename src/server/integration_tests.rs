@@ -1,16 +1,35 @@
-//! Phase 6 — Happy-path HTTP integration tests.
+//! Integration tests for the HTTP server layer.
 //!
 //! Each test spins up a real wiremock server, builds an Axum router whose
 //! backend points at it, and drives requests through
 //! `tower::ServiceExt::oneshot` without opening a TCP listener.
 //!
-//! Covered endpoints:
+//! Read endpoints:
 //!   GET /api/v1/groups
 //!   GET /api/v1/configurations
 //!   GET /api/v1/sessions
 //!   GET /api/v1/templates
 //!   GET /api/v1/images
 //!   GET /api/v1/boot-parameters
+//!   GET /api/v1/kernel-parameters
+//!   GET /api/v1/redfish-endpoints
+//!
+//! Write endpoints:
+//!   POST   /api/v1/groups
+//!   DELETE /api/v1/groups/{label}
+//!   DELETE /api/v1/groups/{name}/members  (dry_run and live)
+//!   POST   /api/v1/nodes
+//!   DELETE /api/v1/nodes/{id}
+//!   POST   /api/v1/kernel-parameters/apply (dry_run)
+//!
+//! Note: DELETE /boot-parameters, POST /boot-parameters, DELETE/POST
+//! /redfish-endpoints are not tested here because csm-rs 0.105.0 returns
+//! "not implemented" for those backend operations (or uses a blocking HTTP
+//! client that panics in async context).
+//!
+//! Error paths:
+//!   GET /api/v1/groups — backend error → 500
+//!   DELETE /api/v1/sessions/{name} — not found → 404
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -688,6 +707,111 @@ async fn delete_group_members_dry_run() {
     .send(fx.auth_delete_json(
       "/api/v1/groups/compute/members",
       json!({"xnames": ["x3000c0s1b0n0"], "dry_run": true}),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+}
+
+// ---------------------------------------------------------------------------
+// Phase D — Write endpoint happy paths (continued)
+// ---------------------------------------------------------------------------
+
+// POST /api/v1/nodes
+//
+// Call chain:
+//   service::node::add_node
+//     → backend.post_nodes          (POST /hsm/v2/State/Components, no smd/ prefix)
+//     → backend.post_member         (POST /smd/hsm/v2/groups/{group}/members)
+#[tokio::test]
+async fn add_node_happy_path() {
+  let fx = TestFixture::setup().await;
+  Mock::given(method("POST"))
+    .and(path("/hsm/v2/State/Components"))
+    .respond_with(ResponseTemplate::new(201).set_body_json(json!({})))
+    .mount(&fx.mock_server)
+    .await;
+  Mock::given(method("POST"))
+    .and(path("/smd/hsm/v2/groups/compute/members"))
+    .respond_with(ResponseTemplate::new(201).set_body_json(json!({"uri": "/hsm/v2/groups/compute/members/x3000c0s2b0n0"})))
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_post_json(
+      "/api/v1/nodes",
+      json!({"id": "x3000c0s2b0n0", "group": "compute", "enabled": true}),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::CREATED);
+
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(body["id"], "x3000c0s2b0n0");
+}
+
+// POST /api/v1/kernel-parameters/apply with dry_run=true, operation=delete
+//
+// Using the "delete" operation avoids IMS image lookups (only Add and Apply
+// call get_images for SBPS projection). dry_run=true skips the update_bootparameters
+// call. Only GET /bss/boot/v1/bootparameters is needed.
+//
+// Call chain:
+//   handlers::apply_kernel_parameters
+//     → resolve_xnames_from_request (xnames provided → no backend calls)
+//     → prepare_kernel_params_changes
+//         → GET /bss/boot/v1/bootparameters
+//     → dry_run: returns changeset without calling update_bootparameters
+#[tokio::test]
+async fn apply_kernel_parameters_delete_dry_run() {
+  let fx = TestFixture::setup().await;
+  Mock::given(method("GET"))
+    .and(path("/bss/boot/v1/bootparameters"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+      {
+        "hosts": ["x3000c0s1b0n0"],
+        "params": "quiet console=ttyS0",
+        "kernel": "",
+        "initrd": ""
+      }
+    ])))
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_post_json(
+      "/api/v1/kernel-parameters/apply",
+      json!({
+        "xnames": ["x3000c0s1b0n0"],
+        "operation": "delete",
+        "params": "quiet",
+        "dry_run": true
+      }),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  assert!(body["has_changes"].is_boolean());
+}
+
+// DELETE /api/v1/groups/compute/members — dry_run=false (live)
+//
+// Call chain:
+//   handlers::delete_group_members
+//     → backend.delete_member_from_group
+//         (DELETE /smd/hsm/v2/groups/compute/members/x3000c0s1b0n0)
+#[tokio::test]
+async fn delete_group_members_live() {
+  let fx = TestFixture::setup().await;
+  Mock::given(method("DELETE"))
+    .and(path("/smd/hsm/v2/groups/compute/members/x3000c0s1b0n0"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_delete_json(
+      "/api/v1/groups/compute/members",
+      json!({"xnames": ["x3000c0s1b0n0"], "dry_run": false}),
     ))
     .await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);

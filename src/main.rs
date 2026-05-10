@@ -118,12 +118,12 @@ async fn run_server(
   let port: u16 = *serve_matches
     .get_one::<u16>("port")
     .expect("port has a default value");
-  let cert_path: &str = serve_matches
+  let cert_path: Option<&str> = serve_matches
     .get_one::<String>("cert")
-    .expect("cert is required");
-  let key_path: &str = serve_matches
+    .map(String::as_str);
+  let key_path: Option<&str> = serve_matches
     .get_one::<String>("key")
-    .expect("key is required");
+    .map(String::as_str);
   let listen_addr: &str = serve_matches
     .get_one::<String>("listen-address")
     .expect("listen-address has a default value");

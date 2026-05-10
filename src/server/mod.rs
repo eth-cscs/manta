@@ -91,13 +91,16 @@ async fn log_requests(
   response
 }
 
-/// Start the HTTPS server.
+/// Start the HTTP or HTTPS server.
+///
+/// When `cert_path` and `key_path` are both `Some`, the server listens with
+/// TLS (`https://`).  When either is `None`, it listens as plain HTTP.
 pub async fn start_server(
   state: Arc<ServerState>,
   listen_addr: &str,
   port: u16,
-  cert_path: &str,
-  key_path: &str,
+  cert_path: Option<&str>,
+  key_path: Option<&str>,
 ) -> Result<(), Error> {
   let app = routes::build_router(state)
     .layer(tower_http::timeout::TimeoutLayer::with_status_code(axum::http::StatusCode::REQUEST_TIMEOUT, Duration::from_secs(60)))
@@ -107,14 +110,26 @@ pub async fn start_server(
     .parse()
     .map_err(|e| Error::BadRequest(format!("Invalid listen address: {e}")))?;
 
-  let tls_config = RustlsConfig::from_pem_file(cert_path, key_path)
-    .await?;
-
-  tracing::info!("Starting HTTPS server on https://{}", addr);
-
-  axum_server::bind_rustls(addr, tls_config)
-    .serve(app.into_make_service())
-    .await?;
+  match (cert_path, key_path) {
+    (Some(cert), Some(key)) => {
+      let tls_config = RustlsConfig::from_pem_file(cert, key).await?;
+      tracing::info!("Starting HTTPS server on https://{}", addr);
+      axum_server::bind_rustls(addr, tls_config)
+        .serve(app.into_make_service())
+        .await?;
+    }
+    (None, None) => {
+      tracing::info!("Starting HTTP server on http://{}", addr);
+      axum_server::bind(addr)
+        .serve(app.into_make_service())
+        .await?;
+    }
+    _ => {
+      return Err(Error::BadRequest(
+        "--cert and --key must be provided together".to_string(),
+      ));
+    }
+  }
 
   Ok(())
 }

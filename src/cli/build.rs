@@ -37,20 +37,20 @@ pub fn build_cli() -> Command {
 
 fn subcommand_serve() -> Command {
   Command::new("serve")
-    .about("Run manta as an HTTPS API server")
+    .about("Run manta as an HTTP/HTTPS API server")
     .arg(
       arg!(--port <PORT> "Port to listen on")
-        .default_value("8443")
+        .default_value("8080")
         .value_parser(value_parser!(u16)),
     )
     .arg(
-      arg!(--cert <CERT_FILE> "Path to TLS certificate PEM file")
-        .required(true)
+      arg!(--cert <CERT_FILE> "Path to TLS certificate PEM file (enables HTTPS)")
+        .required(false)
         .value_hint(ValueHint::FilePath),
     )
     .arg(
-      arg!(--key <KEY_FILE> "Path to TLS private key PEM file")
-        .required(true)
+      arg!(--key <KEY_FILE> "Path to TLS private key PEM file (required with --cert)")
+        .required(false)
         .value_hint(ValueHint::FilePath),
     )
     .arg(
