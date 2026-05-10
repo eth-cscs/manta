@@ -3,6 +3,7 @@
 use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::hardware::GetHardwareNodeParams;
 
@@ -26,18 +27,18 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_hardware_node_params(cli_args)?;
-  let _output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+  let output = cli_args
+    .get_one::<String>("output")
+    .map(String::as_str)
+    .unwrap_or("table");
 
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
   let json = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_hardware_nodes(token, &params)
     .await?;
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&json)
-      .context("Failed to serialize hardware node result")?
-  );
+
+  output::hardware::print_node(&json, output)?;
   Ok(())
 }
 
