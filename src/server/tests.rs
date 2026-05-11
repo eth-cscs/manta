@@ -431,6 +431,15 @@ async fn get_hardware_nodes_without_xnames_returns_400() {
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
+#[tokio::test]
+async fn get_hardware_nodes_list_without_xnames_returns_400() {
+  let resp = router()
+    .oneshot(get_auth("/api/v1/hardware-nodes-list"))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+}
+
 // ---------------------------------------------------------------------------
 // Optional-config endpoints return 501 when vault/k8s not configured
 // ---------------------------------------------------------------------------
@@ -526,6 +535,8 @@ async fn all_get_routes_are_registered() {
     "/api/v1/redfish-endpoints",
     "/api/v1/clusters",
     "/api/v1/hardware-clusters",
+    "/api/v1/hardware-nodes",
+    "/api/v1/hardware-nodes-list",
     "/api/v1/health",
     "/api/v1/nodes/x3000c0s1b0n0/console",
     "/api/v1/sessions/my-session/console",
