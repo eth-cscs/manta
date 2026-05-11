@@ -2,8 +2,8 @@
 
 use crate::cli::commands::{
   get_boot_parameters, get_cluster, get_configuration, get_group,
-  get_hardware_cluster, get_hardware_node, get_images, get_kernel_parameters,
-  get_nodes, get_session, get_template,
+  get_hardware_cluster, get_hardware_node, get_hardware_nodes, get_images,
+  get_kernel_parameters, get_nodes, get_session, get_template,
 };
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
@@ -26,6 +26,7 @@ pub async fn handle_get(
         get_hardware_cluster::exec(ctx, &token, m).await?
       }
       Some(("node", m)) => get_hardware_node::exec(ctx, &token, m).await?,
+      Some(("nodes", m)) => get_hardware_nodes::exec(ctx, &token, m).await?,
       Some((other, _)) => bail!("Unknown 'get hardware' subcommand: {other}"),
       None => bail!("No 'get hardware' subcommand provided"),
     },

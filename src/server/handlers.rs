@@ -665,6 +665,40 @@ pub async fn get_hardware_nodes(
   })))
 }
 
+// ---------------------------------------------------------------------------
+// GET /api/v1/hardware-nodes-list
+// ---------------------------------------------------------------------------
+
+/// Query parameters for `GET /hardware-nodes-list`.
+#[derive(Deserialize)]
+pub struct HardwareNodesListQuery {
+  /// Comma-separated xnames.
+  pub xnames: String,
+}
+
+/// GET /hardware-nodes-list — hardware details for an explicit list of xnames.
+#[tracing::instrument(skip_all)]
+pub async fn get_hardware_nodes_list(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  SiteName(site_name): SiteName,
+  Query(q): Query<HardwareNodesListQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let params =
+    service::hardware::GetHardwareNodesListParams { xnames: q.xnames };
+
+  let result =
+    service::hardware::get_hardware_nodes_list(&infra, &token, &params)
+      .await
+      .map_err(to_handler_error)?;
+
+  Ok(Json(serde_json::json!({
+    "node_summaries": result.node_summaries,
+  })))
+}
+
 // ===========================================================================
 // WRITE ENDPOINTS
 // ===========================================================================

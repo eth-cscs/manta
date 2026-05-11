@@ -1,0 +1,72 @@
+//! Implements the `manta get hardware nodes` command.
+
+use anyhow::{Context, Error};
+
+use crate::cli::http_client::MantaClient;
+use crate::cli::output;
+use crate::common::app_context::AppContext;
+use crate::service::hardware::GetHardwareNodesListParams;
+
+/// Parse CLI arguments into typed [`GetHardwareNodesListParams`].
+fn parse_hardware_nodes_params(
+  cli_args: &clap::ArgMatches,
+) -> Result<GetHardwareNodesListParams, Error> {
+  let xnames = cli_args
+    .get_one::<String>("VALUE")
+    .context("The 'VALUE' argument must have a value")?
+    .clone();
+  Ok(GetHardwareNodesListParams { xnames })
+}
+
+/// CLI adapter for `manta get hardware nodes`.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  cli_args: &clap::ArgMatches,
+) -> Result<(), Error> {
+  let params = parse_hardware_nodes_params(cli_args)?;
+  let output = cli_args
+    .get_one::<String>("output")
+    .map(String::as_str)
+    .unwrap_or("table");
+
+  let server_url = ctx.cli.manta_server_url
+    .context("manta server URL must be configured")?;
+  let json = MantaClient::new(server_url, ctx.infra.site_name)?
+    .get_hardware_nodes_list(token, &params)
+    .await?;
+
+  output::hardware::print_nodes_list(&json, output)?;
+  Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use clap::arg;
+
+  fn hw_nodes_cmd() -> clap::Command {
+    clap::Command::new("nodes")
+      .arg(arg!(<VALUE> "xnames expression"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .value_parser(["table", "json"])
+          .default_value("table"),
+      )
+  }
+
+  #[test]
+  fn parse_xnames() {
+    let matches =
+      hw_nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0,x1000c0s0b0n1"]);
+    let params = parse_hardware_nodes_params(&matches).unwrap();
+    assert_eq!(params.xnames, "x1000c0s0b0n0,x1000c0s0b0n1");
+  }
+
+  #[test]
+  fn parse_single_xname() {
+    let matches = hw_nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0"]);
+    let params = parse_hardware_nodes_params(&matches).unwrap();
+    assert_eq!(params.xnames, "x1000c0s0b0n0");
+  }
+}

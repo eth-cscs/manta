@@ -137,6 +137,20 @@ Output modes:
 manta get hardware cluster gpu-cluster -o details
 ```
 
+### get hardware nodes \<VALUE\>
+
+Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get hardware cluster --output details` but scoped to specific xnames instead of an entire cluster.
+
+| Arg/Flag | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `VALUE` | string | **yes** | — | Comma-separated xnames (e.g. `x1003c1s7b0n0,x1003c1s7b1n0`) |
+| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
+
+```
+manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1
+manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1 -o json
+```
+
 ### get hardware node \<XNAMES\>
 
 List hardware components for specific nodes.

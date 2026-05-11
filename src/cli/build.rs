@@ -261,11 +261,22 @@ fn subcommand_get_hardware() -> Command {
     .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
     .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
 
+  let command_get_hw_nodes = Command::new("nodes")
+    .arg_required_else_help(true)
+    .about("Per-node hw component breakdown for an explicit list of nodes")
+    .arg(arg!(<VALUE> "List of xnames or nids. Can use comma separated list of nodes.\neg 'x1003c1s7b0n0,x1003c1s7b0n1,x1003c1s7b1n0'"))
+    .arg(
+      arg!(-o --output <FORMAT> "Output format")
+        .value_parser(["table", "json"])
+        .default_value("table"),
+    );
+
   Command::new("hardware")
     .arg_required_else_help(true)
     .about("Get hardware components for a cluster or a node")
     .subcommand(command_get_hw_configuration_cluster)
     .subcommand(command_get_hw_configuration_node)
+    .subcommand(command_get_hw_nodes)
 }
 
 fn subcommand_get_cfs_configuration() -> Command {

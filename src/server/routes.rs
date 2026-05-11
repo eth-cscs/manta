@@ -26,6 +26,7 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/clusters", get(handlers::get_clusters))
     .route("/hardware-clusters", get(handlers::get_hardware_clusters))
     .route("/hardware-nodes", get(handlers::get_hardware_nodes))
+    .route("/hardware-nodes-list", get(handlers::get_hardware_nodes_list))
     // --- Write endpoints ---
     // Nodes
     .route("/nodes", post(handlers::add_node))

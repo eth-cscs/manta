@@ -29,7 +29,7 @@ use crate::service::{
   cluster::GetClusterParams,
   configuration::GetConfigurationParams,
   group::GetGroupParams,
-  hardware::{GetHardwareClusterParams, GetHardwareNodeParams},
+  hardware::{GetHardwareClusterParams, GetHardwareNodeParams, GetHardwareNodesListParams},
   image::GetImagesParams,
   kernel_parameters::GetKernelParametersParams,
   node::GetNodesParams,
@@ -472,6 +472,15 @@ impl MantaClient {
       q.push(("type_artifact", v.clone()));
     }
     self.get_json(token, "/hardware-nodes", &q).await
+  }
+
+  pub async fn get_hardware_nodes_list(
+    &self,
+    token: &str,
+    params: &GetHardwareNodesListParams,
+  ) -> anyhow::Result<Value> {
+    let q: Vec<(&str, String)> = vec![("xnames", params.xnames.clone())];
+    self.get_json(token, "/hardware-nodes-list", &q).await
   }
 
   // ── POST endpoints ────────────────────────────────────────────────────────

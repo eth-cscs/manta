@@ -115,6 +115,69 @@ pub struct HardwareClusterResult {
   pub node_summaries: Vec<NodeSummary>,
 }
 
+/// Fetch hardware inventory for a slice of xnames concurrently,
+/// rate-limited by a semaphore. Shared by cluster and nodes-list queries.
+async fn fetch_node_summaries(
+  infra: &InfraContext<'_>,
+  token: &str,
+  xnames: &[String],
+) -> Vec<NodeSummary> {
+  let mut tasks = tokio::task::JoinSet::new();
+  let sem = Arc::new(Semaphore::new(HW_INVENTORY_CONCURRENCY_LIMIT));
+
+  let n = xnames.len();
+  let width = n.checked_ilog10().unwrap_or(0) as usize + 1;
+
+  for (i, xname) in xnames.iter().enumerate() {
+    tracing::info!(
+      "\rGetting hw components for node '{xname}' [{:>width$}/{n}]",
+      i + 1
+    );
+
+    let backend_cp = infra.backend.clone();
+    let token_str = token.to_string();
+    let xname_str = xname.to_string();
+    let permit = Arc::clone(&sem).acquire_owned().await;
+
+    tasks.spawn(async move {
+      let _permit = permit;
+      let hw_inventory_value = backend_cp
+        .get_inventory_hardware_query(
+          &token_str,
+          &xname_str,
+          None,
+          None,
+          None,
+          None,
+          None,
+        )
+        .await;
+
+      let node_hw_opt = match hw_inventory_value {
+        Ok(value) => value.pointer("/Nodes/0").cloned(),
+        Err(e) => {
+          tracing::error!("Failed to get HW inventory for '{}': {}", xname_str, e);
+          None
+        }
+      };
+
+      match node_hw_opt {
+        Some(v) => NodeSummary::from_csm_value(v),
+        None => NodeSummary { xname: xname_str, ..Default::default() },
+      }
+    });
+  }
+
+  let mut summaries = Vec::with_capacity(n);
+  while let Some(res) = tasks.join_next().await {
+    match res {
+      Ok(s) => summaries.push(s),
+      Err(e) => tracing::error!("Failed fetching node hardware information: {}", e),
+    }
+  }
+  summaries
+}
+
 /// Fetch hardware inventory for all nodes in a cluster (HSM group).
 ///
 /// Concurrently queries hardware inventory for each node, rate-limited
@@ -137,108 +200,66 @@ pub async fn get_hardware_cluster(
     .ok_or_else(|| Error::NotFound("No HSM groups available for this user".to_string()))?
     .clone();
 
-  let hsm_group = infra.backend
-    .get_group(token, &hsm_group_name)
-    .await?;
+  let hsm_group = infra.backend.get_group(token, &hsm_group_name).await?;
 
-  let hsm_group_target_members = hsm_group
+  let members = hsm_group
     .members
     .unwrap_or_default()
     .ids
     .unwrap_or_default();
 
-  if hsm_group_target_members.is_empty() {
+  if members.is_empty() {
     tracing::warn!("HSM group '{}' has no members", hsm_group.label);
   }
 
   tracing::debug!(
     "Get HW artifacts for nodes in HSM group '{}' and members {:?}",
     hsm_group.label,
-    hsm_group_target_members
+    members
   );
-
-  let mut hsm_summary: Vec<NodeSummary> = Vec::new();
 
   let start_total = Instant::now();
-
-  let mut tasks = tokio::task::JoinSet::new();
-  let sem = Arc::new(Semaphore::new(HW_INVENTORY_CONCURRENCY_LIMIT));
-
-  let num_hsm_group_members = hsm_group_target_members.len();
-  let width = num_hsm_group_members.checked_ilog10().unwrap_or(0) as usize + 1;
-  let mut i = 1;
-
-  for hsm_member in hsm_group_target_members.iter() {
-    tracing::info!(
-      "\rGetting hw components for node '{hsm_member}' [{:>width$}/{num_hsm_group_members}]",
-      i + 1
-    );
-
-    let backend_cp = infra.backend.clone();
-    let shasta_token_string = token.to_string();
-    let hsm_member_string = hsm_member.to_string();
-
-    let permit = Arc::clone(&sem).acquire_owned().await;
-
-    tasks.spawn(async move {
-      let _permit = permit;
-      let hw_inventory_value = backend_cp
-        .get_inventory_hardware_query(
-          &shasta_token_string,
-          &hsm_member_string,
-          None,
-          None,
-          None,
-          None,
-          None,
-        )
-        .await;
-
-      let node_hw_inventory_value_opt = match hw_inventory_value {
-        Ok(value) => value.pointer("/Nodes/0").cloned(),
-        Err(e) => {
-          tracing::error!(
-            "Failed to get HW inventory for '{}': {}",
-            hsm_member_string,
-            e
-          );
-          None
-        }
-      };
-
-      match node_hw_inventory_value_opt {
-        Some(node_hw_inventory) => NodeSummary::from_csm_value(node_hw_inventory),
-        None => NodeSummary {
-          xname: hsm_member_string,
-          ..Default::default()
-        },
-      }
-    });
-
-    i += 1;
-  }
-
-  while let Some(message) = tasks.join_next().await {
-    match message {
-      Ok(node_hw_inventory) => {
-        hsm_summary.push(node_hw_inventory);
-      }
-      Err(e) => tracing::error!("Failed fetching node hardware information: {}", e),
-    }
-  }
-
-  let duration = start_total.elapsed();
-
+  let node_summaries = fetch_node_summaries(infra, token, &members).await;
   tracing::info!(
-    "Time elapsed in http calls to get hw inventory for HSM '{}' is: {:?}",
+    "Time elapsed getting hw inventory for HSM '{}': {:?}",
     hsm_group_name,
-    duration
+    start_total.elapsed()
   );
 
-  Ok(HardwareClusterResult {
-    hsm_group_name,
-    node_summaries: hsm_summary,
-  })
+  Ok(HardwareClusterResult { hsm_group_name, node_summaries })
+}
+
+// ── Hardware Nodes List ──
+
+/// Typed parameters for fetching hardware inventory for an explicit node list.
+pub struct GetHardwareNodesListParams {
+  /// Comma-separated xnames.
+  pub xnames: String,
+}
+
+/// Result of a hardware nodes-list query.
+pub struct HardwareNodesListResult {
+  pub node_summaries: Vec<NodeSummary>,
+}
+
+/// Fetch hardware inventory for an explicit comma-separated list of xnames.
+pub async fn get_hardware_nodes_list(
+  infra: &InfraContext<'_>,
+  token: &str,
+  params: &GetHardwareNodesListParams,
+) -> Result<HardwareNodesListResult, Error> {
+  let xnames: Vec<String> = params
+    .xnames
+    .split(',')
+    .map(str::trim)
+    .map(String::from)
+    .filter(|s| !s.is_empty())
+    .collect();
+
+  validate_target_hsm_members(infra.backend, token, &xnames).await?;
+
+  let node_summaries = fetch_node_summaries(infra, token, &xnames).await;
+  Ok(HardwareNodesListResult { node_summaries })
 }
 
 /// Aggregate hardware component counts across nodes (summary view).

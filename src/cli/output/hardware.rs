@@ -240,6 +240,26 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
   Ok(())
 }
 
+/// Print hardware for an explicit list of nodes in the requested format.
+///
+/// Accepted values: `"table"` (per-node details table) or `"json"`.
+pub fn print_nodes_list(json: &Value, output: &str) -> Result<(), Error> {
+  if output == "json" {
+    println!(
+      "{}",
+      serde_json::to_string_pretty(json)
+        .context("Failed to serialize hardware nodes list")?
+    );
+    return Ok(());
+  }
+
+  let node_summaries: Vec<NodeSummary> =
+    serde_json::from_value(json["node_summaries"].clone())
+      .context("Failed to deserialize node summaries")?;
+  print_table_details(&node_summaries);
+  Ok(())
+}
+
 /// Print hardware node data in the requested format.
 ///
 /// Pass `Some("json")` for JSON output; `None` renders a detailed
