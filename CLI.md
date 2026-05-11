@@ -139,15 +139,15 @@ manta get hardware cluster gpu-cluster -o details
 
 ### get hardware nodes \<VALUE\>
 
-Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get hardware cluster --output details` but scoped to specific xnames instead of an entire cluster.
+Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get hardware cluster --output details` but scoped to specific nodes instead of an entire cluster.
 
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `VALUE` | string | **yes** | — | Comma-separated xnames (e.g. `x1003c1s7b0n0,x1003c1s7b1n0`) |
+| `VALUE` | string | **yes** | — | Xnames/nids or [hostlist expression](#node-expressions) |
 | `-o/--output` | string | no | `table` | Output format: `table`, `json` |
 
 ```
-manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1
+manta get hardware nodes x3000c0s1b0n[0-3]
 manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1 -o json
 ```
 
@@ -727,7 +727,7 @@ Move compute nodes from one HSM group to another.
 
 | Arg/Flag | Type | Required | Description |
 |----------|------|----------|-------------|
-| `XNAMES` | string | **yes** | Comma-separated xnames to move |
+| `XNAMES` | string | **yes** | Xnames/nids or [hostlist expression](#node-expressions) |
 | `-t/--to` | string | **yes** | Destination HSM group |
 | `-f/--from` | string | no | Source HSM group |
 | `-d/--dry-run` | flag | no | Simulate without changes |
