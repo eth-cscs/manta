@@ -610,7 +610,7 @@ impl MantaClient {
   pub async fn apply_kernel_parameters(
     &self,
     token: &str,
-    xnames: Option<&[String]>,
+    xnames_expression: Option<&str>,
     hsm_group: Option<&str>,
     operation: &str,
     params: &str,
@@ -619,7 +619,7 @@ impl MantaClient {
     dry_run: bool,
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
-      "xnames": xnames,
+      "xnames_expression": xnames_expression,
       "hsm_group": hsm_group,
       "operation": operation,
       "params": params,
@@ -635,7 +635,7 @@ impl MantaClient {
     &self,
     token: &str,
     params_str: &str,
-    xnames: Option<&[String]>,
+    xnames_expression: Option<&str>,
     hsm_group: Option<&str>,
     overwrite: bool,
     project_sbps: bool,
@@ -643,7 +643,7 @@ impl MantaClient {
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
       "params": params_str,
-      "xnames": xnames,
+      "xnames_expression": xnames_expression,
       "hsm_group": hsm_group,
       "overwrite": overwrite,
       "project_sbps": project_sbps,
@@ -890,10 +890,10 @@ impl MantaClient {
     &self,
     token: &str,
     name: &str,
-    xnames: Vec<String>,
+    xnames_expression: &str,
     dry_run: bool,
   ) -> anyhow::Result<()> {
-    let body = serde_json::json!({ "xnames": xnames, "dry_run": dry_run });
+    let body = serde_json::json!({ "xnames_expression": xnames_expression, "dry_run": dry_run });
     self
       .delete_no_content_with_body(token, &format!("/groups/{}/members", name), &body)
       .await
@@ -904,13 +904,13 @@ impl MantaClient {
     &self,
     token: &str,
     params_str: &str,
-    xnames: Option<&[String]>,
+    xnames_expression: Option<&str>,
     hsm_group: Option<&str>,
     dry_run: bool,
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
       "params": params_str,
-      "xnames": xnames,
+      "xnames_expression": xnames_expression,
       "hsm_group": hsm_group,
       "dry_run": dry_run,
     });
@@ -976,13 +976,13 @@ impl MantaClient {
     &self,
     token: &str,
     action: &str,
-    targets: &[String],
+    targets_expression: &str,
     target_type: &str,
     force: bool,
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
       "action": action,
-      "targets": targets,
+      "targets_expression": targets_expression,
       "target_type": target_type,
       "force": force,
     });

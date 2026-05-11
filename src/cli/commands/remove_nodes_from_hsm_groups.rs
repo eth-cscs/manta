@@ -37,21 +37,15 @@ pub async fn exec(
     return Ok(());
   }
 
-  let xnames_to_remove: Vec<String> = hosts_expression
-    .split(',')
-    .map(str::trim)
-    .map(String::from)
-    .collect();
-
   MantaClient::new(server_url, ctx.infra.site_name)?
-    .delete_group_members(token, target_hsm_name, xnames_to_remove.clone(), dryrun)
+    .delete_group_members(token, target_hsm_name, hosts_expression, dryrun)
     .await?;
 
   audit::maybe_send_audit(
     kafka_audit_opt,
     token,
     format!("Remove nodes from group '{}'", target_hsm_name),
-    Some(serde_json::json!(xnames_to_remove)),
+    Some(serde_json::json!(hosts_expression)),
     Some(serde_json::json!(vec![target_hsm_name])),
   )
   .await;

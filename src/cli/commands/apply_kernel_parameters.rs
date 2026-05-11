@@ -18,15 +18,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
-  let xnames_vec: Option<Vec<String>> = if hsm_group_name_arg_opt.is_none() {
-    hosts_expression.map(|e| e.split(',').map(str::trim).map(String::from).collect())
-  } else {
-    None
-  };
+  let xnames_expression = if hsm_group_name_arg_opt.is_none() { hosts_expression } else { None };
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .apply_kernel_parameters(
       token,
-      xnames_vec.as_deref(),
+      xnames_expression,
       hsm_group_name_arg_opt,
       "apply",
       kernel_params,

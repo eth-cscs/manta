@@ -78,17 +78,12 @@ pub async fn exec_nodes(
 
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
-  let xnames: Vec<String> = hosts_expression
-    .split(',')
-    .map(str::trim)
-    .map(String::from)
-    .collect();
-  println!("Nodes: {}", xnames.join(", "));
+  println!("Nodes expression: {}", hosts_expression);
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes) {
     bail!("Operation cancelled by user");
   }
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
-    .power(token, action_str, &xnames, "nodes", force)
+    .power(token, action_str, hosts_expression, "nodes", force)
     .await?;
   println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
   Ok(())
@@ -118,13 +113,7 @@ pub async fn exec_cluster(
     bail!("Operation cancelled by user");
   }
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
-    .power(
-      token,
-      action_str,
-      &[hsm_group_name_arg.to_string()],
-      "cluster",
-      force,
-    )
+    .power(token, action_str, hsm_group_name_arg, "cluster", force)
     .await?;
   println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
   Ok(())

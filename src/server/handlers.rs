@@ -1307,8 +1307,8 @@ pub enum KernelParamOp {
 /// Request body for `POST /kernel-parameters/apply`.
 #[derive(Deserialize)]
 pub struct ApplyKernelParametersRequest {
-  /// Target node xnames; mutually exclusive with `hsm_group`.
-  pub xnames: Option<Vec<String>>,
+  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
+  pub xnames_expression: Option<String>,
   /// Target HSM group; all members are resolved to xnames.
   pub hsm_group: Option<String>,
   /// Which mutation to perform: add, apply (replace), or delete.
@@ -1343,7 +1343,7 @@ pub async fn apply_kernel_parameters(
   let xnames = resolve_xnames_from_request(
     infra.backend,
     &token,
-    body.xnames.as_deref(),
+    body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
   .await?;
@@ -1566,8 +1566,8 @@ pub async fn create_ephemeral_env(
 /// Request body for `DELETE /groups/{name}/members`.
 #[derive(Deserialize)]
 pub struct DeleteGroupMembersRequest {
-  /// xnames to remove from the HSM group.
-  pub xnames: Vec<String>,
+  /// Hosts expression (xnames, nids, or hostlist notation) identifying nodes to remove.
+  pub xnames_expression: String,
   /// When true, validates the request without modifying group membership.
   #[serde(default)]
   pub dry_run: bool,
@@ -1583,15 +1583,24 @@ pub async fn delete_group_members(
   Json(body): Json<DeleteGroupMembersRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
-    "delete_group_members group={} xnames={:?} dry_run={}",
+    "delete_group_members group={} xnames_expression={} dry_run={}",
     name,
-    body.xnames,
+    body.xnames_expression,
     body.dry_run
   );
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
+  let xnames = crate::common::node_ops::resolve_hosts_expression(
+    infra.backend,
+    &token,
+    &body.xnames_expression,
+    false,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
   if !body.dry_run {
-    for xname in &body.xnames {
+    for xname in &xnames {
       infra
         .backend
         .delete_member_from_group(&token, &name, xname)
@@ -1634,9 +1643,10 @@ pub enum PowerTargetType {
 pub struct PowerRequest {
   /// Power operation to perform.
   pub action: PowerAction,
-  /// xnames or cluster name, depending on `target_type`.
-  pub targets: Vec<String>,
-  /// Indicates whether `targets` contains node xnames or a cluster name.
+  /// For nodes: hosts expression (xnames, nids, or hostlist notation).
+  /// For cluster: the HSM group name.
+  pub targets_expression: String,
+  /// Indicates whether `targets_expression` is a node expression or a cluster name.
   pub target_type: PowerTargetType,
   /// Pass `--force` to the underlying power operation (forceful shutdown/reset).
   #[serde(default)]
@@ -1659,22 +1669,19 @@ pub async fn post_power(
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames: Vec<String> = match body.target_type {
-    PowerTargetType::Cluster => {
-      let group_name = body.targets.first().ok_or_else(|| {
-        (
-          StatusCode::BAD_REQUEST,
-          Json(ErrorResponse {
-            error: "targets must contain at least one cluster name".into(),
-          }),
-        )
-      })?;
-      infra
-        .backend
-        .get_member_vec_from_group_name_vec(&token, &[group_name.clone()])
-        .await
-        .map_err(to_handler_error)?
-    }
-    PowerTargetType::Nodes => body.targets.clone(),
+    PowerTargetType::Cluster => infra
+      .backend
+      .get_member_vec_from_group_name_vec(&token, &[body.targets_expression.clone()])
+      .await
+      .map_err(to_handler_error)?,
+    PowerTargetType::Nodes => crate::common::node_ops::resolve_hosts_expression(
+      infra.backend,
+      &token,
+      &body.targets_expression,
+      false,
+    )
+    .await
+    .map_err(to_handler_error)?,
   };
 
   if xnames.is_empty() {
@@ -1931,8 +1938,8 @@ pub async fn post_sat_file(
 pub struct AddKernelParametersRequest {
   /// Space-separated kernel parameter key=value pairs to add.
   pub params: String,
-  /// Explicit list of target xnames; mutually exclusive with `hsm_group`.
-  pub xnames: Option<Vec<String>>,
+  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
+  pub xnames_expression: Option<String>,
   /// Target HSM group; all members are resolved to xnames.
   pub hsm_group: Option<String>,
   /// When true, overwrite parameters that already exist.
@@ -1958,7 +1965,7 @@ pub async fn add_kernel_parameters(
   let xnames = resolve_xnames_from_request(
     infra.backend,
     &token,
-    body.xnames.as_deref(),
+    body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
   .await?;
@@ -2002,8 +2009,8 @@ pub async fn add_kernel_parameters(
 pub struct DeleteKernelParametersRequest {
   /// Space-separated kernel parameter names (or key=value pairs) to remove.
   pub params: String,
-  /// Explicit list of target xnames; mutually exclusive with `hsm_group`.
-  pub xnames: Option<Vec<String>>,
+  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
+  pub xnames_expression: Option<String>,
   /// Target HSM group; all members are resolved to xnames.
   pub hsm_group: Option<String>,
   /// When true, returns the computed changeset without applying it.
@@ -2023,7 +2030,7 @@ pub async fn delete_kernel_parameters(
   let xnames = resolve_xnames_from_request(
     infra.backend,
     &token,
-    body.xnames.as_deref(),
+    body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
   .await?;
@@ -2501,12 +2508,14 @@ async fn run_console_bridge(
 async fn resolve_xnames_from_request(
   backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
   token: &str,
-  xnames: Option<&[String]>,
+  xnames_expression: Option<&str>,
   hsm_group: Option<&str>,
 ) -> Result<Vec<String>, (StatusCode, Json<ErrorResponse>)> {
-  if let Some(xnames) = xnames {
-    if !xnames.is_empty() {
-      return Ok(xnames.to_vec());
+  if let Some(expr) = xnames_expression {
+    if !expr.is_empty() {
+      return crate::common::node_ops::resolve_hosts_expression(backend, token, expr, false)
+        .await
+        .map_err(display_error);
     }
   }
   if let Some(group) = hsm_group {
