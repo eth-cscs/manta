@@ -13,6 +13,7 @@ use tokio::sync::Semaphore;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
+use crate::common::node_ops;
 
 /// Maximum number of concurrent hardware inventory requests.
 const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
@@ -242,19 +243,30 @@ pub struct HardwareNodesListResult {
   pub node_summaries: Vec<NodeSummary>,
 }
 
-/// Fetch hardware inventory for an explicit comma-separated list of xnames.
+/// Fetch hardware inventory for an explicit node expression.
+///
+/// The expression is resolved via `resolve_hosts_expression`, which expands
+/// hostlist notation, translates NIDs to xnames, and validates that every
+/// resolved node actually exists. Authorization is then checked with
+/// `validate_target_hsm_members`.
 pub async fn get_hardware_nodes_list(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetHardwareNodesListParams,
 ) -> Result<HardwareNodesListResult, Error> {
-  let xnames: Vec<String> = params
-    .xnames
-    .split(',')
-    .map(str::trim)
-    .map(String::from)
-    .filter(|s| !s.is_empty())
-    .collect();
+  let xnames = node_ops::resolve_hosts_expression(
+    infra.backend,
+    token,
+    &params.xnames,
+    false,
+  )
+  .await?;
+
+  if xnames.is_empty() {
+    return Err(Error::BadRequest(
+      "The list of nodes is empty. Nothing to do.".to_string(),
+    ));
+  }
 
   validate_target_hsm_members(infra.backend, token, &xnames).await?;
 
