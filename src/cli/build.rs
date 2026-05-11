@@ -388,6 +388,7 @@ fn subcommand_get_redfish_endpoints() -> Command {
     .arg(arg!(-u --uuid <VALUE> "Retrieve the RedfishEndpoint with the given UUID."))
     .arg(arg!(-m --macaddr <VALUE> "Retrieve the RedfishEndpoint with the given MAC address."))
     .arg(arg!(-I --ipaddress <VALUE> "Retrieve the RedfishEndpoint with the given IP address. A blank string will get Redfish endpoints without IP addresses."))
+    .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["table", "json"]).default_value("table"))
 }
 
 fn subcommand_get() -> Command {

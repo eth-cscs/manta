@@ -3,6 +3,7 @@
 use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output;
 use crate::common::app_context::AppContext;
 use crate::service::redfish_endpoints::GetRedfishEndpointsParams;
 
@@ -24,6 +25,10 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_redfish_endpoints_params(cli_args);
+  let output = cli_args
+    .get_one::<String>("output")
+    .map(String::as_str)
+    .unwrap_or("table");
 
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
@@ -31,8 +36,7 @@ pub async fn exec(
     .get_redfish_endpoints(token, &params)
     .await?;
 
-  println!("{}", serde_json::to_string_pretty(&endpoints)?);
-
+  output::redfish_endpoints::print(&endpoints, output)?;
   Ok(())
 }
 
@@ -48,6 +52,7 @@ mod tests {
       .arg(arg!(--uuid <UUID> "uuid"))
       .arg(arg!(--macaddr <MACADDR> "mac address"))
       .arg(arg!(--ipaddress <IPADDRESS> "ip address"))
+      .arg(arg!(-o --output <FORMAT> "output format").value_parser(["table", "json"]).default_value("table"))
   }
 
   #[test]

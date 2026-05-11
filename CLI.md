@@ -285,13 +285,14 @@ manta get kernel-parameters --hsm-group compute --filter console,loglevel
 
 List registered Redfish endpoints (BMCs).
 
-| Flag | Type | Description |
-|------|------|-------------|
-| `-i/--id` | string | Filter by xname (repeatable) |
-| `-f/--fqdn` | string | Filter by FQDN |
-| `-u/--uuid` | string | Filter by UUID |
-| `-m/--macaddr` | string | Filter by MAC address |
-| `-I/--ipaddress` | string | Filter by IP address |
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `-i/--id` | string | — | Filter by xname (repeatable) |
+| `-f/--fqdn` | string | — | Filter by FQDN |
+| `-u/--uuid` | string | — | Filter by UUID |
+| `-m/--macaddr` | string | — | Filter by MAC address |
+| `-I/--ipaddress` | string | — | Filter by IP address |
+| `-o/--output` | string | `table` | Output format: `table`, `json` |
 
 ---
 
