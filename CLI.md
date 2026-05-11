@@ -147,7 +147,7 @@ Per-node hardware component breakdown for an explicit list of nodes. Equivalent 
 | `-o/--output` | string | no | `table` | Output format: `table`, `json` |
 
 ```
-manta get hardware nodes x3000c0s1b0n[0-3]
+manta get hardware nodes 'x3000c0s1b0n[0-3]'
 manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1 -o json
 ```
 
@@ -254,7 +254,7 @@ Show details for specific nodes.
 | `-o/--output` | string | `table` | Output format: `table`, `table-wide`, `json`, `summary` |
 
 ```
-manta get nodes x3000c0s1b0n[0-3]
+manta get nodes 'x3000c0s1b0n[0-3]'
 manta get nodes nid001313,nid001314 -o json
 ```
 
@@ -331,7 +331,7 @@ Create a new HSM group.
 | `-n/--nodes` | string | no | Initial members (xnames/nids/hostlist) |
 
 ```
-manta add group --label my-cluster --description "GPU nodes" --nodes x3000c0s1b0n[0-7]
+manta add group --label my-cluster --description "GPU nodes" --nodes 'x3000c0s1b0n[0-7]'
 ```
 
 ### add node
@@ -733,7 +733,7 @@ Move compute nodes from one HSM group to another.
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
 ```
-manta migrate nodes x3000c0s1b0n[0-3] --to gpu-cluster --from nodes_free
+manta migrate nodes 'x3000c0s1b0n[0-3]' --to gpu-cluster --from nodes_free
 ```
 
 ---
@@ -788,7 +788,7 @@ Power-cycle nodes.
 ```
 manta power off cluster compute --graceful --assume-yes
 manta power on cluster compute
-manta power reset nodes x3000c0s1b0n[0-3] --graceful
+manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful
 ```
 
 ---
