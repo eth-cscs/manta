@@ -1,8 +1,6 @@
 # cargo-features = ["codegen-backend"]
 # default-features = false
 
-# build = "build.rs"
-
 [package]
 edition = "2024"
 authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
@@ -15,16 +13,17 @@ homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
 repository = "https://github.com/eth-cscs/manta"
 keywords = ["cli", "productivity"]
 publish = true
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-# [build-dependencies]
-# clap = "*"
-# clap_complete = "*"
-# manta-backend-dispatcher = { path = "../backend-dispatcher" } # Only for development purposes
-# backend-dispatcher = "*"
-# strum = "*"
-# strum_macros = "*"
+[build-dependencies]
+clap                      = { version = "4.5.60", features = ["wrap_help"] }
+clap_complete             = "4.5.66"
+clap_mangen               = "0.3.0"
+manta-backend-dispatcher  = { path = "../manta-backend-dispatcher" }
+strum                     = { version = "0.27.1", default-features = false }
+strum_macros              = "0.27.1"
 
 [dependencies]
 # --- START MANTA DEPENDENCIES ---

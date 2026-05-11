@@ -1,4 +1,6 @@
 /target
+/man
+/autocomplete_shell_scripts
 /.vscode
 /sat-file
 /cfr_semantic_files
