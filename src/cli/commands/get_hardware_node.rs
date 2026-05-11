@@ -27,10 +27,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_hardware_node_params(cli_args)?;
-  let output = cli_args
-    .get_one::<String>("output")
-    .map(String::as_str)
-    .unwrap_or("table");
+  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
@@ -38,7 +35,7 @@ pub async fn exec(
     .get_hardware_nodes(token, &params)
     .await?;
 
-  output::hardware::print_node(&json, output)?;
+  output::hardware::print_node(&json, output_opt)?;
   Ok(())
 }
 
@@ -51,7 +48,7 @@ mod tests {
     clap::Command::new("node")
       .arg(arg!(<XNAMES> "xnames"))
       .arg(arg!(-t --type <TYPE> "artifact type"))
-      .arg(arg!(-o --output <FORMAT> "output format"))
+      .arg(arg!(-o --output <FORMAT> "output format").value_parser(["json"]))
   }
 
   #[test]

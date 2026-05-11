@@ -250,8 +250,8 @@ fn subcommand_get_hardware() -> Command {
     .arg(arg!(<CLUSTER_NAME> "Name of the cluster").required(true))
     .arg(
       arg!(-o --output <FORMAT> "Output format")
-        .value_parser(["table", "json"])
-        .default_value("table"),
+        .value_parser(["json", "summary", "details", "pattern"])
+        .default_value("summary"),
     );
 
   let command_get_hw_configuration_node = Command::new("node")
@@ -259,7 +259,7 @@ fn subcommand_get_hardware() -> Command {
     .about("Get hw components for some nodes")
     .arg(arg!(<XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'").required(true))
     .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
-    .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["table", "json"]).default_value("table"));
+    .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
 
   Command::new("hardware")
     .arg_required_else_help(true)

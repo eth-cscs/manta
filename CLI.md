@@ -125,10 +125,16 @@ List hardware components in a cluster.
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
 | `CLUSTER_NAME` | string | **yes** | — | Cluster (HSM group) name |
-| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
+| `-o/--output` | string | no | `summary` | Output format: `summary`, `details`, `pattern`, `json` |
+
+Output modes:
+- `summary` — aggregated table: hw component → total count across all nodes
+- `details` — per-node table with one column per unique hw component type
+- `pattern` — single line `<cluster>:<component>:<qty>:...`
+- `json` — raw JSON
 
 ```
-manta get hardware cluster gpu-cluster -o json
+manta get hardware cluster gpu-cluster -o details
 ```
 
 ### get hardware node \<XNAMES\>
@@ -139,7 +145,7 @@ List hardware components for specific nodes.
 |----------|------|----------|---------|-------------|
 | `XNAMES` | string | **yes** | — | Comma-separated xnames |
 | `-t/--type` | string | no | — | Filter to a specific hardware artifact type |
-| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
+| `-o/--output` | string | no | — | Output format: `json` (omit for table) |
 
 ```
 manta get hardware node x3000c0s1b0n0,x3000c0s1b0n1

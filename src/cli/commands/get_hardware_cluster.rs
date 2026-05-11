@@ -29,7 +29,7 @@ pub async fn exec(
   let output = cli_args
     .get_one::<String>("output")
     .map(String::as_str)
-    .unwrap_or("table");
+    .unwrap_or("summary");
 
   let server_url = ctx.cli.manta_server_url
     .context("manta server URL must be configured")?;
@@ -51,7 +51,8 @@ mod tests {
       .arg(arg!([CLUSTER_NAME] "cluster name"))
       .arg(
         arg!(-o --output <FORMAT> "output format")
-          .value_parser(["json", "pattern", "details", "summary"]),
+          .value_parser(["json", "summary", "details", "pattern"])
+          .default_value("summary"),
       )
   }
 

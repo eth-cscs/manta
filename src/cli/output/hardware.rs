@@ -1,90 +1,262 @@
 //! Table and JSON renderers for hardware inventory output.
 
-use anyhow::{Context, Error};
-use comfy_table::{ContentArrangement, Table};
+use std::collections::{HashMap, HashSet};
+
+use anyhow::{bail, Context, Error};
+use comfy_table::{Cell, Color, ContentArrangement, Table};
+use manta_backend_dispatcher::types::NodeSummary;
 use serde_json::Value;
 
-fn node_summary_row(ns: &Value) -> Vec<String> {
-  let xname = ns["xname"].as_str().unwrap_or("").to_string();
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
 
-  let count = |key: &str| -> String {
-    ns[key]
-      .as_array()
-      .map(|a| a.len().to_string())
-      .unwrap_or_default()
-  };
-
-  let info = |key: &str| -> String {
-    ns[key]
-      .as_array()
-      .map(|a| {
-        a.iter()
-          .filter_map(|e| e["info"].as_str())
-          .collect::<Vec<_>>()
-          .join("\n")
-      })
-      .unwrap_or_default()
-  };
-
-  vec![
-    xname,
-    count("processors"),
-    info("processors"),
-    count("memory"),
-    count("node_accels"),
-    count("node_hsn_nics"),
-  ]
+fn count_hw_components(
+  info_iter: impl Iterator<Item = Option<String>>,
+) -> (HashMap<String, usize>, HashSet<String>) {
+  let mut counts: HashMap<String, usize> = HashMap::new();
+  for info in info_iter.flatten() {
+    counts.entry(info).and_modify(|q| *q += 1).or_insert(1);
+  }
+  let keys: HashSet<String> = counts.keys().cloned().collect();
+  (counts, keys)
 }
 
-fn make_table() -> Table {
+fn build_details_table(
+  headers: &[String],
+  rows: &[(String, HashMap<String, usize>)],
+) -> Table {
+  let mut all_cols: Vec<String> = [
+    rows
+      .iter()
+      .flat_map(|(_, m)| m.keys().cloned())
+      .collect::<Vec<_>>(),
+    headers.to_vec(),
+  ]
+  .concat();
+  all_cols.sort();
+  all_cols.dedup();
+
   let mut table = Table::new();
-  table.set_content_arrangement(ContentArrangement::Dynamic);
-  table.set_header(vec!["XNAME", "CPUs", "CPU Info", "Memory Modules", "GPUs", "HSN NICs"]);
+  table.set_header([vec!["Node".to_string()], all_cols.clone()].concat());
+
+  for (xname, counts) in rows {
+    let mut row: Vec<Cell> = vec![
+      Cell::new(xname).set_alignment(comfy_table::CellAlignment::Center),
+    ];
+    for col in &all_cols {
+      if col.to_uppercase().contains("ERROR")
+        && counts.get(col).is_some_and(|n| *n > 0)
+      {
+        let n = counts.get(col).copied().unwrap_or(0);
+        row.push(
+          Cell::new(format!("⚠️  ({})", n))
+            .fg(Color::Yellow)
+            .set_alignment(comfy_table::CellAlignment::Center),
+        );
+      } else if headers.contains(col) && counts.contains_key(col) {
+        let n = counts.get(col).copied().unwrap_or(0);
+        row.push(
+          Cell::new(format!("✅ ({})", n))
+            .fg(Color::Green)
+            .set_alignment(comfy_table::CellAlignment::Center),
+        );
+      } else {
+        row.push(
+          Cell::new("❌").set_alignment(comfy_table::CellAlignment::Center),
+        );
+      }
+    }
+    table.add_row(row);
+  }
   table
 }
 
-fn print_cluster_table(json: &Value) {
-  let mut table = make_table();
-  if let Some(summaries) = json["node_summaries"].as_array() {
-    for ns in summaries {
-      table.add_row(node_summary_row(ns));
+// ---------------------------------------------------------------------------
+// Cluster renderers
+// ---------------------------------------------------------------------------
+
+fn print_to_terminal_cluster_hw_pattern(
+  hsm_group_name: &str,
+  pattern: HashMap<String, usize>,
+) {
+  println!(
+    "{}:{}",
+    hsm_group_name,
+    pattern
+      .iter()
+      .map(|(hw, qty)| format!("{}:{}", hw, qty))
+      .collect::<Vec<_>>()
+      .join(":")
+  );
+}
+
+fn print_table_summary(summary: &HashMap<String, usize>) {
+  let mut table = Table::new();
+  table.set_header(["HW Component", "Quantity"]);
+  for (component, qty) in summary {
+    table.add_row(vec![component.as_str(), qty.to_string().as_str()]);
+  }
+  println!("{table}");
+}
+
+fn print_table_details(node_summaries: &[NodeSummary]) {
+  let mut rows: Vec<(String, HashMap<String, usize>)> = vec![];
+  let mut proc_set: HashSet<String> = HashSet::new();
+  let mut accel_set: HashSet<String> = HashSet::new();
+  let mut mem_set: HashSet<String> = HashSet::new();
+  let mut hsn_set: HashSet<String> = HashSet::new();
+
+  for ns in node_summaries {
+    let mut counts: HashMap<String, usize> = HashMap::new();
+
+    let (c, k) =
+      count_hw_components(ns.processors.iter().map(|p| p.info.clone()));
+    proc_set.extend(k);
+    counts.extend(c);
+
+    let (c, k) =
+      count_hw_components(ns.node_accels.iter().map(|a| a.info.clone()));
+    accel_set.extend(k);
+    counts.extend(c);
+
+    let (c, k) = count_hw_components(ns.memory.iter().map(|m| {
+      Some(m.info.clone().unwrap_or_else(|| "ERROR".to_string()))
+    }));
+    mem_set.extend(k);
+    counts.extend(c);
+
+    let (c, k) =
+      count_hw_components(ns.node_hsn_nics.iter().map(|h| h.info.clone()));
+    hsn_set.extend(k);
+    counts.extend(c);
+
+    rows.push((ns.xname.clone(), counts));
+  }
+
+  rows.sort_by(|a, b| a.0.cmp(&b.0));
+
+  let headers = [
+    Vec::from_iter(proc_set),
+    Vec::from_iter(accel_set),
+    Vec::from_iter(mem_set),
+    Vec::from_iter(hsn_set),
+  ]
+  .concat();
+
+  println!("{}", build_details_table(&headers, &rows));
+}
+
+// ---------------------------------------------------------------------------
+// Node renderer
+// ---------------------------------------------------------------------------
+
+fn print_node_details(node_summaries: &[NodeSummary]) {
+  let mut table = Table::new();
+  table.set_content_arrangement(ContentArrangement::Dynamic);
+  table.set_header([
+    "Node XName",
+    "Component XName",
+    "Component Type",
+    "Component Info",
+  ]);
+
+  for ns in node_summaries {
+    for p in &ns.processors {
+      table.add_row(vec![
+        ns.xname.clone(),
+        p.xname.clone(),
+        p.r#type.to_string(),
+        p.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
+      ]);
+    }
+    for m in &ns.memory {
+      table.add_row(vec![
+        ns.xname.clone(),
+        m.xname.clone(),
+        m.r#type.to_string(),
+        m.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
+      ]);
+    }
+    for a in &ns.node_accels {
+      table.add_row(vec![
+        ns.xname.clone(),
+        a.xname.clone(),
+        a.r#type.to_string(),
+        a.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
+      ]);
+    }
+    for h in &ns.node_hsn_nics {
+      table.add_row(vec![
+        ns.xname.clone(),
+        h.xname.clone(),
+        h.r#type.to_string(),
+        h.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
+      ]);
     }
   }
+
   println!("{table}");
 }
 
-fn print_node_table(json: &Value) {
-  let mut table = make_table();
-  if let Some(ns) = json.get("node_summary") {
-    table.add_row(node_summary_row(ns));
-  }
-  println!("{table}");
-}
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
-/// Print hardware cluster data in the requested format (`"json"` or `"table"`).
-pub fn print_cluster(json: &Value, format: &str) -> Result<(), Error> {
-  if format == "json" {
+/// Print hardware cluster data in the requested format.
+///
+/// Accepted values: `"json"`, `"summary"`, `"details"`, `"pattern"`.
+pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
+  if output == "json" {
     println!(
       "{}",
       serde_json::to_string_pretty(json)
         .context("Failed to serialize hardware cluster")?
     );
-  } else {
-    print_cluster_table(json);
+    return Ok(());
+  }
+
+  let hsm_group_name =
+    json["hsm_group_name"].as_str().unwrap_or("").to_string();
+  let node_summaries: Vec<NodeSummary> =
+    serde_json::from_value(json["node_summaries"].clone())
+      .context("Failed to deserialize node summaries")?;
+
+  match output {
+    "details" => print_table_details(&node_summaries),
+    "summary" => {
+      let summary = crate::service::hardware::calculate_hsm_hw_component_summary(
+        &node_summaries,
+      );
+      print_table_summary(&summary);
+    }
+    "pattern" => {
+      let pattern =
+        crate::service::hardware::get_cluster_hw_pattern(node_summaries);
+      print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);
+    }
+    other => bail!("unsupported output format '{}'", other),
   }
   Ok(())
 }
 
-/// Print hardware node data in the requested format (`"json"` or `"table"`).
-pub fn print_node(json: &Value, format: &str) -> Result<(), Error> {
-  if format == "json" {
+/// Print hardware node data in the requested format.
+///
+/// Pass `Some("json")` for JSON output; `None` renders a detailed
+/// per-component table.
+pub fn print_node(json: &Value, output: Option<&str>) -> Result<(), Error> {
+  if output.is_some_and(|o| o == "json") {
     println!(
       "{}",
       serde_json::to_string_pretty(json)
         .context("Failed to serialize hardware node")?
     );
-  } else {
-    print_node_table(json);
+    return Ok(());
   }
+
+  let node_summary: NodeSummary =
+    serde_json::from_value(json["node_summary"].clone())
+      .context("Failed to deserialize node summary")?;
+  print_node_details(&[node_summary]);
   Ok(())
 }
