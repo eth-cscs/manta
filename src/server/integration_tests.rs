@@ -439,6 +439,38 @@ async fn get_sessions_happy_path() {
   assert_eq!(arr[0]["name"], "my-session");
 }
 
+// GET /api/v1/sessions?xnames=x3000c0s1b0n0
+//
+// Verifies that the server resolves the xnames query parameter via
+// resolve_hosts_expression (GET /smd/hsm/v2/groups + /smd/hsm/v2/State/Components)
+// before passing resolved xnames to get_and_filter_sessions.
+//
+// Call chain:
+//   resolve_hosts_expression("x3000c0s1b0n0")
+//     → get_node_metadata_available
+//         → get_group_available    (GET /smd/hsm/v2/groups)
+//         → get_all_nodes          (GET /smd/hsm/v2/State/Components)
+//   service::session::get_sessions(xnames=["x3000c0s1b0n0"])
+//     → backend.get_and_filter_sessions
+//         → get_group_available    (GET /smd/hsm/v2/groups — same stub, re-matched)
+//         → cfs::session::get_and_sort (GET /cfs/v2/sessions)
+#[tokio::test]
+async fn get_sessions_xnames_expression_resolves_correctly() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_hsm_components(&fx.mock_server).await;
+  mock_cfs_v2_sessions(&fx.mock_server).await;
+
+  let resp = fx
+    .send(fx.auth_get("/api/v1/sessions?xnames=x3000c0s1b0n0"))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let arr = body.as_array().expect("expected JSON array");
+  assert_eq!(arr[0]["name"], "my-session");
+}
+
 // GET /api/v1/templates
 //
 // Call chain:

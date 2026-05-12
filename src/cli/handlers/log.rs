@@ -29,7 +29,7 @@ pub async fn handle_log(
   let client = MantaClient::new(server_url, ctx.infra.site_name)?;
 
   // Try user input as a session name first, then as an xname.
-  let sessions = client
+  let sessions_rslt = client
     .get_sessions(
       &token,
       &GetSessionParams {
@@ -43,10 +43,9 @@ pub async fn handle_log(
         limit: Some(1),
       },
     )
-    .await
-    .context("Failed to query CFS sessions")?;
+    .await;
 
-  let session_name = if let Some(s) = sessions.into_iter().next() {
+  let session_name = if let Ok([s, ..]) = sessions_rslt.as_deref() {
     s.name.clone()
   } else {
     let by_xname = client

@@ -41,7 +41,6 @@ pub mod get_cluster;
 pub mod get_configuration;
 pub mod get_group;
 pub mod get_hardware_cluster;
-pub mod get_hardware_node;
 pub mod get_hardware_nodes;
 pub mod get_images;
 pub mod get_kernel_parameters;

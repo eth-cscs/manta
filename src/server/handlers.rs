@@ -228,12 +228,21 @@ pub async fn get_sessions(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
+  let xnames = match q.xnames {
+    Some(expr) => crate::common::node_ops::resolve_hosts_expression(
+      infra.backend,
+      &token,
+      &expr,
+      false,
+    )
+    .await
+    .map_err(to_handler_error)?,
+    None => vec![],
+  };
+
   let params = service::session::GetSessionParams {
     hsm_group: q.hsm_group,
-    xnames: q
-      .xnames
-      .map(|x| x.split(',').map(String::from).collect())
-      .unwrap_or_default(),
+    xnames,
     min_age: q.min_age,
     max_age: q.max_age,
     session_type: q.session_type,
@@ -626,42 +635,6 @@ pub async fn get_hardware_clusters(
   Ok(Json(serde_json::json!({
     "hsm_group_name": result.hsm_group_name,
     "node_summaries": result.node_summaries,
-  })))
-}
-
-// ---------------------------------------------------------------------------
-// GET /api/v1/hardware-nodes
-// ---------------------------------------------------------------------------
-
-/// Query parameters for `GET /hardware-nodes`.
-#[derive(Deserialize)]
-pub struct HardwareNodeQuery {
-  pub xnames: String,
-  /// Hardware component type to filter on (e.g. `"Memory"`, `"Processor"`).
-  pub type_artifact: Option<String>,
-}
-
-/// GET /hardware-nodes — list hardware components for a set of xnames.
-#[tracing::instrument(skip_all)]
-pub async fn get_hardware_nodes(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
-  Query(q): Query<HardwareNodeQuery>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-
-  let params = service::hardware::GetHardwareNodeParams {
-    xnames: q.xnames,
-    type_artifact: q.type_artifact,
-  };
-
-  let result = service::hardware::get_hardware_node(&infra, &token, &params)
-    .await
-    .map_err(to_handler_error)?;
-
-  Ok(Json(serde_json::json!({
-    "node_summary": result.node_summary,
   })))
 }
 

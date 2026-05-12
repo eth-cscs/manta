@@ -25,7 +25,7 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
     hsm_group: cli_args.get_one::<String>("hsm-group").cloned(),
     xnames: cli_args
       .get_one::<String>("xnames")
-      .map(|s| s.split(',').map(|x| x.trim().to_string()).collect())
+      .map(|s| vec![s.clone()])
       .unwrap_or_default(),
     min_age: cli_args.get_one::<String>("min-age").cloned(),
     max_age: cli_args.get_one::<String>("max-age").cloned(),
@@ -146,11 +146,11 @@ mod tests {
   }
 
   #[test]
-  fn parse_xnames_splits_and_trims() {
+  fn parse_xnames_passes_expression_verbatim() {
     let matches = sessions_cmd()
-      .get_matches_from(["sessions", "--xnames", "x1, x2 ,x3"]);
+      .get_matches_from(["sessions", "--xnames", "x3000c0s1b0n[0-3]"]);
     let params = parse_session_params(&matches);
-    assert_eq!(params.xnames, vec!["x1", "x2", "x3"]);
+    assert_eq!(params.xnames, vec!["x3000c0s1b0n[0-3]"]);
   }
 
   #[test]

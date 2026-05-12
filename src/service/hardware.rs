@@ -8,7 +8,6 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::types::NodeSummary;
-use serde_json::Value;
 use tokio::sync::Semaphore;
 
 use crate::common::app_context::InfraContext;
@@ -20,87 +19,6 @@ const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
 
 /// Divisor to convert MiB to GiB.
 const MIB_PER_GIB: usize = 1024;
-
-// ── Hardware Node ──
-
-/// Typed parameters for fetching hardware node inventory.
-pub struct GetHardwareNodeParams {
-  pub xnames: String,
-  /// Filter results to a specific hardware artifact type (e.g. `Processor`, `Memory`).
-  pub type_artifact: Option<String>,
-}
-
-/// Result of a hardware node query.
-pub struct HardwareNodeResult {
-  pub node_summary: NodeSummary,
-}
-
-/// Fetch hardware inventory for a single node.
-pub async fn get_hardware_node(
-  infra: &InfraContext<'_>,
-  token: &str,
-  params: &GetHardwareNodeParams,
-) -> Result<HardwareNodeResult, Error> {
-  let xname_vec: Vec<String> =
-    params.xnames.split(',').map(str::to_string).collect();
-
-  validate_target_hsm_members(infra.backend, token, &xname_vec)
-    .await?;
-
-  let mut node_hw_inventory = &infra.backend
-    .get_inventory_hardware_query(
-      token,
-      &params.xnames,
-      None,
-      None,
-      None,
-      None,
-      None,
-    )
-    .await?;
-
-  node_hw_inventory =
-    node_hw_inventory.pointer("/Nodes/0").ok_or_else(|| {
-      Error::NotFound(format!(
-        "JSON section '/Nodes' missing in hardware inventory for node '{}'",
-        params.xnames
-      ))
-    })?;
-
-  if let Some(ref type_artifact) = params.type_artifact {
-    let nodes_array = node_hw_inventory
-      .as_array()
-      .ok_or_else(|| Error::MissingField("Expected Nodes to be a JSON array".to_string()))?;
-    let matching_node = nodes_array
-      .iter()
-      .find(|&node| {
-        node
-          .get("ID")
-          .and_then(Value::as_str)
-          .is_some_and(|id| id.eq(&params.xnames))
-      })
-      .ok_or_else(|| {
-        Error::NotFound(format!(
-          "Node '{}' not found in hardware inventory",
-          params.xnames
-        ))
-      })?;
-    let artifact_value = matching_node
-      .get(type_artifact.as_str())
-      .ok_or_else(|| {
-        Error::NotFound(format!(
-          "Artifact type '{}' not found in node '{}'",
-          type_artifact, params.xnames
-        ))
-      })?;
-
-    let node_summary = NodeSummary::from_csm_value(artifact_value.clone());
-    return Ok(HardwareNodeResult { node_summary });
-  }
-
-  let node_summary = NodeSummary::from_csm_value(node_hw_inventory.clone());
-  Ok(HardwareNodeResult { node_summary })
-}
 
 // ── Hardware Cluster ──
 
@@ -233,6 +151,7 @@ pub async fn get_hardware_cluster(
 // ── Hardware Nodes List ──
 
 /// Typed parameters for fetching hardware inventory for an explicit node list.
+#[derive(Debug)]
 pub struct GetHardwareNodesListParams {
   /// Comma-separated xnames.
   pub xnames: String,

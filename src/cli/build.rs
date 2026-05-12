@@ -1,8 +1,6 @@
 //! Clap command tree definition for the manta CLI.
 
 use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
-use manta_backend_dispatcher::types::ArtifactType;
-use strum::IntoEnumIterator;
 
 use std::path::PathBuf;
 
@@ -254,13 +252,6 @@ fn subcommand_get_hardware() -> Command {
         .default_value("summary"),
     );
 
-  let command_get_hw_configuration_node = Command::new("node")
-    .arg_required_else_help(true)
-    .about("Get hw components for some nodes")
-    .arg(arg!(<XNAMES> "Comma separated list of xnames.\neg 'x1003c1s7b0n0,1003c1s7b0n1,x1003c1s7b1n0'").required(true))
-    .arg(arg!(-t --type <TYPE> "Filters output to specific type").value_parser(ArtifactType::iter().map(|e| e.into()).collect::<Vec<&str>>()))
-    .arg(arg!(-o --output <FORMAT> "Output format. If missing it will print output data in human redeable (table) format").value_parser(["json"]));
-
   let command_get_hw_nodes = Command::new("nodes")
     .arg_required_else_help(true)
     .about("Per-node hw component breakdown for an explicit list of nodes")
@@ -275,7 +266,6 @@ fn subcommand_get_hardware() -> Command {
     .arg_required_else_help(true)
     .about("Get hardware components for a cluster or a node")
     .subcommand(command_get_hw_configuration_cluster)
-    .subcommand(command_get_hw_configuration_node)
     .subcommand(command_get_hw_nodes)
 }
 

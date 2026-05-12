@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Context, Error};
-use comfy_table::{Cell, Color, ContentArrangement, Table};
+use comfy_table::{Cell, Color, Table};
 use manta_backend_dispatcher::types::NodeSummary;
 use serde_json::Value;
 
@@ -148,58 +148,6 @@ fn print_table_details(node_summaries: &[NodeSummary]) {
 }
 
 // ---------------------------------------------------------------------------
-// Node renderer
-// ---------------------------------------------------------------------------
-
-fn print_node_details(node_summaries: &[NodeSummary]) {
-  let mut table = Table::new();
-  table.set_content_arrangement(ContentArrangement::Dynamic);
-  table.set_header([
-    "Node XName",
-    "Component XName",
-    "Component Type",
-    "Component Info",
-  ]);
-
-  for ns in node_summaries {
-    for p in &ns.processors {
-      table.add_row(vec![
-        ns.xname.clone(),
-        p.xname.clone(),
-        p.r#type.to_string(),
-        p.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
-      ]);
-    }
-    for m in &ns.memory {
-      table.add_row(vec![
-        ns.xname.clone(),
-        m.xname.clone(),
-        m.r#type.to_string(),
-        m.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
-      ]);
-    }
-    for a in &ns.node_accels {
-      table.add_row(vec![
-        ns.xname.clone(),
-        a.xname.clone(),
-        a.r#type.to_string(),
-        a.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
-      ]);
-    }
-    for h in &ns.node_hsn_nics {
-      table.add_row(vec![
-        ns.xname.clone(),
-        h.xname.clone(),
-        h.r#type.to_string(),
-        h.info.clone().unwrap_or_else(|| "*** Missing info".to_string()),
-      ]);
-    }
-  }
-
-  println!("{table}");
-}
-
-// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -260,23 +208,3 @@ pub fn print_nodes_list(json: &Value, output: &str) -> Result<(), Error> {
   Ok(())
 }
 
-/// Print hardware node data in the requested format.
-///
-/// Pass `Some("json")` for JSON output; `None` renders a detailed
-/// per-component table.
-pub fn print_node(json: &Value, output: Option<&str>) -> Result<(), Error> {
-  if output.is_some_and(|o| o == "json") {
-    println!(
-      "{}",
-      serde_json::to_string_pretty(json)
-        .context("Failed to serialize hardware node")?
-    );
-    return Ok(());
-  }
-
-  let node_summary: NodeSummary =
-    serde_json::from_value(json["node_summary"].clone())
-      .context("Failed to deserialize node summary")?;
-  print_node_details(&[node_summary]);
-  Ok(())
-}
