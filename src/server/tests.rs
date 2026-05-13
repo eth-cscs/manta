@@ -791,6 +791,33 @@ async fn console_session_without_auth_returns_401() {
 
 
 // ---------------------------------------------------------------------------
+// OpenAPI spec tests
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn openapi_json_returns_200() {
+  let resp = router().oneshot(get("/openapi.json")).await.unwrap();
+  assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn openapi_spec_contains_expected_paths_and_schemas() {
+  let resp = router().oneshot(get("/openapi.json")).await.unwrap();
+  assert_eq!(resp.status(), StatusCode::OK);
+  let body = body_string(resp.into_body()).await;
+  let spec: serde_json::Value =
+    serde_json::from_str(&body).expect("OpenAPI spec must be valid JSON");
+  let paths = spec["paths"].as_object().expect("spec must have a paths object");
+  assert!(paths.contains_key("/sessions"), "spec must document /sessions");
+  assert!(paths.contains_key("/health"), "spec must document /health");
+  assert!(paths.contains_key("/boot-parameters"), "spec must document /boot-parameters");
+  assert!(
+    spec["components"]["schemas"].is_object(),
+    "spec must have a schemas object"
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Error mapping unit tests
 // ---------------------------------------------------------------------------
 

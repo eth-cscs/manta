@@ -1,4 +1,7 @@
 //! Axum router registration: maps every `/api/v1/` path to its handler.
+//!
+//! The OpenAPI JSON spec is served at `GET /openapi.json` and the
+//! Swagger UI is served at `GET /docs`.
 
 use std::sync::Arc;
 
@@ -6,11 +9,14 @@ use axum::{
   routing::{delete, get, post},
   Router,
 };
+use utoipa::OpenApi as _;
+use utoipa_swagger_ui::SwaggerUi;
 
+use super::api_doc::ApiDoc;
 use super::handlers;
 use super::ServerState;
 
-/// Build the axum router with all API endpoints.
+/// Build the axum router with all API endpoints and OpenAPI doc routes.
 pub fn build_router(state: Arc<ServerState>) -> Router {
   let api = Router::new()
     // --- GET endpoints ---
@@ -103,7 +109,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/sessions/apply", post(handlers::apply_session))
     .merge(build_ws_routes());
 
-  Router::new().nest("/api/v1", api).with_state(state)
+  Router::new()
+    .nest("/api/v1", api)
+    .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
+    .with_state(state)
 }
 
 /// WebSocket upgrade routes — kept separate so they're easy to identify

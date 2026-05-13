@@ -26,6 +26,7 @@ use manta_backend_dispatcher::{
 };
 use tokio::io::AsyncWriteExt;
 use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
 use super::ServerState;
 use crate::service;
@@ -100,6 +101,18 @@ impl<S: Send + Sync> FromRequestParts<S> for SiteName {
       })?;
     Ok(SiteName(site.to_string()))
   }
+}
+
+/// Required header parameter present on every authenticated endpoint.
+///
+/// Tells the server which cluster to route the request to.
+/// **Not** an authentication mechanism — documented as a plain header parameter.
+#[derive(IntoParams)]
+#[into_params(parameter_in = Header)]
+pub struct SiteHeader {
+  /// Name of the target cluster (matches a site configured in the server).
+  #[param(required = true, rename = "X-Manta-Site")]
+  pub x_manta_site: String,
 }
 
 /// Convert a `BackendError` into the best-fitting HTTP error response.
@@ -186,7 +199,7 @@ fn parse_iso_datetime(
 // ---------------------------------------------------------------------------
 
 /// Standard JSON error body returned by all failed endpoints.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
   pub error: String,
 }
@@ -196,6 +209,11 @@ pub struct ErrorResponse {
 // ---------------------------------------------------------------------------
 
 /// GET /health — liveness probe; returns `{"status":"ok"}`.
+#[utoipa::path(get, path = "/health", tag = "system",
+  responses(
+    (status = 200, description = "Server is healthy"),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn health() -> impl IntoResponse {
   Json(serde_json::json!({ "status": "ok" }))
@@ -206,7 +224,7 @@ pub async fn health() -> impl IntoResponse {
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /sessions`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct SessionQuery {
   pub hsm_group: Option<String>,
   pub xnames: Option<String>,
@@ -219,6 +237,16 @@ pub struct SessionQuery {
 }
 
 /// GET /sessions — list CFS sessions with optional filters.
+#[utoipa::path(get, path = "/sessions", tag = "sessions",
+  params(SessionQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of sessions", body = serde_json::Value),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_sessions(
   State(state): State<Arc<ServerState>>,
@@ -263,7 +291,7 @@ pub async fn get_sessions(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /configurations`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ConfigurationQuery {
   pub name: Option<String>,
   pub pattern: Option<String>,
@@ -272,6 +300,15 @@ pub struct ConfigurationQuery {
 }
 
 /// GET /configurations — list CFS configurations with optional name/pattern/group filters.
+#[utoipa::path(get, path = "/configurations", tag = "configurations",
+  params(ConfigurationQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of configurations", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",           body = ErrorResponse),
+    (status = 500, description = "Internal error",         body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_configurations(
   State(state): State<Arc<ServerState>>,
@@ -304,7 +341,7 @@ pub async fn get_configurations(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /nodes`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct NodesQuery {
   pub xname: String,
   /// Expand results to include nodes sharing the same power supply.
@@ -313,6 +350,16 @@ pub struct NodesQuery {
 }
 
 /// GET /nodes — fetch node details for a given xname expression.
+#[utoipa::path(get, path = "/nodes", tag = "nodes",
+  params(NodesQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Node details",  body = serde_json::Value),
+    (status = 400, description = "Bad request",   body = ErrorResponse),
+    (status = 401, description = "Unauthorized",  body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_nodes(
   State(state): State<Arc<ServerState>>,
@@ -340,12 +387,21 @@ pub async fn get_nodes(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /groups`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct GroupQuery {
   pub name: Option<String>,
 }
 
 /// GET /groups — list HSM groups, optionally filtered by name.
+#[utoipa::path(get, path = "/groups", tag = "groups",
+  params(GroupQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of groups", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups(
   State(state): State<Arc<ServerState>>,
@@ -372,7 +428,7 @@ pub async fn get_groups(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /images`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ImageQuery {
   pub id: Option<String>,
   pub hsm_group: Option<String>,
@@ -380,7 +436,7 @@ pub struct ImageQuery {
 }
 
 /// Wrapper so the image tuple serializes to named fields.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ImageEntry {
   pub image: serde_json::Value,
   pub configuration_name: String,
@@ -389,6 +445,15 @@ pub struct ImageEntry {
 }
 
 /// GET /images — list IMS images with their associated CFS configuration names.
+#[utoipa::path(get, path = "/images", tag = "images",
+  params(ImageQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of images", body = Vec<ImageEntry>),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_images(
   State(state): State<Arc<ServerState>>,
@@ -428,7 +493,7 @@ pub async fn get_images(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /templates`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct TemplateQuery {
   pub name: Option<String>,
   pub hsm_group: Option<String>,
@@ -436,6 +501,15 @@ pub struct TemplateQuery {
 }
 
 /// GET /templates — list BOS session templates with optional filters.
+#[utoipa::path(get, path = "/templates", tag = "templates",
+  params(TemplateQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of session templates", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",              body = ErrorResponse),
+    (status = 500, description = "Internal error",            body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_templates(
   State(state): State<Arc<ServerState>>,
@@ -464,13 +538,22 @@ pub async fn get_templates(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /boot-parameters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct BootParametersQuery {
   pub hsm_group: Option<String>,
   pub nodes: Option<String>,
 }
 
 /// GET /boot-parameters — fetch BSS boot parameters for a group or node list.
+#[utoipa::path(get, path = "/boot-parameters", tag = "boot-parameters",
+  params(BootParametersQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Boot parameters",  body = serde_json::Value),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -499,13 +582,22 @@ pub async fn get_boot_parameters(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /kernel-parameters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct KernelParametersQuery {
   pub hsm_group: Option<String>,
   pub nodes: Option<String>,
 }
 
 /// GET /kernel-parameters — fetch BSS kernel parameters for a group or node list.
+#[utoipa::path(get, path = "/kernel-parameters", tag = "kernel-parameters",
+  params(KernelParametersQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Kernel parameters", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",      body = ErrorResponse),
+    (status = 500, description = "Internal error",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -534,7 +626,7 @@ pub async fn get_kernel_parameters(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /redfish-endpoints`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct RedfishEndpointsQuery {
   pub id: Option<String>,
   pub fqdn: Option<String>,
@@ -544,6 +636,15 @@ pub struct RedfishEndpointsQuery {
 }
 
 /// GET /redfish-endpoints — list HSM Redfish endpoints with optional filters.
+#[utoipa::path(get, path = "/redfish-endpoints", tag = "redfish-endpoints",
+  params(RedfishEndpointsQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of Redfish endpoints", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",              body = ErrorResponse),
+    (status = 500, description = "Internal error",            body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_redfish_endpoints(
   State(state): State<Arc<ServerState>>,
@@ -574,13 +675,22 @@ pub async fn get_redfish_endpoints(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /clusters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ClusterQuery {
   pub hsm_group: Option<String>,
   pub status: Option<String>,
 }
 
 /// GET /clusters — list cluster nodes with optional group/status filters.
+#[utoipa::path(get, path = "/clusters", tag = "clusters",
+  params(ClusterQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of cluster nodes", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",          body = ErrorResponse),
+    (status = 500, description = "Internal error",        body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_clusters(
   State(state): State<Arc<ServerState>>,
@@ -608,12 +718,21 @@ pub async fn get_clusters(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /hardware-clusters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct HardwareClusterQuery {
   pub hsm_group: Option<String>,
 }
 
 /// GET /hardware-clusters — summarize hardware components per node for a cluster.
+#[utoipa::path(get, path = "/hardware-clusters", tag = "hardware",
+  params(HardwareClusterQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Hardware summary for cluster nodes", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                       body = ErrorResponse),
+    (status = 500, description = "Internal error",                     body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_clusters(
   State(state): State<Arc<ServerState>>,
@@ -643,13 +762,23 @@ pub async fn get_hardware_clusters(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /hardware-nodes-list`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct HardwareNodesListQuery {
   /// Comma-separated xnames.
   pub xnames: String,
 }
 
 /// GET /hardware-nodes-list — hardware details for an explicit list of xnames.
+#[utoipa::path(get, path = "/hardware-nodes-list", tag = "hardware",
+  params(HardwareNodesListQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Hardware details for specified nodes", body = serde_json::Value),
+    (status = 400, description = "Bad request",                          body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                         body = ErrorResponse),
+    (status = 500, description = "Internal error",                       body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_nodes_list(
   State(state): State<Arc<ServerState>>,
@@ -681,6 +810,16 @@ pub async fn get_hardware_nodes_list(
 // ---------------------------------------------------------------------------
 
 /// DELETE /nodes/{id} — remove a node from HSM by xname or NID.
+#[utoipa::path(delete, path = "/nodes/{id}", tag = "nodes",
+  params(("id" = String, Path, description = "Node xname or NID"), SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Node removed"),
+    (status = 401, description = "Unauthorized", body = ErrorResponse),
+    (status = 404, description = "Not found",    body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_node(
   State(state): State<Arc<ServerState>>,
@@ -703,7 +842,7 @@ pub async fn delete_node(
 // ---------------------------------------------------------------------------
 
 /// Body for `POST /nodes`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct AddNodeRequest {
   pub id: String,
   pub group: String,
@@ -713,6 +852,17 @@ pub struct AddNodeRequest {
 }
 
 /// POST /nodes — register a new node in HSM and add it to a group.
+#[utoipa::path(post, path = "/nodes", tag = "nodes",
+  params(SiteHeader),
+  request_body = AddNodeRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Node registered",  body = serde_json::Value),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_node(
   State(state): State<Arc<ServerState>>,
@@ -743,7 +893,7 @@ pub async fn add_node(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `DELETE /groups/{label}`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteGroupQuery {
   /// Delete even if the group still has members (default: false).
   #[serde(default)]
@@ -751,6 +901,16 @@ pub struct DeleteGroupQuery {
 }
 
 /// DELETE /groups/{label} — remove an HSM group.
+#[utoipa::path(delete, path = "/groups/{label}", tag = "groups",
+  params(("label" = String, Path, description = "Group label"), DeleteGroupQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Group removed"),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 404, description = "Not found",      body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group(
   State(state): State<Arc<ServerState>>,
@@ -774,6 +934,17 @@ pub async fn delete_group(
 // ---------------------------------------------------------------------------
 
 /// POST /groups — create a new HSM group.
+#[utoipa::path(post, path = "/groups", tag = "groups",
+  params(SiteHeader),
+  request_body = manta_backend_dispatcher::types::Group,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Group created",    body = serde_json::Value),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 409, description = "Conflict",         body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn create_group(
   State(state): State<Arc<ServerState>>,
@@ -796,19 +967,30 @@ pub async fn create_group(
 // ---------------------------------------------------------------------------
 
 /// Body for `POST /groups/{name}/members`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct AddNodesToGroupRequest {
   pub hosts_expression: String,
 }
 
 /// Response for `POST /groups/{name}/members`.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct AddNodesToGroupResponse {
   pub added: Vec<String>,
   pub removed: Vec<String>,
 }
 
 /// POST /groups/{name}/members — replace a group's member list from a host expression.
+#[utoipa::path(post, path = "/groups/{name}/members", tag = "groups",
+  params(("name" = String, Path, description = "Group name"), SiteHeader),
+  request_body = AddNodesToGroupRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Members updated",   body = AddNodesToGroupResponse),
+    (status = 400, description = "Bad request",       body = ErrorResponse),
+    (status = 401, description = "Unauthorized",      body = ErrorResponse),
+    (status = 500, description = "Internal error",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
   State(state): State<Arc<ServerState>>,
@@ -837,12 +1019,23 @@ pub async fn add_nodes_to_group(
 // ---------------------------------------------------------------------------
 
 /// Body for `DELETE /boot-parameters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct DeleteBootParametersRequest {
   pub hosts: Vec<String>,
 }
 
 /// DELETE /boot-parameters — remove BSS boot parameter entries for specified hosts.
+#[utoipa::path(delete, path = "/boot-parameters", tag = "boot-parameters",
+  params(SiteHeader),
+  request_body = DeleteBootParametersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Boot parameters removed"),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -873,6 +1066,16 @@ pub async fn delete_boot_parameters(
 // ---------------------------------------------------------------------------
 
 /// POST /boot-parameters — create a new BSS boot parameters entry.
+#[utoipa::path(post, path = "/boot-parameters", tag = "boot-parameters",
+  params(SiteHeader),
+  request_body = manta_backend_dispatcher::types::bss::BootParameters,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Boot parameters created",  body = serde_json::Value),
+    (status = 401, description = "Unauthorized",             body = ErrorResponse),
+    (status = 500, description = "Internal error",           body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -895,6 +1098,17 @@ pub async fn add_boot_parameters(
 // ---------------------------------------------------------------------------
 
 /// PUT /boot-parameters — update boot image, kernel params, or runtime config for nodes.
+#[utoipa::path(put, path = "/boot-parameters", tag = "boot-parameters",
+  params(SiteHeader),
+  request_body = crate::service::boot_parameters::UpdateBootParametersParams,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Boot parameters updated"),
+    (status = 400, description = "Bad request",    body = ErrorResponse),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
   State(state): State<Arc<ServerState>>,
@@ -917,6 +1131,16 @@ pub async fn update_boot_parameters(
 // ---------------------------------------------------------------------------
 
 /// DELETE /redfish-endpoints/{id} — remove a Redfish endpoint from HSM.
+#[utoipa::path(delete, path = "/redfish-endpoints/{id}", tag = "redfish-endpoints",
+  params(("id" = String, Path, description = "BMC xname"), SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Endpoint removed"),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 404, description = "Not found",      body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -939,6 +1163,16 @@ pub async fn delete_redfish_endpoint(
 // ---------------------------------------------------------------------------
 
 /// POST /redfish-endpoints — register a new Redfish endpoint in HSM.
+#[utoipa::path(post, path = "/redfish-endpoints", tag = "redfish-endpoints",
+  params(SiteHeader),
+  request_body = crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Endpoint registered",  body = serde_json::Value),
+    (status = 401, description = "Unauthorized",          body = ErrorResponse),
+    (status = 500, description = "Internal error",        body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -961,6 +1195,16 @@ pub async fn add_redfish_endpoint(
 // ---------------------------------------------------------------------------
 
 /// PUT /redfish-endpoints — update an existing Redfish endpoint's properties.
+#[utoipa::path(put, path = "/redfish-endpoints", tag = "redfish-endpoints",
+  params(SiteHeader),
+  request_body = crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Endpoint updated"),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
   State(state): State<Arc<ServerState>>,
@@ -983,7 +1227,7 @@ pub async fn update_redfish_endpoint(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `DELETE /sessions/{name}`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteSessionQuery {
   /// When true, return deletion context without actually deleting (default: false).
   #[serde(default)]
@@ -991,6 +1235,16 @@ pub struct DeleteSessionQuery {
 }
 
 /// DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.
+#[utoipa::path(delete, path = "/sessions/{name}", tag = "sessions",
+  params(("name" = String, Path, description = "Session name"), DeleteSessionQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Session deleted or deletion preview", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                        body = ErrorResponse),
+    (status = 404, description = "Not found",                           body = ErrorResponse),
+    (status = 500, description = "Internal error",                      body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_session(
   State(state): State<Arc<ServerState>>,
@@ -1023,7 +1277,7 @@ pub async fn delete_session(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `DELETE /images`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteImagesQuery {
   /// Comma-separated list of IMS image IDs to delete.
   pub ids: String,
@@ -1033,6 +1287,16 @@ pub struct DeleteImagesQuery {
 }
 
 /// `DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.
+#[utoipa::path(delete, path = "/images", tag = "images",
+  params(DeleteImagesQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Images deleted or validation result", body = serde_json::Value),
+    (status = 400, description = "Bad request",                         body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                        body = ErrorResponse),
+    (status = 500, description = "Internal error",                      body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_images(
   State(state): State<Arc<ServerState>>,
@@ -1065,7 +1329,7 @@ pub async fn delete_images(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `DELETE /configurations`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteConfigurationsQuery {
   /// Glob pattern to match configuration names.
   pub pattern: Option<String>,
@@ -1079,6 +1343,16 @@ pub struct DeleteConfigurationsQuery {
 }
 
 /// `DELETE /api/v1/configurations` — delete CFS configurations and all derived artifacts.
+#[utoipa::path(delete, path = "/configurations", tag = "configurations",
+  params(DeleteConfigurationsQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Configurations deleted or preview", body = serde_json::Value),
+    (status = 400, description = "Bad request",                       body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                      body = ErrorResponse),
+    (status = 500, description = "Internal error",                    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_configurations(
   State(state): State<Arc<ServerState>>,
@@ -1126,7 +1400,7 @@ pub async fn delete_configurations(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /sessions`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateSessionRequest {
   /// Explicit name for the CFS session and configuration; auto-generated when absent.
   pub cfs_conf_sess_name: Option<String>,
@@ -1147,6 +1421,18 @@ pub struct CreateSessionRequest {
 }
 
 /// `POST /api/v1/sessions` — create a CFS session from one or more git repositories.
+#[utoipa::path(post, path = "/sessions", tag = "sessions",
+  params(SiteHeader),
+  request_body = CreateSessionRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Session created",               body = serde_json::Value),
+    (status = 400, description = "Bad request",                   body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                  body = ErrorResponse),
+    (status = 500, description = "Internal error",                body = ErrorResponse),
+    (status = 501, description = "Vault not configured",          body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn create_session(
   State(state): State<Arc<ServerState>>,
@@ -1198,7 +1484,7 @@ pub async fn create_session(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /boot-config`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ApplyBootConfigRequest {
   /// Node-set expression (xnames, HSM group, or nodeset) identifying the target nodes.
   pub hosts_expression: String,
@@ -1216,6 +1502,17 @@ pub struct ApplyBootConfigRequest {
 }
 
 /// `POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.
+#[utoipa::path(post, path = "/boot-config", tag = "boot-parameters",
+  params(SiteHeader),
+  request_body = ApplyBootConfigRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Boot config applied or preview", body = serde_json::Value),
+    (status = 400, description = "Bad request",                    body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
   State(state): State<Arc<ServerState>>,
@@ -1266,7 +1563,7 @@ pub async fn apply_boot_config(
 // ---------------------------------------------------------------------------
 
 /// Which kernel-parameter mutation to perform (`add`, `apply`, or `delete`).
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum KernelParamOp {
   /// Merge new parameters into the existing set.
@@ -1278,7 +1575,7 @@ pub enum KernelParamOp {
 }
 
 /// Request body for `POST /kernel-parameters/apply`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ApplyKernelParametersRequest {
   /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
   pub xnames_expression: Option<String>,
@@ -1304,6 +1601,17 @@ fn default_true() -> bool {
 }
 
 /// `POST /api/v1/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
+#[utoipa::path(post, path = "/kernel-parameters/apply", tag = "kernel-parameters",
+  params(SiteHeader),
+  request_body = ApplyKernelParametersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Kernel parameters applied or preview", body = serde_json::Value),
+    (status = 400, description = "Bad request",                          body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                         body = ErrorResponse),
+    (status = 500, description = "Internal error",                       body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -1369,7 +1677,7 @@ pub async fn apply_kernel_parameters(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /migrate/nodes`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct MigrateNodesRequest {
   /// Destination HSM group names to move nodes into.
   pub target_hsm_names: Vec<String>,
@@ -1386,6 +1694,17 @@ pub struct MigrateNodesRequest {
 }
 
 /// `POST /api/v1/migrate/nodes` — move nodes between HSM groups.
+#[utoipa::path(post, path = "/migrate/nodes", tag = "migrate",
+  params(SiteHeader),
+  request_body = MigrateNodesRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Migration result", body = serde_json::Value),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
   State(state): State<Arc<ServerState>>,
@@ -1419,7 +1738,7 @@ pub async fn migrate_nodes(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /migrate/backup`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct MigrateBackupRequest {
   /// BOS session template name (or filter) to back up.
   pub bos: Option<String>,
@@ -1428,6 +1747,16 @@ pub struct MigrateBackupRequest {
 }
 
 /// `POST /api/v1/migrate/backup` — export BOS session templates to backup files.
+#[utoipa::path(post, path = "/migrate/backup", tag = "migrate",
+  params(SiteHeader),
+  request_body = MigrateBackupRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Backup completed",      body = serde_json::Value),
+    (status = 401, description = "Unauthorized",          body = ErrorResponse),
+    (status = 500, description = "Internal error",        body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_backup(
   State(state): State<Arc<ServerState>>,
@@ -1455,7 +1784,7 @@ pub async fn migrate_backup(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /migrate/restore`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct MigrateRestoreRequest {
   /// Path to the BOS session template backup file.
   pub bos_file: Option<String>,
@@ -1473,6 +1802,16 @@ pub struct MigrateRestoreRequest {
 }
 
 /// `POST /api/v1/migrate/restore` — import BOS session templates and related artifacts from backup.
+#[utoipa::path(post, path = "/migrate/restore", tag = "migrate",
+  params(SiteHeader),
+  request_body = MigrateRestoreRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Restore completed",  body = serde_json::Value),
+    (status = 401, description = "Unauthorized",       body = ErrorResponse),
+    (status = 500, description = "Internal error",     body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_restore(
   State(state): State<Arc<ServerState>>,
@@ -1504,13 +1843,23 @@ pub async fn migrate_restore(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /ephemeral-env`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateEphemeralEnvRequest {
   /// IMS image ID to boot the ephemeral environment from.
   pub image_id: String,
 }
 
 /// `POST /api/v1/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.
+#[utoipa::path(post, path = "/ephemeral-env", tag = "ephemeral-env",
+  params(SiteHeader),
+  request_body = CreateEphemeralEnvRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Ephemeral env created", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",          body = ErrorResponse),
+    (status = 500, description = "Internal error",        body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn create_ephemeral_env(
   State(state): State<Arc<ServerState>>,
@@ -1537,7 +1886,7 @@ pub async fn create_ephemeral_env(
 // ---------------------------------------------------------------------------
 
 /// Request body for `DELETE /groups/{name}/members`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct DeleteGroupMembersRequest {
   /// Hosts expression (xnames, nids, or hostlist notation) identifying nodes to remove.
   pub xnames_expression: String,
@@ -1547,6 +1896,17 @@ pub struct DeleteGroupMembersRequest {
 }
 
 /// `DELETE /api/v1/groups/{name}/members` — remove nodes from an HSM group.
+#[utoipa::path(delete, path = "/groups/{name}/members", tag = "groups",
+  params(("name" = String, Path, description = "Group name"), SiteHeader),
+  request_body = DeleteGroupMembersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Members removed"),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
   State(state): State<Arc<ServerState>>,
@@ -1590,7 +1950,7 @@ pub async fn delete_group_members(
 // ---------------------------------------------------------------------------
 
 /// Power action to apply to the target nodes or cluster.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerAction {
   /// Power on the nodes.
@@ -1602,7 +1962,7 @@ pub enum PowerAction {
 }
 
 /// Whether `targets` contains xnames (`nodes`) or a single cluster name (`cluster`).
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerTargetType {
   /// `targets` is a list of xnames.
@@ -1612,7 +1972,7 @@ pub enum PowerTargetType {
 }
 
 /// Request body for `POST /power`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct PowerRequest {
   /// Power operation to perform.
   pub action: PowerAction,
@@ -1627,6 +1987,17 @@ pub struct PowerRequest {
 }
 
 /// `POST /api/v1/power` — power on, off, or reset nodes or all members of a cluster.
+#[utoipa::path(post, path = "/power", tag = "power",
+  params(SiteHeader),
+  request_body = PowerRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Power operation result", body = serde_json::Value),
+    (status = 400, description = "Bad request",            body = ErrorResponse),
+    (status = 401, description = "Unauthorized",           body = ErrorResponse),
+    (status = 500, description = "Internal error",         body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
   State(state): State<Arc<ServerState>>,
@@ -1681,7 +2052,7 @@ pub async fn post_power(
 // ---------------------------------------------------------------------------
 
 /// BOS session operation to run against the template's node list.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum BosOperation {
   /// Boot nodes that are currently off.
@@ -1703,7 +2074,7 @@ impl BosOperation {
 }
 
 /// Request body for `POST /templates/{name}/sessions`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct PostTemplateSessionRequest {
   /// BOS operation to run (boot, reboot, or shutdown).
   pub operation: BosOperation,
@@ -1720,6 +2091,18 @@ pub struct PostTemplateSessionRequest {
 }
 
 /// `POST /api/v1/templates/{name}/sessions` — create a BOS session from a session template.
+#[utoipa::path(post, path = "/templates/{name}/sessions", tag = "templates",
+  params(("name" = String, Path, description = "Template name"), SiteHeader),
+  request_body = PostTemplateSessionRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Dry run preview",  body = serde_json::Value),
+    (status = 201, description = "Session created",  body = serde_json::Value),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn post_template_session(
   State(state): State<Arc<ServerState>>,
@@ -1766,7 +2149,7 @@ pub async fn post_template_session(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for `GET /sessions/{name}/logs`.
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct SessionLogsQuery {
   /// When true, prefix each log line with its timestamp.
   #[serde(default)]
@@ -1774,6 +2157,16 @@ pub struct SessionLogsQuery {
 }
 
 /// `GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
+#[utoipa::path(get, path = "/sessions/{name}/logs", tag = "sessions",
+  params(("name" = String, Path, description = "Session name"), SessionLogsQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "SSE log stream"),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn get_session_logs(
   State(state): State<Arc<ServerState>>,
@@ -1817,7 +2210,7 @@ pub async fn get_session_logs(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /sat-file`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct PostSatFileRequest {
   /// Raw YAML content of the SAT file to apply.
   pub sat_file_content: String,
@@ -1853,6 +2246,17 @@ pub struct PostSatFileRequest {
 }
 
 /// `POST /api/v1/sat-file` — apply a SAT file (images, session templates, and CFS sessions).
+#[utoipa::path(post, path = "/sat-file", tag = "sat-file",
+  params(SiteHeader),
+  request_body = PostSatFileRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "SAT file applied",               body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_file(
   State(state): State<Arc<ServerState>>,
@@ -1907,7 +2311,7 @@ pub async fn post_sat_file(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /kernel-parameters/add`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct AddKernelParametersRequest {
   /// Space-separated kernel parameter key=value pairs to add.
   pub params: String,
@@ -1927,6 +2331,17 @@ pub struct AddKernelParametersRequest {
 }
 
 /// `POST /api/v1/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.
+#[utoipa::path(post, path = "/kernel-parameters/add", tag = "kernel-parameters",
+  params(SiteHeader),
+  request_body = AddKernelParametersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Parameters added or preview", body = serde_json::Value),
+    (status = 400, description = "Bad request",                 body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -1978,7 +2393,7 @@ pub async fn add_kernel_parameters(
 // ---------------------------------------------------------------------------
 
 /// Request body for `DELETE /kernel-parameters`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct DeleteKernelParametersRequest {
   /// Space-separated kernel parameter names (or key=value pairs) to remove.
   pub params: String,
@@ -1992,6 +2407,17 @@ pub struct DeleteKernelParametersRequest {
 }
 
 /// `DELETE /api/v1/kernel-parameters` — remove named kernel parameters from node BSS entries.
+#[utoipa::path(delete, path = "/kernel-parameters", tag = "kernel-parameters",
+  params(SiteHeader),
+  request_body = DeleteKernelParametersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Parameters removed or preview", body = serde_json::Value),
+    (status = 400, description = "Bad request",                   body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                  body = ErrorResponse),
+    (status = 500, description = "Internal error",                body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
   State(state): State<Arc<ServerState>>,
@@ -2044,7 +2470,7 @@ pub async fn delete_kernel_parameters(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /hardware-clusters/{target}/members`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct AddHwComponentRequest {
   /// Source HSM group that donates nodes matching `pattern`.
   pub parent_cluster: String,
@@ -2059,6 +2485,16 @@ pub struct AddHwComponentRequest {
 }
 
 /// `POST /api/v1/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.
+#[utoipa::path(post, path = "/hardware-clusters/{target}/members", tag = "hardware",
+  params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
+  request_body = AddHwComponentRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Members added or preview", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",             body = ErrorResponse),
+    (status = 500, description = "Internal error",           body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
   State(state): State<Arc<ServerState>>,
@@ -2098,7 +2534,7 @@ pub async fn add_hw_component(
 // ---------------------------------------------------------------------------
 
 /// Request body for `DELETE /hardware-clusters/{target}/members`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct DeleteHwComponentRequest {
   /// Destination HSM group that receives nodes moved out of the target cluster.
   pub parent_cluster: String,
@@ -2113,6 +2549,16 @@ pub struct DeleteHwComponentRequest {
 }
 
 /// `DELETE /api/v1/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.
+#[utoipa::path(delete, path = "/hardware-clusters/{target}/members", tag = "hardware",
+  params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
+  request_body = DeleteHwComponentRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Members removed or preview", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",               body = ErrorResponse),
+    (status = 500, description = "Internal error",             body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
   State(state): State<Arc<ServerState>>,
@@ -2152,7 +2598,7 @@ pub async fn delete_hw_component(
 // ---------------------------------------------------------------------------
 
 /// Whether to pin nodes to the target cluster or unpin them back to the parent.
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum HwClusterMode {
   /// Move nodes from the parent cluster into the target cluster.
@@ -2163,7 +2609,7 @@ pub enum HwClusterMode {
 }
 
 /// Request body for `POST /hardware-clusters/{target}/configuration`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ApplyHwConfigurationRequest {
   /// Source (parent) HSM group supplying nodes.
   pub parent_cluster: String,
@@ -2184,6 +2630,16 @@ pub struct ApplyHwConfigurationRequest {
 }
 
 /// `POST /api/v1/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.
+#[utoipa::path(post, path = "/hardware-clusters/{target}/configuration", tag = "hardware",
+  params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
+  request_body = ApplyHwConfigurationRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Configuration applied or preview", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                     body = ErrorResponse),
+    (status = 500, description = "Internal error",                   body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
   State(state): State<Arc<ServerState>>,
@@ -2229,7 +2685,7 @@ pub async fn apply_hw_configuration(
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /sessions/apply`.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct ApplySessionRequest {
   /// Git repository names (parallel-indexed with `repo_last_commit_ids`).
   pub repo_names: Vec<String>,
@@ -2250,6 +2706,18 @@ pub struct ApplySessionRequest {
 }
 
 /// `POST /api/v1/sessions/apply` — create a CFS configuration and session from git repositories.
+#[utoipa::path(post, path = "/sessions/apply", tag = "sessions",
+  params(SiteHeader),
+  request_body = ApplySessionRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Session created",              body = serde_json::Value),
+    (status = 400, description = "Bad request",                  body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                 body = ErrorResponse),
+    (status = 500, description = "Internal error",               body = ErrorResponse),
+    (status = 501, description = "Vault not configured",         body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all)]
 pub async fn apply_session(
   State(state): State<Arc<ServerState>>,
@@ -2311,7 +2779,7 @@ pub async fn apply_session(
 // ---------------------------------------------------------------------------
 
 /// Query parameters for WebSocket console endpoints (initial terminal size).
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct ConsoleQuery {
   /// Initial terminal width in columns (default 80).
   #[serde(default = "default_cols")]
@@ -2325,6 +2793,16 @@ fn default_cols() -> u16 { 80 }
 fn default_rows() -> u16 { 24 }
 
 /// `WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
+#[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",
+  params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 101, description = "WebSocket upgrade"),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
   BearerToken(token): BearerToken,
@@ -2371,6 +2849,16 @@ pub async fn console_node_ws(
 // ---------------------------------------------------------------------------
 
 /// `WS /api/v1/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.
+#[utoipa::path(get, path = "/sessions/{name}/console", tag = "console",
+  params(("name" = String, Path, description = "Session name"), ConsoleQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 101, description = "WebSocket upgrade"),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured",    body = ErrorResponse),
+  )
+)]
 #[tracing::instrument(skip_all, fields(session = %name))]
 pub async fn console_session_ws(
   BearerToken(token): BearerToken,

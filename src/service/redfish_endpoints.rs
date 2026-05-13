@@ -55,7 +55,7 @@ pub async fn delete_redfish_endpoint(
 }
 
 /// Typed parameters for updating/adding a Redfish endpoint.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateRedfishEndpointParams {
   /// Xname identifying the BMC (e.g. `x3000c0s1b0`).
   pub id: String,

@@ -77,6 +77,9 @@ rdkafka = { version = "0.39" }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
 axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
+utoipa            = { version = "5.5", features = ["axum_extras", "uuid"] }
+utoipa-axum       = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 tokio-tungstenite = "0.29"
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 tower-http = { version = "0.6", features = ["trace", "cors", "timeout"] }

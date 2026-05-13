@@ -1,6 +1,7 @@
 //! HTTPS server setup: shared state, request-logging middleware, and the
 //! TLS server entry point.
 
+pub mod api_doc;
 pub mod handlers;
 pub mod routes;
 #[cfg(test)]
