@@ -62,18 +62,21 @@ pub async fn handle_power(
         let hsm_group_name_arg = m
           .get_one::<String>("CLUSTER_NAME")
           .context("The 'cluster name' argument must have a value")?;
-        let force = m
+        let graceful = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
         let output: &str = m
           .get_one::<String>("output")
           .context("'output' argument is required")?;
         let assume_yes: bool = m.get_flag("assume-yes");
+
+        let force = !graceful;
+
         power_common::exec_cluster(
           ctx,
           PowerAction::Off,
           hsm_group_name_arg,
-          *force,
+          force,
           assume_yes,
           output,
           &token,
