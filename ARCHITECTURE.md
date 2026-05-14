@@ -99,9 +99,9 @@ Axum HTTPS server. Key files:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
-| `routes.rs` | Registers ~40 REST endpoints + 2 WebSocket upgrades under `/api/v1/` |
+| `routes.rs` | Registers ~47 REST endpoints + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
 | `handlers.rs` | Per-endpoint functions: extract bearer token, deserialise params, call service, serialise response |
-| `middleware.rs` | JWT authentication middleware applied to all routes |
+| `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
 `ServerState` (wrapped in `Arc`) owns all infrastructure: backend dispatcher, TLS certificates, optional Vault/k8s URLs.
 
@@ -174,6 +174,7 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 | `ochami-rs` | HTTP client for OpenCHAMI APIs: BSS, SMD |
 | `manta-backend-dispatcher` | Trait definitions, shared types, shared error enum |
 | `axum` + `axum-server` | HTTPS server with TLS via rustls |
+| `utoipa` + `utoipa-swagger-ui` | OpenAPI 3.0 spec generation and Swagger UI serving |
 | `clap` | CLI argument parsing |
 | `tokio` | Async runtime |
 | `minijinja` | Jinja2 template rendering for SAT file processing |
@@ -234,4 +235,4 @@ All mutating CLI operations can emit a Kafka message. Configuration lives under 
 3. Add the dispatch arm in `src/cli/process/`.
 4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `src/service/<module>.rs`.
 5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm in `src/backend_dispatcher/`.
-6. If the command should also be reachable via the HTTP API, add a handler in `src/server/handlers.rs` and register the route in `src/server/routes.rs`.
+6. If the command should also be reachable via the HTTP API, add a handler in `src/server/handlers.rs` (with a `#[utoipa::path(...)]` annotation), register the route in `src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `src/server/api_doc.rs`.

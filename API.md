@@ -329,7 +329,7 @@ Create a new HSM group.
 }
 ```
 
-**Response `201`** — no body.
+**Response `201`** — `{ "created": true }`.
 
 ---
 
@@ -382,14 +382,14 @@ Remove nodes from an HSM group.
 
 ```json
 {
-  "xnames": ["x3000c0s1b0n0", "x3000c0s2b0n0"],
+  "xnames_expression": "x3000c0s1b0n0,x3000c0s2b0n0",
   "dry_run": false
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `xnames` | string[] | **yes** | Nodes to remove |
+| `xnames_expression` | string | **yes** | Hosts expression (xnames, nids, or hostlist notation) |
 | `dry_run` | bool | no | Preview without removing (default: `false`) |
 
 **Response `204`** — no content.
@@ -515,15 +515,33 @@ Add boot parameters.
 
 **Request body** — BSS BootParameters object.
 
-**Response `201`** — no body.
+**Response `201`** — `{ "created": true }`.
 
 ---
 
 ### PUT /boot-parameters
 
-Update boot parameters.
+Update boot parameters for specified nodes.
 
-**Request body** — updated BSS BootParameters object.
+**Request body**
+
+```json
+{
+  "hosts": ["x3000c0s1b0n0"],
+  "params": "console=ttyS0,115200n8 quiet",
+  "kernel": "s3://boot-images/kernel",
+  "initrd": "s3://boot-images/initrd"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `hosts` | string[] | **yes** | Target node xnames |
+| `params` | string | **yes** | Kernel command-line parameters string |
+| `kernel` | string | **yes** | S3 path to the kernel image |
+| `initrd` | string | **yes** | S3 path to the initrd image |
+| `nids` | u32[] | no | Node IDs (alternative identifier) |
+| `macs` | string[] | no | MAC addresses (alternative identifier) |
 
 **Response `204`** — no content.
 
@@ -569,7 +587,7 @@ Append kernel parameters to a set of nodes without replacing existing ones.
 ```json
 {
   "params": "console=ttyS0,115200n8",
-  "xnames": ["x3000c0s1b0n0"],
+  "xnames_expression": "x3000c0s[1-4]b0n0",
   "hsm_group": null,
   "overwrite": false,
   "project_sbps": true,
@@ -580,8 +598,8 @@ Append kernel parameters to a set of nodes without replacing existing ones.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `params` | string | **yes** | Space-separated kernel parameters to add |
-| `xnames` | string[] | no | Target nodes (use instead of `hsm_group`) |
-| `hsm_group` | string | no | Target HSM group (use instead of `xnames`) |
+| `xnames_expression` | string | no | Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group` |
+| `hsm_group` | string | no | Target HSM group; mutually exclusive with `xnames_expression` |
 | `overwrite` | bool | no | Overwrite a parameter if it already exists (default: `false`) |
 | `project_sbps` | bool | no | Project SBPS images (default: `true`) |
 | `dry_run` | bool | no | Preview without persisting (default: `false`) |
@@ -606,7 +624,8 @@ Add, replace, or delete kernel parameters for a set of nodes.
 
 ```json
 {
-  "xnames": ["x3000c0s1b0n0"],
+  "xnames_expression": "x3000c0s[1-4]b0n0",
+  "hsm_group": null,
   "operation": "add",
   "params": "console=ttyS0,115200n8",
   "overwrite": false,
@@ -617,9 +636,10 @@ Add, replace, or delete kernel parameters for a set of nodes.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `xnames` | string[] | **yes** | Target nodes |
 | `operation` | string | **yes** | `add`, `apply` (replace all), or `delete` |
 | `params` | string | **yes** | Space-separated kernel parameters |
+| `xnames_expression` | string | no | Hosts expression; mutually exclusive with `hsm_group` |
+| `hsm_group` | string | no | Target HSM group; mutually exclusive with `xnames_expression` |
 | `overwrite` | bool | no | For `add`: overwrite existing params (default: `false`) |
 | `project_sbps` | bool | no | Project SBPS images (default: `true`) |
 | `dry_run` | bool | no | Preview without persisting (default: `false`) |
@@ -645,7 +665,7 @@ Remove specific kernel parameters from a set of nodes.
 ```json
 {
   "params": "console=ttyS0,115200n8",
-  "xnames": ["x3000c0s1b0n0"],
+  "xnames_expression": "x3000c0s[1-4]b0n0",
   "hsm_group": null,
   "dry_run": false
 }
@@ -654,8 +674,8 @@ Remove specific kernel parameters from a set of nodes.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `params` | string | **yes** | Space-separated kernel parameters to remove |
-| `xnames` | string[] | no | Target nodes (use instead of `hsm_group`) |
-| `hsm_group` | string | no | Target HSM group (use instead of `xnames`) |
+| `xnames_expression` | string | no | Hosts expression; mutually exclusive with `hsm_group` |
+| `hsm_group` | string | no | Target HSM group; mutually exclusive with `xnames_expression` |
 | `dry_run` | bool | no | Preview without persisting (default: `false`) |
 
 **Response `200`**
@@ -721,7 +741,7 @@ Power on, off, or reset nodes or an entire cluster.
 ```json
 {
   "action": "reboot",
-  "targets": ["x3000c0s1b0n0", "x3000c0s3b0n0"],
+  "targets_expression": "x3000c0s[1-4]b0n0",
   "target_type": "nodes",
   "force": false
 }
@@ -730,7 +750,7 @@ Power on, off, or reset nodes or an entire cluster.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `action` | string | **yes** | `on`, `off`, or `reset` |
-| `targets` | string[] | **yes** | Xnames (for `target_type: nodes`) or `[group-name]` (for `target_type: cluster`) |
+| `targets_expression` | string | **yes** | Hosts expression (for `target_type: nodes`) or HSM group name (for `target_type: cluster`) |
 | `target_type` | string | **yes** | `nodes` or `cluster` |
 | `force` | bool | no | Hard power off/reset without graceful shutdown (default: `false`) |
 
@@ -764,7 +784,7 @@ Add a Redfish endpoint.
 
 **Request body** — Redfish endpoint parameters object.
 
-**Response `201`** — no body.
+**Response `201`** — `{ "created": true }`.
 
 ---
 
@@ -819,7 +839,7 @@ Get hardware component summary for one or more clusters.
 
 ---
 
-### GET /hardware-nodes
+### GET /hardware-nodes-list
 
 Get hardware component details for specific nodes.
 
@@ -828,9 +848,8 @@ Get hardware component details for specific nodes.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `xnames` | string | **yes** | Comma-separated xnames |
-| `type_artifact` | string | no | Filter by component type |
 
-**Response `200`** — hardware node summary object.
+**Response `200`** — object with a `node_summaries` array.
 
 ---
 
@@ -988,7 +1007,7 @@ Back up vCluster configuration to files.
 }
 ```
 
-**Response `200`** — `{ "status": "backup completed" }`.
+**Response `200`** — `{ "completed": true }`.
 
 ---
 
@@ -1011,7 +1030,7 @@ Restore a vCluster from backup files.
 
 All fields optional. `overwrite` defaults to `false`.
 
-**Response `200`** — `{ "status": "restore completed" }`.
+**Response `200`** — `{ "completed": true }`.
 
 ---
 
@@ -1027,7 +1046,7 @@ Create an ephemeral CFS environment from an existing image.
 { "image_id": "ims-image-uuid" }
 ```
 
-**Response `201`** — `{ "status": "ephemeral environment created" }`.
+**Response `201`** — `{ "hostname": "<allocated-hostname>" }`.
 
 ---
 
@@ -1073,7 +1092,7 @@ Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds im
 | `overwrite` | bool | no | Overwrite existing configurations and images (default: `false`) |
 | `dry_run` | bool | no | Render and validate without creating anything (default: `false`) |
 
-**Response `200`** — `{ "status": "SAT file applied successfully" }`.
+**Response `200`** — `{ "applied": true }`.
 
 ---
 
@@ -1138,6 +1157,22 @@ Open an interactive console to the Ansible container of a running image-type CFS
 Returns server health. Does not require authentication.
 
 **Response `200`** — `{ "status": "ok" }`.
+
+---
+
+## API documentation
+
+### GET /openapi.json
+
+Returns the OpenAPI 3.0 specification for the manta API as JSON. Does not require authentication.
+
+**Response `200`** — OpenAPI 3.0 document.
+
+---
+
+### GET /docs
+
+Serves the Swagger UI, pre-configured to load the spec from `/openapi.json`. Does not require authentication. Open in a browser to browse and try out all endpoints interactively.
 
 ---
 

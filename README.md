@@ -136,7 +136,7 @@ wscat -H "Authorization: Bearer $TOKEN" \
   --connect wss://localhost:8443/api/v1/nodes/x3000c0s1b0n0/console
 ```
 
-See [API.md](API.md) for the full endpoint reference.
+See [API.md](API.md) for the full endpoint reference, or browse the interactive Swagger UI at `https://localhost:8443/docs` once the server is running.
 
 ---
 
