@@ -98,16 +98,6 @@ fn get_auth(uri: &str) -> Request<Body> {
     .unwrap()
 }
 
-fn delete_auth(uri: &str) -> Request<Body> {
-  Request::builder()
-    .method(Method::DELETE)
-    .uri(uri)
-    .header(header::AUTHORIZATION, "Bearer test-token")
-    .header("X-Manta-Site", "test")
-    .body(Body::empty())
-    .unwrap()
-}
-
 fn post_json(uri: &str, body: &str) -> Request<Body> {
   Request::builder()
     .method(Method::POST)
@@ -698,11 +688,19 @@ async fn add_kernel_parameters_missing_params_returns_422() {
 #[tokio::test]
 async fn delete_kernel_parameters_missing_params_returns_422() {
   let resp = router()
-    .oneshot(post_json("/api/v1/kernel-parameters", "{}"))
+    .oneshot(
+      Request::builder()
+        .method(Method::DELETE)
+        .uri("/api/v1/kernel-parameters")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header(header::AUTHORIZATION, "Bearer test-token")
+        .header("X-Manta-Site", "test")
+        .body(Body::from("{}"))
+        .unwrap(),
+    )
     .await
     .unwrap();
-  // DELETE /kernel-parameters — wrong method from post_json (POST), expect 405
-  assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[tokio::test]
@@ -733,6 +731,43 @@ async fn apply_session_missing_repo_fields_returns_422() {
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+// ---------------------------------------------------------------------------
+// 501-complement tests — vault/k8s configured → guard does NOT fire
+//
+// When vault and k8s ARE configured the relevant 501 guard passes and the
+// handler attempts a real backend call.  The stub URL fails with a network
+// error (5xx), but crucially that is NOT 501 Not Implemented.
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn create_session_with_vault_does_not_return_501() {
+  let resp = router_with_vault()
+    .oneshot(post_json(
+      "/api/v1/sessions",
+      r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc123"]}"#,
+    ))
+    .await
+    .unwrap();
+  assert_ne!(
+    resp.status(),
+    StatusCode::NOT_IMPLEMENTED,
+    "create_session should pass the vault 501 guard when vault is configured"
+  );
+}
+
+#[tokio::test]
+async fn get_session_logs_with_vault_and_k8s_does_not_return_501() {
+  let resp = router_with_vault()
+    .oneshot(get_auth("/api/v1/sessions/my-session/logs"))
+    .await
+    .unwrap();
+  assert_ne!(
+    resp.status(),
+    StatusCode::NOT_IMPLEMENTED,
+    "get_session_logs should pass the k8s 501 guard when k8s is configured"
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -643,11 +643,7 @@ async fn get_redfish_endpoints_happy_path() {
   mock_redfish_endpoints(&fx.mock_server).await;
 
   let resp = fx.send(fx.auth_get("/api/v1/redfish-endpoints")).await;
-  let status = resp.status();
-  if status != StatusCode::OK {
-    let body = TestFixture::body_json(resp).await;
-    panic!("Expected 200, got {}: {:?}", status, body);
-  }
+  assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
   let endpoints = body["RedfishEndpoints"]
