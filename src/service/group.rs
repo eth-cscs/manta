@@ -6,7 +6,7 @@ use manta_backend_dispatcher::types::Group;
 
 use crate::common;
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::get_groups_names_available;
+use crate::server::common::authorization::get_groups_names_available;
 pub use crate::shared::params::group::GetGroupParams;
 
 /// Fetch HSM groups from the backend.

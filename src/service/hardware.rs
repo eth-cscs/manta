@@ -11,8 +11,8 @@ use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
 
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
-use crate::common::node_ops;
+use crate::server::common::authorization::{get_groups_names_available, validate_target_hsm_members};
+use crate::server::common::node_ops;
 pub use crate::shared::params::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
 };

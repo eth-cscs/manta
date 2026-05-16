@@ -3,7 +3,7 @@
 use comfy_table::{Cell, ContentArrangement, Table};
 use crate::shared::dto::BootParameters;
 
-use crate::common::kernel_parameters_ops::group_boot_params_by_kernel_params;
+use crate::cli::common::kernel_parameters_ops::group_boot_params_by_kernel_params;
 
 /// Print kernel boot parameters grouped by common
 /// parameter sets.

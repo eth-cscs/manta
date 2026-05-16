@@ -260,7 +260,7 @@ pub async fn get_sessions(
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames = match q.xnames {
-    Some(expr) => crate::common::node_ops::resolve_hosts_expression(
+    Some(expr) => crate::server::common::node_ops::resolve_hosts_expression(
       infra.backend,
       &token,
       &expr,
@@ -1450,7 +1450,7 @@ pub async fn create_session(
   let vault_base_url = require_vault(infra.vault_base_url)?;
 
   let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, infra.site_name)
+    crate::server::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, infra.site_name)
       .await
       .map_err(to_handler_error)?;
 
@@ -1926,7 +1926,7 @@ pub async fn delete_group_members(
   );
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
-  let xnames = crate::common::node_ops::resolve_hosts_expression(
+  let xnames = crate::server::common::node_ops::resolve_hosts_expression(
     infra.backend,
     &token,
     &body.xnames_expression,
@@ -2021,7 +2021,7 @@ pub async fn post_power(
       .get_member_vec_from_group_name_vec(&token, std::slice::from_ref(&body.targets_expression))
       .await
       .map_err(to_handler_error)?,
-    PowerTargetType::Nodes => crate::common::node_ops::resolve_hosts_expression(
+    PowerTargetType::Nodes => crate::server::common::node_ops::resolve_hosts_expression(
       infra.backend,
       &token,
       &body.targets_expression,
@@ -2280,7 +2280,7 @@ pub async fn post_sat_file(
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
   let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(
+    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
       &token,
       vault_base_url,
       infra.site_name,
@@ -2745,13 +2745,13 @@ pub async fn apply_session(
       .split(',')
       .map(|s| s.trim().to_string())
       .collect();
-    crate::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
+    crate::server::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
       .await
       .map_err(display_error)?;
   }
 
   let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, infra.site_name)
+    crate::server::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, infra.site_name)
       .await
       .map_err(to_handler_error)?;
 
@@ -2984,12 +2984,12 @@ async fn resolve_xnames_from_request(
   if let Some(expr) = xnames_expression
     && !expr.is_empty()
   {
-    return crate::common::node_ops::resolve_hosts_expression(backend, token, expr, false)
+    return crate::server::common::node_ops::resolve_hosts_expression(backend, token, expr, false)
       .await
       .map_err(display_error);
   }
   if let Some(group) = hsm_group {
-    return crate::common::node_ops::resolve_target_nodes(
+    return crate::server::common::node_ops::resolve_target_nodes(
       backend,
       token,
       None,

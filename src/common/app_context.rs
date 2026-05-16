@@ -1,6 +1,5 @@
 //! Context structs threaded through the call stack in CLI and server modes.
 
-use crate::common::config::types::MantaConfiguration;
 use crate::common::kafka::Kafka;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use config::Config;
@@ -26,7 +25,6 @@ pub struct CliConfig<'a> {
   pub settings_hsm_group_name_opt: Option<&'a str>,
   pub kafka_audit_opt: Option<&'a Kafka>,
   pub settings: &'a Config,
-  pub configuration: &'a MantaConfiguration,
   /// When `Some`, CLI commands route requests through the manta HTTP server at
   /// this URL instead of calling the backend directly.
   pub manta_server_url: Option<&'a str>,

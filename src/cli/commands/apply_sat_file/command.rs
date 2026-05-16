@@ -34,7 +34,7 @@ fn validate_hook(
   label: &str,
 ) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
-    crate::common::hooks::check_hook_perms(hook_opt)
+    crate::cli::common::hooks::check_hook_perms(hook_opt)
       .map_err(|e| anyhow::anyhow!("{}. File: {}", e, hook))?;
     println!(
       "{}-hook script '{}' exists and is executable.",
@@ -51,7 +51,7 @@ fn run_hook_if_present(
 ) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
     println!("Running the {}-hook '{}'", label, hook);
-    let code = crate::common::hooks::run_hook(hook_opt)?;
+    let code = crate::cli::common::hooks::run_hook(hook_opt)?;
     tracing::debug!("{}-hook script completed ok. RT={}", label, code);
   }
   Ok(())

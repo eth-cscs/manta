@@ -2,7 +2,7 @@
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use crate::shared::params::session::GetSessionParams;
 use anyhow::{Context, Error};
 use clap::ArgMatches;

@@ -42,7 +42,7 @@ pub async fn apply_sat_file(
   let sat_file_yaml = serde_yaml::to_value(sat_file)?;
 
   let shasta_k8s_secrets =
-    crate::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
+    crate::server::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
       vault_base_url,
       infra.site_name,
       token,

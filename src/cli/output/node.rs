@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use comfy_table::{Cell, ContentArrangement, Table};
 use csm_rs::node::types::NodeDetails;
 
-use crate::common::node_ops::string_vec_to_multi_line_string;
+use crate::cli::common::display::string_vec_to_multi_line_string;
 
 /// Print a formatted table of node details. When `wide`
 /// is true, an extra column for kernel parameters is shown.

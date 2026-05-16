@@ -6,7 +6,7 @@ use crate::cli::commands::{
   get_kernel_parameters, get_nodes, get_session, get_template,
 };
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 

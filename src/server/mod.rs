@@ -2,6 +2,7 @@
 //! TLS server entry point.
 
 pub mod api_doc;
+pub mod common;
 pub mod handlers;
 pub mod routes;
 #[cfg(test)]

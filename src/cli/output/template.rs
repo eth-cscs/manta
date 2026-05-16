@@ -4,8 +4,6 @@ use anyhow::{Context, Error};
 use comfy_table::Table;
 use crate::shared::dto::BosSessionTemplate;
 
-use crate::common;
-
 /// Print BOS session templates in the requested format.
 pub fn print(
   templates: &[BosSessionTemplate],
@@ -65,7 +63,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
             .and_then(|cfs| cfs.configuration.clone())
             .unwrap_or_else(|| "NA".to_string()),
           enable_cfs.clone(),
-          common::node_ops::string_vec_to_multi_line_string(Some(&target), 2),
+          crate::cli::common::display::string_vec_to_multi_line_string(Some(&target), 2),
         ]);
       }
     }

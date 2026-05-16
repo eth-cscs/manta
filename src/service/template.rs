@@ -10,10 +10,10 @@ use manta_backend_dispatcher::types::bos::session::Operation;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::{
+use crate::server::common::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
-use crate::common::node_ops::validate_xname_format;
+use crate::server::common::node_ops::validate_xname_format;
 pub use crate::shared::params::template::{ApplyTemplateParams, GetTemplateParams};
 
 /// Fetch and filter BOS session templates from the backend.

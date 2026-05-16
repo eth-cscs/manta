@@ -8,7 +8,7 @@
 //! `manta-backend-dispatcher` for type definitions.
 
 pub use manta_backend_dispatcher::types::{
-  Group, K8sDetails, NodeSummary,
+  Group, NodeSummary,
   bos::session_template::BosSessionTemplate,
   bss::BootParameters,
   cfs::{

@@ -4,15 +4,13 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use crate::shared::dto::K8sDetails;
 
+use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
-use crate::common::{
-    self,
-    app_context::AppContext,
-    audit,
-    authorization::{get_groups_names_available, validate_target_hsm_members},
-    local_git_repo,
+use crate::common::app_context::AppContext;
+use crate::common::audit;
+use crate::server::common::authorization::{
+    get_groups_names_available, validate_target_hsm_members,
 };
 
 /// Gitea repository name prefix used by CFS.
@@ -23,18 +21,9 @@ pub async fn exec(
     cli_apply_session: &ArgMatches,
     ctx: &AppContext<'_>,
     token: &str,
-    vault_base_url: &str,
 ) -> Result<(), Error> {
     let backend = ctx.infra.backend;
     let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
-    let configuration = ctx.cli.configuration;
-
-    let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
-        token,
-        vault_base_url,
-        ctx.infra.site_name,
-    )
-    .await?;
 
     let repo_path_vec: Vec<PathBuf> = cli_apply_session
         .get_many("repo-path")
@@ -87,22 +76,8 @@ pub async fn exec(
         .await?;
     }
 
-    let site = configuration
-        .sites
-        .get(&configuration.site)
-        .context(format!(
-            "Site '{}' not found in configuration",
-            &configuration.site
-        ))?;
-
-    let k8s_details = site
-        .k8s
-        .as_ref()
-        .context("k8s section not found in configuration")?;
-
     let _ = apply_session(
         ctx,
-        &gitea_token,
         token,
         cfs_conf_sess_name_opt.map(String::as_str),
         playbook_file_name_opt.map(String::as_str),
@@ -113,7 +88,6 @@ pub async fn exec(
         ansible_passthrough.map(String::as_str),
         watch_logs,
         timestamps,
-        k8s_details,
     )
     .await?;
 
@@ -126,7 +100,6 @@ pub async fn exec(
 #[allow(clippy::too_many_arguments)]
 async fn apply_session(
     ctx: &AppContext<'_>,
-    _gitea_token: &str,
     shasta_token: &str,
     cfs_conf_sess_name: Option<&str>,
     playbook_yaml_file_name_opt: Option<&str>,
@@ -137,7 +110,6 @@ async fn apply_session(
     ansible_passthrough: Option<&str>,
     watch_logs: bool,
     timestamps: bool,
-    _k8s: &K8sDetails,
 ) -> Result<(String, String), Error> {
     let server_url = ctx.cli.manta_server_url
         .context("manta server URL must be configured")?;
@@ -238,7 +210,7 @@ fn check_local_repos(
             })?;
 
         if !all_committed {
-            if common::user_interaction::confirm(
+            if user_interaction::confirm(
                 "Your local repo has uncommitted changes. Do you want to continue?",
                 false,
             ) {
@@ -304,7 +276,7 @@ fn check_local_repos(
         );
     }
 
-    if common::user_interaction::confirm(
+    if user_interaction::confirm(
         "Please review the layers and its order and confirm if proceed. Do you want to continue?",
         false,
     ) {

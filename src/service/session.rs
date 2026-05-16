@@ -11,7 +11,7 @@ use manta_backend_dispatcher::types::cfs::component::Component;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::get_groups_names_available;
+use crate::server::common::authorization::get_groups_names_available;
 pub use crate::shared::params::session::GetSessionParams;
 
 /// Fetch and filter CFS sessions from the backend.
@@ -172,7 +172,7 @@ pub async fn create_cfs_session(
   let backend = infra.backend;
 
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
-    let xname_vec = crate::common::node_ops::resolve_hosts_expression(
+    let xname_vec = crate::server::common::node_ops::resolve_hosts_expression(
       backend,
       token,
       ansible_limit,

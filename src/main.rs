@@ -278,7 +278,6 @@ async fn run_cli(
       settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
       kafka_audit_opt: audit_kafka_opt.as_ref(),
       settings: &settings,
-      configuration: &configuration,
       manta_server_url: manta_server_url.as_deref(),
     },
   };

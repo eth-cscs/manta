@@ -2,7 +2,7 @@
 
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 

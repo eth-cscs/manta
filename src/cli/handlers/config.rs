@@ -2,7 +2,7 @@
 
 use crate::cli::commands;
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 

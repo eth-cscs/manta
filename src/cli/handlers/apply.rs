@@ -2,7 +2,7 @@
 
 use crate::cli::{commands, http_client::MantaClient};
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -25,11 +25,7 @@ pub async fn handle_apply(
     },
 
     Some(("session", m)) => {
-      let vault_base_url = ctx
-        .infra
-        .vault_base_url
-        .context("vault_base_url is required for apply session")?;
-      commands::apply_session::exec(m, ctx, &token, vault_base_url).await?
+      commands::apply_session::exec(m, ctx, &token).await?
     }
 
     Some(("sat-file", m)) => {

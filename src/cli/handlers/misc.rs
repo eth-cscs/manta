@@ -4,7 +4,7 @@ use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
 };
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
