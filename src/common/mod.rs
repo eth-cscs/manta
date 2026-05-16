@@ -20,5 +20,6 @@ pub mod kernel_parameters_ops;
 pub mod local_git_repo;
 pub mod log_ops;
 pub mod node_ops;
+pub mod sat_file;
 pub mod user_interaction;
 pub mod vault;

@@ -43,14 +43,13 @@ pub async fn apply_sat_file(
     })
     .unwrap_or_default();
 
-  let sat_template_yaml =
-    crate::cli::commands::apply_sat_file::utils::render_jinja2_sat_file_yaml(
-      params.sat_file_content,
-      params.values_file_content,
-      if values_cli_vec.is_empty() { None } else { Some(&values_cli_vec) },
-    )?;
+  let sat_template_yaml = crate::common::sat_file::render_jinja2_sat_file_yaml(
+    params.sat_file_content,
+    params.values_file_content,
+    if values_cli_vec.is_empty() { None } else { Some(&values_cli_vec) },
+  )?;
 
-  let mut sat_file: crate::cli::commands::apply_sat_file::utils::SatFile =
+  let mut sat_file: crate::common::sat_file::SatFile =
     serde_yaml::from_value(sat_template_yaml)?;
 
   sat_file.filter(params.image_only, params.session_template_only)?;
