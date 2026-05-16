@@ -7,6 +7,7 @@ use anyhow::{Context, Error};
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.
 /// Reboots the nodes whose kernel params have changed.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

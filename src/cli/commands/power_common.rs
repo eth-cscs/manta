@@ -48,15 +48,6 @@ impl PowerAction {
       }
     }
   }
-
-  /// Error verb for failure messages.
-  fn error_verb(&self) -> &'static str {
-    match self {
-      PowerAction::On => "power on",
-      PowerAction::Off => "power off",
-      PowerAction::Reset => "restart",
-    }
-  }
 }
 
 /// Execute a power action against a list of nodes resolved

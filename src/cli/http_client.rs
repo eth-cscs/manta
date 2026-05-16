@@ -529,6 +529,10 @@ impl MantaClient {
     Ok(())
   }
 
+  // Thin wrappers below relay CLI flags straight into a JSON body; a Params
+  // struct would just relocate the same argument list, so we suppress
+  // `clippy::too_many_arguments` instead of adding boilerplate types.
+  #[allow(clippy::too_many_arguments)]
   pub async fn apply_boot_config(
     &self,
     token: &str,
@@ -559,6 +563,7 @@ impl MantaClient {
     Ok(())
   }
 
+  #[allow(clippy::too_many_arguments)]
   pub async fn create_session(
     &self,
     token: &str,
@@ -595,6 +600,7 @@ impl MantaClient {
 
   /// POST /kernel-parameters/apply — replace/add/delete kernel parameters on nodes.
   /// `operation` is one of "add", "apply", "delete".
+  #[allow(clippy::too_many_arguments)]
   pub async fn apply_kernel_parameters(
     &self,
     token: &str,
@@ -619,6 +625,7 @@ impl MantaClient {
   }
 
   /// POST /kernel-parameters/add — merge new kernel parameters into existing entries.
+  #[allow(clippy::too_many_arguments)]
   pub async fn add_kernel_parameters(
     &self,
     token: &str,
@@ -670,6 +677,7 @@ impl MantaClient {
     Ok(())
   }
 
+  #[allow(clippy::too_many_arguments)]
   pub async fn migrate_restore(
     &self,
     token: &str,
@@ -692,6 +700,7 @@ impl MantaClient {
     Ok(())
   }
 
+  #[allow(clippy::too_many_arguments)]
   pub async fn apply_template_session(
     &self,
     token: &str,
@@ -1016,7 +1025,7 @@ impl MantaClient {
 
     let byte_stream = resp
       .bytes_stream()
-      .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
+      .map_err(std::io::Error::other);
     Ok(BufReader::new(StreamReader::new(byte_stream)))
   }
 

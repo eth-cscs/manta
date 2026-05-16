@@ -237,7 +237,7 @@ pub async fn persist_boot_config(
       )
       .await?;
 
-    for (_, image) in &changeset.image_vec {
+    for image in changeset.image_vec.values() {
       let image_id = image
         .id
         .clone()

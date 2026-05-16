@@ -5,13 +5,8 @@ use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
-use manta_backend_dispatcher::types::cfs::cfs_configuration_details::{
-  ConfigurationDetails, LayerDetails,
-};
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
-use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
-use manta_backend_dispatcher::types::ims::Image;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
@@ -58,76 +53,6 @@ pub async fn get_configurations(
     .await?;
 
   Ok(cfs_configuration_vec)
-}
-
-/// Fetch detailed configuration info including layer details and derivatives.
-///
-/// This fetches the VCS/Gitea token from Vault internally since it is
-/// specific to configuration detail queries.
-pub async fn get_configuration_details(
-  infra: &InfraContext<'_>,
-  token: &str,
-  config: &CfsConfigurationResponse,
-) -> Result<
-  (
-    ConfigurationDetails,
-    Option<Vec<CfsSessionGetResponse>>,
-    Option<Vec<BosSessionTemplate>>,
-    Option<Vec<Image>>,
-  ),
-  Error,
-> {
-  let vault_base_url = infra
-    .vault_base_url
-    .ok_or_else(|| Error::MissingField("vault_base_url is required for configuration details".to_string()))?;
-
-  let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(
-      token,
-      vault_base_url,
-      infra.site_name,
-    )
-    .await?;
-
-  let layer_details_vec: Vec<LayerDetails> =
-    futures::future::try_join_all(config.layers.iter().map(|layer| {
-      let backend = infra.backend.clone();
-      let root_cert = infra.shasta_root_cert.to_vec();
-      let gitea_base_url = infra.gitea_base_url.to_string();
-      let gitea_token = gitea_token.clone();
-      let site_name = infra.site_name.to_string();
-      let layer = layer.clone();
-      async move {
-        backend
-          .get_configuration_layer_details(
-            &root_cert,
-            &gitea_base_url,
-            &gitea_token,
-            layer,
-            &site_name,
-          )
-          .await
-      }
-    }))
-    .await?;
-
-  let (cfs_session_vec_opt, bos_sessiontemplate_vec_opt, image_vec_opt) =
-    infra.backend
-      .get_derivatives(token, infra.shasta_base_url, infra.shasta_root_cert, &config.name)
-      .await?;
-
-  let details = ConfigurationDetails::new(
-    &config.name,
-    &config.last_updated,
-    layer_details_vec,
-  );
-
-  Ok((
-    details,
-    cfs_session_vec_opt,
-    bos_sessiontemplate_vec_opt,
-    image_vec_opt,
-  ))
 }
 
 /// Data gathered for deletion review and execution.
@@ -209,12 +134,12 @@ pub fn validate_date_range(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
 ) -> Result<(), Error> {
-  if let (Some(s), Some(u)) = (since, until) {
-    if s > u {
-      return Err(Error::BadRequest(
-        "'since' date can't be after 'until' date".to_string(),
-      ));
-    }
+  if let (Some(s), Some(u)) = (since, until)
+    && s > u
+  {
+    return Err(Error::BadRequest(
+      "'since' date can't be after 'until' date".to_string(),
+    ));
   }
   Ok(())
 }

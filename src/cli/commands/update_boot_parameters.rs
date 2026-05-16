@@ -8,6 +8,7 @@ use crate::common::audit;
 use crate::service::boot_parameters::UpdateBootParametersParams;
 
 /// CLI adapter for `manta update boot-parameters`.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

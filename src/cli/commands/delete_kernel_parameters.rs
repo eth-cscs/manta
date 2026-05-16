@@ -6,6 +6,7 @@ use anyhow::{Context, Error};
 
 /// Deletes the specified kernel parameters from a set of nodes.
 /// Reboots the nodes whose kernel params have changed.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

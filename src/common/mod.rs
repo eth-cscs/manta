@@ -9,7 +9,6 @@ pub mod audit;
 pub mod authentication;
 pub mod authorization;
 pub mod boot_parameters;
-pub mod cfs_session_utils;
 pub mod check_network_connectivity;
 pub mod config;
 pub mod hooks;

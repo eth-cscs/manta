@@ -278,5 +278,5 @@ async fn get_token_interactively(
     attempts += 1;
   }
 
-  Ok(shasta_token_rslt?)
+  shasta_token_rslt
 }

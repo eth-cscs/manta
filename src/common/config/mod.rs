@@ -226,9 +226,7 @@ async fn create_new_config_file(
 
   let audit_file: String = prompt_string_allow_empty(
     "Please type full path for the audit file",
-    &get_default_manta_audit_file_path()?
-      .to_string_lossy()
-      .to_string(),
+    &get_default_manta_audit_file_path()?.to_string_lossy(),
   )?;
 
   let site: String = prompt_string("Please type site name", "alps")?;
@@ -255,9 +253,7 @@ async fn create_new_config_file(
 
   let root_ca_cert_file: String = prompt_string(
     "Please type full path for the CA public certificate file",
-    &get_default_mgmt_plane_ca_cert_file_path()?
-      .to_string_lossy()
-      .to_string(),
+    &get_default_mgmt_plane_ca_cert_file_path()?.to_string_lossy(),
   )?;
 
   let backend_options = [BackendTechnology::Csm, BackendTechnology::Ochami];
@@ -265,7 +261,7 @@ async fn create_new_config_file(
 
   let backend_selection = Select::new()
     .with_prompt("Please select 'backend' technology from the list below")
-    .items(&backend_option_labels)
+    .items(backend_option_labels)
     .default(0)
     .interact()?;
 

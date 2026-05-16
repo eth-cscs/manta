@@ -1,10 +1,9 @@
 //! Audit trail helpers: build and send structured JSON messages to Kafka.
 
-use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
+use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 
 use super::{jwt_ops, kafka::Kafka};
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.
@@ -91,37 +90,4 @@ pub async fn maybe_send_audit(
   if let Some(kafka) = kafka_opt {
     send_audit(kafka, token, message, host, group).await;
   }
-}
-
-/// Send an audit message with group names resolved from a
-/// backend lookup.
-///
-/// Like [`maybe_send_audit`], but first queries the backend to
-/// discover which HSM groups the given `xnames` belong to, and
-/// includes those group names in the audit message.
-pub async fn maybe_send_audit_with_group_lookup(
-  kafka_opt: Option<&Kafka>,
-  backend: &StaticBackendDispatcher,
-  token: &str,
-  message: impl Into<String>,
-  xnames: &[String],
-) -> Result<(), Error> {
-  if let Some(kafka) = kafka_opt {
-    let xname_refs: Vec<&str> =
-      xnames.iter().map(String::as_str).collect();
-
-    let group_map = backend
-      .get_group_map_and_filter_by_member_vec(token, &xname_refs)
-      .await?;
-
-    send_audit(
-      kafka,
-      token,
-      message,
-      Some(serde_json::json!(xnames)),
-      Some(serde_json::json!(group_map.keys().collect::<Vec<_>>())),
-    )
-    .await;
-  }
-  Ok(())
 }

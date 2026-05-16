@@ -4,8 +4,6 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::{self, app_context::AppContext};
 
-use manta_backend_dispatcher::types::K8sDetails;
-
 use crate::cli::http_client::MantaClient;
 
 /// Options for applying a SAT file.
@@ -13,8 +11,6 @@ use crate::cli::http_client::MantaClient;
 /// Bundles the many parameters needed by [`exec`] into a
 /// single struct, improving call-site readability.
 pub struct SatApplyOptions<'a> {
-  pub vault_base_url: &'a str,
-  pub k8s_api_url: &'a str,
   pub sat_file_content: &'a str,
   pub values_file_content_opt: Option<&'a str>,
   pub values_cli_opt: Option<&'a [String]>,
@@ -27,11 +23,9 @@ pub struct SatApplyOptions<'a> {
   pub posthook_opt: Option<&'a str>,
   pub image_only: bool,
   pub session_template_only: bool,
-  pub debug_on_failure: bool,
   pub overwrite: bool,
   pub dry_run: bool,
   pub assume_yes: bool,
-  pub k8s: &'a K8sDetails,
 }
 
 /// Validate that a hook script exists and is executable.

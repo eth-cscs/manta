@@ -6,9 +6,7 @@ use manta_backend_dispatcher::types::Group;
 
 use crate::common;
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::{
-  get_groups_names_available, validate_target_hsm_members,
-};
+use crate::common::authorization::get_groups_names_available;
 
 /// Typed parameters for fetching HSM groups.
 #[derive(Debug)]
@@ -85,46 +83,6 @@ pub async fn delete_group(
     validate_group_deletion(infra, token, label).await?;
   }
   infra.backend.delete_group(token, label).await.map(|_| ())
-}
-
-/// Resolve hosts and build a Group ready for creation.
-///
-/// Returns the constructed Group and the resolved xname list.
-pub async fn prepare_add_group(
-  infra: &InfraContext<'_>,
-  token: &str,
-  label: &str,
-  description: Option<&str>,
-  hosts_expression_opt: Option<&str>,
-) -> Result<(Group, Option<Vec<String>>), Error> {
-  let xname_vec_opt: Option<Vec<String>> = match hosts_expression_opt {
-    Some(hosts_expression) => {
-      let xname_vec = common::node_ops::resolve_hosts_expression(
-        infra.backend,
-        token,
-        hosts_expression,
-        false,
-      )
-      .await?;
-      Some(xname_vec)
-    }
-    None => None,
-  };
-
-  if let Some(xname_vec) = &xname_vec_opt {
-    validate_target_hsm_members(infra.backend, token, xname_vec)
-      .await?;
-  }
-
-  let group = Group::new(
-    label,
-    description.map(str::to_string),
-    xname_vec_opt.clone(),
-    None,
-    None,
-  );
-
-  Ok((group, xname_vec_opt))
 }
 
 /// Create an HSM group via the backend.

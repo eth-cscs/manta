@@ -107,8 +107,12 @@ impl<S: Send + Sync> FromRequestParts<S> for SiteName {
 ///
 /// Tells the server which cluster to route the request to.
 /// **Not** an authentication mechanism — documented as a plain header parameter.
+///
+/// The field is consumed by the `utoipa::IntoParams` derive macro at compile
+/// time to generate the OpenAPI spec; the runtime extractor is [`SiteName`].
 #[derive(IntoParams)]
 #[into_params(parameter_in = Header)]
+#[allow(dead_code)]
 pub struct SiteHeader {
   /// Name of the target cluster (matches a site configured in the server).
   #[param(required = true, rename = "X-Manta-Site")]
@@ -2015,7 +2019,7 @@ pub async fn post_power(
   let xnames: Vec<String> = match body.target_type {
     PowerTargetType::Cluster => infra
       .backend
-      .get_member_vec_from_group_name_vec(&token, &[body.targets_expression.clone()])
+      .get_member_vec_from_group_name_vec(&token, std::slice::from_ref(&body.targets_expression))
       .await
       .map_err(to_handler_error)?,
     PowerTargetType::Nodes => crate::common::node_ops::resolve_hosts_expression(
@@ -2932,10 +2936,10 @@ async fn run_console_bridge(
           Some(Ok(Message::Text(text))) => {
             deadline = tokio::time::Instant::now() + inactivity_timeout;
             // Consume resize control messages silently; forward everything else.
-            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
-              if v.get("type").and_then(|t| t.as_str()) == Some("resize") {
-                continue;
-              }
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text)
+              && v.get("type").and_then(|t| t.as_str()) == Some("resize")
+            {
+              continue;
             }
             if console_in.write_all(text.as_bytes()).await.is_err() { break; }
           }
@@ -2972,12 +2976,12 @@ async fn resolve_xnames_from_request(
   xnames_expression: Option<&str>,
   hsm_group: Option<&str>,
 ) -> Result<Vec<String>, (StatusCode, Json<ErrorResponse>)> {
-  if let Some(expr) = xnames_expression {
-    if !expr.is_empty() {
-      return crate::common::node_ops::resolve_hosts_expression(backend, token, expr, false)
-        .await
-        .map_err(display_error);
-    }
+  if let Some(expr) = xnames_expression
+    && !expr.is_empty()
+  {
+    return crate::common::node_ops::resolve_hosts_expression(backend, token, expr, false)
+      .await
+      .map_err(display_error);
   }
   if let Some(group) = hsm_group {
     return crate::common::node_ops::resolve_target_nodes(

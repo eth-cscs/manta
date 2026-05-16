@@ -142,9 +142,7 @@ pub async fn add_node(
     force: Some(true),
   };
 
-  if let Err(error) = backend.post_nodes(token, components).await {
-    return Err(error.into());
-  }
+  backend.post_nodes(token, components).await?;
 
   tracing::info!("Node saved '{}'", id);
 
@@ -189,14 +187,14 @@ pub async fn add_node(
       .await
     {
       rollback_node(backend, token, id).await;
-      return Err(error.into());
+      return Err(error);
     }
   }
 
   // Add node to group
   if let Err(error) = backend.post_member(token, group, id).await {
     rollback_node(backend, token, id).await;
-    return Err(error.into());
+    return Err(error);
   }
 
   Ok(())

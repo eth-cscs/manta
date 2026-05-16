@@ -53,24 +53,6 @@ pub enum KernelParamOperation<'a> {
 }
 
 impl<'a> KernelParamOperation<'a> {
-  /// The verb used in log/user-facing messages.
-  pub fn verb(&self) -> &'static str {
-    match self {
-      Self::Add { .. } => "Add",
-      Self::Apply { .. } => "Apply",
-      Self::Delete { .. } => "Delete",
-    }
-  }
-
-  /// The raw kernel parameter string.
-  pub fn params(&self) -> &str {
-    match self {
-      Self::Add { params, .. }
-      | Self::Apply { params }
-      | Self::Delete { params } => params,
-    }
-  }
-
   /// Apply the mutation to a single `BootParameters` entry.
   /// Returns `true` if the parameters were actually changed.
   fn mutate(
@@ -86,24 +68,6 @@ impl<'a> KernelParamOperation<'a> {
       }
       Self::Delete { params } => {
         boot_parameter.delete_kernel_params(params)
-      }
-    }
-  }
-
-  /// The confirmation message shown to the user.
-  pub fn confirm_message(&self) -> &'static str {
-    match self {
-      Self::Add { .. } => {
-        "This operation will add the kernel parameters for the nodes below. \
-         Please confirm to proceed"
-      }
-      Self::Apply { .. } => {
-        "This operation will replace the kernel parameters for the nodes below. \
-         Please confirm to proceed"
-      }
-      Self::Delete { .. } => {
-        "This operation will delete the kernel parameters for the nodes below. \
-         Please confirm to proceed"
       }
     }
   }
@@ -158,23 +122,22 @@ pub async fn prepare_kernel_params_changes(
     }
 
     // Detect SBPS image candidates (add & apply only)
-    if operation.handles_sbps_images() {
-      if let Some(image_id) = bp.try_get_boot_image_id() {
-        if !seen_images.contains_key(&image_id) {
-          seen_images.insert(image_id.clone(), true);
+    if operation.handles_sbps_images()
+      && let Some(image_id) = bp.try_get_boot_image_id()
+      && !seen_images.contains_key(&image_id)
+    {
+      seen_images.insert(image_id.clone(), true);
 
-          let image: Image = infra
-            .backend
-            .get_images(token, Some(&image_id))
-            .await?
-            .first()
-            .ok_or_else(|| Error::NotFound("No image found for the given image id".to_string()))?
-            .clone();
+      let image: Image = infra
+        .backend
+        .get_images(token, Some(&image_id))
+        .await?
+        .first()
+        .ok_or_else(|| Error::NotFound("No image found for the given image id".to_string()))?
+        .clone();
 
-          if bp.is_root_kernel_param_iscsi_ready() {
-            sbps_candidates.push((image_id, image));
-          }
-        }
+      if bp.is_root_kernel_param_iscsi_ready() {
+        sbps_candidates.push((image_id, image));
       }
     }
   }
@@ -203,7 +166,7 @@ pub async fn apply_kernel_params_changes(
   }
 
   // Update images projected through SBPS
-  for (_, image) in images_to_project {
+  for image in images_to_project.values() {
     infra
       .backend
       .update_image(
@@ -261,20 +224,6 @@ mod tests {
   }
 
   #[test]
-  fn verb_returns_correct_string() {
-    assert_eq!(add("quiet").verb(), "Add");
-    assert_eq!(apply("quiet").verb(), "Apply");
-    assert_eq!(delete("quiet").verb(), "Delete");
-  }
-
-  #[test]
-  fn params_returns_the_string() {
-    assert_eq!(add("quiet crashkernel=auto").params(), "quiet crashkernel=auto");
-    assert_eq!(apply("console=ttyS0").params(), "console=ttyS0");
-    assert_eq!(delete("splash").params(), "splash");
-  }
-
-  #[test]
   fn overwrite_flag_preserved() {
     match add_overwrite("x") {
       KernelParamOperation::Add { overwrite, .. } => assert!(overwrite),
@@ -291,19 +240,5 @@ mod tests {
     assert!(add("quiet").handles_sbps_images());
     assert!(apply("quiet").handles_sbps_images());
     assert!(!delete("quiet").handles_sbps_images());
-  }
-
-  #[test]
-  fn confirm_messages_are_nonempty() {
-    assert!(!add("x").confirm_message().is_empty());
-    assert!(!apply("x").confirm_message().is_empty());
-    assert!(!delete("x").confirm_message().is_empty());
-  }
-
-  #[test]
-  fn confirm_messages_are_distinct() {
-    assert_ne!(add("x").confirm_message(), apply("x").confirm_message());
-    assert_ne!(add("x").confirm_message(), delete("x").confirm_message());
-    assert_ne!(apply("x").confirm_message(), delete("x").confirm_message());
   }
 }
