@@ -1,0 +1,28 @@
+[package]
+name        = "manta-shared"
+description = "Shared types and pure helpers used by both manta-cli and (future) manta-server."
+publish     = false
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license-file.workspace = true
+repository.workspace   = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# Wire types come from manta-backend-dispatcher::types.
+manta-backend-dispatcher = { workspace = true }
+# cluster_status takes csm-rs's NodeDetails by reference.
+csm-rs                   = { workspace = true }
+
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+serde_yaml   = { workspace = true }
+chrono       = { workspace = true }
+utoipa       = { workspace = true }
+minijinja    = { workspace = true }
+strum        = { workspace = true }
+strum_macros = { workspace = true }
+tracing      = { workspace = true }

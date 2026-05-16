@@ -28,9 +28,11 @@ strum_macros              = "0.27.1"
 [dependencies]
 # --- START MANTA DEPENDENCIES ---
 
-# Inherited from [workspace.dependencies] so the three internal crates
-# (manta-backend-dispatcher, csm-rs, ochami-rs) are pinned in one place
-# at the workspace root.
+# In-workspace library crate with wire types + pure helpers.
+manta-shared             = { workspace = true }
+
+# Sibling repos — inherited from [workspace.dependencies] so the three are
+# pinned in one place at the workspace root.
 manta-backend-dispatcher = { workspace = true }
 ochami-rs                = { workspace = true }
 csm-rs                   = { workspace = true }

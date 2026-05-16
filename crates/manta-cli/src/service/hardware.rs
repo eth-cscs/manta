@@ -12,7 +12,7 @@ use tokio::sync::Semaphore;
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
 use crate::server::common::node_ops;
-pub use crate::shared::params::hardware::{
+pub use manta_shared::shared::params::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
 };
 
@@ -180,10 +180,10 @@ pub async fn get_hardware_nodes_list(
 }
 
 // `calculate_hsm_hw_component_summary` and `get_cluster_hw_pattern` moved
-// to `crate::shared::cluster_status`. Only `calculate_hsm_hw_component_summary`
+// to `manta_shared::shared::cluster_status`. Only `calculate_hsm_hw_component_summary`
 // is still needed locally — the tests below use it.
 #[cfg(test)]
-use crate::shared::cluster_status::calculate_hsm_hw_component_summary;
+use manta_shared::shared::cluster_status::calculate_hsm_hw_component_summary;
 
 #[cfg(test)]
 mod tests {

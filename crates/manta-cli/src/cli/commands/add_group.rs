@@ -4,7 +4,7 @@ use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext, audit};
-use crate::shared::dto::Group;
+use manta_shared::shared::dto::Group;
 
 /// CLI adapter for `manta add group`.
 pub async fn exec(

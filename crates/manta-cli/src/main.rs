@@ -7,7 +7,8 @@ mod common;
 mod manta_backend_dispatcher;
 mod server;
 mod service;
-mod shared;
+// `shared` was extracted as the `manta-shared` workspace crate; use it
+// via `manta_shared::shared::*` instead of a local `mod shared;`.
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{

@@ -5,7 +5,7 @@ use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse;
 
 use crate::common::app_context::InfraContext;
-pub use crate::shared::params::power::{ApplyPowerParams, PowerAction};
+pub use manta_shared::shared::params::power::{ApplyPowerParams, PowerAction};
 
 /// Dispatch the requested power action to the backend PCS trait.
 ///

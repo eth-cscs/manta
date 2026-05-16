@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::configuration::print_table_struct;
 use crate::common::app_context::AppContext;
-use crate::shared::params::configuration::GetConfigurationParams;
+use manta_shared::shared::params::configuration::GetConfigurationParams;
 
 /// Parse CLI arguments into typed [`GetConfigurationParams`].
 fn parse_configuration_params(

@@ -5,8 +5,8 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::shared::cluster_status;
-use crate::shared::params::cluster::GetClusterParams;
+use manta_shared::shared::cluster_status;
+use manta_shared::shared::params::cluster::GetClusterParams;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
 fn parse_cluster_params(

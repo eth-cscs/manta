@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::shared::params::kernel_parameters::GetKernelParametersParams;
+use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
 
 /// Parse CLI arguments into typed [`GetKernelParametersParams`].
 fn parse_kernel_parameters_params(

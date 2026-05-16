@@ -6,7 +6,7 @@ use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-pub use crate::shared::params::cluster::GetClusterParams;
+pub use manta_shared::shared::params::cluster::GetClusterParams;
 
 /// Fetch node details for all nodes in the specified HSM groups.
 pub async fn get_cluster_nodes(

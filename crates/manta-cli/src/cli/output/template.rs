@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Error};
 use comfy_table::Table;
-use crate::shared::dto::BosSessionTemplate;
+use manta_shared::shared::dto::BosSessionTemplate;
 
 /// Print BOS session templates in the requested format.
 pub fn print(

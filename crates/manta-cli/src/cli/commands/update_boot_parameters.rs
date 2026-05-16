@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
-use crate::shared::params::boot_parameters::UpdateBootParametersParams;
+use manta_shared::shared::params::boot_parameters::UpdateBootParametersParams;
 
 /// CLI adapter for `manta update boot-parameters`.
 #[allow(clippy::too_many_arguments)]

@@ -1,7 +1,7 @@
 //! Implements the `manta add boot-parameters` command.
 
 use anyhow::{Context, Error};
-use crate::shared::dto::BootParameters;
+use manta_shared::shared::dto::BootParameters;
 use serde_json::Value;
 
 use crate::cli::http_client::MantaClient;

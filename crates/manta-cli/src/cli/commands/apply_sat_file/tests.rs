@@ -1,4 +1,4 @@
-use crate::shared::sat_file::render_jinja2_sat_file_yaml;
+use manta_shared::shared::sat_file::render_jinja2_sat_file_yaml;
 
 /// Test rendering a SAT template file with the values file
 #[test]

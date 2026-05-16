@@ -14,7 +14,7 @@ use crate::common::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
 use crate::server::common::node_ops::validate_xname_format;
-pub use crate::shared::params::template::{ApplyTemplateParams, GetTemplateParams};
+pub use manta_shared::shared::params::template::{ApplyTemplateParams, GetTemplateParams};
 
 /// Fetch and filter BOS session templates from the backend.
 pub async fn get_templates(

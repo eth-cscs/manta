@@ -22,7 +22,7 @@ const HW_COMPONENT_CONCURRENCY_LIMIT: usize = 5;
 
 // ── Public types ────────────────────────────────────────────────────────────
 
-pub use crate::shared::params::hw_cluster::HwClusterMode;
+pub use manta_shared::shared::params::hw_cluster::HwClusterMode;
 
 /// A list of nodes paired with their per-component counts.
 pub type NodeHwCountVec = Vec<(String, HashMap<String, usize>)>;

@@ -10,7 +10,7 @@ use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-pub use crate::shared::params::configuration::GetConfigurationParams;
+pub use manta_shared::shared::params::configuration::GetConfigurationParams;
 
 /// Fetch and filter CFS configurations from the backend.
 pub async fn get_configurations(

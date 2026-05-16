@@ -3,7 +3,7 @@
 use crate::common::DATETIME_FORMAT;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
-use crate::shared::dto::Image;
+use manta_shared::shared::dto::Image;
 
 /// Print image details as a formatted table.
 pub fn print(image_detail_vec: &[(Image, String, String, bool)]) {

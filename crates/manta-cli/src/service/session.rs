@@ -12,7 +12,7 @@ use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-pub use crate::shared::params::session::GetSessionParams;
+pub use manta_shared::shared::params::session::GetSessionParams;
 
 /// Fetch and filter CFS sessions from the backend.
 pub async fn get_sessions(

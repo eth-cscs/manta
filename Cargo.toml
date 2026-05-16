@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/manta-cli"]
+members = ["crates/manta-shared", "crates/manta-cli"]
 
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
@@ -17,6 +17,9 @@ repository   = "https://github.com/eth-cscs/manta"
 # `<crate> = { workspace = true }`. Keeping them here means the three
 # workspace members can't drift apart on tokio/serde/reqwest/etc.
 [workspace.dependencies]
+# Internal workspace crates
+manta-shared             = { path = "crates/manta-shared" }
+# Sibling repos
 manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
 csm-rs                   = { path = "../csm-rs" }
 ochami-rs                = { path = "../ochami-rs" }

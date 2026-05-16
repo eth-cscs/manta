@@ -446,7 +446,7 @@ pub mod configuration {
 /// eg:
 /// having a:
 ///
-/// ```
+/// ```text
 /// key_1
 ///   key_1_1: value_1_1
 ///   key_1_2: value_1_2
@@ -454,7 +454,7 @@ pub mod configuration {
 /// key_3: value_3
 /// ```
 /// and b:
-/// ```
+/// ```text
 /// key_1
 ///   key_1_1: new_value_1_1
 ///   key_1_2: value_1_2
@@ -463,7 +463,7 @@ pub mod configuration {
 /// key_4: new_value_4
 /// ```
 /// would convert a into:
-/// ```
+/// ```text
 /// key_1
 ///   key_1_1: new_value_1_1
 ///   key_1_3: new_value_1_3
@@ -494,11 +494,11 @@ fn merge_yaml(base: Value, merge: Value) -> Option<Value> {
 /// Convert a String dot notation expression into a serde_yaml::Value.
 /// eg:
 /// dot notation input like:
-/// ```
+/// ```text
 /// key_1.key_2.key_3=1
-/// ````
-/// would result in a serde_yaml::Value equivalent to:
 /// ```
+/// would result in a serde_yaml::Value equivalent to:
+/// ```text
 /// key_1
 ///   key_2
 ///     key_3: 1
