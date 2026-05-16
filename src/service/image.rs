@@ -10,7 +10,7 @@ use manta_backend_dispatcher::types::ims::Image;
 use manta_backend_dispatcher::types::Group;
 
 use crate::common::app_context::InfraContext;
-use crate::server::common::authorization::get_groups_names_available;
+use crate::common::authorization::get_groups_names_available;
 use crate::server::common::boot_parameters::get_restricted_boot_parameters;
 pub use crate::shared::params::image::GetImagesParams;
 

@@ -304,7 +304,7 @@ pub async fn resolve_target_nodes(
     || settings_hsm_group_name_opt.is_some()
   {
     let hsm_group_name_vec =
-      super::authorization::get_groups_names_available(
+      crate::common::authorization::get_groups_names_available(
         backend,
         shasta_token,
         hsm_group_name_arg_opt,

@@ -173,14 +173,14 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
   match output {
     "details" => print_table_details(&node_summaries),
     "summary" => {
-      let summary = crate::service::hardware::calculate_hsm_hw_component_summary(
+      let summary = crate::shared::cluster_status::calculate_hsm_hw_component_summary(
         &node_summaries,
       );
       print_table_summary(&summary);
     }
     "pattern" => {
       let pattern =
-        crate::service::hardware::get_cluster_hw_pattern(node_summaries);
+        crate::shared::cluster_status::get_cluster_hw_pattern(node_summaries);
       print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);
     }
     other => bail!("unsupported output format '{}'", other),

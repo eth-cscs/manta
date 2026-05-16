@@ -2745,7 +2745,7 @@ pub async fn apply_session(
       .split(',')
       .map(|s| s.trim().to_string())
       .collect();
-    crate::server::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
+    crate::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
       .await
       .map_err(display_error)?;
   }

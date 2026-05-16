@@ -9,6 +9,7 @@
 //! Future-proofing: once the codebase is split into a Cargo workspace, this
 //! module becomes the `manta-shared` library crate.
 
+pub mod cluster_status;
 pub mod dto;
 pub mod params;
 pub mod sat_file;

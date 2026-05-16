@@ -9,7 +9,7 @@ use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
-use crate::server::common::authorization::{
+use crate::common::authorization::{
     get_groups_names_available, validate_target_hsm_members,
 };
 

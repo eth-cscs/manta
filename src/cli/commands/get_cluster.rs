@@ -5,8 +5,8 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
+use crate::shared::cluster_status;
 use crate::shared::params::cluster::GetClusterParams;
-use crate::service::node;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
 fn parse_cluster_params(
@@ -40,7 +40,7 @@ pub async fn exec(
     .await?;
 
   if summary_status {
-    println!("{}", node::compute_summary_status(&node_details_list));
+    println!("{}", cluster_status::compute_summary_status(&node_details_list));
   } else if nids_only {
     let node_nid_list: Vec<String> = node_details_list
       .iter()

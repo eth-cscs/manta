@@ -22,13 +22,7 @@ const HW_COMPONENT_CONCURRENCY_LIMIT: usize = 5;
 
 // ── Public types ────────────────────────────────────────────────────────────
 
-/// Whether the hw cluster operation moves nodes into the target (Pin) or
-/// releases them back (Unpin).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HwClusterMode {
-  Pin,
-  Unpin,
-}
+pub use crate::shared::params::hw_cluster::HwClusterMode;
 
 /// A list of nodes paired with their per-component counts.
 pub type NodeHwCountVec = Vec<(String, HashMap<String, usize>)>;

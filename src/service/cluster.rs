@@ -5,7 +5,7 @@ use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::common::app_context::InfraContext;
-use crate::server::common::authorization::get_groups_names_available;
+use crate::common::authorization::get_groups_names_available;
 pub use crate::shared::params::cluster::GetClusterParams;
 
 /// Fetch node details for all nodes in the specified HSM groups.

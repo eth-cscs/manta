@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use crate::common;
 use crate::common::app_context::InfraContext;
-use crate::server::common::authorization::validate_target_hsm_members;
+use crate::common::authorization::validate_target_hsm_members;
 use crate::server::common::ims_ops::get_image_vec_related_cfs_configuration_name;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 pub use crate::shared::params::boot_parameters::{

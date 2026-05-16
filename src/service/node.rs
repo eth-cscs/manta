@@ -57,39 +57,8 @@ pub async fn get_nodes(
   Ok(node_details_list)
 }
 
-/// Compute a summary status from a list of node details.
-///
-/// Priority order: FAILED > OFF > ON > STANDBY > UNCONFIGURED > OK
-pub fn compute_summary_status(nodes: &[NodeDetails]) -> &'static str {
-  if nodes
-    .iter()
-    .any(|n| n.configuration_status.eq_ignore_ascii_case("failed"))
-  {
-    "FAILED"
-  } else if nodes
-    .iter()
-    .any(|n| n.power_status.eq_ignore_ascii_case("OFF"))
-  {
-    "OFF"
-  } else if nodes
-    .iter()
-    .any(|n| n.power_status.eq_ignore_ascii_case("on"))
-  {
-    "ON"
-  } else if nodes
-    .iter()
-    .any(|n| n.power_status.eq_ignore_ascii_case("standby"))
-  {
-    "STANDBY"
-  } else if nodes
-    .iter()
-    .any(|n| !n.configuration_status.eq_ignore_ascii_case("configured"))
-  {
-    "UNCONFIGURED"
-  } else {
-    "OK"
-  }
-}
+// `compute_summary_status` moved to `crate::shared::cluster_status` — only
+// CLI display code calls it.
 
 /// Delete a node by its xname/ID.
 pub async fn delete_node(

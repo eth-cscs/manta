@@ -10,6 +10,7 @@ pub mod cluster;
 pub mod configuration;
 pub mod group;
 pub mod hardware;
+pub mod hw_cluster;
 pub mod image;
 pub mod kernel_parameters;
 pub mod node;

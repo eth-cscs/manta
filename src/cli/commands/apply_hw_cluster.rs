@@ -3,11 +3,9 @@
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
-use crate::{
-  cli::http_client::MantaClient,
-  common::app_context::AppContext,
-  service::hw_cluster::HwClusterMode,
-};
+use crate::cli::http_client::MantaClient;
+use crate::common::app_context::AppContext;
+use crate::shared::params::hw_cluster::HwClusterMode;
 
 /// Apply a hardware cluster configuration (pin or unpin).
 pub async fn exec(
