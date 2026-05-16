@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::cluster::GetClusterParams;
+use crate::shared::params::cluster::GetClusterParams;
 use crate::service::node;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].

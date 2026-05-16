@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::session::GetSessionParams;
+use crate::shared::params::session::GetSessionParams;
 
 /// Parse CLI arguments into typed [`GetSessionParams`].
 fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {

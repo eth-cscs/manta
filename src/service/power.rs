@@ -5,21 +5,7 @@ use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::pcs::transitions::types::TransitionResponse;
 
 use crate::common::app_context::InfraContext;
-
-/// The power operation to apply to a list of xnames.
-#[derive(Debug, Clone, Copy)]
-pub enum PowerAction {
-  On,
-  Off,
-  Reset,
-}
-
-/// Typed parameters for [`apply_power`].
-pub struct ApplyPowerParams {
-  pub action: PowerAction,
-  pub xnames: Vec<String>,
-  pub force: bool,
-}
+pub use crate::shared::params::power::{ApplyPowerParams, PowerAction};
 
 /// Dispatch the requested power action to the backend PCS trait.
 ///

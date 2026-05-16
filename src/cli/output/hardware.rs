@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::{bail, Context, Error};
 use comfy_table::{Cell, Color, Table};
-use manta_backend_dispatcher::types::NodeSummary;
+use crate::shared::dto::NodeSummary;
 use serde_json::Value;
 
 // ---------------------------------------------------------------------------

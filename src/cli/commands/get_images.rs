@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::image::GetImagesParams;
+use crate::shared::params::image::GetImagesParams;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
 fn parse_images_params(

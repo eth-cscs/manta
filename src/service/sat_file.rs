@@ -6,22 +6,7 @@ use manta_backend_dispatcher::{
 };
 
 use crate::common::app_context::InfraContext;
-
-/// Parameters for applying a SAT file.
-pub struct ApplySatFileParams<'a> {
-  pub sat_file_content: &'a str,
-  pub values: Option<&'a serde_json::Value>,
-  pub values_file_content: Option<&'a str>,
-  pub ansible_verbosity: Option<u8>,
-  pub ansible_passthrough: Option<&'a str>,
-  pub reboot: bool,
-  pub watch_logs: bool,
-  pub timestamps: bool,
-  pub image_only: bool,
-  pub session_template_only: bool,
-  pub overwrite: bool,
-  pub dry_run: bool,
-}
+pub use crate::shared::params::sat_file::ApplySatFileParams;
 
 /// Render, filter, and apply a SAT file via the backend.
 pub async fn apply_sat_file(
@@ -43,13 +28,13 @@ pub async fn apply_sat_file(
     })
     .unwrap_or_default();
 
-  let sat_template_yaml = crate::common::sat_file::render_jinja2_sat_file_yaml(
+  let sat_template_yaml = crate::shared::sat_file::render_jinja2_sat_file_yaml(
     params.sat_file_content,
     params.values_file_content,
     if values_cli_vec.is_empty() { None } else { Some(&values_cli_vec) },
   )?;
 
-  let mut sat_file: crate::common::sat_file::SatFile =
+  let mut sat_file: crate::shared::sat_file::SatFile =
     serde_yaml::from_value(sat_template_yaml)?;
 
   sat_file.filter(params.image_only, params.session_template_only)?;

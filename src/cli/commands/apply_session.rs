@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_backend_dispatcher::types::K8sDetails;
+use crate::shared::dto::K8sDetails;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::{

@@ -14,14 +14,7 @@ use crate::common::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
 use crate::common::node_ops::validate_xname_format;
-
-/// Typed parameters for fetching BOS session templates.
-pub struct GetTemplateParams {
-  pub name: Option<String>,
-  pub hsm_group: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-  pub limit: Option<u8>,
-}
+pub use crate::shared::params::template::{ApplyTemplateParams, GetTemplateParams};
 
 /// Fetch and filter BOS session templates from the backend.
 pub async fn get_templates(
@@ -63,15 +56,6 @@ pub async fn get_templates(
   bos_sessiontemplate_vec.sort_by(|a, b| a.name.cmp(&b.name));
 
   Ok(bos_sessiontemplate_vec)
-}
-
-/// Parameters for applying a BOS session template.
-pub struct ApplyTemplateParams {
-  pub bos_session_name: Option<String>,
-  pub bos_sessiontemplate_name: String,
-  pub bos_session_operation: String,
-  pub limit: String,
-  pub include_disabled: bool,
 }
 
 /// Validate template access, resolve limit targets, and build

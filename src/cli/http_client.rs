@@ -13,18 +13,12 @@ use tokio::io::{AsyncBufRead, BufReader};
 use tokio_util::io::StreamReader;
 
 use csm_rs::node::types::NodeDetails;
-use manta_backend_dispatcher::types::{
-  Group,
-  bss::BootParameters,
-  cfs::{
-    cfs_configuration_response::CfsConfigurationResponse,
-    session::CfsSessionGetResponse,
-  },
-  bos::session_template::BosSessionTemplate,
-  ims::Image,
+use crate::shared::dto::{
+  BootParameters, BosSessionTemplate, CfsConfigurationResponse,
+  CfsSessionGetResponse, Group, Image,
 };
 
-use crate::service::{
+use crate::shared::params::{
   boot_parameters::{GetBootParametersParams, UpdateBootParametersParams},
   cluster::GetClusterParams,
   configuration::GetConfigurationParams,

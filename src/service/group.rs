@@ -7,13 +7,7 @@ use manta_backend_dispatcher::types::Group;
 use crate::common;
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
-
-/// Typed parameters for fetching HSM groups.
-#[derive(Debug)]
-pub struct GetGroupParams {
-  pub group_name: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-}
+pub use crate::shared::params::group::GetGroupParams;
 
 /// Fetch HSM groups from the backend.
 pub async fn get_groups(

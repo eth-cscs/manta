@@ -9,13 +9,7 @@ use std::collections::HashMap;
 
 use crate::common;
 use crate::common::app_context::InfraContext;
-
-/// Typed parameters for fetching kernel boot parameters.
-pub struct GetKernelParametersParams {
-  pub hsm_group: Option<String>,
-  pub nodes: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-}
+pub use crate::shared::params::kernel_parameters::GetKernelParametersParams;
 
 /// Fetch kernel boot parameters for the specified nodes.
 ///

@@ -7,15 +7,9 @@ use manta_backend_dispatcher::types::hsm::inventory::{
 };
 
 use crate::common::app_context::InfraContext;
-
-/// Typed parameters for fetching Redfish endpoints.
-pub struct GetRedfishEndpointsParams {
-  pub id: Option<String>,
-  pub fqdn: Option<String>,
-  pub uuid: Option<String>,
-  pub macaddr: Option<String>,
-  pub ipaddress: Option<String>,
-}
+pub use crate::shared::params::redfish_endpoints::{
+  GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
+};
 
 /// Fetch Redfish endpoint registrations from the backend.
 pub async fn get_redfish_endpoints(
@@ -52,39 +46,6 @@ pub async fn delete_redfish_endpoint(
     .delete_redfish_endpoint(token, id)
     .await
     .map(|_| ())
-}
-
-/// Typed parameters for updating/adding a Redfish endpoint.
-#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
-pub struct UpdateRedfishEndpointParams {
-  /// Xname identifying the BMC (e.g. `x3000c0s1b0`).
-  pub id: String,
-  /// Optional human-readable name.
-  pub name: Option<String>,
-  /// Hostname portion of the BMC FQDN.
-  pub hostname: Option<String>,
-  /// Domain portion of the BMC FQDN.
-  pub domain: Option<String>,
-  /// Full FQDN; overrides hostname+domain when set.
-  pub fqdn: Option<String>,
-  /// Whether the endpoint is enabled for discovery.
-  pub enabled: bool,
-  /// BMC username for Redfish authentication.
-  pub user: Option<String>,
-  /// BMC password for Redfish authentication.
-  pub password: Option<String>,
-  /// Use SSDP for automatic endpoint discovery.
-  pub use_ssdp: bool,
-  /// Whether a MAC address is required for geolocation.
-  pub mac_required: bool,
-  /// BMC MAC address (colon-separated).
-  pub mac_addr: Option<String>,
-  /// BMC IP address (IPv4 or IPv6).
-  pub ip_address: Option<String>,
-  /// Trigger a rediscovery pass when the endpoint is updated.
-  pub rediscover_on_update: bool,
-  /// ID of a discovery template to apply.
-  pub template_id: Option<String>,
 }
 
 /// Add (register) a new Redfish endpoint.

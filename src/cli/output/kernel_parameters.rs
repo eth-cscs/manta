@@ -1,7 +1,7 @@
 //! Table and JSON renderers for kernel parameter output.
 
 use comfy_table::{Cell, ContentArrangement, Table};
-use manta_backend_dispatcher::types::bss::BootParameters;
+use crate::shared::dto::BootParameters;
 
 use crate::common::kernel_parameters_ops::group_boot_params_by_kernel_params;
 

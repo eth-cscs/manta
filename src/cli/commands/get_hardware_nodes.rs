@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::hardware::GetHardwareNodesListParams;
+use crate::shared::params::hardware::GetHardwareNodesListParams;
 
 /// Parse CLI arguments into typed [`GetHardwareNodesListParams`].
 fn parse_hardware_nodes_params(

@@ -4,7 +4,7 @@ use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::service::redfish_endpoints::UpdateRedfishEndpointParams;
+use crate::shared::params::redfish_endpoints::UpdateRedfishEndpointParams;
 
 /// CLI adapter for `manta add redfish-endpoint`.
 pub async fn exec(

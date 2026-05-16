@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::hardware::GetHardwareClusterParams;
+use crate::shared::params::hardware::GetHardwareClusterParams;
 
 /// Parse CLI arguments into typed [`GetHardwareClusterParams`].
 fn parse_hardware_cluster_params(

@@ -1,7 +1,7 @@
 //! Table and JSON renderers for BSS boot parameter output.
 
 use anyhow::Error;
-use manta_backend_dispatcher::types::bss::BootParameters;
+use crate::shared::dto::BootParameters;
 
 /// Print boot parameters in the requested format.
 ///

@@ -3,7 +3,7 @@
 use crate::common::DATETIME_FORMAT;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
-use manta_backend_dispatcher::types::ims::Image;
+use crate::shared::dto::Image;
 
 /// Print image details as a formatted table.
 pub fn print(image_detail_vec: &[(Image, String, String, bool)]) {

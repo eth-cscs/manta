@@ -12,14 +12,7 @@ use manta_backend_dispatcher::types::Group;
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
 use crate::common::boot_parameters::get_restricted_boot_parameters;
-
-/// Typed parameters for fetching IMS images.
-pub struct GetImagesParams {
-  pub id: Option<String>,
-  pub hsm_group: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-  pub limit: Option<u8>,
-}
+pub use crate::shared::params::image::GetImagesParams;
 
 /// Fetch images and their associated details from the backend.
 ///

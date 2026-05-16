@@ -7,6 +7,7 @@ mod common;
 mod manta_backend_dispatcher;
 mod server;
 mod service;
+mod shared;
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{

@@ -13,6 +13,9 @@ use tokio::sync::Semaphore;
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
 use crate::common::node_ops;
+pub use crate::shared::params::hardware::{
+  GetHardwareClusterParams, GetHardwareNodesListParams,
+};
 
 /// Maximum number of concurrent hardware inventory requests.
 const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
@@ -21,12 +24,6 @@ const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
 const MIB_PER_GIB: usize = 1024;
 
 // ── Hardware Cluster ──
-
-/// Typed parameters for fetching cluster hardware inventory.
-pub struct GetHardwareClusterParams {
-  pub hsm_group_name: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-}
 
 /// Result of a hardware cluster query.
 pub struct HardwareClusterResult {
@@ -149,13 +146,6 @@ pub async fn get_hardware_cluster(
 }
 
 // ── Hardware Nodes List ──
-
-/// Typed parameters for fetching hardware inventory for an explicit node list.
-#[derive(Debug)]
-pub struct GetHardwareNodesListParams {
-  /// Comma-separated xnames.
-  pub xnames: String,
-}
 
 /// Result of a hardware nodes-list query.
 pub struct HardwareNodesListResult {

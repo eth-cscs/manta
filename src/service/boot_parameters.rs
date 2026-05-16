@@ -19,13 +19,9 @@ use crate::common::app_context::InfraContext;
 use crate::common::authorization::validate_target_hsm_members;
 use crate::common::ims_ops::get_image_vec_related_cfs_configuration_name;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-
-/// Typed parameters for fetching boot parameters.
-pub struct GetBootParametersParams {
-  pub hsm_group: Option<String>,
-  pub nodes: Option<String>,
-  pub settings_hsm_group_name: Option<String>,
-}
+pub use crate::shared::params::boot_parameters::{
+  GetBootParametersParams, UpdateBootParametersParams,
+};
 
 /// Fetch boot parameters for the specified nodes.
 pub async fn get_boot_parameters(
@@ -73,23 +69,6 @@ pub async fn add_boot_parameters(
   boot_parameters: &BootParameters,
 ) -> Result<(), Error> {
   infra.backend.add_bootparameters(token, boot_parameters).await
-}
-
-/// Typed parameters for updating boot parameters.
-#[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
-pub struct UpdateBootParametersParams {
-  /// Target node xnames.
-  pub hosts: Vec<String>,
-  /// Node IDs corresponding to `hosts` (optional alternate identifier).
-  pub nids: Option<Vec<u32>>,
-  /// MAC addresses corresponding to `hosts` (optional alternate identifier).
-  pub macs: Option<Vec<String>>,
-  /// Kernel command-line parameters string.
-  pub params: String,
-  /// S3 path to the kernel image.
-  pub kernel: String,
-  /// S3 path to the initrd image.
-  pub initrd: String,
 }
 
 /// Update boot parameters for specified nodes.

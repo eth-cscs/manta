@@ -12,13 +12,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::common;
 use crate::common::app_context::InfraContext;
-
-/// Typed parameters for fetching node details.
-pub struct GetNodesParams {
-  pub xname: String,
-  pub include_siblings: bool,
-  pub status_filter: Option<String>,
-}
+pub use crate::shared::params::node::GetNodesParams;
 
 /// Fetch node details for the given xname expression.
 pub async fn get_nodes(

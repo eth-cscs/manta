@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use crate::common::app_context::AppContext;
-use crate::service::template::GetTemplateParams;
+use crate::shared::params::template::GetTemplateParams;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
 fn parse_template_params(
