@@ -1,0 +1,34 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-delete-kernel-parameters 1  "kernel-parameters " 
+.SH NAME
+manta\-cli\-delete\-kernel\-parameters \- Remove kernel parameters from nodes
+.SH SYNOPSIS
+\fBmanta\-cli delete kernel\-parameters\fR [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-H\fR|\fB\-\-hsm\-group\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-do\-not\-reboot\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIPARAMS\fR> 
+.SH DESCRIPTION
+Remove kernel parameters from nodes
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+\fB\-H\fR, \fB\-\-hsm\-group\fR \fI<GROUP_NAME>\fR
+Node group name
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR
+Skip confirmation prompts
+.TP
+\fB\-\-do\-not\-reboot\fR
+Do not reboot nodes after applying changes
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIPARAMS\fR>
+Comma\-separated kernel parameter names to remove.
+eg: console,bad_page,crashkernel,hugepagelist,quiet

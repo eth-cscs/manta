@@ -1,0 +1,103 @@
+# cargo-features = ["codegen-backend"]
+# default-features = false
+
+[package]
+edition = "2024"
+authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
+name = "manta-cli"
+description = "Another CLI for ALPS"
+version = "1.64.3"
+license-file = "LICENSE"
+documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
+homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
+repository = "https://github.com/eth-cscs/manta"
+keywords = ["cli", "productivity"]
+publish = true
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+clap                      = { version = "4.5.60", features = ["wrap_help"] }
+clap_complete             = "4.5.66"
+clap_mangen               = "0.3.0"
+manta-backend-dispatcher  = { workspace = true }
+strum                     = { version = "0.27.1", default-features = false }
+strum_macros              = "0.27.1"
+
+[dependencies]
+# --- START MANTA DEPENDENCIES ---
+
+# Inherited from [workspace.dependencies] so the three internal crates
+# (manta-backend-dispatcher, csm-rs, ochami-rs) are pinned in one place
+# at the workspace root.
+manta-backend-dispatcher = { workspace = true }
+ochami-rs                = { workspace = true }
+csm-rs                   = { workspace = true }
+
+# --- END MANTA DEPENDENCIES ---
+
+hostlist-parser = "0.1.6"
+nodeset = "0.5.0"
+strum = { version = "0.27.1", default-features = false }
+strum_macros = "0.27.1"
+chrono = { version = "0.4.41", default-features = false }
+anyhow = { version = "1.0.44", default-features = false }
+reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls", "socks", "stream"] } # We need native-tls-vendored feature to be able to compile on `musl` target
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+serde_yaml = "0.9.34"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "time"] }
+tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
+uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
+git2 = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
+dialoguer = { version = "0.12.0", features = ["password"], default-features = false }
+futures = { version = "0.3.31", default-features = false }
+toml = "0.8.16"
+toml_edit = "0.22.27" # used to edit manta configuration file
+clap = { version = "4.5.60", features = ["wrap_help"] }
+clap_complete = "4.5.66"
+regex = "1.6.0"
+directories = "6.0.0"                                                      # XDG Base Directory Specification
+comfy-table = "7.2.2"
+crossterm = { version = "0.29.0", default-features = false }               # terminal colors and raw mode
+execute = "0.2.13"
+is_executable = "1.0.1"
+minijinja = { version = "2.4.0", features = ["custom_syntax"] }
+rdkafka = { version = "0.39" }
+# rdkafka = { version = "0.37", features = ["cmake-build"] }
+base64 = { version = "0.22", default-features = false }
+config = { version = "0.15.19", features = ["toml"], default-features = false }
+axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
+utoipa            = { version = "5.5", features = ["axum_extras", "uuid"] }
+utoipa-axum       = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+tokio-tungstenite = "0.29"
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "timeout"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+rustls-pemfile = "2"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+wiremock = "0.6"
+
+# Build profiles ([profile.release], [profile.dist]) live at the workspace
+# root so they apply to every member.
+
+# Config for `cargo release`
+[package.metadata.release]
+pre-release-hook = [
+  "git",
+  "cliff",
+  "-o",
+  "CHANGELOG.md",
+  "--tag",
+  "{{version}}",
+] # [Generates CHANGELOG automatically] (https://github.com/crate-ci/cargo-release/blob/master/docs/faq.md#maintaining-changelog) using [git cliff](https://github.com/orhun/git-cliff) as a dependency

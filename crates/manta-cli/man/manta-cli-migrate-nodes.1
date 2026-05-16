@@ -1,0 +1,26 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-migrate-nodes 1  "nodes " 
+.SH NAME
+manta\-cli\-migrate\-nodes \- Move nodes between clusters
+.SH SYNOPSIS
+\fBmanta\-cli migrate nodes\fR [\fB\-f\fR|\fB\-\-from\fR] <\fB\-t\fR|\fB\-\-to\fR> [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIXNAMES\fR> 
+.SH DESCRIPTION
+Move nodes between clusters
+.SH OPTIONS
+.TP
+\fB\-f\fR, \fB\-\-from\fR \fI<NAME>\fR
+Source cluster to move nodes from
+.TP
+\fB\-t\fR, \fB\-\-to\fR \fI<NAME>\fR
+Destination cluster to move nodes to
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIXNAMES\fR>
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq

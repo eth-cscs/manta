@@ -1,0 +1,28 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-delete-hardware 1  "hardware " 
+.SH NAME
+manta\-cli\-delete\-hardware \- [experimental] Remove hardware components from a cluster
+.SH SYNOPSIS
+\fBmanta\-cli delete hardware\fR [\fB\-P\fR|\fB\-\-pattern\fR] [\fB\-t\fR|\fB\-\-target\-cluster\fR] [\fB\-p\fR|\fB\-\-parent\-cluster\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-D\fR|\fB\-\-delete\-hsm\-group\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+[experimental] Remove hardware components from a cluster
+.SH OPTIONS
+.TP
+\fB\-P\fR, \fB\-\-pattern\fR \fI<PATTERN>\fR
+Hardware component pattern
+.TP
+\fB\-t\fR, \fB\-\-target\-cluster\fR \fI<TARGET_CLUSTER_NAME>\fR
+Cluster to remove components from
+.TP
+\fB\-p\fR, \fB\-\-parent\-cluster\fR \fI<PARENT_CLUSTER_NAME>\fR
+Cluster that receives the freed components
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-D\fR, \fB\-\-delete\-hsm\-group\fR
+Delete the group if empty after this operation
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

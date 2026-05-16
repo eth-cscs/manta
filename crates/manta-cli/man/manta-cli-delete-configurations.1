@@ -1,0 +1,32 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-delete-configurations 1  "configurations " 
+.SH NAME
+manta\-cli\-delete\-configurations \- Delete configurations and all associated data
+.SH SYNOPSIS
+\fBmanta\-cli delete configurations\fR [\fB\-n\fR|\fB\-\-configuration\-name\fR] [\fB\-s\fR|\fB\-\-since\fR] [\fB\-u\fR|\fB\-\-until\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Delete configurations and all associated data (sessions, session templates, boot sessions, and images).
+.PP
+Use \-\-since and/or \-\-until to filter by the configuration\*(Aqs last\-updated date (format: %Y\-%m\-%d).
+.PP
+eg:
+  \-\-since 2023\-01\-01 \-\-until 2023\-10\-01
+    Deletes all configurations last updated between 2023\-01\-01 and 2023\-10\-01.
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-configuration\-name\fR \fI<VALUE>\fR
+Glob pattern to filter by name.
+eg: my\-config*, my\-config\-v[1,2]
+.TP
+\fB\-s\fR, \fB\-\-since\fR \fI<DATE>\fR
+Delete configurations last updated after this date (format: %Y\-%m\-%d)
+.TP
+\fB\-u\fR, \fB\-\-until\fR \fI<DATE>\fR
+Delete configurations last updated before this date (format: %Y\-%m\-%d)
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR
+Skip confirmation prompts
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

@@ -1,0 +1,29 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-get-groups 1  "groups " 
+.SH NAME
+manta\-cli\-get\-groups \- List node groups
+.SH SYNOPSIS
+\fBmanta\-cli get groups\fR [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fIGROUP_NAME\fR] 
+.SH DESCRIPTION
+List node groups
+.SH OPTIONS
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+json
+.IP \(bu 2
+table
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+[\fIGROUP_NAME\fR]
+Group name (lists all groups if omitted)

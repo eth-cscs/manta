@@ -1,0 +1,55 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-update-redfish-endpoint 1  "redfish-endpoint " 
+.SH NAME
+manta\-cli\-update\-redfish\-endpoint \- Update a Redfish endpoint
+.SH SYNOPSIS
+\fBmanta\-cli update redfish\-endpoint\fR <\fB\-i\fR|\fB\-\-id\fR> [\fB\-n\fR|\fB\-\-name\fR] [\fB\-H\fR|\fB\-\-hostname\fR] [\fB\-d\fR|\fB\-\-domain\fR] [\fB\-f\fR|\fB\-\-fqdn\fR] [\fB\-e\fR|\fB\-\-enabled\fR] [\fB\-u\fR|\fB\-\-user\fR] [\fB\-p\fR|\fB\-\-password\fR] [\fB\-U\fR|\fB\-\-use\-ssdp\fR] [\fB\-m\fR|\fB\-\-mac\-required\fR] [\fB\-M\fR|\fB\-\-macaddr\fR] [\fB\-I\fR|\fB\-\-ipaddress\fR] [\fB\-r\fR|\fB\-\-rediscover\-on\-update\fR] [\fB\-t\fR|\fB\-\-template\-id\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Update a Redfish endpoint
+.SH OPTIONS
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Xname of the endpoint to update
+.TP
+\fB\-n\fR, \fB\-\-name\fR \fI<VALUE>\fR
+Arbitrary user\-provided name for the endpoint
+.TP
+\fB\-H\fR, \fB\-\-hostname\fR \fI<VALUE>\fR
+Hostname (FQDN host portion)
+.TP
+\fB\-d\fR, \fB\-\-domain\fR \fI<VALUE>\fR
+Domain (FQDN domain portion)
+.TP
+\fB\-f\fR, \fB\-\-fqdn\fR \fI<VALUE>\fR
+Fully\-qualified domain name on the management network
+.TP
+\fB\-e\fR, \fB\-\-enabled\fR
+Enable the endpoint
+.TP
+\fB\-u\fR, \fB\-\-user\fR \fI<VALUE>\fR
+Username for endpoint authentication
+.TP
+\fB\-p\fR, \fB\-\-password\fR \fI<VALUE>\fR
+Password for endpoint authentication
+.TP
+\fB\-U\fR, \fB\-\-use\-ssdp\fR
+Use SSDP for discovery if the endpoint supports it
+.TP
+\fB\-m\fR, \fB\-\-mac\-required\fR
+Require a MAC address for geolocation
+.TP
+\fB\-M\fR, \fB\-\-macaddr\fR \fI<VALUE>\fR
+MAC address of the Redfish endpoint on the management network
+.TP
+\fB\-I\fR, \fB\-\-ipaddress\fR \fI<VALUE>\fR
+IP address of the Redfish endpoint on the management network (IPv4 or IPv6)
+.TP
+\fB\-r\fR, \fB\-\-rediscover\-on\-update\fR
+Trigger rediscovery when endpoint information is updated
+.TP
+\fB\-t\fR, \fB\-\-template\-id\fR \fI<VALUE>\fR
+Discovery template ID
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

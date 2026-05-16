@@ -1,0 +1,73 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-get-nodes 1  "nodes " 
+.SH NAME
+manta\-cli\-get\-nodes \- Show node details and status
+.SH SYNOPSIS
+\fBmanta\-cli get nodes\fR [\fB\-n\fR|\fB\-\-nids\-only\-one\-line\fR] [\fB\-s\fR|\fB\-\-status\fR] [\fB\-T\fR|\fB\-\-summary\-status\fR] [\fB\-S\fR|\fB\-\-include\-siblings\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINODES\fR> 
+.SH DESCRIPTION
+Show node details and status
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-nids\-only\-one\-line\fR
+Print NIDs on a single line
+.TP
+\fB\-s\fR, \fB\-\-status\fR \fI<VALUE>\fR
+Filter nodes by status
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+OFF
+.IP \(bu 2
+ON
+.IP \(bu 2
+READY
+.IP \(bu 2
+STANDBY
+.IP \(bu 2
+PENDING
+.IP \(bu 2
+FAILED
+.IP \(bu 2
+CONFIGURED
+.RE
+.TP
+\fB\-T\fR, \fB\-\-summary\-status\fR
+Show a node status summary:
+OK          — all nodes booted and configured
+OFF         — at least one node is OFF
+ON          — no nodes OFF, at least one is ON
+STANDBY     — at least one node\*(Aqs heartbeat is lost
+UNCONFIGURED — all nodes READY but at least one is still being configured
+FAILED      — at least one node\*(Aqs configuration failed
+.TP
+\fB\-S\fR, \fB\-\-include\-siblings\fR
+Also show sibling nodes that share a power supply with the requested nodes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+table\-wide
+.IP \(bu 2
+json
+.IP \(bu 2
+summary
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fINODES\fR>
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq

@@ -1,0 +1,23 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-config-unset 1  "unset " 
+.SH NAME
+manta\-cli\-config\-unset \- Clear a configuration value
+.SH SYNOPSIS
+\fBmanta\-cli config unset\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Clear a configuration value
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-cli\-config\-unset\-hsm(1)
+Clear the active node group
+.TP
+manta\-cli\-config\-unset\-parent\-hsm(1)
+Clear the parent node group
+.TP
+manta\-cli\-config\-unset\-auth(1)
+Clear the cached authentication token
