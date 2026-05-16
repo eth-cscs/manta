@@ -47,9 +47,7 @@ pub async fn exec(
       .map(|nd| nd.nid.clone())
       .collect();
 
-    if let Some(output) = output_opt
-      && output.eq("json")
-    {
+    if output_opt.is_some_and(|o| o == "json") {
       println!(
         "{}",
         serde_json::to_string(&node_nid_list)
@@ -64,9 +62,7 @@ pub async fn exec(
       .map(|nd| nd.xname.clone())
       .collect();
 
-    if let Some(output) = output_opt
-      && output.eq("json")
-    {
+    if output_opt.is_some_and(|o| o == "json") {
       println!(
         "{}",
         serde_json::to_string(&node_xname_list)
@@ -75,28 +71,28 @@ pub async fn exec(
     } else {
       println!("{}", node_xname_list.join(","));
     }
-  } else if let Some(output) = output_opt
-    && output.eq("json")
-  {
-    println!(
-      "{}",
-      serde_json::to_string_pretty(&node_details_list)
-        .context("Failed to serialize node details")?
-    );
-  } else if let Some(output) = output_opt
-    && output.eq("summary")
-  {
-    output::node::print_summary(node_details_list);
-  } else if let Some(output) = output_opt
-    && output.eq("table-wide")
-  {
-    output::node::print_table(node_details_list, true);
-  } else if let Some(output) = output_opt
-    && output.eq("table")
-  {
-    output::node::print_table(node_details_list, false);
   } else {
-    bail!("Output value not recognized or missing");
+    match output_opt.map(String::as_str) {
+      Some("json") => {
+        println!(
+          "{}",
+          serde_json::to_string_pretty(&node_details_list)
+            .context("Failed to serialize node details")?
+        );
+      }
+      Some("summary") => {
+        output::node::print_summary(node_details_list);
+      }
+      Some("table-wide") => {
+        output::node::print_table(node_details_list, true);
+      }
+      Some("table") => {
+        output::node::print_table(node_details_list, false);
+      }
+      _ => {
+        bail!("Output value not recognized or missing");
+      }
+    }
   }
 
   Ok(())

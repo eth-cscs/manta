@@ -20,7 +20,6 @@ use manta_backend_dispatcher::{
     cfs::CfsTrait,
     console::ConsoleTrait,
     hsm::group::GroupTrait,
-    pcs::PCSTrait,
   },
   types::{K8sAuth, K8sDetails},
 };
@@ -2041,12 +2040,18 @@ pub async fn post_power(
     ));
   }
 
-  let result = match body.action {
-    PowerAction::On => infra.backend.power_on_sync(&token, &xnames).await,
-    PowerAction::Off => infra.backend.power_off_sync(&token, &xnames, body.force).await,
-    PowerAction::Reset => infra.backend.power_reset_sync(&token, &xnames, body.force).await,
-  }
-  .map_err(to_handler_error)?;
+  let params = service::power::ApplyPowerParams {
+    action: match body.action {
+      PowerAction::On => service::power::PowerAction::On,
+      PowerAction::Off => service::power::PowerAction::Off,
+      PowerAction::Reset => service::power::PowerAction::Reset,
+    },
+    xnames,
+    force: body.force,
+  };
+  let result = service::power::apply_power(&infra, &token, &params)
+    .await
+    .map_err(to_handler_error)?;
 
   Ok(Json(result))
 }

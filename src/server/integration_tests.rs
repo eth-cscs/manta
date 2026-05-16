@@ -21,6 +21,7 @@
 //!   POST   /api/v1/nodes
 //!   DELETE /api/v1/nodes/{id}
 //!   POST   /api/v1/kernel-parameters/apply (dry_run)
+//!   POST   /api/v1/power                   (action=on, target_type=nodes)
 //!
 //! Note: DELETE /boot-parameters, POST /boot-parameters, DELETE/POST
 //! /redfish-endpoints are not tested here because csm-rs 0.105.0 returns
@@ -899,4 +900,66 @@ async fn delete_session_unknown_session_returns_404() {
     .send(fx.auth_delete("/api/v1/sessions/unknown-session"))
     .await;
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+// POST /api/v1/power (action=on, target_type=nodes)
+//
+// Call chain:
+//   handlers::post_power
+//     → resolve_hosts_expression
+//         → backend.get_node_metadata_available
+//             → get_group_available             (GET /smd/hsm/v2/groups, for auth filtering)
+//             → get_all_nodes                   (GET /smd/hsm/v2/State/Components)
+//     → service::power::apply_power → backend.power_on_sync
+//         → POST /power-control/v1/transitions   (csm-rs transitions::http_client::post)
+//         → GET  /power-control/v1/transitions/{id}  (wait_to_complete loop;
+//             exits on first poll when transitionStatus == "completed", so
+//             the test never hits the 3-second sleep)
+//
+// Field names below match the on-the-wire camelCase that csm-rs's
+// pcs::transitions::types declares via #[serde(rename = …)].
+#[tokio::test]
+async fn post_power_on_nodes_happy_path() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_hsm_components(&fx.mock_server).await;
+
+  Mock::given(method("POST"))
+    .and(path("/power-control/v1/transitions"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+      "transitionID": "abc-123",
+      "operation": "On",
+    })))
+    .mount(&fx.mock_server)
+    .await;
+
+  Mock::given(method("GET"))
+    .and(path("/power-control/v1/transitions/abc-123"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+      "transitionID": "abc-123",
+      "createTime": "2024-01-01T00:00:00Z",
+      "automaticExpirationTime": "2024-01-01T01:00:00Z",
+      "transitionStatus": "completed",
+      "operation": "On",
+      "taskCounts": {
+        "total": 1, "new": 0, "in-progress": 0,
+        "failed": 0, "succeeded": 1, "un-supported": 0,
+      },
+      "tasks": [],
+    })))
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_post_json("/api/v1/power", json!({
+      "action": "on",
+      "targets_expression": "x3000c0s1b0n0",
+      "target_type": "nodes",
+      "force": false,
+    })))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(body["transitionID"], "abc-123");
+  assert_eq!(body["transitionStatus"], "completed");
 }

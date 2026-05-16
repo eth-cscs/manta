@@ -54,7 +54,7 @@ pub async fn exec(
 
   let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
 
-  if output_opt.is_some_and(|o| o.eq("json")) {
+  if output_opt.is_some_and(|o| o == "json") {
     println!(
       "{}",
       serde_json::to_string_pretty(&cfs_configuration_vec)

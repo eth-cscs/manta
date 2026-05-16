@@ -11,6 +11,7 @@ pub mod hardware;
 pub mod image;
 pub mod kernel_parameters;
 pub mod node;
+pub mod power;
 pub mod redfish_endpoints;
 pub mod session;
 pub mod migrate;
