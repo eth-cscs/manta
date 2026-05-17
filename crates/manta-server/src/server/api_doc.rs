@@ -60,6 +60,8 @@ use super::handlers;
     handlers::console_session_ws,
     handlers::auth_token,
     handlers::auth_validate,
+    handlers::get_available_groups,
+    handlers::get_all_groups,
   ),
   components(schemas(
     handlers::ErrorResponse,

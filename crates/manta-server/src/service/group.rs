@@ -9,6 +9,29 @@ use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::group::GetGroupParams;
 
+/// Return the list of HSM group names this token can access.
+///
+/// Thin wrapper around `backend.get_group_name_available` — backs the
+/// `GET /api/v1/groups/available` endpoint.
+pub async fn get_available_group_names(
+  infra: &InfraContext<'_>,
+  token: &str,
+) -> Result<Vec<String>, Error> {
+  infra.backend.get_group_name_available(token).await
+}
+
+/// Return every HSM group in the system, regardless of access.
+///
+/// Used by CLI commands that need to display the full set of group
+/// names (e.g. when prompting the operator to pick one to set as
+/// default). Backs the `GET /api/v1/groups/all` endpoint.
+pub async fn get_all_groups(
+  infra: &InfraContext<'_>,
+  token: &str,
+) -> Result<Vec<Group>, Error> {
+  infra.backend.get_all_groups(token).await
+}
+
 /// Fetch HSM groups from the backend.
 pub async fn get_groups(
   infra: &InfraContext<'_>,

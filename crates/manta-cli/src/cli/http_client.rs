@@ -319,6 +319,30 @@ impl MantaClient {
     self.get_json(token, "/groups", &q).await
   }
 
+  /// `GET /api/v1/groups/available` — list HSM group names the token can
+  /// access. Replaces the CLI's direct `backend.get_group_name_available`
+  /// calls.
+  // First consumed by Phase 7c; allow until then.
+  #[allow(dead_code)]
+  pub async fn get_available_groups(
+    &self,
+    token: &str,
+  ) -> anyhow::Result<Vec<String>> {
+    self.get_json(token, "/groups/available", &[]).await
+  }
+
+  /// `GET /api/v1/groups/all` — list every HSM group in the system,
+  /// regardless of access. Used by CLI commands that need the full
+  /// catalogue (e.g. setting a default HSM group at config time).
+  // First consumed by Phase 7f; allow until then.
+  #[allow(dead_code)]
+  pub async fn get_all_groups(
+    &self,
+    token: &str,
+  ) -> anyhow::Result<Vec<Group>> {
+    self.get_json(token, "/groups/all", &[]).await
+  }
+
   pub async fn get_nodes(
     &self,
     token: &str,

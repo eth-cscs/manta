@@ -428,6 +428,58 @@ pub struct GroupQuery {
   pub name: Option<String>,
 }
 
+/// GET /groups/available — list HSM group names the token can access.
+///
+/// Backs CLI authorization helpers that used to call
+/// `backend.get_group_name_available` directly.
+#[utoipa::path(get, path = "/groups/available", tag = "groups",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of accessible group names", body = Vec<String>),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_available_groups(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  SiteName(site_name): SiteName,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let names = service::group::get_available_group_names(&infra, &token)
+    .await
+    .map_err(to_handler_error)?;
+  Ok(Json(names))
+}
+
+/// GET /groups/all — list every HSM group in the system.
+///
+/// Backs CLI commands (e.g. `config_set_hsm_common`) that need the full
+/// catalogue, not just the accessible-to-this-token subset.
+#[utoipa::path(get, path = "/groups/all", tag = "groups",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of all groups",      body = serde_json::Value),
+    (status = 401, description = "Unauthorized",            body = ErrorResponse),
+    (status = 500, description = "Internal error",          body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_all_groups(
+  State(state): State<Arc<ServerState>>,
+  BearerToken(token): BearerToken,
+  SiteName(site_name): SiteName,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let groups = service::group::get_all_groups(&infra, &token)
+    .await
+    .map_err(to_handler_error)?;
+  Ok(Json(groups))
+}
+
 /// GET /groups — list HSM groups, optionally filtered by name.
 #[utoipa::path(get, path = "/groups", tag = "groups",
   params(GroupQuery, SiteHeader),

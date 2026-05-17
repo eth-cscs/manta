@@ -27,6 +27,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/configurations", get(handlers::get_configurations))
     .route("/nodes", get(handlers::get_nodes))
     .route("/groups", get(handlers::get_groups))
+    .route("/groups/available", get(handlers::get_available_groups))
+    .route("/groups/all", get(handlers::get_all_groups))
     .route("/images", get(handlers::get_images))
     .route("/templates", get(handlers::get_templates))
     .route("/boot-parameters", get(handlers::get_boot_parameters))
