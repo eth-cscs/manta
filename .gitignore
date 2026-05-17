@@ -13,3 +13,4 @@
 .idea/
 .DS_Store
 Cargo.lock
+/crates/*/config.toml
