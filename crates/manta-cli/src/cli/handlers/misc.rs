@@ -14,7 +14,7 @@ pub async fn handle_misc(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_root.subcommand() {
     Some(("add-nodes-to-groups", m)) => {

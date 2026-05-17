@@ -17,7 +17,7 @@ pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_get.subcommand() {
     Some(("groups", m)) => get_group::exec(ctx, &token, m).await?,

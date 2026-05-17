@@ -14,19 +14,17 @@ pub async fn handle_config(
 ) -> Result<(), Error> {
   match cli_config.subcommand() {
     Some(("show", _)) => {
-      let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+      let token = get_api_token(ctx).await?;
       commands::config_show::exec(ctx.infra.backend, &token, ctx.cli.settings)
         .await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
-        let token =
-          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token = get_api_token(ctx).await?;
         commands::config_set_hsm::exec(m, ctx.infra.backend, &token).await?;
       }
       Some(("parent-hsm", m)) => {
-        let token =
-          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token = get_api_token(ctx).await?;
         commands::config_set_parent_hsm::exec(m, ctx.infra.backend, &token)
           .await?;
       }
@@ -38,8 +36,7 @@ pub async fn handle_config(
     Some(("unset", m)) => match m.subcommand() {
       Some(("hsm", _)) => commands::config_unset_hsm::exec()?,
       Some(("parent-hsm", _)) => {
-        let token =
-          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token = get_api_token(ctx).await?;
         commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
           .await?;
       }

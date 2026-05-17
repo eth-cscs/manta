@@ -15,7 +15,7 @@ pub async fn handle_migrate(
   cli_migrate: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_migrate.subcommand() {
     Some(("nodes", m)) => {

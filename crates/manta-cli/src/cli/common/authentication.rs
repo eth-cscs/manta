@@ -1,12 +1,16 @@
 //! Token acquisition: env var → cached file → interactive Keycloak login.
+//!
+//! Every path checks the candidate token against the configured
+//! `manta-server` (via `MantaClient`), which in turn validates it
+//! against the CSM/OCHAMI backend. The CLI never reaches a backend
+//! directly.
 
+use crate::cli::http_client::MantaClient;
+use crate::common::app_context::AppContext;
 use crate::common::config::get_default_cache_path;
+use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
-use manta_backend_dispatcher::{
-  error::Error, interfaces::authentication::AuthenticationTrait,
-};
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
@@ -23,14 +27,13 @@ const AUTH_CACHE_FILE_SUFFIX: &str = "_auth";
 const MAX_LOGIN_ATTEMPTS: u32 = 3;
 
 /// Obtain a valid API token, trying in order: env var
-/// `MANTA_CSM_TOKEN`, cached file, interactive login.
-pub async fn get_api_token(
-  backend: &StaticBackendDispatcher,
-  site_name: &str,
-) -> Result<String, Error> {
-  let auth_token_rslt = get_token_from_env(backend).await;
+/// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
+/// is validated through `manta-server`.
+pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
+  let client = MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+  let site_name = ctx.infra.site_name;
 
-  match auth_token_rslt {
+  match get_token_from_env(&client).await {
     Ok(token) => {
       tracing::info!("Authentication successful using env var");
       return Ok(token);
@@ -43,9 +46,7 @@ pub async fn get_api_token(
     }
   }
 
-  let auth_token_rslt = get_token_from_local_file(site_name, backend).await;
-
-  match auth_token_rslt {
+  match get_token_from_local_file(site_name, &client).await {
     Ok(token) => {
       tracing::info!("Authentication successful using local file");
       return Ok(token);
@@ -67,15 +68,13 @@ pub async fn get_api_token(
   }
 
   tracing::info!("Getting CSM authentication token interactively");
-  let shasta_token = get_token_interactively(backend).await?;
+  let shasta_token = get_token_interactively(&client).await?;
 
   store_token_in_local_file(site_name, &shasta_token)?;
   Ok(shasta_token)
 }
 
-async fn get_token_from_env(
-  backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
+async fn get_token_from_env(client: &MantaClient) -> Result<String> {
   let auth_token_env_name = AUTH_TOKEN_ENV_VAR;
 
   tracing::info!(
@@ -83,29 +82,26 @@ async fn get_token_from_env(
     auth_token_env_name
   );
 
-  let shasta_token_rslt = std::env::var(auth_token_env_name);
-
-  if let Ok(shasta_token) = shasta_token_rslt {
-    tracing::info!(
-      "Authentication token found in env var '{}'. Check if it is valid",
+  let shasta_token = std::env::var(auth_token_env_name).map_err(|_| {
+    anyhow!(
+      "authentication token not found in env var '{}'",
       auth_token_env_name
-    );
+    )
+  })?;
 
-    backend.validate_api_token(&shasta_token).await?;
+  tracing::info!(
+    "Authentication token found in env var '{}'. Check if it is valid",
+    auth_token_env_name
+  );
 
-    Ok(shasta_token)
-  } else {
-    Err(Error::AuthenticationTokenNotFound(format!(
-      "env var '{}'",
-      auth_token_env_name
-    )))
-  }
+  client.validate_token(&shasta_token).await?;
+  Ok(shasta_token)
 }
 
 async fn get_token_from_local_file(
   site_name: &str,
-  backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
+  client: &MantaClient,
+) -> Result<String> {
   let mut path = get_default_cache_path()?;
 
   path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX);
@@ -121,7 +117,7 @@ async fn get_token_from_local_file(
       tracing::debug!("Could not open token file '{}': {}", path.display(), e);
     })
     .map_err(|_| {
-      Error::AuthenticationTokenNotFound(format!("'{}'", path.display()))
+      anyhow!("authentication token not found at '{}'", path.display())
     })?
     .read_to_string(&mut shasta_token)?;
 
@@ -129,15 +125,14 @@ async fn get_token_from_local_file(
     "Authentication token found in filesystem. Check if it is still valid",
   );
 
-  backend.validate_api_token(&shasta_token).await?;
-
+  client.validate_token(&shasta_token).await?;
   Ok(shasta_token)
 }
 
 fn store_token_in_local_file(
   site_name: &str,
   shasta_token: &str,
-) -> Result<(), Error> {
+) -> Result<()> {
   tracing::info!("Store authentication token in filesystem file");
 
   let mut path = get_default_cache_path()?;
@@ -243,9 +238,7 @@ mod tests {
   }
 }
 
-async fn get_token_interactively(
-  backend: &StaticBackendDispatcher,
-) -> Result<String, Error> {
+async fn get_token_interactively(client: &MantaClient) -> Result<String> {
   println!("Please type your {}", "Keycloak credentials".green());
 
   let username: String =
@@ -253,7 +246,7 @@ async fn get_token_interactively(
 
   let password = Password::new().with_prompt("password").interact()?;
 
-  let mut shasta_token_rslt = backend.get_api_token(&username, &password).await;
+  let mut shasta_token_rslt = client.get_token(&username, &password).await;
 
   let mut attempts = 0;
 
@@ -271,7 +264,7 @@ async fn get_token_interactively(
       Input::new().with_prompt("username").interact_text()?;
     let password = Password::new().with_prompt("password").interact()?;
 
-    shasta_token_rslt = backend.get_api_token(&username, &password).await;
+    shasta_token_rslt = client.get_token(&username, &password).await;
 
     attempts += 1;
   }

@@ -12,7 +12,7 @@ pub async fn handle_update(
   cli_update: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_update.subcommand() {
     Some(("boot-parameters", m)) => {

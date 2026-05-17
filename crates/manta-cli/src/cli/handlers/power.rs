@@ -12,7 +12,7 @@ pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_power.subcommand() {
     Some(("on", m)) => match m.subcommand() {

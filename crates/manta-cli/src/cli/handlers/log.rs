@@ -16,7 +16,7 @@ pub async fn handle_log(
   cli_log: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   let user_input = cli_log
     .get_one::<String>("VALUE")

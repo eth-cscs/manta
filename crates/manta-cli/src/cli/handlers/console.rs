@@ -13,7 +13,7 @@ pub async fn handle_console(
   cli_console: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_console.subcommand() {
     Some(("node", m)) => {

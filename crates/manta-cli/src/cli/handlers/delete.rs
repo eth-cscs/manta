@@ -18,7 +18,7 @@ pub async fn handle_delete(
   cli_delete: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_delete.subcommand() {
     Some(("group", m)) => {

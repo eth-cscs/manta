@@ -13,7 +13,7 @@ pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+  let token = get_api_token(ctx).await?;
 
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
