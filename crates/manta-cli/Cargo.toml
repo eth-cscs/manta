@@ -31,8 +31,13 @@ strum_macros              = "0.27.1"
 # In-workspace library crate with wire types + pure helpers.
 manta-shared             = { workspace = true }
 
-# Sibling repos — inherited from [workspace.dependencies] so the three are
-# pinned in one place at the workspace root.
+# After Phase 7 the CLI no longer *constructs* StaticBackendDispatcher
+# (main.rs is clean, every command goes through MantaClient). But these
+# three crates remain direct deps because a long tail of CLI files
+# still imports types from them — `manta_backend_dispatcher::error::Error`
+# in cli/common helpers, `csm_rs::node::types::NodeDetails` in
+# http_client.rs + output::node, etc. Eliminating these imports is a
+# separate epic ("decouple wire types from csm-rs/ochami-rs").
 manta-backend-dispatcher = { workspace = true }
 ochami-rs                = { workspace = true }
 csm-rs                   = { workspace = true }

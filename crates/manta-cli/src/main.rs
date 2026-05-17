@@ -1,30 +1,18 @@
 //! Application entry point: parses CLI args, loads configuration, and
-//! launches either the HTTPS server or the CLI command handler.
+//! launches the CLI command handler. After Phase 7 the CLI never talks
+//! to CSM/OCHAMI directly — every operation is forwarded to the manta
+//! HTTPS server named by `cli.toml`'s `manta_server_url`.
 
 mod cli;
 mod common;
-// `shared`, `backend_dispatcher`, `manta_backend_dispatcher`, and the
-// `common::*` partition all live in the `manta-shared` workspace crate.
-// `server` and `service` were extracted into the `manta-server` workspace
-// crate (its own binary); the CLI no longer compiles them.
 
-use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
-  app_context::AppContext,
-  config::types::{BackendTechnology, CliConfiguration},
-  kafka::Kafka,
+  app_context::AppContext, config::types::CliConfiguration, kafka::Kafka,
 };
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 use clap::ArgMatches;
 
 use crate::common::log_ops;
-
-/// URL path suffix for the CSM API endpoint.
-const API_URL_SUFFIX: &str = "/apis";
-
-/// URL path suffix for the Gitea VCS endpoint.
-const VCS_URL_SUFFIX: &str = "/vcs";
 
 /// Process entry point. Delegates to `run` and prints any error with
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
@@ -92,11 +80,12 @@ async fn run_cli(
     .unwrap_or_else(|_| "error".to_string());
   log_ops::configure(log_level);
 
+  // Verify the resolved site still exists in the config; emit a log
+  // line about SOCKS5 if it was configured (env var was set in `run`).
   let site_details_value =
     configuration.sites.get(&site_name).ok_or_else(|| {
       format!("Site '{}' not found in configuration file", site_name)
     })?;
-
   if let Some(socks_proxy) = &site_details_value.socks5_proxy {
     if !socks_proxy.is_empty() {
       tracing::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
@@ -104,29 +93,6 @@ async fn run_cli(
       tracing::debug!("config - socks_proxy:  Not defined");
     }
   }
-
-  let backend_tech = &site_details_value.backend;
-  let shasta_base_url = &site_details_value.shasta_base_url;
-  let shasta_barebone_url = shasta_base_url
-    .strip_suffix(API_URL_SUFFIX)
-    .unwrap_or(shasta_base_url);
-  let shasta_api_url = match backend_tech {
-    BackendTechnology::Csm => shasta_barebone_url.to_owned() + API_URL_SUFFIX,
-    BackendTechnology::Ochami => shasta_barebone_url.to_owned(),
-  };
-  let gitea_base_url = shasta_barebone_url.to_owned() + VCS_URL_SUFFIX;
-  let k8s_api_url: Option<&String> = site_details_value
-    .k8s
-    .as_ref()
-    .map(|k8s_details| &k8s_details.api_url);
-  let vault_base_url =
-    site_details_value
-      .k8s
-      .as_ref()
-      .and_then(|k8s| match &k8s.authentication {
-        K8sAuth::Vault { base_url, .. } => Some(base_url),
-        K8sAuth::Native { .. } => None,
-      });
 
   let audit_kafka_opt: Option<Kafka> =
     if let Some(auditor) = &configuration.auditor {
@@ -137,41 +103,11 @@ async fn run_cli(
     };
 
   let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
-
-  let root_ca_cert_file = &site_details_value.root_ca_cert_file;
-
-  let shasta_root_cert =
-    match common::config::get_csm_root_cert_content(root_ca_cert_file) {
-      Ok(cert) => cert,
-      Err(_) => {
-        tracing::warn!(
-          "CA public root file '{}' not found. Proceeding without it.",
-          root_ca_cert_file
-        );
-        vec![]
-      }
-    };
-
-  let socks5_proxy = site_details_value.socks5_proxy.as_deref();
-
-  let backend = StaticBackendDispatcher::new(
-    backend_tech.as_str(),
-    &shasta_api_url,
-    &shasta_root_cert,
-    socks5_proxy,
-  )?;
-
   let manta_server_url = configuration.manta_server_url.as_str();
+
   let app_context = AppContext {
-    infra: crate::common::app_context::InfraContext {
-      backend: &backend,
+    infra: crate::common::app_context::CliInfra {
       site_name: &site_name,
-      shasta_base_url: &shasta_api_url,
-      shasta_root_cert: &shasta_root_cert,
-      socks5_proxy,
-      vault_base_url: vault_base_url.map(String::as_str),
-      gitea_base_url: &gitea_base_url,
-      k8s_api_url: k8s_api_url.map(String::as_str),
     },
     cli: crate::common::app_context::CliConfig {
       settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
