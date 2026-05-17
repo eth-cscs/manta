@@ -6,7 +6,7 @@ use anyhow::{Context, Error};
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::common::config::get_config_file_path;
+use crate::common::config::get_cli_config_file_path;
 use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Display the current manta configuration.
@@ -54,8 +54,7 @@ async fn show(
   // Print configuration file content to stdout
   println!(
     "Configuration file: {}",
-    get_config_file_path()
-      .await
+    get_cli_config_file_path()
       .map(|p| p.to_string_lossy().to_string())
       .unwrap_or_else(|_| "<unknown>".to_string())
   );
