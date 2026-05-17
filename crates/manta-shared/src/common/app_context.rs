@@ -25,9 +25,8 @@ pub struct CliConfig<'a> {
   pub settings_hsm_group_name_opt: Option<&'a str>,
   pub kafka_audit_opt: Option<&'a Kafka>,
   pub settings: &'a Config,
-  /// When `Some`, CLI commands route requests through the manta HTTP server at
-  /// this URL instead of calling the backend directly.
-  pub manta_server_url: Option<&'a str>,
+  /// URL of the manta HTTP server this CLI talks to. Required.
+  pub manta_server_url: &'a str,
 }
 
 /// Top-level context that composes infrastructure and CLI config.

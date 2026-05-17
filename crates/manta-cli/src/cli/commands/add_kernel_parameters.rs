@@ -2,7 +2,7 @@
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.
@@ -19,10 +19,7 @@ pub async fn exec(
   _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let xnames_expression = if hsm_group_name_arg_opt.is_none() {
     hosts_expression
   } else {

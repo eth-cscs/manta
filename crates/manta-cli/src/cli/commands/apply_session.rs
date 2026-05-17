@@ -111,10 +111,7 @@ async fn apply_session(
   watch_logs: bool,
   timestamps: bool,
 ) -> Result<(String, String), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let kafka_audit_opt = ctx.cli.kafka_audit_opt;
 
   // Check local repos (user interaction: confirm dialogs)

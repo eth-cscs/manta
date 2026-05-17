@@ -2,7 +2,7 @@
 
 use crate::{cli::http_client::MantaClient, common::app_context::AppContext};
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 /// Apply a boot configuration to specific nodes.
 #[allow(clippy::too_many_arguments)]
@@ -18,10 +18,7 @@ pub async fn exec(
   _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .apply_boot_config(
       token,

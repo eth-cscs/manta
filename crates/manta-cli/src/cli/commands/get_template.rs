@@ -39,10 +39,7 @@ pub async fn exec(
   let params =
     parse_template_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let templates = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_templates(token, &params)
     .await?;

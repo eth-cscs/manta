@@ -30,10 +30,7 @@ pub async fn exec(
     ctx.cli.settings_hsm_group_name_opt,
   );
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let boot_parameters = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_kernel_parameters(token, &params)
     .await?;

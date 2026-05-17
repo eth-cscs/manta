@@ -1,6 +1,6 @@
 //! Implements the `manta delete node` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
@@ -11,10 +11,7 @@ pub async fn exec(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .delete_node(token, id)
     .await?;

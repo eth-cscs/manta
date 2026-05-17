@@ -14,9 +14,7 @@ pub async fn exec(
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url.ok_or_else(|| {
-    Error::Message("manta server URL must be configured".to_string())
-  })?;
+  let server_url = ctx.cli.manta_server_url;
   let target = target_hsm_group_name_arg_opt
     .or(ctx.cli.settings_hsm_group_name_opt)
     .ok_or_else(|| {

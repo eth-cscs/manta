@@ -155,6 +155,7 @@ const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
 audit_file = "/tmp/manta-cli-audit.log"
 site = "<site_name>"
 parent_hsm_group = ""
+manta_server_url = "https://manta-server.example.com:8443"
 
 [sites.<site_name>]
 backend = "csm"                 # or "ochami"
@@ -167,7 +168,8 @@ const CLI_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
   copy these fields verbatim:        log, audit_file, site, parent_hsm_group,
                                      auditor, sites
-  add CLI-only (was a flat key):     manta_server_url (optional)
+  add CLI-only (now required):       manta_server_url = \"https://...\"
+                                     (CLI talks only to the manta server)
   drop (no longer recognised):       sites.<X>.manta_server_url
   do not copy (server-only fields):  the [server] section belongs in
                                      server.toml, not cli.toml";

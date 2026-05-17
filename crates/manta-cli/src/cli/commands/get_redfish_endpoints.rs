@@ -1,6 +1,6 @@
 //! Implements the `manta get redfish-endpoints` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
@@ -32,10 +32,7 @@ pub async fn exec(
     .map(String::as_str)
     .unwrap_or("table");
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let endpoints = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_redfish_endpoints(token, &params)
     .await?;

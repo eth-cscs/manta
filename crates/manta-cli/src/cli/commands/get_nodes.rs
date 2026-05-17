@@ -35,10 +35,7 @@ pub async fn exec(
   let output_opt: Option<&String> = cli_args.get_one("output");
   let status_summary = cli_args.get_flag("summary-status");
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let node_details_list = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_nodes(token, &params)
     .await?;

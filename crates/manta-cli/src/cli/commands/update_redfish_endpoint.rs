@@ -1,6 +1,6 @@
 //! Implements the `manta update redfish-endpoint` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
@@ -43,10 +43,7 @@ pub async fn exec(
     template_id,
   };
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .update_redfish_endpoint(token, &params)
     .await?;

@@ -1,6 +1,6 @@
 //! Implements the `manta delete images` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
@@ -17,10 +17,7 @@ pub async fn exec(
     image_id_vec.join(", "),
   );
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .delete_images(token, image_id_vec, dry_run)
     .await?;

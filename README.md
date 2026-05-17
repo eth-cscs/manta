@@ -65,6 +65,7 @@ log = "info"
 site = "ochami"
 parent_hsm_group = "nodes_free"
 audit_file = "/tmp/manta_audit.log"
+manta_server_url = "https://manta-server.example.com:8443"   # required
 
 [sites.ochami]
 backend = "ochami"
@@ -153,13 +154,15 @@ The two files share the `[sites.*]` definitions (typically duplicated, since the
 
 **`~/.config/manta/cli.toml`**
 
+`manta_server_url` is required: the CLI no longer talks to CSM/OCHAMI backends directly — every operation (including auth) is forwarded to the named manta server. Run `manta-server` on a reachable host first.
+
 ```toml
 log = "info"
 audit_file = "/var/log/manta/cli-audit.log"
 
 site = "alps"                    # active site for this CLI process
 parent_hsm_group = "nodes_free"
-# manta_server_url = "https://manta-server.cscs.ch:8443"  # optional: proxy through manta-server
+manta_server_url = "https://manta-server.cscs.ch:8443"
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]

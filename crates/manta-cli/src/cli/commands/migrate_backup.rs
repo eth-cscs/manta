@@ -59,10 +59,7 @@ pub async fn exec(
     };
   }
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .migrate_backup(token, bos, destination)
     .await?;

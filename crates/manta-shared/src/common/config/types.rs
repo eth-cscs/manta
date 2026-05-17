@@ -48,9 +48,10 @@ pub struct CliConfiguration {
   /// `--site <name>`.
   pub site: String,
   pub parent_hsm_group: String,
-  /// When set, CLI commands forward their requests to this manta HTTP
-  /// server instead of calling the CSM/OCHAMI backend directly.
-  pub manta_server_url: Option<String>,
+  /// URL of the manta HTTP server this CLI talks to. Required — the CLI
+  /// no longer calls CSM/OCHAMI backends directly; every operation
+  /// (including auth) is forwarded through `manta-server`.
+  pub manta_server_url: String,
   pub sites: HashMap<String, Site>,
   pub auditor: Option<Auditor>,
 }
@@ -143,7 +144,7 @@ mod tests {
       audit_file: "/tmp/cli-audit.log".to_string(),
       site: "alps".to_string(),
       parent_hsm_group: "nodes_free".to_string(),
-      manta_server_url: None,
+      manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       sites,
       auditor: None,
     };
@@ -151,29 +152,26 @@ mod tests {
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
     assert_eq!(parsed.site, "alps");
     assert_eq!(parsed.parent_hsm_group, "nodes_free");
-    assert!(parsed.manta_server_url.is_none());
+    assert_eq!(parsed.manta_server_url, "https://manta-server.cscs.ch:8443");
     assert!(parsed.sites.contains_key("alps"));
   }
 
   #[test]
-  fn cli_configuration_with_manta_server_url() {
-    let mut sites = HashMap::new();
-    sites.insert("alps".to_string(), make_minimal_site());
-    let cfg = CliConfiguration {
-      log: "info".to_string(),
-      audit_file: "/tmp/cli-audit.log".to_string(),
-      site: "alps".to_string(),
-      parent_hsm_group: String::new(),
-      manta_server_url: Some("https://manta-server.cscs.ch:8443".to_string()),
-      sites,
-      auditor: None,
-    };
-    let toml_str = toml::to_string(&cfg).unwrap();
-    let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
-    assert_eq!(
-      parsed.manta_server_url.as_deref(),
-      Some("https://manta-server.cscs.ch:8443")
-    );
+  fn cli_configuration_missing_manta_server_url_fails() {
+    let bad_toml = r#"
+      log = "info"
+      audit_file = "/tmp/cli-audit.log"
+      site = "alps"
+      parent_hsm_group = ""
+
+      [sites.alps]
+      backend = "csm"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+      # missing manta_server_url
+    "#;
+    let result = toml::from_str::<CliConfiguration>(bad_toml);
+    assert!(result.is_err());
   }
 
   #[test]

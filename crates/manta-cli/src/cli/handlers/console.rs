@@ -24,10 +24,7 @@ pub async fn handle_console(
         .get_one::<String>("XNAME")
         .context("The 'XNAME' argument must have a value")?;
 
-      let server_url = ctx
-        .cli
-        .manta_server_url
-        .context("manta server URL must be configured")?;
+      let server_url = ctx.cli.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;
       let (a_input, a_output) =
         MantaClient::new(server_url, ctx.infra.site_name)?
@@ -44,10 +41,7 @@ pub async fn handle_console(
         .get_one::<String>("SESSION_NAME")
         .context("The 'SESSION_NAME' argument must have a value")?;
 
-      let server_url = ctx
-        .cli
-        .manta_server_url
-        .context("manta server URL must be configured")?;
+      let server_url = ctx.cli.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;
       let (a_input, a_output) =
         MantaClient::new(server_url, ctx.infra.site_name)?

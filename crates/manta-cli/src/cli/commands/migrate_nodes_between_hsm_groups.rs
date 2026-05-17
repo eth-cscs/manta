@@ -1,6 +1,6 @@
 //! Implements the `manta migrate nodes` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::common::{app_context::AppContext, audit};
@@ -15,10 +15,7 @@ pub async fn exec(
   dry_run: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .migrate_nodes(
       token,

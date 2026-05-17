@@ -24,10 +24,7 @@ pub async fn handle_log(
   let timestamps = cli_log.get_flag("timestamps");
 
   use tokio::io::AsyncBufReadExt as _;
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let client = MantaClient::new(server_url, ctx.infra.site_name)?;
 
   // Try user input as a session name first, then as an xname.

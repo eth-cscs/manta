@@ -40,10 +40,7 @@ pub async fn exec(
     .get_one::<String>("pattern")
     .context("pattern argument is required")?;
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let target = target_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No target HSM group specified")?;

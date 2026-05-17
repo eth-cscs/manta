@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 
 use crate::{
   cli::http_client::MantaClient,
@@ -67,10 +67,7 @@ pub async fn exec_nodes(
     PowerAction::Reset => "reset",
   };
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   println!("Nodes expression: {}", hosts_expression);
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
@@ -103,10 +100,7 @@ pub async fn exec_cluster(
     PowerAction::Reset => "reset",
   };
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   println!("Cluster: {}", hsm_group_name_arg);
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {

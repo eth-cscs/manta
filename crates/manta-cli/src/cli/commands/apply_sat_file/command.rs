@@ -1,6 +1,6 @@
 //! Implements the `manta apply sat-file` command.
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 
 use crate::common::{self, app_context::AppContext};
 
@@ -57,10 +57,7 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 

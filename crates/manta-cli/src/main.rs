@@ -161,7 +161,7 @@ async fn run_cli(
     socks5_proxy,
   )?;
 
-  let manta_server_url = configuration.manta_server_url.as_deref();
+  let manta_server_url = configuration.manta_server_url.as_str();
   let app_context = AppContext {
     infra: crate::common::app_context::InfraContext {
       backend: &backend,

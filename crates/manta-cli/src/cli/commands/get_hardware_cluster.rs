@@ -1,6 +1,6 @@
 //! Implements the `manta get hardware cluster` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
@@ -33,10 +33,7 @@ pub async fn exec(
     .map(String::as_str)
     .unwrap_or("summary");
 
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let json = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_hardware_clusters(token, &params)
     .await?;

@@ -1,6 +1,6 @@
 //! Implements the `manta add node` command.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::cli::http_client::MantaClient;
@@ -16,10 +16,7 @@ pub async fn exec(
   arch_opt: Option<String>,
   _hardware_file_path: Option<&PathBuf>,
 ) -> Result<()> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .add_node(token, id, group, enabled, arch_opt)
     .await?;

@@ -16,10 +16,7 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
   let grp = Group {
     label: label.to_string(),
     description: description.map(String::from),

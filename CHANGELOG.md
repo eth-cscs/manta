@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Removed the per-site `sites.X.manta_server_url` field from the configuration schema. The top-level `manta_server_url` setting still controls whether the CLI proxies through a manta server; it is now the only source for that decision.
 - Split the unified `~/.config/manta/config.toml` into two per-binary files: `~/.config/manta/cli.toml` (read by `manta-cli`) and `~/.config/manta/server.toml` (read by `manta-server`). Each binary has its own schema (`CliConfiguration` / `ServerConfiguration`); legacy `MantaConfiguration`, `get_configuration()`, the `MANTA_CONFIG` env var, and the interactive create-wizard are removed. Override the per-binary paths with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 - `manta-server` flags (`--port`, `--cert`, `--key`, `--listen-address`) are now **overrides** for the matching `[server]` keys in `server.toml`; the previously hardcoded 30-minute console inactivity timeout is now configurable via `[server].console_inactivity_timeout_secs`.
+- `cli.toml`'s `manta_server_url` field is now **required**. The CLI no longer talks to CSM/OCHAMI backends directly — every operation is forwarded to the named manta server. Users must point `manta_server_url` at a reachable `manta-server` instance.
 
 **Migration:** there is no automated migration. When either binary starts with no per-binary config file, it prints a minimal sample plus — if `~/.config/manta/config.toml` is found — a field-by-field mapping for what to copy where. Migrate by hand following that hint.
 

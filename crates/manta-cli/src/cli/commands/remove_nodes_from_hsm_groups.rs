@@ -1,6 +1,6 @@
 //! Implements the `manta remove-nodes-from-groups` command.
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 
 use crate::{
   cli::http_client::MantaClient,
@@ -16,10 +16,7 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let server_url = ctx
-    .cli
-    .manta_server_url
-    .context("manta server URL must be configured")?;
+  let server_url = ctx.cli.manta_server_url;
 
   if !common::user_interaction::confirm(
     &format!(

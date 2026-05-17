@@ -151,9 +151,7 @@ pub async fn handle_apply(
       let image_id = m
         .get_one::<String>("image-id")
         .context("'image-id' argument is mandatory")?;
-      let server_url = ctx.cli.manta_server_url.context(
-        "manta_server_url is required for apply ephemeral-environment",
-      )?;
+      let server_url = ctx.cli.manta_server_url;
       let response = MantaClient::new(server_url, ctx.infra.site_name)?
         .create_ephemeral_env(&token, image_id)
         .await?;
