@@ -49,11 +49,27 @@ pub fn get_default_config_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.config_dir()))
 }
 
-/// Returns the default manta config file path
+/// Returns the default (legacy) manta config file path
 /// (e.g. `~/.config/manta/config.toml`).
 pub fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
   let mut path = get_default_config_path()?;
   path.push("config.toml");
+  Ok(path)
+}
+
+/// Returns the default CLI config file path
+/// (e.g. `~/.config/manta/cli.toml`).
+pub fn get_default_manta_cli_config_file_path() -> Result<PathBuf, Error> {
+  let mut path = get_default_config_path()?;
+  path.push("cli.toml");
+  Ok(path)
+}
+
+/// Returns the default server config file path
+/// (e.g. `~/.config/manta/server.toml`).
+pub fn get_default_manta_server_config_file_path() -> Result<PathBuf, Error> {
+  let mut path = get_default_config_path()?;
+  path.push("server.toml");
   Ok(path)
 }
 
@@ -172,6 +188,78 @@ pub async fn get_configuration() -> Result<Config, Error> {
 
   ::config::Config::builder()
     .add_source(config_file)
+    .add_source(
+      ::config::Environment::with_prefix("MANTA")
+        .try_parsing(true)
+        .prefix_separator("_"),
+    )
+    .build()
+    .map_err(Error::ConfigError)
+}
+
+/// Returns the CLI config file path, honoring `MANTA_CLI_CONFIG` if set.
+pub fn get_cli_config_file_path() -> Result<PathBuf, Error> {
+  if let Ok(env_path) = std::env::var("MANTA_CLI_CONFIG") {
+    Ok(PathBuf::from(env_path))
+  } else {
+    get_default_manta_cli_config_file_path()
+  }
+}
+
+/// Returns the server config file path, honoring `MANTA_SERVER_CONFIG` if set.
+pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
+  if let Ok(env_path) = std::env::var("MANTA_SERVER_CONFIG") {
+    Ok(PathBuf::from(env_path))
+  } else {
+    get_default_manta_server_config_file_path()
+  }
+}
+
+/// Load `cli.toml`. Fails loudly if the file is missing — the migration
+/// command (5e) is responsible for creating it from a legacy `config.toml`.
+pub fn get_cli_configuration() -> Result<Config, Error> {
+  let path = get_cli_config_file_path()?;
+  if !path.exists() {
+    return Err(Error::NotFound(format!(
+      "CLI configuration file '{}' not found. Run \
+       `manta-cli config migrate` if you have a legacy ~/.config/manta/config.toml, \
+       otherwise create cli.toml manually.",
+      path.to_string_lossy()
+    )));
+  }
+  let path_str = path.to_str().ok_or_else(|| {
+    Error::MissingField(
+      "CLI configuration file path contains invalid UTF-8".to_string(),
+    )
+  })?;
+  ::config::Config::builder()
+    .add_source(::config::File::new(path_str, ::config::FileFormat::Toml))
+    .add_source(
+      ::config::Environment::with_prefix("MANTA")
+        .try_parsing(true)
+        .prefix_separator("_"),
+    )
+    .build()
+    .map_err(Error::ConfigError)
+}
+
+/// Load `server.toml`. Fails loudly if the file is missing — the
+/// operator is expected to provision it on the server host.
+pub fn get_server_configuration() -> Result<Config, Error> {
+  let path = get_server_config_file_path()?;
+  if !path.exists() {
+    return Err(Error::NotFound(format!(
+      "Server configuration file '{}' not found.",
+      path.to_string_lossy()
+    )));
+  }
+  let path_str = path.to_str().ok_or_else(|| {
+    Error::MissingField(
+      "Server configuration file path contains invalid UTF-8".to_string(),
+    )
+  })?;
+  ::config::Config::builder()
+    .add_source(::config::File::new(path_str, ::config::FileFormat::Toml))
     .add_source(
       ::config::Environment::with_prefix("MANTA")
         .try_parsing(true)
@@ -360,4 +448,34 @@ async fn create_new_config_file(
   );
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn default_cli_config_path_ends_with_cli_toml() {
+    let path = get_default_manta_cli_config_file_path().unwrap();
+    assert_eq!(path.file_name().unwrap(), "cli.toml");
+  }
+
+  #[test]
+  fn default_server_config_path_ends_with_server_toml() {
+    let path = get_default_manta_server_config_file_path().unwrap();
+    assert_eq!(path.file_name().unwrap(), "server.toml");
+  }
+
+  #[test]
+  fn default_legacy_config_path_ends_with_config_toml() {
+    let path = get_default_manta_config_file_path().unwrap();
+    assert_eq!(path.file_name().unwrap(), "config.toml");
+  }
+
+  #[test]
+  fn cli_and_server_default_paths_share_parent() {
+    let cli = get_default_manta_cli_config_file_path().unwrap();
+    let server = get_default_manta_server_config_file_path().unwrap();
+    assert_eq!(cli.parent(), server.parent());
+  }
 }
