@@ -10,7 +10,9 @@ use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
 
 use crate::common::app_context::InfraContext;
-use crate::common::authorization::{get_groups_names_available, validate_target_hsm_members};
+use crate::common::authorization::{
+  get_groups_names_available, validate_target_hsm_members,
+};
 use crate::server::common::node_ops;
 pub use manta_shared::shared::params::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
@@ -55,27 +57,28 @@ async fn fetch_node_summaries(
       let _permit = permit;
       let hw_inventory_value = backend_cp
         .get_inventory_hardware_query(
-          &token_str,
-          &xname_str,
-          None,
-          None,
-          None,
-          None,
-          None,
+          &token_str, &xname_str, None, None, None, None, None,
         )
         .await;
 
       let node_hw_opt = match hw_inventory_value {
         Ok(value) => value.pointer("/Nodes/0").cloned(),
         Err(e) => {
-          tracing::error!("Failed to get HW inventory for '{}': {}", xname_str, e);
+          tracing::error!(
+            "Failed to get HW inventory for '{}': {}",
+            xname_str,
+            e
+          );
           None
         }
       };
 
       match node_hw_opt {
         Some(v) => NodeSummary::from_csm_value(v),
-        None => NodeSummary { xname: xname_str, ..Default::default() },
+        None => NodeSummary {
+          xname: xname_str,
+          ..Default::default()
+        },
       }
     });
   }
@@ -84,7 +87,9 @@ async fn fetch_node_summaries(
   while let Some(res) = tasks.join_next().await {
     match res {
       Ok(s) => summaries.push(s),
-      Err(e) => tracing::error!("Failed fetching node hardware information: {}", e),
+      Err(e) => {
+        tracing::error!("Failed fetching node hardware information: {}", e)
+      }
     }
   }
   summaries
@@ -109,7 +114,9 @@ pub async fn get_hardware_cluster(
 
   let hsm_group_name = target_hsm_group_vec
     .first()
-    .ok_or_else(|| Error::NotFound("No HSM groups available for this user".to_string()))?
+    .ok_or_else(|| {
+      Error::NotFound("No HSM groups available for this user".to_string())
+    })?
     .clone();
 
   let hsm_group = infra.backend.get_group(token, &hsm_group_name).await?;
@@ -138,7 +145,10 @@ pub async fn get_hardware_cluster(
     start_total.elapsed()
   );
 
-  Ok(HardwareClusterResult { hsm_group_name, node_summaries })
+  Ok(HardwareClusterResult {
+    hsm_group_name,
+    node_summaries,
+  })
 }
 
 // ── Hardware Nodes List ──
@@ -188,10 +198,15 @@ use manta_shared::shared::cluster_status::calculate_hsm_hw_component_summary;
 #[cfg(test)]
 mod tests {
   use super::*;
-  use manta_backend_dispatcher::types::{ArtifactSummary, ArtifactType, NodeSummary};
+  use manta_backend_dispatcher::types::{
+    ArtifactSummary, ArtifactType, NodeSummary,
+  };
 
   /// Helper: create an ArtifactSummary with the given info string.
-  fn make_artifact(art_type: ArtifactType, info: Option<&str>) -> ArtifactSummary {
+  fn make_artifact(
+    art_type: ArtifactType,
+    info: Option<&str>,
+  ) -> ArtifactSummary {
     ArtifactSummary {
       xname: "x0".to_string(),
       r#type: art_type,
@@ -207,9 +222,10 @@ mod tests {
         make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
         make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
       ],
-      node_accels: vec![
-        make_artifact(ArtifactType::NodeAccel, Some("NVIDIA A100")),
-      ],
+      node_accels: vec![make_artifact(
+        ArtifactType::NodeAccel,
+        Some("NVIDIA A100"),
+      )],
       memory: vec![],
       node_hsn_nics: vec![],
       ..Default::default()
@@ -249,9 +265,10 @@ mod tests {
     let nodes = vec![
       NodeSummary {
         xname: "n1".to_string(),
-        processors: vec![
-          make_artifact(ArtifactType::Processor, Some("AMD EPYC 7742")),
-        ],
+        processors: vec![make_artifact(
+          ArtifactType::Processor,
+          Some("AMD EPYC 7742"),
+        )],
         ..Default::default()
       },
       NodeSummary {

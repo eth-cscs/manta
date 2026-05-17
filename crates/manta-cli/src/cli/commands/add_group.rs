@@ -16,7 +16,9 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let grp = Group {
     label: label.to_string(),
@@ -51,9 +53,8 @@ pub async fn exec(
 
   let mut added = vec![];
   if let Some(expr) = hosts_expression_opt {
-    let (members, _) = client
-      .add_nodes_to_group(auth_token, label, expr)
-      .await?;
+    let (members, _) =
+      client.add_nodes_to_group(auth_token, label, expr).await?;
     added = members;
   }
 

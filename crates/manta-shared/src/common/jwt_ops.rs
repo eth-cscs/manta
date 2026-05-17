@@ -7,9 +7,7 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
   let jwt_body = token.split(' ').nth(1).unwrap_or(token);
 
   let base64_claims = jwt_body.split('.').nth(1).ok_or_else(|| {
-    Error::JwtMalformed(
-      "expected header.payload.signature format".to_string(),
-    )
+    Error::JwtMalformed("expected header.payload.signature format".to_string())
   })?;
 
   let claims_u8 = BASE64_URL_SAFE_NO_PAD

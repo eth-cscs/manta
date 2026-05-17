@@ -34,7 +34,10 @@ fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
   }
 
   let nid_number = long_nid.strip_prefix("nid").ok_or_else(|| {
-    Error::InvalidNodeId(format!("Nid '{}' not valid, 'nid' prefix missing", long_nid))
+    Error::InvalidNodeId(format!(
+      "Nid '{}' not valid, 'nid' prefix missing",
+      long_nid
+    ))
   })?;
 
   nid_number.parse::<usize>().map_err(|e| {
@@ -117,9 +120,8 @@ pub async fn resolve_hosts_expression(
   hosts_expression: &str,
   is_include_siblings: bool,
 ) -> Result<Vec<String>, Error> {
-  let node_metadata_available_vec = backend
-    .get_node_metadata_available(shasta_token)
-    .await?;
+  let node_metadata_available_vec =
+    backend.get_node_metadata_available(shasta_token).await?;
 
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -190,7 +192,12 @@ pub async fn from_hosts_expression_to_xname_vec(
     tracing::debug!("Include siblings");
     let xname_blade_vec: Vec<String> = xname_vec
       .iter()
-      .map(|xname| xname.get(0..XNAME_BLADE_PREFIX_LEN).unwrap_or(xname).to_string())
+      .map(|xname| {
+        xname
+          .get(0..XNAME_BLADE_PREFIX_LEN)
+          .unwrap_or(xname)
+          .to_string()
+      })
       .collect();
 
     tracing::debug!("XNAME blades:\n{:?}", xname_blade_vec);
@@ -496,9 +503,7 @@ mod tests {
 
   #[tokio::test]
   async fn nid_hostlist_no_match() {
-    let metadata = vec![
-      make_component("x1000c0s0b0n0", Some(1)),
-    ];
+    let metadata = vec![make_component("x1000c0s0b0n0", Some(1))];
     let nids = vec!["nid000099".to_string()];
 
     let result = get_xname_from_nid_hostlist(&nids, &metadata).await.unwrap();
@@ -520,23 +525,22 @@ mod tests {
       make_component("x1000c0s1b0n0", Some(2)),
       make_component("x1000c0s2b0n0", Some(3)),
     ];
-    let xnames = vec![
-      "x1000c0s0b0n0".to_string(),
-      "x1000c0s2b0n0".to_string(),
-    ];
+    let xnames = vec!["x1000c0s0b0n0".to_string(), "x1000c0s2b0n0".to_string()];
 
-    let result = get_xname_from_xname_hostlist(&xnames, &metadata).await.unwrap();
+    let result = get_xname_from_xname_hostlist(&xnames, &metadata)
+      .await
+      .unwrap();
     assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s2b0n0"]);
   }
 
   #[tokio::test]
   async fn xname_hostlist_no_match() {
-    let metadata = vec![
-      make_component("x1000c0s0b0n0", Some(1)),
-    ];
+    let metadata = vec![make_component("x1000c0s0b0n0", Some(1))];
     let xnames = vec!["x9999c0s0b0n0".to_string()];
 
-    let result = get_xname_from_xname_hostlist(&xnames, &metadata).await.unwrap();
+    let result = get_xname_from_xname_hostlist(&xnames, &metadata)
+      .await
+      .unwrap();
     assert!(result.is_empty());
   }
 
@@ -584,31 +588,19 @@ mod tests {
 
   #[tokio::test]
   async fn hosts_expression_invalid_input() {
-    let metadata = vec![
-      make_component("x1000c0s0b0n0", Some(1)),
-    ];
+    let metadata = vec![make_component("x1000c0s0b0n0", Some(1))];
     // "foobar" is neither a valid NID nor xname
-    let result = from_hosts_expression_to_xname_vec(
-      "foobar",
-      false,
-      metadata,
-    )
-    .await;
+    let result =
+      from_hosts_expression_to_xname_vec("foobar", false, metadata).await;
     assert!(result.is_err());
   }
 
   #[tokio::test]
   async fn hosts_expression_nid_no_metadata_match_returns_error() {
     // All NIDs are valid but none match the metadata -> empty -> error
-    let metadata = vec![
-      make_component("x1000c0s0b0n0", Some(99)),
-    ];
-    let result = from_hosts_expression_to_xname_vec(
-      "nid000001",
-      false,
-      metadata,
-    )
-    .await;
+    let metadata = vec![make_component("x1000c0s0b0n0", Some(99))];
+    let result =
+      from_hosts_expression_to_xname_vec("nid000001", false, metadata).await;
     assert!(result.is_err());
   }
 
@@ -621,13 +613,10 @@ mod tests {
       make_component("x1000c0s1b0n0", Some(3)), // different blade
     ];
     // Request only nid000001 but include siblings
-    let mut result = from_hosts_expression_to_xname_vec(
-      "nid000001",
-      true,
-      metadata,
-    )
-    .await
-    .unwrap();
+    let mut result =
+      from_hosts_expression_to_xname_vec("nid000001", true, metadata)
+        .await
+        .unwrap();
     result.sort();
     assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
   }
@@ -649,7 +638,10 @@ mod tests {
   #[test]
   fn validate_nid_format_vec_empty() {
     let nids: Vec<String> = vec![];
-    assert!(validate_nid_format_vec(&nids), "empty vec should return true (vacuous truth)");
+    assert!(
+      validate_nid_format_vec(&nids),
+      "empty vec should return true (vacuous truth)"
+    );
   }
 
   #[test]
@@ -675,7 +667,10 @@ mod tests {
   #[test]
   fn validate_xname_format_vec_empty() {
     let xnames: Vec<String> = vec![];
-    assert!(validate_xname_format_vec(&xnames), "empty vec should return true (vacuous truth)");
+    assert!(
+      validate_xname_format_vec(&xnames),
+      "empty vec should return true (vacuous truth)"
+    );
   }
 
   #[test]

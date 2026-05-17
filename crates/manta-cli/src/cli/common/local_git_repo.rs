@@ -67,17 +67,16 @@ pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
 ///
 /// Finds the `origin` remote, reads its URL, takes the last
 /// path segment, and strips any trailing `.git` suffix.
-pub fn parse_repo_name_from_remote(
-  repo: &Repository,
-) -> Result<String, Error> {
+pub fn parse_repo_name_from_remote(repo: &Repository) -> Result<String, Error> {
   let remote = repo.find_remote("origin").map_err(|e| {
     Error::LocalGitError(format!("Failed to find remote 'origin': {}", e))
   })?;
   let url = remote.url().ok_or_else(|| {
     Error::LocalGitError("Remote 'origin' URL is not valid UTF-8".to_string())
   })?;
-  parse_repo_name_from_url(url)
-    .ok_or_else(|| Error::LocalGitError("Remote URL has no '/' separator".to_string()))
+  parse_repo_name_from_url(url).ok_or_else(|| {
+    Error::LocalGitError("Remote URL has no '/' separator".to_string())
+  })
 }
 
 #[cfg(test)]

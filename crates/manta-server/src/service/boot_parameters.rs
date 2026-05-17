@@ -2,11 +2,7 @@
 
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{
-    bss::BootParametersTrait,
-    cfs::CfsTrait,
-    ims::ImsTrait,
-  },
+  interfaces::{bss::BootParametersTrait, cfs::CfsTrait, ims::ImsTrait},
   types::{
     bss::BootParameters,
     ims::{Image, PatchImage},
@@ -59,7 +55,11 @@ pub async fn delete_boot_parameters(
     cloud_init: None,
   };
 
-  infra.backend.delete_bootparameters(token, &boot_parameters).await.map(|_| ())
+  infra
+    .backend
+    .delete_bootparameters(token, &boot_parameters)
+    .await
+    .map(|_| ())
 }
 
 /// Add (create) boot parameters for specified nodes.
@@ -68,7 +68,10 @@ pub async fn add_boot_parameters(
   token: &str,
   boot_parameters: &BootParameters,
 ) -> Result<(), Error> {
-  infra.backend.add_bootparameters(token, boot_parameters).await
+  infra
+    .backend
+    .add_bootparameters(token, boot_parameters)
+    .await
 }
 
 /// Update boot parameters for specified nodes.
@@ -77,8 +80,7 @@ pub async fn update_boot_parameters(
   token: &str,
   params: UpdateBootParametersParams,
 ) -> Result<(), Error> {
-  validate_target_hsm_members(infra.backend, token, &params.hosts)
-    .await?;
+  validate_target_hsm_members(infra.backend, token, &params.hosts).await?;
 
   let boot_parameters = BootParameters {
     hosts: params.hosts,
@@ -92,7 +94,10 @@ pub async fn update_boot_parameters(
 
   tracing::debug!("new boot params: {:#?}", boot_parameters);
 
-  infra.backend.update_bootparameters(token, &boot_parameters).await
+  infra
+    .backend
+    .update_bootparameters(token, &boot_parameters)
+    .await
 }
 
 /// Result of preparing boot configuration changes.
@@ -217,12 +222,14 @@ pub async fn persist_boot_config(
       .await?;
 
     for image in changeset.image_vec.values() {
-      let image_id = image
-        .id
-        .clone()
-        .ok_or_else(|| Error::MissingField("Image id is missing".to_string()))?;
+      let image_id = image.id.clone().ok_or_else(|| {
+        Error::MissingField("Image id is missing".to_string())
+      })?;
       let patch_image: PatchImage = image.clone().into();
-      infra.backend.update_image(token, &image_id, &patch_image).await?;
+      infra
+        .backend
+        .update_image(token, &image_id, &patch_image)
+        .await?;
     }
   } else {
     tracing::info!("Runtime configuration does not change.");
@@ -263,10 +270,9 @@ async fn get_new_boot_image(
 
     backend.filter_images(&mut image_vec)?;
 
-    let most_recent_image = image_vec
-      .iter()
-      .last()
-      .ok_or_else(|| Error::NotFound("No image found for configuration".to_string()))?;
+    let most_recent_image = image_vec.iter().last().ok_or_else(|| {
+      Error::NotFound("No image found for configuration".to_string())
+    })?;
 
     tracing::debug!(
       "Boot image id related to configuration '{}' found:\n{:#?}",
@@ -340,14 +346,18 @@ async fn collect_boot_images(
     let new_boot_image_id = new_boot_image
       .id
       .as_ref()
-      .ok_or_else(|| Error::MissingField("New boot image id is missing".to_string()))?
+      .ok_or_else(|| {
+        Error::MissingField("New boot image id is missing".to_string())
+      })?
       .clone();
 
     let new_boot_image_etag = new_boot_image
       .link
       .as_ref()
       .and_then(|link| link.etag.as_ref())
-      .ok_or_else(|| Error::MissingField("New boot image etag is missing".to_string()))?;
+      .ok_or_else(|| {
+        Error::MissingField("New boot image etag is missing".to_string())
+      })?;
 
     image_vec.insert(new_boot_image_id.clone(), new_boot_image.clone());
 
@@ -362,7 +372,8 @@ async fn collect_boot_images(
           boot_parameter.hosts,
           new_boot_image_id
         );
-        boot_parameter.update_boot_image(&new_boot_image_id, new_boot_image_etag)?;
+        boot_parameter
+          .update_boot_image(&new_boot_image_id, new_boot_image_etag)?;
       }
       *need_restart = true;
     }
@@ -380,7 +391,9 @@ async fn collect_boot_images(
         .get_images(shasta_token, Some(boot_image_id.as_str()))
         .await?
         .first()
-        .ok_or_else(|| Error::NotFound("No image found for boot image id".to_string()))?
+        .ok_or_else(|| {
+          Error::NotFound("No image found for boot image id".to_string())
+        })?
         .clone();
 
       image_vec.insert(boot_image_id, boot_image);

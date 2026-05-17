@@ -1,8 +1,8 @@
 //! OpenAPI specification document for the manta HTTP server.
 
 use utoipa::{
-  openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
   Modify, OpenApi,
+  openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 
 use super::handlers;

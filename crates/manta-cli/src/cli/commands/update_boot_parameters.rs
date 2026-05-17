@@ -45,7 +45,9 @@ pub async fn exec(
     initrd: initrd.unwrap_or_default().to_string(),
   };
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .update_boot_parameters(token, &params)

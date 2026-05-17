@@ -120,15 +120,18 @@ impl TestFixture {
     .unwrap();
 
     let mut sites = std::collections::HashMap::new();
-    sites.insert("test".to_string(), SiteBackend {
-      backend,
-      shasta_base_url: mock_server.uri(),
-      shasta_root_cert: TEST_ROOT_CERT.to_vec(),
-      socks5_proxy: None,
-      vault_base_url: None,
-      gitea_base_url: "http://stub.invalid".to_string(),
-      k8s_api_url: None,
-    });
+    sites.insert(
+      "test".to_string(),
+      SiteBackend {
+        backend,
+        shasta_base_url: mock_server.uri(),
+        shasta_root_cert: TEST_ROOT_CERT.to_vec(),
+        socks5_proxy: None,
+        vault_base_url: None,
+        gitea_base_url: "http://stub.invalid".to_string(),
+        k8s_api_url: None,
+      },
+    );
     let state = Arc::new(ServerState {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
@@ -136,7 +139,10 @@ impl TestFixture {
 
     let router = build_router(state);
 
-    TestFixture { mock_server, router }
+    TestFixture {
+      mock_server,
+      router,
+    }
   }
 
   fn auth_get(&self, uri: &str) -> Request<Body> {
@@ -158,7 +164,11 @@ impl TestFixture {
     serde_json::from_slice(&bytes).expect("response body is not valid JSON")
   }
 
-  fn auth_post_json(&self, uri: &str, body: serde_json::Value) -> Request<Body> {
+  fn auth_post_json(
+    &self,
+    uri: &str,
+    body: serde_json::Value,
+  ) -> Request<Body> {
     Request::builder()
       .method(Method::POST)
       .uri(uri)
@@ -179,7 +189,11 @@ impl TestFixture {
       .unwrap()
   }
 
-  fn auth_delete_json(&self, uri: &str, body: serde_json::Value) -> Request<Body> {
+  fn auth_delete_json(
+    &self,
+    uri: &str,
+    body: serde_json::Value,
+  ) -> Request<Body> {
     Request::builder()
       .method(Method::DELETE)
       .uri(uri)
@@ -597,7 +611,9 @@ async fn mock_redfish_endpoints(srv: &MockServer) {
 async fn mock_cfs_v3_components(srv: &MockServer) {
   Mock::given(method("GET"))
     .and(path("/cfs/v3/components"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!({"components": []})))
+    .respond_with(
+      ResponseTemplate::new(200).set_body_json(json!({"components": []})),
+    )
     .mount(srv)
     .await;
 }
@@ -667,8 +683,7 @@ async fn create_group_happy_path() {
   Mock::given(method("POST"))
     .and(path("/smd/hsm/v2/groups"))
     .respond_with(
-      ResponseTemplate::new(201)
-        .set_body_json(json!({"label": "new-group"})),
+      ResponseTemplate::new(201).set_body_json(json!({"label": "new-group"})),
     )
     .mount(&fx.mock_server)
     .await;
@@ -716,9 +731,7 @@ async fn delete_node_happy_path() {
     .mount(&fx.mock_server)
     .await;
 
-  let resp = fx
-    .send(fx.auth_delete("/api/v1/nodes/x3000c0s1b0n0"))
-    .await;
+  let resp = fx.send(fx.auth_delete("/api/v1/nodes/x3000c0s1b0n0")).await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 }
 
@@ -761,7 +774,9 @@ async fn add_node_happy_path() {
     .await;
   Mock::given(method("POST"))
     .and(path("/smd/hsm/v2/groups/compute/members"))
-    .respond_with(ResponseTemplate::new(201).set_body_json(json!({"uri": "/hsm/v2/groups/compute/members/x3000c0s2b0n0"})))
+    .respond_with(ResponseTemplate::new(201).set_body_json(
+      json!({"uri": "/hsm/v2/groups/compute/members/x3000c0s2b0n0"}),
+    ))
     .mount(&fx.mock_server)
     .await;
 
@@ -949,12 +964,15 @@ async fn post_power_on_nodes_happy_path() {
     .await;
 
   let resp = fx
-    .send(fx.auth_post_json("/api/v1/power", json!({
-      "action": "on",
-      "targets_expression": "x3000c0s1b0n0",
-      "target_type": "nodes",
-      "force": false,
-    })))
+    .send(fx.auth_post_json(
+      "/api/v1/power",
+      json!({
+        "action": "on",
+        "targets_expression": "x3000c0s1b0n0",
+        "target_type": "nodes",
+        "force": false,
+      }),
+    ))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body = TestFixture::body_json(resp).await;

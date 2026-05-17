@@ -1,7 +1,7 @@
 //! Deserialization types for HPE Cray SAT (System Admin Toolkit) YAML files.
 
-use manta_backend_dispatcher::error::Error;
 use image::Image;
+use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
@@ -347,10 +347,7 @@ pub mod configuration {
       commit: String,
     },
     /// Product pinned by exact version string.
-    ProductVersion {
-      name: String,
-      version: String,
-    },
+    ProductVersion { name: String, version: String },
   }
 
   /// A Git repository reference within a CFS configuration
@@ -551,7 +548,9 @@ fn dot_notation_to_yaml(
           })?
         }
       } else {
-        return Err(Error::TemplateError("Unexpected structure encountered".to_string()));
+        return Err(Error::TemplateError(
+          "Unexpected structure encountered".to_string(),
+        ));
       };
       current_level = next_level;
     }
@@ -577,7 +576,11 @@ pub fn render_jinja2_sat_file_yaml(
     minijinja::syntax::SyntaxConfig::builder()
       .line_comment_prefix("#")
       .build()
-      .map_err(|e| Error::TemplateError(format!("Failed to build jinja2 syntax config: {e}")))?,
+      .map_err(|e| {
+        Error::TemplateError(format!(
+          "Failed to build jinja2 syntax config: {e}"
+        ))
+      })?,
   );
   // Set 'String' as undefined behaviour meaning, missing values won't pass the template
   // rendering
@@ -597,9 +600,10 @@ pub fn render_jinja2_sat_file_yaml(
     // file is also a jinja template and combine both vars and values in it)
     let values_file_rendered = env
       .render_str(values_file_content, values_file_yaml)
-      .map_err(|e| Error::TemplateError(format!("Error parsing values file to YAML: {e}")))?;
-    serde_yaml::from_str(&values_file_rendered)
-      ?
+      .map_err(|e| {
+        Error::TemplateError(format!("Error parsing values file to YAML: {e}"))
+      })?;
+    serde_yaml::from_str(&values_file_rendered)?
   } else {
     serde_yaml::from_str(sat_file_content)?
   };
@@ -613,13 +617,15 @@ pub fn render_jinja2_sat_file_yaml(
       let cli_var_context_yaml = dot_notation_to_yaml(value_option)?;
 
       values_file_yaml =
-        merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).ok_or_else(|| {
-          Error::TemplateError(
-            "Failed to merge CLI variable values into \
+        merge_yaml(values_file_yaml.clone(), cli_var_context_yaml).ok_or_else(
+          || {
+            Error::TemplateError(
+              "Failed to merge CLI variable values into \
              SAT file YAML"
-              .to_string(),
-          )
-        })?;
+                .to_string(),
+            )
+          },
+        )?;
     }
   }
 
@@ -627,7 +633,9 @@ pub fn render_jinja2_sat_file_yaml(
   tracing::info!("Expand variables in 'SAT file'");
   let sat_file_rendered = env
     .render_str(sat_file_content, values_file_yaml)
-    .map_err(|e| Error::TemplateError(format!("Failed to render SAT file template: {e}")))?;
+    .map_err(|e| {
+      Error::TemplateError(format!("Failed to render SAT file template: {e}"))
+    })?;
 
   // Disable debug
   env.set_debug(false);

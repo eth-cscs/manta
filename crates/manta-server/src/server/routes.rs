@@ -6,15 +6,15 @@
 use std::sync::Arc;
 
 use axum::{
-  routing::{delete, get, post},
   Router,
+  routing::{delete, get, post},
 };
 use utoipa::OpenApi as _;
 use utoipa_swagger_ui::SwaggerUi;
 
+use super::ServerState;
 use super::api_doc::ApiDoc;
 use super::handlers;
-use super::ServerState;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
 pub fn build_router(state: Arc<ServerState>) -> Router {
@@ -31,7 +31,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/redfish-endpoints", get(handlers::get_redfish_endpoints))
     .route("/clusters", get(handlers::get_clusters))
     .route("/hardware-clusters", get(handlers::get_hardware_clusters))
-    .route("/hardware-nodes-list", get(handlers::get_hardware_nodes_list))
+    .route(
+      "/hardware-nodes-list",
+      get(handlers::get_hardware_nodes_list),
+    )
     // --- Write endpoints ---
     // Nodes
     .route("/nodes", post(handlers::add_node))
@@ -41,8 +44,7 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/groups/{label}", delete(handlers::delete_group))
     .route(
       "/groups/{name}/members",
-      post(handlers::add_nodes_to_group)
-        .delete(handlers::delete_group_members),
+      post(handlers::add_nodes_to_group).delete(handlers::delete_group_members),
     )
     // Boot parameters
     .route(
@@ -68,16 +70,22 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // Images (delete with dry_run)
     .route("/images", delete(handlers::delete_images))
     // Configurations (delete with dry_run)
-    .route(
-      "/configurations",
-      delete(handlers::delete_configurations),
-    )
+    .route("/configurations", delete(handlers::delete_configurations))
     // Boot config (apply with dry_run)
     .route("/boot-config", post(handlers::apply_boot_config))
     // Kernel parameters (apply, add, delete)
-    .route("/kernel-parameters/apply", post(handlers::apply_kernel_parameters))
-    .route("/kernel-parameters/add", post(handlers::add_kernel_parameters))
-    .route("/kernel-parameters", delete(handlers::delete_kernel_parameters))
+    .route(
+      "/kernel-parameters/apply",
+      post(handlers::apply_kernel_parameters),
+    )
+    .route(
+      "/kernel-parameters/add",
+      post(handlers::add_kernel_parameters),
+    )
+    .route(
+      "/kernel-parameters",
+      delete(handlers::delete_kernel_parameters),
+    )
     // Migrate
     .route("/migrate/nodes", post(handlers::migrate_nodes))
     .route("/migrate/backup", post(handlers::migrate_backup))
@@ -87,7 +95,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // Power management
     .route("/power", post(handlers::post_power))
     // BOS session from template
-    .route("/templates/{name}/sessions", post(handlers::post_template_session))
+    .route(
+      "/templates/{name}/sessions",
+      post(handlers::post_template_session),
+    )
     // CFS session logs (SSE)
     .route("/sessions/{name}/logs", get(handlers::get_session_logs))
     // SAT file apply
@@ -97,8 +108,7 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // Hardware cluster member management
     .route(
       "/hardware-clusters/{target}/members",
-      post(handlers::add_hw_component)
-        .delete(handlers::delete_hw_component),
+      post(handlers::add_hw_component).delete(handlers::delete_hw_component),
     )
     // Hardware cluster configuration (pin/unpin)
     .route(
@@ -120,5 +130,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
 fn build_ws_routes() -> Router<Arc<ServerState>> {
   Router::new()
     .route("/nodes/{xname}/console", get(handlers::console_node_ws))
-    .route("/sessions/{name}/console", get(handlers::console_session_ws))
+    .route(
+      "/sessions/{name}/console",
+      get(handlers::console_session_ws),
+    )
 }

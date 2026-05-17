@@ -28,7 +28,8 @@ pub async fn get_configurations(
 
   let limit_ref = params.limit.as_ref();
 
-  let cfs_configuration_vec = infra.backend
+  let cfs_configuration_vec = infra
+    .backend
     .get_and_filter_configuration(
       token,
       infra.shasta_base_url,
@@ -179,7 +180,13 @@ mod tests {
 
   #[test]
   fn validate_date_range_ok_when_since_before_until() {
-    assert!(validate_date_range(Some(dt("2024-01-01T00:00:00")), Some(dt("2024-01-02T00:00:00"))).is_ok());
+    assert!(
+      validate_date_range(
+        Some(dt("2024-01-01T00:00:00")),
+        Some(dt("2024-01-02T00:00:00"))
+      )
+      .is_ok()
+    );
   }
 
   #[test]
@@ -198,8 +205,16 @@ mod tests {
 
   #[test]
   fn validate_date_range_err_when_since_after_until() {
-    let result = validate_date_range(Some(dt("2024-01-02T00:00:00")), Some(dt("2024-01-01T00:00:00")));
+    let result = validate_date_range(
+      Some(dt("2024-01-02T00:00:00")),
+      Some(dt("2024-01-01T00:00:00")),
+    );
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("'since' date can't be after 'until' date"));
+    assert!(
+      result
+        .unwrap_err()
+        .to_string()
+        .contains("'since' date can't be after 'until' date")
+    );
   }
 }

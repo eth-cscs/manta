@@ -5,7 +5,7 @@ use clap_complete::{generate, generate_to};
 
 use std::{env, io, path::PathBuf};
 
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 
 /// Generate shell auto-completion scripts.
 pub fn exec(

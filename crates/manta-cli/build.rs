@@ -18,7 +18,12 @@ fn main() -> Result<(), Error> {
   fs::create_dir_all(completion_dir)?;
 
   for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Elvish] {
-    let path = generate_to(shell, &mut cli::build_cli(), env!("CARGO_PKG_NAME"), completion_dir)?;
+    let path = generate_to(
+      shell,
+      &mut cli::build_cli(),
+      env!("CARGO_PKG_NAME"),
+      completion_dir,
+    )?;
     println!("cargo:warning=completion file generated: {path:?}");
   }
 

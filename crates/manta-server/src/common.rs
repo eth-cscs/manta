@@ -10,11 +10,11 @@
 //! explicit `manta_shared::common::*` / `crate::server::common::*` imports.
 
 #[allow(unused_imports)]
-pub use manta_shared::common::{
-  DATETIME_FORMAT, app_context, audit, authorization, config, jwt_ops,
-  kafka, log_ops,
-};
-#[allow(unused_imports)]
 pub use crate::server::common::{
   boot_parameters, hw_inventory_utils, ims_ops, node_ops, vault,
+};
+#[allow(unused_imports)]
+pub use manta_shared::common::{
+  DATETIME_FORMAT, app_context, audit, authorization, config, jwt_ops, kafka,
+  log_ops,
 };

@@ -10,11 +10,12 @@
 //! can collapse to a one-liner or go away entirely.
 
 #[allow(unused_imports)]
-pub use manta_shared::common::{
-  DATETIME_FORMAT, app_context, audit, authorization, config, jwt_ops,
-  kafka, log_ops,
+pub use crate::cli::common::{
+  authentication, hooks, kernel_parameters_ops, local_git_repo,
+  user_interaction,
 };
 #[allow(unused_imports)]
-pub use crate::cli::common::{
-  authentication, hooks, kernel_parameters_ops, local_git_repo, user_interaction,
+pub use manta_shared::common::{
+  DATETIME_FORMAT, app_context, audit, authorization, config, jwt_ops, kafka,
+  log_ops,
 };

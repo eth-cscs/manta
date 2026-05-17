@@ -1,8 +1,8 @@
 //! Routes `manta config *` subcommands to their exec functions.
 
 use crate::cli::commands;
-use crate::common::app_context::AppContext;
 use crate::cli::common::authentication::get_api_token;
+use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -20,11 +20,13 @@ pub async fn handle_config(
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
-        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token =
+          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
         commands::config_set_hsm::exec(m, ctx.infra.backend, &token).await?;
       }
       Some(("parent-hsm", m)) => {
-        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token =
+          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
         commands::config_set_parent_hsm::exec(m, ctx.infra.backend, &token)
           .await?;
       }
@@ -36,7 +38,8 @@ pub async fn handle_config(
     Some(("unset", m)) => match m.subcommand() {
       Some(("hsm", _)) => commands::config_unset_hsm::exec()?,
       Some(("parent-hsm", _)) => {
-        let token = get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
+        let token =
+          get_api_token(ctx.infra.backend, ctx.infra.site_name).await?;
         commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
           .await?;
       }

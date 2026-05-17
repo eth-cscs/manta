@@ -33,17 +33,21 @@ use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 /// either fail at auth or at Axum's request extraction layer first.
 fn router() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
-  sites.insert("test".to_string(), SiteBackend {
-    backend,
-    shasta_base_url: "http://stub.invalid".to_string(),
-    shasta_root_cert: vec![],
-    socks5_proxy: None,
-    vault_base_url: None,
-    gitea_base_url: "http://stub.invalid".to_string(),
-    k8s_api_url: None,
-  });
+  sites.insert(
+    "test".to_string(),
+    SiteBackend {
+      backend,
+      shasta_base_url: "http://stub.invalid".to_string(),
+      shasta_root_cert: vec![],
+      socks5_proxy: None,
+      vault_base_url: None,
+      gitea_base_url: "http://stub.invalid".to_string(),
+      k8s_api_url: None,
+    },
+  );
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
@@ -55,17 +59,21 @@ fn router() -> axum::Router {
 /// reach the "requires vault/k8s" code paths.
 fn router_with_vault() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
-  sites.insert("test".to_string(), SiteBackend {
-    backend,
-    shasta_base_url: "http://stub.invalid".to_string(),
-    shasta_root_cert: vec![],
-    socks5_proxy: None,
-    vault_base_url: Some("http://vault.stub.invalid".to_string()),
-    gitea_base_url: "http://stub.invalid".to_string(),
-    k8s_api_url: Some("http://k8s.stub.invalid".to_string()),
-  });
+  sites.insert(
+    "test".to_string(),
+    SiteBackend {
+      backend,
+      shasta_base_url: "http://stub.invalid".to_string(),
+      shasta_root_cert: vec![],
+      socks5_proxy: None,
+      vault_base_url: Some("http://vault.stub.invalid".to_string()),
+      gitea_base_url: "http://stub.invalid".to_string(),
+      k8s_api_url: Some("http://k8s.stub.invalid".to_string()),
+    },
+  );
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
@@ -139,10 +147,7 @@ async fn unknown_route_returns_404() {
 
 #[tokio::test]
 async fn wrong_api_version_returns_404() {
-  let resp = router()
-    .oneshot(get("/api/v2/sessions"))
-    .await
-    .unwrap();
+  let resp = router().oneshot(get("/api/v2/sessions")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
@@ -152,10 +157,7 @@ async fn wrong_api_version_returns_404() {
 
 #[tokio::test]
 async fn get_on_post_only_route_returns_405() {
-  let resp = router()
-    .oneshot(get("/api/v1/power"))
-    .await
-    .unwrap();
+  let resp = router().oneshot(get("/api/v1/power")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
 
@@ -403,10 +405,7 @@ async fn post_sat_file_missing_content_returns_422() {
 
 #[tokio::test]
 async fn get_nodes_without_xname_returns_400() {
-  let resp = router()
-    .oneshot(get_auth("/api/v1/nodes"))
-    .await
-    .unwrap();
+  let resp = router().oneshot(get_auth("/api/v1/nodes")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -448,17 +447,21 @@ async fn post_sat_file_without_vault_config_returns_501() {
 #[tokio::test]
 async fn post_sat_file_without_k8s_config_returns_501() {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None).unwrap();
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
-  sites.insert("test".to_string(), SiteBackend {
-    backend,
-    shasta_base_url: "http://stub.invalid".to_string(),
-    shasta_root_cert: vec![],
-    socks5_proxy: None,
-    vault_base_url: Some("http://vault.stub.invalid".to_string()),
-    gitea_base_url: "http://stub.invalid".to_string(),
-    k8s_api_url: None, // k8s not set
-  });
+  sites.insert(
+    "test".to_string(),
+    SiteBackend {
+      backend,
+      shasta_base_url: "http://stub.invalid".to_string(),
+      shasta_root_cert: vec![],
+      socks5_proxy: None,
+      vault_base_url: Some("http://vault.stub.invalid".to_string()),
+      gitea_base_url: "http://stub.invalid".to_string(),
+      k8s_api_url: None, // k8s not set
+    },
+  );
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
@@ -704,7 +707,10 @@ async fn delete_kernel_parameters_missing_params_returns_422() {
 #[tokio::test]
 async fn add_hw_component_missing_body_returns_422() {
   let resp = router()
-    .oneshot(post_json("/api/v1/hardware-clusters/my-cluster/members", "{}"))
+    .oneshot(post_json(
+      "/api/v1/hardware-clusters/my-cluster/members",
+      "{}",
+    ))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
@@ -803,7 +809,6 @@ fn ws_upgrade(uri: &str) -> Request<Body> {
     .unwrap()
 }
 
-
 #[tokio::test]
 async fn console_node_without_auth_returns_401() {
   let resp = router()
@@ -822,7 +827,6 @@ async fn console_session_without_auth_returns_401() {
   assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-
 // ---------------------------------------------------------------------------
 // OpenAPI spec tests
 // ---------------------------------------------------------------------------
@@ -840,10 +844,18 @@ async fn openapi_spec_contains_expected_paths_and_schemas() {
   let body = body_string(resp.into_body()).await;
   let spec: serde_json::Value =
     serde_json::from_str(&body).expect("OpenAPI spec must be valid JSON");
-  let paths = spec["paths"].as_object().expect("spec must have a paths object");
-  assert!(paths.contains_key("/sessions"), "spec must document /sessions");
+  let paths = spec["paths"]
+    .as_object()
+    .expect("spec must have a paths object");
+  assert!(
+    paths.contains_key("/sessions"),
+    "spec must document /sessions"
+  );
   assert!(paths.contains_key("/health"), "spec must document /health");
-  assert!(paths.contains_key("/boot-parameters"), "spec must document /boot-parameters");
+  assert!(
+    paths.contains_key("/boot-parameters"),
+    "spec must document /boot-parameters"
+  );
   assert!(
     spec["components"]["schemas"].is_object(),
     "spec must have a schemas object"
@@ -860,9 +872,18 @@ fn to_handler_error_not_found_variants() {
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(to_handler_error(Error::NotFound("session foo".into())).0, StatusCode::NOT_FOUND);
-  assert_eq!(to_handler_error(Error::SessionNotFound).0, StatusCode::NOT_FOUND);
-  assert_eq!(to_handler_error(Error::ConfigurationNotFound).0, StatusCode::NOT_FOUND);
+  assert_eq!(
+    to_handler_error(Error::NotFound("session foo".into())).0,
+    StatusCode::NOT_FOUND
+  );
+  assert_eq!(
+    to_handler_error(Error::SessionNotFound).0,
+    StatusCode::NOT_FOUND
+  );
+  assert_eq!(
+    to_handler_error(Error::ConfigurationNotFound).0,
+    StatusCode::NOT_FOUND
+  );
 }
 
 #[test]
@@ -871,8 +892,14 @@ fn to_handler_error_conflict_variants() {
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(to_handler_error(Error::Conflict("group foo".into())).0, StatusCode::CONFLICT);
-  assert_eq!(to_handler_error(Error::ConfigurationAlreadyExistsError("cfg".into())).0, StatusCode::CONFLICT);
+  assert_eq!(
+    to_handler_error(Error::Conflict("group foo".into())).0,
+    StatusCode::CONFLICT
+  );
+  assert_eq!(
+    to_handler_error(Error::ConfigurationAlreadyExistsError("cfg".into())).0,
+    StatusCode::CONFLICT
+  );
 }
 
 #[test]
@@ -881,6 +908,12 @@ fn to_handler_error_bad_request_and_internal() {
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
 
-  assert_eq!(to_handler_error(Error::BadRequest("bad input".into())).0, StatusCode::BAD_REQUEST);
-  assert_eq!(to_handler_error(Error::Message("something broke".into())).0, StatusCode::INTERNAL_SERVER_ERROR);
+  assert_eq!(
+    to_handler_error(Error::BadRequest("bad input".into())).0,
+    StatusCode::BAD_REQUEST
+  );
+  assert_eq!(
+    to_handler_error(Error::Message("something broke".into())).0,
+    StatusCode::INTERNAL_SERVER_ERROR
+  );
 }

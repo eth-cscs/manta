@@ -47,7 +47,9 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_session_params(cli_args);
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let sessions = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_sessions(token, &params)
@@ -85,18 +87,15 @@ mod tests {
         arg!(-l --limit <VALUE> "limit")
           .value_parser(value_parser!(u8).range(1..)),
       )
-      .arg(
-        arg!(-o --output <FORMAT> "output format").value_parser(["json"]),
-      )
+      .arg(arg!(-o --output <FORMAT> "output format").value_parser(["json"]))
       .arg(arg!(-x --xnames <XNAMES> "xnames"))
       .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
-      .group(
-        ArgGroup::new("hsm-group_or_xnames_or_name")
-          .args(["hsm-group", "xnames", "name"]),
-      )
-      .group(
-        ArgGroup::new("session_limit").args(["most-recent", "limit"]),
-      )
+      .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
+        "hsm-group",
+        "xnames",
+        "name",
+      ]))
+      .group(ArgGroup::new("session_limit").args(["most-recent", "limit"]))
   }
 
   #[test]
@@ -139,32 +138,37 @@ mod tests {
 
   #[test]
   fn parse_limit_flag() {
-    let matches =
-      sessions_cmd().get_matches_from(["sessions", "--limit", "5"]);
+    let matches = sessions_cmd().get_matches_from(["sessions", "--limit", "5"]);
     let params = parse_session_params(&matches);
     assert_eq!(params.limit, Some(5));
   }
 
   #[test]
   fn parse_xnames_passes_expression_verbatim() {
-    let matches = sessions_cmd()
-      .get_matches_from(["sessions", "--xnames", "x3000c0s1b0n[0-3]"]);
+    let matches = sessions_cmd().get_matches_from([
+      "sessions",
+      "--xnames",
+      "x3000c0s1b0n[0-3]",
+    ]);
     let params = parse_session_params(&matches);
     assert_eq!(params.xnames, vec!["x3000c0s1b0n[0-3]"]);
   }
 
   #[test]
   fn parse_single_xname() {
-    let matches =
-      sessions_cmd().get_matches_from(["sessions", "--xnames", "x1000c0s0b0n0"]);
+    let matches = sessions_cmd().get_matches_from([
+      "sessions",
+      "--xnames",
+      "x1000c0s0b0n0",
+    ]);
     let params = parse_session_params(&matches);
     assert_eq!(params.xnames, vec!["x1000c0s0b0n0"]);
   }
 
   #[test]
   fn parse_hsm_group() {
-    let matches = sessions_cmd()
-      .get_matches_from(["sessions", "--hsm-group", "compute"]);
+    let matches =
+      sessions_cmd().get_matches_from(["sessions", "--hsm-group", "compute"]);
     let params = parse_session_params(&matches);
     assert_eq!(params.hsm_group.as_deref(), Some("compute"));
   }
@@ -187,8 +191,13 @@ mod tests {
 
   #[test]
   fn parse_age_filters() {
-    let matches = sessions_cmd()
-      .get_matches_from(["sessions", "--min-age", "1d", "--max-age", "6h"]);
+    let matches = sessions_cmd().get_matches_from([
+      "sessions",
+      "--min-age",
+      "1d",
+      "--max-age",
+      "6h",
+    ]);
     let params = parse_session_params(&matches);
     assert_eq!(params.min_age.as_deref(), Some("1d"));
     assert_eq!(params.max_age.as_deref(), Some("6h"));

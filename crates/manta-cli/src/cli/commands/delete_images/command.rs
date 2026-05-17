@@ -17,14 +17,19 @@ pub async fn exec(
     image_id_vec.join(", "),
   );
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .delete_images(token, image_id_vec, dry_run)
     .await?;
   if dry_run {
     eprintln!("Dry-run enabled. No changes persisted into the system");
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+    println!(
+      "{}",
+      serde_json::to_string_pretty(&result).unwrap_or_default()
+    );
   } else {
     println!("Images deleted:\n{}", image_id_vec.join(", "));
   }

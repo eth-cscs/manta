@@ -1,7 +1,7 @@
 //! HSM node queries, registration, and deletion, with rollback on partial failure.
 
-use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
@@ -145,9 +145,8 @@ pub async fn add_node(
 
   if let Some(hw_inventory) = hw_inventory_opt {
     tracing::info!("Adding hardware inventory for '{}'", id);
-    if let Err(error) = backend
-      .post_inventory_hardware(token, hw_inventory)
-      .await
+    if let Err(error) =
+      backend.post_inventory_hardware(token, hw_inventory).await
     {
       rollback_node(backend, token, id).await;
       return Err(error);

@@ -32,8 +32,16 @@ pub async fn handle_add(
       let hardware_file_opt = m.get_one::<PathBuf>("hardware");
       let arch_opt = m.get_one::<String>("arch").cloned();
       let enabled = m.get_one::<bool>("disabled").cloned().unwrap_or(true);
-      add_node::exec(ctx, &token, id, group, enabled, arch_opt, hardware_file_opt)
-        .await?;
+      add_node::exec(
+        ctx,
+        &token,
+        id,
+        group,
+        enabled,
+        arch_opt,
+        hardware_file_opt,
+      )
+      .await?;
     }
     Some(("group", m)) => {
       let label = m
@@ -41,8 +49,16 @@ pub async fn handle_add(
         .context("'label' argument is mandatory")?;
       let description = m.get_one::<String>("description").map(String::as_str);
       let node_expression = m.get_one::<String>("nodes").map(String::as_str);
-      add_group::exec(ctx, &token, label, description, node_expression, true, false)
-        .await?;
+      add_group::exec(
+        ctx,
+        &token,
+        label,
+        description,
+        node_expression,
+        true,
+        false,
+      )
+      .await?;
     }
     Some(("hardware", m)) => {
       let target_hsm_group_name_arg_opt =

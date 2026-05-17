@@ -3,7 +3,7 @@
 use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
-use crate::common::{self, audit, kafka::Kafka, app_context::AppContext};
+use crate::common::{self, app_context::AppContext, audit, kafka::Kafka};
 
 /// Add/assign a list of xnames to an HSM group.
 pub async fn exec(
@@ -14,7 +14,9 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
 
   if !common::user_interaction::confirm(
@@ -35,9 +37,10 @@ pub async fn exec(
     return Ok(());
   }
 
-  let (added, updated_members) = MantaClient::new(server_url, ctx.infra.site_name)?
-    .add_nodes_to_group(token, target_hsm_name, hosts_expression)
-    .await?;
+  let (added, updated_members) =
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .add_nodes_to_group(token, target_hsm_name, hosts_expression)
+      .await?;
 
   println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
 

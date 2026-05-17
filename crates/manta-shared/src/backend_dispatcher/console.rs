@@ -21,8 +21,13 @@ impl ConsoleTrait for StaticBackendDispatcher {
     width: u16,
     height: u16,
     k8s: &K8sDetails,
-  ) -> Result<(Box<dyn AsyncWrite + Unpin + Send>, Box<dyn AsyncRead + Unpin + Send>), Error>
-  {
+  ) -> Result<
+    (
+      Box<dyn AsyncWrite + Unpin + Send>,
+      Box<dyn AsyncRead + Unpin + Send>,
+    ),
+    Error,
+  > {
     dispatch!(
       self,
       attach_to_node_console,
@@ -43,8 +48,13 @@ impl ConsoleTrait for StaticBackendDispatcher {
     width: u16,
     height: u16,
     k8s: &K8sDetails,
-  ) -> Result<(Box<dyn AsyncWrite + Unpin + Send>, Box<dyn AsyncRead + Unpin + Send>), Error>
-  {
+  ) -> Result<
+    (
+      Box<dyn AsyncWrite + Unpin + Send>,
+      Box<dyn AsyncRead + Unpin + Send>,
+    ),
+    Error,
+  > {
     dispatch!(
       self,
       attach_to_session_console,

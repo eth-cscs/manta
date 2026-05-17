@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use anyhow::{bail, Context, Error};
+use anyhow::{Context, Error, bail};
 use comfy_table::{Cell, Color, Table};
 use manta_shared::shared::dto::NodeSummary;
 use serde_json::Value;
@@ -41,9 +41,8 @@ fn build_details_table(
   table.set_header([vec!["Node".to_string()], all_cols.clone()].concat());
 
   for (xname, counts) in rows {
-    let mut row: Vec<Cell> = vec![
-      Cell::new(xname).set_alignment(comfy_table::CellAlignment::Center),
-    ];
+    let mut row: Vec<Cell> =
+      vec![Cell::new(xname).set_alignment(comfy_table::CellAlignment::Center)];
     for col in &all_cols {
       if col.to_uppercase().contains("ERROR")
         && counts.get(col).is_some_and(|n| *n > 0)
@@ -120,9 +119,11 @@ fn print_table_details(node_summaries: &[NodeSummary]) {
     accel_set.extend(k);
     counts.extend(c);
 
-    let (c, k) = count_hw_components(ns.memory.iter().map(|m| {
-      Some(m.info.clone().unwrap_or_else(|| "ERROR".to_string()))
-    }));
+    let (c, k) = count_hw_components(
+      ns.memory
+        .iter()
+        .map(|m| Some(m.info.clone().unwrap_or_else(|| "ERROR".to_string()))),
+    );
     mem_set.extend(k);
     counts.extend(c);
 
@@ -180,7 +181,9 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
     }
     "pattern" => {
       let pattern =
-        manta_shared::shared::cluster_status::get_cluster_hw_pattern(node_summaries);
+        manta_shared::shared::cluster_status::get_cluster_hw_pattern(
+          node_summaries,
+        );
       print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);
     }
     other => bail!("unsupported output format '{}'", other),
@@ -207,4 +210,3 @@ pub fn print_nodes_list(json: &Value, output: &str) -> Result<(), Error> {
   print_table_details(&node_summaries);
   Ok(())
 }
-

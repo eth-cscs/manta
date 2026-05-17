@@ -29,9 +29,8 @@ pub async fn get_kernel_parameters(
   )
   .await?;
 
-  let boot_parameter_vec = infra.backend
-    .get_bootparameters(token, &xname_vec)
-    .await?;
+  let boot_parameter_vec =
+    infra.backend.get_bootparameters(token, &xname_vec).await?;
 
   Ok(boot_parameter_vec)
 }
@@ -49,20 +48,13 @@ pub enum KernelParamOperation<'a> {
 impl<'a> KernelParamOperation<'a> {
   /// Apply the mutation to a single `BootParameters` entry.
   /// Returns `true` if the parameters were actually changed.
-  fn mutate(
-    &self,
-    boot_parameter: &mut BootParameters,
-  ) -> bool {
+  fn mutate(&self, boot_parameter: &mut BootParameters) -> bool {
     match self {
       Self::Add { params, overwrite } => {
         boot_parameter.add_kernel_params(params, *overwrite)
       }
-      Self::Apply { params } => {
-        boot_parameter.apply_kernel_params(params)
-      }
-      Self::Delete { params } => {
-        boot_parameter.delete_kernel_params(params)
-      }
+      Self::Apply { params } => boot_parameter.apply_kernel_params(params),
+      Self::Delete { params } => boot_parameter.delete_kernel_params(params),
     }
   }
 
@@ -98,10 +90,8 @@ pub async fn prepare_kernel_params_changes(
   xname_vec: &[String],
   operation: &KernelParamOperation<'_>,
 ) -> Result<KernelParamsChangeset, Error> {
-  let mut boot_params: Vec<BootParameters> = infra
-    .backend
-    .get_bootparameters(token, xname_vec)
-    .await?;
+  let mut boot_params: Vec<BootParameters> =
+    infra.backend.get_bootparameters(token, xname_vec).await?;
 
   let mut has_changes = false;
   let mut xnames_to_reboot: Vec<String> = Vec::new();
@@ -127,7 +117,9 @@ pub async fn prepare_kernel_params_changes(
         .get_images(token, Some(&image_id))
         .await?
         .first()
-        .ok_or_else(|| Error::NotFound("No image found for the given image id".to_string()))?
+        .ok_or_else(|| {
+          Error::NotFound("No image found for the given image id".to_string())
+        })?
         .clone();
 
       if bp.is_root_kernel_param_iscsi_ready() {
@@ -153,10 +145,7 @@ pub async fn apply_kernel_params_changes(
 ) -> Result<(), Error> {
   // Update boot parameters
   for bp in &changeset.boot_params {
-    infra
-      .backend
-      .update_bootparameters(token, bp)
-      .await?;
+    infra.backend.update_bootparameters(token, bp).await?;
   }
 
   // Update images projected through SBPS
@@ -205,10 +194,16 @@ mod tests {
   use super::*;
 
   fn add(params: &str) -> KernelParamOperation<'_> {
-    KernelParamOperation::Add { params, overwrite: false }
+    KernelParamOperation::Add {
+      params,
+      overwrite: false,
+    }
   }
   fn add_overwrite(params: &str) -> KernelParamOperation<'_> {
-    KernelParamOperation::Add { params, overwrite: true }
+    KernelParamOperation::Add {
+      params,
+      overwrite: true,
+    }
   }
   fn apply(params: &str) -> KernelParamOperation<'_> {
     KernelParamOperation::Apply { params }

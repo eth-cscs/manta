@@ -5,9 +5,9 @@ use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::ims::GetImagesAndDetailsTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
+use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
-use manta_backend_dispatcher::types::Group;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
@@ -32,7 +32,8 @@ pub async fn get_images(
 
   let limit_ref = params.limit.as_ref();
 
-  let image_detail_vec = infra.backend
+  let image_detail_vec = infra
+    .backend
     .get_images_and_details(
       token,
       infra.shasta_base_url,
@@ -69,7 +70,11 @@ pub async fn validate_image_deletion(
     .iter()
     .map(|boot_param| boot_param.try_get_boot_image_id())
     .collect::<Option<Vec<String>>>()
-    .ok_or_else(|| Error::MissingField("Could not get image ids used to boot nodes".to_string()))?;
+    .ok_or_else(|| {
+      Error::MissingField(
+        "Could not get image ids used to boot nodes".to_string(),
+      )
+    })?;
 
   let image_xnames_boot_map: Vec<&&str> = image_id_vec
     .iter()
@@ -92,7 +97,10 @@ pub async fn validate_image_deletion(
   let image_restricted_vec =
     get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
       .ok_or_else(|| {
-        Error::MissingField("Could not get restricted image ids used by boot parameters".to_string())
+        Error::MissingField(
+          "Could not get restricted image ids used by boot parameters"
+            .to_string(),
+        )
       })?;
 
   if !image_restricted_vec.is_empty() {
@@ -115,8 +123,13 @@ pub async fn delete_images(
   image_id_vec: &[&str],
   settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
-  validate_image_deletion(infra, token, image_id_vec, settings_hsm_group_name_opt)
-    .await?;
+  validate_image_deletion(
+    infra,
+    token,
+    image_id_vec,
+    settings_hsm_group_name_opt,
+  )
+  .await?;
 
   let mut deleted = Vec::new();
   for image_id in image_id_vec {
@@ -136,7 +149,11 @@ pub async fn delete_images(
         deleted.push(image_id.to_string());
       }
       Err(e) => {
-        tracing::error!("Failed to delete image {}: {}. Continuing", image_id, e);
+        tracing::error!(
+          "Failed to delete image {}: {}. Continuing",
+          image_id,
+          e
+        );
       }
     }
   }

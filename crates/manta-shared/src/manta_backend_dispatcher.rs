@@ -1,8 +1,8 @@
 //! Runtime backend selector — wraps either a CSM or an OpenCHAMI backend
 //! behind a single enum so the rest of the codebase is backend-agnostic.
 
-use manta_backend_dispatcher::error::Error;
 use csm_rs::backend_connector::Csm;
+use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
 #[derive(Clone)]
@@ -31,7 +31,9 @@ impl StaticBackendDispatcher {
   ) -> Result<Self, Error> {
     match backend_type {
       "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert, socks5_proxy))),
-      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy))),
+      "ochami" => {
+        Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy)))
+      }
       _ => Err(Error::UnsupportedBackend(format!(
         "Backend '{}' not supported",
         backend_type

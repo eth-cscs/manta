@@ -8,7 +8,9 @@ use crate::common::app_context::AppContext;
 use manta_shared::shared::params::redfish_endpoints::GetRedfishEndpointsParams;
 
 /// Parse CLI arguments into typed [`GetRedfishEndpointsParams`].
-fn parse_redfish_endpoints_params(cli_args: &clap::ArgMatches) -> GetRedfishEndpointsParams {
+fn parse_redfish_endpoints_params(
+  cli_args: &clap::ArgMatches,
+) -> GetRedfishEndpointsParams {
   GetRedfishEndpointsParams {
     id: cli_args.get_one::<String>("id").cloned(),
     fqdn: cli_args.get_one::<String>("fqdn").cloned(),
@@ -30,7 +32,9 @@ pub async fn exec(
     .map(String::as_str)
     .unwrap_or("table");
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let endpoints = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_redfish_endpoints(token, &params)
@@ -52,7 +56,11 @@ mod tests {
       .arg(arg!(--uuid <UUID> "uuid"))
       .arg(arg!(--macaddr <MACADDR> "mac address"))
       .arg(arg!(--ipaddress <IPADDRESS> "ip address"))
-      .arg(arg!(-o --output <FORMAT> "output format").value_parser(["table", "json"]).default_value("table"))
+      .arg(
+        arg!(-o --output <FORMAT> "output format")
+          .value_parser(["table", "json"])
+          .default_value("table"),
+      )
   }
 
   #[test]
@@ -70,11 +78,16 @@ mod tests {
   fn parse_all_args() {
     let matches = redfish_cmd().get_matches_from([
       "redfish-endpoints",
-      "--id", "x3000c0s1b0",
-      "--fqdn", "node1.example.com",
-      "--uuid", "abc-123",
-      "--macaddr", "00:11:22:33:44:55",
-      "--ipaddress", "10.0.0.1",
+      "--id",
+      "x3000c0s1b0",
+      "--fqdn",
+      "node1.example.com",
+      "--uuid",
+      "abc-123",
+      "--macaddr",
+      "00:11:22:33:44:55",
+      "--ipaddress",
+      "10.0.0.1",
     ]);
     let params = parse_redfish_endpoints_params(&matches);
     assert_eq!(params.id.as_deref(), Some("x3000c0s1b0"));

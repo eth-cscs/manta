@@ -6,8 +6,8 @@ use crate::cli::commands::{
   delete_hw_component_cluster, delete_images, delete_kernel_parameters,
   delete_node, delete_redfish_endpoint,
 };
-use crate::common::app_context::AppContext;
 use crate::cli::common::authentication::get_api_token;
+use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -103,9 +103,14 @@ pub async fn handle_delete(
         .context("'session-name' argument must be provided")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
-      if let Err(e) =
-        delete_and_cancel_session::exec(ctx, &token, session_name, dry_run, assume_yes)
-          .await
+      if let Err(e) = delete_and_cancel_session::exec(
+        ctx,
+        &token,
+        session_name,
+        dry_run,
+        assume_yes,
+      )
+      .await
       {
         bail!("Failed to delete session: {e}");
       }
@@ -161,8 +166,13 @@ pub async fn handle_delete(
         .map(|s| s.trim())
         .collect();
       let dry_run: bool = m.get_flag("dry-run");
-      match delete_images::command::exec(ctx, &token, image_id_vec.as_slice(), dry_run)
-        .await
+      match delete_images::command::exec(
+        ctx,
+        &token,
+        image_id_vec.as_slice(),
+        dry_run,
+      )
+      .await
       {
         Ok(_) => println!("Images deleted successfully"),
         Err(e) => bail!("Failed to delete images: {e}"),

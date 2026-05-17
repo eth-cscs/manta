@@ -19,10 +19,16 @@ pub async fn apply_power(
   match params.action {
     PowerAction::On => infra.backend.power_on_sync(token, &params.xnames).await,
     PowerAction::Off => {
-      infra.backend.power_off_sync(token, &params.xnames, params.force).await
+      infra
+        .backend
+        .power_off_sync(token, &params.xnames, params.force)
+        .await
     }
     PowerAction::Reset => {
-      infra.backend.power_reset_sync(token, &params.xnames, params.force).await
+      infra
+        .backend
+        .power_reset_sync(token, &params.xnames, params.force)
+        .await
     }
   }
 }

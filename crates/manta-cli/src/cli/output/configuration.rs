@@ -50,4 +50,3 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
 
   println!("{table}");
 }
-

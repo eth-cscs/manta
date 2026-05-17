@@ -1,10 +1,12 @@
 //! Token acquisition: env var → cached file → interactive Keycloak login.
 
 use crate::common::config::get_default_cache_path;
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
-use manta_backend_dispatcher::{error::Error, interfaces::authentication::AuthenticationTrait};
+use manta_backend_dispatcher::{
+  error::Error, interfaces::authentication::AuthenticationTrait,
+};
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
@@ -246,9 +248,8 @@ async fn get_token_interactively(
 ) -> Result<String, Error> {
   println!("Please type your {}", "Keycloak credentials".green());
 
-  let username: String = Input::new()
-    .with_prompt("username")
-    .interact_text()?;
+  let username: String =
+    Input::new().with_prompt("username").interact_text()?;
 
   let password = Password::new().with_prompt("password").interact()?;
 
@@ -266,9 +267,8 @@ async fn get_token_interactively(
     }
 
     println!("Please type your {}", "Keycloak credentials".green());
-    let username: String = Input::new()
-      .with_prompt("username")
-      .interact_text()?;
+    let username: String =
+      Input::new().with_prompt("username").interact_text()?;
     let password = Password::new().with_prompt("password").interact()?;
 
     shasta_token_rslt = backend.get_api_token(&username, &password).await;

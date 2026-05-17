@@ -28,9 +28,12 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_boot_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
+  let params =
+    parse_boot_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let boot_parameters = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_boot_parameters(token, &params)
@@ -63,16 +66,22 @@ mod tests {
 
   #[test]
   fn parse_hsm_group() {
-    let matches = boot_params_cmd()
-      .get_matches_from(["boot-parameters", "--hsm-group", "compute"]);
+    let matches = boot_params_cmd().get_matches_from([
+      "boot-parameters",
+      "--hsm-group",
+      "compute",
+    ]);
     let params = parse_boot_parameters_params(&matches, None);
     assert_eq!(params.hsm_group.as_deref(), Some("compute"));
   }
 
   #[test]
   fn parse_nodes() {
-    let matches = boot_params_cmd()
-      .get_matches_from(["boot-parameters", "--nodes", "x1000c0s0b0n0"]);
+    let matches = boot_params_cmd().get_matches_from([
+      "boot-parameters",
+      "--nodes",
+      "x1000c0s0b0n0",
+    ]);
     let params = parse_boot_parameters_params(&matches, None);
     assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
   }
@@ -81,6 +90,9 @@ mod tests {
   fn parse_settings_hsm_group() {
     let matches = boot_params_cmd().get_matches_from(["boot-parameters"]);
     let params = parse_boot_parameters_params(&matches, Some("default-group"));
-    assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default-group"));
+    assert_eq!(
+      params.settings_hsm_group_name.as_deref(),
+      Some("default-group")
+    );
   }
 }

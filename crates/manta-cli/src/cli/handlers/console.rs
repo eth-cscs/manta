@@ -1,9 +1,9 @@
 //! Routes `manta console *` subcommands to their exec functions.
 
 use crate::cli::commands::console_common;
+use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::cli::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::io::IsTerminal;
@@ -24,12 +24,15 @@ pub async fn handle_console(
         .get_one::<String>("XNAME")
         .context("The 'XNAME' argument must have a value")?;
 
-      let server_url = ctx.cli.manta_server_url
+      let server_url = ctx
+        .cli
+        .manta_server_url
         .context("manta server URL must be configured")?;
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
-        .console_node(&token, xname, cols, rows)
-        .await?;
+      let (a_input, a_output) =
+        MantaClient::new(server_url, ctx.infra.site_name)?
+          .console_node(&token, xname, cols, rows)
+          .await?;
       let result = console_common::run_console_loop(a_input, a_output).await;
       console_common::handle_console_result(result);
     }
@@ -41,12 +44,15 @@ pub async fn handle_console(
         .get_one::<String>("SESSION_NAME")
         .context("The 'SESSION_NAME' argument must have a value")?;
 
-      let server_url = ctx.cli.manta_server_url
+      let server_url = ctx
+        .cli
+        .manta_server_url
         .context("manta server URL must be configured")?;
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::new(server_url, ctx.infra.site_name)?
-        .console_session(&token, session_name, cols, rows)
-        .await?;
+      let (a_input, a_output) =
+        MantaClient::new(server_url, ctx.infra.site_name)?
+          .console_session(&token, session_name, cols, rows)
+          .await?;
       let result = console_common::run_console_loop(a_input, a_output).await;
       console_common::handle_console_result(result);
     }

@@ -11,8 +11,8 @@
 //!   `StaticBackendDispatcher` enum (CSM / OCHAMI variants) and its trait
 //!   impls.
 
-pub mod shared;
 pub mod common;
+pub mod shared;
 
 pub mod backend_dispatcher;
 pub mod manta_backend_dispatcher;

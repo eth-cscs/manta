@@ -24,9 +24,12 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_group_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
+  let params =
+    parse_group_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let groups = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_groups(token, &params)
@@ -88,6 +91,9 @@ mod tests {
   fn parse_settings_hsm_group() {
     let matches = group_cmd().get_matches_from(["groups"]);
     let params = parse_group_params(&matches, Some("default-group"));
-    assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default-group"));
+    assert_eq!(
+      params.settings_hsm_group_name.as_deref(),
+      Some("default-group")
+    );
   }
 }

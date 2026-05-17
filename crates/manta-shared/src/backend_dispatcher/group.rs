@@ -161,7 +161,7 @@ impl GroupTrait for StaticBackendDispatcher {
     target_hsm_group_name: &str,
     parent_hsm_group_name: &str,
     new_target_hsm_members: &[&str],
-    dryrun: bool
+    dryrun: bool,
   ) -> Result<(Vec<String>, Vec<String>), Error> {
     dispatch!(
       self,

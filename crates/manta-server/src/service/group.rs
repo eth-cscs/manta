@@ -23,7 +23,8 @@ pub async fn get_groups(
   )
   .await?;
 
-  infra.backend
+  infra
+    .backend
     .get_groups(token, Some(&target_hsm_group_vec))
     .await
 }
@@ -112,7 +113,12 @@ pub async fn add_nodes_to_group(
     ));
   }
 
-  if infra.backend.get_group(token, target_hsm_name).await.is_err() {
+  if infra
+    .backend
+    .get_group(token, target_hsm_name)
+    .await
+    .is_err()
+  {
     return Err(Error::NotFound(format!(
       "Target HSM group '{target_hsm_name}' does not exist"
     )));

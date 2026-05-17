@@ -17,16 +17,19 @@ pub async fn exec(
     .context("'id' argument is mandatory")?
     .to_string();
   let name: Option<String> = cli_args.get_one("name").cloned();
-  let hostname: Option<String> = cli_args.get_one::<String>("hostname").cloned();
+  let hostname: Option<String> =
+    cli_args.get_one::<String>("hostname").cloned();
   let domain: Option<String> = cli_args.get_one::<String>("domain").cloned();
   let fqdn: Option<String> = cli_args.get_one::<String>("fqdn").cloned();
   let enabled: bool = cli_args.get_flag("enabled");
   let user: Option<String> = cli_args.get_one::<String>("user").cloned();
-  let password: Option<String> = cli_args.get_one::<String>("password").cloned();
+  let password: Option<String> =
+    cli_args.get_one::<String>("password").cloned();
   let use_ssdp: bool = cli_args.get_flag("use-ssdp");
   let mac_required: bool = cli_args.get_flag("mac-required");
   let mac_addr: Option<String> = cli_args.get_one::<String>("macaddr").cloned();
-  let ip_address: Option<String> = cli_args.get_one::<String>("ipaddress").cloned();
+  let ip_address: Option<String> =
+    cli_args.get_one::<String>("ipaddress").cloned();
   let rediscover_on_update: bool = cli_args.get_flag("rediscover-on-update");
   let template_id: Option<String> =
     cli_args.get_one::<String>("template-id").cloned();
@@ -48,7 +51,9 @@ pub async fn exec(
     template_id,
   };
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .add_redfish_endpoint(token, params)

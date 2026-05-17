@@ -1,8 +1,8 @@
 //! Implements the `manta delete session` command.
 
-use anyhow::Context;
 use crate::cli::http_client::MantaClient;
 use crate::common::{self, app_context::AppContext};
+use anyhow::Context;
 
 /// Delete or cancel a CFS session.
 pub async fn exec(
@@ -12,7 +12,9 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   if !common::user_interaction::confirm(
     &format!(

@@ -2,11 +2,11 @@
 
 use crate::cli::commands::{
   get_boot_parameters, get_cluster, get_configuration, get_group,
-  get_hardware_cluster, get_hardware_nodes, get_images,
-  get_kernel_parameters, get_nodes, get_session, get_template,
+  get_hardware_cluster, get_hardware_nodes, get_images, get_kernel_parameters,
+  get_nodes, get_session, get_template,
 };
-use crate::common::app_context::AppContext;
 use crate::cli::common::authentication::get_api_token;
+use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 

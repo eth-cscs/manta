@@ -29,17 +29,11 @@ pub struct SatApplyOptions<'a> {
 }
 
 /// Validate that a hook script exists and is executable.
-fn validate_hook(
-  hook_opt: Option<&str>,
-  label: &str,
-) -> Result<(), Error> {
+fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
     crate::cli::common::hooks::check_hook_perms(hook_opt)
       .map_err(|e| anyhow::anyhow!("{}. File: {}", e, hook))?;
-    println!(
-      "{}-hook script '{}' exists and is executable.",
-      label, hook
-    );
+    println!("{}-hook script '{}' exists and is executable.", label, hook);
   }
   Ok(())
 }
@@ -63,7 +57,9 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
@@ -77,9 +73,15 @@ pub async fn exec(
 
   run_hook_if_present(opts.prehook_opt, "pre")?;
 
-  let values_json: Option<serde_json::Value> = opts.values_cli_opt.map(|vals| {
-    serde_json::Value::Array(vals.iter().map(|v| serde_json::Value::String(v.clone())).collect())
-  });
+  let values_json: Option<serde_json::Value> =
+    opts.values_cli_opt.map(|vals| {
+      serde_json::Value::Array(
+        vals
+          .iter()
+          .map(|v| serde_json::Value::String(v.clone()))
+          .collect(),
+      )
+    });
 
   MantaClient::new(server_url, ctx.infra.site_name)?
     .apply_sat_file(

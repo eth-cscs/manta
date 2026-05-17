@@ -1,6 +1,6 @@
 //! Clap command tree definition for the manta CLI.
 
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
+use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 
 use std::path::PathBuf;
 
@@ -153,7 +153,11 @@ fn subcommand_delete_group() -> Command {
     )
     .arg(arg!(-f --force "Force deletion").action(ArgAction::SetTrue))
     // ID preserved as "VALUE" for handler compatibility
-    .arg(arg!(<VALUE> "Name of the group to delete").value_name("GROUP_NAME").required(true))
+    .arg(
+      arg!(<VALUE> "Name of the group to delete")
+        .value_name("GROUP_NAME")
+        .required(true),
+    )
 }
 
 fn subcommand_delete_node() -> Command {
@@ -161,7 +165,11 @@ fn subcommand_delete_node() -> Command {
     .arg_required_else_help(true)
     .about("Remove a node from the system")
     // ID preserved as "VALUE" for handler compatibility
-    .arg(arg!(<VALUE> "Xname of the node to remove").value_name("XNAME").required(true))
+    .arg(
+      arg!(<VALUE> "Xname of the node to remove")
+        .value_name("XNAME")
+        .required(true),
+    )
 }
 
 fn subcommand_delete_hw_component() -> Command {
@@ -265,7 +273,11 @@ fn subcommand_get_group() -> Command {
   Command::new("groups")
     .about("List node groups")
     // ID preserved as "VALUE" for handler compatibility
-    .arg(arg!(<VALUE> "Group name (lists all groups if omitted)").value_name("GROUP_NAME").required(false))
+    .arg(
+      arg!(<VALUE> "Group name (lists all groups if omitted)")
+        .value_name("GROUP_NAME")
+        .required(false),
+    )
     .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["json", "table"])
@@ -820,7 +832,10 @@ fn subcommand_power() -> Command {
             .arg_required_else_help(true)
             .about("Power on all nodes in a cluster")
             .arg(arg!(-R --reason <TEXT> "Reason for the power operation"))
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -832,7 +847,10 @@ fn subcommand_power() -> Command {
           Command::new("nodes")
             .arg_required_else_help(true)
             .about("Power on a set of nodes")
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -850,9 +868,15 @@ fn subcommand_power() -> Command {
           Command::new("cluster")
             .arg_required_else_help(true)
             .about("Power off all nodes in a cluster")
-            .arg(arg!(-g --graceful "Perform a graceful shutdown").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-g --graceful "Perform a graceful shutdown")
+                .action(ArgAction::SetTrue),
+            )
             .arg(arg!(-R --reason <TEXT> "Reason for the power operation"))
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -864,8 +888,14 @@ fn subcommand_power() -> Command {
           Command::new("nodes")
             .arg_required_else_help(true)
             .about("Power off a set of nodes")
-            .arg(arg!(-g --graceful "Perform a graceful shutdown").action(ArgAction::SetTrue))
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-g --graceful "Perform a graceful shutdown")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -883,8 +913,14 @@ fn subcommand_power() -> Command {
           Command::new("cluster")
             .arg_required_else_help(true)
             .about("Reset all nodes in a cluster")
-            .arg(arg!(-g --graceful "Perform a graceful reboot").action(ArgAction::SetTrue))
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-g --graceful "Perform a graceful reboot")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -897,8 +933,14 @@ fn subcommand_power() -> Command {
           Command::new("nodes")
             .arg_required_else_help(true)
             .about("Reset a set of nodes")
-            .arg(arg!(-g --graceful "Perform a graceful reboot").action(ArgAction::SetTrue))
-            .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+            .arg(
+              arg!(-g --graceful "Perform a graceful reboot")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
+              arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
             .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
@@ -1000,8 +1042,14 @@ fn subcommand_add_boot_parameters() -> Command {
     .arg(arg!(-k --"kernel" <VALUE> "S3 path to the kernel file"))
     .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
     .arg(arg!(-c --"cloud-init" <VALUE> "Cloud-init script"))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(-y --"assume-yes" "Skip confirmation prompts")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 fn subcommand_add_kernel_parameters() -> Command {
@@ -1054,12 +1102,21 @@ fn subcommand_update_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
     .about("Update boot parameters for nodes")
-    .arg(arg!(-H --"hosts" <XNAMES> "Xnames of the nodes to update").required(true))
+    .arg(
+      arg!(-H --"hosts" <XNAMES> "Xnames of the nodes to update")
+        .required(true),
+    )
     .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
     .arg(arg!(-k --"kernel" <VALUE> "S3 path to the kernel file"))
     .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(-y --"assume-yes" "Skip confirmation prompts")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 fn subcommand_update_redfish_endpoint() -> Command {
@@ -1171,7 +1228,9 @@ fn subcommand_console() -> Command {
     .subcommand(
       Command::new("target-ansible")
         .arg_required_else_help(true)
-        .about("Connect to the Ansible target container of a configuration session")
+        .about(
+          "Connect to the Ansible target container of a configuration session",
+        )
         .arg(arg!(<SESSION_NAME> "Configuration session name").required(true)),
     )
 }
@@ -1181,7 +1240,10 @@ fn subcommand_add_nodes_to_groups() -> Command {
     .about("Add nodes to one or more groups")
     .arg(arg!(-g --group <NAME> "Group to add the nodes to"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 fn subcommand_remove_nodes_from_groups() -> Command {
@@ -1189,7 +1251,10 @@ fn subcommand_remove_nodes_from_groups() -> Command {
     .about("Remove nodes from one or more groups")
     .arg(arg!(-g --group <NAME> "Group to remove the nodes from"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 #[cfg(test)]

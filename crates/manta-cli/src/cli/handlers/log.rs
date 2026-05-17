@@ -1,11 +1,11 @@
 //! Routes the `manta log` command to its exec function.
 
+use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
-use crate::cli::common::authentication::get_api_token;
-use manta_shared::shared::params::session::GetSessionParams;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
+use manta_shared::shared::params::session::GetSessionParams;
 
 /// Dispatch the `manta log` command to stream CFS session logs.
 ///
@@ -24,7 +24,9 @@ pub async fn handle_log(
   let timestamps = cli_log.get_flag("timestamps");
 
   use tokio::io::AsyncBufReadExt as _;
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let client = MantaClient::new(server_url, ctx.infra.site_name)?;
 

@@ -4,7 +4,7 @@ use anyhow::{Context, Error, bail};
 
 use crate::{
   cli::http_client::MantaClient,
-  common::{self, audit, kafka::Kafka, app_context::AppContext},
+  common::{self, app_context::AppContext, audit, kafka::Kafka},
 };
 
 /// Remove/unassign a list of xnames to a list of HSM groups
@@ -16,7 +16,9 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
 
   if !common::user_interaction::confirm(

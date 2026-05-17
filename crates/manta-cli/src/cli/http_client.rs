@@ -80,7 +80,10 @@ impl MantaClient {
     resp: reqwest::Response,
   ) -> anyhow::Result<T> {
     if resp.status().is_success() {
-      resp.json::<T>().await.context("Failed to parse response JSON")
+      resp
+        .json::<T>()
+        .await
+        .context("Failed to parse response JSON")
     } else {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
@@ -155,7 +158,11 @@ impl MantaClient {
     Self::parse_no_content(resp).await
   }
 
-  async fn delete_no_content(&self, token: &str, path: &str) -> anyhow::Result<()> {
+  async fn delete_no_content(
+    &self,
+    token: &str,
+    path: &str,
+  ) -> anyhow::Result<()> {
     let url = format!("{}{}", self.base_url, path);
     let resp = self
       .client
@@ -346,8 +353,8 @@ impl MantaClient {
     entries
       .into_iter()
       .map(|e| {
-        let img: Image =
-          serde_json::from_value(e.image).context("Failed to deserialize image")?;
+        let img: Image = serde_json::from_value(e.image)
+          .context("Failed to deserialize image")?;
         Ok((img, e.configuration_name, e.image_id, e.is_linked))
       })
       .collect()
@@ -431,7 +438,9 @@ impl MantaClient {
     params: &GetClusterParams,
   ) -> anyhow::Result<Vec<NodeDetails>> {
     let mut q: Vec<(&str, String)> = Vec::new();
-    let hsm = params.hsm_group_name.as_deref()
+    let hsm = params
+      .hsm_group_name
+      .as_deref()
       .or(params.settings_hsm_group_name.as_deref());
     if let Some(v) = hsm {
       q.push(("hsm_group", v.to_string()));
@@ -448,7 +457,9 @@ impl MantaClient {
     params: &GetHardwareClusterParams,
   ) -> anyhow::Result<Value> {
     let mut q: Vec<(&str, String)> = Vec::new();
-    let hsm = params.hsm_group_name.as_deref()
+    let hsm = params
+      .hsm_group_name
+      .as_deref()
       .or(params.settings_hsm_group_name.as_deref());
     if let Some(v) = hsm {
       q.push(("hsm_group", v.to_string()));
@@ -480,7 +491,11 @@ impl MantaClient {
     Ok(())
   }
 
-  pub async fn create_group(&self, token: &str, group: Group) -> anyhow::Result<()> {
+  pub async fn create_group(
+    &self,
+    token: &str,
+    group: Group,
+  ) -> anyhow::Result<()> {
     let _: Value = self.post_json(token, "/groups", &group).await?;
     Ok(())
   }
@@ -615,7 +630,9 @@ impl MantaClient {
       "project_sbps": project_sbps,
       "dry_run": dry_run,
     });
-    self.post_json(token, "/kernel-parameters/apply", &body).await
+    self
+      .post_json(token, "/kernel-parameters/apply", &body)
+      .await
   }
 
   /// POST /kernel-parameters/add — merge new kernel parameters into existing entries.
@@ -733,7 +750,11 @@ impl MantaClient {
       "dry_run": dry_run,
     });
     self
-      .post_json(token, &format!("/hardware-clusters/{}/members", target), &body)
+      .post_json(
+        token,
+        &format!("/hardware-clusters/{}/members", target),
+        &body,
+      )
       .await
   }
 
@@ -787,7 +808,9 @@ impl MantaClient {
     token: &str,
     params: &UpdateRedfishEndpointParams,
   ) -> anyhow::Result<()> {
-    self.put_no_content(token, "/redfish-endpoints", params).await
+    self
+      .put_no_content(token, "/redfish-endpoints", params)
+      .await
   }
 
   // ── DELETE endpoints ──────────────────────────────────────────────────────
@@ -849,10 +872,7 @@ impl MantaClient {
     ids: &[&str],
     dry_run: bool,
   ) -> anyhow::Result<Value> {
-    let q = [
-      ("ids", ids.join(",")),
-      ("dry_run", dry_run.to_string()),
-    ];
+    let q = [("ids", ids.join(",")), ("dry_run", dry_run.to_string())];
     self.delete_json_with_query(token, "/images", &q).await
   }
 
@@ -874,7 +894,9 @@ impl MantaClient {
     if let Some(v) = until {
       q.push(("until", v.to_string()));
     }
-    self.delete_json_with_query(token, "/configurations", &q).await
+    self
+      .delete_json_with_query(token, "/configurations", &q)
+      .await
   }
 
   pub async fn delete_group_members(
@@ -886,7 +908,11 @@ impl MantaClient {
   ) -> anyhow::Result<()> {
     let body = serde_json::json!({ "xnames_expression": xnames_expression, "dry_run": dry_run });
     self
-      .delete_no_content_with_body(token, &format!("/groups/{}/members", name), &body)
+      .delete_no_content_with_body(
+        token,
+        &format!("/groups/{}/members", name),
+        &body,
+      )
       .await
   }
 
@@ -1017,9 +1043,7 @@ impl MantaClient {
       bail!("GET session logs returned {}: {}", status, body);
     }
 
-    let byte_stream = resp
-      .bytes_stream()
-      .map_err(std::io::Error::other);
+    let byte_stream = resp.bytes_stream().map_err(std::io::Error::other);
     Ok(BufReader::new(StreamReader::new(byte_stream)))
   }
 
@@ -1084,13 +1108,11 @@ impl MantaClient {
   )> {
     use futures::{SinkExt, StreamExt};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio_tungstenite::tungstenite::Message;
     use tokio_tungstenite::tungstenite::client::IntoClientRequest;
     use tokio_tungstenite::tungstenite::http::HeaderValue;
-    use tokio_tungstenite::tungstenite::Message;
 
-    let mut req = url
-      .into_client_request()
-      .context("Invalid WebSocket URL")?;
+    let mut req = url.into_client_request().context("Invalid WebSocket URL")?;
     req.headers_mut().insert(
       "Authorization",
       HeaderValue::from_str(&format!("Bearer {}", token))

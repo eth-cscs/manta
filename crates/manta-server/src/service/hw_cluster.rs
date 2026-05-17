@@ -523,33 +523,28 @@ pub async fn resolve_hw_description_to_xnames(
       .and_modify(|current_qty| *current_qty = qty - *current_qty);
   }
 
-  let hw_component_counters_to_move_out_from_combined_hsm =
-    match mode {
-      HwClusterMode::Pin => {
-        calculate_target_hsm_pin(
-          &final_combined_target_parent_hsm_hw_component_summary,
-          &final_combined_target_parent_hsm_hw_component_summary
-            .keys()
-            .cloned()
-            .collect::<Vec<String>>(),
-          &mut combined_target_parent_hsm_node_hw_component_count_vec,
-          &mut target_hsm_node_hw_component_count_vec,
-          &mut parent_hsm_node_hw_component_count_vec,
-          &hw_component_scarcity_scores_hashmap,
-        )?
-      }
-      HwClusterMode::Unpin => {
-        calculate_target_hsm_unpin(
-          &final_combined_target_parent_hsm_hw_component_summary,
-          &final_combined_target_parent_hsm_hw_component_summary
-            .keys()
-            .cloned()
-            .collect::<Vec<String>>(),
-          &mut combined_target_parent_hsm_node_hw_component_count_vec,
-          &hw_component_scarcity_scores_hashmap,
-        )?
-      }
-    };
+  let hw_component_counters_to_move_out_from_combined_hsm = match mode {
+    HwClusterMode::Pin => calculate_target_hsm_pin(
+      &final_combined_target_parent_hsm_hw_component_summary,
+      &final_combined_target_parent_hsm_hw_component_summary
+        .keys()
+        .cloned()
+        .collect::<Vec<String>>(),
+      &mut combined_target_parent_hsm_node_hw_component_count_vec,
+      &mut target_hsm_node_hw_component_count_vec,
+      &mut parent_hsm_node_hw_component_count_vec,
+      &hw_component_scarcity_scores_hashmap,
+    )?,
+    HwClusterMode::Unpin => calculate_target_hsm_unpin(
+      &final_combined_target_parent_hsm_hw_component_summary,
+      &final_combined_target_parent_hsm_hw_component_summary
+        .keys()
+        .cloned()
+        .collect::<Vec<String>>(),
+      &mut combined_target_parent_hsm_node_hw_component_count_vec,
+      &hw_component_scarcity_scores_hashmap,
+    )?,
+  };
 
   let new_target_hsm_node_hw_component_count_vec =
     hw_component_counters_to_move_out_from_combined_hsm;
@@ -702,7 +697,9 @@ pub fn calculate_target_hsm_pin(
       target_hsm_node_hw_component_count_vec,
       parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::InsufficientResources("No best candidate found.".to_string()))?;
+    .ok_or_else(|| {
+      Error::InsufficientResources("No best candidate found.".to_string())
+    })?;
 
   let mut work_to_do = keep_iterating_final_hsm(
     user_defined_hsm_hw_components_count_hashmap,
@@ -814,7 +811,9 @@ pub fn calculate_target_hsm_pin(
         target_hsm_node_hw_component_count_vec,
         parent_hsm_node_hw_component_count_vec,
       )
-      .ok_or_else(|| Error::InsufficientResources("No best candidate found.".to_string()))?;
+      .ok_or_else(|| {
+        Error::InsufficientResources("No best candidate found.".to_string())
+      })?;
 
     work_to_do = keep_iterating_final_hsm(
       user_defined_hsm_hw_components_count_hashmap,
@@ -879,7 +878,9 @@ pub fn calculate_target_hsm_unpin(
       &mut combination_target_parent_hsm_node_score_tuple_vec,
       combination_target_parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::InsufficientResources("No best candidate found.".to_string()))?;
+    .ok_or_else(|| {
+      Error::InsufficientResources("No best candidate found.".to_string())
+    })?;
 
   let mut work_to_do = keep_iterating_final_hsm(
     user_defined_hsm_hw_components_count_hashmap,
@@ -947,7 +948,9 @@ pub fn calculate_target_hsm_unpin(
       &mut target_hsm_node_score_tuple_vec,
       combination_target_parent_hsm_node_hw_component_count_vec,
     )
-    .ok_or_else(|| Error::InsufficientResources("No best candidate found.".to_string()))?;
+    .ok_or_else(|| {
+      Error::InsufficientResources("No best candidate found.".to_string())
+    })?;
 
     work_to_do = keep_iterating_final_hsm(
       user_defined_hsm_hw_components_count_hashmap,
@@ -1040,7 +1043,10 @@ async fn ensure_target_group_exists(
 ) -> Result<(), Error> {
   match backend.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
-      tracing::debug!("Target HSM group '{}' exists, good.", target_hsm_group_name);
+      tracing::debug!(
+        "Target HSM group '{}' exists, good.",
+        target_hsm_group_name
+      );
       Ok(())
     }
     Err(_) => {
@@ -1072,14 +1078,9 @@ async fn ensure_target_group_exists(
         members: None,
         exclusive_group: Some("false".to_string()),
       };
-      let _ = backend
-        .add_group(shasta_token, group)
-        .await
-        .map_err(|e| {
-          Error::BadRequest(format!(
-            "Unable to create new target HSM group: {e}"
-          ))
-        })?;
+      let _ = backend.add_group(shasta_token, group).await.map_err(|e| {
+        Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
+      })?;
       Ok(())
     }
   }
@@ -1450,16 +1451,15 @@ pub async fn add_hw_component(
   )
   .await;
 
-  let hw_counters_to_move =
-    calculate_target_hsm_unpin(
-      &final_parent_hsm_hw_component_summary,
-      &final_parent_hsm_hw_component_summary
-        .keys()
-        .cloned()
-        .collect::<Vec<String>>(),
-      &mut parent_hsm_node_hw_component_count_vec,
-      &scarcity_scores,
-    )?;
+  let hw_counters_to_move = calculate_target_hsm_unpin(
+    &final_parent_hsm_hw_component_summary,
+    &final_parent_hsm_hw_component_summary
+      .keys()
+      .cloned()
+      .collect::<Vec<String>>(),
+    &mut parent_hsm_node_hw_component_count_vec,
+    &scarcity_scores,
+  )?;
 
   let nodes_to_move: Vec<String> = hw_counters_to_move
     .iter()
@@ -1483,11 +1483,7 @@ pub async fn add_hw_component(
         .await?;
 
       let _ = backend
-        .add_members_to_group(
-          shasta_token,
-          target_name,
-          &[xname.as_str()],
-        )
+        .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
         .await?;
     }
   }
@@ -1669,7 +1665,8 @@ pub async fn delete_hw_component(
   .await?;
 
   if target_hsm_node_hw_component_count_vec.is_empty() {
-    handle_empty_target(backend, token, target_name, dryrun, delete_hsm_group).await?;
+    handle_empty_target(backend, token, target_name, dryrun, delete_hsm_group)
+      .await?;
     return Ok(DeleteHwResult {
       nodes_moved: vec![],
       target_nodes: vec![],
@@ -1697,16 +1694,20 @@ pub async fn delete_hw_component(
   .concat();
   let scarcity_scores = calculate_hw_component_scarcity_scores(&combined).await;
 
-  let final_target_summary =
-    compute_delete_final_summary(&target_hsm_hw_component_summary, &user_defined_delta_hw_component_count_hashmap)?;
+  let final_target_summary = compute_delete_final_summary(
+    &target_hsm_hw_component_summary,
+    &user_defined_delta_hw_component_count_hashmap,
+  )?;
 
-  let hw_counters_to_move =
-    calculate_target_hsm_unpin(
-      &final_target_summary,
-      &final_target_summary.keys().cloned().collect::<Vec<String>>(),
-      &mut target_hsm_node_hw_component_count_vec,
-      &scarcity_scores,
-    )?;
+  let hw_counters_to_move = calculate_target_hsm_unpin(
+    &final_target_summary,
+    &final_target_summary
+      .keys()
+      .cloned()
+      .collect::<Vec<String>>(),
+    &mut target_hsm_node_hw_component_count_vec,
+    &scarcity_scores,
+  )?;
 
   let nodes_to_move: Vec<String> = hw_counters_to_move
     .iter()
@@ -1735,7 +1736,11 @@ pub async fn delete_hw_component(
     .await?;
   }
 
-  Ok(DeleteHwResult { nodes_moved: nodes_to_move, target_nodes, parent_nodes })
+  Ok(DeleteHwResult {
+    nodes_moved: nodes_to_move,
+    target_nodes,
+    parent_nodes,
+  })
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -1971,7 +1976,9 @@ mod tests {
       HashMap::from([("a100".to_string(), 8)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 10)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok()
+    );
   }
 
   #[test]
@@ -1982,7 +1989,10 @@ mod tests {
       HashMap::from([("a100".to_string(), 2)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 10)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_err());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested)
+        .is_err()
+    );
   }
 
   #[test]
@@ -1993,7 +2003,10 @@ mod tests {
       HashMap::from([("epyc".to_string(), 10)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 1)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_err());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested)
+        .is_err()
+    );
   }
 
   #[test]
@@ -2004,7 +2017,9 @@ mod tests {
       HashMap::from([("a100".to_string(), 4)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 4)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok()
+    );
   }
 
   #[test]
@@ -2018,7 +2033,9 @@ mod tests {
       HashMap::from([("a100".to_string(), 3)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 6)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_ok()
+    );
   }
 
   #[test]
@@ -2032,7 +2049,10 @@ mod tests {
       HashMap::from([("a100".to_string(), 4)]),
     )];
     let requested = HashMap::from([("a100".to_string(), 5)]);
-    assert!(validate_resource_sufficiency(&target_hw, &parent_hw, &requested).is_err());
+    assert!(
+      validate_resource_sufficiency(&target_hw, &parent_hw, &requested)
+        .is_err()
+    );
   }
 
   // ---- resolve_hw_description_to_xnames (pin / unpin integration) ----
@@ -2272,7 +2292,9 @@ mod tests {
       .unwrap();
 
     let target_hsm_hw_summary: HashMap<String, usize> =
-      calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+      calculate_hsm_hw_component_summary(
+        &target_hsm_node_hw_component_count_vec,
+      );
 
     let mut success = true;
     for (hw_component, qty) in user_request_hw_summary {
@@ -2447,7 +2469,9 @@ mod tests {
       .unwrap();
 
     let target_hsm_hw_summary: HashMap<String, usize> =
-      calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+      calculate_hsm_hw_component_summary(
+        &target_hsm_node_hw_component_count_vec,
+      );
 
     let mut success = true;
     for (hw_component, qty) in &user_request_hw_summary {
@@ -2706,7 +2730,9 @@ mod tests {
       .unwrap();
 
     let target_hsm_hw_summary: HashMap<String, usize> =
-      calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+      calculate_hsm_hw_component_summary(
+        &target_hsm_node_hw_component_count_vec,
+      );
 
     let mut success = true;
     for (hw_component, qty) in user_request_hw_summary {
@@ -2881,7 +2907,9 @@ mod tests {
       .unwrap();
 
     let target_hsm_hw_summary: HashMap<String, usize> =
-      calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+      calculate_hsm_hw_component_summary(
+        &target_hsm_node_hw_component_count_vec,
+      );
 
     let mut success = true;
     for (hw_component, qty) in user_request_hw_summary {

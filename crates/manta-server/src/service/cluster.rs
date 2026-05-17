@@ -1,7 +1,7 @@
 //! Cluster-scoped node detail queries using HSM group membership.
 
-use manta_backend_dispatcher::error::Error;
 use csm_rs::node::types::NodeDetails;
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::common::app_context::InfraContext;
@@ -22,7 +22,8 @@ pub async fn get_cluster_nodes(
   )
   .await?;
 
-  let mut hsm_groups_node_list = infra.backend
+  let mut hsm_groups_node_list = infra
+    .backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
     .await?;
 

@@ -43,7 +43,9 @@ pub async fn exec(
     template_id,
   };
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .update_redfish_endpoint(token, &params)

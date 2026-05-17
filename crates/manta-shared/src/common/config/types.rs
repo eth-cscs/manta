@@ -117,7 +117,11 @@ mod tests {
 
     let k8s = parsed.sites.get("alps").unwrap().k8s.as_ref().unwrap();
     assert_eq!(k8s.api_url, "https://10.0.0.1:6443");
-    let K8sAuth::Native { certificate_authority_data, .. } = &k8s.authentication else {
+    let K8sAuth::Native {
+      certificate_authority_data,
+      ..
+    } = &k8s.authentication
+    else {
       panic!("expected K8sAuth::Native, got a different variant");
     };
     assert_eq!(certificate_authority_data, "ca-data");
@@ -225,7 +229,9 @@ mod tests {
     struct Wrapper {
       backend: BackendTechnology,
     }
-    let w = Wrapper { backend: BackendTechnology::Csm };
+    let w = Wrapper {
+      backend: BackendTechnology::Csm,
+    };
     let s = toml::to_string(&w).unwrap();
     assert!(s.contains("\"csm\"") || s.contains("csm"));
     let parsed: Wrapper = toml::from_str(&s).unwrap();

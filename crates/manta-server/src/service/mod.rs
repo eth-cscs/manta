@@ -2,18 +2,18 @@
 //! for every resource type exposed by the CLI and HTTP server.
 
 pub mod boot_parameters;
-pub mod ephemeral_env;
 pub mod cluster;
-pub mod hw_cluster;
 pub mod configuration;
+pub mod ephemeral_env;
 pub mod group;
 pub mod hardware;
+pub mod hw_cluster;
 pub mod image;
 pub mod kernel_parameters;
+pub mod migrate;
 pub mod node;
 pub mod power;
 pub mod redfish_endpoints;
-pub mod session;
-pub mod migrate;
 pub mod sat_file;
+pub mod session;
 pub mod template;

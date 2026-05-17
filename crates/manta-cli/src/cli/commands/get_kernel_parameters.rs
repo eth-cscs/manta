@@ -25,18 +25,21 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params =
-    parse_kernel_parameters_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
+  let params = parse_kernel_parameters_params(
+    cli_args,
+    ctx.cli.settings_hsm_group_name_opt,
+  );
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let boot_parameters = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_kernel_parameters(token, &params)
     .await?;
 
-  let output: &String = cli_args
-    .get_one("output")
-    .context("output value missing")?;
+  let output: &String =
+    cli_args.get_one("output").context("output value missing")?;
   let filter_opt = cli_args.get_one::<String>("filter").map(String::as_str);
 
   match output.as_str() {
@@ -83,16 +86,22 @@ mod tests {
 
   #[test]
   fn parse_hsm_group() {
-    let matches = kernel_params_cmd()
-      .get_matches_from(["kernel-parameters", "--hsm-group", "compute"]);
+    let matches = kernel_params_cmd().get_matches_from([
+      "kernel-parameters",
+      "--hsm-group",
+      "compute",
+    ]);
     let params = parse_kernel_parameters_params(&matches, None);
     assert_eq!(params.hsm_group.as_deref(), Some("compute"));
   }
 
   #[test]
   fn parse_nodes() {
-    let matches = kernel_params_cmd()
-      .get_matches_from(["kernel-parameters", "--nodes", "x1000c0s0b0n0"]);
+    let matches = kernel_params_cmd().get_matches_from([
+      "kernel-parameters",
+      "--nodes",
+      "x1000c0s0b0n0",
+    ]);
     let params = parse_kernel_parameters_params(&matches, None);
     assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
   }

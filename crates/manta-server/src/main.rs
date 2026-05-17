@@ -87,8 +87,11 @@ async fn run_server(
     .unwrap_or_else(|_| "error".to_string());
   log_ops::configure(log_level);
 
-  let port: u16 = *cli.get_one::<u16>("port").expect("port has a default value");
-  let cert_path: Option<&str> = cli.get_one::<String>("cert").map(String::as_str);
+  let port: u16 = *cli
+    .get_one::<u16>("port")
+    .expect("port has a default value");
+  let cert_path: Option<&str> =
+    cli.get_one::<String>("cert").map(String::as_str);
   let key_path: Option<&str> = cli.get_one::<String>("key").map(String::as_str);
   let listen_addr: &str = cli
     .get_one::<String>("listen-address")

@@ -14,7 +14,9 @@ pub async fn exec(
   until_opt: Option<NaiveDateTime>,
   _assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let since_str = since_opt.map(|d| d.to_string());
   let until_str = until_opt.map(|d| d.to_string());

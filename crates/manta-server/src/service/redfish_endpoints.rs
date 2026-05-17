@@ -19,7 +19,8 @@ pub async fn get_redfish_endpoints(
 ) -> Result<RedfishEndpointArray, Error> {
   tracing::info!("Get Redfish endpoints");
 
-  let result = infra.backend
+  let result = infra
+    .backend
     .get_redfish_endpoints(
       token,
       params.id.as_deref(),
@@ -85,7 +86,6 @@ pub async fn add_redfish_endpoint(
 
   Ok(())
 }
-
 
 /// Update a Redfish endpoint registration.
 pub async fn update_redfish_endpoint(

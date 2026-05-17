@@ -11,7 +11,9 @@ pub async fn exec(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .delete_redfish_endpoint(token, id)

@@ -63,7 +63,10 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
             .and_then(|cfs| cfs.configuration.clone())
             .unwrap_or_else(|| "NA".to_string()),
           enable_cfs.clone(),
-          crate::cli::common::display::string_vec_to_multi_line_string(Some(&target), 2),
+          crate::cli::common::display::string_vec_to_multi_line_string(
+            Some(&target),
+            2,
+          ),
         ]);
       }
     }

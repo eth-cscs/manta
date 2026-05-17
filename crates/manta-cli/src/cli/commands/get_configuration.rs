@@ -42,11 +42,14 @@ pub async fn exec(
   let params =
     parse_configuration_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
-  let cfs_configuration_vec = MantaClient::new(server_url, ctx.infra.site_name)?
-    .get_configurations(token, &params)
-    .await?;
+  let cfs_configuration_vec =
+    MantaClient::new(server_url, ctx.infra.site_name)?
+      .get_configurations(token, &params)
+      .await?;
 
   if cfs_configuration_vec.is_empty() {
     bail!("No CFS configuration found!");
@@ -116,8 +119,11 @@ mod tests {
 
   #[test]
   fn parse_pattern() {
-    let matches = config_cmd()
-      .get_matches_from(["configurations", "--pattern", "compute-*"]);
+    let matches = config_cmd().get_matches_from([
+      "configurations",
+      "--pattern",
+      "compute-*",
+    ]);
     let params = parse_configuration_params(&matches, None);
     assert_eq!(params.pattern.as_deref(), Some("compute-*"));
   }

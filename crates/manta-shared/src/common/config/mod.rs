@@ -10,7 +10,10 @@ use std::{
 use config::Config;
 use dialoguer::{Input, Select};
 use directories::ProjectDirs;
-use manta_backend_dispatcher::{error::Error, types::{K8sAuth, K8sDetails}};
+use manta_backend_dispatcher::{
+  error::Error,
+  types::{K8sAuth, K8sDetails},
+};
 use toml_edit::DocumentMut;
 use types::{BackendTechnology, MantaConfiguration, Site};
 
@@ -98,9 +101,7 @@ pub fn write_config_toml(
 /// Read the root CA certificate from `file_path`, falling
 /// back to the default config directory if the path is
 /// relative.
-pub fn get_csm_root_cert_content(
-  file_path: &str,
-) -> Result<Vec<u8>, Error> {
+pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
   let mut buf = Vec::new();
   let root_cert_file_rslt = File::open(file_path);
 
@@ -246,10 +247,8 @@ async fn create_new_config_file(
     "https://hashicorp-vault.cscs.ch:8200",
   )?;
 
-  let vault_secret_path: String = prompt_string(
-    "Please type Hashicorp Vault secret path",
-    "shasta",
-  )?;
+  let vault_secret_path: String =
+    prompt_string("Please type Hashicorp Vault secret path", "shasta")?;
 
   let root_ca_cert_file: String = prompt_string(
     "Please type full path for the CA public certificate file",
@@ -274,11 +273,8 @@ async fn create_new_config_file(
   .unwrap_or_default();
 
   let audit_kafka_topic: String = if !audit_kafka_brokers.is_empty() {
-    prompt_string(
-      "Please type kafka topic to send audit logs",
-      "test-topic",
-    )
-    .unwrap_or_default()
+    prompt_string("Please type kafka topic to send audit logs", "test-topic")
+      .unwrap_or_default()
   } else {
     String::new()
   };

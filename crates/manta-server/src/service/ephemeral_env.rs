@@ -19,10 +19,7 @@ pub async fn exec(
       ))
     })?;
 
-  tracing::info!(
-    "Looking for user '{}' public SSH key",
-    user_public_key_name
-  );
+  tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
   let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
     ims::public_keys::http_client::v3::get_single(
@@ -56,9 +53,9 @@ pub async fn exec(
     infra.socks5_proxy,
     EPHEMERAL_IMAGE_NAME,
     image_id,
-    user_public_ssh_id_value
-      .as_str()
-      .ok_or_else(|| Error::MissingField("SSH key ID is not a string".to_string()))?,
+    user_public_ssh_id_value.as_str().ok_or_else(|| {
+      Error::MissingField("SSH key ID is not a string".to_string())
+    })?,
   )
   .await
   .map_err(|e| {
@@ -78,10 +75,7 @@ pub async fn exec(
     })?
     .to_string();
 
-  tracing::info!(
-    "Ephemeral environment created — SSH hostname: {}",
-    hostname
-  );
+  tracing::info!("Ephemeral environment created — SSH hostname: {}", hostname);
 
   Ok(hostname)
 }

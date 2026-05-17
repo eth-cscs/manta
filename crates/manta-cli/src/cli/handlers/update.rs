@@ -1,8 +1,8 @@
 //! Routes `manta update *` subcommands to their exec functions.
 
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
-use crate::common::app_context::AppContext;
 use crate::cli::common::authentication::get_api_token;
+use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -23,8 +23,10 @@ pub async fn handle_update(
       let params = m.get_one::<String>("params").map(String::as_str);
       let kernel = m.get_one::<String>("kernel").map(String::as_str);
       let initrd = m.get_one::<String>("initrd").map(String::as_str);
-      update_boot_parameters::exec(ctx, &token, hosts, None, None, params, kernel, initrd)
-        .await?;
+      update_boot_parameters::exec(
+        ctx, &token, hosts, None, None, params, kernel, initrd,
+      )
+      .await?;
     }
     Some(("redfish-endpoint", m)) => {
       let id: String = m

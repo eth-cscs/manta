@@ -23,8 +23,10 @@ pub mod http_client {
 
     let client = reqwest::Client::builder().build()?;
 
-    let api_url =
-      format!("{}{}/auth/jwt-manta-{}/login", vault_base_url, VAULT_API_PREFIX, site_name);
+    let api_url = format!(
+      "{}{}/auth/jwt-manta-{}/login",
+      vault_base_url, VAULT_API_PREFIX, site_name
+    );
 
     tracing::debug!("Accessing/login to {}", api_url);
 
@@ -82,7 +84,8 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path = format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
+    let vault_secret_path =
+      format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
 
     let vault_secret = fetch_secret(
       &vault_token,
@@ -95,10 +98,10 @@ pub mod http_client {
       .get("token")
       .and_then(Value::as_str)
       .ok_or_else(|| {
-        Error::MissingField(
-          "Vault secret response missing 'token' field".to_string(),
-        )
-      })?;
+      Error::MissingField(
+        "Vault secret response missing 'token' field".to_string(),
+      )
+    })?;
 
     Ok(vcs_token.to_string())
   }
@@ -113,7 +116,8 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path = format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
+    let vault_secret_path =
+      format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
 
     let secret = fetch_secret(
       &vault_token,

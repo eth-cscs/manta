@@ -1,6 +1,8 @@
 //! Authorization helpers: validate user access to HSM groups and their members.
 
-use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
+use manta_backend_dispatcher::{
+  error::Error, interfaces::hsm::group::GroupTrait,
+};
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

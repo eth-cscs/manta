@@ -33,19 +33,22 @@ pub async fn exec(
   let output_opt: Option<&String> = cli_args.get_one("output");
   let summary_status = cli_args.get_flag("summary-status");
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let node_details_list = MantaClient::new(server_url, ctx.infra.site_name)?
     .get_clusters(token, &params)
     .await?;
 
   if summary_status {
-    println!("{}", cluster_status::compute_summary_status(&node_details_list));
+    println!(
+      "{}",
+      cluster_status::compute_summary_status(&node_details_list)
+    );
   } else if nids_only {
-    let node_nid_list: Vec<String> = node_details_list
-      .iter()
-      .map(|nd| nd.nid.clone())
-      .collect();
+    let node_nid_list: Vec<String> =
+      node_details_list.iter().map(|nd| nd.nid.clone()).collect();
 
     if output_opt.is_some_and(|o| o == "json") {
       println!(
@@ -110,10 +113,12 @@ mod tests {
       .arg(arg!(--"nids-only-one-line" "nids only"))
       .arg(arg!(--"xnames-only-one-line" "xnames only"))
       .arg(arg!(--"summary-status" "summary status"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .value_parser(["json", "table", "table-wide", "summary"]),
-      )
+      .arg(arg!(-o --output <FORMAT> "output format").value_parser([
+        "json",
+        "table",
+        "table-wide",
+        "summary",
+      ]))
   }
 
   #[test]
@@ -133,8 +138,7 @@ mod tests {
 
   #[test]
   fn parse_status_filter() {
-    let matches =
-      cluster_cmd().get_matches_from(["cluster", "--status", "ON"]);
+    let matches = cluster_cmd().get_matches_from(["cluster", "--status", "ON"]);
     let params = parse_cluster_params(&matches, None);
     assert_eq!(params.status_filter.as_deref(), Some("ON"));
   }

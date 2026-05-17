@@ -5,8 +5,8 @@ use tracing_subscriber::EnvFilter;
 /// `log_level` is an `EnvFilter` directive string, e.g. `"info"`, `"debug"`,
 /// or `"manta=debug,hyper=warn"`. Falls back to `"error"` on parse failure.
 pub fn configure(log_level: String) {
-  let filter = EnvFilter::try_new(&log_level)
-    .unwrap_or_else(|_| EnvFilter::new("error"));
+  let filter =
+    EnvFilter::try_new(&log_level).unwrap_or_else(|_| EnvFilter::new("error"));
 
   tracing_subscriber::fmt()
     .with_env_filter(filter)

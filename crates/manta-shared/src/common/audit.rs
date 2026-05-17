@@ -55,11 +55,10 @@ pub async fn send_audit(
     tracing::warn!("Failed to extract user name from JWT for audit: {}", e);
     String::new()
   });
-  let user_id =
-    jwt_ops::get_preferred_username(token).unwrap_or_else(|e| {
-      tracing::warn!("Failed to extract user ID from JWT for audit: {}", e);
-      String::new()
-    });
+  let user_id = jwt_ops::get_preferred_username(token).unwrap_or_else(|e| {
+    tracing::warn!("Failed to extract user ID from JWT for audit: {}", e);
+    String::new()
+  });
 
   let mut msg = serde_json::json!({
     "user": {"id": user_id, "name": username},

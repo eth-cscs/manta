@@ -18,7 +18,9 @@ pub async fn exec(
   _assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .apply_template_session(

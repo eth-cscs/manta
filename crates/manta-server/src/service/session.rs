@@ -22,7 +22,8 @@ pub async fn get_sessions(
 ) -> Result<Vec<CfsSessionGetResponse>, Error> {
   tracing::info!("Get CFS sessions");
 
-  infra.backend
+  infra
+    .backend
     .get_and_filter_sessions(
       token,
       infra.shasta_base_url,
@@ -221,9 +222,13 @@ pub async fn validate_console_session(
       infra.shasta_root_cert,
       Vec::new(),
       Vec::new(),
-      None, None, None, None,
+      None,
+      None,
+      None,
+      None,
       Some(&name.to_string()),
-      None, None,
+      None,
+      None,
     )
     .await?;
 
@@ -235,7 +240,11 @@ pub async fn validate_console_session(
     .target
     .as_ref()
     .and_then(|t| t.definition.as_ref())
-    .ok_or_else(|| Error::BadRequest(format!("CFS session '{name}' has no target definition")))?;
+    .ok_or_else(|| {
+      Error::BadRequest(format!(
+        "CFS session '{name}' has no target definition"
+      ))
+    })?;
 
   if target_def != "image" {
     return Err(Error::BadRequest(format!(
@@ -248,7 +257,9 @@ pub async fn validate_console_session(
     .as_ref()
     .and_then(|s| s.session.as_ref())
     .and_then(|s| s.status.as_ref())
-    .ok_or_else(|| Error::BadRequest(format!("CFS session '{name}' has no status")))?;
+    .ok_or_else(|| {
+      Error::BadRequest(format!("CFS session '{name}' has no status"))
+    })?;
 
   if status != "running" {
     return Err(Error::Conflict(format!(

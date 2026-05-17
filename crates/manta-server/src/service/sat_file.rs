@@ -28,11 +28,16 @@ pub async fn apply_sat_file(
     })
     .unwrap_or_default();
 
-  let sat_template_yaml = manta_shared::shared::sat_file::render_jinja2_sat_file_yaml(
-    params.sat_file_content,
-    params.values_file_content,
-    if values_cli_vec.is_empty() { None } else { Some(&values_cli_vec) },
-  )?;
+  let sat_template_yaml =
+    manta_shared::shared::sat_file::render_jinja2_sat_file_yaml(
+      params.sat_file_content,
+      params.values_file_content,
+      if values_cli_vec.is_empty() {
+        None
+      } else {
+        Some(&values_cli_vec)
+      },
+    )?;
 
   let mut sat_file: manta_shared::shared::sat_file::SatFile =
     serde_yaml::from_value(sat_template_yaml)?;

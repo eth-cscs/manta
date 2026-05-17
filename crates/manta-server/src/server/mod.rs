@@ -4,19 +4,19 @@
 pub mod api_doc;
 pub mod common;
 pub mod handlers;
+#[cfg(test)]
+mod integration_tests;
 pub mod routes;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod integration_tests;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use axum_server::tls_rustls::RustlsConfig;
 use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
-use axum_server::tls_rustls::RustlsConfig;
 
 use crate::common::app_context::InfraContext;
 use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -104,7 +104,10 @@ pub async fn start_server(
   key_path: Option<&str>,
 ) -> Result<(), Error> {
   let app = routes::build_router(state)
-    .layer(tower_http::timeout::TimeoutLayer::with_status_code(axum::http::StatusCode::REQUEST_TIMEOUT, Duration::from_secs(60)))
+    .layer(tower_http::timeout::TimeoutLayer::with_status_code(
+      axum::http::StatusCode::REQUEST_TIMEOUT,
+      Duration::from_secs(60),
+    ))
     .layer(axum::middleware::from_fn(log_requests));
 
   let addr: SocketAddr = format!("{}:{}", listen_addr, port)
@@ -118,7 +121,10 @@ pub async fn start_server(
       let ready_handle = handle.clone();
       tokio::spawn(async move {
         ready_handle.listening().await;
-        tracing::info!("HTTPS server ready, accepting requests on https://{}", addr);
+        tracing::info!(
+          "HTTPS server ready, accepting requests on https://{}",
+          addr
+        );
         eprintln!("HTTPS server ready, accepting requests on https://{}", addr);
       });
       axum_server::bind_rustls(addr, tls_config)
@@ -131,7 +137,10 @@ pub async fn start_server(
       let ready_handle = handle.clone();
       tokio::spawn(async move {
         ready_handle.listening().await;
-        tracing::info!("HTTP server ready, accepting requests on http://{}", addr);
+        tracing::info!(
+          "HTTP server ready, accepting requests on http://{}",
+          addr
+        );
         eprintln!("HTTP server ready, accepting requests on http://{}", addr);
       });
       axum_server::bind(addr)

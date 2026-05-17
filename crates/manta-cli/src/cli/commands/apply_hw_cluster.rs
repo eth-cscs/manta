@@ -40,7 +40,9 @@ pub async fn exec(
     .get_one::<String>("pattern")
     .context("pattern argument is required")?;
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   let target = target_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
@@ -67,6 +69,9 @@ pub async fn exec(
   if dryrun {
     println!("Dry run enabled, not modifying the HSM groups on the system.");
   }
-  println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+  println!(
+    "{}",
+    serde_json::to_string_pretty(&result).unwrap_or_default()
+  );
   Ok(())
 }

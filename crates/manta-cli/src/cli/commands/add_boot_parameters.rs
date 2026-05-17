@@ -46,10 +46,7 @@ pub async fn exec(
       x.split(',')
         .map(|value| {
           value.trim().parse().with_context(|| {
-            format!(
-              "Could not parse NID value '{}' as a number",
-              value.trim()
-            )
+            format!("Could not parse NID value '{}' as a number", value.trim())
           })
         })
         .collect::<Result<Vec<u32>, _>>()
@@ -66,7 +63,9 @@ pub async fn exec(
     cloud_init,
   };
 
-  let server_url = ctx.cli.manta_server_url
+  let server_url = ctx
+    .cli
+    .manta_server_url
     .context("manta server URL must be configured")?;
   MantaClient::new(server_url, ctx.infra.site_name)?
     .add_boot_parameters(token, &bp)
