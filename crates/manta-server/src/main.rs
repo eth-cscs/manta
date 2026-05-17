@@ -10,7 +10,7 @@ use clap::{Arg, Command};
 use manta_backend_dispatcher::types::K8sAuth;
 use manta_shared::common::{
   config as manta_config,
-  config::types::{BackendTechnology, MantaConfiguration},
+  config::types::{BackendTechnology, ServerConfiguration},
   log_ops,
 };
 use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -20,13 +20,6 @@ const API_URL_SUFFIX: &str = "/apis";
 
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
-
-/// Default TLS port (kept as &str so clap's `default_value` accepts it
-/// without an extra allocation).
-const DEFAULT_PORT: &str = "8443";
-
-/// Default listen address.
-const DEFAULT_LISTEN: &str = "0.0.0.0";
 
 fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // Install ring as the rustls CryptoProvider before any TLS code runs.
@@ -40,62 +33,63 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
       Arg::new("port")
         .long("port")
         .value_parser(clap::value_parser!(u16))
-        .default_value(DEFAULT_PORT),
+        .help("Override [server] port from server.toml."),
     )
     .arg(
       Arg::new("cert")
         .long("cert")
-        .help("Path to the TLS certificate (PEM)."),
+        .help("Override [server] cert from server.toml."),
     )
     .arg(
       Arg::new("key")
         .long("key")
-        .help("Path to the TLS private key (PEM)."),
+        .help("Override [server] key from server.toml."),
     )
     .arg(
       Arg::new("listen-address")
         .long("listen-address")
-        .default_value(DEFAULT_LISTEN),
+        .help("Override [server] listen_address from server.toml."),
     )
     .get_matches();
 
-  let preliminary_rt = tokio::runtime::Builder::new_current_thread()
-    .enable_all()
-    .build()?;
-  let settings = preliminary_rt
-    .block_on(async { manta_config::get_configuration().await })
-    .map_err(|e| format!("Could not read configuration file: {}", e))?;
-  let configuration: MantaConfiguration = settings
-    .clone()
+  let settings = manta_config::get_server_configuration()
+    .map_err(|e| format!("Could not read server configuration: {}", e))?;
+  let configuration: ServerConfiguration = settings
     .try_deserialize()
-    .map_err(|e| format!("Configuration file is not valid: {}", e))?;
-  drop(preliminary_rt);
+    .map_err(|e| format!("Server configuration file is not valid: {}", e))?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()?;
-  rt.block_on(run_server(settings, configuration, cli))
+  rt.block_on(run_server(configuration, cli))
 }
 
 async fn run_server(
-  settings: ::config::Config,
-  configuration: MantaConfiguration,
+  configuration: ServerConfiguration,
   cli: clap::ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-  let log_level = settings
-    .get_string("log")
-    .unwrap_or_else(|_| "error".to_string());
-  log_ops::configure(log_level);
+  log_ops::configure(configuration.log.clone());
 
-  let port: u16 = *cli
+  // Resolution precedence for each setting: CLI flag > config file > fallback.
+  let port: u16 = cli
     .get_one::<u16>("port")
-    .expect("port has a default value");
-  let cert_path: Option<&str> =
-    cli.get_one::<String>("cert").map(String::as_str);
-  let key_path: Option<&str> = cli.get_one::<String>("key").map(String::as_str);
-  let listen_addr: &str = cli
+    .copied()
+    .unwrap_or(configuration.server.port);
+  let listen_addr: String = cli
     .get_one::<String>("listen-address")
-    .expect("listen-address has a default value");
+    .cloned()
+    .unwrap_or_else(|| configuration.server.listen_address.clone());
+  let cert_path: Option<String> = cli
+    .get_one::<String>("cert")
+    .cloned()
+    .or_else(|| configuration.server.cert.clone());
+  let key_path: Option<String> = cli
+    .get_one::<String>("key")
+    .cloned()
+    .or_else(|| configuration.server.key.clone());
+  let console_inactivity_timeout = std::time::Duration::from_secs(
+    configuration.server.console_inactivity_timeout_secs,
+  );
 
   let mut sites = std::collections::HashMap::new();
   for (name, site) in &configuration.sites {
@@ -144,10 +138,16 @@ async fn run_server(
 
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
-    console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
+    console_inactivity_timeout,
   });
 
-  server::start_server(server_state, listen_addr, port, cert_path, key_path)
-    .await
-    .map_err(|e| e.into())
+  server::start_server(
+    server_state,
+    &listen_addr,
+    port,
+    cert_path.as_deref(),
+    key_path.as_deref(),
+  )
+  .await
+  .map_err(|e| e.into())
 }
