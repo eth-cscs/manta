@@ -72,23 +72,15 @@ rdkafka = { version = "0.39" }
 # rdkafka = { version = "0.37", features = ["cmake-build"] }
 base64 = { version = "0.22", default-features = false }
 config = { version = "0.15.19", features = ["toml"], default-features = false }
-axum = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
-utoipa            = { version = "5.5", features = ["axum_extras", "uuid"] }
-utoipa-axum       = "0.2"
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
 tokio-tungstenite = "0.29"
-axum-server = { version = "0.7", features = ["tls-rustls"] }
-tower-http = { version = "0.6", features = ["trace", "cors", "timeout"] }
-rustls = { version = "0.23", default-features = false, features = ["ring"] }
-rustls-pemfile = "2"
+
+# Server-only deps (axum, axum-server, utoipa*, tower-http, rustls,
+# rustls-pemfile) moved to crates/manta-server with the HTTP server itself.
 
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
-tower = { version = "0.5", features = ["util"] }
-http-body-util = "0.1"
-wiremock = "0.6"
 
 # Build profiles ([profile.release], [profile.dist]) live at the workspace
 # root so they apply to every member.

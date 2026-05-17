@@ -3,11 +3,10 @@
 
 mod cli;
 mod common;
-mod server;
-mod service;
-// `shared`, `backend_dispatcher`, and `manta_backend_dispatcher` were
-// extracted into the `manta-shared` workspace crate. Use them via
-// `manta_shared::*` instead of declaring them here.
+// `shared`, `backend_dispatcher`, `manta_backend_dispatcher`, and the
+// `common::*` partition all live in the `manta-shared` workspace crate.
+// `server` and `service` were extracted into the `manta-server` workspace
+// crate (its own binary); the CLI no longer compiles them.
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
@@ -31,13 +30,6 @@ const VCS_URL_SUFFIX: &str = "/vcs";
 /// must happen before the multi-threaded tokio runtime is active)
 /// and then launches the async runtime.
 fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
-  // Install ring as the rustls CryptoProvider before any TLS code runs.
-  // Required when multiple rustls backends are present in the dependency tree
-  // (e.g. kube enables aws-lc-rs while we use ring).
-  rustls::crypto::ring::default_provider()
-    .install_default()
-    .ok();
-
   // Parse CLI arguments early so we can extract --site before
   // starting the multi-threaded runtime.
   let cli_matches = crate::cli::build::build_cli().get_matches();
@@ -66,13 +58,7 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .enable_all()
     .build()?;
 
-  // Server mode: skip site resolution entirely — the server serves all
-  // configured sites and does not need a single "active" site.
-  if cli_matches.subcommand_matches("serve").is_some() {
-    return rt.block_on(run_server(settings, configuration, cli_matches));
-  }
-
-  // CLI mode: resolve the active site and set the SOCKS5 proxy env var
+  // Resolve the active site and set the SOCKS5 proxy env var
   // while we are still single-threaded.
   let site_name: String = cli_matches
     .get_one::<String>("site")
@@ -98,82 +84,6 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
   }
 
   rt.block_on(run_cli(settings, configuration, site_name, cli_matches))
-}
-
-/// Server startup — does not require a valid `site` selection.
-/// Loads every site from the configuration and serves all of them.
-async fn run_server(
-  settings: config::Config,
-  configuration: MantaConfiguration,
-  cli_matches: ArgMatches,
-) -> core::result::Result<(), Box<dyn std::error::Error>> {
-  let log_level = settings
-    .get_string("log")
-    .unwrap_or_else(|_| "error".to_string());
-  log_ops::configure(log_level);
-
-  let serve_matches = cli_matches
-    .subcommand_matches("serve")
-    .expect("serve subcommand already confirmed");
-
-  let port: u16 = *serve_matches
-    .get_one::<u16>("port")
-    .expect("port has a default value");
-  let cert_path: Option<&str> = serve_matches
-    .get_one::<String>("cert")
-    .map(String::as_str);
-  let key_path: Option<&str> = serve_matches
-    .get_one::<String>("key")
-    .map(String::as_str);
-  let listen_addr: &str = serve_matches
-    .get_one::<String>("listen-address")
-    .expect("listen-address has a default value");
-
-  let mut sites = std::collections::HashMap::new();
-  for (name, site) in &configuration.sites {
-    let barebone = site.shasta_base_url
-      .strip_suffix(API_URL_SUFFIX)
-      .unwrap_or(&site.shasta_base_url);
-    let api_url = match &site.backend {
-      BackendTechnology::Csm => barebone.to_owned() + API_URL_SUFFIX,
-      BackendTechnology::Ochami => barebone.to_owned(),
-    };
-    let gitea = barebone.to_owned() + VCS_URL_SUFFIX;
-    let k8s_url = site.k8s.as_ref().map(|k| k.api_url.clone());
-    let vault_url = site.k8s.as_ref().and_then(|k| match &k.authentication {
-      K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
-      K8sAuth::Native { .. } => None,
-    });
-    let root_cert = common::config::get_csm_root_cert_content(&site.root_ca_cert_file)
-      .unwrap_or_else(|_| {
-        tracing::warn!("CA cert for site '{}' not found, proceeding without it", name);
-        vec![]
-      });
-    let site_backend_dispatcher = StaticBackendDispatcher::new(
-      site.backend.as_str(),
-      &api_url,
-      &root_cert,
-      site.socks5_proxy.as_deref(),
-    )?;
-    sites.insert(name.clone(), server::SiteBackend {
-      backend: site_backend_dispatcher,
-      shasta_base_url: api_url,
-      shasta_root_cert: root_cert,
-      socks5_proxy: site.socks5_proxy.clone(),
-      vault_base_url: vault_url,
-      gitea_base_url: gitea,
-      k8s_api_url: k8s_url,
-    });
-  }
-
-  let server_state = std::sync::Arc::new(server::ServerState {
-    sites,
-    console_inactivity_timeout: std::time::Duration::from_secs(30 * 60),
-  });
-
-  server::start_server(server_state, listen_addr, port, cert_path, key_path)
-    .await
-    .map_err(|e| e.into())
 }
 
 /// CLI startup — requires a valid active site from the configuration.

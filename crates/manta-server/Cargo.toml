@@ -1,0 +1,66 @@
+[package]
+name        = "manta-server"
+description = "Manta HTTP server — single API that proxies to CSM / Ochami backends."
+publish     = false
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license-file.workspace = true
+repository.workspace   = true
+
+[[bin]]
+name = "manta-server"
+path = "src/main.rs"
+
+[dependencies]
+# Shared crate carries wire types, common helpers, and the backend dispatcher.
+manta-shared             = { workspace = true }
+manta-backend-dispatcher = { workspace = true }
+csm-rs                   = { workspace = true }
+ochami-rs                = { workspace = true }
+
+# HTTP server framework
+axum              = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
+axum-server       = { version = "0.7", features = ["tls-rustls"] }
+tower-http        = { version = "0.6", features = ["trace", "cors", "timeout"] }
+tokio             = { workspace = true }
+tokio-tungstenite = { workspace = true }
+tokio-util        = { workspace = true }
+futures           = { workspace = true }
+
+# OpenAPI + Swagger UI
+utoipa            = { workspace = true }
+utoipa-axum       = "0.2"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
+# TLS bootstrap
+rustls         = { version = "0.23", default-features = false, features = ["ring"] }
+rustls-pemfile = "2"
+
+# Server-side helpers used by service/* and server/common/*
+anyhow             = { workspace = true }
+base64             = { workspace = true }
+chrono             = { workspace = true }
+comfy-table        = "7.2.2"
+config             = { workspace = true }
+git2               = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
+hostlist-parser    = "0.1.6"
+nodeset            = "0.5.0"
+minijinja          = { workspace = true }
+regex              = { workspace = true }
+reqwest            = { workspace = true }
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+serde_yaml         = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid               = { workspace = true }
+
+# Minimal arg parsing for --port / --cert / --key / --listen-address.
+clap = { version = "4.5.60", features = ["wrap_help"] }
+
+[dev-dependencies]
+tower           = { version = "0.5", features = ["util"] }
+http-body-util  = "0.1"
+wiremock        = "0.6"
+tempfile        = "3"
