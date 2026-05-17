@@ -1577,6 +1577,28 @@ pub async fn create_session(
   tracing::info!("create_session repos={:?}", body.repo_names);
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
+  // Authorization: requested HSM group must be accessible to the token.
+  if let Some(ref hsm_group) = body.hsm_group {
+    service::group::validate_hsm_group_access(&infra, &token, hsm_group)
+      .await
+      .map_err(to_handler_error)?;
+  }
+  // Authorization: every xname in ansible_limit must belong to a group
+  // the token can access.
+  if let Some(ref ansible_limit) = body.ansible_limit {
+    let xnames: Vec<String> = ansible_limit
+      .split(',')
+      .map(|s| s.trim().to_string())
+      .collect();
+    crate::common::authorization::validate_target_hsm_members(
+      infra.backend,
+      &token,
+      &xnames,
+    )
+    .await
+    .map_err(to_handler_error)?;
+  }
+
   let vault_base_url = require_vault(infra.vault_base_url)?;
 
   let gitea_token =
@@ -2888,113 +2910,6 @@ pub async fn apply_hw_configuration(
     "parent_cluster": body.parent_cluster,
     "parent_nodes": result.parent_nodes,
   })))
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/v1/sessions/apply
-// ---------------------------------------------------------------------------
-
-/// Request body for `POST /sessions/apply`.
-#[derive(Deserialize, ToSchema)]
-pub struct ApplySessionRequest {
-  /// Git repository names (parallel-indexed with `repo_last_commit_ids`).
-  pub repo_names: Vec<String>,
-  /// Git commit SHAs matching each entry in `repo_names`.
-  pub repo_last_commit_ids: Vec<String>,
-  /// Explicit name for the CFS session and configuration; auto-generated when absent.
-  pub cfs_conf_sess_name: Option<String>,
-  /// Ansible playbook filename inside the repository.
-  pub playbook_yaml_file_name: Option<String>,
-  /// Target HSM group name.
-  pub hsm_group: Option<String>,
-  /// Ansible `--limit` expression to restrict which hosts are targeted.
-  pub ansible_limit: Option<String>,
-  /// Ansible verbosity level (e.g. `"-v"`, `"-vvv"`).
-  pub ansible_verbosity: Option<String>,
-  /// Extra arguments forwarded verbatim to `ansible-playbook`.
-  pub ansible_passthrough: Option<String>,
-}
-
-/// `POST /api/v1/sessions/apply` — create a CFS configuration and session from git repositories.
-#[utoipa::path(post, path = "/sessions/apply", tag = "sessions",
-  params(SiteHeader),
-  request_body = ApplySessionRequest,
-  security(("bearerAuth" = [])),
-  responses(
-    (status = 201, description = "Session created",              body = serde_json::Value),
-    (status = 400, description = "Bad request",                  body = ErrorResponse),
-    (status = 401, description = "Unauthorized",                 body = ErrorResponse),
-    (status = 500, description = "Internal error",               body = ErrorResponse),
-    (status = 501, description = "Vault not configured",         body = ErrorResponse),
-  )
-)]
-#[tracing::instrument(skip_all)]
-pub async fn apply_session(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
-  Json(body): Json<ApplySessionRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
-
-  tracing::info!("apply_session repos={:?}", body.repo_names);
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-  let vault_base_url = require_vault(infra.vault_base_url)?;
-
-  if let Some(ref ansible_limit) = body.ansible_limit {
-    let xnames: Vec<String> = ansible_limit
-      .split(',')
-      .map(|s| s.trim().to_string())
-      .collect();
-    crate::common::authorization::validate_target_hsm_members(
-      infra.backend,
-      &token,
-      &xnames,
-    )
-    .await
-    .map_err(display_error)?;
-  }
-
-  let gitea_token =
-    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
-      &token,
-      vault_base_url,
-      infra.site_name,
-    )
-    .await
-    .map_err(to_handler_error)?;
-
-  let repo_name_refs: Vec<&str> =
-    body.repo_names.iter().map(|s| s.as_str()).collect();
-  let repo_commit_refs: Vec<&str> = body
-    .repo_last_commit_ids
-    .iter()
-    .map(|s| s.as_str())
-    .collect();
-
-  let (session_name, config_name) = service::session::create_cfs_session(
-    &infra,
-    &token,
-    &gitea_token,
-    body.cfs_conf_sess_name.as_deref(),
-    body.playbook_yaml_file_name.as_deref(),
-    body.hsm_group.as_deref(),
-    &repo_name_refs,
-    &repo_commit_refs,
-    body.ansible_limit.as_deref(),
-    body.ansible_verbosity.as_deref(),
-    body.ansible_passthrough.as_deref(),
-  )
-  .await
-  .map_err(to_handler_error)?;
-
-  Ok((
-    StatusCode::CREATED,
-    Json(serde_json::json!({
-      "session_name": session_name,
-      "configuration_name": config_name,
-    })),
-  ))
 }
 
 // ---------------------------------------------------------------------------

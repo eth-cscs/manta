@@ -32,6 +32,30 @@ pub async fn get_all_groups(
   infra.backend.get_all_groups(token).await
 }
 
+/// Validate that `group_name` is in the set this token can access.
+///
+/// Used by handlers that perform privileged HSM-group operations and
+/// need a server-side authorization check before delegating to the
+/// service layer. Returns `Error::BadRequest` with a usable error
+/// message when the group is not accessible.
+pub async fn validate_hsm_group_access(
+  infra: &InfraContext<'_>,
+  token: &str,
+  group_name: &str,
+) -> Result<(), Error> {
+  let accessible = infra.backend.get_group_name_available(token).await?;
+  if !accessible.iter().any(|name| name == group_name) {
+    let mut accessible = accessible;
+    accessible.sort();
+    return Err(Error::BadRequest(format!(
+      "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
+      group_name,
+      accessible.join(", ")
+    )));
+  }
+  Ok(())
+}
+
 /// Fetch HSM groups from the backend.
 pub async fn get_groups(
   infra: &InfraContext<'_>,

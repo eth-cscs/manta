@@ -120,8 +120,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       "/hardware-clusters/{target}/configuration",
       post(handlers::apply_hw_configuration),
     )
-    // CFS session from pre-resolved repos with HSM validation
-    .route("/sessions/apply", post(handlers::apply_session))
     .merge(build_ws_routes());
 
   // /api/v1/auth/* — credential-handling sub-router. No Bearer

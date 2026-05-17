@@ -9,22 +9,20 @@ use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use crate::common::audit;
-use crate::common::authorization::{
-  get_groups_names_available, validate_target_hsm_members,
-};
 
 /// Gitea repository name prefix used by CFS.
 const GITEA_REPO_NAME_PREFIX: &str = "cray/";
 
 /// Create and run a CFS session on target nodes.
+///
+/// Authorization (target HSM group access + every xname in
+/// `--ansible-limit` belonging to an accessible group) is enforced
+/// server-side by `POST /api/v1/sessions`.
 pub async fn exec(
   cli_apply_session: &ArgMatches,
   ctx: &AppContext<'_>,
   token: &str,
 ) -> Result<(), Error> {
-  let backend = ctx.infra.backend;
-  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
-
   let repo_path_vec: Vec<PathBuf> = cli_apply_session
     .get_many("repo-path")
     .context("'repo-path' argument not provided")?
@@ -51,30 +49,6 @@ pub async fn exec(
 
   let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
   let timestamps: bool = cli_apply_session.get_flag("timestamps");
-
-  let target_hsm_group_vec = get_groups_names_available(
-    backend,
-    token,
-    hsm_group_name_arg_opt,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
-
-  if target_hsm_group_vec.is_empty() {
-    bail!("No HSM groups available for this session");
-  }
-
-  if let Some(ansible_limit) = hsm_group_members_opt {
-    validate_target_hsm_members(
-      backend,
-      token,
-      &ansible_limit
-        .split(',')
-        .map(|xname| xname.trim().to_string())
-        .collect::<Vec<String>>(),
-    )
-    .await?;
-  }
 
   let _ = apply_session(
     ctx,

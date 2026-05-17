@@ -536,7 +536,6 @@ async fn all_get_routes_are_registered() {
 async fn all_post_routes_are_registered() {
   for uri in &[
     "/api/v1/sessions",
-    "/api/v1/sessions/apply",
     "/api/v1/nodes",
     "/api/v1/groups",
     "/api/v1/groups/test/members",
@@ -661,24 +660,6 @@ async fn apply_hw_configuration_requires_auth() {
   assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 
-#[tokio::test]
-async fn apply_session_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::POST)
-        .uri("/api/v1/sessions/apply")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(
-          r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc"]}"#,
-        ))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
 // ---------------------------------------------------------------------------
 // Body validation (422) for new endpoints
 // ---------------------------------------------------------------------------
@@ -734,15 +715,6 @@ async fn apply_hw_configuration_missing_body_returns_422() {
   assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
-#[tokio::test]
-async fn apply_session_missing_repo_fields_returns_422() {
-  let resp = router()
-    .oneshot(post_json("/api/v1/sessions/apply", "{}"))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
 // ---------------------------------------------------------------------------
 // 501-complement tests — vault/k8s configured → guard does NOT fire
 //
@@ -778,22 +750,6 @@ async fn get_session_logs_with_vault_and_k8s_does_not_return_501() {
     StatusCode::NOT_IMPLEMENTED,
     "get_session_logs should pass the k8s 501 guard when k8s is configured"
   );
-}
-
-// ---------------------------------------------------------------------------
-// apply_session — 501 when vault not configured
-// ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn apply_session_without_vault_returns_501() {
-  let resp = router()
-    .oneshot(post_json(
-      "/api/v1/sessions/apply",
-      r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc123"]}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
 }
 
 // ---------------------------------------------------------------------------
