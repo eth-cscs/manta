@@ -79,15 +79,16 @@ pub fn get_default_cache_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.cache_dir()))
 }
 
-/// Reads the manta configuration file and parses it as TOML.
+/// Reads the manta CLI configuration file (`cli.toml`) and parses it as
+/// TOML, honoring `MANTA_CLI_CONFIG`.
 ///
 /// Returns both the file path (for later writing) and the
 /// parsed `DocumentMut`.
 pub fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
-  let path = get_default_manta_config_file_path()?;
+  let path = get_cli_config_file_path()?;
 
   tracing::debug!(
-    "Reading manta configuration from {}",
+    "Reading manta CLI configuration from {}",
     path.to_string_lossy()
   );
 

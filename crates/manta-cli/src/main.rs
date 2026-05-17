@@ -11,7 +11,7 @@ mod common;
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
   app_context::AppContext,
-  config::types::{BackendTechnology, MantaConfiguration},
+  config::types::{BackendTechnology, CliConfiguration},
   kafka::Kafka,
 };
 use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -26,33 +26,18 @@ const API_URL_SUFFIX: &str = "/apis";
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
 
-/// Synchronous entry point. Sets environment variables (which
-/// must happen before the multi-threaded tokio runtime is active)
-/// and then launches the async runtime.
+/// Synchronous entry point. Loads `cli.toml`, resolves the active site,
+/// sets the SOCKS5 env var (must happen before the multi-threaded tokio
+/// runtime is active), and then launches the async runtime.
 fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
-  // Parse CLI arguments early so we can extract --site before
-  // starting the multi-threaded runtime.
   let cli_matches = crate::cli::build::build_cli().get_matches();
 
-  // Build a *single-threaded* runtime just to load the config file.
-  let preliminary_rt = tokio::runtime::Builder::new_current_thread()
-    .enable_all()
-    .build()?;
-  let settings = preliminary_rt
-    .block_on(async { common::config::get_configuration().await });
-  let settings = match settings {
-    Ok(s) => s,
-    Err(e) => {
-      return Err(format!("Could not read configuration file: {}", e).into());
-    }
-  };
-  let configuration: MantaConfiguration = settings
+  let settings = common::config::get_cli_configuration()
+    .map_err(|e| format!("Could not read CLI configuration file: {}", e))?;
+  let configuration: CliConfiguration = settings
     .clone()
     .try_deserialize()
-    .map_err(|e| format!("Configuration file is not valid: {}", e))?;
-  // Drop the preliminary runtime before setting env vars — no
-  // other threads are alive at this point.
-  drop(preliminary_rt);
+    .map_err(|e| format!("CLI configuration file is not valid: {}", e))?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
@@ -89,7 +74,7 @@ fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
 /// CLI startup — requires a valid active site from the configuration.
 async fn run_cli(
   settings: config::Config,
-  configuration: MantaConfiguration,
+  configuration: CliConfiguration,
   site_name: String,
   cli_matches: ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
@@ -167,7 +152,7 @@ async fn run_cli(
     socks5_proxy,
   )?;
 
-  let manta_server_url = settings.get_string("manta_server_url").ok();
+  let manta_server_url = configuration.manta_server_url.as_deref();
   let app_context = AppContext {
     infra: crate::common::app_context::InfraContext {
       backend: &backend,
@@ -183,7 +168,7 @@ async fn run_cli(
       settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
       kafka_audit_opt: audit_kafka_opt.as_ref(),
       settings: &settings,
-      manta_server_url: manta_server_url.as_deref(),
+      manta_server_url,
     },
   };
 
