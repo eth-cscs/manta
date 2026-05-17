@@ -55,16 +55,16 @@ docker build -t manta .
 
 #### Copy configuration file
 
+The CLI reads `~/.config/manta/cli.toml`; the HTTP server reads `~/.config/manta/server.toml`. Each has its own schema — see the [Configuration files](#configuration-files) section below for the full layout. A minimal CLI config looks like:
+
 ```bash
 mkdir -p ~/.config/manta
-cat > ~/.config/manta/config.toml <<EOF
+cat > ~/.config/manta/cli.toml <<EOF
 log = "info"
 
 site = "ochami"
 parent_hsm_group = "nodes_free"
 audit_file = "/tmp/manta_audit.log"
-
-[sites]
 
 [sites.ochami]
 backend = "ochami"
@@ -126,18 +126,82 @@ The HTTP server lives in its own binary (`manta-server`) inside the `crates/mant
 
 **Start the server**
 
+Write `~/.config/manta/server.toml` first — see the [Configuration files](#configuration-files) section below. Then:
+
 ```bash
-manta-server --cert /path/to/cert.pem --key /path/to/key.pem
+manta-server
 ```
 
-Optional flags:
+Each setting in the `[server]` block can be overridden at runtime:
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--port` | `8443` | Port to listen on |
-| `--listen-address` | `0.0.0.0` | Bind address |
+| Flag | Overrides | Description |
+|------|-----------|-------------|
+| `--port` | `[server].port` | Port to listen on |
+| `--listen-address` | `[server].listen_address` | Bind address |
+| `--cert` | `[server].cert` | TLS certificate path |
+| `--key` | `[server].key` | TLS private key path |
 
 > The CLI no longer ships a `manta serve` subcommand — invoke `manta-server` directly.
+
+---
+
+### Configuration files
+
+Manta reads two TOML files, one per binary. The CLI uses `~/.config/manta/cli.toml`; the HTTP server uses `~/.config/manta/server.toml`. Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
+
+The two files share the `[sites.*]` definitions (typically duplicated, since the CLI usually runs on a different host than the server). CLI-only knobs (`site`, `parent_hsm_group`, `manta_server_url`) live in `cli.toml`; the `[server]` block (TLS, listen address, console timeout) lives in `server.toml`.
+
+**`~/.config/manta/cli.toml`**
+
+```toml
+log = "info"
+audit_file = "/var/log/manta/cli-audit.log"
+
+site = "alps"                    # active site for this CLI process
+parent_hsm_group = "nodes_free"
+# manta_server_url = "https://manta-server.cscs.ch:8443"  # optional: proxy through manta-server
+
+[auditor.kafka]
+brokers = ["kafka.cscs.ch:9095"]
+topic   = "manta-cli-audit"
+
+[sites.alps]
+backend           = "csm"
+shasta_base_url   = "https://api.alps.cscs.ch"
+root_ca_cert_file = "alps_root_cert.pem"
+socks5_proxy      = "socks5h://127.0.0.1:1080"
+vault_base_url    = "https://vault.cscs.ch:8200"
+vault_secret_path = "secret/shasta"
+```
+
+**`~/.config/manta/server.toml`**
+
+```toml
+log = "info"
+audit_file = "/var/log/manta/server-audit.log"
+
+[server]
+listen_address                  = "0.0.0.0"
+port                            = 8443
+cert                            = "/etc/manta/tls/server.crt"
+key                             = "/etc/manta/tls/server.key"
+console_inactivity_timeout_secs = 1800
+
+[auditor.kafka]
+brokers = ["kafka.cscs.ch:9095"]
+topic   = "manta-server-audit"
+
+[sites.alps]
+backend           = "csm"
+shasta_base_url   = "https://api.alps.cscs.ch"
+root_ca_cert_file = "/etc/manta/certs/alps_root_cert.pem"
+vault_base_url    = "https://vault.cscs.ch:8200"
+vault_secret_path = "secret/shasta"
+```
+
+**Migrating from the pre-split `config.toml`**
+
+There is no auto-migration command. When either binary starts and finds its config file missing, it prints a minimal example and — if `~/.config/manta/config.toml` exists — a field-by-field mapping of what to copy where. Copy by hand following that mapping. The per-site `sites.X.manta_server_url` field was removed; use the top-level `manta_server_url` in `cli.toml` if you need it.
 
 **Example — list CFS sessions**
 

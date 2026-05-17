@@ -154,12 +154,31 @@ Axum HTTPS server. Key files:
 
 ---
 
+## Configuration files
+
+Manta reads two TOML files, one per binary:
+
+| Binary | Default path | Env override |
+|---|---|---|
+| `manta-cli` | `~/.config/manta/cli.toml` | `MANTA_CLI_CONFIG` |
+| `manta-server` | `~/.config/manta/server.toml` | `MANTA_SERVER_CONFIG` |
+
+Both schemas share the `[sites.X]` block (backend, URLs, cert paths) but each carries its own non-shared fields:
+
+| Schema | Fields |
+|---|---|
+| `CliConfiguration` | `log`, `audit_file`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, `auditor`, `sites` |
+| `ServerConfiguration` | `log`, `audit_file`, `[server]` (TLS, listen, console timeout), `auditor`, `sites` |
+
+The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header.
+
+Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `Error::NotFound` if the file is missing; the error message includes a minimal sample and (if `~/.config/manta/config.toml` is detected on disk) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
+
 ## Backend selection
 
-The config file (`~/.config/manta/config.toml`) has one or more site sections:
-
 ```toml
-site = "cscs_prod"          # active site
+# In cli.toml: pick the active site
+site = "cscs_prod"
 
 [sites.cscs_prod]
 backend = "csm"             # or "ochami"
@@ -172,7 +191,9 @@ shasta_base_url = "https://foobar.openchami.cluster:8443"
 root_ca_cert_file = "ochami_root_cert.pem"
 ```
 
-The active site is chosen by `site = "<name>"` at the top level, overridable per-invocation with `--site <name>`. `StaticBackendDispatcher::new` reads the `backend` string and constructs `CSM(...)` or `OCHAMI(...)`.
+The active site is chosen by `site = "<name>"` at the top level of `cli.toml`, overridable per-invocation with `--site <name>`. `StaticBackendDispatcher::new` reads the `backend` string and constructs `CSM(...)` or `OCHAMI(...)`.
+
+For the HTTP server, every site in `server.toml`'s `[sites.*]` table gets its own `StaticBackendDispatcher` at startup; client requests select between them via `X-Manta-Site`.
 
 ---
 
