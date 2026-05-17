@@ -3,10 +3,8 @@
 use crate::cli::commands::{
   migrate_backup, migrate_nodes_between_hsm_groups, migrate_restore,
 };
-use crate::common::{
-  app_context::AppContext, authentication::get_api_token,
-  authorization::get_groups_names_available,
-};
+use crate::cli::http_client::MantaClient;
+use crate::common::{app_context::AppContext, authentication::get_api_token};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -28,21 +26,22 @@ pub async fn handle_migrate(
       let xnames_string: &String = m
         .get_one("XNAMES")
         .context("The 'XNAMES' argument must have a value")?;
-      let from = get_groups_names_available(
-        ctx.infra.backend,
-        &token,
-        from_opt,
-        ctx.cli.settings_hsm_group_name_opt,
-      )
-      .await?;
-      // let from = ctx.infra.backend.get_group_name_available(jwt_token).await?;
-      let to = get_groups_names_available(
-        ctx.infra.backend,
-        &token,
-        Some(to),
-        ctx.cli.settings_hsm_group_name_opt,
-      )
-      .await?;
+
+      // If --from is set, use just that group; otherwise fan out to every
+      // group the token can access. The accessible-group list comes from
+      // the manta server. Server-side `validate_hsm_group_access` then
+      // re-checks each name in the resulting list.
+      let from: Vec<String> =
+        match from_opt.or(ctx.cli.settings_hsm_group_name_opt) {
+          Some(name) => vec![name.to_string()],
+          None => {
+            MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?
+              .get_available_groups(&token)
+              .await?
+          }
+        };
+      let to = vec![to.to_string()];
+
       migrate_nodes_between_hsm_groups::exec(
         ctx,
         &token,

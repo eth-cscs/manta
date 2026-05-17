@@ -1899,6 +1899,17 @@ pub async fn migrate_nodes(
   tracing::info!("migrate_nodes dry_run={}", body.dry_run);
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
+  // Authorization: every named group on both sides must be accessible.
+  for name in body
+    .target_hsm_names
+    .iter()
+    .chain(body.parent_hsm_names.iter())
+  {
+    service::group::validate_hsm_group_access(&infra, &token, name)
+      .await
+      .map_err(to_handler_error)?;
+  }
+
   let (xnames, results) = service::migrate::migrate_nodes(
     &infra,
     &token,

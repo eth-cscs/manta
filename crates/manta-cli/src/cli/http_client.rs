@@ -322,8 +322,6 @@ impl MantaClient {
   /// `GET /api/v1/groups/available` — list HSM group names the token can
   /// access. Replaces the CLI's direct `backend.get_group_name_available`
   /// calls.
-  // First consumed by Phase 7c; allow until then.
-  #[allow(dead_code)]
   pub async fn get_available_groups(
     &self,
     token: &str,
