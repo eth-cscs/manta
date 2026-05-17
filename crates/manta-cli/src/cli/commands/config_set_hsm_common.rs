@@ -1,11 +1,10 @@
 //! Shared logic for HSM group config set operations.
 
 use anyhow::{Context, Error, bail};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::value;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::config::{read_config_toml, write_config_toml};
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Sets an HSM group value in the manta configuration file.
 ///
@@ -15,7 +14,7 @@ use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 /// messages (e.g. `"Target HSM group"` or
 /// `"Parent HSM group"`).
 pub async fn set_hsm_config_value(
-  backend: &StaticBackendDispatcher,
+  client: &MantaClient,
   shasta_token: &str,
   new_hsm: &str,
   toml_key: &str,
@@ -23,8 +22,8 @@ pub async fn set_hsm_config_value(
 ) -> Result<(), Error> {
   let (path, mut doc) = read_config_toml()?;
 
-  let mut settings_hsm_available_vec = backend
-    .get_group_name_available(shasta_token)
+  let mut settings_hsm_available_vec = client
+    .get_available_groups(shasta_token)
     .await
     .unwrap_or_default();
 
@@ -33,9 +32,9 @@ pub async fn set_hsm_config_value(
 
   // VALIDATION
   // If 'hsm_available' is empty (admin user), fetch all HSM
-  // groups from CSM to validate the requested group exists.
+  // groups via the server to validate the requested group exists.
   let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
-    backend
+    client
       .get_all_groups(shasta_token)
       .await
       .context("Failed to fetch HSM groups")?

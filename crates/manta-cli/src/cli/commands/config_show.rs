@@ -4,22 +4,21 @@ use std::collections::HashMap;
 
 use anyhow::{Context, Error};
 use config::{Config, Value};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+use crate::cli::http_client::MantaClient;
 use crate::common::config::get_cli_config_file_path;
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Display the current manta configuration.
 pub async fn exec(
-  backend: &StaticBackendDispatcher,
+  client: &MantaClient,
   token: &str,
   settings: &Config,
 ) -> Result<(), Error> {
-  show(backend, Some(token.to_string()), settings).await
+  show(client, Some(token.to_string()), settings).await
 }
 
 async fn show(
-  backend: &StaticBackendDispatcher,
+  client: &MantaClient,
   shasta_token_opt: Option<String>,
   settings: &Config,
 ) -> Result<(), Error> {
@@ -32,7 +31,7 @@ async fn show(
     settings.get_string("parent_hsm_group").unwrap_or_default();
 
   let hsm_group_available_opt = if let Some(shasta_token) = shasta_token_opt {
-    match backend.get_group_name_available(&shasta_token).await {
+    match client.get_available_groups(&shasta_token).await {
       Ok(groups) => Some(groups),
       Err(e) => {
         tracing::warn!("Failed to fetch available HSM groups: {}", e);

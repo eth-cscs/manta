@@ -2,6 +2,7 @@
 
 use crate::cli::commands;
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::http_client::MantaClient;
 use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
@@ -15,18 +16,22 @@ pub async fn handle_config(
   match cli_config.subcommand() {
     Some(("show", _)) => {
       let token = get_api_token(ctx).await?;
-      commands::config_show::exec(ctx.infra.backend, &token, ctx.cli.settings)
-        .await?;
+      let client =
+        MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+      commands::config_show::exec(&client, &token, ctx.cli.settings).await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
         let token = get_api_token(ctx).await?;
-        commands::config_set_hsm::exec(m, ctx.infra.backend, &token).await?;
+        let client =
+          MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+        commands::config_set_hsm::exec(m, &client, &token).await?;
       }
       Some(("parent-hsm", m)) => {
         let token = get_api_token(ctx).await?;
-        commands::config_set_parent_hsm::exec(m, ctx.infra.backend, &token)
-          .await?;
+        let client =
+          MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+        commands::config_set_parent_hsm::exec(m, &client, &token).await?;
       }
       Some(("site", m)) => commands::config_set_site::exec(m)?,
       Some(("log", m)) => commands::config_set_log::exec(m)?,
@@ -35,11 +40,7 @@ pub async fn handle_config(
     },
     Some(("unset", m)) => match m.subcommand() {
       Some(("hsm", _)) => commands::config_unset_hsm::exec()?,
-      Some(("parent-hsm", _)) => {
-        let token = get_api_token(ctx).await?;
-        commands::config_unset_parent_hsm::exec(ctx.infra.backend, &token)
-          .await?;
-      }
+      Some(("parent-hsm", _)) => commands::config_unset_parent_hsm::exec()?,
       Some(("auth", _)) => commands::config_unset_auth::exec()?,
       Some((other, _)) => bail!("Unknown 'config unset' subcommand: {other}"),
       None => bail!("No 'config unset' subcommand provided"),

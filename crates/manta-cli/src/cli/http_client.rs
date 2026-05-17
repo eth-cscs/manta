@@ -332,8 +332,6 @@ impl MantaClient {
   /// `GET /api/v1/groups/all` — list every HSM group in the system,
   /// regardless of access. Used by CLI commands that need the full
   /// catalogue (e.g. setting a default HSM group at config time).
-  // First consumed by Phase 7f; allow until then.
-  #[allow(dead_code)]
   pub async fn get_all_groups(
     &self,
     token: &str,
