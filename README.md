@@ -189,6 +189,7 @@ port                            = 8443
 cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
+auth_rate_limit_per_minute      = 60      # per source IP for /api/v1/auth/*; omit to disable
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]

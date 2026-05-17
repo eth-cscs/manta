@@ -91,3 +91,29 @@ pub async fn maybe_send_audit(
     send_audit(kafka, token, message, host, group).await;
   }
 }
+
+/// Send a structured audit event for an `/api/v1/auth/token` attempt.
+///
+/// Used by the server's auth handler — there is no JWT yet (the user is
+/// asking for one), so identity is captured from the submitted username
+/// rather than extracted from a token. The password is never logged.
+///
+/// Always Kafka-only; failures log a warning and do not abort the
+/// outer auth flow.
+pub async fn send_auth_audit(
+  kafka_opt: Option<&Kafka>,
+  outcome: &str,
+  username: &str,
+  source_ip: &str,
+  site: &str,
+) {
+  let Some(kafka) = kafka_opt else { return };
+  let msg = serde_json::json!({
+    "event": "auth_attempt",
+    "outcome": outcome,
+    "username": username,
+    "source_ip": source_ip,
+    "site": site,
+  });
+  send_audit_message(kafka, msg).await;
+}

@@ -2,6 +2,7 @@
 //! TLS server entry point.
 
 pub mod api_doc;
+pub mod auth_middleware;
 pub mod common;
 pub mod handlers;
 #[cfg(test)]
@@ -19,6 +20,7 @@ use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
 
 use crate::common::app_context::InfraContext;
+use manta_shared::common::kafka::Kafka;
 use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// All per-site connection data the server needs to talk to backend APIs.
@@ -53,6 +55,12 @@ pub struct ServerState {
   /// How long a WebSocket console session may be idle before the server
   /// closes it.  Protects against leaked Kubernetes pod attachments.
   pub console_inactivity_timeout: Duration,
+  /// Kafka producer for security/audit events (currently used only by
+  /// `/api/v1/auth/*`). `None` disables audit emission.
+  pub auditor: Option<Kafka>,
+  /// Per-source-IP rate limit on `/api/v1/auth/*` (requests/minute).
+  /// `None` disables in-process rate limiting.
+  pub auth_rate_limit_per_minute: Option<u32>,
 }
 
 impl ServerState {
@@ -129,7 +137,7 @@ pub async fn start_server(
       });
       axum_server::bind_rustls(addr, tls_config)
         .handle(handle)
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
     }
     (None, None) => {
@@ -145,7 +153,7 @@ pub async fn start_server(
       });
       axum_server::bind(addr)
         .handle(handle)
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
     }
     _ => {

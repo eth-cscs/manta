@@ -222,6 +222,26 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 
 ---
 
+## Security model
+
+`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v1/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`. This is the only path the CLI takes to reach backend credentials — there is no direct CSM/OCHAMI call from `manta-cli`.
+
+This means manta-server is a **single point of compromise** for everyone using it: if it is owned, the attacker gets a chokepoint that sees every auth attempt and holds whatever service-account scoped tokens are configured for the backend. Mitigations split between code and ops:
+
+| Layer | Where | Notes |
+|---|---|---|
+| Per-source-IP rate limit on `/api/v1/auth/*` | code | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
+| Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
+| Audit event per auth attempt | code | `manta_shared::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }` to the configured Kafka producer. Credentials are never logged. |
+| Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
+| TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence; manta-server's in-process limiter is belt-and-braces. |
+| Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
+| Network segmentation | **ops** | Treat manta-server as a privileged host. |
+
+**Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
+
+---
+
 ## Key external dependencies
 
 | Crate | Role |

@@ -145,9 +145,12 @@ async fn run_server(
     );
   }
 
+  let auditor = configuration.auditor.as_ref().map(|a| a.kafka.clone());
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
     console_inactivity_timeout,
+    auditor,
+    auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
   });
 
   server::start_server(

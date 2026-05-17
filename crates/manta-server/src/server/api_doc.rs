@@ -58,6 +58,8 @@ use super::handlers;
     handlers::apply_session,
     handlers::console_node_ws,
     handlers::console_session_ws,
+    handlers::auth_token,
+    handlers::auth_validate,
   ),
   components(schemas(
     handlers::ErrorResponse,
@@ -88,6 +90,9 @@ use super::handlers;
     handlers::HwClusterMode,
     handlers::ApplyHwConfigurationRequest,
     handlers::ApplySessionRequest,
+    manta_shared::shared::auth::AuthTokenRequest,
+    manta_shared::shared::auth::AuthTokenResponse,
+    manta_shared::shared::auth::ValidateTokenRequest,
     crate::service::boot_parameters::UpdateBootParametersParams,
     crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
     manta_backend_dispatcher::types::Group,

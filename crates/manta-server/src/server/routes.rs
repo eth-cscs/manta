@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use axum::{
-  Router,
+  Extension, Router, middleware,
   routing::{delete, get, post},
 };
 use utoipa::OpenApi as _;
@@ -14,6 +14,9 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use super::ServerState;
 use super::api_doc::ApiDoc;
+use super::auth_middleware::{
+  AuthRateLimiter, rate_limit, strip_body_for_logs,
+};
 use super::handlers;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
@@ -119,8 +122,20 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/sessions/apply", post(handlers::apply_session))
     .merge(build_ws_routes());
 
+  // /api/v1/auth/* — credential-handling sub-router. No Bearer
+  // extractor (chicken-and-egg). Two layered defences applied:
+  // (1) per-IP rate limit, (2) body redaction from any log span.
+  let limiter = AuthRateLimiter::new();
+  let auth = Router::new()
+    .route("/token", post(handlers::auth_token))
+    .route("/validate", post(handlers::auth_validate))
+    .layer(middleware::from_fn(strip_body_for_logs))
+    .layer(middleware::from_fn_with_state(state.clone(), rate_limit))
+    .layer(Extension(limiter));
+
   Router::new()
     .nest("/api/v1", api)
+    .nest("/api/v1/auth", auth)
     .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
     .with_state(state)
 }

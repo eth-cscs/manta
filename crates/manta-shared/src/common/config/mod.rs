@@ -184,6 +184,7 @@ port = 8443
 cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
+auth_rate_limit_per_minute = 60       # per source IP for /auth/*; omit to disable
 
 [sites.<site_name>]
 backend = "csm"

@@ -51,6 +51,8 @@ fn router() -> axum::Router {
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
+    auditor: None,
+    auth_rate_limit_per_minute: None,
   });
   build_router(state)
 }
@@ -77,6 +79,8 @@ fn router_with_vault() -> axum::Router {
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
+    auditor: None,
+    auth_rate_limit_per_minute: None,
   });
   build_router(state)
 }
@@ -465,6 +469,8 @@ async fn post_sat_file_without_k8s_config_returns_501() {
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
+    auditor: None,
+    auth_rate_limit_per_minute: None,
   });
   let resp = build_router(state)
     .oneshot(post_json(

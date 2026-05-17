@@ -135,6 +135,8 @@ impl TestFixture {
     let state = Arc::new(ServerState {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
+      auditor: None,
+      auth_rate_limit_per_minute: None,
     });
 
     let router = build_router(state);
