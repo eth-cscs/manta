@@ -21,7 +21,16 @@ const API_URL_SUFFIX: &str = "/apis";
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
 
-fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+/// Process entry point. Delegates to `run` and prints any error with
+/// `Display` (not `Debug`) so multi-line messages aren't escaped.
+fn main() {
+  if let Err(e) = run() {
+    eprintln!("{}", e);
+    std::process::exit(1);
+  }
+}
+
+fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   // Install ring as the rustls CryptoProvider before any TLS code runs.
   rustls::crypto::ring::default_provider()
     .install_default()

@@ -216,16 +216,86 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
   }
 }
 
-/// Load `cli.toml`. Fails loudly if the file is missing — the migration
-/// command (5e) is responsible for creating it from a legacy `config.toml`.
+/// Minimal CLI config sample shown in the NotFound error.
+const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
+audit_file = "/tmp/manta-cli-audit.log"
+site = "<site_name>"
+parent_hsm_group = ""
+
+[sites.<site_name>]
+backend = "csm"                 # or "ochami"
+shasta_base_url = "https://api.example.com"
+root_ca_cert_file = "alps_root_cert.pem"
+"#;
+
+/// Migration mapping shown when a legacy `config.toml` is detected.
+const CLI_CONFIG_MIGRATION: &str = "\
+Migration from ~/.config/manta/config.toml:
+  copy these fields verbatim:        log, audit_file, site, parent_hsm_group,
+                                     auditor, sites
+  add CLI-only (was a flat key):     manta_server_url (optional)
+  drop (no longer recognised):       sites.<X>.manta_server_url
+  do not copy (server-only fields):  the [server] section belongs in
+                                     server.toml, not cli.toml";
+
+/// Minimal server config sample shown in the NotFound error.
+const SERVER_CONFIG_SAMPLE: &str = r#"log = "info"
+audit_file = "/var/log/manta/server-audit.log"
+
+[server]
+listen_address = "0.0.0.0"
+port = 8443
+cert = "/path/to/server.crt"
+key = "/path/to/server.key"
+console_inactivity_timeout_secs = 1800
+
+[sites.<site_name>]
+backend = "csm"
+shasta_base_url = "https://api.example.com"
+root_ca_cert_file = "/path/to/alps_root_cert.pem"
+"#;
+
+/// Migration mapping shown when a legacy `config.toml` is detected.
+const SERVER_CONFIG_MIGRATION: &str = "\
+Migration from ~/.config/manta/config.toml:
+  copy these fields verbatim:        log, audit_file, auditor, sites
+  add new [server] section:          listen_address, port, cert, key,
+                                     console_inactivity_timeout_secs
+  drop (CLI-only):                   site, parent_hsm_group, hsm_group,
+                                     manta_server_url
+  drop (no longer recognised):       sites.<X>.manta_server_url";
+
+fn missing_config_message(
+  binary: &str,
+  expected_path: &std::path::Path,
+  sample: &str,
+  migration: &str,
+) -> String {
+  let legacy_exists = get_default_manta_config_file_path()
+    .map(|p| p.exists())
+    .unwrap_or(false);
+  let mut msg = format!(
+    "{binary} configuration file '{}' not found.\n\nMinimal example:\n\n{sample}",
+    expected_path.to_string_lossy()
+  );
+  if legacy_exists {
+    msg.push('\n');
+    msg.push_str(migration);
+  }
+  msg
+}
+
+/// Load `cli.toml`. Fails loudly if the file is missing; the error
+/// message includes a minimal example and (when a legacy config.toml is
+/// detected) a field-by-field migration mapping.
 pub fn get_cli_configuration() -> Result<Config, Error> {
   let path = get_cli_config_file_path()?;
   if !path.exists() {
-    return Err(Error::NotFound(format!(
-      "CLI configuration file '{}' not found. Run \
-       `manta-cli config migrate` if you have a legacy ~/.config/manta/config.toml, \
-       otherwise create cli.toml manually.",
-      path.to_string_lossy()
+    return Err(Error::NotFound(missing_config_message(
+      "CLI",
+      &path,
+      CLI_CONFIG_SAMPLE,
+      CLI_CONFIG_MIGRATION,
     )));
   }
   let path_str = path.to_str().ok_or_else(|| {
@@ -244,14 +314,17 @@ pub fn get_cli_configuration() -> Result<Config, Error> {
     .map_err(Error::ConfigError)
 }
 
-/// Load `server.toml`. Fails loudly if the file is missing — the
-/// operator is expected to provision it on the server host.
+/// Load `server.toml`. Fails loudly if the file is missing; the error
+/// message includes a minimal example and (when a legacy config.toml is
+/// detected) a field-by-field migration mapping.
 pub fn get_server_configuration() -> Result<Config, Error> {
   let path = get_server_config_file_path()?;
   if !path.exists() {
-    return Err(Error::NotFound(format!(
-      "Server configuration file '{}' not found.",
-      path.to_string_lossy()
+    return Err(Error::NotFound(missing_config_message(
+      "Server",
+      &path,
+      SERVER_CONFIG_SAMPLE,
+      SERVER_CONFIG_MIGRATION,
     )));
   }
   let path_str = path.to_str().ok_or_else(|| {

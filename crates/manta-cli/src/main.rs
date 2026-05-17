@@ -26,10 +26,19 @@ const API_URL_SUFFIX: &str = "/apis";
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
 
+/// Process entry point. Delegates to `run` and prints any error with
+/// `Display` (not `Debug`) so multi-line messages aren't escaped.
+fn main() {
+  if let Err(e) = run() {
+    eprintln!("{}", e);
+    std::process::exit(1);
+  }
+}
+
 /// Synchronous entry point. Loads `cli.toml`, resolves the active site,
 /// sets the SOCKS5 env var (must happen before the multi-threaded tokio
 /// runtime is active), and then launches the async runtime.
-fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
+fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::cli::build::build_cli().get_matches();
 
   let settings = common::config::get_cli_configuration()
