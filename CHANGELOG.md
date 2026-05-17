@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Reorganised the repository into a Cargo workspace with three crates: `crates/manta-shared/` (library), `crates/manta-cli/` (CLI binary), and `crates/manta-server/` (HTTP server binary). Build a single crate with `cargo build -p <crate>`; the two binaries no longer depend on each other.
 - Removed the `manta serve` subcommand from the CLI. Run the HTTP server as a standalone binary: `manta-server --cert ... --key ...` (flags: `--port`, `--listen-address`).
+- Removed the per-site `sites.X.manta_server_url` field from the configuration schema. The top-level `manta_server_url` setting still controls whether the CLI proxies through a manta server; it is now the only source for that decision.
 
 ### Refactor
 

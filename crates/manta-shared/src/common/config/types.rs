@@ -35,10 +35,6 @@ pub struct Site {
   pub vault_base_url: Option<String>,
   pub vault_secret_path: Option<String>,
   pub root_ca_cert_file: String,
-  /// When set, CLI commands forward their requests to this manta HTTP server
-  /// instead of calling the CSM/OCHAMI backend directly.  The server resolves
-  /// CA certificates, base URLs, and credentials internally.
-  pub manta_server_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -67,7 +63,6 @@ mod tests {
       vault_base_url: None,
       vault_secret_path: None,
       root_ca_cert_file: "cert.pem".to_string(),
-      manta_server_url: None,
     };
 
     let mut sites = HashMap::new();
@@ -173,7 +168,6 @@ mod tests {
         vault_base_url: None,
         vault_secret_path: None,
         root_ca_cert_file: "eiger_cert.pem".to_string(),
-        manta_server_url: None,
       },
     );
 

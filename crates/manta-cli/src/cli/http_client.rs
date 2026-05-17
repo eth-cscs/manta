@@ -1,9 +1,9 @@
 //! Thin HTTP client for forwarding CLI calls to a remote manta server.
 //!
-//! When a site configures `manta_server_url`, CLI commands call `MantaClient`
-//! methods instead of the service layer.  The server resolves CA certificates,
-//! base URLs, and credentials internally — the CLI only sends
-//! `X-Manta-Site` + `Authorization: Bearer <token>`.
+//! When `manta_server_url` is set in the CLI configuration, commands call
+//! `MantaClient` methods instead of the service layer.  The server resolves
+//! CA certificates, base URLs, and credentials internally — the CLI only
+//! sends `X-Manta-Site` + `Authorization: Bearer <token>`.
 
 use anyhow::{Context, bail};
 use futures::TryStreamExt;
