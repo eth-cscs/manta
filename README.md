@@ -4,6 +4,19 @@
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
+## Repository layout
+
+manta is a Cargo workspace with three crates:
+
+```
+crates/
+├── manta-shared/   (lib)  — wire types, common helpers, backend dispatcher
+├── manta-cli/      (bin)  — terminal client (binary: `manta-cli`)
+└── manta-server/   (bin)  — Axum HTTPS server (binary: `manta-server`)
+```
+
+Build a single crate with `cargo build -p manta-cli` or `cargo build -p manta-server`; the two binaries do not depend on each other. See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
+
 ## Documentation
 
 | Document | Description |
@@ -109,10 +122,12 @@ docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN mant
 
 Manta can run as an HTTPS server, exposing all CLI operations as a REST + WebSocket API. This is useful for automation, scripting, and integration with other tools without requiring direct CLI access.
 
+The HTTP server lives in its own binary (`manta-server`) inside the `crates/manta-server` workspace member. Build it with `cargo build -p manta-server`.
+
 **Start the server**
 
 ```bash
-manta serve --cert /path/to/cert.pem --key /path/to/key.pem
+manta-server --cert /path/to/cert.pem --key /path/to/key.pem
 ```
 
 Optional flags:
@@ -120,7 +135,9 @@ Optional flags:
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--port` | `8443` | Port to listen on |
-| `--listen-addr` | `0.0.0.0` | Bind address |
+| `--listen-address` | `0.0.0.0` | Bind address |
+
+> The CLI no longer ships a `manta serve` subcommand — invoke `manta-server` directly.
 
 **Example — list CFS sessions**
 

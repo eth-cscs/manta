@@ -19,16 +19,21 @@ jobs:
       with:
         submodules: recursive
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --workspace --verbose
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --workspace --verbose
     - name: Check formatting
-      run: cargo fmt -- --check
+      run: cargo fmt -p manta-shared -p manta-cli -p manta-server -- --check
     - name: Run clippy
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --workspace --no-deps -- -D warnings
     - name: Enforce anyhow boundary
       run: |
-        if grep -r 'use anyhow' src/server/ src/service/ src/common/ src/manta_backend_dispatcher.rs 2>/dev/null; then
-          echo "ERROR: anyhow found outside src/cli/ — only src/cli/ may use anyhow"
+        if grep -rn 'use anyhow' \
+            crates/manta-server/src/server/ \
+            crates/manta-server/src/service/ \
+            crates/manta-shared/src/common/ \
+            crates/manta-shared/src/manta_backend_dispatcher.rs \
+            2>/dev/null; then
+          echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
           exit 1
         fi

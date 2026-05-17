@@ -85,13 +85,19 @@ tempfile = "3"
 # Build profiles ([profile.release], [profile.dist]) live at the workspace
 # root so they apply to every member.
 
-# Config for `cargo release`
+# Config for `cargo release`. The hook runs from this crate's manifest
+# directory, so the workspace CHANGELOG and cliff config are referenced
+# via `../../` to keep them at the workspace root.
 [package.metadata.release]
 pre-release-hook = [
   "git",
   "cliff",
+  "--config",
+  "../../cliff.toml",
+  "--repository",
+  "../..",
   "-o",
-  "CHANGELOG.md",
+  "../../CHANGELOG.md",
   "--tag",
   "{{version}}",
 ] # [Generates CHANGELOG automatically] (https://github.com/crate-ci/cargo-release/blob/master/docs/faq.md#maintaining-changelog) using [git cliff](https://github.com/orhun/git-cliff) as a dependency

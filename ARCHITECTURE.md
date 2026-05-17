@@ -4,54 +4,86 @@ This document describes the internal structure of the manta codebase for contrib
 
 ---
 
+## Workspace layout
+
+manta is a Cargo workspace with three member crates:
+
+```
+manta/
+├── Cargo.toml                       (workspace manifest)
+└── crates/
+    ├── manta-shared/   (lib)        — wire types, common helpers, backend dispatcher
+    ├── manta-cli/      (bin)        — terminal client, depends on manta-shared
+    └── manta-server/   (bin)        — Axum HTTPS server + service layer, depends on manta-shared
+```
+
+Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends on the other, so each can be built and shipped on its own (`cargo build -p manta-cli` / `cargo build -p manta-server`).
+
+`manta-shared` exposes three top-level modules:
+
+| Module | Used by | Contents |
+|--------|---------|----------|
+| `shared` | both bins | Wire types (`params/`, `output/`) and pure helpers (`cluster_status`, `node_summary`, …) |
+| `common` | both bins | Config loader, JWT ops, Kafka audit producer, authorization helpers, logging |
+| `backend_dispatcher` + `manta_backend_dispatcher` | both bins | `StaticBackendDispatcher` enum and trait `impl`s routing to `csm-rs`/`ochami-rs` |
+
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `authentication`, `hooks`, `user_interaction`); `manta-server` keeps its server-only common under `crates/manta-server/src/server/common/` (e.g. `node_ops`, `vault`, `boot_parameters`).
+
+---
+
 ## Layer overview
 
 ```
 User
   │
-  ├─ CLI mode
-  │    src/cli/          — argument parsing, output tables, user prompts
-  │      └─ src/service/ — business logic, orchestration, filtering
-  │           └─ src/backend_dispatcher/   — trait dispatch to backend
-  │                └─ csm-rs / ochami-rs   — HTTP clients for CSM / OpenCHAMI
+  ├─ CLI mode (manta-cli binary)
+  │    crates/manta-cli/src/cli/          — argument parsing, output tables, user prompts
+  │      └─ crates/manta-shared/          — common + shared helpers + backend dispatcher
+  │           └─ csm-rs / ochami-rs       — HTTP clients for CSM / OpenCHAMI
   │
-  └─ HTTP server mode
-       src/server/       — axum HTTPS server, JWT auth middleware
-         └─ src/service/ — same service layer as CLI
-              └─ src/backend_dispatcher/
+  └─ HTTP server mode (manta-server binary)
+       crates/manta-server/src/server/    — axum HTTPS server, JWT auth middleware
+         └─ crates/manta-server/src/service/ — business logic, orchestration, filtering
+              └─ crates/manta-shared/     — common + shared helpers + backend dispatcher
                    └─ csm-rs / ochami-rs
 ```
 
-Both modes share the `service` and `backend_dispatcher` layers. The CLI and server layers are the only parts that differ.
+Both binaries share `manta-shared`. The CLI does not link the service layer or axum; the server does not link the CLI command tree.
 
 ---
 
-## Entry point: `src/main.rs`
+## Entry points
+
+Each binary has its own `main.rs`:
+
+### `crates/manta-cli/src/main.rs`
 
 Startup runs in two phases:
 
 1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/config.toml`. The SOCKS5 proxy URL is read from `site.socks5_proxy` in the config.
-2. **Multi-threaded phase** — start the tokio runtime, construct a `StaticBackendDispatcher` (passing `socks5_proxy`), then branch:
-   - `manta serve ...` → start the HTTPS server
-   - anything else → run the CLI command
+2. **Multi-threaded phase** — start the tokio runtime, construct a `StaticBackendDispatcher` (passing `socks5_proxy`), and run the requested CLI command.
+
+### `crates/manta-server/src/main.rs`
+
+Mirrors the CLI bootstrap, then starts the HTTPS server. Minimal Clap surface: `--port`, `--cert`, `--key`, `--listen-address`. The `manta serve` subcommand has been removed from the CLI; users invoke `manta-server` directly.
 
 ---
 
 ## Layer responsibilities
 
-### `src/cli/`
+### `crates/manta-cli/src/cli/`
 
 Presentation layer. Responsibilities:
 
 - **`build/`** — Clap command and subcommand definitions.
-- **`process/`** — Argument extraction and dispatch to the service layer.
+- **`process/`** — Argument extraction and dispatch to the service layer (via `manta-shared` helpers or HTTP calls through `MantaClient`).
 - Output formatting via `comfy-table` for terminal tables.
 - Interactive prompts via `dialoguer`.
 - Error handling via `anyhow::Error`; CLI handlers terminate with `eprintln!` + `process::exit()`.
 
 CLI code **must not** contain business logic. It calls service functions with typed parameters and formats their results.
 
-### `src/service/`
+### `crates/manta-server/src/service/`
 
 Business logic layer. Modules: `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `redfish_endpoints`.
 
@@ -62,11 +94,11 @@ Each module receives an `&InfraContext<'_>` plus a bearer token and typed parame
 - Uses `manta_backend_dispatcher::error::Error` (not `anyhow`).
 - Has no knowledge of terminal output or HTTP request/response shapes.
 
-### `src/backend_dispatcher/`
+### `crates/manta-shared/src/backend_dispatcher/`
 
 Trait implementation glue. Implements all `manta-backend-dispatcher` traits (`CfsTrait`, `GroupTrait`, `BootParametersTrait`, etc.) on `StaticBackendDispatcher` using a `dispatch!` macro. The macro expands to a `match` that routes each method call to either the `Csm` or `OCHAMI` variant.
 
-### `src/manta_backend_dispatcher.rs`
+### `crates/manta-shared/src/manta_backend_dispatcher.rs`
 
 Defines the `StaticBackendDispatcher` enum:
 
@@ -79,7 +111,7 @@ pub enum StaticBackendDispatcher {
 
 `StaticBackendDispatcher::new(backend_type, base_url, root_cert, socks5_proxy)` reads the `backend` field from the site config and constructs the appropriate variant, forwarding `socks5_proxy` to both `Csm::new` and `Ochami::new`.
 
-### `src/common/`
+### `crates/manta-shared/src/common/`
 
 Shared utilities used by both CLI and server:
 
@@ -88,11 +120,14 @@ Shared utilities used by both CLI and server:
 | `config/` | Load and validate `~/.config/manta/config.toml` |
 | `jwt_ops` | Decode and validate JWT bearer tokens |
 | `kafka` | Fire-and-forget audit event producer |
-| `hooks` | Execute pre/post shell hooks |
-| `vault` | Fetch secrets from HashiCorp Vault |
 | `log_ops` | Logger initialisation |
+| `authorization` | HSM-group membership checks |
+| `app_context` | `InfraContext` + `AppContext` types |
+| `audit` | Audit trait + log writer |
 
-### `src/server/`
+CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`) live under `crates/manta-server/src/server/common/`.
+
+### `crates/manta-server/src/server/`
 
 Axum HTTPS server. Key files:
 
@@ -159,10 +194,10 @@ The active site is chosen by `site = "<name>"` at the top level, overridable per
 
 Two error types are used depending on context (enforced by CI):
 
-- **`manta_backend_dispatcher::error::Error`** — used in `src/server/`, `src/service/`, `src/common/`, `src/manta_backend_dispatcher.rs`, and any `src/cli/` function callable from the HTTP server.
-- **`anyhow::Error`** — allowed only in `src/cli/` handlers and CLI-only functions that never run in server mode.
+- **`manta_backend_dispatcher::error::Error`** — used everywhere in `manta-shared` and `manta-server` (specifically `crates/manta-server/src/{server,service}/` and `crates/manta-shared/src/{common,manta_backend_dispatcher.rs}`).
+- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
-The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `src/server/handlers.rs`.
+The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers.rs`.
 
 ---
 
@@ -230,9 +265,9 @@ All mutating CLI operations can emit a Kafka message. Configuration lives under 
 
 ## Adding a new command
 
-1. Create `src/cli/commands/<verb_noun>.rs` with the clap `Args` struct and an `exec` function.
-2. Register it in `src/cli/commands/mod.rs` and add the subcommand variant to the appropriate clap enum in `src/cli/build.rs`.
-3. Add the dispatch arm in `src/cli/process/`.
-4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `src/service/<module>.rs`.
-5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm in `src/backend_dispatcher/`.
-6. If the command should also be reachable via the HTTP API, add a handler in `src/server/handlers.rs` (with a `#[utoipa::path(...)]` annotation), register the route in `src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `src/server/api_doc.rs`.
+1. Create `crates/manta-cli/src/cli/commands/<verb_noun>.rs` with the clap `Args` struct and an `exec` function.
+2. Register it in `crates/manta-cli/src/cli/commands/mod.rs` and add the subcommand variant to the appropriate clap enum in `crates/manta-cli/src/cli/build.rs`.
+3. Add the dispatch arm in `crates/manta-cli/src/cli/process/`.
+4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `crates/manta-server/src/service/<module>.rs`.
+5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm in `crates/manta-shared/src/backend_dispatcher/`.
+6. If the command should also be reachable via the HTTP API, add a handler in `crates/manta-server/src/server/handlers.rs` (with a `#[utoipa::path(...)]` annotation), register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.

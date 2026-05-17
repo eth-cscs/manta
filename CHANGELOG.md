@@ -4,10 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Breaking
+
+- Reorganised the repository into a Cargo workspace with three crates: `crates/manta-shared/` (library), `crates/manta-cli/` (CLI binary), and `crates/manta-server/` (HTTP server binary). Build a single crate with `cargo build -p <crate>`; the two binaries no longer depend on each other.
+- Removed the `manta serve` subcommand from the CLI. Run the HTTP server as a standalone binary: `manta-server --cert ... --key ...` (flags: `--port`, `--listen-address`).
+
 ### Refactor
 
 - Move hardware-cluster business logic (`add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, `resolve_hw_description_to_xnames`, and supporting utilities) from `src/cli/commands/hw_cluster_common/` into `src/service/hw_cluster.rs`, eliminating the layer inversion where `src/server/handlers.rs` was calling CLI-layer code
 - Move `manta_server_url` from `InfraContext` to `CliConfig` — it is a CLI routing decision, not infrastructure
+- Move pure helpers (`compute_summary_status`, `calculate_hsm_hw_component_summary`, `get_cluster_hw_pattern`, `HwClusterMode`, `authorization`) into `manta-shared` so the CLI compiles without the service layer
 
 ### Features
 
