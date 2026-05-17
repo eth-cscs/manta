@@ -1,14 +1,13 @@
 //! Application entry point: parses CLI args, loads configuration, and
 //! launches either the HTTPS server or the CLI command handler.
 
-mod backend_dispatcher;
 mod cli;
 mod common;
-mod manta_backend_dispatcher;
 mod server;
 mod service;
-// `shared` was extracted as the `manta-shared` workspace crate; use it
-// via `manta_shared::shared::*` instead of a local `mod shared;`.
+// `shared`, `backend_dispatcher`, and `manta_backend_dispatcher` were
+// extracted into the `manta-shared` workspace crate. Use them via
+// `manta_shared::*` instead of declaring them here.
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use common::{
@@ -16,7 +15,7 @@ use common::{
   config::types::{BackendTechnology, MantaConfiguration},
   kafka::Kafka,
 };
-use manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 use clap::ArgMatches;
 

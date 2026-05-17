@@ -4,10 +4,8 @@ use anyhow::{Context, Error, bail};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use toml_edit::value;
 
-use crate::{
-  common::config::{read_config_toml, write_config_toml},
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::common::config::{read_config_toml, write_config_toml};
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Sets an HSM group value in the manta configuration file.
 ///

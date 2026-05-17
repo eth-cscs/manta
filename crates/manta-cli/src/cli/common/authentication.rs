@@ -1,9 +1,7 @@
 //! Token acquisition: env var → cached file → interactive Keycloak login.
 
-use crate::{
-  common::config::get_default_cache_path,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::common::config::get_default_cache_path;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
 use manta_backend_dispatcher::{error::Error, interfaces::authentication::AuthenticationTrait};

@@ -16,7 +16,7 @@ static XNAME_RE: LazyLock<Regex> = LazyLock::new(|| {
     .expect("Invalid xname regex pattern")
 });
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Length of a NID string, e.g. "nid000001" = 9 characters.
 const NID_STRING_LENGTH: usize = 9;

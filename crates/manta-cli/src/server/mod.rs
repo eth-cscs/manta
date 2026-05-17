@@ -19,7 +19,7 @@ use std::time::Duration;
 use axum_server::tls_rustls::RustlsConfig;
 
 use crate::common::app_context::InfraContext;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///

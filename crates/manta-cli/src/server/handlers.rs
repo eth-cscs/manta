@@ -2976,7 +2976,7 @@ async fn run_console_bridge(
 /// Resolve target xnames from an explicit list or an HSM group name.
 /// Returns 400 if neither is provided.
 async fn resolve_xnames_from_request(
-  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
+  backend: &manta_shared::manta_backend_dispatcher::StaticBackendDispatcher,
   token: &str,
   xnames_expression: Option<&str>,
   hsm_group: Option<&str>,

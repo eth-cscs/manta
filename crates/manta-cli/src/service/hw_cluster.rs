@@ -11,7 +11,8 @@ use manta_backend_dispatcher::{
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use crate::{common, manta_backend_dispatcher::StaticBackendDispatcher};
+use crate::common;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// LCM (Least Common Multiple) used to normalise memory capacity values.
 /// Memory DIMMs come in multiples of 16 GiB (16384 MiB).

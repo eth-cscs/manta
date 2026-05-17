@@ -6,10 +6,8 @@ use anyhow::{Context, Error};
 use config::{Config, Value};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
-use crate::{
-  common::config::get_config_file_path,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::common::config::get_config_file_path;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Display the current manta configuration.
 pub async fn exec(

@@ -18,7 +18,7 @@ use crate::common;
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::validate_target_hsm_members;
 use crate::server::common::ims_ops::get_image_vec_related_cfs_configuration_name;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 pub use manta_shared::shared::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };

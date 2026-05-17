@@ -3,10 +3,8 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::{
-  cli::commands::config_set_hsm_common,
-  manta_backend_dispatcher::StaticBackendDispatcher,
-};
+use crate::cli::commands::config_set_hsm_common;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Set the default HSM group in configuration.
 pub async fn exec(

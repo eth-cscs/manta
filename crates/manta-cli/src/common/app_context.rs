@@ -1,7 +1,7 @@
 //! Context structs threaded through the call stack in CLI and server modes.
 
 use crate::common::kafka::Kafka;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 use config::Config;
 
 /// Infrastructure context needed by the service layer: backend

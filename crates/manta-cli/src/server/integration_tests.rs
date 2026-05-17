@@ -48,10 +48,8 @@ use wiremock::{
   matchers::{method, path},
 };
 
-use crate::{
-  manta_backend_dispatcher::StaticBackendDispatcher,
-  server::{ServerState, SiteBackend, routes::build_router},
-};
+use crate::server::{ServerState, SiteBackend, routes::build_router};
+use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 // ---------------------------------------------------------------------------
 // Embedded credentials (CI-safe — no file-system dependency)
