@@ -26,5 +26,17 @@ minijinja    = { workspace = true }
 strum        = { workspace = true }
 strum_macros = { workspace = true }
 tracing      = { workspace = true }
+tracing-subscriber = { workspace = true }
 tokio        = { workspace = true }
 futures      = { workspace = true }
+
+# common/* helpers: kafka, jwt_ops, config loader.
+rdkafka            = { workspace = true }
+base64             = { workspace = true }
+config             = { workspace = true }
+dialoguer          = { workspace = true }
+directories        = { workspace = true }
+toml               = { workspace = true }
+toml_edit          = { workspace = true }
+reqwest            = { workspace = true }
+anyhow             = { workspace = true }

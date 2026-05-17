@@ -13,6 +13,7 @@ pub struct Auditor {
 
 /// Trait for producing audit messages to a message broker.
 pub trait Audit {
+  #[allow(async_fn_in_trait)]
   async fn produce_message(&self, data: &[u8]) -> Result<(), Error>;
 }
 

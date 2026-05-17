@@ -42,13 +42,13 @@ fn get_project_dirs() -> Result<ProjectDirs, Error> {
 
 /// Returns the default manta config directory path
 /// (e.g. `~/.config/manta/`).
-pub(crate) fn get_default_config_path() -> Result<PathBuf, Error> {
+pub fn get_default_config_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.config_dir()))
 }
 
 /// Returns the default manta config file path
 /// (e.g. `~/.config/manta/config.toml`).
-pub(crate) fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
+pub fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
   let mut path = get_default_config_path()?;
   path.push("config.toml");
   Ok(path)
@@ -56,7 +56,7 @@ pub(crate) fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
 
 /// Returns the default manta cache directory path
 /// (e.g. `~/.cache/manta/`).
-pub(crate) fn get_default_cache_path() -> Result<PathBuf, Error> {
+pub fn get_default_cache_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.cache_dir()))
 }
 
@@ -64,7 +64,7 @@ pub(crate) fn get_default_cache_path() -> Result<PathBuf, Error> {
 ///
 /// Returns both the file path (for later writing) and the
 /// parsed `DocumentMut`.
-pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
+pub fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
   let path = get_default_manta_config_file_path()?;
 
   tracing::debug!(
@@ -80,7 +80,7 @@ pub(crate) fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
 }
 
 /// Writes a `DocumentMut` back to the manta configuration file.
-pub(crate) fn write_config_toml(
+pub fn write_config_toml(
   path: &std::path::Path,
   doc: &DocumentMut,
 ) -> Result<(), Error> {

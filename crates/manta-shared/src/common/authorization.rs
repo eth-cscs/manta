@@ -2,7 +2,7 @@
 
 use manta_backend_dispatcher::{error::Error, interfaces::hsm::group::GroupTrait};
 
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Return the accessible HSM groups for the token; errors if the requested group is not accessible.
 pub async fn get_groups_names_available(
