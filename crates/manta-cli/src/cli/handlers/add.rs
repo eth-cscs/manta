@@ -5,9 +5,7 @@ use crate::cli::commands::{
   add_kernel_parameters, add_node, add_redfish_endpoint,
 };
 use crate::common::app_context::AppContext;
-use crate::common::{
-  authentication::get_api_token, authorization::get_groups_names_available,
-};
+use crate::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::path::PathBuf;
@@ -61,36 +59,26 @@ pub async fn handle_add(
       .await?;
     }
     Some(("hardware", m)) => {
-      let target_hsm_group_name_arg_opt =
-        m.get_one::<String>("target-cluster").map(String::as_str);
-      let target_hsm_group_vec = get_groups_names_available(
-        ctx.infra.backend,
-        &token,
-        target_hsm_group_name_arg_opt,
-        ctx.cli.settings_hsm_group_name_opt,
-      )
-      .await?;
-      let parent_hsm_group_name_arg_opt =
-        m.get_one::<String>("parent-cluster").map(String::as_str);
-      let parent_hsm_group_vec = get_groups_names_available(
-        ctx.infra.backend,
-        &token,
-        parent_hsm_group_name_arg_opt,
-        ctx.cli.settings_hsm_group_name_opt,
-      )
-      .await?;
+      // Authorization (target + parent HSM group access) is enforced by
+      // POST /api/v1/hardware-clusters/{target}/members on the server.
+      let target = m
+        .get_one::<String>("target-cluster")
+        .map(String::as_str)
+        .or(ctx.cli.settings_hsm_group_name_opt)
+        .context("'target-cluster' is required (no default in cli.toml)")?;
+      let parent = m
+        .get_one::<String>("parent-cluster")
+        .map(String::as_str)
+        .or(ctx.cli.settings_hsm_group_name_opt)
+        .context("'parent-cluster' is required (no default in cli.toml)")?;
       let dryrun = m.get_flag("dry-run");
       let create_hsm_group =
         *m.get_one::<bool>("create-hsm-group").unwrap_or(&false);
       add_hw_component_cluster::exec(
         ctx,
         &token,
-        target_hsm_group_vec
-          .first()
-          .context("No target HSM groups available")?,
-        parent_hsm_group_vec
-          .first()
-          .context("No parent HSM groups available")?,
+        target,
+        parent,
         m.get_one::<String>("pattern")
           .context("'pattern' argument is mandatory")?,
         dryrun,

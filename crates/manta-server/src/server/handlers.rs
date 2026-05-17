@@ -2731,6 +2731,17 @@ pub async fn add_hw_component(
   );
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
+  service::group::validate_hsm_group_access(&infra, &token, &target)
+    .await
+    .map_err(to_handler_error)?;
+  service::group::validate_hsm_group_access(
+    &infra,
+    &token,
+    &body.parent_cluster,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
   let result = crate::service::hw_cluster::add_hw_component(
     infra.backend,
     &token,
@@ -2798,6 +2809,17 @@ pub async fn delete_hw_component(
     body.dry_run
   );
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  service::group::validate_hsm_group_access(&infra, &token, &target)
+    .await
+    .map_err(to_handler_error)?;
+  service::group::validate_hsm_group_access(
+    &infra,
+    &token,
+    &body.parent_cluster,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   let result = crate::service::hw_cluster::delete_hw_component(
     infra.backend,
@@ -2883,6 +2905,17 @@ pub async fn apply_hw_configuration(
     body.dry_run
   );
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  service::group::validate_hsm_group_access(&infra, &token, &target)
+    .await
+    .map_err(to_handler_error)?;
+  service::group::validate_hsm_group_access(
+    &infra,
+    &token,
+    &body.parent_cluster,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   let mode = match body.mode {
     HwClusterMode::Pin => crate::service::hw_cluster::HwClusterMode::Pin,
