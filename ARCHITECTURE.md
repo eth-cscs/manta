@@ -224,7 +224,9 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 
 ## Security model
 
-`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v1/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`. This is the only path the CLI takes to reach backend credentials — there is no direct CSM/OCHAMI call from `manta-cli`.
+`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v1/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`. The CLI's auth flow (`crates/manta-cli/src/cli/common/authentication.rs`) goes entirely through `MantaClient` — no direct backend call for credential exchange.
+
+> **Residual direct-backend access from the CLI:** A long tail of handlers (`apply_session`, `handlers/add hardware`, `handlers/migrate nodes`, `config_show/set/unset hsm/parent-hsm`, plus the authorization helpers `get_groups_names_available` / `validate_target_hsm_members` in `manta-shared`) still calls the backend directly via `StaticBackendDispatcher`. This is why `csm-rs` and `ochami-rs` remain direct workspace deps of `manta-cli`. Migrating these to `MantaClient` (with new server endpoints where needed) is tracked as the next epic.
 
 This means manta-server is a **single point of compromise** for everyone using it: if it is owned, the attacker gets a chokepoint that sees every auth attempt and holds whatever service-account scoped tokens are configured for the backend. Mitigations split between code and ops:
 
