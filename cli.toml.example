@@ -1,0 +1,38 @@
+# manta-cli configuration template.
+#
+# Copy to ~/.config/manta/cli.toml (or set MANTA_CLI_CONFIG to a custom
+# path) and fill in your values.
+#
+# The CLI only talks to a single manta-server instance; it does NOT
+# call CSM/OCHAMI backends directly. All per-site backend connection
+# details (URLs, TLS certs, vault, k8s, per-site SOCKS proxies) live
+# in the server's config.
+
+# Default log level. Override at the command line with the -l flag.
+log = "info"
+
+# Default site name. Sent as the `X-Manta-Site` header on every request
+# to manta-server. The server validates the name against its configured
+# sites; the CLI does no local validation. Override per-invocation with
+# `--site <name>`.
+site = "alps"
+
+# Default parent HSM group used by commands that accept `--hsm-group`.
+parent_hsm_group = "nodes_free"
+
+# Local file the CLI appends audit lines to.
+audit_file = "/tmp/manta_audit.log"
+
+# URL of the manta HTTP server. Required.
+manta_server_url = "https://manta-server.example.com:8443"
+
+# Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
+# proxying for backend traffic is the server's concern, configured in
+# server.toml.
+# socks5_proxy = "socks5h://127.0.0.1:1080"
+
+# Optional Kafka audit forwarder. Remove the whole block to disable
+# CLI-side audit emission.
+[auditor.kafka]
+brokers = ["kafka.example.com:9095"]
+topic = "manta-cli-audit"
