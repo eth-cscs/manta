@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.2] - 2026-05-18
+## [2.0.0-beta.3] - 2026-05-18
 
 ### Documentation
 
@@ -135,6 +135,38 @@ All notable changes to this project will be documented in this file.
 - Collapse the two crate::common re-export shims
 - Add LICENSE file to creates
 - Update Cargo.toml
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
+- `cargo package -p manta-cli` end-to-end passes the verify
+- Write generated man pages and completions to OUT_DIR
+- Write generated man pages and completions to OUT_DIR
 
 ### Refactor
 
