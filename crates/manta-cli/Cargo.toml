@@ -10,7 +10,7 @@ build = "build.rs"
 version.workspace      = true
 edition.workspace      = true
 authors.workspace      = true
-license-file.workspace = true
+license-file           = "LICENSE"
 repository.workspace   = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

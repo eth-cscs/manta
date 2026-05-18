@@ -10,7 +10,10 @@ authors      = [
   "Manuel Sopena Ballesteros <msopena@cscs.ch>",
   "Miguel Gila <miguel.gila@cscs.ch>",
 ]
-license-file = "LICENSE"
+# `license-file` is set per-crate (NOT inherited) so cargo doesn't
+# stamp the published manifest with `../../LICENSE` — a back-walking
+# path that cargo-publish warns about and cargo-dist fails to copy
+# from in CI. Each crate has its own LICENSE next to its Cargo.toml.
 repository   = "https://github.com/eth-cscs/manta"
 
 # Shared external dep versions. Crates opt in with

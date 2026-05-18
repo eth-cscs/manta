@@ -5,7 +5,7 @@ publish     = true
 version.workspace      = true
 edition.workspace      = true
 authors.workspace      = true
-license-file.workspace = true
+license-file           = "LICENSE"
 repository.workspace   = true
 
 [lib]
