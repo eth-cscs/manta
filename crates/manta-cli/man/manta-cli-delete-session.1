@@ -1,0 +1,25 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-delete-session 1  "session " 
+.SH NAME
+manta\-cli\-delete\-session \- Delete a configuration session
+.SH SYNOPSIS
+\fBmanta\-cli delete session\fR [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fISESSION_NAME\fR> 
+.SH DESCRIPTION
+Delete a configuration session.
+.PP
+For image\-building sessions, the associated image is also removed.
+For dynamic (runtime) sessions, the error count is set to its maximum value.
+.SH OPTIONS
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR
+Skip confirmation prompts
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fISESSION_NAME\fR>
+Name of the session to delete

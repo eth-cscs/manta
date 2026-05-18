@@ -1,0 +1,57 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli 1  "manta-cli 2.0.0-beta.1" 
+.SH NAME
+manta\-cli
+.SH SYNOPSIS
+\fBmanta\-cli\fR [\fB\-\-site\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+.SH OPTIONS
+.TP
+\fB\-\-site\fR \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.SH SUBCOMMANDS
+.TP
+manta\-cli\-config(1)
+Manage manta CLI configuration
+.TP
+manta\-cli\-get(1)
+Query system resources
+.TP
+manta\-cli\-add(1)
+Create system resources
+.TP
+manta\-cli\-update(1)
+Update system resources
+.TP
+manta\-cli\-apply(1)
+Apply changes to the system
+.TP
+manta\-cli\-delete(1)
+Delete system resources
+.TP
+manta\-cli\-migrate(1)
+Move nodes or clusters between groups
+.TP
+manta\-cli\-power(1)
+Manage node and cluster power state
+.TP
+manta\-cli\-log(1)
+Stream configuration session logs
+.TP
+manta\-cli\-console(1)
+Open an interactive console to a node or configuration session
+.TP
+manta\-cli\-add\-nodes\-to\-groups(1)
+Add nodes to one or more groups
+.TP
+manta\-cli\-remove\-nodes\-from\-groups(1)
+Remove nodes from one or more groups
+.SH VERSION
+v2.0.0\-beta.1

@@ -1,0 +1,23 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-power 1  "power " 
+.SH NAME
+manta\-cli\-power \- Manage node and cluster power state
+.SH SYNOPSIS
+\fBmanta\-cli power\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Manage node and cluster power state
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-cli\-power\-on(1)
+Power on nodes or a cluster
+.TP
+manta\-cli\-power\-off(1)
+Power off nodes or a cluster
+.TP
+manta\-cli\-power\-reset(1)
+Reset (reboot) nodes or a cluster

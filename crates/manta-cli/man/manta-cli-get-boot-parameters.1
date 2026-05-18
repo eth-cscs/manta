@@ -1,0 +1,21 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-get-boot-parameters 1  "boot-parameters " 
+.SH NAME
+manta\-cli\-get\-boot\-parameters \- Show boot parameters for nodes or a group
+.SH SYNOPSIS
+\fBmanta\-cli get boot\-parameters\fR [\fB\-H\fR|\fB\-\-hsm\-group\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Show boot parameters for nodes or a group
+.SH OPTIONS
+.TP
+\fB\-H\fR, \fB\-\-hsm\-group\fR \fI<GROUP_NAME>\fR
+Node group name
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

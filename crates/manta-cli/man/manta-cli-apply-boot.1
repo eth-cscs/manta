@@ -1,0 +1,20 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-apply-boot 1  "boot " 
+.SH NAME
+manta\-cli\-apply\-boot \- Update boot parameters and runtime configuration
+.SH SYNOPSIS
+\fBmanta\-cli apply boot\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Update boot parameters and runtime configuration
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-cli\-apply\-boot\-nodes(1)
+Update boot parameters for a set of nodes
+.TP
+manta\-cli\-apply\-boot\-cluster(1)
+Update boot parameters for all nodes in a cluster

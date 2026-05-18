@@ -1,0 +1,32 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-add 1  "add " 
+.SH NAME
+manta\-cli\-add \- Create system resources
+.SH SYNOPSIS
+\fBmanta\-cli add\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Create system resources
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-cli\-add\-node(1)
+Register a new node
+.TP
+manta\-cli\-add\-group(1)
+Create a node group
+.TP
+manta\-cli\-add\-hardware(1)
+[experimental] Add hardware components to a cluster
+.TP
+manta\-cli\-add\-boot\-parameters(1)
+Create boot parameters for nodes
+.TP
+manta\-cli\-add\-kernel\-parameters(1)
+Append kernel parameters to nodes
+.TP
+manta\-cli\-add\-redfish\-endpoint(1)
+Register a new Redfish endpoint

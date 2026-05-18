@@ -1,0 +1,40 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-add-node 1  "node " 
+.SH NAME
+manta\-cli\-add\-node \- Register a new node
+.SH SYNOPSIS
+\fBmanta\-cli add node\fR <\fB\-i\fR|\fB\-\-id\fR> <\fB\-g\fR|\fB\-\-group\fR> [\fB\-H\fR|\fB\-\-hardware\fR] [\fB\-a\fR|\fB\-\-arch\fR] [\fB\-d\fR|\fB\-\-disabled\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Register a new node
+.SH OPTIONS
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Node xname
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Node group to add the node to
+.TP
+\fB\-H\fR, \fB\-\-hardware\fR \fI<FILE>\fR
+File containing hardware information
+.TP
+\fB\-a\fR, \fB\-\-arch\fR \fI<VALUE>\fR
+Node architecture
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+X86
+.IP \(bu 2
+ARM
+.IP \(bu 2
+Other
+.RE
+.TP
+\fB\-d\fR, \fB\-\-disabled\fR
+Register the node as disabled
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

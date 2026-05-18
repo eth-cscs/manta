@@ -1,54 +1,54 @@
-//! Generate man pages and shell completions into cargo's `OUT_DIR`.
+//! Regenerate man pages and shell completions into the source tree
+//! when explicitly asked, otherwise do nothing.
 //!
-//! Writing to `OUT_DIR` (per cargo convention) keeps the source tree
-//! untouched on every build, which is what `cargo publish`'s verify
-//! step requires. The generated files end up at:
+//! The generated files at `man/` and `autocomplete_shell_scripts/`
+//! are checked into git so cargo-dist's `include` directive can
+//! reference them at stable, glob-free paths.
 //!
-//!   target/{profile}/build/manta-cli-{fingerprint}/out/man/*.1
-//!   target/{profile}/build/manta-cli-{fingerprint}/out/completions/*
+//! Default behaviour: no-op. This keeps `cargo build` and
+//! `cargo publish` from mutating the source tree (cargo publish's
+//! verify step rejects build-script writes outside `OUT_DIR`,
+//! including "regenerating identical files" because the mtime
+//! changes).
 //!
-//! `dist` (in `dist-workspace.toml`) glob-includes those paths into
-//! release tarballs. The `{fingerprint}` hash varies between builds,
-//! so the glob is `target/release/build/manta-cli-*/out/...`.
+//! To refresh the committed files after a CLI definition change:
 //!
-//! For local inspection:
+//!   MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli
+//!   git diff -- crates/manta-cli/{man,autocomplete_shell_scripts}/
 //!
-//!   cargo build -p manta-cli --release
-//!   find target/release/build -path '*/manta-cli-*/out/man'
-//!
-//! There are no committed copies in the source tree.
+//! CI should run that command followed by `git diff --exit-code` so
+//! PRs with stale generated docs fail loudly.
 
 use clap_complete::{Shell, generate_to};
 use clap_mangen::generate_to as generate_man_to;
 use std::fs;
 use std::io::Error;
-use std::path::PathBuf;
 
 #[path = "src/cli/build/mod.rs"]
 mod cli;
 
 fn main() -> Result<(), Error> {
-  // cargo always sets OUT_DIR for build scripts; the .expect() is
-  // safe by contract.
-  let out_dir = PathBuf::from(
-    std::env::var_os("OUT_DIR").expect("cargo always sets OUT_DIR"),
-  );
+  if std::env::var("MANTA_REGENERATE_DOCS").is_err() {
+    return Ok(());
+  }
 
   // ── Man pages ─────────────────────────────────────────────────────────────
-  let man_dir = out_dir.join("man");
-  fs::create_dir_all(&man_dir)?;
-  generate_man_to(cli::build_cli(), &man_dir)?;
+  let man_dir = "man";
+  fs::create_dir_all(man_dir)?;
+  generate_man_to(cli::build_cli(), man_dir)?;
+  println!("cargo:warning=man pages regenerated in {man_dir}/");
 
   // ── Shell completions ──────────────────────────────────────────────────────
-  let completion_dir = out_dir.join("completions");
-  fs::create_dir_all(&completion_dir)?;
+  let completion_dir = "autocomplete_shell_scripts";
+  fs::create_dir_all(completion_dir)?;
   for shell in [Shell::Bash, Shell::Zsh, Shell::Fish, Shell::Elvish] {
-    generate_to(
+    let path = generate_to(
       shell,
       &mut cli::build_cli(),
       env!("CARGO_PKG_NAME"),
-      &completion_dir,
+      completion_dir,
     )?;
+    println!("cargo:warning=completion regenerated: {path:?}");
   }
 
   Ok(())

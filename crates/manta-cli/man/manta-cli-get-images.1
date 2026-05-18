@@ -1,0 +1,25 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-get-images 1  "images " 
+.SH NAME
+manta\-cli\-get\-images \- List images
+.SH SYNOPSIS
+\fBmanta\-cli get images\fR [\fB\-i\fR|\fB\-\-id\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-H\fR|\fB\-\-hsm\-group\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+List images
+.SH OPTIONS
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<IMAGE_ID>\fR
+Image ID
+.TP
+\fB\-m\fR, \fB\-\-most\-recent\fR
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+\fB\-l\fR, \fB\-\-limit\fR \fI<VALUE>\fR
+Return only the <VALUE> most recent images
+.TP
+\fB\-H\fR, \fB\-\-hsm\-group\fR \fI<GROUP_NAME>\fR
+Node group name
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

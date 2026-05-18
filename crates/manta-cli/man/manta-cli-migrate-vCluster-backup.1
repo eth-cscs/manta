@@ -1,0 +1,29 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-migrate-vCluster-backup 1  "backup " 
+.SH NAME
+manta\-cli\-migrate\-vCluster\-backup \- Back up a cluster\*(Aqs configuration
+.SH SYNOPSIS
+\fBmanta\-cli migrate vCluster backup\fR [\fB\-b\fR|\fB\-\-bos\fR] [\fB\-d\fR|\fB\-\-destination\fR] [\fB\-p\fR|\fB\-\-pre\-hook\fR] [\fB\-a\fR|\fB\-\-post\-hook\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Back up a cluster\*(Aqs configuration: images, boot settings, and group membership.
+.PP
+The backup is derived from the specified session template.
+.SH OPTIONS
+.TP
+\fB\-b\fR, \fB\-\-bos\fR \fI<SESSIONTEMPLATE>\fR
+Session template to derive the backup from
+.TP
+\fB\-d\fR, \fB\-\-destination\fR \fI<FOLDER>\fR
+Destination directory for the backup files
+.TP
+\fB\-p\fR, \fB\-\-pre\-hook\fR \fI<SCRIPT>\fR
+Command to run before the backup.
+eg: \-\-pre\-hook "echo hello"
+.TP
+\fB\-a\fR, \fB\-\-post\-hook\fR \fI<SCRIPT>\fR
+Command to run after a successful backup.
+eg: \-\-post\-hook "echo hello"
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

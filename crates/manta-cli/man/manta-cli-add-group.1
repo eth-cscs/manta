@@ -1,0 +1,24 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-add-group 1  "group " 
+.SH NAME
+manta\-cli\-add\-group \- Create a node group
+.SH SYNOPSIS
+\fBmanta\-cli add group\fR <\fB\-l\fR|\fB\-\-label\fR> [\fB\-d\fR|\fB\-\-description\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Create a node group
+.SH OPTIONS
+.TP
+\fB\-l\fR, \fB\-\-label\fR \fI<NAME>\fR
+Group name
+.TP
+\fB\-d\fR, \fB\-\-description\fR \fI<VALUE>\fR
+Group description
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

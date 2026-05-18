@@ -1,0 +1,24 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-add-nodes-to-groups 1  "add-nodes-to-groups " 
+.SH NAME
+manta\-cli\-add\-nodes\-to\-groups \- Add nodes to one or more groups
+.SH SYNOPSIS
+\fBmanta\-cli add\-nodes\-to\-groups\fR [\fB\-g\fR|\fB\-\-group\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Add nodes to one or more groups
+.SH OPTIONS
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Group to add the nodes to
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

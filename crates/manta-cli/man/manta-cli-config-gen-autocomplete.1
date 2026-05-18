@@ -1,0 +1,31 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-cli-config-gen-autocomplete 1  "gen-autocomplete " 
+.SH NAME
+manta\-cli\-config\-gen\-autocomplete \- Generate shell completion scripts
+.SH SYNOPSIS
+\fBmanta\-cli config gen\-autocomplete\fR [\fB\-s\fR|\fB\-\-shell\fR] [\fB\-p\fR|\fB\-\-path\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Generate shell completion scripts
+.SH OPTIONS
+.TP
+\fB\-s\fR, \fB\-\-shell\fR \fI<SHELL>\fR
+Shell type (guessed from $SHELL if omitted)
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+bash
+.IP \(bu 2
+zsh
+.IP \(bu 2
+fish
+.RE
+.TP
+\fB\-p\fR, \fB\-\-path\fR \fI<PATH>\fR
+Directory to write the script (prints to stdout if omitted)
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
