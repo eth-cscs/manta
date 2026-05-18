@@ -202,9 +202,10 @@ impl RequestCtx {
 }
 
 /// Convert a `BackendError` into the best-fitting HTTP error response.
-pub(crate) fn to_handler_error(
-  e: BackendError,
-) -> (StatusCode, Json<ErrorResponse>) {
+///
+/// `pub` (rather than `pub(crate)`) so the integration tests in
+/// `crates/manta-server/tests/` can exercise the mapping directly.
+pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
   let status = match &e {
     BackendError::NotFound(_)
     | BackendError::SessionNotFound

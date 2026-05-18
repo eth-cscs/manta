@@ -1,13 +1,10 @@
-//! Manta HTTP server entry point. Loads the configuration, builds a
-//! `ServerState` containing one `SiteBackend` per configured site, and
-//! starts the TLS server.
-
-mod backend_dispatcher;
-mod common;
-mod manta_backend_dispatcher;
-mod server;
-mod service;
-mod wire_conv;
+//! Manta HTTP server binary entry point. Loads the configuration,
+//! builds a `ServerState` containing one `SiteBackend` per configured
+//! site, and starts the TLS server.
+//!
+//! The crate is set up as both a library (`src/lib.rs`, used by the
+//! integration tests in `tests/`) and a binary (this file). All
+//! module logic lives in the library; this file is just bootstrap.
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use clap::{Arg, Command};
@@ -17,7 +14,8 @@ use manta_shared::common::{
   log_ops,
 };
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_server::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_server::server;
 
 /// URL path suffix for the CSM API endpoint.
 const API_URL_SUFFIX: &str = "/apis";

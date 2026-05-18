@@ -21,8 +21,8 @@ use axum::{
 use http_body_util::BodyExt as _;
 use tower::ServiceExt as _;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use crate::server::{ServerState, SiteBackend, routes::build_router};
+use manta_server::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -830,9 +830,9 @@ async fn openapi_spec_contains_expected_paths_and_schemas() {
 
 #[test]
 fn to_handler_error_not_found_variants() {
-  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
+  use manta_server::server::handlers::to_handler_error;
 
   assert_eq!(
     to_handler_error(Error::NotFound("session foo".into())).0,
@@ -850,9 +850,9 @@ fn to_handler_error_not_found_variants() {
 
 #[test]
 fn to_handler_error_conflict_variants() {
-  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
+  use manta_server::server::handlers::to_handler_error;
 
   assert_eq!(
     to_handler_error(Error::Conflict("group foo".into())).0,
@@ -866,9 +866,9 @@ fn to_handler_error_conflict_variants() {
 
 #[test]
 fn to_handler_error_bad_request_and_internal() {
-  use crate::server::handlers::to_handler_error;
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
+  use manta_server::server::handlers::to_handler_error;
 
   assert_eq!(
     to_handler_error(Error::BadRequest("bad input".into())).0,

@@ -8,6 +8,10 @@ authors.workspace      = true
 license-file.workspace = true
 repository.workspace   = true
 
+[lib]
+name = "manta_server"
+path = "src/lib.rs"
+
 [[bin]]
 name = "manta-server"
 path = "src/main.rs"

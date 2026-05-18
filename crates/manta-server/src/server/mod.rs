@@ -5,11 +5,7 @@ pub mod api_doc;
 pub mod auth_middleware;
 pub mod common;
 pub mod handlers;
-#[cfg(test)]
-mod integration_tests;
 pub mod routes;
-#[cfg(test)]
-mod tests;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
