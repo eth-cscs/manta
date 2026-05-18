@@ -26,15 +26,14 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params =
-    parse_cluster_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
+  let params = parse_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
   let nids_only = cli_args.get_flag("nids-only-one-line");
   let xnames_only = cli_args.get_flag("xnames-only-one-line");
   let output_opt: Option<&String> = cli_args.get_one("output");
   let summary_status = cli_args.get_flag("summary-status");
 
-  let server_url = ctx.cli.manta_server_url;
-  let node_details_list = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let node_details_list = MantaClient::new(server_url, ctx.site_name)?
     .get_clusters(token, &params)
     .await?;
 

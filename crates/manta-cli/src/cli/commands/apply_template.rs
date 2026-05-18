@@ -18,8 +18,8 @@ pub async fn exec(
   _assume_yes: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_template_session(
       token,
       bos_sessiontemplate_name,

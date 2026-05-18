@@ -1,11 +1,10 @@
 //! Context structs threaded through the call stack in CLI and server modes.
 //!
 //! The server uses [`InfraContext`] in its service layer (carries the
-//! backend dispatcher, base URLs, TLS cert, vault/k8s/proxy URLs). The
-//! CLI uses [`AppContext`] (carries a lightweight [`CliInfra`] with
-//! just `site_name`, plus the CLI-only [`CliConfig`]). After Phase 7
-//! the CLI never instantiates `StaticBackendDispatcher`, so the wider
-//! `InfraContext` shape is server-only.
+//! backend dispatcher, base URLs, TLS cert, vault/k8s/proxy URLs).
+//! The CLI uses [`AppContext`] — a flat struct with the `site_name`
+//! for the `X-Manta-Site` header, the manta-server URL, plus the
+//! CLI-only configuration (settings, HSM filter, Kafka audit).
 
 use crate::common::kafka::Kafka;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
@@ -26,30 +25,16 @@ pub struct InfraContext<'a> {
   pub k8s_api_url: Option<&'a str>,
 }
 
-/// Lightweight infrastructure context for the CLI — only the
-/// `site_name` the CLI needs to set the `X-Manta-Site` header on
-/// outbound `MantaClient` requests.
+/// Top-level CLI context, passed as `&AppContext` through CLI
+/// handlers and commands.
 #[derive(Debug)]
-pub struct CliInfra<'a> {
+pub struct AppContext<'a> {
+  /// Site name used to set the `X-Manta-Site` header on outbound
+  /// `MantaClient` requests.
   pub site_name: &'a str,
-}
-
-/// CLI-specific configuration that stays in the presentation layer:
-/// user settings, HSM group filter, Kafka audit, etc.
-#[derive(Debug)]
-pub struct CliConfig<'a> {
+  /// URL of the manta HTTP server this CLI talks to. Required.
+  pub manta_server_url: &'a str,
   pub settings_hsm_group_name_opt: Option<&'a str>,
   pub kafka_audit_opt: Option<&'a Kafka>,
   pub settings: &'a Config,
-  /// URL of the manta HTTP server this CLI talks to. Required.
-  pub manta_server_url: &'a str,
-}
-
-/// Top-level CLI context — composes the lightweight [`CliInfra`] and
-/// the [`CliConfig`]. Passed as `&AppContext` through CLI handlers
-/// and commands.
-#[derive(Debug)]
-pub struct AppContext<'a> {
-  pub infra: CliInfra<'a>,
-  pub cli: CliConfig<'a>,
 }

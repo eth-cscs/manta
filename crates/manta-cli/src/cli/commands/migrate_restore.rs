@@ -68,8 +68,8 @@ pub async fn exec(
     };
   }
 
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .migrate_restore(
       token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite,
     )

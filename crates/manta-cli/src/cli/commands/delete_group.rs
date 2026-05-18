@@ -15,8 +15,8 @@ pub async fn exec(
   force: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .delete_group(token, label, force)
     .await?;
 

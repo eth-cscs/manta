@@ -59,8 +59,8 @@ pub async fn exec(
     };
   }
 
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .migrate_backup(token, bos, destination)
     .await?;
   tracing::debug!("Migrate backup completed successfully.");

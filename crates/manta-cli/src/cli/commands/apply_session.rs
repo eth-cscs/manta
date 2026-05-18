@@ -85,8 +85,8 @@ async fn apply_session(
   watch_logs: bool,
   timestamps: bool,
 ) -> Result<(String, String), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  let kafka_audit_opt = ctx.cli.kafka_audit_opt;
+  let server_url = ctx.manta_server_url;
+  let kafka_audit_opt = ctx.kafka_audit_opt;
 
   // Check local repos (user interaction: confirm dialogs)
   let (repo_name_vec, repo_last_commit_id_vec) =
@@ -94,7 +94,7 @@ async fn apply_session(
 
   // Create CFS session via server
   let (cfs_configuration_name, cfs_session_name) =
-    MantaClient::new(server_url, ctx.infra.site_name)?
+    MantaClient::new(server_url, ctx.site_name)?
       .create_session(
         shasta_token,
         cfs_conf_sess_name,
@@ -119,7 +119,7 @@ async fn apply_session(
     tracing::info!("Fetching logs ...");
 
     use tokio::io::AsyncBufReadExt as _;
-    let client = MantaClient::new(server_url, ctx.infra.site_name)?;
+    let client = MantaClient::new(server_url, ctx.site_name)?;
     let reader = client
       .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
       .await

@@ -32,7 +32,7 @@ pub async fn handle_misc(
         target_hsm_name,
         hosts_expression,
         dryrun,
-        ctx.cli.kafka_audit_opt,
+        ctx.kafka_audit_opt,
       )
       .await?;
     }
@@ -51,7 +51,7 @@ pub async fn handle_misc(
         target_hsm_name,
         nodes,
         dryrun,
-        ctx.cli.kafka_audit_opt,
+        ctx.kafka_audit_opt,
       )
       .await?;
     }

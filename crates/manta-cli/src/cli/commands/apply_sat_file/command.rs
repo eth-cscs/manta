@@ -57,7 +57,7 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 
@@ -80,7 +80,7 @@ pub async fn exec(
       )
     });
 
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  MantaClient::new(server_url, ctx.site_name)?
     .apply_sat_file(
       token,
       opts.sat_file_content,

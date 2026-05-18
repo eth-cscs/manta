@@ -11,8 +11,8 @@ pub async fn exec(
   token: &str,
   hosts: Vec<String>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .delete_boot_parameters(token, hosts)
     .await?;
   println!("Boot parameters deleted successfully");

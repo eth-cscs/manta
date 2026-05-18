@@ -24,17 +24,15 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_hardware_cluster_params(
-    cli_args,
-    ctx.cli.settings_hsm_group_name_opt,
-  );
+  let params =
+    parse_hardware_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
   let output = cli_args
     .get_one::<String>("output")
     .map(String::as_str)
     .unwrap_or("summary");
 
-  let server_url = ctx.cli.manta_server_url;
-  let json = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let json = MantaClient::new(server_url, ctx.site_name)?
     .get_hardware_clusters(token, &params)
     .await?;
 

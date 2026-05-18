@@ -13,7 +13,7 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
 ) -> Result<(), Error> {
-  let settings_hsm_group_name_opt = ctx.cli.settings_hsm_group_name_opt;
+  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
 
   let target_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
     .get_one::<String>("target-cluster")
@@ -40,7 +40,7 @@ pub async fn exec(
     .get_one::<String>("pattern")
     .context("pattern argument is required")?;
 
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   let target = target_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No target HSM group specified")?;
@@ -51,7 +51,7 @@ pub async fn exec(
     HwClusterMode::Pin => "pin",
     HwClusterMode::Unpin => "unpin",
   };
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_hw_configuration(
       token,
       target,

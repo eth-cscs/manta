@@ -17,13 +17,13 @@ pub async fn exec(
   _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   let xnames_expression = if hsm_group_name_arg_opt.is_none() {
     hosts_expression
   } else {
     None
   };
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_kernel_parameters(
       token,
       xnames_expression,

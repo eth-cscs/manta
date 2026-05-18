@@ -11,7 +11,7 @@ pub async fn exec(
   dry_run: bool,
   assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   if !common::user_interaction::confirm(
     &format!(
       "Session '{}' will get canceled:\nDo you want to continue?",
@@ -22,7 +22,7 @@ pub async fn exec(
     println!("Operation cancelled by user");
     return Ok(());
   }
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  MantaClient::new(server_url, ctx.site_name)?
     .delete_session(token, session_name, dry_run)
     .await?;
   Ok(())

@@ -13,10 +13,10 @@ pub async fn exec(
   until_opt: Option<NaiveDateTime>,
   _assume_yes: bool,
 ) -> Result<(), anyhow::Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   let since_str = since_opt.map(|d| d.to_string());
   let until_str = until_opt.map(|d| d.to_string());
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .delete_configurations(
       token,
       configuration_name_pattern_opt,

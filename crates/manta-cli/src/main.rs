@@ -106,15 +106,11 @@ async fn run_cli(
   let manta_server_url = configuration.manta_server_url.as_str();
 
   let app_context = AppContext {
-    infra: crate::common::app_context::CliInfra {
-      site_name: &site_name,
-    },
-    cli: crate::common::app_context::CliConfig {
-      settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
-      kafka_audit_opt: audit_kafka_opt.as_ref(),
-      settings: &settings,
-      manta_server_url,
-    },
+    site_name: &site_name,
+    manta_server_url,
+    settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
+    kafka_audit_opt: audit_kafka_opt.as_ref(),
+    settings: &settings,
   };
 
   let cli_result =

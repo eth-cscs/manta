@@ -63,8 +63,8 @@ pub async fn exec(
     cloud_init,
   };
 
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .add_boot_parameters(token, &bp)
     .await?;
 

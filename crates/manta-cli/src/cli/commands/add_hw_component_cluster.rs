@@ -12,8 +12,8 @@ pub async fn exec(
   dryrun: bool,
   create_hsm_group: bool,
 ) -> anyhow::Result<()> {
-  let server_url = ctx.cli.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .add_hw_component(
       shasta_token,
       target_hsm_group_name,

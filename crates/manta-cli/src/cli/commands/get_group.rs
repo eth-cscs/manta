@@ -24,11 +24,10 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params =
-    parse_group_params(cli_args, ctx.cli.settings_hsm_group_name_opt);
+  let params = parse_group_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let server_url = ctx.cli.manta_server_url;
-  let groups = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let groups = MantaClient::new(server_url, ctx.site_name)?
     .get_groups(token, &params)
     .await?;
 

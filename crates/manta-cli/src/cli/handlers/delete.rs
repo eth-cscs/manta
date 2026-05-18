@@ -28,7 +28,7 @@ pub async fn handle_delete(
       let force: bool = *m
         .get_one("force")
         .context("'force' argument must have a value")?;
-      delete_group::exec(ctx, &token, label, force, ctx.cli.kafka_audit_opt)
+      delete_group::exec(ctx, &token, label, force, ctx.kafka_audit_opt)
         .await?;
     }
     Some(("node", m)) => {

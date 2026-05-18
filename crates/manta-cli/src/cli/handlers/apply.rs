@@ -67,7 +67,7 @@ pub async fn handle_apply(
         })?;
 
       let ansible_passthrough_env: Option<String> =
-        ctx.cli.settings.get("ansible-passthrough").ok();
+        ctx.settings.get("ansible-passthrough").ok();
       let ansible_passthrough_cli_arg =
         m.get_one::<String>("ansible-passthrough").cloned();
       let ansible_passthrough =
@@ -151,8 +151,8 @@ pub async fn handle_apply(
       let image_id = m
         .get_one::<String>("image-id")
         .context("'image-id' argument is mandatory")?;
-      let server_url = ctx.cli.manta_server_url;
-      let response = MantaClient::new(server_url, ctx.infra.site_name)?
+      let server_url = ctx.manta_server_url;
+      let response = MantaClient::new(server_url, ctx.site_name)?
         .create_ephemeral_env(&token, image_id)
         .await?;
       if let Some(hostname) = response.get("hostname").and_then(|v| v.as_str())

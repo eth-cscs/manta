@@ -30,8 +30,8 @@ const MAX_LOGIN_ATTEMPTS: u32 = 3;
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
 /// is validated through `manta-server`.
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
-  let client = MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
-  let site_name = ctx.infra.site_name;
+  let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
+  let site_name = ctx.site_name;
 
   match get_token_from_env(&client).await {
     Ok(token) => {

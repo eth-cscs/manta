@@ -30,8 +30,8 @@ pub async fn exec(
     .map(String::as_str)
     .unwrap_or("table");
 
-  let server_url = ctx.cli.manta_server_url;
-  let json = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let json = MantaClient::new(server_url, ctx.site_name)?
     .get_hardware_nodes_list(token, &params)
     .await?;
 

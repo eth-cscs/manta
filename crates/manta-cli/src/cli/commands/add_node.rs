@@ -16,14 +16,14 @@ pub async fn exec(
   arch_opt: Option<String>,
   _hardware_file_path: Option<&PathBuf>,
 ) -> Result<()> {
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .add_node(token, id, group, enabled, arch_opt)
     .await?;
 
   // Audit
   audit::maybe_send_audit(
-    ctx.cli.kafka_audit_opt,
+    ctx.kafka_audit_opt,
     token,
     "add node",
     Some(serde_json::json!(id)),

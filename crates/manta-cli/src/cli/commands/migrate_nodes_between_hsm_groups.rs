@@ -15,8 +15,8 @@ pub async fn exec(
   dry_run: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .migrate_nodes(
       token,
       target_hsm_name_vec,
@@ -35,7 +35,7 @@ pub async fn exec(
   );
 
   audit::maybe_send_audit(
-    ctx.cli.kafka_audit_opt,
+    ctx.kafka_audit_opt,
     token,
     format!(
       "Migrate nodes from {:?} to {:?}",

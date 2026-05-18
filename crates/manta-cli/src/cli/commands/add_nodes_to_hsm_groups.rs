@@ -14,7 +14,7 @@ pub async fn exec(
   dryrun: bool,
   kafka_audit_opt: Option<&Kafka>,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
 
   if !common::user_interaction::confirm(
     &format!(
@@ -34,10 +34,9 @@ pub async fn exec(
     return Ok(());
   }
 
-  let (added, updated_members) =
-    MantaClient::new(server_url, ctx.infra.site_name)?
-      .add_nodes_to_group(token, target_hsm_name, hosts_expression)
-      .await?;
+  let (added, updated_members) = MantaClient::new(server_url, ctx.site_name)?
+    .add_nodes_to_group(token, target_hsm_name, hosts_expression)
+    .await?;
 
   println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
 

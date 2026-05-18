@@ -14,14 +14,14 @@ pub async fn exec(
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   let target = target_hsm_group_name_arg_opt
-    .or(ctx.cli.settings_hsm_group_name_opt)
+    .or(ctx.settings_hsm_group_name_opt)
     .ok_or_else(|| anyhow!("No target HSM group specified"))?;
   let parent = parent_hsm_group_name_arg_opt
-    .or(ctx.cli.settings_hsm_group_name_opt)
+    .or(ctx.settings_hsm_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .delete_hw_component(
       token,
       target,

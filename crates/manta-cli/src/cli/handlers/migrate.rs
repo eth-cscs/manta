@@ -31,15 +31,15 @@ pub async fn handle_migrate(
       // group the token can access. The accessible-group list comes from
       // the manta server. Server-side `validate_hsm_group_access` then
       // re-checks each name in the resulting list.
-      let from: Vec<String> =
-        match from_opt.or(ctx.cli.settings_hsm_group_name_opt) {
-          Some(name) => vec![name.to_string()],
-          None => {
-            MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?
-              .get_available_groups(&token)
-              .await?
-          }
-        };
+      let from: Vec<String> = match from_opt.or(ctx.settings_hsm_group_name_opt)
+      {
+        Some(name) => vec![name.to_string()],
+        None => {
+          MantaClient::new(ctx.manta_server_url, ctx.site_name)?
+            .get_available_groups(&token)
+            .await?
+        }
+      };
       let to = vec![to.to_string()];
 
       migrate_nodes_between_hsm_groups::exec(

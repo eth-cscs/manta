@@ -16,7 +16,7 @@ pub async fn exec(
   assume_yes: bool,
   dryrun: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
+  let server_url = ctx.manta_server_url;
   let grp = Group {
     label: label.to_string(),
     description: description.map(String::from),
@@ -45,7 +45,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let client = MantaClient::new(server_url, ctx.infra.site_name)?;
+  let client = MantaClient::new(server_url, ctx.site_name)?;
   client.create_group(auth_token, grp).await?;
 
   let mut added = vec![];
@@ -58,7 +58,7 @@ pub async fn exec(
   println!("Group '{}' created", label);
 
   audit::maybe_send_audit(
-    ctx.cli.kafka_audit_opt,
+    ctx.kafka_audit_opt,
     auth_token,
     format!("Create Group '{}'", label),
     Some(serde_json::json!(added)),

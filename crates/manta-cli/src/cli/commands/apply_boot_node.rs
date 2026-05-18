@@ -18,8 +18,8 @@ pub async fn exec(
   _do_not_reboot: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let server_url = ctx.cli.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_boot_config(
       token,
       hosts_expression,

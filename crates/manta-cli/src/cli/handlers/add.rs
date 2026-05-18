@@ -64,12 +64,12 @@ pub async fn handle_add(
       let target = m
         .get_one::<String>("target-cluster")
         .map(String::as_str)
-        .or(ctx.cli.settings_hsm_group_name_opt)
+        .or(ctx.settings_hsm_group_name_opt)
         .context("'target-cluster' is required (no default in cli.toml)")?;
       let parent = m
         .get_one::<String>("parent-cluster")
         .map(String::as_str)
-        .or(ctx.cli.settings_hsm_group_name_opt)
+        .or(ctx.settings_hsm_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
       let dryrun = m.get_flag("dry-run");
       let create_hsm_group =

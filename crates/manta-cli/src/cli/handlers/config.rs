@@ -16,21 +16,18 @@ pub async fn handle_config(
   match cli_config.subcommand() {
     Some(("show", _)) => {
       let token = get_api_token(ctx).await?;
-      let client =
-        MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
-      commands::config_show::exec(&client, &token, ctx.cli.settings).await?;
+      let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
+      commands::config_show::exec(&client, &token, ctx.settings).await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
         let token = get_api_token(ctx).await?;
-        let client =
-          MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+        let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
         commands::config_set_hsm::exec(m, &client, &token).await?;
       }
       Some(("parent-hsm", m)) => {
         let token = get_api_token(ctx).await?;
-        let client =
-          MantaClient::new(ctx.cli.manta_server_url, ctx.infra.site_name)?;
+        let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
         commands::config_set_parent_hsm::exec(m, &client, &token).await?;
       }
       Some(("site", m)) => commands::config_set_site::exec(m)?,

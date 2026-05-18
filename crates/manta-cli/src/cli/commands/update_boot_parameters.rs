@@ -45,14 +45,14 @@ pub async fn exec(
     initrd: initrd.unwrap_or_default().to_string(),
   };
 
-  let server_url = ctx.cli.manta_server_url;
-  MantaClient::new(server_url, ctx.infra.site_name)?
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
     .update_boot_parameters(token, &params)
     .await?;
 
   // Audit
   audit::maybe_send_audit(
-    ctx.cli.kafka_audit_opt,
+    ctx.kafka_audit_opt,
     token,
     "Update boot parameters",
     Some(serde_json::json!(hosts)),
