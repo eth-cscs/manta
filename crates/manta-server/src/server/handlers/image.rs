@@ -1,0 +1,132 @@
+//! GET/DELETE /api/v1/images.
+
+use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
+
+use super::{
+  ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
+};
+use crate::service;
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/images
+// ---------------------------------------------------------------------------
+
+/// Query parameters for `GET /images`.
+#[derive(Deserialize, IntoParams)]
+pub struct ImageQuery {
+  pub id: Option<String>,
+  pub hsm_group: Option<String>,
+  pub limit: Option<u8>,
+}
+
+/// Wrapper so the image tuple serializes to named fields.
+#[derive(Serialize, ToSchema)]
+pub struct ImageEntry {
+  pub image: serde_json::Value,
+  pub configuration_name: String,
+  pub image_id: String,
+  pub is_linked: bool,
+}
+
+/// GET /images — list IMS images with their associated CFS configuration names.
+#[utoipa::path(get, path = "/images", tag = "images",
+  params(ImageQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of images", body = Vec<ImageEntry>),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_images(
+  ctx: RequestCtx,
+  Query(q): Query<ImageQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let params = service::image::GetImagesParams {
+    id: q.id,
+    hsm_group: q.hsm_group,
+    settings_hsm_group_name: None,
+    limit: q.limit,
+  };
+
+  let images = service::image::get_images(&infra, &token, &params)
+    .await
+    .map_err(to_handler_error)?;
+
+  let mut entries = Vec::with_capacity(images.len());
+  for (img, config_name, image_id, linked) in images {
+    let image = serialize_or_500(&img)?;
+    entries.push(ImageEntry {
+      image,
+      configuration_name: config_name,
+      image_id,
+      is_linked: linked,
+    });
+  }
+
+  Ok(Json(entries))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/images — with ?ids=id1,id2&dry_run=true
+// ---------------------------------------------------------------------------
+
+/// Query parameters for `DELETE /images`.
+#[derive(Deserialize, IntoParams)]
+pub struct DeleteImagesQuery {
+  /// Comma-separated list of IMS image IDs to delete.
+  pub ids: String,
+  /// When true, validates deletion eligibility without removing anything.
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+/// `DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.
+#[utoipa::path(delete, path = "/images", tag = "images",
+  params(DeleteImagesQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Images deleted or validation result", body = serde_json::Value),
+    (status = 400, description = "Bad request",                         body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                        body = ErrorResponse),
+    (status = 500, description = "Internal error",                      body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn delete_images(
+  ctx: RequestCtx,
+  Query(q): Query<DeleteImagesQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let id_strings: Vec<String> =
+    q.ids.split(',').map(|s| s.trim().to_string()).collect();
+  let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
+
+  if q.dry_run {
+    service::image::validate_image_deletion(&infra, &token, &id_refs, None)
+      .await
+      .map_err(to_handler_error)?;
+    return Ok((
+      StatusCode::OK,
+      Json(serde_json::json!({ "validated_ids": id_strings })),
+    ));
+  }
+
+  let deleted = service::image::delete_images(&infra, &token, &id_refs, None)
+    .await
+    .map_err(to_handler_error)?;
+
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({ "deleted": deleted })),
+  ))
+}

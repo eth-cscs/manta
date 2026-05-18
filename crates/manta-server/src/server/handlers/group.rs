@@ -1,0 +1,297 @@
+//! HSM group CRUD + membership handlers.
+
+use axum::{
+  Json,
+  extract::{Path, Query},
+  http::StatusCode,
+  response::IntoResponse,
+};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
+
+use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::service;
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/groups
+// ---------------------------------------------------------------------------
+
+/// Query parameters for `GET /groups`.
+#[derive(Deserialize, IntoParams)]
+pub struct GroupQuery {
+  pub name: Option<String>,
+}
+
+/// GET /groups/available — list HSM group names the token can access.
+///
+/// Backs CLI authorization helpers that used to call
+/// `backend.get_group_name_available` directly.
+#[utoipa::path(get, path = "/groups/available", tag = "groups",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of accessible group names", body = Vec<String>),
+    (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 500, description = "Internal error",                 body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_available_groups(
+  ctx: RequestCtx,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let names = service::group::get_available_group_names(&infra, &token)
+    .await
+    .map_err(to_handler_error)?;
+  Ok(Json(names))
+}
+
+/// GET /groups/all — list every HSM group in the system.
+///
+/// Backs CLI commands (e.g. `config_set_hsm_common`) that need the full
+/// catalogue, not just the accessible-to-this-token subset.
+#[utoipa::path(get, path = "/groups/all", tag = "groups",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of all groups",      body = serde_json::Value),
+    (status = 401, description = "Unauthorized",            body = ErrorResponse),
+    (status = 500, description = "Internal error",          body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_all_groups(
+  ctx: RequestCtx,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let groups = service::group::get_all_groups(&infra, &token)
+    .await
+    .map_err(to_handler_error)?;
+  Ok(Json(groups))
+}
+
+/// GET /groups — list HSM groups, optionally filtered by name.
+#[utoipa::path(get, path = "/groups", tag = "groups",
+  params(GroupQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "List of groups", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_groups(
+  ctx: RequestCtx,
+  Query(q): Query<GroupQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let params = service::group::GetGroupParams {
+    group_name: q.name,
+    settings_hsm_group_name: None,
+  };
+
+  let groups = service::group::get_groups(&infra, &token, &params)
+    .await
+    .map_err(to_handler_error)?;
+
+  Ok(Json(groups))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/groups/{label}
+// ---------------------------------------------------------------------------
+
+/// Query parameters for `DELETE /groups/{label}`.
+#[derive(Deserialize, IntoParams)]
+pub struct DeleteGroupQuery {
+  /// Delete even if the group still has members (default: false).
+  #[serde(default)]
+  pub force: bool,
+}
+
+/// DELETE /groups/{label} — remove an HSM group.
+#[utoipa::path(delete, path = "/groups/{label}", tag = "groups",
+  params(("label" = String, Path, description = "Group label"), DeleteGroupQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Group removed"),
+    (status = 401, description = "Unauthorized",   body = ErrorResponse),
+    (status = 404, description = "Not found",      body = ErrorResponse),
+    (status = 500, description = "Internal error", body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn delete_group(
+  ctx: RequestCtx,
+  Path(label): Path<String>,
+  Query(q): Query<DeleteGroupQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("delete_group label={} force={}", label, q.force);
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  service::group::delete_group(&infra, &token, &label, q.force)
+    .await
+    .map_err(to_handler_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/groups
+// ---------------------------------------------------------------------------
+
+/// POST /groups — create a new HSM group.
+#[utoipa::path(post, path = "/groups", tag = "groups",
+  params(SiteHeader),
+  request_body = manta_backend_dispatcher::types::Group,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "Group created",    body = serde_json::Value),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 409, description = "Conflict",         body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn create_group(
+  ctx: RequestCtx,
+  Json(group): Json<::manta_backend_dispatcher::types::Group>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("create_group");
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  service::group::create_group(&infra, &token, group)
+    .await
+    .map_err(to_handler_error)?;
+
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "created": true })),
+  ))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/groups/{name}/members
+// ---------------------------------------------------------------------------
+
+/// Body for `POST /groups/{name}/members`.
+#[derive(Deserialize, ToSchema)]
+pub struct AddNodesToGroupRequest {
+  pub hosts_expression: String,
+}
+
+/// Response for `POST /groups/{name}/members`.
+#[derive(Serialize, ToSchema)]
+pub struct AddNodesToGroupResponse {
+  pub added: Vec<String>,
+  pub removed: Vec<String>,
+}
+
+/// POST /groups/{name}/members — replace a group's member list from a host expression.
+#[utoipa::path(post, path = "/groups/{name}/members", tag = "groups",
+  params(("name" = String, Path, description = "Group name"), SiteHeader),
+  request_body = AddNodesToGroupRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Members updated",   body = AddNodesToGroupResponse),
+    (status = 400, description = "Bad request",       body = ErrorResponse),
+    (status = 401, description = "Unauthorized",      body = ErrorResponse),
+    (status = 500, description = "Internal error",    body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn add_nodes_to_group(
+  ctx: RequestCtx,
+  Path(name): Path<String>,
+  Json(body): Json<AddNodesToGroupRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!(
+    "add_nodes_to_group group={} hosts={}",
+    name,
+    body.hosts_expression
+  );
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let (added, removed) = service::group::add_nodes_to_group(
+    &infra,
+    &token,
+    &name,
+    &body.hosts_expression,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
+  Ok(Json(AddNodesToGroupResponse { added, removed }))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /api/v1/groups/{name}/members — Remove nodes from HSM group
+// ---------------------------------------------------------------------------
+
+/// Request body for `DELETE /groups/{name}/members`.
+#[derive(Deserialize, ToSchema)]
+pub struct DeleteGroupMembersRequest {
+  /// Hosts expression (xnames, nids, or hostlist notation) identifying nodes to remove.
+  pub xnames_expression: String,
+  /// When true, validates the request without modifying group membership.
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+/// `DELETE /api/v1/groups/{name}/members` — remove nodes from an HSM group.
+#[utoipa::path(delete, path = "/groups/{name}/members", tag = "groups",
+  params(("name" = String, Path, description = "Group name"), SiteHeader),
+  request_body = DeleteGroupMembersRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "Members removed"),
+    (status = 400, description = "Bad request",      body = ErrorResponse),
+    (status = 401, description = "Unauthorized",     body = ErrorResponse),
+    (status = 500, description = "Internal error",   body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn delete_group_members(
+  ctx: RequestCtx,
+  Path(name): Path<String>,
+  Json(body): Json<DeleteGroupMembersRequest>,
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!(
+    "delete_group_members group={} xnames_expression={} dry_run={}",
+    name,
+    body.xnames_expression,
+    body.dry_run
+  );
+  let (state, token, site_name) = ctx.into_parts();
+  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+
+  let xnames = crate::server::common::node_ops::resolve_hosts_expression(
+    infra.backend,
+    &token,
+    &body.xnames_expression,
+    false,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
+  if !body.dry_run {
+    for xname in &xnames {
+      infra
+        .backend
+        .delete_member_from_group(&token, &name, xname)
+        .await
+        .map_err(to_handler_error)?;
+    }
+  }
+
+  Ok(StatusCode::NO_CONTENT)
+}
