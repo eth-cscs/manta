@@ -134,6 +134,7 @@ All notable changes to this project will be documented in this file.
 - Collapse the two crate::common re-export shims
 - Collapse the two crate::common re-export shims
 - Add LICENSE file to creates
+- Update Cargo.toml
 
 ### Refactor
 
