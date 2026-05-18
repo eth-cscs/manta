@@ -1,9 +1,8 @@
 //! Audit trail helpers: build and send structured JSON messages to Kafka.
 
-use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 
-use super::{jwt_ops, kafka::Kafka};
+use super::{error::MantaError, jwt_ops, kafka::Kafka};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.
@@ -14,7 +13,7 @@ pub struct Auditor {
 /// Trait for producing audit messages to a message broker.
 pub trait Audit {
   #[allow(async_fn_in_trait)]
-  async fn produce_message(&self, data: &[u8]) -> Result<(), Error>;
+  async fn produce_message(&self, data: &[u8]) -> Result<(), MantaError>;
 }
 
 /// Serialize a JSON audit message and send it to Kafka.

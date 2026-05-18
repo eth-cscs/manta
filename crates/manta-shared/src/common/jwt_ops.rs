@@ -1,24 +1,27 @@
 use base64::prelude::*;
-use manta_backend_dispatcher::error::Error;
 use serde_json::Value;
 
-fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
+use crate::common::error::MantaError;
+
+fn get_claims_from_jwt_token(token: &str) -> Result<Value, MantaError> {
   // Handle both "Bearer <token>" and bare "<token>" formats
   let jwt_body = token.split(' ').nth(1).unwrap_or(token);
 
   let base64_claims = jwt_body.split('.').nth(1).ok_or_else(|| {
-    Error::JwtMalformed("expected header.payload.signature format".to_string())
+    MantaError::JwtMalformed(
+      "expected header.payload.signature format".to_string(),
+    )
   })?;
 
   let claims_u8 = BASE64_URL_SAFE_NO_PAD
     .decode(base64_claims)
     .or_else(|_| BASE64_STANDARD.decode(base64_claims))
     .map_err(|e| {
-      Error::JwtMalformed(format!("could not decode claims: {}", e))
+      MantaError::JwtMalformed(format!("could not decode claims: {}", e))
     })?;
 
   let claims_str = std::str::from_utf8(&claims_u8).map_err(|e| {
-    Error::JwtMalformed(format!("claims are not valid UTF-8: {}", e))
+    MantaError::JwtMalformed(format!("claims are not valid UTF-8: {}", e))
   })?;
 
   Ok(serde_json::from_str::<Value>(claims_str)?)
@@ -27,7 +30,7 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, Error> {
 /// Extract the `name` claim from a JWT token.
 ///
 /// Returns `"MISSING"` if the claim is absent.
-pub fn get_name(token: &str) -> Result<String, Error> {
+pub fn get_name(token: &str) -> Result<String, MantaError> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 
   let jwt_name = jwt_claims.get("name").and_then(Value::as_str);
@@ -41,7 +44,7 @@ pub fn get_name(token: &str) -> Result<String, Error> {
 /// Extract the `preferred_username` claim from a JWT token.
 ///
 /// Returns `"MISSING"` if the claim is absent.
-pub fn get_preferred_username(token: &str) -> Result<String, Error> {
+pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 
   let jwt_preferred_username =

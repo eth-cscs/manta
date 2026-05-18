@@ -37,12 +37,15 @@ pub async fn apply_sat_file(
       } else {
         Some(&values_cli_vec)
       },
-    )?;
+    )
+    .map_err(crate::wire_conv::to_backend)?;
 
   let mut sat_file: manta_shared::shared::sat_file::SatFile =
     serde_yaml::from_value(sat_template_yaml)?;
 
-  sat_file.filter(params.image_only, params.session_template_only)?;
+  sat_file
+    .filter(params.image_only, params.session_template_only)
+    .map_err(crate::wire_conv::to_backend)?;
 
   let sat_file_yaml = serde_yaml::to_value(sat_file)?;
 

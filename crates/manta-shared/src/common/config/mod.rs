@@ -6,9 +6,9 @@ use std::{
   path::PathBuf,
 };
 
+use crate::common::error::MantaError as Error;
 use config::Config;
 use directories::ProjectDirs;
-use manta_backend_dispatcher::error::Error;
 use toml_edit::DocumentMut;
 
 /// Returns the XDG-compliant `ProjectDirs` for manta.

@@ -7,6 +7,7 @@ mod common;
 mod manta_backend_dispatcher;
 mod server;
 mod service;
+mod wire_conv;
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use clap::{Arg, Command};

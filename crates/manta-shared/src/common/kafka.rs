@@ -1,13 +1,12 @@
 use std::{fmt, sync::OnceLock, time::Duration};
 
-use manta_backend_dispatcher::error::Error;
 use rdkafka::{
   ClientConfig,
   producer::{FutureProducer, FutureRecord},
 };
 use serde::{Deserialize, Serialize};
 
-use super::audit::Audit;
+use super::{audit::Audit, error::MantaError};
 
 /// Kafka message delivery timeout in milliseconds.
 const KAFKA_MESSAGE_TIMEOUT_MS: &str = "5000";
@@ -71,7 +70,7 @@ impl Kafka {
 
   /// Return the cached [`FutureProducer`], creating it on
   /// first call.
-  fn get_or_init_producer(&self) -> Result<&FutureProducer, Error> {
+  fn get_or_init_producer(&self) -> Result<&FutureProducer, MantaError> {
     if let Some(p) = self.producer.get() {
       return Ok(p);
     }
@@ -81,7 +80,10 @@ impl Kafka {
       .set("message.timeout.ms", KAFKA_MESSAGE_TIMEOUT_MS)
       .create()
       .map_err(|e| {
-        Error::KafkaError(format!("Failed to create Kafka producer: {}", e))
+        MantaError::KafkaError(format!(
+          "Failed to create Kafka producer: {}",
+          e
+        ))
       })?;
     // Another thread may have raced us; either value is
     // fine since they are configured identically.
@@ -90,7 +92,7 @@ impl Kafka {
 }
 
 impl Audit for Kafka {
-  async fn produce_message(&self, data: &[u8]) -> Result<(), Error> {
+  async fn produce_message(&self, data: &[u8]) -> Result<(), MantaError> {
     let producer = self.get_or_init_producer()?;
 
     let delivery_status = producer
@@ -105,7 +107,7 @@ impl Audit for Kafka {
         tracing::info!("Delivery status for message received");
       }
       Err(e) => {
-        return Err(Error::KafkaError(format!(
+        return Err(MantaError::KafkaError(format!(
           "Delivery status for message failed: {:?}",
           e.0
         )));

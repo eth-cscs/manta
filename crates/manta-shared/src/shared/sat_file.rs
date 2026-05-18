@@ -1,7 +1,7 @@
 //! Deserialization types for HPE Cray SAT (System Admin Toolkit) YAML files.
 
+use crate::common::error::MantaError as Error;
 use image::Image;
-use manta_backend_dispatcher::error::Error;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 

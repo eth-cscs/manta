@@ -31,7 +31,7 @@ tracing-subscriber = { workspace = true }
 tokio        = { workspace = true }
 futures      = { workspace = true }
 
-# common/* helpers: kafka, jwt_ops, config loader.
+# common/* helpers: kafka, jwt_ops, config loader, structured error type.
 rdkafka            = { workspace = true }
 base64             = { workspace = true }
 config             = { workspace = true }
@@ -41,3 +41,4 @@ toml               = { workspace = true }
 toml_edit          = { workspace = true }
 reqwest            = { workspace = true }
 anyhow             = { workspace = true }
+thiserror          = { workspace = true }
