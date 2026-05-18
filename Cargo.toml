@@ -4,7 +4,7 @@ members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server"]
 
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
-version      = "1.64.3"
+version      = "2.0.0-beta.1"
 edition      = "2024"
 authors      = [
   "Manuel Sopena Ballesteros <msopena@cscs.ch>",
@@ -21,7 +21,7 @@ repository   = "https://github.com/eth-cscs/manta"
 # every published `manta-cli` requires exactly the matching
 # `manta-shared`; the two are tightly coupled and not independently
 # semver-compatible.
-manta-shared             = { path = "crates/manta-shared",            version = "=1.64.3" }
+manta-shared             = { path = "crates/manta-shared",            version = "=2.0.0-beta.1" }
 # Sibling repos — already published on crates.io. Loose semver
 # constraints (default caret), pinned to the currently-vendored
 # version so a stray upgrade doesn't slip in as part of an unrelated
