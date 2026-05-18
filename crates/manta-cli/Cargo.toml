@@ -2,18 +2,16 @@
 # default-features = false
 
 [package]
-edition = "2024"
-authors = ["Manuel Sopena Ballesteros <msopena@cscs.ch>", "Miguel Gila <miguel.gila@cscs.ch>"]
 name = "manta-cli"
 description = "Another CLI for ALPS"
-version = "1.64.3"
-license-file = "LICENSE"
-documentation = "https://github.com/eth-cscs/manta/blob/main/README.md"
-homepage = "https://github.com/eth-cscs/manta/blob/main/README.md"
-repository = "https://github.com/eth-cscs/manta"
 keywords = ["cli", "productivity"]
 publish = true
 build = "build.rs"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license-file.workspace = true
+repository.workspace   = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
