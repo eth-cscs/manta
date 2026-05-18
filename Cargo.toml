@@ -21,14 +21,25 @@ repository   = "https://github.com/eth-cscs/manta"
 # every published `manta-cli` requires exactly the matching
 # `manta-shared`; the two are tightly coupled and not independently
 # semver-compatible.
-manta-shared             = { path = "crates/manta-shared",            version = "=2.0.0-beta.1" }
-# Sibling repos — already published on crates.io. Loose semver
-# constraints (default caret), pinned to the currently-vendored
-# version so a stray upgrade doesn't slip in as part of an unrelated
-# change.
-manta-backend-dispatcher = { path = "../manta-backend-dispatcher",    version = "0.25.0" }
-csm-rs                   = { path = "../csm-rs",                      version = "0.105.0" }
-ochami-rs                = { path = "../ochami-rs",                   version = "0.13.2" }
+manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.1" }
+# Sibling repos — registry-only (no `path = "../..."`) so CI runners
+# and fresh-clone contributors that don't have the adjacent sibling
+# checkouts can still resolve them. cargo's `path` attribute is
+# "always use the path", not "use path if present, fall back to
+# registry", so the path form broke `cargo metadata` in any
+# environment without the sibling layout.
+#
+# For inner-loop dev against unreleased sibling-repo commits, add a
+# per-user `.cargo/config.toml` (gitignored) with a `[patch.crates-io]`
+# block:
+#
+#   [patch.crates-io]
+#   manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+#   csm-rs                   = { path = "../csm-rs" }
+#   ochami-rs                = { path = "../ochami-rs" }
+manta-backend-dispatcher = "0.26.0"
+csm-rs                   = "0.105.0"
+ochami-rs                = "0.13.2"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
