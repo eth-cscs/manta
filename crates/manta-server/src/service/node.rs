@@ -164,7 +164,7 @@ pub async fn add_node(
 
 /// Rollback helper: attempt to delete a node that was partially created.
 async fn rollback_node(
-  backend: &manta_shared::manta_backend_dispatcher::StaticBackendDispatcher,
+  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
   token: &str,
   id: &str,
 ) {

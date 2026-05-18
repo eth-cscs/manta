@@ -20,8 +20,8 @@ use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
 
 use crate::common::app_context::InfraContext;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use manta_shared::common::kafka::Kafka;
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///

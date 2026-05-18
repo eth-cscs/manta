@@ -2,18 +2,21 @@
 //! `ServerState` containing one `SiteBackend` per configured site, and
 //! starts the TLS server.
 
+mod backend_dispatcher;
 mod common;
+mod manta_backend_dispatcher;
 mod server;
 mod service;
 
+use ::manta_backend_dispatcher::types::K8sAuth;
 use clap::{Arg, Command};
-use manta_backend_dispatcher::types::K8sAuth;
 use manta_shared::common::{
   config as manta_config,
   config::types::{BackendTechnology, ServerConfiguration},
   log_ops,
 };
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
+
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// URL path suffix for the CSM API endpoint.
 const API_URL_SUFFIX: &str = "/apis";

@@ -21,8 +21,8 @@ use axum::{
 use http_body_util::BodyExt as _;
 use tower::ServiceExt as _;
 
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use crate::server::{ServerState, SiteBackend, routes::build_router};
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
 
 // ---------------------------------------------------------------------------
 // Test helpers

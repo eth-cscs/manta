@@ -1,29 +1,11 @@
-//! Context structs threaded through the call stack in CLI and server modes.
+//! CLI context struct threaded through `manta-cli`'s call stack.
 //!
-//! The server uses [`InfraContext`] in its service layer (carries the
-//! backend dispatcher, base URLs, TLS cert, vault/k8s/proxy URLs).
-//! The CLI uses [`AppContext`] — a flat struct with the `site_name`
-//! for the `X-Manta-Site` header, the manta-server URL, plus the
-//! CLI-only configuration (settings, HSM filter, Kafka audit).
+//! The server's analogous `InfraContext` (with backend dispatcher and
+//! per-site URLs) lives in `manta-server::common::app_context` — it
+//! depends on `StaticBackendDispatcher` which the CLI never touches.
 
 use crate::common::kafka::Kafka;
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use config::Config;
-
-/// Infrastructure context needed by the service layer: backend
-/// dispatcher, API endpoints, and TLS certificates. **Server-only**
-/// after Phase 7.
-#[derive(Debug)]
-pub struct InfraContext<'a> {
-  pub backend: &'a StaticBackendDispatcher,
-  pub site_name: &'a str,
-  pub shasta_base_url: &'a str,
-  pub shasta_root_cert: &'a [u8],
-  pub socks5_proxy: Option<&'a str>,
-  pub vault_base_url: Option<&'a str>,
-  pub gitea_base_url: &'a str,
-  pub k8s_api_url: Option<&'a str>,
-}
 
 /// Top-level CLI context, passed as `&AppContext` through CLI
 /// handlers and commands.

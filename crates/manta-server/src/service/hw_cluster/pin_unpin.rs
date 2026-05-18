@@ -9,7 +9,7 @@ use manta_backend_dispatcher::{
 };
 
 use super::{NodeHwCountVec, scoring};
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 // ── Pin algorithm ────────────────────────────────────────────────────────────
 

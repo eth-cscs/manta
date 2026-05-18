@@ -12,7 +12,7 @@ use super::{
   AddHwResult, ApplyHwResult, DeleteHwResult, HwClusterMode,
   MEMORY_CAPACITY_LCM, pin_unpin, scoring,
 };
-use manta_shared::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
 /// Core logic for hardware cluster pin/unpin — no terminal interaction.
 #[allow(clippy::too_many_arguments)]

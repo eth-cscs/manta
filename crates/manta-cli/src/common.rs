@@ -16,6 +16,5 @@ pub use crate::cli::common::{
 };
 #[allow(unused_imports)]
 pub use manta_shared::common::{
-  DATETIME_FORMAT, app_context, audit, authorization, config, jwt_ops, kafka,
-  log_ops,
+  DATETIME_FORMAT, app_context, audit, config, jwt_ops, kafka, log_ops,
 };
