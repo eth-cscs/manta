@@ -49,6 +49,69 @@ pub struct MantaClient {
   site_name: String,
 }
 
+/// Chainable builder for the `&[(&str, String)]` query-pairs slice
+/// that `MantaClient::get_json` expects. Each `.opt()` / `.vec()` /
+/// `.flag()` / `.pair()` call mirrors one of the patterns the older
+/// hand-written query blocks used; absent values are skipped.
+#[derive(Default)]
+struct QueryBuilder {
+  pairs: Vec<(&'static str, String)>,
+}
+
+impl QueryBuilder {
+  fn new() -> Self {
+    Self::default()
+  }
+
+  /// Push `(name, value.clone())` only when `value` is `Some`.
+  fn opt(mut self, name: &'static str, value: &Option<String>) -> Self {
+    if let Some(v) = value {
+      self.pairs.push((name, v.clone()));
+    }
+    self
+  }
+
+  /// Push `(name, value.to_string())` only when `value` is `Some`.
+  /// For numeric `Option<T>` where `T: ToString`.
+  fn opt_display<T: ToString>(
+    mut self,
+    name: &'static str,
+    value: &Option<T>,
+  ) -> Self {
+    if let Some(v) = value {
+      self.pairs.push((name, v.to_string()));
+    }
+    self
+  }
+
+  /// Push `(name, items.join(","))` only when `items` is non-empty.
+  fn vec(mut self, name: &'static str, items: &[String]) -> Self {
+    if !items.is_empty() {
+      self.pairs.push((name, items.join(",")));
+    }
+    self
+  }
+
+  /// Push `(name, "true")` only when `value` is `true`.
+  fn flag(mut self, name: &'static str, value: bool) -> Self {
+    if value {
+      self.pairs.push((name, "true".to_string()));
+    }
+    self
+  }
+
+  /// Push `(name, value)` unconditionally.
+  fn pair(mut self, name: &'static str, value: String) -> Self {
+    self.pairs.push((name, value));
+    self
+  }
+
+  /// Consume into the slice-shaped form `get_json` accepts.
+  fn build(self) -> Vec<(&'static str, String)> {
+    self.pairs
+  }
+}
+
 impl MantaClient {
   /// Build a client pointing at `server_url` for the given `site_name`.
   ///
@@ -258,31 +321,16 @@ impl MantaClient {
     token: &str,
     params: &GetSessionParams,
   ) -> anyhow::Result<Vec<CfsSessionGetResponse>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if !params.xnames.is_empty() {
-      q.push(("xnames", params.xnames.join(",")));
-    }
-    if let Some(v) = &params.min_age {
-      q.push(("min_age", v.clone()));
-    }
-    if let Some(v) = &params.max_age {
-      q.push(("max_age", v.clone()));
-    }
-    if let Some(v) = &params.session_type {
-      q.push(("session_type", v.clone()));
-    }
-    if let Some(v) = &params.status {
-      q.push(("status", v.clone()));
-    }
-    if let Some(v) = &params.name {
-      q.push(("name", v.clone()));
-    }
-    if let Some(v) = &params.limit {
-      q.push(("limit", v.to_string()));
-    }
+    let q = QueryBuilder::new()
+      .opt("hsm_group", &params.hsm_group)
+      .vec("xnames", &params.xnames)
+      .opt("min_age", &params.min_age)
+      .opt("max_age", &params.max_age)
+      .opt("session_type", &params.session_type)
+      .opt("status", &params.status)
+      .opt("name", &params.name)
+      .opt_display("limit", &params.limit)
+      .build();
     self.get_json(token, "/sessions", &q).await
   }
 
@@ -291,19 +339,12 @@ impl MantaClient {
     token: &str,
     params: &GetConfigurationParams,
   ) -> anyhow::Result<Vec<CfsConfigurationResponse>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.name {
-      q.push(("name", v.clone()));
-    }
-    if let Some(v) = &params.pattern {
-      q.push(("pattern", v.clone()));
-    }
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if let Some(v) = &params.limit {
-      q.push(("limit", v.to_string()));
-    }
+    let q = QueryBuilder::new()
+      .opt("name", &params.name)
+      .opt("pattern", &params.pattern)
+      .opt("hsm_group", &params.hsm_group)
+      .opt_display("limit", &params.limit)
+      .build();
     self.get_json(token, "/configurations", &q).await
   }
 
@@ -312,10 +353,7 @@ impl MantaClient {
     token: &str,
     params: &GetGroupParams,
   ) -> anyhow::Result<Vec<Group>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.group_name {
-      q.push(("name", v.clone()));
-    }
+    let q = QueryBuilder::new().opt("name", &params.group_name).build();
     self.get_json(token, "/groups", &q).await
   }
 
@@ -344,13 +382,11 @@ impl MantaClient {
     token: &str,
     params: &GetNodesParams,
   ) -> anyhow::Result<Vec<NodeDetails>> {
-    let mut q: Vec<(&str, String)> = vec![("xname", params.xname.clone())];
-    if params.include_siblings {
-      q.push(("include_siblings", "true".to_string()));
-    }
-    if let Some(v) = &params.status_filter {
-      q.push(("status", v.clone()));
-    }
+    let q = QueryBuilder::new()
+      .pair("xname", params.xname.clone())
+      .flag("include_siblings", params.include_siblings)
+      .opt("status", &params.status_filter)
+      .build();
     self.get_json(token, "/nodes", &q).await
   }
 
@@ -359,16 +395,11 @@ impl MantaClient {
     token: &str,
     params: &GetImagesParams,
   ) -> anyhow::Result<Vec<(Image, String, String, bool)>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.id {
-      q.push(("id", v.clone()));
-    }
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if let Some(v) = &params.limit {
-      q.push(("limit", v.to_string()));
-    }
+    let q = QueryBuilder::new()
+      .opt("id", &params.id)
+      .opt("hsm_group", &params.hsm_group)
+      .opt_display("limit", &params.limit)
+      .build();
     let entries: Vec<ImageEntry> = self.get_json(token, "/images", &q).await?;
     entries
       .into_iter()
@@ -385,16 +416,11 @@ impl MantaClient {
     token: &str,
     params: &GetTemplateParams,
   ) -> anyhow::Result<Vec<BosSessionTemplate>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.name {
-      q.push(("name", v.clone()));
-    }
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if let Some(v) = &params.limit {
-      q.push(("limit", v.to_string()));
-    }
+    let q = QueryBuilder::new()
+      .opt("name", &params.name)
+      .opt("hsm_group", &params.hsm_group)
+      .opt_display("limit", &params.limit)
+      .build();
     self.get_json(token, "/templates", &q).await
   }
 
@@ -403,13 +429,10 @@ impl MantaClient {
     token: &str,
     params: &GetBootParametersParams,
   ) -> anyhow::Result<Vec<BootParameters>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if let Some(v) = &params.nodes {
-      q.push(("nodes", v.clone()));
-    }
+    let q = QueryBuilder::new()
+      .opt("hsm_group", &params.hsm_group)
+      .opt("nodes", &params.nodes)
+      .build();
     self.get_json(token, "/boot-parameters", &q).await
   }
 
@@ -418,13 +441,10 @@ impl MantaClient {
     token: &str,
     params: &GetKernelParametersParams,
   ) -> anyhow::Result<Vec<BootParameters>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.hsm_group {
-      q.push(("hsm_group", v.clone()));
-    }
-    if let Some(v) = &params.nodes {
-      q.push(("nodes", v.clone()));
-    }
+    let q = QueryBuilder::new()
+      .opt("hsm_group", &params.hsm_group)
+      .opt("nodes", &params.nodes)
+      .build();
     self.get_json(token, "/kernel-parameters", &q).await
   }
 
@@ -433,22 +453,13 @@ impl MantaClient {
     token: &str,
     params: &GetRedfishEndpointsParams,
   ) -> anyhow::Result<serde_json::Value> {
-    let mut q: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = &params.id {
-      q.push(("id", v.clone()));
-    }
-    if let Some(v) = &params.fqdn {
-      q.push(("fqdn", v.clone()));
-    }
-    if let Some(v) = &params.uuid {
-      q.push(("uuid", v.clone()));
-    }
-    if let Some(v) = &params.macaddr {
-      q.push(("macaddr", v.clone()));
-    }
-    if let Some(v) = &params.ipaddress {
-      q.push(("ipaddress", v.clone()));
-    }
+    let q = QueryBuilder::new()
+      .opt("id", &params.id)
+      .opt("fqdn", &params.fqdn)
+      .opt("uuid", &params.uuid)
+      .opt("macaddr", &params.macaddr)
+      .opt("ipaddress", &params.ipaddress)
+      .build();
     self.get_json(token, "/redfish-endpoints", &q).await
   }
 
@@ -457,17 +468,15 @@ impl MantaClient {
     token: &str,
     params: &GetClusterParams,
   ) -> anyhow::Result<Vec<NodeDetails>> {
-    let mut q: Vec<(&str, String)> = Vec::new();
     let hsm = params
       .hsm_group_name
       .as_deref()
-      .or(params.settings_hsm_group_name.as_deref());
-    if let Some(v) = hsm {
-      q.push(("hsm_group", v.to_string()));
-    }
-    if let Some(v) = &params.status_filter {
-      q.push(("status", v.clone()));
-    }
+      .or(params.settings_hsm_group_name.as_deref())
+      .map(String::from);
+    let q = QueryBuilder::new()
+      .opt("hsm_group", &hsm)
+      .opt("status", &params.status_filter)
+      .build();
     self.get_json(token, "/clusters", &q).await
   }
 
@@ -476,14 +485,12 @@ impl MantaClient {
     token: &str,
     params: &GetHardwareClusterParams,
   ) -> anyhow::Result<Value> {
-    let mut q: Vec<(&str, String)> = Vec::new();
     let hsm = params
       .hsm_group_name
       .as_deref()
-      .or(params.settings_hsm_group_name.as_deref());
-    if let Some(v) = hsm {
-      q.push(("hsm_group", v.to_string()));
-    }
+      .or(params.settings_hsm_group_name.as_deref())
+      .map(String::from);
+    let q = QueryBuilder::new().opt("hsm_group", &hsm).build();
     self.get_json(token, "/hardware-clusters", &q).await
   }
 
@@ -904,16 +911,12 @@ impl MantaClient {
     until: Option<&str>,
     dry_run: bool,
   ) -> anyhow::Result<Value> {
-    let mut q: Vec<(&str, String)> = vec![("dry_run", dry_run.to_string())];
-    if let Some(v) = pattern {
-      q.push(("pattern", v.to_string()));
-    }
-    if let Some(v) = since {
-      q.push(("since", v.to_string()));
-    }
-    if let Some(v) = until {
-      q.push(("until", v.to_string()));
-    }
+    let q = QueryBuilder::new()
+      .pair("dry_run", dry_run.to_string())
+      .opt("pattern", &pattern.map(String::from))
+      .opt("since", &since.map(String::from))
+      .opt("until", &until.map(String::from))
+      .build();
     self
       .delete_json_with_query(token, "/configurations", &q)
       .await
