@@ -21,7 +21,8 @@ repository   = "https://github.com/eth-cscs/manta"
 # every published `manta-cli` requires exactly the matching
 # `manta-shared`; the two are tightly coupled and not independently
 # semver-compatible.
-manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.1" }
+# manta-shared             = { path = "crates/manta-shared" }
+manta-shared             = "2.0.0-beta.1"
 # Sibling repos — registry-only (no `path = "../..."`) so CI runners
 # and fresh-clone contributors that don't have the adjacent sibling
 # checkouts can still resolve them. cargo's `path` attribute is
@@ -38,8 +39,8 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 #   csm-rs                   = { path = "../csm-rs" }
 #   ochami-rs                = { path = "../ochami-rs" }
 manta-backend-dispatcher = "0.26.0"
-csm-rs                   = "0.105.0"
-ochami-rs                = "0.13.2"
+csm-rs                   = "0.106.0"
+ochami-rs                = "0.14.0"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
