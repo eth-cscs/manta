@@ -17,12 +17,18 @@ repository   = "https://github.com/eth-cscs/manta"
 # `<crate> = { workspace = true }`. Keeping them here means the three
 # workspace members can't drift apart on tokio/serde/reqwest/etc.
 [workspace.dependencies]
-# Internal workspace crates
-manta-shared             = { path = "crates/manta-shared" }
-# Sibling repos
-manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-csm-rs                   = { path = "../csm-rs" }
-ochami-rs                = { path = "../ochami-rs" }
+# Internal workspace crate. `=` pinned to the workspace version so
+# every published `manta-cli` requires exactly the matching
+# `manta-shared`; the two are tightly coupled and not independently
+# semver-compatible.
+manta-shared             = { path = "crates/manta-shared",            version = "=1.64.3" }
+# Sibling repos — already published on crates.io. Loose semver
+# constraints (default caret), pinned to the currently-vendored
+# version so a stray upgrade doesn't slip in as part of an unrelated
+# change.
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher",    version = "0.25.0" }
+csm-rs                   = { path = "../csm-rs",                      version = "0.105.0" }
+ochami-rs                = { path = "../ochami-rs",                   version = "0.13.2" }
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
