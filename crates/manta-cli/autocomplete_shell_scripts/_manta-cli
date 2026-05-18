@@ -2051,16 +2051,6 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
-(serve)
-_arguments "${_arguments_options[@]}" : \
-'--port=[Port to listen on]:PORT:_default' \
-'--cert=[Path to TLS certificate PEM file (enables HTTPS)]:CERT_FILE:_files' \
-'--key=[Path to TLS private key PEM file (required with --cert)]:KEY_FILE:_files' \
-'--listen-address=[Address to bind to]:ADDRESS:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-&& ret=0
-;;
 (help)
 _arguments "${_arguments_options[@]}" : \
 ":: :_manta-cli__subcmd__help_commands" \
@@ -2605,10 +2595,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(serve)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (help)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2637,7 +2623,6 @@ _manta-cli_commands() {
 'console:Open an interactive console to a node or configuration session' \
 'add-nodes-to-groups:Add nodes to one or more groups' \
 'remove-nodes-from-groups:Remove nodes from one or more groups' \
-'serve:Run manta as an HTTP/HTTPS API server' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta-cli commands' commands "$@"
@@ -3547,7 +3532,6 @@ _manta-cli__subcmd__help_commands() {
 'console:Open an interactive console to a node or configuration session' \
 'add-nodes-to-groups:Add nodes to one or more groups' \
 'remove-nodes-from-groups:Remove nodes from one or more groups' \
-'serve:Run manta as an HTTP/HTTPS API server' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta-cli help commands' commands "$@"
@@ -4019,11 +4003,6 @@ _manta-cli__subcmd__help__subcmd__remove-nodes-from-groups_commands() {
     local commands; commands=()
     _describe -t commands 'manta-cli help remove-nodes-from-groups commands' commands "$@"
 }
-(( $+functions[_manta-cli__subcmd__help__subcmd__serve_commands] )) ||
-_manta-cli__subcmd__help__subcmd__serve_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta-cli help serve commands' commands "$@"
-}
 (( $+functions[_manta-cli__subcmd__help__subcmd__update_commands] )) ||
 _manta-cli__subcmd__help__subcmd__update_commands() {
     local commands; commands=(
@@ -4353,11 +4332,6 @@ _manta-cli__subcmd__power__subcmd__reset__subcmd__nodes_commands() {
 _manta-cli__subcmd__remove-nodes-from-groups_commands() {
     local commands; commands=()
     _describe -t commands 'manta-cli remove-nodes-from-groups commands' commands "$@"
-}
-(( $+functions[_manta-cli__subcmd__serve_commands] )) ||
-_manta-cli__subcmd__serve_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta-cli serve commands' commands "$@"
 }
 (( $+functions[_manta-cli__subcmd__update_commands] )) ||
 _manta-cli__subcmd__update_commands() {

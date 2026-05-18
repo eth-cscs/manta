@@ -35,7 +35,6 @@ set edit:completion:arg-completer[manta-cli] = {|@words|
             cand console 'Open an interactive console to a node or configuration session'
             cand add-nodes-to-groups 'Add nodes to one or more groups'
             cand remove-nodes-from-groups 'Remove nodes from one or more groups'
-            cand serve 'Run manta as an HTTP/HTTPS API server'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta-cli;config'= {
@@ -1260,14 +1259,6 @@ set edit:completion:arg-completer[manta-cli] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'manta-cli;serve'= {
-            cand --port 'Port to listen on'
-            cand --cert 'Path to TLS certificate PEM file (enables HTTPS)'
-            cand --key 'Path to TLS private key PEM file (required with --cert)'
-            cand --listen-address 'Address to bind to'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
         &'manta-cli;help'= {
             cand config 'Manage manta CLI configuration'
             cand get 'Query system resources'
@@ -1281,7 +1272,6 @@ set edit:completion:arg-completer[manta-cli] = {|@words|
             cand console 'Open an interactive console to a node or configuration session'
             cand add-nodes-to-groups 'Add nodes to one or more groups'
             cand remove-nodes-from-groups 'Remove nodes from one or more groups'
-            cand serve 'Run manta as an HTTP/HTTPS API server'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta-cli;help;config'= {
@@ -1508,8 +1498,6 @@ set edit:completion:arg-completer[manta-cli] = {|@words|
         &'manta-cli;help;add-nodes-to-groups'= {
         }
         &'manta-cli;help;remove-nodes-from-groups'= {
-        }
-        &'manta-cli;help;serve'= {
         }
         &'manta-cli;help;help'= {
         }

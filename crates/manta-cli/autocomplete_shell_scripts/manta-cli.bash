@@ -52,9 +52,6 @@ _manta-cli() {
             manta__cli,remove-nodes-from-groups)
                 cmd="manta__cli__subcmd__remove__subcmd__nodes__subcmd__from__subcmd__groups"
                 ;;
-            manta__cli,serve)
-                cmd="manta__cli__subcmd__serve"
-                ;;
             manta__cli,update)
                 cmd="manta__cli__subcmd__update"
                 ;;
@@ -508,9 +505,6 @@ _manta-cli() {
             manta__cli__subcmd__help,remove-nodes-from-groups)
                 cmd="manta__cli__subcmd__help__subcmd__remove__subcmd__nodes__subcmd__from__subcmd__groups"
                 ;;
-            manta__cli__subcmd__help,serve)
-                cmd="manta__cli__subcmd__help__subcmd__serve"
-                ;;
             manta__cli__subcmd__help,update)
                 cmd="manta__cli__subcmd__help__subcmd__update"
                 ;;
@@ -878,7 +872,7 @@ _manta-cli() {
 
     case "${cmd}" in
         manta__cli)
-            opts="-h -V --site --help --version config get add update apply delete migrate power log console add-nodes-to-groups remove-nodes-from-groups serve help"
+            opts="-h -V --site --help --version config get add update apply delete migrate power log console add-nodes-to-groups remove-nodes-from-groups help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3942,7 +3936,7 @@ _manta-cli() {
             return 0
             ;;
         manta__subcmd__cli__subcmd__help)
-            opts="config get add update apply delete migrate power log console add-nodes-to-groups remove-nodes-from-groups serve help"
+            opts="config get add update apply delete migrate power log console add-nodes-to-groups remove-nodes-from-groups help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5033,20 +5027,6 @@ _manta-cli() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__cli__subcmd__help__subcmd__serve)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__cli__subcmd__help__subcmd__update)
             opts="boot-parameters redfish-endpoint"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
@@ -6071,58 +6051,6 @@ _manta-cli() {
                     return 0
                     ;;
                 -n)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__cli__subcmd__serve)
-            opts="-h --port --cert --key --listen-address --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --port)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --cert)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --key)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --listen-address)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

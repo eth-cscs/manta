@@ -3,7 +3,7 @@ use clap_mangen::generate_to as generate_man_to;
 use std::fs;
 use std::io::Error;
 
-#[path = "src/cli/build.rs"]
+#[path = "src/cli/build/mod.rs"]
 mod cli;
 
 fn main() -> Result<(), Error> {
