@@ -3,8 +3,8 @@
 use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
-use crate::common::audit;
+use manta_shared::common::app_context::AppContext;
+use manta_shared::common::audit;
 use manta_shared::shared::params::boot_parameters::UpdateBootParametersParams;
 
 /// CLI adapter for `manta update boot-parameters`.

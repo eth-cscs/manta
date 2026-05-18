@@ -1,8 +1,8 @@
 //! Table and JSON renderers for IMS image output.
 
-use crate::common::DATETIME_FORMAT;
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
+use manta_shared::common::DATETIME_FORMAT;
 use manta_shared::shared::dto::Image;
 
 /// Print image details as a formatted table.

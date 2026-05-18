@@ -3,9 +3,9 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
-use crate::common::audit;
-use crate::common::kafka::Kafka;
+use manta_shared::common::app_context::AppContext;
+use manta_shared::common::audit;
+use manta_shared::common::kafka::Kafka;
 
 /// CLI adapter for `manta delete group`.
 pub async fn exec(

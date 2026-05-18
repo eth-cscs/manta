@@ -3,7 +3,7 @@
 use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 
 /// Back up cluster configuration to a local bundle.
 pub async fn exec(

@@ -4,10 +4,10 @@ use crate::cli::commands::{
   add_boot_parameters, add_group, add_hw_component_cluster,
   add_kernel_parameters, add_node, add_redfish_endpoint,
 };
-use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::cli::common::authentication::get_api_token;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 use std::path::PathBuf;
 
 /// Dispatch `manta add` subcommands (node, group,

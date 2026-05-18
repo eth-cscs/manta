@@ -4,10 +4,9 @@ use std::fmt;
 
 use anyhow::{Error, bail};
 
-use crate::{
-  cli::http_client::MantaClient,
-  common::{self, app_context::AppContext},
-};
+use crate::cli::common;
+use crate::cli::http_client::MantaClient;
+use manta_shared::common::app_context::AppContext;
 
 /// The three power operations supported by the backend.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::{app_context::AppContext, audit};
+use manta_shared::common::{app_context::AppContext, audit};
 
 /// Move nodes between HSM groups with validation.
 pub async fn exec(

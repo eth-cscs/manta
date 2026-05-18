@@ -8,8 +8,8 @@ use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
-use crate::common::app_context::InfraContext;
-use crate::common::authorization::get_groups_names_available;
+use crate::server::common::app_context::InfraContext;
+use crate::server::common::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::configuration::GetConfigurationParams;
 
 /// Fetch and filter CFS configurations from the backend.

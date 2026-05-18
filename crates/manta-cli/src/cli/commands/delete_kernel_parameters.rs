@@ -1,8 +1,8 @@
 //! Implements the `manta delete kernel-parameters` command.
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use anyhow::Error;
+use manta_shared::common::app_context::AppContext;
 
 /// Deletes the specified kernel parameters from a set of nodes.
 /// Reboots the nodes whose kernel params have changed.

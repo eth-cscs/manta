@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 
 /// Create a BOS session template and optionally boot.
 #[allow(clippy::too_many_arguments)]

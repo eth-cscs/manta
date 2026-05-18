@@ -11,7 +11,7 @@ use manta_backend_dispatcher::{
   error::Error, interfaces::authentication::AuthenticationTrait,
 };
 
-use crate::common::app_context::InfraContext;
+use crate::server::common::app_context::InfraContext;
 
 /// Exchange `username` + `password` for a CSM bearer token via the
 /// site's configured backend.

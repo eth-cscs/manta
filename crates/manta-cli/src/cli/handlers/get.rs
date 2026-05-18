@@ -6,9 +6,9 @@ use crate::cli::commands::{
   get_nodes, get_session, get_template,
 };
 use crate::cli::common::authentication::get_api_token;
-use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta get` subcommands (groups, session,
 /// configuration, template, images, cluster, hardware, nodes,

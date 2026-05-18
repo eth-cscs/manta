@@ -2,7 +2,7 @@
 
 use anyhow::Error;
 
-use crate::common::config::{read_config_toml, write_config_toml};
+use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Remove the default HSM group from configuration.
 pub fn exec() -> Result<(), Error> {

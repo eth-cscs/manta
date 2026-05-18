@@ -6,11 +6,11 @@
 //! directly.
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
-use crate::common::config::get_default_cache_path;
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
+use manta_shared::common::app_context::AppContext;
+use manta_shared::common::config::get_default_cache_path;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},

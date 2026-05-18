@@ -5,7 +5,7 @@ use std::fs;
 use anyhow::{Context, Error};
 use dialoguer::Select;
 
-use crate::common::config::get_default_cache_path;
+use manta_shared::common::config::get_default_cache_path;
 
 /// Remove cached authentication credentials.
 pub fn exec() -> Result<(), Error> {

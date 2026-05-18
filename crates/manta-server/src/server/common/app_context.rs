@@ -8,7 +8,7 @@
 //!
 //! `AppContext` is re-exported from `manta-shared` so handlers /
 //! services that want the CLI shape can keep using
-//! `crate::common::app_context::AppContext`.
+//! `crate::server::common::app_context::AppContext`.
 
 #[allow(unused_imports)]
 pub use manta_shared::common::app_context::AppContext;

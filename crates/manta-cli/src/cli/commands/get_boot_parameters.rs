@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::boot_parameters::GetBootParametersParams;
 
 /// Parse CLI arguments into typed [`GetBootParametersParams`].

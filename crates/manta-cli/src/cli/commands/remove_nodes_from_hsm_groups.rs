@@ -2,10 +2,9 @@
 
 use anyhow::{Error, bail};
 
-use crate::{
-  cli::http_client::MantaClient,
-  common::{self, app_context::AppContext, audit, kafka::Kafka},
-};
+use crate::cli::common;
+use crate::cli::http_client::MantaClient;
+use manta_shared::common::{app_context::AppContext, audit, kafka::Kafka};
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(

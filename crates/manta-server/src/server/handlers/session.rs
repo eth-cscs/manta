@@ -206,7 +206,7 @@ pub async fn create_session(
       .split(',')
       .map(|s| s.trim().to_string())
       .collect();
-    crate::common::authorization::validate_target_hsm_members(
+    crate::server::common::authorization::validate_target_hsm_members(
       infra.backend,
       &token,
       &xnames,

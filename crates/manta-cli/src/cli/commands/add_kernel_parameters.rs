@@ -1,8 +1,8 @@
 //! Implements the `manta add kernel-parameters` command.
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use anyhow::Error;
+use manta_shared::common::app_context::AppContext;
 
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.

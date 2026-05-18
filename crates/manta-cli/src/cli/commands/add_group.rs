@@ -2,8 +2,9 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::common;
 use crate::cli::http_client::MantaClient;
-use crate::common::{self, app_context::AppContext, audit};
+use manta_shared::common::{app_context::AppContext, audit};
 use manta_shared::shared::dto::Group;
 
 /// CLI adapter for `manta add group`.

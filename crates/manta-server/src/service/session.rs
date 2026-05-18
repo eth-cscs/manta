@@ -10,8 +10,8 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::cfs::component::Component;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
-use crate::common::app_context::InfraContext;
-use crate::common::authorization::get_groups_names_available;
+use crate::server::common::app_context::InfraContext;
+use crate::server::common::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::session::GetSessionParams;
 
 /// Fetch and filter CFS sessions from the backend.

@@ -3,9 +3,9 @@
 use crate::cli::commands;
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta config` subcommands (show, set, unset,
 /// gen-autocomplete).

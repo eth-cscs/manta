@@ -4,7 +4,7 @@ use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::group::GetGroupParams;
 
 /// Parse CLI arguments into typed [`GetGroupParams`].

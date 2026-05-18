@@ -10,10 +10,10 @@ use manta_backend_dispatcher::{
 };
 use std::collections::HashMap;
 
-use crate::common;
-use crate::common::app_context::InfraContext;
-use crate::common::authorization::validate_target_hsm_members;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common;
+use crate::server::common::app_context::InfraContext;
+use crate::server::common::authorization::validate_target_hsm_members;
 use crate::server::common::ims_ops::get_image_vec_related_cfs_configuration_name;
 pub use manta_shared::shared::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,

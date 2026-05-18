@@ -4,7 +4,7 @@ use anyhow::{Context, Error, bail};
 use toml_edit::value;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::config::{read_config_toml, write_config_toml};
+use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Sets an HSM group value in the manta configuration file.
 ///

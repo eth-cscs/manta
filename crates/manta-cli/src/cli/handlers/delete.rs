@@ -7,9 +7,9 @@ use crate::cli::commands::{
   delete_node, delete_redfish_endpoint,
 };
 use crate::cli::common::authentication::get_api_token;
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta delete` subcommands (group, node,
 /// session, configuration, image, boot-parameters,

@@ -2,7 +2,7 @@
 
 use anyhow::Error;
 
-use crate::common::config::{read_config_toml, write_config_toml};
+use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Remove the parent HSM group from configuration.
 ///

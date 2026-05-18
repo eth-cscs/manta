@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
 use manta_shared::shared::dto::CfsSessionGetResponse;
 
-use crate::common::DATETIME_FORMAT;
+use manta_shared::common::DATETIME_FORMAT;
 
 fn cfs_session_struct_to_vec(
   cfs_session: &CfsSessionGetResponse,

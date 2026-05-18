@@ -3,10 +3,11 @@
 use crate::cli::commands::{
   migrate_backup, migrate_nodes_between_hsm_groups, migrate_restore,
 };
+use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
-use crate::common::{app_context::AppContext, authentication::get_api_token};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta migrate` subcommands (nodes, vCluster backup/restore).
 pub async fn handle_migrate(

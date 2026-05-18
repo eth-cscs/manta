@@ -4,9 +4,9 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
-use crate::common;
-use crate::common::app_context::InfraContext;
-use crate::common::authorization::get_groups_names_available;
+use crate::server::common;
+use crate::server::common::app_context::InfraContext;
+use crate::server::common::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::group::GetGroupParams;
 
 /// Return the list of HSM group names this token can access.

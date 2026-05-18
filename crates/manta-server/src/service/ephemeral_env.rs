@@ -1,8 +1,8 @@
 use csm_rs::ims;
 use manta_backend_dispatcher::error::Error;
 
-use crate::common::app_context::InfraContext;
-use crate::common::jwt_ops;
+use crate::server::common::app_context::InfraContext;
+use manta_shared::common::jwt_ops;
 
 const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 

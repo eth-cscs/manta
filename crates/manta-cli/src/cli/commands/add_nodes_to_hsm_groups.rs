@@ -2,8 +2,9 @@
 
 use anyhow::{Error, bail};
 
+use crate::cli::common;
 use crate::cli::http_client::MantaClient;
-use crate::common::{self, app_context::AppContext, audit, kafka::Kafka};
+use manta_shared::common::{app_context::AppContext, audit, kafka::Kafka};
 
 /// Add/assign a list of xnames to an HSM group.
 pub async fn exec(

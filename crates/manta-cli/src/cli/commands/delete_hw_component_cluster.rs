@@ -2,7 +2,8 @@
 
 use anyhow::{Error, anyhow};
 
-use crate::{cli::http_client::MantaClient, common::app_context::AppContext};
+use crate::cli::http_client::MantaClient;
+use manta_shared::common::app_context::AppContext;
 
 /// Remove hardware components from a cluster group.
 pub async fn exec(

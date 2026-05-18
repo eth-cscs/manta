@@ -5,7 +5,6 @@
 //! library directly via `use manta_server::...`.
 
 pub mod backend_dispatcher;
-pub mod common;
 pub mod manta_backend_dispatcher;
 pub mod server;
 pub mod service;

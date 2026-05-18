@@ -4,9 +4,9 @@ use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
 };
 use crate::cli::common::authentication::get_api_token;
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch top-level misc commands (add-nodes-to-groups,
 /// remove-nodes-from-groups).

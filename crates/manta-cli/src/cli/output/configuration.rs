@@ -4,7 +4,7 @@ use chrono::{DateTime, Local};
 use comfy_table::Table;
 use manta_shared::shared::dto::CfsConfigurationResponse;
 
-use crate::common::DATETIME_FORMAT;
+use manta_shared::common::DATETIME_FORMAT;
 
 /// Print CFS configurations as a formatted table.
 pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {

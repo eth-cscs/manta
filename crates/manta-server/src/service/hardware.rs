@@ -9,8 +9,8 @@ use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInven
 use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
 
-use crate::common::app_context::InfraContext;
-use crate::common::authorization::{
+use crate::server::common::app_context::InfraContext;
+use crate::server::common::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
 use crate::server::common::node_ops;

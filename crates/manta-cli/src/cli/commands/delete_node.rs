@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 
 /// CLI adapter for `manta delete node`.
 pub async fn exec(

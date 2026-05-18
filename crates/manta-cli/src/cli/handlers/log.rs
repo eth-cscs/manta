@@ -2,9 +2,9 @@
 
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::session::GetSessionParams;
 
 /// Dispatch the `manta log` command to stream CFS session logs.

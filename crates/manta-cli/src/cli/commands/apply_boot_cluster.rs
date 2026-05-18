@@ -1,6 +1,7 @@
 //! Implements the `manta apply boot cluster` command.
 
-use crate::{cli::http_client::MantaClient, common::app_context::AppContext};
+use crate::cli::http_client::MantaClient;
+use manta_shared::common::app_context::AppContext;
 
 /// Apply a boot configuration to all nodes in a cluster.
 #[allow(clippy::too_many_arguments)]

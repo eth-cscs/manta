@@ -7,8 +7,8 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
 use std::collections::HashMap;
 
-use crate::common;
-use crate::common::app_context::InfraContext;
+use crate::server::common;
+use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
 
 /// Fetch kernel boot parameters for the specified nodes.

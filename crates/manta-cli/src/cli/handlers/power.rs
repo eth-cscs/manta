@@ -2,9 +2,9 @@
 
 use crate::cli::commands::power_common::{self, PowerAction};
 use crate::cli::common::authentication::get_api_token;
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta power` subcommands (on, off, reset —
 /// each targeting nodes or clusters).

@@ -5,7 +5,7 @@ use manta_shared::shared::dto::BootParameters;
 use serde_json::Value;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
+use manta_shared::common::app_context::AppContext;
 
 /// CLI adapter for `manta add boot-parameters`.
 pub async fn exec(

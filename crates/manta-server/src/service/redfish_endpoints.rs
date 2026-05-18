@@ -6,7 +6,7 @@ use manta_backend_dispatcher::types::hsm::inventory::{
   RedfishEndpoint, RedfishEndpointArray,
 };
 
-use crate::common::app_context::InfraContext;
+use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };

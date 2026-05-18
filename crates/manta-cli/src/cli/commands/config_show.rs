@@ -6,7 +6,7 @@ use anyhow::{Context, Error};
 use config::{Config, Value};
 
 use crate::cli::http_client::MantaClient;
-use crate::common::config::get_cli_config_file_path;
+use manta_shared::common::config::get_cli_config_file_path;
 
 /// Display the current manta configuration.
 pub async fn exec(

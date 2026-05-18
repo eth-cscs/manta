@@ -17,8 +17,8 @@ use tokio::sync::Semaphore;
 use super::{
   HW_COMPONENT_CONCURRENCY_LIMIT, HwClusterMode, NodeHwCountVec, pin_unpin,
 };
-use crate::common;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common;
 
 /// Compute a scarcity score for each hardware component type across all nodes.
 pub async fn calculate_hw_component_scarcity_scores(

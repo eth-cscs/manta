@@ -1,6 +1,7 @@
 //! Implements the `manta add hardware` command.
 
-use crate::{cli::http_client::MantaClient, common::app_context::AppContext};
+use crate::cli::http_client::MantaClient;
+use manta_shared::common::app_context::AppContext;
 
 /// Add hardware components to a cluster group (CLI entry point).
 pub async fn exec(

@@ -4,7 +4,7 @@ use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::cli::http_client::MantaClient;
-use crate::common::{app_context::AppContext, audit};
+use manta_shared::common::{app_context::AppContext, audit};
 
 /// CLI adapter for `manta add node`.
 pub async fn exec(

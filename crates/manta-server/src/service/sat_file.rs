@@ -5,7 +5,7 @@ use manta_backend_dispatcher::{
   interfaces::{apply_sat_file::SatTrait, hsm::group::GroupTrait},
 };
 
-use crate::common::app_context::InfraContext;
+use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::sat_file::ApplySatFileParams;
 
 /// Render, filter, and apply a SAT file via the backend.

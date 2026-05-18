@@ -2,7 +2,8 @@
 
 use anyhow::{Error, bail};
 
-use crate::common::{self, app_context::AppContext};
+use crate::cli::common;
+use manta_shared::common::app_context::AppContext;
 
 use crate::cli::http_client::MantaClient;
 

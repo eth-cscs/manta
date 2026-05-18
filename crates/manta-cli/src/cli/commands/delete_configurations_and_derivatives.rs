@@ -1,8 +1,8 @@
 //! Implements the `manta delete configurations` command.
 
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use chrono::NaiveDateTime;
+use manta_shared::common::app_context::AppContext;
 
 /// Delete CFS configurations and their derived artifacts.
 pub async fn exec(

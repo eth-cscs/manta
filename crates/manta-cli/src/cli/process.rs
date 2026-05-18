@@ -1,8 +1,8 @@
 //! Top-level CLI dispatch: matches the parsed command tree and calls handlers.
 
-use crate::common::app_context::AppContext;
 use anyhow::Error;
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 use crate::cli::handlers::{
   add, apply, config, console, delete, get, log, migrate, misc, power, update,

@@ -3,9 +3,9 @@
 use crate::cli::commands::console_common;
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::http_client::MantaClient;
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 use std::io::IsTerminal;
 
 /// Dispatch `manta console` subcommands (node, target-ansible).

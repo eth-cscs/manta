@@ -10,8 +10,8 @@ use manta_backend_dispatcher::types::{
 };
 use std::{fs::File, io::BufReader, path::PathBuf};
 
-use crate::common;
-use crate::common::app_context::InfraContext;
+use crate::server::common;
+use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::node::GetNodesParams;
 
 /// Fetch node details for the given xname expression.

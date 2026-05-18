@@ -4,15 +4,14 @@
 //! HTTPS server named by `cli.toml`'s `manta_server_url`.
 
 mod cli;
-mod common;
 
-use common::{
+use manta_shared::common::{
   app_context::AppContext, config::types::CliConfiguration, kafka::Kafka,
 };
 
 use clap::ArgMatches;
 
-use crate::common::log_ops;
+use manta_shared::common::log_ops;
 
 /// Process entry point. Delegates to `run` and prints any error with
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
@@ -29,7 +28,7 @@ fn main() {
 fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::cli::build::build_cli().get_matches();
 
-  let settings = common::config::get_cli_configuration()
+  let settings = manta_shared::common::config::get_cli_configuration()
     .map_err(|e| format!("Could not read CLI configuration file: {}", e))?;
   let configuration: CliConfiguration = settings
     .clone()

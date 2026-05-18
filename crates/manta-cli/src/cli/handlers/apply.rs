@@ -2,9 +2,9 @@
 
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::{commands, http_client::MantaClient};
-use crate::common::app_context::AppContext;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
+use manta_shared::common::app_context::AppContext;
 
 /// Dispatch `manta apply` subcommands (hardware, session,
 /// sat-file, boot, template, ephemeral-env,
