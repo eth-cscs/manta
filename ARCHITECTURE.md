@@ -19,15 +19,16 @@ manta/
 
 Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends on the other, so each can be built and shipped on its own (`cargo build -p manta-cli` / `cargo build -p manta-server`).
 
-`manta-shared` exposes three top-level modules:
+`manta-shared` exposes two top-level modules:
 
 | Module | Used by | Contents |
 |--------|---------|----------|
-| `shared` | both bins | Wire types (`params/`, `output/`) and pure helpers (`cluster_status`, `node_summary`, …) |
-| `common` | both bins | Config loader, JWT ops, Kafka audit producer, authorization helpers, logging |
-| `backend_dispatcher` + `manta_backend_dispatcher` | both bins | `StaticBackendDispatcher` enum and trait `impl`s routing to `csm-rs`/`ochami-rs` |
+| `shared` | both bins | Wire types (`params/`, `dto`) and pure helpers (`cluster_status`, `sat_file`, …) |
+| `common` | both bins | Config loader, JWT ops, Kafka audit producer, `MantaError`, logging, `AppContext` |
 
-`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `authentication`, `hooks`, `user_interaction`); `manta-server` keeps its server-only common under `crates/manta-server/src/server/common/` (e.g. `node_ops`, `vault`, `boot_parameters`).
+The backend bridge (`StaticBackendDispatcher` enum and the 18 trait-impl files routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/`, `manta_backend_dispatcher.rs`, `server/common/authorization.rs`). The CLI never reaches them.
+
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `authentication`, `hooks`, `user_interaction`); `manta-server` keeps its server-only common under `crates/manta-server/src/server/common/` (e.g. `node_ops`, `vault`, `boot_parameters`, `authorization`).
 
 ---
 
@@ -38,17 +39,19 @@ User
   │
   ├─ CLI mode (manta-cli binary)
   │    crates/manta-cli/src/cli/          — argument parsing, output tables, user prompts
-  │      └─ crates/manta-shared/          — common + shared helpers + backend dispatcher
-  │           └─ csm-rs / ochami-rs       — HTTP clients for CSM / OpenCHAMI
+  │      └─ crates/manta-shared/          — wire types, AppContext, MantaError, config, audit
+  │           └─ manta-backend-dispatcher — lightweight types/traits crate (transitive only)
+  │      └─ MantaClient                   — HTTP client; all backend calls go via manta-server
   │
   └─ HTTP server mode (manta-server binary)
-       crates/manta-server/src/server/    — axum HTTPS server, JWT auth middleware
-         └─ crates/manta-server/src/service/ — business logic, orchestration, filtering
-              └─ crates/manta-shared/     — common + shared helpers + backend dispatcher
-                   └─ csm-rs / ochami-rs
+       crates/manta-server/src/server/      — axum HTTPS server, JWT auth middleware
+         ├─ crates/manta-server/src/service/        — business logic, orchestration, filtering
+         ├─ crates/manta-server/src/backend_dispatcher/ — trait impls on StaticBackendDispatcher
+         │    └─ csm-rs / ochami-rs                 — HTTP clients for CSM / OpenCHAMI
+         └─ crates/manta-shared/                    — same shared library as the CLI
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer or axum; the server does not link the CLI command tree.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge.
 
 ---
 
@@ -60,8 +63,8 @@ Each binary has its own `main.rs`:
 
 Startup runs in two phases:
 
-1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/config.toml`. The SOCKS5 proxy URL is read from `site.socks5_proxy` in the config.
-2. **Multi-threaded phase** — start the tokio runtime, construct a `StaticBackendDispatcher` (passing `socks5_proxy`), and run the requested CLI command.
+1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/cli.toml` into a `CliConfiguration`. If the optional top-level `socks5_proxy` is set, export `SOCKS5` so `reqwest` picks it up for connections to manta-server.
+2. **Multi-threaded phase** — start the tokio runtime, build an `AppContext` (site name, manta-server URL, settings, HSM filter, Kafka audit), and dispatch the requested CLI command. The CLI never instantiates `StaticBackendDispatcher` — every backend operation goes through `MantaClient` HTTPS calls to manta-server.
 
 ### `crates/manta-server/src/main.rs`
 
@@ -94,11 +97,11 @@ Each module receives an `&InfraContext<'_>` plus a bearer token and typed parame
 - Uses `manta_backend_dispatcher::error::Error` (not `anyhow`).
 - Has no knowledge of terminal output or HTTP request/response shapes.
 
-### `crates/manta-shared/src/backend_dispatcher/`
+### `crates/manta-server/src/backend_dispatcher/`
 
-Trait implementation glue. Implements all `manta-backend-dispatcher` traits (`CfsTrait`, `GroupTrait`, `BootParametersTrait`, etc.) on `StaticBackendDispatcher` using a `dispatch!` macro. The macro expands to a `match` that routes each method call to either the `Csm` or `OCHAMI` variant.
+Trait implementation glue. Implements all `manta-backend-dispatcher` traits (`CfsTrait`, `GroupTrait`, `BootParametersTrait`, etc.) on `StaticBackendDispatcher` using a `dispatch!` macro. The macro expands to a `match` that routes each method call to either the `Csm` or `OCHAMI` variant. Server-only — the CLI never reaches this code.
 
-### `crates/manta-shared/src/manta_backend_dispatcher.rs`
+### `crates/manta-server/src/manta_backend_dispatcher.rs`
 
 Defines the `StaticBackendDispatcher` enum:
 
@@ -117,15 +120,16 @@ Shared utilities used by both CLI and server:
 
 | Module | Purpose |
 |--------|---------|
-| `config/` | Load and validate `~/.config/manta/config.toml` |
+| `config/` | Load and validate `cli.toml` / `server.toml` |
+| `error` | `MantaError` enum — error type for pure helpers (no backend-dispatcher dep) |
 | `jwt_ops` | Decode and validate JWT bearer tokens |
 | `kafka` | Fire-and-forget audit event producer |
 | `log_ops` | Logger initialisation |
-| `authorization` | HSM-group membership checks |
-| `app_context` | `InfraContext` + `AppContext` types |
+| `app_context` | `AppContext` (CLI-only, flat 5-field struct) |
 | `audit` | Audit trait + log writer |
+| `check_network_connectivity` | 3-second TCP reachability probe to the backend base URL |
 
-CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`) live under `crates/manta-server/src/server/common/`.
+CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`authorization`, `node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`) and `InfraContext` itself live under `crates/manta-server/src/{server,common}/`.
 
 ### `crates/manta-server/src/server/`
 
@@ -135,7 +139,7 @@ Axum HTTPS server. Key files:
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
 | `routes.rs` | Registers ~47 REST endpoints + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
-| `handlers.rs` | Per-endpoint functions: extract bearer token, deserialise params, call service, serialise response |
+| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
 `ServerState` (wrapped in `Arc`) owns all infrastructure: backend dispatcher, TLS certificates, optional Vault/k8s URLs.
@@ -146,11 +150,11 @@ Axum HTTPS server. Key files:
 
 | Type | Used by | Contents |
 |------|---------|---------|
-| `InfraContext<'_>` | Service layer | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
-| `AppContext` | CLI layer | Composes `InfraContext` + `CliConfig` (active HSM group, Kafka audit config, raw settings, `manta_server_url`) |
+| `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/common/app_context.rs`) | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
+| `AppContext<'_>` | CLI layer (in `manta-shared`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `kafka_audit_opt`, `settings` |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
-`manta_server_url` lives in `CliConfig`, not `InfraContext`, because it is a CLI routing decision (proxy requests through the manta HTTP server instead of calling the backend directly). It is not needed by the service layer or the HTTP server.
+`manta_server_url` is a CLI routing decision — proxy requests through the manta HTTP server instead of calling the backend directly. It is not needed by the service layer or the HTTP server.
 
 ---
 
@@ -163,37 +167,43 @@ Manta reads two TOML files, one per binary:
 | `manta-cli` | `~/.config/manta/cli.toml` | `MANTA_CLI_CONFIG` |
 | `manta-server` | `~/.config/manta/server.toml` | `MANTA_SERVER_CONFIG` |
 
-Both schemas share the `[sites.X]` block (backend, URLs, cert paths) but each carries its own non-shared fields:
+The two schemas are disjoint:
 
 | Schema | Fields |
 |---|---|
-| `CliConfiguration` | `log`, `audit_file`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, `auditor`, `sites` |
-| `ServerConfiguration` | `log`, `audit_file`, `[server]` (TLS, listen, console timeout), `auditor`, `sites` |
+| `CliConfiguration` | `log`, `audit_file`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, optional top-level `socks5_proxy`, `auditor`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. |
+| `ServerConfiguration` | `log`, `audit_file`, `[server]` (TLS, listen, console timeout, auth rate limit), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional SOCKS5 proxy, optional `[sites.X.k8s]` block). |
 
-The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header.
+The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 
-Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `Error::NotFound` if the file is missing; the error message includes a minimal sample and (if `~/.config/manta/config.toml` is detected on disk) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
+Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `MantaError::NotFound` if the file is missing; the error message includes a minimal sample and (if a legacy unified `~/.config/manta/config.toml` is detected on disk) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
 
 ## Backend selection
 
-```toml
-# In cli.toml: pick the active site
-site = "cscs_prod"
+CLI side — pick the active site (just a header value):
 
+```toml
+# cli.toml
+site             = "cscs_prod"   # X-Manta-Site header on every request
+manta_server_url = "https://manta-server.cscs.ch:8443"
+```
+
+Server side — every entry in `[sites.*]` becomes a `StaticBackendDispatcher` at startup; client requests select between them via `X-Manta-Site`:
+
+```toml
+# server.toml
 [sites.cscs_prod]
-backend = "csm"             # or "ochami"
-shasta_base_url = "https://api.cscs.ch"
+backend           = "csm"        # or "ochami"
+shasta_base_url   = "https://api.cscs.ch"
 root_ca_cert_file = "cscs_root_cert.pem"
 
 [sites.local_ochami]
-backend = "ochami"
-shasta_base_url = "https://foobar.openchami.cluster:8443"
+backend           = "ochami"
+shasta_base_url   = "https://foobar.openchami.cluster:8443"
 root_ca_cert_file = "ochami_root_cert.pem"
 ```
 
-The active site is chosen by `site = "<name>"` at the top level of `cli.toml`, overridable per-invocation with `--site <name>`. `StaticBackendDispatcher::new` reads the `backend` string and constructs `CSM(...)` or `OCHAMI(...)`.
-
-For the HTTP server, every site in `server.toml`'s `[sites.*]` table gets its own `StaticBackendDispatcher` at startup; client requests select between them via `X-Manta-Site`.
+`StaticBackendDispatcher::new` reads the `backend` string and constructs `CSM(...)` or `OCHAMI(...)`.
 
 ---
 
@@ -203,7 +213,7 @@ For the HTTP server, every site in `server.toml`'s `[sites.*]` table gets its ow
 |--------|-----|-------------|
 | Entry point | `cli::process::process_cli` | `server::start_server` |
 | Auth source | Environment variable / Vault / stdin | `Authorization: Bearer` header, per request |
-| Context type | `AppContext` (owns `CliConfig`) | `Arc<ServerState>` → `infra_context()` |
+| Context type | `AppContext` (flat 5-field struct in manta-shared) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
 | Streaming | stdout | SSE (`/sessions/{name}/logs`) or WebSocket (`/nodes/{xname}/console`) |
@@ -213,12 +223,13 @@ For the HTTP server, every site in `server.toml`'s `[sites.*]` table gets its ow
 
 ## Error handling conventions
 
-Two error types are used depending on context (enforced by CI):
+Three error types, partitioned by layer (the backend-dispatcher rule is enforced by CI):
 
-- **`manta_backend_dispatcher::error::Error`** — used everywhere in `manta-shared` and `manta-server` (specifically `crates/manta-server/src/{server,service}/` and `crates/manta-shared/src/{common,manta_backend_dispatcher.rs}`).
+- **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,manta_backend_dispatcher.rs}`).
+- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file parser, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
-The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers.rs`.
+The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.
 
 ---
 
@@ -226,11 +237,11 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 
 `manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v1/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`.
 
-After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. The CLI's `AppContext::infra` is a one-field `CliInfra { site_name }` — kept minimal because the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
+After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 5-field struct; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
 Server-side authorization (target HSM group access + xname membership) is enforced by `service::group::validate_hsm_group_access` and `common::authorization::validate_target_hsm_members`, called from every privileged handler. Phase 7 closed five pre-existing gaps where these checks were missing: `create_session`, `add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, and `migrate_nodes`.
 
-The type coupling that survived Phase 7 has since been cleaned up: `csm-rs`, `ochami-rs`, and `manta-backend-dispatcher` are no longer direct deps of `manta-cli`. They appear only transitively through `manta-shared`, which re-exports `NodeDetails` and `BootParameters` from its `shared::dto` module. CLI helpers (`local_git_repo`, `hooks`, `delete_hw_component_cluster`) that used `manta_backend_dispatcher::error::Error` now use `anyhow::Error` per the [Error handling conventions](#error-handling-conventions).
+The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::shared::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in six pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
 
 This means manta-server is a **single point of compromise** for everyone using it: if it is owned, the attacker gets a chokepoint that sees every auth attempt and holds whatever service-account scoped tokens are configured for the backend. Mitigations split between code and ops:
 
@@ -271,13 +282,22 @@ This means manta-server is a **single point of compromise** for everyone using i
 
 ## SOCKS5 proxy
 
-The SOCKS5 proxy URL is read from `site.socks5_proxy` in `config.toml` and threaded explicitly through the entire call stack — there is no global environment variable or implicit state.
+SOCKS5 is configured separately on each side because the CLI talks to *manta-server* (one proxy at most) while the server talks to multiple backends (one proxy per site).
 
-The propagation path:
+CLI side — single optional top-level field in `cli.toml`:
 
 ```
-config.toml  socks5_proxy
-  └─ main.rs             reads site_details_value.socks5_proxy.as_deref()
+cli.toml   socks5_proxy
+  └─ main.rs                   exports SOCKS5 env var if set
+       └─ reqwest in MantaClient picks up SOCKS5 automatically for the
+          connection to manta_server_url
+```
+
+Server side — per-site, threaded explicitly through the call stack (no env var, no implicit state):
+
+```
+server.toml  [sites.X].socks5_proxy
+  └─ main.rs                  reads site.socks5_proxy.clone()
        ├─ StaticBackendDispatcher::new(…, socks5_proxy)
        │    ├─ Csm::new(…, socks5_proxy)   — stored as Option<String>
        │    └─ Ochami::new(…, socks5_proxy) — stored as Option<String>
@@ -286,9 +306,8 @@ config.toml  socks5_proxy
        ├─ InfraContext { socks5_proxy, … }  — borrowed for the request lifetime
        │    (service functions that call csm-rs directly — e.g. get_node_details —
        │     pass infra.socks5_proxy to the http_client function)
-       └─ ServerState { socks5_proxy: Option<String>, … }
-            (service functions called from server handlers receive socks5_proxy
-             via InfraContext, built from the matching SiteBackend in ServerState)
+       └─ SiteBackend { socks5_proxy: Option<String>, … } inside ServerState
+            (one entry per configured site)
 ```
 
 Every function in csm-rs and ochami-rs that builds a `reqwest::Client` accepts `socks5_proxy: Option<&str>` as an explicit parameter placed immediately after `root_cert: &[u8]`. The client is built as:
@@ -302,11 +321,11 @@ let client = match socks5_proxy {
 
 ## Audit trail
 
-All mutating CLI operations can emit a Kafka message. Configuration lives under `[auditor]` in `config.toml`. The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made in the service layer via `common::kafka`.
+Both binaries can emit Kafka audit events. Configuration lives under `[auditor]` in their respective config files (`cli.toml` for CLI-originated events, `server.toml` for server-side events such as `/api/v1/auth/*`). The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
 
 ## Hooks
 
-`config.toml` supports pre/post hooks — arbitrary shell commands run before or after certain operations (e.g. `apply sat-file --pre-hook`, `--post-hook`). `common::hooks::run_hook` executes them via a subshell and returns `Error::HookError` if the exit code is non-zero.
+The CLI's `apply sat-file` supports optional `--pre-hook` / `--post-hook` flags pointing at arbitrary shell commands run before / after the operation. `cli::common::hooks::run_hook` executes them via a subshell and returns `anyhow::Error` if the exit code is non-zero.
 
 ---
 
@@ -316,5 +335,5 @@ All mutating CLI operations can emit a Kafka message. Configuration lives under 
 2. Register it in `crates/manta-cli/src/cli/commands/mod.rs` and add the subcommand variant to the appropriate clap enum in `crates/manta-cli/src/cli/build.rs`.
 3. Add the dispatch arm in `crates/manta-cli/src/cli/process/`.
 4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `crates/manta-server/src/service/<module>.rs`.
-5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm in `crates/manta-shared/src/backend_dispatcher/`.
-6. If the command should also be reachable via the HTTP API, add a handler in `crates/manta-server/src/server/handlers.rs` (with a `#[utoipa::path(...)]` annotation), register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.
+5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm in `crates/manta-server/src/backend_dispatcher/`.
+6. If the command should also be reachable via the HTTP API, add a handler in the appropriate `crates/manta-server/src/server/handlers/<resource>.rs` (with a `#[utoipa::path(...)]` annotation; `handlers/mod.rs` re-exports the resource module's public items, so the handler is automatically reachable as `handlers::<fn_name>`). Register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.

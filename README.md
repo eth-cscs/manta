@@ -160,22 +160,20 @@ The two files share the `[sites.*]` definitions (typically duplicated, since the
 log = "info"
 audit_file = "/var/log/manta/cli-audit.log"
 
-site = "alps"                    # active site for this CLI process
+site             = "alps"                                # active site (X-Manta-Site header)
 parent_hsm_group = "nodes_free"
-manta_server_url = "https://manta-server.cscs.ch:8443"
+manta_server_url = "https://manta-server.cscs.ch:8443"   # required
+socks5_proxy     = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]
 topic   = "manta-cli-audit"
-
-[sites.alps]
-backend           = "csm"
-shasta_base_url   = "https://api.alps.cscs.ch"
-root_ca_cert_file = "alps_root_cert.pem"
-socks5_proxy      = "socks5h://127.0.0.1:1080"
-vault_base_url    = "https://vault.cscs.ch:8200"
-vault_secret_path = "secret/shasta"
 ```
+
+The CLI has no `[sites]` section: it only knows about the one
+`manta-server` it talks to. Per-site backend connection details
+(URLs, TLS certs, k8s, vault, per-site SOCKS proxies) live entirely
+in `server.toml`.
 
 **`~/.config/manta/server.toml`**
 
@@ -199,9 +197,18 @@ topic   = "manta-server-audit"
 backend           = "csm"
 shasta_base_url   = "https://api.alps.cscs.ch"
 root_ca_cert_file = "/etc/manta/certs/alps_root_cert.pem"
-vault_base_url    = "https://vault.cscs.ch:8200"
-vault_secret_path = "secret/shasta"
+socks5_proxy      = "socks5h://127.0.0.1:1080"   # optional: per-site backend proxy
+
+[sites.alps.k8s]
+api_url = "https://10.0.0.10:6443"
+
+[sites.alps.k8s.authentication.vault]
+base_url = "https://vault.cscs.ch:8200"          # also used by sat-file/session handlers
 ```
+
+The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
+
+See `cli.toml.example` and `server.toml.example` at the workspace root for fully-commented templates.
 
 **Migrating from the pre-split `config.toml`**
 

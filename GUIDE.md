@@ -434,20 +434,31 @@ manta get configurations --pattern "old-config-*"
 
 ## 11. Working with multiple sites
 
-Add multiple site sections to `~/.config/manta/config.toml`:
+Sites are configured on **the server**. The CLI just picks which one
+to address via the `X-Manta-Site` header (driven by its `site = "..."`
+setting, overridable with `--site`).
+
+Add the per-site backend connection details to
+`~/.config/manta/server.toml`:
 
 ```toml
-site = "cscs_prod"
-
 [sites.cscs_prod]
-backend = "csm"
-shasta_base_url = "https://api.cscs.ch"
-root_ca_cert_file = "~/.config/manta/cscs_root_cert.pem"
+backend           = "csm"
+shasta_base_url   = "https://api.cscs.ch"
+root_ca_cert_file = "/etc/manta/certs/cscs_root_cert.pem"
 
 [sites.local_test]
-backend = "ochami"
-shasta_base_url = "https://foobar.openchami.cluster:8443"
-root_ca_cert_file = "~/.config/manta/ochami_root_cert.pem"
+backend           = "ochami"
+shasta_base_url   = "https://foobar.openchami.cluster:8443"
+root_ca_cert_file = "/etc/manta/certs/ochami_root_cert.pem"
+```
+
+In the CLI (`~/.config/manta/cli.toml`), just point at the
+`manta-server` and name the active site:
+
+```toml
+site             = "cscs_prod"
+manta_server_url = "https://manta-server.example.com:8443"
 ```
 
 **Switch the default site:**

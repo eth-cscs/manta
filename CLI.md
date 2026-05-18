@@ -31,7 +31,7 @@ See [API.md](API.md) for the full HTTP endpoint reference.
 
 ## config
 
-Manage the local manta configuration file (`~/.config/manta/config.toml`).
+Manage the local manta configuration file (`~/.config/manta/cli.toml`).
 
 ### config show
 

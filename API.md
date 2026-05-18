@@ -16,7 +16,7 @@ Every endpoint requires two headers:
 
 | Header | Description |
 |--------|-------------|
-| `X-Manta-Site` | Site name as configured in `config.toml` (e.g. `cscs_prod`) |
+| `X-Manta-Site` | Site name as configured in `server.toml` `[sites.X]` (e.g. `cscs_prod`) |
 | `Authorization` | `Bearer <shasta-token>` — **not** required for `/health` |
 
 ```
@@ -1178,7 +1178,7 @@ Serves the Swagger UI, pre-configured to load the spec from `/openapi.json`. Doe
 
 ## Server configuration requirements
 
-Some endpoints require optional fields to be set in the server configuration (`~/.config/manta/config.toml`):
+Some endpoints require optional fields to be set in the server configuration (`~/.config/manta/server.toml`):
 
 | Config field | Required by |
 |---|---|

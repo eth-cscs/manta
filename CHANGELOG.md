@@ -32,6 +32,17 @@ All notable changes to this project will be documented in this file.
 ### Refactor (post-Phase-7 — wire-type decoupling)
 
 - Dropped `csm-rs`, `ochami-rs`, and `manta-backend-dispatcher` from `manta-cli`'s direct deps (they now appear only transitively through `manta-shared`). `manta_shared::shared::dto` gains a re-export of `csm_rs::node::types::NodeDetails`; the two CLI files that imported it (`http_client.rs`, `output/node.rs`) now go through the shared path. `kernel_parameters_ops.rs` switches its `BootParameters` import to the existing `manta_shared::shared::dto` re-export. Three CLI helpers (`local_git_repo`, `hooks`, `delete_hw_component_cluster`) migrate from `manta_backend_dispatcher::error::Error` to `anyhow::Error` per CLAUDE.md's "CLI uses anyhow" rule. `manta-cli`'s `[build-dependencies]` also sheds `manta-backend-dispatcher`, `strum`, and `strum_macros` which the build script doesn't use.
+- Moved the backend bridge (`backend_dispatcher/` 18 trait-impl files, `manta_backend_dispatcher.rs`'s `StaticBackendDispatcher` enum, and `common/authorization.rs`) out of `manta-shared` into `crates/manta-server/src/`. `InfraContext` follows since it references `&StaticBackendDispatcher`. `manta-server/src/common.rs` becomes `common/mod.rs` to host the server-local `app_context`. `ochami-rs` is removed from `manta-shared/Cargo.toml`; the CLI no longer pulls it transitively.
+- Mirrored `NodeDetails` locally in `manta-shared::shared::dto` (11-field struct, identical derives, no `#[serde(rename)]` — JSON wire shape is byte-identical). `csm-rs` is removed from `manta-shared/Cargo.toml`; the CLI no longer pulls it transitively. No in-process conversion is needed because the type boundary is HTTP — the server returns the csm-rs type, JSON serializes it, and the CLI deserializes into the mirror.
+- New `manta-shared::common::error::MantaError` enum replaces `manta_backend_dispatcher::error::Error` in six pure helpers (audit, jwt_ops, kafka, config loader, sat-file parser, network probe). `crates/manta-server/src/wire_conv.rs` exposes a free function `to_backend(MantaError) -> BackendError` used at the two server call sites that propagate these errors via `?` (orphan rule blocks an `impl From<MantaError> for BackendError`). Workspace gains `thiserror = "2.0.12"`.
+- CLI's transitive backend deps after these three steps: only `manta-backend-dispatcher` (lightweight types/traits crate, no csm-rs/ochami-rs/heavy deps) remains. Mirroring its 7 remaining `dto.rs` re-exports to eliminate it entirely is deferred — trade-off is ~700 LOC of mirror definitions plus perpetual maintenance.
+
+### Refactor (architecture cleanup)
+
+- Split `crates/manta-server/src/server/handlers.rs` (3316 LOC) into a parent `handlers/mod.rs` plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External API preserved via `pub use <module>::*` re-exports; `routes.rs` and `api_doc.rs` reference `handlers::X` unchanged.
+- Flattened `AppContext`: dropped the `CliInfra` and `CliConfig` wrapper sub-structs. All five fields (`site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `kafka_audit_opt`, `settings`) now sit directly on `AppContext`. Rewrote 125 access sites across 51 CLI files (`ctx.infra.X` → `ctx.X`, `ctx.cli.X` → `ctx.X`).
+- Slimmed `CliConfiguration`: dropped `sites: HashMap<String, Site>` (the CLI never read it after Phase 7), added a top-level optional `socks5_proxy` used to reach `manta_server_url`. Per-site backend proxying remains the server's concern.
+- Dropped `Site.vault_base_url` and `Site.vault_secret_path` — both fields were dead schema. The runtime Vault URL is derived at startup from `[sites.X.k8s.authentication.vault] base_url` (`server/main.rs`); the vault secret path is computed from a hard-coded prefix and the site name (`server/common/vault.rs`).
 
 ### Refactor
 
@@ -52,6 +63,7 @@ All notable changes to this project will be documented in this file.
 - Update ARCHITECTURE.md: add `hw_cluster` and `ephemeral_env` to service module list, clarify `manta_server_url` placement in `CliConfig`, correct SOCKS5 propagation description, update server `mod.rs` entry to mention the ready log
 - Update CLAUDE.md: tighten the boundary rule to state that handlers must only call service functions, never CLI functions
 - Update API.md: correct default port from 8443 to 8080, document `X-Manta-Site` as a required header on every endpoint, fix curl/wscat examples to use the header instead of a `?site=` query parameter
+- Replaced the tracked workspace-root `config.toml` (legacy pre-split unified schema, didn't parse against either current schema) with two example files at the workspace root: `cli.toml.example` and `server.toml.example`. Both verified to round-trip through the live schemas.
 
 ## [1.64.3] - 2026-05-08
 

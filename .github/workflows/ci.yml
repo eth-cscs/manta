@@ -31,8 +31,9 @@ jobs:
         if grep -rn 'use anyhow' \
             crates/manta-server/src/server/ \
             crates/manta-server/src/service/ \
+            crates/manta-server/src/backend_dispatcher/ \
+            crates/manta-server/src/manta_backend_dispatcher.rs \
             crates/manta-shared/src/common/ \
-            crates/manta-shared/src/manta_backend_dispatcher.rs \
             2>/dev/null; then
           echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
           exit 1
