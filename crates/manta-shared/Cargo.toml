@@ -14,10 +14,9 @@ path = "src/lib.rs"
 [dependencies]
 # Backend traits and shared types (Group, NodeSummary, K8sDetails, etc.)
 # plus the structured `Error` type used by helpers throughout this crate.
-# csm-rs is still needed for the NodeDetails re-export in shared/dto.rs
-# (mirroring is the next decoupling step). ochami-rs is server-only now.
+# csm-rs / ochami-rs are server-only: they implement the backend traits
+# and are not needed by manta-cli.
 manta-backend-dispatcher = { workspace = true }
-csm-rs                   = { workspace = true }
 
 serde        = { workspace = true }
 serde_json   = { workspace = true }

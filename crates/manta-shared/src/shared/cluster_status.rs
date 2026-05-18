@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use csm_rs::node::types::NodeDetails;
+use crate::shared::dto::NodeDetails;
 use manta_backend_dispatcher::types::NodeSummary;
 
 /// Divisor to convert MiB to GiB.
