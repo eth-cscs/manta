@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.3] - 2026-05-18
+## [2.0.0-beta.4] - 2026-05-18
 
 ### Documentation
 
@@ -667,6 +667,40 @@ All notable changes to this project will be documented in this file.
 - Extract manta-server as a separate binary crate
 - Extract manta-server as a separate binary crate
 - Extract manta-server as a separate binary crate
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
+- Per-crate license-file declarations to fix cargo-dist asset copy
 
 ### Fox
 
