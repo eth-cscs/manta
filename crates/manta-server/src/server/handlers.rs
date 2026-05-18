@@ -117,6 +117,54 @@ pub struct SiteHeader {
   pub x_manta_site: String,
 }
 
+// ---------------------------------------------------------------------------
+// RequestCtx — bundles the State + BearerToken + SiteName extractors that
+// every authenticated handler opens with. Plus `infra()` for the
+// `state.infra_context(&site_name).map_err(to_handler_error)?` line that
+// follows. Each handler shrinks by 3-4 lines.
+// ---------------------------------------------------------------------------
+
+/// Bundled extractor for `State<Arc<ServerState>>` + `BearerToken` +
+/// `SiteName`. Use it in handler signatures instead of the three
+/// individual extractors when all three are needed (the typical case).
+///
+/// The unauthenticated `/auth/*` handlers and the health endpoint
+/// still use explicit extractors — they don't need a Bearer token.
+pub struct RequestCtx {
+  pub state: Arc<ServerState>,
+  pub token: String,
+  pub site_name: String,
+}
+
+impl FromRequestParts<Arc<ServerState>> for RequestCtx {
+  type Rejection = (StatusCode, Json<ErrorResponse>);
+
+  async fn from_request_parts(
+    parts: &mut Parts,
+    state: &Arc<ServerState>,
+  ) -> Result<Self, Self::Rejection> {
+    let BearerToken(token) =
+      BearerToken::from_request_parts(parts, state).await?;
+    let SiteName(site_name) =
+      SiteName::from_request_parts(parts, state).await?;
+    Ok(Self {
+      state: Arc::clone(state),
+      token,
+      site_name,
+    })
+  }
+}
+
+impl RequestCtx {
+  /// Consume into `(state, token, site_name)` for the
+  /// `let (state, token, site_name) = ctx.into_parts();` opening every
+  /// authenticated handler uses. Tuple form keeps `rustfmt` from
+  /// expanding the destructure across five lines.
+  pub fn into_parts(self) -> (Arc<ServerState>, String, String) {
+    (self.state, self.token, self.site_name)
+  }
+}
+
 /// Convert a `BackendError` into the best-fitting HTTP error response.
 pub(crate) fn to_handler_error(
   e: BackendError,
@@ -285,11 +333,10 @@ pub struct SessionQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_sessions(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<SessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames = match q.xnames {
@@ -347,11 +394,10 @@ pub struct ConfigurationQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_configurations(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<ConfigurationQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::configuration::GetConfigurationParams {
@@ -398,11 +444,10 @@ pub struct NodesQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_nodes(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::node::GetNodesParams {
@@ -443,10 +488,9 @@ pub struct GroupQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_available_groups(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
   let names = service::group::get_available_group_names(&infra, &token)
     .await
@@ -469,10 +513,9 @@ pub async fn get_available_groups(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_all_groups(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
   let groups = service::group::get_all_groups(&infra, &token)
     .await
@@ -492,11 +535,10 @@ pub async fn get_all_groups(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<GroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::group::GetGroupParams {
@@ -544,11 +586,10 @@ pub struct ImageEntry {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_images(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<ImageQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::image::GetImagesParams {
@@ -600,11 +641,10 @@ pub struct TemplateQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_templates(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<TemplateQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::template::GetTemplateParams {
@@ -644,11 +684,10 @@ pub struct BootParametersQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<BootParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::boot_parameters::GetBootParametersParams {
@@ -688,11 +727,10 @@ pub struct KernelParametersQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_kernel_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<KernelParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::kernel_parameters::GetKernelParametersParams {
@@ -735,11 +773,10 @@ pub struct RedfishEndpointsQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_redfish_endpoints(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<RedfishEndpointsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::redfish_endpoints::GetRedfishEndpointsParams {
@@ -781,11 +818,10 @@ pub struct ClusterQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_clusters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::cluster::GetClusterParams {
@@ -823,11 +859,10 @@ pub struct HardwareClusterQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_clusters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::hardware::GetHardwareClusterParams {
@@ -869,11 +904,10 @@ pub struct HardwareNodesListQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_nodes_list(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<HardwareNodesListQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params =
@@ -910,12 +944,11 @@ pub async fn get_hardware_nodes_list(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_node(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_node id={}", id);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::node::delete_node(&infra, &token, &id)
@@ -953,12 +986,11 @@ pub struct AddNodeRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_node(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_node id={} group={}", body.id, body.group);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::node::add_node(
@@ -1004,13 +1036,12 @@ pub struct DeleteGroupQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(label): Path<String>,
   Query(q): Query<DeleteGroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_group label={} force={}", label, q.force);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::group::delete_group(&infra, &token, &label, q.force)
@@ -1038,12 +1069,11 @@ pub async fn delete_group(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn create_group(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(group): Json<::manta_backend_dispatcher::types::Group>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("create_group");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::group::create_group(&infra, &token, group)
@@ -1087,9 +1117,7 @@ pub struct AddNodesToGroupResponse {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Json(body): Json<AddNodesToGroupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -1098,6 +1126,7 @@ pub async fn add_nodes_to_group(
     name,
     body.hosts_expression
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let (added, removed) = service::group::add_nodes_to_group(
@@ -1136,9 +1165,7 @@ pub struct DeleteBootParametersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<DeleteBootParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   if body.hosts.is_empty() {
@@ -1150,6 +1177,7 @@ pub async fn delete_boot_parameters(
     ));
   }
   tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
@@ -1176,14 +1204,13 @@ pub async fn delete_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(boot_params): Json<
     ::manta_backend_dispatcher::types::bss::BootParameters,
   >,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_boot_parameters");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
@@ -1214,12 +1241,11 @@ pub async fn add_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("update_boot_parameters");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::boot_parameters::update_boot_parameters(&infra, &token, params)
@@ -1246,12 +1272,11 @@ pub async fn update_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_redfish_endpoint(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_redfish_endpoint id={}", id);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
@@ -1278,12 +1303,11 @@ pub async fn delete_redfish_endpoint(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_redfish_endpoint");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
@@ -1313,12 +1337,11 @@ pub async fn add_redfish_endpoint(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("update_redfish_endpoint");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
@@ -1353,13 +1376,12 @@ pub struct DeleteSessionQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_session(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Query(q): Query<DeleteSessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_session name={} dry_run={}", name, q.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let deletion_ctx =
@@ -1410,12 +1432,11 @@ pub struct DeleteImagesQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_images(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<DeleteImagesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let id_strings: Vec<String> =
@@ -1473,12 +1494,11 @@ pub struct DeleteConfigurationsQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_configurations(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Query(q): Query<DeleteConfigurationsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_configurations dry_run={}", q.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let since = q
@@ -1568,13 +1588,12 @@ pub struct CreateSessionRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn create_session(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<CreateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
   tracing::info!("create_session repos={:?}", body.repo_names);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   // Authorization: requested HSM group must be accessible to the token.
@@ -1679,9 +1698,7 @@ pub struct ApplyBootConfigRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<ApplyBootConfigRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
@@ -1689,6 +1706,7 @@ pub async fn apply_boot_config(
     body.hosts_expression,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let changeset = service::boot_parameters::prepare_boot_config(
@@ -1781,11 +1799,10 @@ fn default_true() -> bool {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames = resolve_xnames_from_request(
@@ -1891,12 +1908,11 @@ pub struct MigrateNodesRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_nodes dry_run={}", body.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   // Authorization: every named group on both sides must be accessible.
@@ -1954,12 +1970,11 @@ pub struct MigrateBackupRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_backup(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<MigrateBackupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_backup");
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::migrate::migrate_backup(
@@ -2009,12 +2024,11 @@ pub struct MigrateRestoreRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_restore(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<MigrateRestoreRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_restore overwrite={}", body.overwrite);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::migrate::migrate_restore(
@@ -2057,12 +2071,11 @@ pub struct CreateEphemeralEnvRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn create_ephemeral_env(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<CreateEphemeralEnvRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("create_ephemeral_env image_id={}", body.image_id);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let hostname =
@@ -2104,9 +2117,7 @@ pub struct DeleteGroupMembersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Json(body): Json<DeleteGroupMembersRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
@@ -2116,6 +2127,7 @@ pub async fn delete_group_members(
     body.xnames_expression,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames = crate::server::common::node_ops::resolve_hosts_expression(
@@ -2195,9 +2207,7 @@ pub struct PowerRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
@@ -2205,6 +2215,7 @@ pub async fn post_power(
     body.action,
     body.target_type
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let xnames: Vec<String> = match body.target_type {
@@ -2311,9 +2322,7 @@ pub struct PostTemplateSessionRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_template_session(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Json(body): Json<PostTemplateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -2323,6 +2332,7 @@ pub async fn post_template_session(
     body.operation,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let params = service::template::ApplyTemplateParams {
@@ -2377,15 +2387,14 @@ pub struct SessionLogsQuery {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_session_logs(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Query(q): Query<SessionLogsQuery>,
 ) -> Result<
   Sse<impl futures::Stream<Item = Result<Event, Infallible>>>,
   (StatusCode, Json<ErrorResponse>),
 > {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
@@ -2467,12 +2476,11 @@ pub struct PostSatFileRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_file(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<PostSatFileRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("post_sat_file dry_run={}", body.dry_run);
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   let vault_base_url = require_vault(infra.vault_base_url)?;
@@ -2552,11 +2560,10 @@ pub struct AddKernelParametersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<AddKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
   let xnames = resolve_xnames_from_request(
     infra.backend,
@@ -2643,11 +2650,10 @@ pub struct DeleteKernelParametersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Json(body): Json<DeleteKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
   let xnames = resolve_xnames_from_request(
     infra.backend,
@@ -2728,9 +2734,7 @@ pub struct AddHwComponentRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(target): Path<String>,
   Json(body): Json<AddHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -2740,6 +2744,7 @@ pub async fn add_hw_component(
     body.parent_cluster,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::group::validate_hsm_group_access(&infra, &token, &target)
@@ -2807,9 +2812,7 @@ pub struct DeleteHwComponentRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(target): Path<String>,
   Json(body): Json<DeleteHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -2819,6 +2822,7 @@ pub async fn delete_hw_component(
     body.parent_cluster,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::group::validate_hsm_group_access(&infra, &token, &target)
@@ -2903,9 +2907,7 @@ pub struct ApplyHwConfigurationRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
-  State(state): State<Arc<ServerState>>,
-  BearerToken(token): BearerToken,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(target): Path<String>,
   Json(body): Json<ApplyHwConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -2915,6 +2917,7 @@ pub async fn apply_hw_configuration(
     body.parent_cluster,
     body.dry_run
   );
+  let (state, token, site_name) = ctx.into_parts();
   let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
 
   service::group::validate_hsm_group_access(&infra, &token, &target)
@@ -2991,13 +2994,12 @@ fn default_rows() -> u16 {
 )]
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
-  BearerToken(token): BearerToken,
-  State(state): State<Arc<ServerState>>,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(xname): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let (k8s_api_url, vault_base_url) = {
     let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
@@ -3052,13 +3054,12 @@ pub async fn console_node_ws(
 )]
 #[tracing::instrument(skip_all, fields(session = %name))]
 pub async fn console_session_ws(
-  BearerToken(token): BearerToken,
-  State(state): State<Arc<ServerState>>,
-  SiteName(site_name): SiteName,
+  ctx: RequestCtx,
   Path(name): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let (state, token, site_name) = ctx.into_parts();
   let (k8s_api_url, vault_base_url) = {
     let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
