@@ -40,23 +40,16 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .enable_all()
     .build()?;
 
-  // Resolve the active site and set the SOCKS5 proxy env var
-  // while we are still single-threaded.
+  // Resolve the active site name (just a header value — the server
+  // validates it). Set the SOCKS5 proxy env var while we are still
+  // single-threaded; the proxy is used to reach manta-server, not the
+  // backends — per-site backend proxying is the server's concern.
   let site_name: String = cli_matches
     .get_one::<String>("site")
     .cloned()
     .unwrap_or_else(|| configuration.site.clone());
 
-  let site_details_value =
-    configuration.sites.get(&site_name).ok_or_else(|| {
-      let available: Vec<&String> = configuration.sites.keys().collect();
-      format!(
-        "Site '{}' not found in configuration file. Available sites: {:?}",
-        site_name, available
-      )
-    })?;
-
-  if let Some(socks_proxy) = &site_details_value.socks5_proxy
+  if let Some(socks_proxy) = &configuration.socks5_proxy
     && !socks_proxy.is_empty()
   {
     // SAFETY: no other threads are running yet.
@@ -68,7 +61,8 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   rt.block_on(run_cli(settings, configuration, site_name, cli_matches))
 }
 
-/// CLI startup — requires a valid active site from the configuration.
+/// CLI startup — takes the resolved site name and forwards it on every
+/// request via the `X-Manta-Site` header.
 async fn run_cli(
   settings: config::Config,
   configuration: CliConfiguration,
@@ -80,17 +74,11 @@ async fn run_cli(
     .unwrap_or_else(|_| "error".to_string());
   log_ops::configure(log_level);
 
-  // Verify the resolved site still exists in the config; emit a log
-  // line about SOCKS5 if it was configured (env var was set in `run`).
-  let site_details_value =
-    configuration.sites.get(&site_name).ok_or_else(|| {
-      format!("Site '{}' not found in configuration file", site_name)
-    })?;
-  if let Some(socks_proxy) = &site_details_value.socks5_proxy {
+  if let Some(socks_proxy) = &configuration.socks5_proxy {
     if !socks_proxy.is_empty() {
       tracing::info!("SOCKS5 enabled: {:?}", std::env::var("SOCKS5"));
     } else {
-      tracing::debug!("config - socks_proxy:  Not defined");
+      tracing::debug!("config - socks5_proxy: not defined");
     }
   }
 

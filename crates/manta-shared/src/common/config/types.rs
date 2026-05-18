@@ -27,32 +27,42 @@ impl BackendTechnology {
 
 #[derive(Serialize, Deserialize, Debug)]
 /// Connection details for a single ALPS site (CSM or OCHAMI instance).
+///
+/// The Vault URL used by handlers requiring vault (sat-file, session,
+/// console, logs) is derived at startup from
+/// `[sites.X.k8s.authentication.vault] base_url`. The vault secret path
+/// is derived from a hard-coded prefix and the site name. Neither is
+/// configured here.
 pub struct Site {
   pub backend: BackendTechnology,
   pub socks5_proxy: Option<String>,
   pub shasta_base_url: String,
   pub k8s: Option<K8sDetails>,
-  pub vault_base_url: Option<String>,
-  pub vault_secret_path: Option<String>,
   pub root_ca_cert_file: String,
 }
 
 /// Top-level configuration for the `manta-cli` binary. Persisted as TOML
 /// under `~/.config/manta/cli.toml`. Carries only the fields the CLI uses
-/// — server-only knobs (TLS, listen address) live in `ServerConfiguration`.
+/// — every backend connection detail (per-site URLs, TLS certs, vault,
+/// k8s, per-site SOCKS proxies) lives in `ServerConfiguration`. The CLI
+/// only knows about the *one* manta-server it talks to.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CliConfiguration {
   pub log: String,
   pub audit_file: String,
-  /// Active site for this CLI process. Overridable per-invocation with
-  /// `--site <name>`.
+  /// Active site name, sent as the `X-Manta-Site` header on every
+  /// request to manta-server. Overridable per-invocation with `--site`.
+  /// The server validates that the name matches one of its configured
+  /// sites; the CLI does no local validation.
   pub site: String,
   pub parent_hsm_group: String,
   /// URL of the manta HTTP server this CLI talks to. Required — the CLI
   /// no longer calls CSM/OCHAMI backends directly; every operation
   /// (including auth) is forwarded through `manta-server`.
   pub manta_server_url: String,
-  pub sites: HashMap<String, Site>,
+  /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
+  /// proxying for backend traffic is the server's concern.
+  pub socks5_proxy: Option<String>,
   pub auditor: Option<Auditor>,
 }
 
@@ -133,23 +143,19 @@ mod tests {
       socks5_proxy: None,
       shasta_base_url: "https://api.example.com".to_string(),
       k8s: None,
-      vault_base_url: None,
-      vault_secret_path: None,
       root_ca_cert_file: "cert.pem".to_string(),
     }
   }
 
   #[test]
   fn cli_configuration_roundtrip_toml_minimal() {
-    let mut sites = HashMap::new();
-    sites.insert("alps".to_string(), make_minimal_site());
     let cfg = CliConfiguration {
       log: "info".to_string(),
       audit_file: "/tmp/cli-audit.log".to_string(),
       site: "alps".to_string(),
       parent_hsm_group: "nodes_free".to_string(),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
-      sites,
+      socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
       auditor: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
@@ -157,7 +163,23 @@ mod tests {
     assert_eq!(parsed.site, "alps");
     assert_eq!(parsed.parent_hsm_group, "nodes_free");
     assert_eq!(parsed.manta_server_url, "https://manta-server.cscs.ch:8443");
-    assert!(parsed.sites.contains_key("alps"));
+    assert_eq!(
+      parsed.socks5_proxy.as_deref(),
+      Some("socks5h://127.0.0.1:1080")
+    );
+  }
+
+  #[test]
+  fn cli_configuration_socks5_proxy_optional() {
+    let toml_str = r#"
+      log = "info"
+      audit_file = "/tmp/cli-audit.log"
+      site = "alps"
+      parent_hsm_group = ""
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+    "#;
+    let parsed: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(parsed.socks5_proxy.is_none());
   }
 
   #[test]
@@ -167,11 +189,6 @@ mod tests {
       audit_file = "/tmp/cli-audit.log"
       site = "alps"
       parent_hsm_group = ""
-
-      [sites.alps]
-      backend = "csm"
-      shasta_base_url = "https://api.example.com"
-      root_ca_cert_file = "cert.pem"
       # missing manta_server_url
     "#;
     let result = toml::from_str::<CliConfiguration>(bad_toml);
