@@ -17,3 +17,8 @@ pub use manta_backend_dispatcher::types::{
   },
   ims::Image,
 };
+
+/// Per-node details returned by `GET /api/v1/nodes` and consumed by the CLI's
+/// output formatters. Re-exported from `csm-rs` so callers in `manta-cli`
+/// don't need `csm-rs` as a direct dep.
+pub use csm_rs::node::types::NodeDetails;

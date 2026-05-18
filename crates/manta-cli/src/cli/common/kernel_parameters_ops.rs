@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::types::bss::BootParameters;
+use manta_shared::shared::dto::BootParameters;
 
 /// Group boot parameters by their (optionally filtered) kernel
 /// parameter sets.

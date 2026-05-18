@@ -12,7 +12,7 @@ use serde_json::Value;
 use tokio::io::{AsyncBufRead, BufReader};
 use tokio_util::io::StreamReader;
 
-use csm_rs::node::types::NodeDetails;
+use manta_shared::shared::dto::NodeDetails;
 use manta_shared::shared::dto::{
   BootParameters, BosSessionTemplate, CfsConfigurationResponse,
   CfsSessionGetResponse, Group, Image,

@@ -21,26 +21,17 @@ build = "build.rs"
 clap                      = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete             = "4.5.66"
 clap_mangen               = "0.3.0"
-manta-backend-dispatcher  = { workspace = true }
-strum                     = { version = "0.27.1", default-features = false }
-strum_macros              = "0.27.1"
 
 [dependencies]
 # --- START MANTA DEPENDENCIES ---
 
-# In-workspace library crate with wire types + pure helpers.
-manta-shared             = { workspace = true }
-
-# After Phase 7 the CLI no longer *constructs* StaticBackendDispatcher
-# (main.rs is clean, every command goes through MantaClient). But these
-# three crates remain direct deps because a long tail of CLI files
-# still imports types from them — `manta_backend_dispatcher::error::Error`
-# in cli/common helpers, `csm_rs::node::types::NodeDetails` in
-# http_client.rs + output::node, etc. Eliminating these imports is a
-# separate epic ("decouple wire types from csm-rs/ochami-rs").
-manta-backend-dispatcher = { workspace = true }
-ochami-rs                = { workspace = true }
-csm-rs                   = { workspace = true }
+# In-workspace library crate with wire types + pure helpers. `csm-rs`,
+# `ochami-rs`, and `manta-backend-dispatcher` are reached only
+# transitively through `manta-shared` — manta-cli no longer needs
+# them as direct deps after the wire-type decoupling. Wire types
+# (`NodeDetails`, `BootParameters`, etc.) come from
+# `manta_shared::shared::dto`; error types in `cli/` use `anyhow`.
+manta-shared = { workspace = true }
 
 # --- END MANTA DEPENDENCIES ---
 

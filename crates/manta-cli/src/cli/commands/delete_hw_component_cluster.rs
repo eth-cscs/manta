@@ -1,6 +1,6 @@
 //! Implements the `manta delete hardware` command.
 
-use manta_backend_dispatcher::error::Error;
+use anyhow::{Error, anyhow};
 
 use crate::{cli::http_client::MantaClient, common::app_context::AppContext};
 
@@ -17,16 +17,11 @@ pub async fn exec(
   let server_url = ctx.cli.manta_server_url;
   let target = target_hsm_group_name_arg_opt
     .or(ctx.cli.settings_hsm_group_name_opt)
-    .ok_or_else(|| {
-      Error::NotFound("No target HSM group specified".to_string())
-    })?;
+    .ok_or_else(|| anyhow!("No target HSM group specified"))?;
   let parent = parent_hsm_group_name_arg_opt
     .or(ctx.cli.settings_hsm_group_name_opt)
-    .ok_or_else(|| {
-      Error::NotFound("No parent HSM group specified".to_string())
-    })?;
-  let result = MantaClient::new(server_url, ctx.infra.site_name)
-    .map_err(|e| Error::Message(e.to_string()))?
+    .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
+  let result = MantaClient::new(server_url, ctx.infra.site_name)?
     .delete_hw_component(
       token,
       target,
@@ -35,8 +30,7 @@ pub async fn exec(
       delete_hsm_group,
       dryrun,
     )
-    .await
-    .map_err(|e| Error::Message(e.to_string()))?;
+    .await?;
   if dryrun {
     println!("Dry run enabled, not modifying the HSM groups on the system.");
   }

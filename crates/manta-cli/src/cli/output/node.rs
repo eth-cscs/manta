@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, ContentArrangement, Table};
-use csm_rs::node::types::NodeDetails;
+use manta_shared::shared::dto::NodeDetails;
 
 use crate::cli::common::display::string_vec_to_multi_line_string;
 

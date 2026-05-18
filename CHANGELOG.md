@@ -29,6 +29,10 @@ All notable changes to this project will be documented in this file.
 - `AppContext::infra` shrinks from the eight-field `InfraContext` (backend, base URLs, certs, proxies) to a one-field `CliInfra { site_name }`. `InfraContext` itself is unchanged and stays in `manta-shared` for the server's service layer. `manta-cli/src/main.rs` sheds ~70 lines of dead setup (`StaticBackendDispatcher::new`, root-cert resolution, k8s/vault URL extraction).
 - `csm-rs`, `ochami-rs`, and `manta-backend-dispatcher` remain direct workspace deps of `manta-cli` because a long tail of files still imports types from them (`NodeDetails`, `manta_backend_dispatcher::error::Error`). Eliminating these is a separate "wire-type decoupling" epic; Phase 7 was about control coupling.
 
+### Refactor (post-Phase-7 — wire-type decoupling)
+
+- Dropped `csm-rs`, `ochami-rs`, and `manta-backend-dispatcher` from `manta-cli`'s direct deps (they now appear only transitively through `manta-shared`). `manta_shared::shared::dto` gains a re-export of `csm_rs::node::types::NodeDetails`; the two CLI files that imported it (`http_client.rs`, `output/node.rs`) now go through the shared path. `kernel_parameters_ops.rs` switches its `BootParameters` import to the existing `manta_shared::shared::dto` re-export. Three CLI helpers (`local_git_repo`, `hooks`, `delete_hw_component_cluster`) migrate from `manta_backend_dispatcher::error::Error` to `anyhow::Error` per CLAUDE.md's "CLI uses anyhow" rule. `manta-cli`'s `[build-dependencies]` also sheds `manta-backend-dispatcher`, `strum`, and `strum_macros` which the build script doesn't use.
+
 ### Refactor
 
 - Move hardware-cluster business logic (`add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, `resolve_hw_description_to_xnames`, and supporting utilities) from `src/cli/commands/hw_cluster_common/` into `src/service/hw_cluster.rs`, eliminating the layer inversion where `src/server/handlers.rs` was calling CLI-layer code
