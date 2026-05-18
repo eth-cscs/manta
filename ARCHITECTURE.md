@@ -80,6 +80,7 @@ Presentation layer. Responsibilities:
 
 - **`build/`** — Clap command and subcommand definitions.
 - **`process/`** — Argument extraction and dispatch to the service layer (via `manta-shared` helpers or HTTP calls through `MantaClient`).
+- **`http_client/`** — `MantaClient` HTTP client. Parent `mod.rs` keeps the struct, constructor, shared HTTP-verb helpers (`get_json`, `post_json`, …), and `QueryBuilder`; 17 per-resource sub-modules (`sessions`, `groups`, `nodes`, `boot_parameters`, …) each carry an `impl MantaClient { ... }` block for that resource's endpoints. The layout mirrors `crates/manta-server/src/server/handlers/`.
 - Output formatting via `comfy-table` for terminal tables.
 - Interactive prompts via `dialoguer`.
 - Error handling via `anyhow::Error`; CLI handlers terminate with `eprintln!` + `process::exit()`.
@@ -129,7 +130,7 @@ Shared utilities used by both CLI and server:
 | `audit` | Audit trait + log writer |
 | `check_network_connectivity` | 3-second TCP reachability probe to the backend base URL |
 
-CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`authorization`, `node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`) and `InfraContext` itself live under `crates/manta-server/src/{server,common}/`.
+CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`authorization`, `node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`, `app_context`) live under `crates/manta-server/src/server/common/` — `InfraContext` is one of them. Both crates explicitly import `manta_shared::common::*` or `crate::{cli,server}::common::*`; there is no `crate::common::*` re-export shim.
 
 ### `crates/manta-server/src/server/`
 
@@ -142,6 +143,10 @@ Axum HTTPS server. Key files:
 | `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
+The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares the six top-level modules as `pub mod` (`server`, `service`, `backend_dispatcher`, `manta_backend_dispatcher`, `common` via `server::common`, `wire_conv`); `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention.
+
+`crates/manta-server/src/wire_conv.rs` holds backend⇄wire-type conversions that can't live in either `manta-shared` or `manta-backend-dispatcher` due to Rust's orphan rule. Currently a single free function `to_backend(MantaError) → BackendError`, used at server call sites that propagate `manta-shared`'s `MantaError` via `?`.
+
 `ServerState` (wrapped in `Arc`) owns all infrastructure: backend dispatcher, TLS certificates, optional Vault/k8s URLs.
 
 ---
@@ -150,7 +155,7 @@ Axum HTTPS server. Key files:
 
 | Type | Used by | Contents |
 |------|---------|---------|
-| `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/common/app_context.rs`) | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
+| `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
 | `AppContext<'_>` | CLI layer (in `manta-shared`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `kafka_audit_opt`, `settings` |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
