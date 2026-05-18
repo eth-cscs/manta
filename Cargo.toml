@@ -17,12 +17,14 @@ repository   = "https://github.com/eth-cscs/manta"
 # `<crate> = { workspace = true }`. Keeping them here means the three
 # workspace members can't drift apart on tokio/serde/reqwest/etc.
 [workspace.dependencies]
-# Internal workspace crate. `=` pinned to the workspace version so
-# every published `manta-cli` requires exactly the matching
-# `manta-shared`; the two are tightly coupled and not independently
-# semver-compatible.
-# manta-shared             = { path = "crates/manta-shared" }
-manta-shared             = "2.0.0-beta.1"
+# Internal workspace crate. `path` lets local builds use the in-tree
+# copy (always at the workspace version); `version` is what cargo
+# stamps into the published manta-cli manifest so downstream installs
+# resolve from crates.io. The `=` pin is because manta-shared and
+# manta-cli move together — they're not independently semver-
+# compatible. Bump this in lockstep with the workspace version on
+# every release.
+manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.2" }
 # Sibling repos — registry-only (no `path = "../..."`) so CI runners
 # and fresh-clone contributors that don't have the adjacent sibling
 # checkouts can still resolve them. cargo's `path` attribute is
