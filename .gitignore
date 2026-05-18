@@ -1,6 +1,13 @@
 /target
+# Legacy: workspace-root copies that never actually existed.
 /man
 /autocomplete_shell_scripts
+# Defence-in-depth: build.rs writes generated docs to OUT_DIR (under
+# `/target/`), so the per-crate paths should never appear. This entry
+# protects against an accidental hand-generation that would otherwise
+# get committed.
+crates/*/man
+crates/*/autocomplete_shell_scripts
 /.vscode
 /sat-file
 /cfr_semantic_files

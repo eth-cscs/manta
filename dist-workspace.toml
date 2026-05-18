@@ -19,6 +19,15 @@ install-path = "CARGO_HOME"
 publish-jobs = ["homebrew"]
 # Whether to install an updater program
 install-updater = false
+# Bundle the manta-cli build script's outputs (man pages + shell
+# completions) into release tarballs. The build script writes to
+# OUT_DIR, which lives at
+# `target/{profile}/build/manta-cli-{fingerprint}/out/`; the
+# fingerprint hash varies between builds so we glob.
+include = [
+  "target/release/build/manta-cli-*/out/man",
+  "target/release/build/manta-cli-*/out/completions",
+]
 
 # 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
 [dist.dependencies.apt]
