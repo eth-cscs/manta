@@ -283,6 +283,37 @@ pub fn get_server_configuration() -> Result<Config, Error> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::io::Write;
+  use std::sync::Mutex;
+  use tempfile::NamedTempFile;
+
+  // The MANTA_* env vars are process-global; tests that mutate them
+  // must serialise on this lock or they'll race each other under
+  // cargo's default parallel test runner.
+  static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+  /// Guard that sets the named env var on construction and clears it on
+  /// drop. Use inside a test holding `ENV_LOCK` so concurrent tests
+  /// don't see the half-installed value.
+  struct EnvGuard(&'static str);
+  impl EnvGuard {
+    fn set(key: &'static str, value: &str) -> Self {
+      // SAFETY: serialised by `ENV_LOCK` above.
+      unsafe { std::env::set_var(key, value) };
+      Self(key)
+    }
+  }
+  impl Drop for EnvGuard {
+    fn drop(&mut self) {
+      unsafe { std::env::remove_var(self.0) };
+    }
+  }
+
+  fn write_tmp_toml(content: &str) -> NamedTempFile {
+    let mut f = NamedTempFile::new().expect("tempfile");
+    f.write_all(content.as_bytes()).expect("write tempfile");
+    f
+  }
 
   #[test]
   fn default_cli_config_path_ends_with_cli_toml() {
@@ -307,5 +338,125 @@ mod tests {
     let cli = get_default_manta_cli_config_file_path().unwrap();
     let server = get_default_manta_server_config_file_path().unwrap();
     assert_eq!(cli.parent(), server.parent());
+  }
+
+  #[test]
+  fn cli_config_file_path_honors_env_var() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let _e = EnvGuard::set("MANTA_CLI_CONFIG", "/tmp/custom-cli.toml");
+    let path = get_cli_config_file_path().unwrap();
+    assert_eq!(path, PathBuf::from("/tmp/custom-cli.toml"));
+  }
+
+  #[test]
+  fn server_config_file_path_honors_env_var() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let _e = EnvGuard::set("MANTA_SERVER_CONFIG", "/tmp/custom-server.toml");
+    let path = get_server_config_file_path().unwrap();
+    assert_eq!(path, PathBuf::from("/tmp/custom-server.toml"));
+  }
+
+  #[test]
+  fn cli_configuration_with_missing_file_returns_notfound() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let _e = EnvGuard::set(
+      "MANTA_CLI_CONFIG",
+      "/nonexistent-dir/definitely-not-here.toml",
+    );
+    let err = get_cli_configuration().unwrap_err();
+    match err {
+      Error::NotFound(msg) => {
+        assert!(
+          msg.contains("CLI configuration file"),
+          "expected helpful NotFound message, got: {msg}"
+        );
+        assert!(
+          msg.contains("Minimal example"),
+          "expected sample TOML in message"
+        );
+      }
+      other => panic!("expected NotFound, got {other:?}"),
+    }
+  }
+
+  #[test]
+  fn cli_configuration_with_malformed_toml_returns_config_error() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let bad = write_tmp_toml("this is = not [valid toml");
+    let _e = EnvGuard::set("MANTA_CLI_CONFIG", bad.path().to_str().unwrap());
+    let err = get_cli_configuration().unwrap_err();
+    assert!(
+      matches!(err, Error::ConfigError(_)),
+      "expected ConfigError variant, got {err:?}"
+    );
+  }
+
+  #[test]
+  fn cli_configuration_loads_valid_toml_and_env_var_overrides_file() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let good = write_tmp_toml(
+      r#"log = "info"
+audit_file = "/tmp/x.log"
+site = "alps"
+parent_hsm_group = ""
+manta_server_url = "https://example:8443"
+"#,
+    );
+    let _path = EnvGuard::set("MANTA_CLI_CONFIG", good.path().to_str().unwrap());
+
+    let cfg = get_cli_configuration().unwrap();
+    assert_eq!(cfg.get_string("log").unwrap(), "info");
+    assert_eq!(cfg.get_string("site").unwrap(), "alps");
+    drop(cfg);
+
+    // Set a MANTA_*-prefixed env var; the `Environment` source should
+    // merge over the file value.
+    let _override = EnvGuard::set("MANTA_LOG", "trace");
+    let cfg = get_cli_configuration().unwrap();
+    assert_eq!(
+      cfg.get_string("log").unwrap(),
+      "trace",
+      "env var should override file value"
+    );
+  }
+
+  #[test]
+  fn server_configuration_with_missing_file_returns_notfound() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let _e = EnvGuard::set(
+      "MANTA_SERVER_CONFIG",
+      "/nonexistent-dir/missing-server.toml",
+    );
+    let err = get_server_configuration().unwrap_err();
+    match err {
+      Error::NotFound(msg) => {
+        assert!(
+          msg.contains("Server configuration file"),
+          "expected helpful NotFound message, got: {msg}"
+        );
+      }
+      other => panic!("expected NotFound, got {other:?}"),
+    }
+  }
+
+  #[test]
+  fn server_configuration_loads_valid_toml() {
+    let _g = ENV_LOCK.lock().unwrap();
+    let good = write_tmp_toml(
+      r#"log = "info"
+audit_file = "/tmp/y.log"
+
+[server]
+listen_address = "0.0.0.0"
+port = 8443
+cert = "/etc/manta/cert.pem"
+key = "/etc/manta/key.pem"
+"#,
+    );
+    let _e =
+      EnvGuard::set("MANTA_SERVER_CONFIG", good.path().to_str().unwrap());
+    let cfg = get_server_configuration().unwrap();
+    assert_eq!(cfg.get_string("server.listen_address").unwrap(), "0.0.0.0");
+    assert_eq!(cfg.get_int("server.port").unwrap(), 8443);
   }
 }
