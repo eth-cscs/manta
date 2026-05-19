@@ -18,6 +18,16 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+    # System libs that several transitive C-based deps need to build:
+    #   - cmake               for librdkafka-sys (rdkafka, used by manta-shared::kafka)
+    #   - libcurl4-openssl-dev for crates that link curl statically
+    # Mirrors `[dist.dependencies.apt]` in dist-workspace.toml so the
+    # CI workflow doesn't fail with cryptic "exit code 101" when those
+    # build-time deps are missing on a fresh ubuntu-latest runner.
+    - name: Install system build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libcurl4-openssl-dev
     - name: Build
       run: cargo build --workspace --verbose
     - name: Run tests
