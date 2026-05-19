@@ -197,134 +197,107 @@ async fn delete_health_returns_405() {
 }
 
 // ---------------------------------------------------------------------------
-// Authentication enforcement — GET endpoints
-//
-// GET endpoints have no body extractors, so the handler always runs
-// and the first thing it does is check the Authorization header.
-// ---------------------------------------------------------------------------
-
-async fn assert_401_without_auth(uri: &str) {
-  let resp = router().oneshot(get(uri)).await.unwrap();
-  assert_eq!(
-    resp.status(),
-    StatusCode::UNAUTHORIZED,
-    "expected 401 for GET {}",
-    uri
-  );
-}
-
-#[tokio::test]
-async fn get_sessions_requires_auth() {
-  assert_401_without_auth("/api/v1/sessions").await;
-}
-
-#[tokio::test]
-async fn get_configurations_requires_auth() {
-  assert_401_without_auth("/api/v1/configurations").await;
-}
-
-#[tokio::test]
-async fn get_groups_requires_auth() {
-  assert_401_without_auth("/api/v1/groups").await;
-}
-
-#[tokio::test]
-async fn get_images_requires_auth() {
-  assert_401_without_auth("/api/v1/images").await;
-}
-
-#[tokio::test]
-async fn get_templates_requires_auth() {
-  assert_401_without_auth("/api/v1/templates").await;
-}
-
-#[tokio::test]
-async fn get_boot_parameters_requires_auth() {
-  assert_401_without_auth("/api/v1/boot-parameters").await;
-}
-
-#[tokio::test]
-async fn get_kernel_parameters_requires_auth() {
-  assert_401_without_auth("/api/v1/kernel-parameters").await;
-}
-
-#[tokio::test]
-async fn get_redfish_endpoints_requires_auth() {
-  assert_401_without_auth("/api/v1/redfish-endpoints").await;
-}
-
-#[tokio::test]
-async fn get_clusters_requires_auth() {
-  assert_401_without_auth("/api/v1/clusters").await;
-}
-
-#[tokio::test]
-async fn get_hardware_clusters_requires_auth() {
-  assert_401_without_auth("/api/v1/hardware-clusters").await;
-}
-
-// ---------------------------------------------------------------------------
-// Authentication enforcement — DELETE endpoints without body
+// Authentication enforcement — table-driven coverage for every privileged
+// endpoint. The handler always runs as far as the bearer-token check; we
+// just iterate over the route list and assert 401.
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn delete_node_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/nodes/x3000c0s1b0n0")
-        .body(Body::empty())
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+async fn get_routes_reject_missing_bearer_token() {
+  let routes = [
+    "/api/v1/sessions",
+    "/api/v1/configurations",
+    "/api/v1/groups",
+    "/api/v1/images",
+    "/api/v1/templates",
+    "/api/v1/boot-parameters",
+    "/api/v1/kernel-parameters",
+    "/api/v1/redfish-endpoints",
+    "/api/v1/clusters",
+    "/api/v1/hardware-clusters",
+  ];
+  for uri in routes {
+    let resp = router().oneshot(get(uri)).await.unwrap();
+    assert_eq!(
+      resp.status(),
+      StatusCode::UNAUTHORIZED,
+      "expected 401 for GET {}",
+      uri
+    );
+  }
 }
 
 #[tokio::test]
-async fn delete_group_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/groups/my-group")
-        .body(Body::empty())
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+async fn delete_routes_without_body_reject_missing_bearer_token() {
+  let routes = [
+    "/api/v1/nodes/x3000c0s1b0n0",
+    "/api/v1/groups/my-group",
+    "/api/v1/sessions/my-session",
+    "/api/v1/redfish-endpoints/x3000c0s1b0",
+  ];
+  for uri in routes {
+    let resp = router()
+      .oneshot(
+        Request::builder()
+          .method(Method::DELETE)
+          .uri(uri)
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(
+      resp.status(),
+      StatusCode::UNAUTHORIZED,
+      "expected 401 for DELETE {}",
+      uri
+    );
+  }
 }
 
 #[tokio::test]
-async fn delete_session_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/sessions/my-session")
-        .body(Body::empty())
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn delete_redfish_endpoint_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/redfish-endpoints/x3000c0s1b0")
-        .body(Body::empty())
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+async fn body_routes_reject_missing_bearer_token() {
+  // POST/DELETE routes that take a JSON body. The Authorization
+  // header check must still trip BEFORE the body deserializer.
+  let cases: &[(Method, &str, &str)] = &[
+    (Method::POST, "/api/v1/kernel-parameters/add", r#"{"params":"quiet"}"#),
+    (Method::DELETE, "/api/v1/kernel-parameters", r#"{"params":"quiet"}"#),
+    (
+      Method::POST,
+      "/api/v1/hardware-clusters/my-cluster/members",
+      r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
+    ),
+    (
+      Method::DELETE,
+      "/api/v1/hardware-clusters/my-cluster/members",
+      r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
+    ),
+    (
+      Method::POST,
+      "/api/v1/hardware-clusters/my-cluster/configuration",
+      r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
+    ),
+  ];
+  for (method, uri, body) in cases {
+    let resp = router()
+      .oneshot(
+        Request::builder()
+          .method(method.clone())
+          .uri(*uri)
+          .header(header::CONTENT_TYPE, "application/json")
+          .body(Body::from(body.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(
+      resp.status(),
+      StatusCode::UNAUTHORIZED,
+      "expected 401 for {} {}",
+      method,
+      uri
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -337,67 +310,42 @@ async fn delete_redfish_endpoint_requires_auth() {
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn post_nodes_missing_required_fields_returns_422() {
-  let resp = router()
-    .oneshot(post_json("/api/v1/nodes", "{}"))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn post_ephemeral_env_missing_image_id_returns_422() {
-  let resp = router()
-    .oneshot(post_json("/api/v1/ephemeral-env", "{}"))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn post_power_unknown_action_returns_422() {
-  // "fly" is not a valid PowerAction enum variant — serde rejects it with 422.
-  let resp = router()
-    .oneshot(post_json(
+async fn post_routes_reject_invalid_bodies() {
+  // Authenticated requests whose JSON body fails to deserialise into
+  // the handler's expected shape — serde rejects them as 422 before
+  // the handler runs. Comments inline justify each case beyond the
+  // generic "missing required field".
+  let cases: &[(&str, &str)] = &[
+    ("/api/v1/nodes", "{}"),
+    ("/api/v1/ephemeral-env", "{}"),
+    // "fly" is not a valid PowerAction enum variant.
+    (
       "/api/v1/power",
       r#"{"action":"fly","targets":["x3000c0s1b0n0"],"target_type":"nodes"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn post_power_missing_action_returns_422() {
-  let resp = router()
-    .oneshot(post_json(
+    ),
+    (
       "/api/v1/power",
       r#"{"targets":["x3000c0s1b0n0"],"target_type":"nodes"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn post_template_session_missing_required_fields_returns_422() {
-  let resp = router()
-    .oneshot(post_json(
+    ),
+    (
       "/api/v1/templates/my-template/sessions",
       r#"{"dry_run":false}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn post_sat_file_missing_content_returns_422() {
-  let resp = router()
-    .oneshot(post_json("/api/v1/sat-file", "{}"))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    ),
+    ("/api/v1/sat-file", "{}"),
+    ("/api/v1/kernel-parameters/add", "{}"),
+    ("/api/v1/hardware-clusters/my-cluster/members", "{}"),
+    ("/api/v1/hardware-clusters/my-cluster/configuration", "{}"),
+  ];
+  for (uri, body) in cases {
+    let resp = router().oneshot(post_json(uri, body)).await.unwrap();
+    assert_eq!(
+      resp.status(),
+      StatusCode::UNPROCESSABLE_ENTITY,
+      "expected 422 for POST {} with body {}",
+      uri,
+      body
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -577,101 +525,9 @@ async fn all_delete_routes_are_registered() {
 }
 
 // ---------------------------------------------------------------------------
-// Auth enforcement for the 6 new endpoints
+// Body validation (422) for body-carrying endpoints not covered by
+// `post_routes_reject_invalid_bodies` above (DELETE method).
 // ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn add_kernel_parameters_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::POST)
-        .uri("/api/v1/kernel-parameters/add")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"params":"quiet"}"#))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn delete_kernel_parameters_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/kernel-parameters")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"params":"quiet"}"#))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn add_hw_component_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::POST)
-        .uri("/api/v1/hardware-clusters/my-cluster/members")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn delete_hw_component_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::DELETE)
-        .uri("/api/v1/hardware-clusters/my-cluster/members")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn apply_hw_configuration_requires_auth() {
-  let resp = router()
-    .oneshot(
-      Request::builder()
-        .method(Method::POST)
-        .uri("/api/v1/hardware-clusters/my-cluster/configuration")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"parent_cluster":"p","pattern":"a100:2"}"#))
-        .unwrap(),
-    )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-// ---------------------------------------------------------------------------
-// Body validation (422) for new endpoints
-// ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn add_kernel_parameters_missing_params_returns_422() {
-  let resp = router()
-    .oneshot(post_json("/api/v1/kernel-parameters/add", "{}"))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
 
 #[tokio::test]
 async fn delete_kernel_parameters_missing_params_returns_422() {
@@ -686,30 +542,6 @@ async fn delete_kernel_parameters_missing_params_returns_422() {
         .body(Body::from("{}"))
         .unwrap(),
     )
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn add_hw_component_missing_body_returns_422() {
-  let resp = router()
-    .oneshot(post_json(
-      "/api/v1/hardware-clusters/my-cluster/members",
-      "{}",
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
-}
-
-#[tokio::test]
-async fn apply_hw_configuration_missing_body_returns_422() {
-  let resp = router()
-    .oneshot(post_json(
-      "/api/v1/hardware-clusters/my-cluster/configuration",
-      "{}",
-    ))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::UNPROCESSABLE_ENTITY);
