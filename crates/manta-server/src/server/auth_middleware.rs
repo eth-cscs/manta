@@ -54,7 +54,13 @@ impl AuthRateLimiter {
   /// the given `limit` (requests per minute), `false` if it would
   /// exceed.
   fn check(&self, ip: IpAddr, limit: u32) -> bool {
-    let now = Instant::now();
+    self.check_at(ip, limit, Instant::now())
+  }
+
+  /// Testable variant of [`check`] with an explicit clock. The split
+  /// lets unit tests exercise the window-reset and pruning logic
+  /// without actually sleeping 60+ seconds.
+  fn check_at(&self, ip: IpAddr, limit: u32, now: Instant) -> bool {
     let window = Duration::from_secs(60);
     let mut windows = self.windows.lock().expect("rate limiter mutex poisoned");
 
@@ -119,3 +125,6 @@ pub async fn strip_body_for_logs(request: Request, next: Next) -> Response {
   let _enter = span.enter();
   next.run(request).await
 }
+
+#[cfg(test)]
+mod tests;
