@@ -15,7 +15,11 @@
 # (The image ENTRYPOINT is `manta`, so anything after the image name
 #  becomes CLI args.)
 
-FROM rust:1.83-bookworm AS builder
+# 1.88 is the effective MSRV: edition 2024 lands in 1.85, and the
+# `aws-sdk-sts` crate (a transitive dep of csm-rs via the server
+# crate, but pulled into the workspace lockfile that the CLI shares)
+# requires 1.88. Bump in lockstep with the server Dockerfile.
+FROM rust:1.88-bookworm AS builder
 # cmake + libcurl4-openssl-dev are needed to build librdkafka, which
 # the audit subsystem depends on. Matches the apt step in CI.
 RUN apt-get update \
