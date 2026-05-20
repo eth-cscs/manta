@@ -80,7 +80,7 @@ Presentation layer. Responsibilities:
 
 - **`build/`** — Clap command and subcommand definitions.
 - **`process/`** — Argument extraction and dispatch to the service layer (via `manta-shared` helpers or HTTP calls through `MantaClient`).
-- **`http_client/`** — `MantaClient` HTTP client. Parent `mod.rs` keeps the struct, constructor, shared HTTP-verb helpers (`get_json`, `post_json`, …), and `QueryBuilder`; 17 per-resource sub-modules (`sessions`, `groups`, `nodes`, `boot_parameters`, …) each carry an `impl MantaClient { ... }` block for that resource's endpoints. The layout mirrors `crates/manta-server/src/server/handlers/`.
+- **`http_client/`** — `MantaClient` HTTP client. Parent `mod.rs` keeps the struct, constructor, shared HTTP-verb helpers (`get_json`, `post_json`, …), and `QueryBuilder`; 18 per-resource sub-modules (`auth`, `sessions`, `groups`, `nodes`, `boot_parameters`, …) each carry an `impl MantaClient { ... }` block for that resource's endpoints. The layout mirrors `crates/manta-server/src/server/handlers/`.
 - Output formatting via `comfy-table` for terminal tables.
 - Interactive prompts via `dialoguer`.
 - Error handling via `anyhow::Error`; CLI handlers terminate with `eprintln!` + `process::exit()`.
@@ -89,7 +89,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer. Modules: `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `redfish_endpoints`.
+Business logic layer (16 modules): `auth`, `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `power`, `redfish_endpoints`.
 
 Each module receives an `&InfraContext<'_>` plus a bearer token and typed parameters, and returns typed results. This layer:
 
@@ -143,7 +143,7 @@ Axum HTTPS server. Key files:
 | `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
-The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares the six top-level modules as `pub mod` (`server`, `service`, `backend_dispatcher`, `manta_backend_dispatcher`, `common` via `server::common`, `wire_conv`); `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention.
+The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares five top-level modules as `pub mod` (`backend_dispatcher`, `manta_backend_dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention.
 
 `crates/manta-server/src/wire_conv.rs` holds backend⇄wire-type conversions that can't live in either `manta-shared` or `manta-backend-dispatcher` due to Rust's orphan rule. Currently a single free function `to_backend(MantaError) → BackendError`, used at server call sites that propagate `manta-shared`'s `MantaError` via `?`.
 
@@ -155,7 +155,7 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 
 | Type | Used by | Contents |
 |------|---------|---------|
-| `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, base URLs, root CA cert, SOCKS5 proxy, optional vault/k8s URLs |
+| `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, site name, shasta + gitea base URLs, root CA cert, optional SOCKS5 proxy, optional vault + k8s URLs (8 borrowed fields) |
 | `AppContext<'_>` | CLI layer (in `manta-shared`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `kafka_audit_opt`, `settings` |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
@@ -217,7 +217,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 | Aspect | CLI | HTTP server |
 |--------|-----|-------------|
 | Entry point | `cli::process::process_cli` | `server::start_server` |
-| Auth source | Environment variable / Vault / stdin | `Authorization: Bearer` header, per request |
+| Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /api/v1/auth/token`) | `Authorization: Bearer` header, per request |
 | Context type | `AppContext` (flat 5-field struct in manta-shared) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
@@ -244,7 +244,7 @@ The HTTP server converts typed errors to HTTP status codes via `to_handler_error
 
 After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 5-field struct; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
-Server-side authorization (target HSM group access + xname membership) is enforced by `service::group::validate_hsm_group_access` and `common::authorization::validate_target_hsm_members`, called from every privileged handler. Phase 7 closed five pre-existing gaps where these checks were missing: `create_session`, `add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, and `migrate_nodes`.
+Server-side authorization helpers live in `service::group::validate_hsm_group_access` (target HSM group must be accessible to the token) and `common::authorization::validate_target_hsm_members` (every xname in the request belongs to an accessible group). Phase 7 closed five gaps where one or both checks were missing: `create_session` (calls both — group + per-xname), `add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, and `migrate_nodes` (each calls `validate_hsm_group_access` on its target group). Handlers operating on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
 
 The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::shared::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in six pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
 
