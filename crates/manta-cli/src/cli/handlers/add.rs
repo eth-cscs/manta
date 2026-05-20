@@ -29,7 +29,7 @@ pub async fn handle_add(
         .context("'group' argument is mandatory")?;
       let hardware_file_opt = m.get_one::<PathBuf>("hardware");
       let arch_opt = m.get_one::<String>("arch").cloned();
-      let enabled = m.get_one::<bool>("disabled").cloned().unwrap_or(true);
+      let enabled = !m.get_flag("disabled");
       add_node::exec(
         ctx,
         &token,
