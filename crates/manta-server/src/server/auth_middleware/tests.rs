@@ -103,7 +103,11 @@ fn stale_entries_are_pruned_after_two_windows() {
   assert!(limiter.check_at(ip(2), 1, t_stale));
   let remaining: Vec<IpAddr> =
     limiter.windows.lock().unwrap().keys().copied().collect();
-  assert_eq!(remaining, vec![ip(2)], "stale entry for IP A should be pruned");
+  assert_eq!(
+    remaining,
+    vec![ip(2)],
+    "stale entry for IP A should be pruned"
+  );
 }
 
 #[test]

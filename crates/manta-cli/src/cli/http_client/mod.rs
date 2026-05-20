@@ -431,10 +431,7 @@ mod tests {
       .build();
     assert_eq!(
       q,
-      vec![
-        ("site", "alps".to_string()),
-        ("kind", "node".to_string()),
-      ]
+      vec![("site", "alps".to_string()), ("kind", "node".to_string()),]
     );
   }
 

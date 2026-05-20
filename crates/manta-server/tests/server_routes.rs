@@ -260,8 +260,16 @@ async fn body_routes_reject_missing_bearer_token() {
   // POST/DELETE routes that take a JSON body. The Authorization
   // header check must still trip BEFORE the body deserializer.
   let cases: &[(Method, &str, &str)] = &[
-    (Method::POST, "/api/v1/kernel-parameters/add", r#"{"params":"quiet"}"#),
-    (Method::DELETE, "/api/v1/kernel-parameters", r#"{"params":"quiet"}"#),
+    (
+      Method::POST,
+      "/api/v1/kernel-parameters/add",
+      r#"{"params":"quiet"}"#,
+    ),
+    (
+      Method::DELETE,
+      "/api/v1/kernel-parameters",
+      r#"{"params":"quiet"}"#,
+    ),
     (
       Method::POST,
       "/api/v1/hardware-clusters/my-cluster/members",

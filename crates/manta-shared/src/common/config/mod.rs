@@ -402,7 +402,8 @@ parent_hsm_group = ""
 manta_server_url = "https://example:8443"
 "#,
     );
-    let _path = EnvGuard::set("MANTA_CLI_CONFIG", good.path().to_str().unwrap());
+    let _path =
+      EnvGuard::set("MANTA_CLI_CONFIG", good.path().to_str().unwrap());
 
     let cfg = get_cli_configuration().unwrap();
     assert_eq!(cfg.get_string("log").unwrap(), "info");

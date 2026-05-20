@@ -157,8 +157,7 @@ mod tests {
   /// can be extracted by `jwt_ops::get_name` / `get_preferred_username`.
   fn jwt_with(name: &str, preferred_username: &str) -> String {
     use base64::prelude::*;
-    let header =
-      BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+    let header = BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
     let body = BASE64_URL_SAFE_NO_PAD.encode(
       json!({"name": name, "preferred_username": preferred_username})
         .to_string(),
@@ -181,7 +180,10 @@ mod tests {
     assert_eq!(msg["message"], "deleted node");
     // No `host` or `group` keys when both are None.
     assert!(msg.get("host").is_none(), "host must be omitted when None");
-    assert!(msg.get("group").is_none(), "group must be omitted when None");
+    assert!(
+      msg.get("group").is_none(),
+      "group must be omitted when None"
+    );
   }
 
   #[test]
@@ -226,8 +228,7 @@ mod tests {
     // whole token in the audit payload would be a security incident.
     // Search the serialized JSON for the JWT body marker.
     let token = jwt_with("Alice", "alice");
-    let msg =
-      build_audit_message(&token, "deleted node", None, None);
+    let msg = build_audit_message(&token, "deleted node", None, None);
     let json = serde_json::to_string(&msg).unwrap();
     assert!(
       !json.contains(&token),
@@ -242,12 +243,7 @@ mod tests {
 
   #[test]
   fn auth_audit_has_expected_wire_shape() {
-    let msg = build_auth_audit_message(
-      "success",
-      "alice",
-      "10.0.0.1",
-      "alps",
-    );
+    let msg = build_auth_audit_message("success", "alice", "10.0.0.1", "alps");
     assert_eq!(msg["event"], "auth_attempt");
     assert_eq!(msg["outcome"], "success");
     assert_eq!(msg["username"], "alice");
@@ -259,8 +255,7 @@ mod tests {
   fn auth_audit_payload_has_no_password_field_by_construction() {
     // The function doesn't take a password — pin via the wire shape
     // that no `password` / `passwd` / `secret` key sneaks in.
-    let msg =
-      build_auth_audit_message("failure", "alice", "10.0.0.1", "alps");
+    let msg = build_auth_audit_message("failure", "alice", "10.0.0.1", "alps");
     let obj = msg.as_object().expect("payload is an object");
     for forbidden in ["password", "passwd", "secret", "token"] {
       assert!(

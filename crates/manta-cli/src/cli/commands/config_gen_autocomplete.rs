@@ -66,12 +66,7 @@ fn gen_autocomplete(
     // Destination path not defined - print to stdout
     tracing::info!("Generating shell autocomplete for '{}'", shell);
 
-    generate(
-      shell_gen,
-      &mut cli,
-      "manta",
-      &mut io::stdout(),
-    );
+    generate(shell_gen, &mut cli, "manta", &mut io::stdout());
   }
 
   Ok(())

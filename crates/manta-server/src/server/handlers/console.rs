@@ -327,7 +327,14 @@ mod tests {
   ) {
     let (in_tx, in_rx) = mpsc::unbounded_channel();
     let (out_tx, out_rx) = mpsc::unbounded_channel();
-    (MockSocket { rx: in_rx, tx: out_tx }, in_tx, out_rx)
+    (
+      MockSocket {
+        rx: in_rx,
+        tx: out_tx,
+      },
+      in_tx,
+      out_rx,
+    )
   }
 
   /// Wait for either the bridge to finish or `cap` of paused time to
@@ -349,8 +356,13 @@ mod tests {
     let console_out = Box::new(PendingReader);
 
     let mut handle = tokio::spawn(async move {
-      run_console_bridge(socket, console_in, console_out, Duration::from_secs(60))
-        .await
+      run_console_bridge(
+        socket,
+        console_in,
+        console_out,
+        Duration::from_secs(60),
+      )
+      .await
     });
 
     // Just before the deadline — bridge should still be alive.
@@ -372,13 +384,20 @@ mod tests {
     let console_out = Box::new(PendingReader);
 
     let mut handle = tokio::spawn(async move {
-      run_console_bridge(socket, console_in, console_out, Duration::from_secs(60))
-        .await
+      run_console_bridge(
+        socket,
+        console_in,
+        console_out,
+        Duration::from_secs(60),
+      )
+      .await
     });
 
     // At t≈59s send a binary frame — that resets the deadline to t+60.
     tokio::time::sleep(Duration::from_secs(59)).await;
-    in_tx.send(Ok(Message::Binary(b"hi".to_vec().into()))).unwrap();
+    in_tx
+      .send(Ok(Message::Binary(b"hi".to_vec().into())))
+      .unwrap();
     // Yield so the bridge actually processes the message before we
     // advance time again.
     tokio::task::yield_now().await;
@@ -406,8 +425,13 @@ mod tests {
     let console_out = Box::new(PendingReader);
 
     let mut handle = tokio::spawn(async move {
-      run_console_bridge(socket, console_in, console_out, Duration::from_secs(60))
-        .await
+      run_console_bridge(
+        socket,
+        console_in,
+        console_out,
+        Duration::from_secs(60),
+      )
+      .await
     });
 
     tokio::time::sleep(Duration::from_secs(59)).await;
@@ -470,13 +494,17 @@ mod tests {
     // the bridge forwards real data once but is never broken by EOF.
     // If the deadline DID reset on server data, the bridge would
     // stay alive past 60s; we assert the opposite below.
-    let console_out = Box::new(
-      std::io::Cursor::new(b"chunk".to_vec()).chain(PendingReader),
-    );
+    let console_out =
+      Box::new(std::io::Cursor::new(b"chunk".to_vec()).chain(PendingReader));
 
     let mut handle = tokio::spawn(async move {
-      run_console_bridge(socket, console_in, console_out, Duration::from_secs(60))
-        .await
+      run_console_bridge(
+        socket,
+        console_in,
+        console_out,
+        Duration::from_secs(60),
+      )
+      .await
     });
 
     // Drain whatever the bridge forwards so its `send` doesn't block.

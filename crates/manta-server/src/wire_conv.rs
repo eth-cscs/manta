@@ -45,24 +45,30 @@ mod tests {
   #[test]
   fn string_variants_preserve_payload_and_variant() {
     let cases: &[(MantaError, fn(&BackendError) -> bool)] = &[
-      (MantaError::NotFound("a".into()), |e| {
-        matches!(e, BackendError::NotFound(s) if s == "a")
-      }),
-      (MantaError::MissingField("b".into()), |e| {
-        matches!(e, BackendError::MissingField(s) if s == "b")
-      }),
-      (MantaError::JwtMalformed("c".into()), |e| {
-        matches!(e, BackendError::JwtMalformed(s) if s == "c")
-      }),
-      (MantaError::KafkaError("d".into()), |e| {
-        matches!(e, BackendError::KafkaError(s) if s == "d")
-      }),
-      (MantaError::InvalidPattern("e".into()), |e| {
-        matches!(e, BackendError::InvalidPattern(s) if s == "e")
-      }),
-      (MantaError::TemplateError("f".into()), |e| {
-        matches!(e, BackendError::TemplateError(s) if s == "f")
-      }),
+      (
+        MantaError::NotFound("a".into()),
+        |e| matches!(e, BackendError::NotFound(s) if s == "a"),
+      ),
+      (
+        MantaError::MissingField("b".into()),
+        |e| matches!(e, BackendError::MissingField(s) if s == "b"),
+      ),
+      (
+        MantaError::JwtMalformed("c".into()),
+        |e| matches!(e, BackendError::JwtMalformed(s) if s == "c"),
+      ),
+      (
+        MantaError::KafkaError("d".into()),
+        |e| matches!(e, BackendError::KafkaError(s) if s == "d"),
+      ),
+      (
+        MantaError::InvalidPattern("e".into()),
+        |e| matches!(e, BackendError::InvalidPattern(s) if s == "e"),
+      ),
+      (
+        MantaError::TemplateError("f".into()),
+        |e| matches!(e, BackendError::TemplateError(s) if s == "f"),
+      ),
     ];
     for (input, predicate) in cases {
       let label = format!("{input:?}");
@@ -75,7 +81,10 @@ mod tests {
         MantaError::TemplateError(s) => MantaError::TemplateError(s.clone()),
         _ => unreachable!(),
       });
-      assert!(predicate(&mapped), "wrong mapping for {label}: got {mapped:?}");
+      assert!(
+        predicate(&mapped),
+        "wrong mapping for {label}: got {mapped:?}"
+      );
     }
   }
 

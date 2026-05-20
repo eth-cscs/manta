@@ -255,14 +255,8 @@ mod tests {
   #[test]
   fn summary_status_matches_case_insensitively() {
     // Power and configuration status checks use eq_ignore_ascii_case.
-    assert_eq!(
-      compute_summary_status(&[node("off", "configured")]),
-      "OFF"
-    );
-    assert_eq!(
-      compute_summary_status(&[node("ON", "CONFIGURED")]),
-      "ON"
-    );
+    assert_eq!(compute_summary_status(&[node("off", "configured")]), "OFF");
+    assert_eq!(compute_summary_status(&[node("ON", "CONFIGURED")]), "ON");
   }
 
   // ---- calculate_hsm_hw_component_summary ----
