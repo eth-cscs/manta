@@ -2,6 +2,16 @@
 
 The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. The default port and TLS material come from `~/.config/manta/server.toml` (see [README.md](README.md#configuration-files)); the canonical port in `server.toml.example` is **8443** and TLS is required by default. Omit `cert`/`key` from `[server]` (or pass empty) only for local plain-HTTP testing.
 
+## TL;DR
+
+- **Base URL:** `https://<host>:8443/api/v1`
+- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, `/docs`, and `/api/v1/auth/*`.
+- **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
+- **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, clusters, migrations, SAT files, power, ephemeral envs).
+- **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
+- **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
+- **Interactive exploration:** `https://<host>:8443/docs` (Swagger UI loads the spec from `/openapi.json`).
+
 ## Starting the server
 
 ```

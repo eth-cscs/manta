@@ -1,8 +1,26 @@
 # Manta CLI Reference
 
-Complete reference for all `manta-cli` commands, subcommands, and flags.
+Complete reference for all `manta` commands, subcommands, and flags.
 
-**Binary name:** the CLI binary is `manta-cli`. The HTTP API server is a separate binary (`manta-server`); see [API.md](API.md) for its endpoints and [README.md](README.md) for how to run it.
+**Binary name:** the CLI binary is `manta` (the Cargo package is `manta-cli`; the `[[bin]]` block in its manifest renames the produced executable). The HTTP API server is a separate binary (`manta-server`); see [API.md](API.md) for its endpoints and [README.md](README.md) for how to run it.
+
+## TL;DR
+
+Every command takes one of the top-level verbs:
+
+| Verb | Purpose |
+|---|---|
+| [`config`](#config) | Manage `~/.config/manta/cli.toml` |
+| [`get`](#get) | Read-only queries (sessions, configurations, nodes, groups, hardware, …) |
+| [`add`](#add) | Create resources (node, group, hardware components, boot/kernel params) |
+| [`update`](#update) | Modify boot parameters or Redfish endpoints |
+| [`apply`](#apply) | Apply changes (SAT files, sessions, boot configs, kernel params, …) |
+| [`delete`](#delete) | Remove resources |
+| [`migrate`](#migrate) | Move nodes between groups; back up / restore virtual clusters |
+| [`power`](#power) | Power on/off/reset nodes or clusters |
+| [`log-value`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
+| [`console`](#console) | Open a WebSocket console to a node or running CFS session |
+| [`add-nodes-to-groups`](#add-nodes-to-groups) / [`remove-nodes-from-groups`](#remove-nodes-from-groups) | Bulk group-membership edits |
 
 **Global flag** (available on every command):
 

@@ -4,6 +4,35 @@
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
+## TL;DR
+
+A command-line + HTTP API frontend for HPC clusters running [CSM](https://github.com/Cray-HPE/cray-site-init) or [OpenCHAMI](https://www.openchami.org/). Two independent binaries from one Cargo workspace:
+
+- **`manta`** — interactive CLI. Forwards every operation (including auth) to a `manta-server` over HTTPS; never calls the backend directly.
+- **`manta-server`** — Axum HTTPS server. Holds the per-site backend credentials and exposes a Swagger-documented REST + WebSocket API at `https://<host>:8443/api/v1` (default port).
+
+**Get something running locally:**
+
+```bash
+# 1. build both binaries
+cargo build -p manta-cli -p manta-server
+
+# 2. fill in your sites + manta-server URL
+cp cli.toml.example    ~/.config/manta/cli.toml      # edit
+cp server.toml.example ~/.config/manta/server.toml   # edit
+
+# 3. start the server, then drive it with the CLI
+./target/debug/manta-server &
+./target/debug/manta get sessions
+```
+
+| Where to look next | For |
+|---|---|
+| [GUIDE.md](GUIDE.md) | common workflows ("how do I deploy a SAT file?") |
+| [CLI.md](CLI.md) | per-flag reference for every `manta` subcommand |
+| [API.md](API.md) | REST + WebSocket endpoints, schemas, status codes |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | crate layout, module boundaries, security model |
+
 ## Repository layout
 
 manta is a Cargo workspace with three crates:

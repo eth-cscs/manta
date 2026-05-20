@@ -2,6 +2,12 @@
 
 Practical walkthroughs for common cluster management tasks. This guide assumes manta is already installed and configured. See [README.md](README.md) for deployment instructions.
 
+## TL;DR
+
+Task-oriented walkthroughs for the most common cluster-management workflows: checking cluster and node status, managing groups, deploying with SAT files, running CFS sessions from local git repos, manipulating boot and kernel parameters, power on/off/reset, console access, moving nodes between groups, cleaning up old configurations, multi-site setups, and non-interactive scripting. Sections are self-contained — jump to the one you need.
+
+For the per-flag reference of every command, see [CLI.md](CLI.md). To call the HTTP API directly without going through the CLI, see [API.md](API.md).
+
 ---
 
 ## Table of contents
