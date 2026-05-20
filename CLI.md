@@ -247,7 +247,7 @@ Get BSS boot parameters.
 | `-H/--hsm-group` | string | HSM group name |
 | `-n/--nodes` | string | Comma-separated xnames/nids or hostlist expression |
 
-> One of `--hsm-group` or `--nodes` is required.
+> Pass one of `--hsm-group` or `--nodes` — clap doesn't enforce this for you, so omitting both returns the global set.
 
 ```
 manta get boot-parameters --hsm-group compute
@@ -276,7 +276,7 @@ List registered Redfish endpoints (BMCs).
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `-i/--id` | string | — | Filter by xname (repeatable) |
+| `-i/--id` | string | — | Filter by xname |
 | `-f/--fqdn` | string | — | Filter by FQDN |
 | `-u/--uuid` | string | — | Filter by UUID |
 | `-m/--macaddr` | string | — | Filter by MAC address |
@@ -449,15 +449,13 @@ Create a CFS session from one or more local git repositories.
 |------|------|----------|---------|-------------|
 | `-n/--name` | string | **yes** | — | Session name |
 | `-r/--repo-path` | path… | **yes** | — | Path(s) to local git repos (repeatable) |
-| `-l/--ansible-limit` | string | no* | — | Target xnames |
-| `-H/--hsm-group` | string | no* | — | HSM group scope |
+| `-l/--ansible-limit` | string | **yes** | — | Target xnames |
+| `-H/--hsm-group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
 | `-p/--playbook-name` | string | no | `site.yml` | Ansible playbook filename |
 | `-w/--watch-logs` | flag | no | — | Stream session logs |
 | `-t/--timestamps` | flag | no | — | Show timestamps in logs |
 | `-v/--ansible-verbosity` | 0–4 | no | `2` | Ansible verbosity |
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
-
-> One of `--ansible-limit` or `--hsm-group` is required.
 
 ```
 manta apply session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
@@ -764,7 +762,7 @@ manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful
 
 ## log \[VALUE\]
 
-Stream CFS session logs.
+Stream CFS session logs. Also available as the alias `manta logs`.
 
 | Arg/Flag | Type | Description |
 |----------|------|-------------|
