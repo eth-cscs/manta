@@ -139,7 +139,7 @@ Axum HTTPS server. Key files:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
-| `routes.rs` | Registers ~47 REST endpoints + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
+| `routes.rs` | Registers 48 REST endpoints (including the two `/api/v1/auth/*` endpoints) + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
 | `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
