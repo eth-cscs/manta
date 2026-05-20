@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.8] - 2026-05-20
+## [2.0.0-beta.9] - 2026-05-20
 
 ### Bug Fixes
 
 - `add node -d/--disabled` actually disables the node
+- Update cli_tests.rs after the manta-cli -> manta binary rename
 
 ### Build
 
