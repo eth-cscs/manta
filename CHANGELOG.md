@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Refactor
+
+- Extract `ConsoleSocket` trait so `run_console_bridge` is generic over the socket type. `WebSocket: ConsoleSocket`, so the production call sites in `console_node_ws` / `console_session_ws` are unchanged; the abstraction exists to let tests use an mpsc-backed `MockSocket`.
+- Extract pure `build_audit_message` and `build_auth_audit_message` JSON builders in `common::audit`; `send_audit` / `send_auth_audit` are now one-line wrappers that build the payload and forward to Kafka. No behaviour change at call sites.
+
+### Testing
+
+- Cover `AuthRateLimiter` window-reset and stale-entry pruning via a new `check_at(now)` clock-injection split. Six tests exercise window arithmetic in microseconds instead of waiting on real time.
+- Compact 24 redundant per-route auth/422 smoke tests in `tests/server_routes.rs` into 4 table-driven loops (53 → 29 tests, ~160 LOC removed, identical route coverage).
+- Cover the six previously-untested `BackendError` → HTTP variants in `to_handler_error` (`InvalidPattern`, `UnsupportedBackend`, `InvalidNodeId` → 400; `AuthenticationTokenNotFound`, `JwtMalformed` → 401; `InsufficientResources` → 422) plus a pin-test against silent default-to-500.
+- Cover the `MantaError` → `BackendError` mapping in `wire_conv::to_backend`: all six string-bearing variants, the renamed `Other → Message` arm, and three `#[from]`-bearing variants (IoError, SerdeError, YamlError).
+- Cover `common::config` env-var overrides (`MANTA_CLI_CONFIG`, `MANTA_SERVER_CONFIG`), missing-file NotFound message shape, malformed-TOML error path, and `MANTA_LOG`-style env-var merging over file values. Env-var mutations are serialised via a Mutex + RAII guard.
+- Cover the CLI HTTP client helpers: `QueryBuilder` (opt / opt_display / vec / flag / pair, insertion order, mixed-method chain) and `ws_base_url` http→ws scheme upgrade.
+- Cover the console bridge's inactivity timeout with five tests using `tokio::test(start_paused = true)`: timeout fires on no traffic, binary message resets deadline, resize text resets deadline but is not forwarded, Close frame breaks immediately, and a pin-test that server-to-client data does NOT reset the deadline (the policy "inactivity tracks the client" is explicit).
+- Cover the three pure helpers in `shared::cluster_status`: `compute_summary_status` priority ladder (FAILED > OFF > ON > STANDBY > UNCONFIGURED > OK) with case-insensitive matching, `calculate_hsm_hw_component_summary` MiB→GiB conversion and None-info skipping, `get_cluster_hw_pattern` whitespace stripping. Includes a divergence-pin test between the two hardware-aggregation helpers.
+- Cover the audit JSON wire shape: user / message keys always present, host wrapped as `{"hostname": ...}`, group passed through verbatim, JWT-extraction fallback to empty strings, and a no-leak assertion that the raw token never appears in the payload. Auth-audit covered too, including a structural assertion that no `password` / `passwd` / `secret` / `token` key is present (pins the "password is never logged" guarantee from the module docs).
+- Cover the non-IO `Kafka` surface: `new` round-trips brokers + topic and starts with an empty producer cache; `clone` deliberately resets the cache (pin against a future "share the OnceLock" fix); `Debug` masks the `FutureProducer` behind a placeholder so librdkafka internals don't leak into log output.
+
+### Build
+
+- Add `tokio` `test-util` feature to `manta-server` dev-dependencies (needed for `tokio::time::pause()` in the console-bridge tests).
+- Add `tempfile` to `manta-shared` dev-dependencies (used by the config loader tests).
+
 ## [2.0.0-beta.7] - 2026-05-19
 
 ### Bug Fixes
