@@ -69,13 +69,10 @@ site = "ochami"
 parent_hsm_group = "nodes_free"
 audit_file = "/tmp/manta_audit.log"
 manta_server_url = "https://manta-server.example.com:8443"   # required
-
-[sites.ochami]
-backend = "ochami"
-shasta_base_url = "https://foobar.openchami.cluster:8443"
-root_ca_cert_file = "ochami_root_cert.pem"
 EOF
 ```
+
+The CLI config has no `[sites.*]` block — per-site backend connection details (URLs, TLS certs, k8s, vault) live in `server.toml`. The CLI's `site = "..."` value is just the `X-Manta-Site` header it sends on each request; the server validates it.
 
 #### Start the `ochami` services from the [deployment recipe quickstart](https://github.com/OpenCHAMI/deployment-recipes/tree/main/quickstart).
 
@@ -95,32 +92,22 @@ EOF
 
 #### Run the CLI with one of the two options mentioned above to confirm that `manta` is working.
 
+The image has `manta` as its ENTRYPOINT, so arguments passed after the image name become CLI args:
+
 ```bash
-docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta manta get redfish-endpoints
+docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta get redfish-endpoints
 ```
 
 > [!NOTE]
 > Some commands will not work yet with OpenCHAMI services and will sometimes show a message indicating no implementation for the backend.
 >
 > ```bash
-> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest manta get sessions
-> INFO  | Get CFS sessions for HSM groups: Some([])
-> ERROR | Failed to get CFS sessions. Reason:
-> ERROR - Message: Get and filter sessions command not implemented for this backend
+> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest get sessions
+> ERROR | Get and filter sessions command not implemented for this backend
 > exit status 1
 > ```
 >
-> Some of the other commands may fail simply due to CSM services not included with OpenCHAMI if only using the OpenCHAMI deployment recipes:
->
-> ```bash
-> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest manta get images
-> INFO  | Get IMS images 'all available'
->
-> thread 'main' panicked at crates/manta-cli/src/cli/commands/get_images.rs:23:6:
-> called `Result::unwrap()` on an `Err` value: NetError(reqwest::Error { kind: Status(503), url: Url { scheme: "https", cannot_be_a_base: false, username: "", password: None, host: Some(Domain("foobar.openchami.cluster") ), port: Some(8443), path: "/ims/v3/images", query: None, fragment: None } })
-> note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-> exit status 101
-> ```
+> Some other commands may fail simply because CSM-only services are not part of an OpenCHAMI deployment.
 
 ### HTTP server mode
 
@@ -153,7 +140,7 @@ Each setting in the `[server]` block can be overridden at runtime:
 
 Manta reads two TOML files, one per binary. The CLI uses `~/.config/manta/cli.toml`; the HTTP server uses `~/.config/manta/server.toml`. Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-The two files share the `[sites.*]` definitions (typically duplicated, since the CLI usually runs on a different host than the server). CLI-only knobs (`site`, `parent_hsm_group`, `manta_server_url`) live in `cli.toml`; the `[server]` block (TLS, listen address, console timeout) lives in `server.toml`.
+The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `parent_hsm_group`, `manta_server_url`, optional `socks5_proxy`, optional `[auditor.kafka]`) — it has **no `[sites.*]` block**. Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit).
 
 **`~/.config/manta/cli.toml`**
 
@@ -339,17 +326,13 @@ perf script -F +pid > manta.perf
 Go to https://profiler.firefox.com/ and open manta.perf file
 
 
-#### DHAT mem alloction profiling
+<!--
+  DHAT memory profiling used to live here. It required a `dhat-heap`
+  feature in manta-cli's Cargo.toml that no longer exists. If you want
+  to revive it, add `dhat = "..."` as an optional dep, expose a
+  `dhat-heap` feature that enables it, and wrap `main` in a
+  `#[cfg(feature = "dhat-heap")] let _profiler = dhat::Profiler::new_heap()`.
+  Then `cargo run -r --features dhat-heap -- get sessions` will produce
+  dhat-heap.json viewable at https://nnethercote.github.io/dh_view/dh_view.html
+-->
 
-> https://docs.rs/dhat/latest/dhat/
-> lto in Cargo.toml needs to be disabled
-
-##### Run
-
-```bash
-cargo run -r --features dhat-heap -- get session
-```
-
-##### View results (dhat-heap.json file)
-
-https://nnethercote.github.io/dh_view/dh_view.html
