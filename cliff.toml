@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.\n
 # https://keats.github.io/tera/docs/#introduction
 body = """
 {% if version %}\
-    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+    ## [{{ version | replace(from="manta-cli-v", to="") | replace(from="manta-server-v", to="") | replace(from="manta-shared-v", to="") | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
 {% else %}\
     ## [unreleased]
 {% endif %}\
@@ -41,8 +41,11 @@ postprocessors = [
 conventional_commits = true
 # filter out the commits that are not conventional
 filter_unconventional = true
-# process each line of a commit as an individual commit
-split_commits = true
+# Emit one bullet per commit. `split_commits = true` (the previous
+# setting) instead emits one bullet per *line* of the commit body,
+# which produces nonsense duplication for any commit with a wrapped
+# body — every line gets bucketed as if it were its own commit subject.
+split_commits = false
 # regex for preprocessing the commit messages
 commit_preprocessors = [
   # { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"}, # replace issue numbers
@@ -56,13 +59,20 @@ commit_parsers = [
   { message = "^refactor", group = "Refactor" },
   { message = "^style", group = "Styling" },
   { message = "^test", group = "Testing" },
+  { message = "^build", group = "Build" },
   { message = "^chore\\(release\\): prepare for", skip = true },
   { message = "^chore\\(deps\\)", skip = true },
   { message = "^chore\\(pr\\)", skip = true },
   { message = "^chore\\(pull\\)", skip = true },
+  # cargo-release emits "chore: Release" (note capital R) before each
+  # bump; these add no signal beyond the version tag itself.
+  { message = "^chore: [Rr]elease", skip = true },
   { message = "^chore|ci", group = "Miscellaneous Tasks" },
-  { body = ".*security", group = "Security" },
   { message = "^revert", group = "Revert" },
+  # NOTE: the previous `{ body = ".*security", group = "Security" }`
+  # rule was removed — it matched any commit body containing the word
+  # "security" (e.g. an audit test commit mentioning "security
+  # incident"), producing a misleading Security section.
 ]
 # protect breaking changes from being skipped due to matching a skipping commit_parser
 protect_breaking_commits = false
