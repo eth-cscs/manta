@@ -24,7 +24,12 @@ pub(super) const HOSTLIST_HELP: &str = "Xnames, NIDs, or a hostlist expression.\
 
 /// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
-  Command::new(env!("CARGO_PKG_NAME"))
+  // Hard-coded "manta" rather than `env!("CARGO_PKG_NAME")` because the
+  // package is `manta-cli` but the produced binary is `manta` (see the
+  // `[[bin]]` block in this crate's Cargo.toml). Using the package name
+  // would render wrong help text and produce wrong completion-script
+  // names.
+  Command::new("manta")
     .term_width(CLI_TERM_WIDTH)
     .version(env!("CARGO_PKG_VERSION"))
     .arg_required_else_help(true)

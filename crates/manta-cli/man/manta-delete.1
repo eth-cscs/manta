@@ -1,0 +1,41 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-delete 1  "delete " 
+.SH NAME
+manta\-delete \- Delete system resources
+.SH SYNOPSIS
+\fBmanta delete\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Delete system resources
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-delete\-group(1)
+Delete a node group
+.TP
+manta\-delete\-node(1)
+Remove a node from the system
+.TP
+manta\-delete\-kernel\-parameters(1)
+Remove kernel parameters from nodes
+.TP
+manta\-delete\-boot\-parameters(1)
+Delete boot parameters for nodes
+.TP
+manta\-delete\-configurations(1)
+Delete configurations and all associated data
+.TP
+manta\-delete\-session(1)
+Delete a configuration session
+.TP
+manta\-delete\-images(1)
+[experimental] Delete images
+.TP
+manta\-delete\-hardware(1)
+[experimental] Remove hardware components from a cluster
+.TP
+manta\-delete\-redfish\-endpoint(1)
+Delete a Redfish endpoint

@@ -1,0 +1,20 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-delete-images 1  "images " 
+.SH NAME
+manta\-delete\-images \- [experimental] Delete images
+.SH SYNOPSIS
+\fBmanta delete images\fR [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIIMAGE_IDS\fR> 
+.SH DESCRIPTION
+[experimental] Delete images
+.SH OPTIONS
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIIMAGE_IDS\fR>
+Comma\-separated image IDs to delete.
+eg: e2ce82f0\-e7ba\-4f36\-9f5c\-750346599600,59e0180a\-3fdd\-4936\-bba7\-14ba914ffd34

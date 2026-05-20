@@ -1,0 +1,20 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-migrate 1  "migrate " 
+.SH NAME
+manta\-migrate \- Move nodes or clusters between groups
+.SH SYNOPSIS
+\fBmanta migrate\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Move nodes or clusters between groups
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-migrate\-vCluster(1)
+[experimental] Migrate a cluster
+.TP
+manta\-migrate\-nodes(1)
+Move nodes between clusters

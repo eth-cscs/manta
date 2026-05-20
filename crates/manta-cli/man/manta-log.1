@@ -1,0 +1,20 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-log 1  "log " 
+.SH NAME
+manta\-log \- Stream configuration session logs
+.SH SYNOPSIS
+\fBmanta log\fR [\fB\-t\fR|\fB\-\-timestamps\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fITARGET\fR] 
+.SH DESCRIPTION
+Stream configuration session logs
+.SH OPTIONS
+.TP
+\fB\-t\fR, \fB\-\-timestamps\fR
+Show log timestamps
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+[\fITARGET\fR]
+Session name, node group, xname, or NID.
+eg: x1003c1s7b0n0, nid001313, zinal, batcher\-64d35a81\-d0e1\-496d\-9eda\-0010e502f2a3

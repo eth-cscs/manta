@@ -1,0 +1,38 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-get-templates 1  "templates " 
+.SH NAME
+manta\-get\-templates \- List session templates
+.SH SYNOPSIS
+\fBmanta get templates\fR [\fB\-n\fR|\fB\-\-name\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-H\fR|\fB\-\-hsm\-group\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+List session templates
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-name\fR \fI<NAME>\fR
+Template name
+.TP
+\fB\-m\fR, \fB\-\-most\-recent\fR
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+\fB\-l\fR, \fB\-\-limit\fR \fI<VALUE>\fR
+Return only the <VALUE> most recent templates
+.TP
+\fB\-H\fR, \fB\-\-hsm\-group\fR \fI<GROUP_NAME>\fR
+Node group name
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+json
+.IP \(bu 2
+table
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

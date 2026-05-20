@@ -1,0 +1,40 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-add-boot-parameters 1  "boot-parameters " 
+.SH NAME
+manta\-add\-boot\-parameters \- Create boot parameters for nodes
+.SH SYNOPSIS
+\fBmanta add boot\-parameters\fR <\fB\-H\fR|\fB\-\-hosts\fR> [\fB\-n\fR|\fB\-\-nids\fR] [\fB\-m\fR|\fB\-\-macs\fR] [\fB\-p\fR|\fB\-\-params\fR] [\fB\-k\fR|\fB\-\-kernel\fR] [\fB\-i\fR|\fB\-\-initrd\fR] [\fB\-c\fR|\fB\-\-cloud\-init\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Create boot parameters for nodes
+.SH OPTIONS
+.TP
+\fB\-H\fR, \fB\-\-hosts\fR \fI<XNAMES>\fR
+Xnames of the nodes
+.TP
+\fB\-n\fR, \fB\-\-nids\fR \fI<VALUE>\fR
+Comma\-separated NIDs of the nodes
+.TP
+\fB\-m\fR, \fB\-\-macs\fR \fI<VALUE>\fR
+Comma\-separated MAC addresses of the nodes
+.TP
+\fB\-p\fR, \fB\-\-params\fR \fI<VALUE>\fR
+Kernel parameters
+.TP
+\fB\-k\fR, \fB\-\-kernel\fR \fI<VALUE>\fR
+S3 path to the kernel file
+.TP
+\fB\-i\fR, \fB\-\-initrd\fR \fI<VALUE>\fR
+S3 path to the initrd file
+.TP
+\fB\-c\fR, \fB\-\-cloud\-init\fR \fI<VALUE>\fR
+Cloud\-init script
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR
+Skip confirmation prompts
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

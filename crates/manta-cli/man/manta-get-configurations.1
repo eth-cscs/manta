@@ -1,0 +1,39 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-get-configurations 1  "configurations " 
+.SH NAME
+manta\-get\-configurations \- List configurations
+.SH SYNOPSIS
+\fBmanta get configurations\fR [\fB\-n\fR|\fB\-\-name\fR] [\fB\-p\fR|\fB\-\-pattern\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-H\fR|\fB\-\-hsm\-group\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+List configurations
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-name\fR \fI<NAME>\fR
+Configuration name
+.TP
+\fB\-p\fR, \fB\-\-pattern\fR \fI<PATTERN>\fR
+Glob pattern to filter by name
+.TP
+\fB\-m\fR, \fB\-\-most\-recent\fR
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+\fB\-l\fR, \fB\-\-limit\fR \fI<VALUE>\fR
+Return only the <VALUE> most recent configurations
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+json
+.RE
+.TP
+\fB\-H\fR, \fB\-\-hsm\-group\fR \fI<GROUP_NAME>\fR
+Node group name
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

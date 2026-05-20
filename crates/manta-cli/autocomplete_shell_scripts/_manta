@@ -1,0 +1,4384 @@
+#compdef manta
+
+autoload -U is-at-least
+
+_manta() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_manta_commands" \
+"*::: :->manta" \
+&& ret=0
+    case $state in
+    (manta)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-command-$line[1]:"
+        case $line[1] in
+            (config)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(set)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__config__subcmd__set_commands" \
+"*::: :->set" \
+&& ret=0
+
+    case $state in
+    (set)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-set-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':HSM_GROUP_NAME -- Node group name:_default' \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':HSM_GROUP_NAME -- Node group name:_default' \
+&& ret=0
+;;
+(site)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':SITE_NAME -- Site name:_default' \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':LOG_LEVEL -- Log verbosity level:(error warn info debug trace)' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__config__subcmd__set__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-set-help-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(site)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(unset)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__config__subcmd__unset_commands" \
+"*::: :->unset" \
+&& ret=0
+
+    case $state in
+    (unset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-unset-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(auth)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__config__subcmd__unset__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-unset-help-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(auth)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(gen-autocomplete)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Shell type (guessed from \$SHELL if omitted)]:SHELL:(bash zsh fish)' \
+'--shell=[Shell type (guessed from \$SHELL if omitted)]:SHELL:(bash zsh fish)' \
+'-p+[Directory to write the script (prints to stdout if omitted)]:PATH:_files -/' \
+'--path=[Directory to write the script (prints to stdout if omitted)]:PATH:_files -/' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__config__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-help-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(set)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__config__subcmd__help__subcmd__set_commands" \
+"*::: :->set" \
+&& ret=0
+
+    case $state in
+    (set)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-help-set-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(site)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(unset)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__config__subcmd__help__subcmd__unset_commands" \
+"*::: :->unset" \
+&& ret=0
+
+    case $state in
+    (unset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-config-help-unset-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(auth)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(gen-autocomplete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__get_commands" \
+"*::: :->get" \
+&& ret=0
+
+    case $state in
+    (get)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-get-command-$line[1]:"
+        case $line[1] in
+            (groups)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(json table)' \
+'--output=[Output format]:FORMAT:(json table)' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::VALUE -- Group name (lists all groups if omitted):_default' \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__get__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-get-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(json summary details pattern)' \
+'--output=[Output format]:FORMAT:(json summary details pattern)' \
+'-h[Print help]' \
+'--help[Print help]' \
+':CLUSTER_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__get__subcmd__hardware__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-get-hardware-help-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(sessions)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Return only the session with this name]:SESSION_NAME:_default' \
+'--name=[Return only the session with this name]:SESSION_NAME:_default' \
+'-a+[Return only sessions older than this age (eg\: '\''1d'\'', '\''6h'\'')]:VALUE:_default' \
+'--min-age=[Return only sessions older than this age (eg\: '\''1d'\'', '\''6h'\'')]:VALUE:_default' \
+'-A+[Return only sessions younger than this age (eg\: '\''1d'\'', '\''6h'\'')]:VALUE:_default' \
+'--max-age=[Return only sessions younger than this age (eg\: '\''1d'\'', '\''6h'\'')]:VALUE:_default' \
+'-t+[Return only sessions of this type]:VALUE:(image runtime)' \
+'--type=[Return only sessions of this type]:VALUE:(image runtime)' \
+'-s+[Return only sessions with this status]:VALUE:(pending running complete)' \
+'--status=[Return only sessions with this status]:VALUE:(pending running complete)' \
+'-l+[Return only the <VALUE> most recent sessions]:VALUE:_default' \
+'--limit=[Return only the <VALUE> most recent sessions]:VALUE:_default' \
+'-o+[Output format]:FORMAT:(json)' \
+'--output=[Output format]:FORMAT:(json)' \
+'-x+[Xnames, NIDs, or hostlist expression. Returns sessions targeting these nodes or their groups]:NODES:_default' \
+'--xnames=[Xnames, NIDs, or hostlist expression. Returns sessions targeting these nodes or their groups]:NODES:_default' \
+'-H+[Node group name. Returns sessions targeting this group or its members]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name. Returns sessions targeting this group or its members]:GROUP_NAME:_default' \
+'-m[Return only the most recent session (equivalent to --limit 1)]' \
+'--most-recent[Return only the most recent session (equivalent to --limit 1)]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Configuration name]:NAME:_default' \
+'--name=[Configuration name]:NAME:_default' \
+'-p+[Glob pattern to filter by name]:PATTERN:_default' \
+'--pattern=[Glob pattern to filter by name]:PATTERN:_default' \
+'-l+[Return only the <VALUE> most recent configurations]:VALUE:_default' \
+'--limit=[Return only the <VALUE> most recent configurations]:VALUE:_default' \
+'-o+[Output format]:FORMAT:(json)' \
+'--output=[Output format]:FORMAT:(json)' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-m[Return only the most recent (equivalent to --limit 1)]' \
+'--most-recent[Return only the most recent (equivalent to --limit 1)]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(templates)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Template name]:NAME:_default' \
+'--name=[Template name]:NAME:_default' \
+'-l+[Return only the <VALUE> most recent templates]:VALUE:_default' \
+'--limit=[Return only the <VALUE> most recent templates]:VALUE:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-o+[Output format]:FORMAT:(json table)' \
+'--output=[Output format]:FORMAT:(json table)' \
+'-m[Return only the most recent (equivalent to --limit 1)]' \
+'--most-recent[Return only the most recent (equivalent to --limit 1)]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
+'--status=[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
+'-o+[Output format]:FORMAT:(table table-wide json summary)' \
+'--output=[Output format]:FORMAT:(table table-wide json summary)' \
+'-n[Print NIDs on a single line]' \
+'--nids-only-one-line[Print NIDs on a single line]' \
+'-x[Print xnames on a single line]' \
+'--xnames-only-one-line[Print xnames on a single line]' \
+'-T[Show a cluster status summary\: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node'\''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node'\''s configuration failed]' \
+'--summary-status[Show a cluster status summary\: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node'\''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node'\''s configuration failed]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':HSM_GROUP_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-s+[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
+'--status=[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
+'-o+[Output format]:FORMAT:(table table-wide json summary)' \
+'--output=[Output format]:FORMAT:(table table-wide json summary)' \
+'-n[Print NIDs on a single line]' \
+'--nids-only-one-line[Print NIDs on a single line]' \
+'-T[Show a node status summary\: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node'\''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node'\''s configuration failed]' \
+'--summary-status[Show a node status summary\: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node'\''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node'\''s configuration failed]' \
+'-S[Also show sibling nodes that share a power supply with the requested nodes]' \
+'--include-siblings[Also show sibling nodes that share a power supply with the requested nodes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Image ID]:IMAGE_ID:_default' \
+'--id=[Image ID]:IMAGE_ID:_default' \
+'-l+[Return only the <VALUE> most recent images]:VALUE:_default' \
+'--limit=[Return only the <VALUE> most recent images]:VALUE:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-m[Return only the most recent (equivalent to --limit 1)]' \
+'--most-recent[Return only the most recent (equivalent to --limit 1)]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-H+[Show kernel parameters for all nodes in this group]:GROUP_NAME:_default' \
+'--hsm-group=[Show kernel parameters for all nodes in this group]:GROUP_NAME:_default' \
+'-f+[Comma-separated list of parameter names to show. eg\: '\''console,bad_page,crashkernel,hugepagelist,root'\'']:VALUE:_default' \
+'--filter=[Comma-separated list of parameter names to show. eg\: '\''console,bad_page,crashkernel,hugepagelist,root'\'']:VALUE:_default' \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(redfish-endpoints)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Filter by xname (can be specified multiple times)]:VALUE:_default' \
+'--id=[Filter by xname (can be specified multiple times)]:VALUE:_default' \
+'-f+[Filter by FQDN]:VALUE:_default' \
+'--fqdn=[Filter by FQDN]:VALUE:_default' \
+'-u+[Filter by UUID]:VALUE:_default' \
+'--uuid=[Filter by UUID]:VALUE:_default' \
+'-m+[Filter by MAC address]:VALUE:_default' \
+'--macaddr=[Filter by MAC address]:VALUE:_default' \
+'-I+[Filter by IP address (empty string matches endpoints without an IP)]:VALUE:_default' \
+'--ipaddress=[Filter by IP address (empty string matches endpoints without an IP)]:VALUE:_default' \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__get__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-get-help-command-$line[1]:"
+        case $line[1] in
+            (groups)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__get__subcmd__help__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-get-help-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(sessions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(templates)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoints)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__add_commands" \
+"*::: :->add" \
+&& ret=0
+
+    case $state in
+    (add)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-add-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Node xname]:XNAME:_default' \
+'--id=[Node xname]:XNAME:_default' \
+'-g+[Node group to add the node to]:NAME:_default' \
+'--group=[Node group to add the node to]:NAME:_default' \
+'-H+[File containing hardware information]:FILE:_files' \
+'--hardware=[File containing hardware information]:FILE:_files' \
+'-a+[Node architecture]:VALUE:(X86 ARM Other)' \
+'--arch=[Node architecture]:VALUE:(X86 ARM Other)' \
+'-d[Register the node as disabled]' \
+'--disabled[Register the node as disabled]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+'-l+[Group name]:NAME:_default' \
+'--label=[Group name]:NAME:_default' \
+'-d+[Group description]:VALUE:_default' \
+'--description=[Group description]:VALUE:_default' \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+'-P+[Hardware component pattern]:PATTERN:_default' \
+'--pattern=[Hardware component pattern]:PATTERN:_default' \
+'-t+[Cluster to add components to]:NAME:_default' \
+'--target-cluster=[Cluster to add components to]:NAME:_default' \
+'-p+[Cluster that donates the components]:NAME:_default' \
+'--parent-cluster=[Cluster that donates the components]:NAME:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-c[Create the target cluster if it does not exist]' \
+'--create-hsm-group[Create the target cluster if it does not exist]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-H+[Xnames of the nodes]:XNAMES:_default' \
+'--hosts=[Xnames of the nodes]:XNAMES:_default' \
+'-n+[Comma-separated NIDs of the nodes]:VALUE:_default' \
+'--nids=[Comma-separated NIDs of the nodes]:VALUE:_default' \
+'-m+[Comma-separated MAC addresses of the nodes]:VALUE:_default' \
+'--macs=[Comma-separated MAC addresses of the nodes]:VALUE:_default' \
+'-p+[Kernel parameters]:VALUE:_default' \
+'--params=[Kernel parameters]:VALUE:_default' \
+'-k+[S3 path to the kernel file]:VALUE:_default' \
+'--kernel=[S3 path to the kernel file]:VALUE:_default' \
+'-i+[S3 path to the initrd file]:VALUE:_default' \
+'--initrd=[S3 path to the initrd file]:VALUE:_default' \
+'-c+[Cloud-init script]:VALUE:_default' \
+'--cloud-init=[Cloud-init script]:VALUE:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-O[Overwrite the value if the parameter already exists]' \
+'--overwrite[Overwrite the value if the parameter already exists]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'--do-not-reboot[Do not reboot nodes after applying changes]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Space-separated kernel parameters to append.
+eg\: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M:_default' \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Xname of the BMC or controller]:XNAME:_default' \
+'--id=[Xname of the BMC or controller]:XNAME:_default' \
+'-n+[Arbitrary user-provided name for the endpoint]:VALUE:_default' \
+'--name=[Arbitrary user-provided name for the endpoint]:VALUE:_default' \
+'-H+[Hostname (FQDN host portion); normally identical to the xname]:VALUE:_default' \
+'--hostname=[Hostname (FQDN host portion); normally identical to the xname]:VALUE:_default' \
+'-d+[Domain (FQDN domain portion)]:VALUE:_default' \
+'--domain=[Domain (FQDN domain portion)]:VALUE:_default' \
+'-f+[Fully-qualified domain name on the management network (derived from hostname + domain)]:VALUE:_default' \
+'--fqdn=[Fully-qualified domain name on the management network (derived from hostname + domain)]:VALUE:_default' \
+'-u+[Username for endpoint authentication]:VALUE:_default' \
+'--user=[Username for endpoint authentication]:VALUE:_default' \
+'-p+[Password for endpoint authentication]:VALUE:_default' \
+'--password=[Password for endpoint authentication]:VALUE:_default' \
+'-M+[MAC address of the Redfish endpoint on the management network]:VALUE:_default' \
+'--macaddr=[MAC address of the Redfish endpoint on the management network]:VALUE:_default' \
+'-I+[IP address of the Redfish endpoint on the management network (IPv4 or IPv6)]:VALUE:_default' \
+'--ipaddress=[IP address of the Redfish endpoint on the management network (IPv4 or IPv6)]:VALUE:_default' \
+'-t+[Discovery template ID]:VALUE:_default' \
+'--template-id=[Discovery template ID]:VALUE:_default' \
+'-e[Enable the endpoint upon creation]' \
+'--enabled[Enable the endpoint upon creation]' \
+'-U[Use SSDP for discovery if the endpoint supports it]' \
+'--use-ssdp[Use SSDP for discovery if the endpoint supports it]' \
+'-m[Require a MAC address for geolocation]' \
+'--mac-required[Require a MAC address for geolocation]' \
+'-r[Trigger rediscovery when endpoint information is updated]' \
+'--rediscover-on-update[Trigger rediscovery when endpoint information is updated]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__add__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-add-help-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__update_commands" \
+"*::: :->update" \
+&& ret=0
+
+    case $state in
+    (update)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-update-command-$line[1]:"
+        case $line[1] in
+            (boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-H+[Xnames of the nodes to update]:XNAMES:_default' \
+'--hosts=[Xnames of the nodes to update]:XNAMES:_default' \
+'-p+[Kernel parameters]:VALUE:_default' \
+'--params=[Kernel parameters]:VALUE:_default' \
+'-k+[S3 path to the kernel file]:VALUE:_default' \
+'--kernel=[S3 path to the kernel file]:VALUE:_default' \
+'-i+[S3 path to the initrd file]:VALUE:_default' \
+'--initrd=[S3 path to the initrd file]:VALUE:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Xname of the endpoint to update]:XNAME:_default' \
+'--id=[Xname of the endpoint to update]:XNAME:_default' \
+'-n+[Arbitrary user-provided name for the endpoint]:VALUE:_default' \
+'--name=[Arbitrary user-provided name for the endpoint]:VALUE:_default' \
+'-H+[Hostname (FQDN host portion)]:VALUE:_default' \
+'--hostname=[Hostname (FQDN host portion)]:VALUE:_default' \
+'-d+[Domain (FQDN domain portion)]:VALUE:_default' \
+'--domain=[Domain (FQDN domain portion)]:VALUE:_default' \
+'-f+[Fully-qualified domain name on the management network]:VALUE:_default' \
+'--fqdn=[Fully-qualified domain name on the management network]:VALUE:_default' \
+'-u+[Username for endpoint authentication]:VALUE:_default' \
+'--user=[Username for endpoint authentication]:VALUE:_default' \
+'-p+[Password for endpoint authentication]:VALUE:_default' \
+'--password=[Password for endpoint authentication]:VALUE:_default' \
+'-M+[MAC address of the Redfish endpoint on the management network]:VALUE:_default' \
+'--macaddr=[MAC address of the Redfish endpoint on the management network]:VALUE:_default' \
+'-I+[IP address of the Redfish endpoint on the management network (IPv4 or IPv6)]:VALUE:_default' \
+'--ipaddress=[IP address of the Redfish endpoint on the management network (IPv4 or IPv6)]:VALUE:_default' \
+'-t+[Discovery template ID]:VALUE:_default' \
+'--template-id=[Discovery template ID]:VALUE:_default' \
+'-e[Enable the endpoint]' \
+'--enabled[Enable the endpoint]' \
+'-U[Use SSDP for discovery if the endpoint supports it]' \
+'--use-ssdp[Use SSDP for discovery if the endpoint supports it]' \
+'-m[Require a MAC address for geolocation]' \
+'--mac-required[Require a MAC address for geolocation]' \
+'-r[Trigger rediscovery when endpoint information is updated]' \
+'--rediscover-on-update[Trigger rediscovery when endpoint information is updated]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__update__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-update-help-command-$line[1]:"
+        case $line[1] in
+            (boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(apply)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__apply_commands" \
+"*::: :->apply" \
+&& ret=0
+
+    case $state in
+    (apply)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-command-$line[1]:"
+        case $line[1] in
+            (hardware)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__apply__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+'-P+[Hardware pattern\: <component>\:<qty>\[\:<component>\:<qty>...\]. eg\: '\''a100\:12\:epyc\:5'\'']:PATTERN:_default' \
+'--pattern=[Hardware pattern\: <component>\:<qty>\[\:<component>\:<qty>...\]. eg\: '\''a100\:12\:epyc\:5'\'']:PATTERN:_default' \
+'-t+[Cluster to rescale]:TARGET_CLUSTER_NAME:_default' \
+'--target-cluster=[Cluster to rescale]:TARGET_CLUSTER_NAME:_default' \
+'-p+[Cluster that donates or receives the redistributed nodes]:PARENT_CLUSTER_NAME:_default' \
+'--parent-cluster=[Cluster that donates or receives the redistributed nodes]:PARENT_CLUSTER_NAME:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-c[Create the target cluster if it does not exist]' \
+'--create-target-hsm-group[Create the target cluster if it does not exist]' \
+'-D[Delete the parent cluster if empty after this operation]' \
+'--delete-empty-parent-hsm-group[Delete the parent cluster if empty after this operation]' \
+'-u[Allow any available nodes to be selected]' \
+'--unpin-nodes[Allow any available nodes to be selected]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__hardware__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-hardware-help-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(configuration)
+_arguments "${_arguments_options[@]}" : \
+'-t+[SAT file path]:SAT_FILE_PATH:_files' \
+'--sat-template-file=[SAT file path]:SAT_FILE_PATH:_files' \
+'-f+[Values file for SAT jinja2 templates]:VALUES_FILE_PATH:_files' \
+'--values-file=[Values file for SAT jinja2 templates]:VALUES_FILE_PATH:_files' \
+'*-V+[Inline values for SAT jinja2 templates (overrides --values-file)]:VALUES:_default' \
+'*--values=[Inline values for SAT jinja2 templates (overrides --values-file)]:VALUES:_default' \
+'-o+[Output format]:FORMAT:(json)' \
+'--output=[Output format]:FORMAT:(json)' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(sat-file)
+_arguments "${_arguments_options[@]}" : \
+'-t+[SAT file path (may be a jinja2 template)]:FILE:_files' \
+'--sat-template-file=[SAT file path (may be a jinja2 template)]:FILE:_files' \
+'-f+[Values file to expand jinja2 variables in the SAT file]:FILE:_files' \
+'--values-file=[Values file to expand jinja2 variables in the SAT file]:FILE:_files' \
+'*-V+[Inline values to expand jinja2 variables (overrides --values-file)]:VALUE:_default' \
+'*--values=[Inline values to expand jinja2 variables (overrides --values-file)]:VALUE:_default' \
+'-v+[Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)]:VALUE:(1 2 3 4)' \
+'--ansible-verbosity=[Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)]:VALUE:(1 2 3 4)' \
+'-P+[Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)]:VALUE:_default' \
+'--ansible-passthrough=[Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)]:VALUE:_default' \
+'-p+[Command to run before processing. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'--pre-hook=[Command to run before processing. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'-a+[Command to run after successful processing. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'--post-hook=[Command to run after successful processing. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'--reboot[Reboot nodes after applying session templates]' \
+'-o[Overwrite an existing configuration with the same name]' \
+'--overwrite-configuration[Overwrite an existing configuration with the same name]' \
+'-w[Stream session logs to stdout]' \
+'--watch-logs[Stream session logs to stdout]' \
+'-T[Show log timestamps]' \
+'--timestamps[Show log timestamps]' \
+'-i[Process only the \`configurations\` and \`images\` sections]' \
+'--image-only[Process only the \`configurations\` and \`images\` sections]' \
+'-s[Process only the \`configurations\` and \`session_templates\` sections]' \
+'--sessiontemplate-only[Process only the \`configurations\` and \`session_templates\` sections]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__apply__subcmd__boot_commands" \
+"*::: :->boot" \
+&& ret=0
+
+    case $state in
+    (boot)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-boot-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Image ID to boot the nodes]:IMAGE_ID:_default' \
+'--boot-image=[Image ID to boot the nodes]:IMAGE_ID:_default' \
+'-b+[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
+'--boot-image-configuration=[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
+'-r+[Configuration to apply to nodes after booting]:NAME:_default' \
+'--runtime-configuration=[Configuration to apply to nodes after booting]:NAME:_default' \
+'-k+[Kernel parameters to assign to the nodes]:VALUE:_default' \
+'--kernel-parameters=[Kernel parameters to assign to the nodes]:VALUE:_default' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'--do-not-reboot[Suppress the automatic reboot after updating boot parameters]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Image ID to boot the nodes]:IMAGE_ID:_default' \
+'--boot-image=[Image ID to boot the nodes]:IMAGE_ID:_default' \
+'-b+[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
+'--boot-image-configuration=[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
+'-r+[Configuration to apply to nodes after booting]:NAME:_default' \
+'--runtime-configuration=[Configuration to apply to nodes after booting]:NAME:_default' \
+'-k+[Kernel parameters to assign to all cluster nodes]:VALUE:_default' \
+'--kernel-parameters=[Kernel parameters to assign to all cluster nodes]:VALUE:_default' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'--do-not-reboot[Suppress the automatic reboot after updating boot parameters]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':CLUSTER_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__boot__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-boot-help-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'--do-not-reboot[Do not reboot nodes after applying changes]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Space-separated kernel parameters to apply.
+eg\: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M:_default' \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Session name]:VALUE:_default' \
+'--name=[Session name]:VALUE:_default' \
+'-p+[Ansible playbook filename]:VALUE:_default' \
+'--playbook-name=[Ansible playbook filename]:VALUE:_default' \
+'*-r+[Path to the local git repo containing the Ansible playbook]:REPO_PATH:_files -/' \
+'*--repo-path=[Path to the local git repo containing the Ansible playbook]:REPO_PATH:_files -/' \
+'-v+[Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)]:VALUE:(0 1 2 3 4)' \
+'--ansible-verbosity=[Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)]:VALUE:(0 1 2 3 4)' \
+'-P+[Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)]:VALUE:_default' \
+'--ansible-passthrough=[Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)]:VALUE:_default' \
+'-l+[Limit the session to specific nodes (must be a subset of --hsm-group if both are provided)]:VALUE:_default' \
+'--ansible-limit=[Limit the session to specific nodes (must be a subset of --hsm-group if both are provided)]:VALUE:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-w[Stream session logs to stdout]' \
+'--watch-logs[Stream session logs to stdout]' \
+'-t[Show log timestamps]' \
+'--timestamps[Show log timestamps]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(ephemeral-environment)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Image ID to use]:IMAGE_ID:_default' \
+'--image-id=[Image ID to use]:IMAGE_ID:_default' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(template)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Name of the boot session to create]:VALUE:_default' \
+'--name=[Name of the boot session to create]:VALUE:_default' \
+'-o+[Boot operation to perform]:VALUE:(reboot boot shutdown)' \
+'--operation=[Boot operation to perform]:VALUE:(reboot boot shutdown)' \
+'-t+[Session template name]:VALUE:_default' \
+'--template=[Session template name]:VALUE:_default' \
+'-l+[Limit to specific nodes, groups, or roles (OR by default; prefix with '\''&'\'' for AND or '\''!'\'' for NOT)]:VALUE:_default' \
+'--limit=[Limit to specific nodes, groups, or roles (OR by default; prefix with '\''&'\'' for AND or '\''!'\'' for NOT)]:VALUE:_default' \
+'-i[Include nodes marked as disabled in the hardware state manager]' \
+'--include-disabled[Include nodes marked as disabled in the hardware state manager]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-help-command-$line[1]:"
+        case $line[1] in
+            (hardware)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__help__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-help-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(configuration)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sat-file)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__help__subcmd__boot_commands" \
+"*::: :->boot" \
+&& ret=0
+
+    case $state in
+    (boot)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-help-boot-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(ephemeral-environment)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(template)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__delete_commands" \
+"*::: :->delete" \
+&& ret=0
+
+    case $state in
+    (delete)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-delete-command-$line[1]:"
+        case $line[1] in
+            (group)
+_arguments "${_arguments_options[@]}" : \
+'-f[Force deletion]' \
+'--force[Force deletion]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':VALUE -- Name of the group to delete:_default' \
+&& ret=0
+;;
+(node)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xname of the node to remove:_default' \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-H+[Node group name]:GROUP_NAME:_default' \
+'--hsm-group=[Node group name]:GROUP_NAME:_default' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'--do-not-reboot[Do not reboot nodes after applying changes]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Comma-separated kernel parameter names to remove.
+eg\: console,bad_page,crashkernel,hugepagelist,quiet:_default' \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+'-H+[Xnames of the nodes]:XNAMES:_default' \
+'--hosts=[Xnames of the nodes]:XNAMES:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+'-n+[Glob pattern to filter by name. eg\: my-config*, my-config-v\[1,2\]]:VALUE:_default' \
+'--configuration-name=[Glob pattern to filter by name. eg\: my-config*, my-config-v\[1,2\]]:VALUE:_default' \
+'-s+[Delete configurations last updated after this date (format\: %Y-%m-%d)]:DATE:_default' \
+'--since=[Delete configurations last updated after this date (format\: %Y-%m-%d)]:DATE:_default' \
+'-u+[Delete configurations last updated before this date (format\: %Y-%m-%d)]:DATE:_default' \
+'--until=[Delete configurations last updated before this date (format\: %Y-%m-%d)]:DATE:_default' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':SESSION_NAME -- Name of the session to delete:_default' \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':IMAGE_LIST -- Comma-separated image IDs to delete.
+eg\: e2ce82f0-e7ba-4f36-9f5c-750346599600,59e0180a-3fdd-4936-bba7-14ba914ffd34:_default' \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+'-P+[Hardware component pattern]:PATTERN:_default' \
+'--pattern=[Hardware component pattern]:PATTERN:_default' \
+'-t+[Cluster to remove components from]:TARGET_CLUSTER_NAME:_default' \
+'--target-cluster=[Cluster to remove components from]:TARGET_CLUSTER_NAME:_default' \
+'-p+[Cluster that receives the freed components]:PARENT_CLUSTER_NAME:_default' \
+'--parent-cluster=[Cluster that receives the freed components]:PARENT_CLUSTER_NAME:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-D[Delete the group if empty after this operation]' \
+'--delete-hsm-group[Delete the group if empty after this operation]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+'-i+[Xname of the Redfish endpoint to delete]:XNAME:_default' \
+'--id=[Xname of the Redfish endpoint to delete]:XNAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__delete__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-delete-help-command-$line[1]:"
+        case $line[1] in
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(migrate)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__migrate_commands" \
+"*::: :->migrate" \
+&& ret=0
+
+    case $state in
+    (migrate)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-migrate-command-$line[1]:"
+        case $line[1] in
+            (vCluster)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__migrate__subcmd__vCluster_commands" \
+"*::: :->vCluster" \
+&& ret=0
+
+    case $state in
+    (vCluster)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-migrate-vCluster-command-$line[1]:"
+        case $line[1] in
+            (backup)
+_arguments "${_arguments_options[@]}" : \
+'-b+[Session template to derive the backup from]:SESSIONTEMPLATE:_default' \
+'--bos=[Session template to derive the backup from]:SESSIONTEMPLATE:_default' \
+'-d+[Destination directory for the backup files]:FOLDER:_files -/' \
+'--destination=[Destination directory for the backup files]:FOLDER:_files -/' \
+'-p+[Command to run before the backup. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'--pre-hook=[Command to run before the backup. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'-a+[Command to run after a successful backup. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'--post-hook=[Command to run after a successful backup. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+'-b+[Session template backup file]:FILE:_files' \
+'--bos-file=[Session template backup file]:FILE:_files' \
+'-c+[Configuration backup file]:FILE:_files' \
+'--cfs-file=[Configuration backup file]:FILE:_files' \
+'-j+[Group description backup file]:FILE:_files' \
+'--hsm-file=[Group description backup file]:FILE:_files' \
+'-m+[Image metadata backup file]:FILE:_files' \
+'--ims-file=[Image metadata backup file]:FILE:_files' \
+'-i+[Directory containing the image files]:PATH:_files -/' \
+'--image-dir=[Directory containing the image files]:PATH:_files -/' \
+'-p+[Command to run before the restore. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'--pre-hook=[Command to run before the restore. eg\: --pre-hook "echo hello"]:SCRIPT:_default' \
+'-a+[Command to run after a successful restore. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'--post-hook=[Command to run after a successful restore. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
+'-o[Overwrite existing data]' \
+'--overwrite[Overwrite existing data]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__migrate__subcmd__vCluster__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-migrate-vCluster-help-command-$line[1]:"
+        case $line[1] in
+            (backup)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-f+[Source cluster to move nodes from]:NAME:_default' \
+'--from=[Source cluster to move nodes from]:NAME:_default' \
+'-t+[Destination cluster to move nodes to]:NAME:_default' \
+'--to=[Destination cluster to move nodes to]:NAME:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':XNAMES -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'':_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__migrate__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-migrate-help-command-$line[1]:"
+        case $line[1] in
+            (vCluster)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__migrate__subcmd__help__subcmd__vCluster_commands" \
+"*::: :->vCluster" \
+&& ret=0
+
+    case $state in
+    (vCluster)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-migrate-help-vCluster-command-$line[1]:"
+        case $line[1] in
+            (backup)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(power)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__power_commands" \
+"*::: :->power" \
+&& ret=0
+
+    case $state in
+    (power)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-command-$line[1]:"
+        case $line[1] in
+            (on)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__power__subcmd__on_commands" \
+"*::: :->on" \
+&& ret=0
+
+    case $state in
+    (on)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-on-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+'-R+[Reason for the power operation]:TEXT:_default' \
+'--reason=[Reason for the power operation]:TEXT:_default' \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':CLUSTER_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__on__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-on-help-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(off)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__power__subcmd__off_commands" \
+"*::: :->off" \
+&& ret=0
+
+    case $state in
+    (off)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-off-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+'-R+[Reason for the power operation]:TEXT:_default' \
+'--reason=[Reason for the power operation]:TEXT:_default' \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-g[Perform a graceful shutdown]' \
+'--graceful[Perform a graceful shutdown]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':CLUSTER_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-g[Perform a graceful shutdown]' \
+'--graceful[Perform a graceful shutdown]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__off__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-off-help-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__power__subcmd__reset_commands" \
+"*::: :->reset" \
+&& ret=0
+
+    case $state in
+    (reset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-reset-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-r+[Reason for the power operation]:TEXT:_default' \
+'--reason=[Reason for the power operation]:TEXT:_default' \
+'-g[Perform a graceful reboot]' \
+'--graceful[Perform a graceful reboot]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':CLUSTER_NAME -- Cluster name:_default' \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'-g[Perform a graceful reboot]' \
+'--graceful[Perform a graceful reboot]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
+'-h[Print help]' \
+'--help[Print help]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__reset__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-reset-help-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-help-command-$line[1]:"
+        case $line[1] in
+            (on)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__help__subcmd__on_commands" \
+"*::: :->on" \
+&& ret=0
+
+    case $state in
+    (on)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-help-on-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(off)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__help__subcmd__off_commands" \
+"*::: :->off" \
+&& ret=0
+
+    case $state in
+    (off)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-help-off-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__power__subcmd__help__subcmd__reset_commands" \
+"*::: :->reset" \
+&& ret=0
+
+    case $state in
+    (reset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-power-help-reset-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+'-t[Show log timestamps]' \
+'--timestamps[Show log timestamps]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'::VALUE -- Session name, node group, xname, or NID.
+eg\: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2a3:_default' \
+&& ret=0
+;;
+(console)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__console_commands" \
+"*::: :->console" \
+&& ret=0
+
+    case $state in
+    (console)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-console-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':XNAME -- Node xname or NID:_default' \
+&& ret=0
+;;
+(target-ansible)
+_arguments "${_arguments_options[@]}" : \
+'-h[Print help]' \
+'--help[Print help]' \
+':SESSION_NAME -- Configuration session name:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__console__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-console-help-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(target-ansible)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(add-nodes-to-groups)
+_arguments "${_arguments_options[@]}" : \
+'-g+[Group to add the nodes to]:NAME:_default' \
+'--group=[Group to add the nodes to]:NAME:_default' \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(remove-nodes-from-groups)
+_arguments "${_arguments_options[@]}" : \
+'-g+[Group to remove the nodes from]:NAME:_default' \
+'--group=[Group to remove the nodes from]:NAME:_default' \
+'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-command-$line[1]:"
+        case $line[1] in
+            (config)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-config-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(set)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__config__subcmd__set_commands" \
+"*::: :->set" \
+&& ret=0
+
+    case $state in
+    (set)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-config-set-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(site)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(unset)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__config__subcmd__unset_commands" \
+"*::: :->unset" \
+&& ret=0
+
+    case $state in
+    (unset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-config-unset-command-$line[1]:"
+        case $line[1] in
+            (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(parent-hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(auth)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(gen-autocomplete)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(get)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__get_commands" \
+"*::: :->get" \
+&& ret=0
+
+    case $state in
+    (get)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-get-command-$line[1]:"
+        case $line[1] in
+            (groups)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__get__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-get-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(sessions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(templates)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoints)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(add)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__add_commands" \
+"*::: :->add" \
+&& ret=0
+
+    case $state in
+    (add)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-add-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(update)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__update_commands" \
+"*::: :->update" \
+&& ret=0
+
+    case $state in
+    (update)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-update-command-$line[1]:"
+        case $line[1] in
+            (boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(apply)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__apply_commands" \
+"*::: :->apply" \
+&& ret=0
+
+    case $state in
+    (apply)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-apply-command-$line[1]:"
+        case $line[1] in
+            (hardware)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__apply__subcmd__hardware_commands" \
+"*::: :->hardware" \
+&& ret=0
+
+    case $state in
+    (hardware)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-apply-hardware-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(configuration)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(sat-file)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__apply__subcmd__boot_commands" \
+"*::: :->boot" \
+&& ret=0
+
+    case $state in
+    (boot)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-apply-boot-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(ephemeral-environment)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(template)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(delete)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__delete_commands" \
+"*::: :->delete" \
+&& ret=0
+
+    case $state in
+    (delete)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-delete-command-$line[1]:"
+        case $line[1] in
+            (group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(kernel-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(boot-parameters)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(configurations)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(session)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(images)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(hardware)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(redfish-endpoint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(migrate)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__migrate_commands" \
+"*::: :->migrate" \
+&& ret=0
+
+    case $state in
+    (migrate)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-migrate-command-$line[1]:"
+        case $line[1] in
+            (vCluster)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__migrate__subcmd__vCluster_commands" \
+"*::: :->vCluster" \
+&& ret=0
+
+    case $state in
+    (vCluster)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-migrate-vCluster-command-$line[1]:"
+        case $line[1] in
+            (backup)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(restore)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(power)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__power_commands" \
+"*::: :->power" \
+&& ret=0
+
+    case $state in
+    (power)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-power-command-$line[1]:"
+        case $line[1] in
+            (on)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__power__subcmd__on_commands" \
+"*::: :->on" \
+&& ret=0
+
+    case $state in
+    (on)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-power-on-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(off)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__power__subcmd__off_commands" \
+"*::: :->off" \
+&& ret=0
+
+    case $state in
+    (off)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-power-off-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(reset)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__power__subcmd__reset_commands" \
+"*::: :->reset" \
+&& ret=0
+
+    case $state in
+    (reset)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-power-reset-command-$line[1]:"
+        case $line[1] in
+            (cluster)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(console)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__console_commands" \
+"*::: :->console" \
+&& ret=0
+
+    case $state in
+    (console)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-console-command-$line[1]:"
+        case $line[1] in
+            (node)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(target-ansible)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(add-nodes-to-groups)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(remove-nodes-from-groups)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_manta_commands] )) ||
+_manta_commands() {
+    local commands; commands=(
+'config:Manage manta CLI configuration' \
+'get:Query system resources' \
+'add:Create system resources' \
+'update:Update system resources' \
+'apply:Apply changes to the system' \
+'delete:Delete system resources' \
+'migrate:Move nodes or clusters between groups' \
+'power:Manage node and cluster power state' \
+'log:Stream configuration session logs' \
+'console:Open an interactive console to a node or configuration session' \
+'add-nodes-to-groups:Add nodes to one or more groups' \
+'remove-nodes-from-groups:Remove nodes from one or more groups' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add_commands] )) ||
+_manta__subcmd__add_commands() {
+    local commands; commands=(
+'node:Register a new node' \
+'group:Create a node group' \
+'hardware:\[experimental\] Add hardware components to a cluster' \
+'boot-parameters:Create boot parameters for nodes' \
+'kernel-parameters:Append kernel parameters to nodes' \
+'redfish-endpoint:Register a new Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta add commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__add__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__group_commands] )) ||
+_manta__subcmd__add__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__hardware_commands] )) ||
+_manta__subcmd__add__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help_commands] )) ||
+_manta__subcmd__add__subcmd__help_commands() {
+    local commands; commands=(
+'node:Register a new node' \
+'group:Create a node group' \
+'hardware:\[experimental\] Add hardware components to a cluster' \
+'boot-parameters:Create boot parameters for nodes' \
+'kernel-parameters:Append kernel parameters to nodes' \
+'redfish-endpoint:Register a new Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta add help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__group_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__hardware_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__node_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__help__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__add__subcmd__help__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add help redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__add__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__node_commands] )) ||
+_manta__subcmd__add__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__add__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__add-nodes-to-groups_commands] )) ||
+_manta__subcmd__add-nodes-to-groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta add-nodes-to-groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply_commands] )) ||
+_manta__subcmd__apply_commands() {
+    local commands; commands=(
+'hardware:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
+'sat-file:Process a SAT file to create configurations, images, and session templates' \
+'boot:Update boot parameters and runtime configuration' \
+'kernel-parameters:Replace kernel parameters on nodes' \
+'session:Create and run a configuration session from a local repo' \
+'ephemeral-environment:Launch an ephemeral SSH environment from an image' \
+'template:Boot nodes using an existing session template' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot_commands] )) ||
+_manta__subcmd__apply__subcmd__boot_commands() {
+    local commands; commands=(
+'nodes:Update boot parameters for a set of nodes' \
+'cluster:Update boot parameters for all nodes in a cluster' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply boot commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply boot cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__help_commands() {
+    local commands; commands=(
+'nodes:Update boot parameters for a set of nodes' \
+'cluster:Update boot parameters for all nodes in a cluster' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply boot help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply boot help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply boot help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply boot help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__boot__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__boot__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply boot nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__configuration_commands] )) ||
+_manta__subcmd__apply__subcmd__configuration_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__ephemeral-environment_commands] )) ||
+_manta__subcmd__apply__subcmd__ephemeral-environment_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply ephemeral-environment commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__hardware_commands] )) ||
+_manta__subcmd__apply__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__hardware__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__hardware__subcmd__help_commands() {
+    local commands; commands=(
+'cluster:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply hardware help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply hardware help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply hardware help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__help_commands() {
+    local commands; commands=(
+'hardware:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
+'sat-file:Process a SAT file to create configurations, images, and session templates' \
+'boot:Update boot parameters and runtime configuration' \
+'kernel-parameters:Replace kernel parameters on nodes' \
+'session:Create and run a configuration session from a local repo' \
+'ephemeral-environment:Launch an ephemeral SSH environment from an image' \
+'template:Boot nodes using an existing session template' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__boot_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__boot_commands() {
+    local commands; commands=(
+'nodes:Update boot parameters for a set of nodes' \
+'cluster:Update boot parameters for all nodes in a cluster' \
+    )
+    _describe -t commands 'manta apply help boot commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help boot cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help boot nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__configuration_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__configuration_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__ephemeral-environment_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__ephemeral-environment_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help ephemeral-environment commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__hardware_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+    )
+    _describe -t commands 'manta apply help hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__sat-file_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__sat-file_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help sat-file commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__session_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__template_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__template_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help template commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__apply__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__sat-file_commands] )) ||
+_manta__subcmd__apply__subcmd__sat-file_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply sat-file commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__session_commands] )) ||
+_manta__subcmd__apply__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__template_commands] )) ||
+_manta__subcmd__apply__subcmd__template_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply template commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config_commands] )) ||
+_manta__subcmd__config_commands() {
+    local commands; commands=(
+'show:Show current configuration values' \
+'set:Set a configuration value' \
+'unset:Clear a configuration value' \
+'gen-autocomplete:Generate shell completion scripts' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__gen-autocomplete_commands] )) ||
+_manta__subcmd__config__subcmd__gen-autocomplete_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config gen-autocomplete commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__help_commands() {
+    local commands; commands=(
+'show:Show current configuration values' \
+'set:Set a configuration value' \
+'unset:Clear a configuration value' \
+'gen-autocomplete:Generate shell completion scripts' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__gen-autocomplete_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__gen-autocomplete_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help gen-autocomplete commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set_commands() {
+    local commands; commands=(
+'hsm:Set the active node group' \
+'parent-hsm:Set the parent node group' \
+'site:Set the active site' \
+'log:Set the log verbosity level' \
+    )
+    _describe -t commands 'manta config help set commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help set hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help set parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help set site commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__show_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help show commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__unset_commands() {
+    local commands; commands=(
+'hsm:Clear the active node group' \
+'parent-hsm:Clear the parent node group' \
+'auth:Clear the cached authentication token' \
+    )
+    _describe -t commands 'manta config help unset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__auth_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__auth_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help unset auth commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help unset hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help unset parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set_commands] )) ||
+_manta__subcmd__config__subcmd__set_commands() {
+    local commands; commands=(
+'hsm:Set the active node group' \
+'parent-hsm:Set the parent node group' \
+'site:Set the active site' \
+'log:Set the log verbosity level' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config set commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help_commands() {
+    local commands; commands=(
+'hsm:Set the active node group' \
+'parent-hsm:Set the parent node group' \
+'site:Set the active site' \
+'log:Set the log verbosity level' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config set help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help site commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__log_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__site_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set site commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__show_commands] )) ||
+_manta__subcmd__config__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config show commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset_commands] )) ||
+_manta__subcmd__config__subcmd__unset_commands() {
+    local commands; commands=(
+'hsm:Clear the active node group' \
+'parent-hsm:Clear the parent node group' \
+'auth:Clear the cached authentication token' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config unset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__auth_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__auth_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset auth commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help_commands() {
+    local commands; commands=(
+'hsm:Clear the active node group' \
+'parent-hsm:Clear the parent node group' \
+'auth:Clear the cached authentication token' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta config unset help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__auth_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__auth_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset help auth commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset help hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset help parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__hsm_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console_commands] )) ||
+_manta__subcmd__console_commands() {
+    local commands; commands=(
+'node:Connect to a node'\''s serial console' \
+'target-ansible:Connect to the Ansible target container of a configuration session' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta console commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__help_commands] )) ||
+_manta__subcmd__console__subcmd__help_commands() {
+    local commands; commands=(
+'node:Connect to a node'\''s serial console' \
+'target-ansible:Connect to the Ansible target container of a configuration session' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta console help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__console__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta console help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__help__subcmd__node_commands] )) ||
+_manta__subcmd__console__subcmd__help__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta console help node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__help__subcmd__target-ansible_commands] )) ||
+_manta__subcmd__console__subcmd__help__subcmd__target-ansible_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta console help target-ansible commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__node_commands] )) ||
+_manta__subcmd__console__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta console node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__console__subcmd__target-ansible_commands] )) ||
+_manta__subcmd__console__subcmd__target-ansible_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta console target-ansible commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete_commands] )) ||
+_manta__subcmd__delete_commands() {
+    local commands; commands=(
+'group:Delete a node group' \
+'node:Remove a node from the system' \
+'kernel-parameters:Remove kernel parameters from nodes' \
+'boot-parameters:Delete boot parameters for nodes' \
+'configurations:Delete configurations and all associated data' \
+'session:Delete a configuration session' \
+'images:\[experimental\] Delete images' \
+'hardware:\[experimental\] Remove hardware components from a cluster' \
+'redfish-endpoint:Delete a Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta delete commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__delete__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__configurations_commands] )) ||
+_manta__subcmd__delete__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__group_commands] )) ||
+_manta__subcmd__delete__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__hardware_commands] )) ||
+_manta__subcmd__delete__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help_commands] )) ||
+_manta__subcmd__delete__subcmd__help_commands() {
+    local commands; commands=(
+'group:Delete a node group' \
+'node:Remove a node from the system' \
+'kernel-parameters:Remove kernel parameters from nodes' \
+'boot-parameters:Delete boot parameters for nodes' \
+'configurations:Delete configurations and all associated data' \
+'session:Delete a configuration session' \
+'images:\[experimental\] Delete images' \
+'hardware:\[experimental\] Remove hardware components from a cluster' \
+'redfish-endpoint:Delete a Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta delete help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__configurations_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__group_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__hardware_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__images_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__node_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__help__subcmd__session_commands] )) ||
+_manta__subcmd__delete__subcmd__help__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete help session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__images_commands] )) ||
+_manta__subcmd__delete__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__delete__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__node_commands] )) ||
+_manta__subcmd__delete__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__delete__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__delete__subcmd__session_commands] )) ||
+_manta__subcmd__delete__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta delete session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get_commands] )) ||
+_manta__subcmd__get_commands() {
+    local commands; commands=(
+'groups:List node groups' \
+'hardware:Inspect hardware components' \
+'sessions:List configuration sessions' \
+'configurations:List configurations' \
+'templates:List session templates' \
+'cluster:Show cluster node details and status' \
+'nodes:Show node details and status' \
+'images:List images' \
+'boot-parameters:Show boot parameters for nodes or a group' \
+'kernel-parameters:Show kernel parameters for nodes or a group' \
+'redfish-endpoints:List Redfish endpoints' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta get commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__get__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__cluster_commands] )) ||
+_manta__subcmd__get__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__configurations_commands] )) ||
+_manta__subcmd__get__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__groups_commands] )) ||
+_manta__subcmd__get__subcmd__groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware_commands] )) ||
+_manta__subcmd__get__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:Show hardware inventory for a cluster' \
+'nodes:Show hardware inventory for a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta get hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__help_commands() {
+    local commands; commands=(
+'cluster:Show hardware inventory for a cluster' \
+'nodes:Show hardware inventory for a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta get hardware help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__nodes_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help_commands] )) ||
+_manta__subcmd__get__subcmd__help_commands() {
+    local commands; commands=(
+'groups:List node groups' \
+'hardware:Inspect hardware components' \
+'sessions:List configuration sessions' \
+'configurations:List configurations' \
+'templates:List session templates' \
+'cluster:Show cluster node details and status' \
+'nodes:Show node details and status' \
+'images:List images' \
+'boot-parameters:Show boot parameters for nodes or a group' \
+'kernel-parameters:Show kernel parameters for nodes or a group' \
+'redfish-endpoints:List Redfish endpoints' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta get help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__configurations_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__groups_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__hardware_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:Show hardware inventory for a cluster' \
+'nodes:Show hardware inventory for a set of nodes' \
+    )
+    _describe -t commands 'manta get help hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__nodes_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help hardware nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__images_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__redfish-endpoints_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__redfish-endpoints_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__sessions_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__sessions_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help sessions commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__templates_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__templates_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help templates commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__images_commands] )) ||
+_manta__subcmd__get__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__get__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__nodes_commands] )) ||
+_manta__subcmd__get__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__redfish-endpoints_commands] )) ||
+_manta__subcmd__get__subcmd__redfish-endpoints_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__sessions_commands] )) ||
+_manta__subcmd__get__subcmd__sessions_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get sessions commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__templates_commands] )) ||
+_manta__subcmd__get__subcmd__templates_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get templates commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help_commands] )) ||
+_manta__subcmd__help_commands() {
+    local commands; commands=(
+'config:Manage manta CLI configuration' \
+'get:Query system resources' \
+'add:Create system resources' \
+'update:Update system resources' \
+'apply:Apply changes to the system' \
+'delete:Delete system resources' \
+'migrate:Move nodes or clusters between groups' \
+'power:Manage node and cluster power state' \
+'log:Stream configuration session logs' \
+'console:Open an interactive console to a node or configuration session' \
+'add-nodes-to-groups:Add nodes to one or more groups' \
+'remove-nodes-from-groups:Remove nodes from one or more groups' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add_commands] )) ||
+_manta__subcmd__help__subcmd__add_commands() {
+    local commands; commands=(
+'node:Register a new node' \
+'group:Create a node group' \
+'hardware:\[experimental\] Add hardware components to a cluster' \
+'boot-parameters:Create boot parameters for nodes' \
+'kernel-parameters:Append kernel parameters to nodes' \
+'redfish-endpoint:Register a new Redfish endpoint' \
+    )
+    _describe -t commands 'manta help add commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__group_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__hardware_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__node_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__help__subcmd__add__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__add-nodes-to-groups_commands] )) ||
+_manta__subcmd__help__subcmd__add-nodes-to-groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help add-nodes-to-groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply_commands] )) ||
+_manta__subcmd__help__subcmd__apply_commands() {
+    local commands; commands=(
+'hardware:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
+'sat-file:Process a SAT file to create configurations, images, and session templates' \
+'boot:Update boot parameters and runtime configuration' \
+'kernel-parameters:Replace kernel parameters on nodes' \
+'session:Create and run a configuration session from a local repo' \
+'ephemeral-environment:Launch an ephemeral SSH environment from an image' \
+'template:Boot nodes using an existing session template' \
+    )
+    _describe -t commands 'manta help apply commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__boot_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__boot_commands() {
+    local commands; commands=(
+'nodes:Update boot parameters for a set of nodes' \
+'cluster:Update boot parameters for all nodes in a cluster' \
+    )
+    _describe -t commands 'manta help apply boot commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply boot cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply boot nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__configuration_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__configuration_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__ephemeral-environment_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__ephemeral-environment_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply ephemeral-environment commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__hardware_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:\[experimental\] Rescale a cluster'\''s hardware allocation' \
+    )
+    _describe -t commands 'manta help apply hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__sat-file_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__sat-file_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply sat-file commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__session_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__template_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__template_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply template commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config_commands] )) ||
+_manta__subcmd__help__subcmd__config_commands() {
+    local commands; commands=(
+'show:Show current configuration values' \
+'set:Set a configuration value' \
+'unset:Clear a configuration value' \
+'gen-autocomplete:Generate shell completion scripts' \
+    )
+    _describe -t commands 'manta help config commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__gen-autocomplete_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__gen-autocomplete_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config gen-autocomplete commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set_commands() {
+    local commands; commands=(
+'hsm:Set the active node group' \
+'parent-hsm:Set the parent node group' \
+'site:Set the active site' \
+'log:Set the log verbosity level' \
+    )
+    _describe -t commands 'manta help config set commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__hsm_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config set hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config set parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config set site commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__show_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config show commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__unset_commands() {
+    local commands; commands=(
+'hsm:Clear the active node group' \
+'parent-hsm:Clear the parent node group' \
+'auth:Clear the cached authentication token' \
+    )
+    _describe -t commands 'manta help config unset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__auth_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__auth_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config unset auth commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config unset hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config unset parent-hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__console_commands] )) ||
+_manta__subcmd__help__subcmd__console_commands() {
+    local commands; commands=(
+'node:Connect to a node'\''s serial console' \
+'target-ansible:Connect to the Ansible target container of a configuration session' \
+    )
+    _describe -t commands 'manta help console commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__console__subcmd__node_commands] )) ||
+_manta__subcmd__help__subcmd__console__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help console node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__console__subcmd__target-ansible_commands] )) ||
+_manta__subcmd__help__subcmd__console__subcmd__target-ansible_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help console target-ansible commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete_commands] )) ||
+_manta__subcmd__help__subcmd__delete_commands() {
+    local commands; commands=(
+'group:Delete a node group' \
+'node:Remove a node from the system' \
+'kernel-parameters:Remove kernel parameters from nodes' \
+'boot-parameters:Delete boot parameters for nodes' \
+'configurations:Delete configurations and all associated data' \
+'session:Delete a configuration session' \
+'images:\[experimental\] Delete images' \
+'hardware:\[experimental\] Remove hardware components from a cluster' \
+'redfish-endpoint:Delete a Redfish endpoint' \
+    )
+    _describe -t commands 'manta help delete commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__configurations_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__group_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__hardware_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__hardware_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__images_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__node_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__node_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete node commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__delete__subcmd__session_commands] )) ||
+_manta__subcmd__help__subcmd__delete__subcmd__session_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help delete session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get_commands] )) ||
+_manta__subcmd__help__subcmd__get_commands() {
+    local commands; commands=(
+'groups:List node groups' \
+'hardware:Inspect hardware components' \
+'sessions:List configuration sessions' \
+'configurations:List configurations' \
+'templates:List session templates' \
+'cluster:Show cluster node details and status' \
+'nodes:Show node details and status' \
+'images:List images' \
+'boot-parameters:Show boot parameters for nodes or a group' \
+'kernel-parameters:Show kernel parameters for nodes or a group' \
+'redfish-endpoints:List Redfish endpoints' \
+    )
+    _describe -t commands 'manta help get commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__configurations_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__configurations_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get configurations commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__groups_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__hardware_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__hardware_commands() {
+    local commands; commands=(
+'cluster:Show hardware inventory for a cluster' \
+'nodes:Show hardware inventory for a set of nodes' \
+    )
+    _describe -t commands 'manta help get hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get hardware cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get hardware nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__images_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__images_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get images commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__kernel-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__kernel-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get kernel-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__redfish-endpoints_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__redfish-endpoints_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__sessions_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__sessions_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get sessions commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__templates_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__templates_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get templates commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__log_commands] )) ||
+_manta__subcmd__help__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__migrate_commands] )) ||
+_manta__subcmd__help__subcmd__migrate_commands() {
+    local commands; commands=(
+'vCluster:\[experimental\] Migrate a cluster' \
+'nodes:Move nodes between clusters' \
+    )
+    _describe -t commands 'manta help migrate commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__migrate__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__migrate__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help migrate nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__migrate__subcmd__vCluster_commands] )) ||
+_manta__subcmd__help__subcmd__migrate__subcmd__vCluster_commands() {
+    local commands; commands=(
+'backup:Back up a cluster'\''s configuration' \
+'restore:Restore a cluster from a backup' \
+    )
+    _describe -t commands 'manta help migrate vCluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__backup_commands] )) ||
+_manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help migrate vCluster backup commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__restore_commands] )) ||
+_manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help migrate vCluster restore commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power_commands] )) ||
+_manta__subcmd__help__subcmd__power_commands() {
+    local commands; commands=(
+'on:Power on nodes or a cluster' \
+'off:Power off nodes or a cluster' \
+'reset:Reset (reboot) nodes or a cluster' \
+    )
+    _describe -t commands 'manta help power commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__off_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__off_commands() {
+    local commands; commands=(
+'cluster:Power off all nodes in a cluster' \
+'nodes:Power off a set of nodes' \
+    )
+    _describe -t commands 'manta help power off commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__off__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__off__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power off cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__off__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__off__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power off nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__on_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__on_commands() {
+    local commands; commands=(
+'cluster:Power on all nodes in a cluster' \
+'nodes:Power on a set of nodes' \
+    )
+    _describe -t commands 'manta help power on commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__on__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__on__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power on cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__on__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__on__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power on nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__reset_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__reset_commands() {
+    local commands; commands=(
+'cluster:Reset all nodes in a cluster' \
+'nodes:Reset a set of nodes' \
+    )
+    _describe -t commands 'manta help power reset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__cluster_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power reset cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help power reset nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__remove-nodes-from-groups_commands] )) ||
+_manta__subcmd__help__subcmd__remove-nodes-from-groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help remove-nodes-from-groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__update_commands] )) ||
+_manta__subcmd__help__subcmd__update_commands() {
+    local commands; commands=(
+'boot-parameters:Update boot parameters for nodes' \
+'redfish-endpoint:Update a Redfish endpoint' \
+    )
+    _describe -t commands 'manta help update commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__update__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__help__subcmd__update__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help update boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__update__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__help__subcmd__update__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help update redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__log_commands] )) ||
+_manta__subcmd__log_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate_commands] )) ||
+_manta__subcmd__migrate_commands() {
+    local commands; commands=(
+'vCluster:\[experimental\] Migrate a cluster' \
+'nodes:Move nodes between clusters' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta migrate commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help_commands] )) ||
+_manta__subcmd__migrate__subcmd__help_commands() {
+    local commands; commands=(
+'vCluster:\[experimental\] Migrate a cluster' \
+'nodes:Move nodes between clusters' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta migrate help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__migrate__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__migrate__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help__subcmd__vCluster_commands] )) ||
+_manta__subcmd__migrate__subcmd__help__subcmd__vCluster_commands() {
+    local commands; commands=(
+'backup:Back up a cluster'\''s configuration' \
+'restore:Restore a cluster from a backup' \
+    )
+    _describe -t commands 'manta migrate help vCluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__backup_commands] )) ||
+_manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate help vCluster backup commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__restore_commands] )) ||
+_manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate help vCluster restore commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__nodes_commands] )) ||
+_manta__subcmd__migrate__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster_commands() {
+    local commands; commands=(
+'backup:Back up a cluster'\''s configuration' \
+'restore:Restore a cluster from a backup' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta migrate vCluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__backup_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate vCluster backup commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__help_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__help_commands() {
+    local commands; commands=(
+'backup:Back up a cluster'\''s configuration' \
+'restore:Restore a cluster from a backup' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta migrate vCluster help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__backup_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__backup_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate vCluster help backup commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate vCluster help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__restore_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate vCluster help restore commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__migrate__subcmd__vCluster__subcmd__restore_commands] )) ||
+_manta__subcmd__migrate__subcmd__vCluster__subcmd__restore_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta migrate vCluster restore commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power_commands] )) ||
+_manta__subcmd__power_commands() {
+    local commands; commands=(
+'on:Power on nodes or a cluster' \
+'off:Power off nodes or a cluster' \
+'reset:Reset (reboot) nodes or a cluster' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__help_commands() {
+    local commands; commands=(
+'on:Power on nodes or a cluster' \
+'off:Power off nodes or a cluster' \
+'reset:Reset (reboot) nodes or a cluster' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__off_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__off_commands() {
+    local commands; commands=(
+'cluster:Power off all nodes in a cluster' \
+'nodes:Power off a set of nodes' \
+    )
+    _describe -t commands 'manta power help off commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__off__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__off__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help off cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__off__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__off__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help off nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__on_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__on_commands() {
+    local commands; commands=(
+'cluster:Power on all nodes in a cluster' \
+'nodes:Power on a set of nodes' \
+    )
+    _describe -t commands 'manta power help on commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__on__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__on__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help on cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__on__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__on__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help on nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__reset_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__reset_commands() {
+    local commands; commands=(
+'cluster:Reset all nodes in a cluster' \
+'nodes:Reset a set of nodes' \
+    )
+    _describe -t commands 'manta power help reset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help reset cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power help reset nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off_commands] )) ||
+_manta__subcmd__power__subcmd__off_commands() {
+    local commands; commands=(
+'cluster:Power off all nodes in a cluster' \
+'nodes:Power off a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power off commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power off cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__help_commands() {
+    local commands; commands=(
+'cluster:Power off all nodes in a cluster' \
+'nodes:Power off a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power off help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power off help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power off help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power off help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__off__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__off__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power off nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on_commands] )) ||
+_manta__subcmd__power__subcmd__on_commands() {
+    local commands; commands=(
+'cluster:Power on all nodes in a cluster' \
+'nodes:Power on a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power on commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power on cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__help_commands() {
+    local commands; commands=(
+'cluster:Power on all nodes in a cluster' \
+'nodes:Power on a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power on help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power on help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power on help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power on help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__on__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__on__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power on nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset_commands] )) ||
+_manta__subcmd__power__subcmd__reset_commands() {
+    local commands; commands=(
+'cluster:Reset all nodes in a cluster' \
+'nodes:Reset a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power reset commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power reset cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__help_commands() {
+    local commands; commands=(
+'cluster:Reset all nodes in a cluster' \
+'nodes:Reset a set of nodes' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta power reset help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__cluster_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__cluster_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power reset help cluster commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power reset help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power reset help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__power__subcmd__reset__subcmd__nodes_commands] )) ||
+_manta__subcmd__power__subcmd__reset__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta power reset nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__remove-nodes-from-groups_commands] )) ||
+_manta__subcmd__remove-nodes-from-groups_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta remove-nodes-from-groups commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update_commands] )) ||
+_manta__subcmd__update_commands() {
+    local commands; commands=(
+'boot-parameters:Update boot parameters for nodes' \
+'redfish-endpoint:Update a Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta update commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__update__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta update boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__help_commands] )) ||
+_manta__subcmd__update__subcmd__help_commands() {
+    local commands; commands=(
+'boot-parameters:Update boot parameters for nodes' \
+'redfish-endpoint:Update a Redfish endpoint' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta update help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__help__subcmd__boot-parameters_commands] )) ||
+_manta__subcmd__update__subcmd__help__subcmd__boot-parameters_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta update help boot-parameters commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__update__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta update help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__help__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__update__subcmd__help__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta update help redfish-endpoint commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__update__subcmd__redfish-endpoint_commands] )) ||
+_manta__subcmd__update__subcmd__redfish-endpoint_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta update redfish-endpoint commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_manta" ]; then
+    _manta "$@"
+else
+    compdef _manta manta
+fi

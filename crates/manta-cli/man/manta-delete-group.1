@@ -1,0 +1,21 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-delete-group 1  "group " 
+.SH NAME
+manta\-delete\-group \- Delete a node group
+.SH SYNOPSIS
+\fBmanta delete group\fR [\fB\-f\fR|\fB\-\-force\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIGROUP_NAME\fR> 
+.SH DESCRIPTION
+Delete a node group.
+.PP
+The group must be empty before deletion. Move its members to another group with \*(Aqmigrate nodes\*(Aq first.
+.SH OPTIONS
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+Force deletion
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+<\fIGROUP_NAME\fR>
+Name of the group to delete

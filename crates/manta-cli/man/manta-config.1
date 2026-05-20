@@ -1,0 +1,26 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-config 1  "config " 
+.SH NAME
+manta\-config \- Manage manta CLI configuration
+.SH SYNOPSIS
+\fBmanta config\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
+.SH DESCRIPTION
+Manage manta CLI configuration
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.SH SUBCOMMANDS
+.TP
+manta\-config\-show(1)
+Show current configuration values
+.TP
+manta\-config\-set(1)
+Set a configuration value
+.TP
+manta\-config\-unset(1)
+Clear a configuration value
+.TP
+manta\-config\-gen\-autocomplete(1)
+Generate shell completion scripts

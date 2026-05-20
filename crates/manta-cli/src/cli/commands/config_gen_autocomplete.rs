@@ -61,7 +61,7 @@ fn gen_autocomplete(
       path.display()
     );
 
-    generate_to(shell_gen, &mut cli, env!("CARGO_PKG_NAME"), path)?;
+    generate_to(shell_gen, &mut cli, "manta", path)?;
   } else {
     // Destination path not defined - print to stdout
     tracing::info!("Generating shell autocomplete for '{}'", shell);
@@ -69,7 +69,7 @@ fn gen_autocomplete(
     generate(
       shell_gen,
       &mut cli,
-      env!("CARGO_PKG_NAME"),
+      "manta",
       &mut io::stdout(),
     );
   }

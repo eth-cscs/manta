@@ -1,0 +1,31 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-update-boot-parameters 1  "boot-parameters " 
+.SH NAME
+manta\-update\-boot\-parameters \- Update boot parameters for nodes
+.SH SYNOPSIS
+\fBmanta update boot\-parameters\fR <\fB\-H\fR|\fB\-\-hosts\fR> [\fB\-p\fR|\fB\-\-params\fR] [\fB\-k\fR|\fB\-\-kernel\fR] [\fB\-i\fR|\fB\-\-initrd\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Update boot parameters for nodes
+.SH OPTIONS
+.TP
+\fB\-H\fR, \fB\-\-hosts\fR \fI<XNAMES>\fR
+Xnames of the nodes to update
+.TP
+\fB\-p\fR, \fB\-\-params\fR \fI<VALUE>\fR
+Kernel parameters
+.TP
+\fB\-k\fR, \fB\-\-kernel\fR \fI<VALUE>\fR
+S3 path to the kernel file
+.TP
+\fB\-i\fR, \fB\-\-initrd\fR \fI<VALUE>\fR
+S3 path to the initrd file
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-y\fR, \fB\-\-assume\-yes\fR
+Skip confirmation prompts
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

@@ -1,0 +1,41 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-get-redfish-endpoints 1  "redfish-endpoints " 
+.SH NAME
+manta\-get\-redfish\-endpoints \- List Redfish endpoints
+.SH SYNOPSIS
+\fBmanta get redfish\-endpoints\fR [\fB\-i\fR|\fB\-\-id\fR] [\fB\-f\fR|\fB\-\-fqdn\fR] [\fB\-u\fR|\fB\-\-uuid\fR] [\fB\-m\fR|\fB\-\-macaddr\fR] [\fB\-I\fR|\fB\-\-ipaddress\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+List Redfish endpoints
+.SH OPTIONS
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<VALUE>\fR
+Filter by xname (can be specified multiple times)
+.TP
+\fB\-f\fR, \fB\-\-fqdn\fR \fI<VALUE>\fR
+Filter by FQDN
+.TP
+\fB\-u\fR, \fB\-\-uuid\fR \fI<VALUE>\fR
+Filter by UUID
+.TP
+\fB\-m\fR, \fB\-\-macaddr\fR \fI<VALUE>\fR
+Filter by MAC address
+.TP
+\fB\-I\fR, \fB\-\-ipaddress\fR \fI<VALUE>\fR
+Filter by IP address (empty string matches endpoints without an IP)
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help

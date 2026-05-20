@@ -45,7 +45,9 @@ fn main() -> Result<(), Error> {
     let path = generate_to(
       shell,
       &mut cli::build_cli(),
-      env!("CARGO_PKG_NAME"),
+      // Binary name is `manta`, not the package name `manta-cli` —
+      // the `[[bin]]` block in Cargo.toml renames the produced binary.
+      "manta",
       completion_dir,
     )?;
     println!("cargo:warning=completion regenerated: {path:?}");
