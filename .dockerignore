@@ -1,0 +1,27 @@
+# Anything in this file is excluded from the Docker build context, so
+# `docker build` doesn't have to ship multi-gigabyte target/ directories
+# to the daemon.
+
+# Rust build artifacts
+target/
+
+# Editor / IDE state
+.vscode/
+.idea/
+
+# Agent / tooling scratch
+.claude/
+.opencode/
+
+# Version control
+.git/
+
+# Existing CI / release machinery doesn't belong inside images
+.github/
+
+# Local secrets and runtime config (operators mount their own)
+*.env
+.env*
+*.pem
+*.key
+*.crt

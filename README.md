@@ -48,13 +48,16 @@ git clone https://github.com/eth-cscs/manta && cd manta
 
 The `main` branch holds the current 2.x line.
 
-### Build container image
+### Build container images
 
-This repo contains a Dockerfile to build a Container with manta cli.
+The two binaries ship as two images, each with its own multi-stage Dockerfile alongside its source. **Build from the workspace root in both cases** so the Cargo lockfile and shared sources are in the build context:
 
 ```
-docker build -t manta .
+docker build -f crates/manta-cli/Dockerfile    -t manta-cli    .
+docker build -f crates/manta-server/Dockerfile -t manta-server .
 ```
+
+A `.dockerignore` at the workspace root keeps `target/`, `.git/`, and editor state out of the context.
 
 #### Copy configuration file
 
@@ -92,17 +95,32 @@ The CLI config has no `[sites.*]` block — per-site backend connection details 
 
 #### Run the CLI with one of the two options mentioned above to confirm that `manta` is working.
 
-The image has `manta` as its ENTRYPOINT, so arguments passed after the image name become CLI args:
+The `manta-cli` image has `manta` as its ENTRYPOINT, so anything after the image tag is forwarded as CLI args:
 
 ```bash
-docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta get redfish-endpoints
+docker run -it --network=host \
+  -v $HOME/.config/manta:/root/.config/manta \
+  -e MANTA_CSM_TOKEN \
+  manta-cli get redfish-endpoints
+```
+
+The `manta-server` image runs the HTTPS server; mount your config + TLS material and publish the port:
+
+```bash
+docker run -p 8443:8443 \
+  -v $HOME/.config/manta:/root/.config/manta:ro \
+  -v /etc/manta/tls:/etc/manta/tls:ro \
+  manta-server
 ```
 
 > [!NOTE]
 > Some commands will not work yet with OpenCHAMI services and will sometimes show a message indicating no implementation for the backend.
 >
 > ```bash
-> docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest get sessions
+> docker run -it --rm --network=host \
+>   -v $HOME/.config/manta:/root/.config/manta \
+>   -e MANTA_CSM_TOKEN \
+>   manta-cli get sessions
 > ERROR | Get and filter sessions command not implemented for this backend
 > exit status 1
 > ```
