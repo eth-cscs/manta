@@ -68,3 +68,6 @@ tower           = { version = "0.5", features = ["util"] }
 http-body-util  = "0.1"
 wiremock        = "0.6"
 tempfile        = "3"
+# `test-util` adds `tokio::time::pause()` so the console-bridge tests
+# can fast-forward the inactivity timer without actually sleeping.
+tokio           = { workspace = true, features = ["test-util"] }
