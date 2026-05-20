@@ -1,14 +1,14 @@
 # Manta HTTP API Reference
 
-The manta HTTP server exposes a REST API on port `8080` by default.
+The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. The default port and TLS material come from `~/.config/manta/server.toml` (see [README.md](README.md#configuration-files)); the canonical port in `server.toml.example` is **8443** and TLS is required by default. Omit `cert`/`key` from `[server]` (or pass empty) only for local plain-HTTP testing.
 
 ## Starting the server
 
 ```
-manta serve [--cert <cert.pem> --key <key.pem>] [--port 8080] [--listen-addr 0.0.0.0]
+manta-server [--port 8443] [--listen-address 0.0.0.0] [--cert <cert.pem>] [--key <key.pem>]
 ```
 
-Omit `--cert`/`--key` for plain HTTP (useful for local testing).
+Each flag overrides the corresponding `[server]` field in `server.toml` for that invocation. The CLI does not ship a `serve` subcommand — `manta-server` is its own binary.
 
 ## Required headers
 
@@ -17,7 +17,7 @@ Every endpoint requires two headers:
 | Header | Description |
 |--------|-------------|
 | `X-Manta-Site` | Site name as configured in `server.toml` `[sites.X]` (e.g. `cscs_prod`) |
-| `Authorization` | `Bearer <shasta-token>` — **not** required for `/health` |
+| `Authorization` | `Bearer <shasta-token>` — **not** required for `/health`, `/openapi.json`, `/docs`, or `/api/v1/auth/*` |
 
 ```
 X-Manta-Site: cscs_prod
@@ -27,7 +27,7 @@ Authorization: Bearer <shasta-token>
 ## Base URL
 
 ```
-http(s)://<host>:8080/api/v1
+https://<host>:8443/api/v1
 ```
 
 ## Error responses
@@ -46,7 +46,7 @@ All errors return JSON with an `error` field:
 | `409` | Conflict — resource already exists |
 | `422` | Unprocessable entity — required field missing or wrong type |
 | `500` | Backend call failed |
-| `501` | Feature requires server config not set (`vault_base_url`, `k8s_api_url`) |
+| `501` | Feature requires per-site Vault / Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)) |
 
 ---
 
@@ -73,56 +73,11 @@ List CFS sessions, optionally filtered.
 
 ---
 
-### POST /sessions/apply
-
-Create a CFS configuration and session with HSM membership validation.
-
-Identical to `POST /sessions` but also validates that every node in `ansible_limit` belongs to an HSM group the token has access to before creating the session.
-
-> Requires `vault_base_url` configured on the server.
-
-**Request body**
-
-```json
-{
-  "repo_names": ["csm-config"],
-  "repo_last_commit_ids": ["abc123def456"],
-  "cfs_conf_sess_name": "my-session",
-  "playbook_yaml_file_name": "site.yaml",
-  "hsm_group": "compute",
-  "ansible_limit": "x3000c0s1b0n0,x3000c0s2b0n0",
-  "ansible_verbosity": "1",
-  "ansible_passthrough": ""
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `repo_names` | string[] | **yes** | Gitea repository names |
-| `repo_last_commit_ids` | string[] | **yes** | Commit SHA for each repo (same order as `repo_names`) |
-| `cfs_conf_sess_name` | string | no | Name for the config and session (auto-generated if omitted) |
-| `playbook_yaml_file_name` | string | no | Ansible playbook file (default: `site.yaml`) |
-| `hsm_group` | string | no | Target HSM group |
-| `ansible_limit` | string | no | Comma-separated xnames to limit execution; each must belong to an accessible HSM group |
-| `ansible_verbosity` | string | no | Ansible verbosity level (`0`–`4`) |
-| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
-
-**Response `201`**
-
-```json
-{
-  "session_name": "my-session-20240101",
-  "configuration_name": "my-session-20240101-config"
-}
-```
-
----
-
 ### POST /sessions
 
 Create a CFS configuration and session from one or more git repositories.
 
-> Requires `vault_base_url` configured on the server (used to fetch the Gitea token from Vault).
+> Requires per-site Vault config (see [Server configuration requirements](#server-configuration-requirements)). Vault is used to fetch the Gitea token.
 
 **Request body**
 
@@ -181,7 +136,7 @@ Delete and cancel a CFS session.
 
 Stream CFS session logs as [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events).
 
-> Requires `k8s_api_url` and `vault_base_url` configured on the server.
+> Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
 **Path parameters:** `name` — CFS session name.
 
@@ -197,7 +152,7 @@ Stream CFS session logs as [Server-Sent Events](https://developer.mozilla.org/en
 curl --no-buffer \
   -H "X-Manta-Site: $SITE" \
   -H "Authorization: Bearer $TOKEN" \
-  http://host:8080/api/v1/sessions/my-session/logs
+  https://host:8443/api/v1/sessions/my-session/logs
 ```
 
 ---
@@ -312,6 +267,26 @@ List HSM groups.
 | `name` | string | no | Exact group name |
 
 **Response `200`** — array of HSM group objects.
+
+---
+
+### GET /groups/available
+
+List the names of HSM groups the authenticated token is allowed to act on. Returns the subset of `GET /groups` that the caller's authorization permits.
+
+**Response `200`** — array of group-name strings:
+
+```json
+["compute", "gpu-cluster"]
+```
+
+---
+
+### GET /groups/all
+
+List every HSM group on the backend (no authorization filtering). Useful for site operators and read-only dashboards.
+
+**Response `200`** — array of HSM group objects (same shape as `GET /groups`).
 
 ---
 
@@ -1056,7 +1031,7 @@ Create an ephemeral CFS environment from an existing image.
 
 Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds images, creates BOS session templates, and optionally reboots nodes.
 
-> Requires `vault_base_url` and `k8s_api_url` configured on the server.
+> Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
 **Request body**
 
@@ -1096,18 +1071,59 @@ Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds im
 
 ---
 
+## Authentication
+
+The CLI obtains a bearer token by exchanging Keycloak credentials through the server. These endpoints **do not** themselves require an `Authorization` header (they're the bootstrap), but they do require `X-Manta-Site` so the server can pick the right backend. They sit under `/api/v1/auth/*` behind a per-source-IP rate limiter (`[server].auth_rate_limit_per_minute`, default 60) and a body-redaction logging layer.
+
+### POST /auth/token
+
+Exchange username + password for a backend bearer token.
+
+**Request body**
+
+```json
+{ "username": "alice", "password": "..." }
+```
+
+**Response `200`**
+
+```json
+{ "token": "<backend-bearer-token>" }
+```
+
+**Response `401`** — `{ "error": "invalid credentials" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
+
+---
+
+### POST /auth/validate
+
+Check whether a bearer token is still accepted by the backend.
+
+**Request body**
+
+```json
+{ "token": "<backend-bearer-token>" }
+```
+
+**Response `200`** — no body. The token is currently valid.
+
+**Response `401`** — `{ "error": "invalid credentials" }`. The token is missing, malformed, or rejected by the backend.
+
+---
+
 ## Interactive consoles (WebSocket)
 
-Both console endpoints use the standard WebSocket upgrade handshake. Authentication is checked during the HTTP upgrade — a missing or invalid `Authorization` header returns `401` before the WebSocket connection is established. The server closes the connection after **30 minutes of inactivity**.
+Both console endpoints use the standard WebSocket upgrade handshake. Authentication is checked during the HTTP upgrade — a missing or invalid `Authorization` header returns `401` before the WebSocket connection is established. The server closes the connection after **30 minutes of inactivity** (configurable via `[server].console_inactivity_timeout_secs`; inactivity tracks the client side only — server-side log scroll does not reset the timer).
 
 Once connected, the WebSocket carries raw terminal I/O:
 - **Text or binary frames sent by the client** are forwarded as stdin to the console.
 - **Binary frames sent by the server** are stdout from the console.
+- **Text frames matching `{"type":"resize","cols":N,"rows":N}`** are consumed silently (dynamic resize is not yet supported by the backend trait).
 
 ```
 wscat -H "Authorization: Bearer $TOKEN" \
   -H "X-Manta-Site: $SITE" \
-  --connect ws://host:8080/api/v1/nodes/x3000c0s1b0n0/console
+  --connect wss://host:8443/api/v1/nodes/x3000c0s1b0n0/console
 ```
 
 ---
@@ -1116,7 +1132,7 @@ wscat -H "Authorization: Bearer $TOKEN" \
 
 Open an interactive console to a node.
 
-> Requires `k8s_api_url` and `vault_base_url` configured on the server.
+> Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
 **Path parameters:** `xname` — node xname (e.g. `x3000c0s1b0n0`).
 
@@ -1135,7 +1151,7 @@ Open an interactive console to a node.
 
 Open an interactive console to the Ansible container of a running image-type CFS session.
 
-> Requires `k8s_api_url` and `vault_base_url` configured on the server. The session must exist, be of type `image`, and have status `running`. Returns `409` if those conditions are not met.
+> Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)). The session must exist, be of type `image`, and have status `running`. Returns `409` if those conditions are not met.
 
 **Path parameters:** `name` — CFS session name.
 
@@ -1178,9 +1194,19 @@ Serves the Swagger UI, pre-configured to load the spec from `/openapi.json`. Doe
 
 ## Server configuration requirements
 
-Some endpoints require optional fields to be set in the server configuration (`~/.config/manta/server.toml`):
+Some endpoints require per-site Vault and Kubernetes settings in `~/.config/manta/server.toml`. The relevant keys are nested under the selected `[sites.X]`:
 
-| Config field | Required by |
+```toml
+[sites.alps.k8s]
+api_url = "https://10.0.0.10:6443"
+
+[sites.alps.k8s.authentication.vault]
+base_url = "https://vault.example.com:8200"
+```
+
+When either is missing for the active site, the affected endpoints return `501 Not Implemented` with an explanatory `error` body.
+
+| Required site config | Used by |
 |---|---|
-| `vault_base_url` | `POST /sessions`, `POST /sessions/apply`, `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
-| `k8s_api_url` | `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
