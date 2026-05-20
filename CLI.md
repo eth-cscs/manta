@@ -1,31 +1,14 @@
 # Manta CLI Reference
 
-Complete reference for all `manta` commands, subcommands, and flags.
+Complete reference for all `manta-cli` commands, subcommands, and flags.
+
+**Binary name:** the CLI binary is `manta-cli`. The HTTP API server is a separate binary (`manta-server`); see [API.md](API.md) for its endpoints and [README.md](README.md) for how to run it.
 
 **Global flag** (available on every command):
 
 | Flag | Description |
 |------|-------------|
 | `--site <SITE_NAME>` | Override the active site from config for this invocation |
-
----
-
-## serve
-
-Run manta as an HTTPS REST + WebSocket API server.
-
-```
-manta serve --cert <cert.pem> --key <key.pem> [--port 8443] [--listen-address 0.0.0.0]
-```
-
-| Flag | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `--cert` | path | **yes** | — | TLS certificate PEM file |
-| `--key` | path | **yes** | — | TLS private key PEM file |
-| `--port` | u16 | no | `8443` | Port to listen on |
-| `--listen-address` | string | no | `0.0.0.0` | Bind address |
-
-See [API.md](API.md) for the full HTTP endpoint reference.
 
 ---
 
@@ -149,20 +132,6 @@ Per-node hardware component breakdown for an explicit list of nodes. Equivalent 
 ```
 manta get hardware nodes 'x3000c0s1b0n[0-3]'
 manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1 -o json
-```
-
-### get hardware node \<XNAMES\>
-
-List hardware components for specific nodes.
-
-| Arg/Flag | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `XNAMES` | string | **yes** | — | Comma-separated xnames |
-| `-t/--type` | string | no | — | Filter to a specific hardware artifact type |
-| `-o/--output` | string | no | — | Output format: `json` (omit for table) |
-
-```
-manta get hardware node x3000c0s1b0n0,x3000c0s1b0n1
 ```
 
 ### get sessions
@@ -825,20 +794,6 @@ Open an interactive shell in the Ansible target container of a running CFS sessi
 
 ```
 manta console target-ansible my-session
-```
-
----
-
-## validate-local-repo
-
-Verify that a local git repository's tags and HEAD commit exist in the configured Gitea instance. Useful before creating a CFS session.
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `-r/--repo-path` | path… | **yes** | Path(s) to local git repos (repeatable) |
-
-```
-manta validate-local-repo -r ~/repos/csm-config
 ```
 
 ---

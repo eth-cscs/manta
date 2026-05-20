@@ -158,13 +158,7 @@ manta apply sat-file -t cluster.yaml \
 
 ## 4. Running a CFS session from a local repo
 
-Use this to run Ansible from a local git repository without going through the full SAT file workflow.
-
-**Prerequisites:** verify the repo's tags are pushed to Gitea:
-
-```bash
-manta validate-local-repo -r ~/repos/csm-config
-```
+Use this to run Ansible from a local git repository without going through the full SAT file workflow. Make sure the repo's tags and `HEAD` commit are already pushed to the configured Gitea instance — the session creation will fail if the server can't resolve them.
 
 **Run a session targeting a group:**
 
@@ -499,13 +493,14 @@ NODES=$(manta get cluster compute --xnames-only-one-line)
 echo "Nodes: $NODES"
 ```
 
-**Run manta as a server and call it via curl:**
+**Run the manta server and call it via curl:**
 
 ```bash
-manta serve --cert server.pem --key server-key.pem &
+manta-server &
 
 curl -sk -H "Authorization: Bearer $TOKEN" \
+  -H "X-Manta-Site: $SITE" \
   https://localhost:8443/api/v1/sessions | jq .
 ```
 
-See [API.md](API.md) for the full HTTP API reference.
+`manta-server` is a separate binary; it reads `~/.config/manta/server.toml` (override path with `MANTA_SERVER_CONFIG`). See [API.md](API.md) for the full HTTP API reference and [README.md](README.md) for the per-binary config files.
