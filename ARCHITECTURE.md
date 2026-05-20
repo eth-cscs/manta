@@ -298,6 +298,8 @@ cli.toml   socks5_proxy
           connection to manta_server_url
 ```
 
+The env-var export is intentional and scoped to the CLI's single `MantaClient`: it happens during the single-threaded startup phase (before tokio starts) so `std::env::set_var` is safe, and the CLI only ever opens one outbound connection (to `manta_server_url`). The "no env vars, explicit parameters" rule applies to per-site backend traffic on the **server** side (csm-rs / ochami-rs), shown below.
+
 Server side — per-site, threaded explicitly through the call stack (no env var, no implicit state):
 
 ```

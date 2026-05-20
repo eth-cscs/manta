@@ -35,15 +35,18 @@ Manta is a frontend cli to interact with CSM and OCHAMI.
 Install build dependencies
 
 ```shell
-$ cargo install cargo-release cargo-dist git-cliff
+$ cargo install cargo-release dist git-cliff
 ```
+
+> `dist` is the renamed successor of `cargo-dist`; the old name still installs the same binary but emits a deprecation warning.
 
 ### Clone repo
 
 ```bash
 git clone https://github.com/eth-cscs/manta && cd manta
-git checkout 1.5
 ```
+
+The `main` branch holds the current 2.x line.
 
 ### Build container image
 
@@ -113,7 +116,7 @@ docker run -it --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN mant
 > docker run -it --rm --network=host -v $HOME:/root/ -e ACCESS_TOKEN=$ACCESS_TOKEN manta:latest manta get images
 > INFO  | Get IMS images 'all available'
 >
-> thread 'main' panicked at src/cli/commands/get_images.rs:23:6:
+> thread 'main' panicked at crates/manta-cli/src/cli/commands/get_images.rs:23:6:
 > called `Result::unwrap()` on an `Err` value: NetError(reqwest::Error { kind: Status(503), url: Url { scheme: "https", cannot_be_a_base: false, username: "", password: None, host: Some(Domain("foobar.openchami.cluster") ), port: Some(8443), path: "/ims/v3/images", query: None, fragment: None } })
 > note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 > exit status 101
@@ -263,17 +266,17 @@ cargo build --target=x86_64-unknown-linux-gnu
 
 #### Prerequisites
 
-Install 'cargo dist' and 'cargo release'
+Install `dist` and `cargo-release`:
 
 ```
-cargo install cargo-dist
+cargo install dist
 cargo install cargo-release
 ```
 
-Configure cargo-dist. Accept default options and only target linux assets
+Configure `dist`. Accept default options and only target linux assets:
 
 ```
-cargo dist init -t $(uname -m)-unknown-$(uname -s | tr '[:upper:]' '[:lower:]')-gnu
+dist init -t $(uname -m)-unknown-$(uname -s | tr '[:upper:]' '[:lower:]')-gnu
 ```
 
 Then remove the assets for macos and windows
@@ -284,7 +287,7 @@ Make sure a github workflow is created in `.github/workflows/release.yml`
 
 This project is already integrated with github actions through 'cargo release' and 'git cliff'
 
-> git cliff will parse your commits and update the CHANGELOG.md file automatically as long as your commits follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) and [git cliff extra commit types](https://github.com/eth-cscs/manta/blob/main/cliff.toml#L52-L65)
+> git cliff will parse your commits and update the CHANGELOG.md file automatically as long as your commits follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#specification). The commit-type → section mapping lives in the `[git.commit_parsers]` table inside [`cliff.toml`](cliff.toml).
 
 ```
 cargo release <bump level> --execute
@@ -292,7 +295,7 @@ cargo release <bump level> --execute
 
 > choose your [bump level](https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md#bump-level) accordingly
 
-If everything went well, then binary should be located in `manta/target/x86_64-unknown-linux-gnu/release/manta`
+If everything went well, the binaries will be at `target/x86_64-unknown-linux-gnu/release/manta-cli` and `target/x86_64-unknown-linux-gnu/release/manta-server`.
 
 ### Profiling
 
@@ -317,14 +320,14 @@ sudo sh -c " echo 0 > /proc/sys/kernel/kptr_restrict"
 #### Create perf data
 
 ```bash
-perf stat -ad -r 100 target/release/manta get session
+perf stat -ad -r 100 target/release/manta-cli get sessions
 ```
 
 #### Identify bottlenecks and get hotspots for those events
 
 
 ```bash
-perf record -g --call-graph=dwarf -F max target/release/manta get session
+perf record -g --call-graph=dwarf -F max target/release/manta-cli get sessions
 ```
 
 #### Convert perf data file to a format firefox profiles understands
