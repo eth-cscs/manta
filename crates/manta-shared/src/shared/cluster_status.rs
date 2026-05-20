@@ -149,3 +149,226 @@ pub fn get_cluster_hw_pattern(
 
   hsm_node_hw_component_count_hashmap
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use manta_backend_dispatcher::types::{ArtifactSummary, ArtifactType};
+
+  // ---- fixtures ----
+
+  fn node(power: &str, config: &str) -> NodeDetails {
+    NodeDetails {
+      xname: String::new(),
+      nid: String::new(),
+      hsm: String::new(),
+      power_status: power.to_string(),
+      desired_configuration: String::new(),
+      configuration_status: config.to_string(),
+      enabled: String::new(),
+      error_count: String::new(),
+      boot_image_id: String::new(),
+      boot_configuration: String::new(),
+      kernel_params: String::new(),
+    }
+  }
+
+  fn artifact(kind: ArtifactType, info: Option<&str>) -> ArtifactSummary {
+    ArtifactSummary {
+      xname: String::new(),
+      r#type: kind,
+      info: info.map(String::from),
+    }
+  }
+
+  fn summary(
+    processors: Vec<ArtifactSummary>,
+    memory: Vec<ArtifactSummary>,
+    accels: Vec<ArtifactSummary>,
+    nics: Vec<ArtifactSummary>,
+  ) -> NodeSummary {
+    NodeSummary {
+      xname: String::new(),
+      r#type: String::new(),
+      processors,
+      memory,
+      node_accels: accels,
+      node_hsn_nics: nics,
+    }
+  }
+
+  // ---- compute_summary_status priority ladder ----
+  //
+  // Priority: FAILED > OFF > ON > STANDBY > UNCONFIGURED > OK
+  // Each test mixes a higher-priority node with lower-priority ones
+  // to pin the precedence — a swap (e.g. OFF and ON reversed) would
+  // change what operators see in `manta get cluster` and is silent
+  // without these tests.
+
+  #[test]
+  fn summary_status_failed_beats_everything() {
+    let nodes = [
+      node("ON", "failed"),
+      node("OFF", "configured"),
+      node("on", "configured"),
+    ];
+    assert_eq!(compute_summary_status(&nodes), "FAILED");
+  }
+
+  #[test]
+  fn summary_status_off_beats_on() {
+    let nodes = [node("OFF", "configured"), node("on", "configured")];
+    assert_eq!(compute_summary_status(&nodes), "OFF");
+  }
+
+  #[test]
+  fn summary_status_on_beats_standby() {
+    let nodes = [node("on", "configured"), node("standby", "configured")];
+    assert_eq!(compute_summary_status(&nodes), "ON");
+  }
+
+  #[test]
+  fn summary_status_standby_beats_unconfigured() {
+    let nodes = [node("standby", "configured"), node("ready", "pending")];
+    assert_eq!(compute_summary_status(&nodes), "STANDBY");
+  }
+
+  #[test]
+  fn summary_status_unconfigured_when_only_config_differs() {
+    let nodes = [node("ready", "pending")];
+    assert_eq!(compute_summary_status(&nodes), "UNCONFIGURED");
+  }
+
+  #[test]
+  fn summary_status_ok_when_all_configured_and_no_known_power_state() {
+    let nodes = [node("ready", "configured"), node("ready", "configured")];
+    assert_eq!(compute_summary_status(&nodes), "OK");
+  }
+
+  #[test]
+  fn summary_status_empty_input_is_ok() {
+    // No nodes means no `any()` matches, falls through to OK.
+    // Worth pinning so callers can rely on it instead of pre-checking.
+    assert_eq!(compute_summary_status(&[]), "OK");
+  }
+
+  #[test]
+  fn summary_status_matches_case_insensitively() {
+    // Power and configuration status checks use eq_ignore_ascii_case.
+    assert_eq!(
+      compute_summary_status(&[node("off", "configured")]),
+      "OFF"
+    );
+    assert_eq!(
+      compute_summary_status(&[node("ON", "CONFIGURED")]),
+      "ON"
+    );
+  }
+
+  // ---- calculate_hsm_hw_component_summary ----
+
+  #[test]
+  fn hw_summary_empty_input_is_empty() {
+    assert!(calculate_hsm_hw_component_summary(&[]).is_empty());
+  }
+
+  #[test]
+  fn hw_summary_counts_identical_processors_across_nodes() {
+    let node_a = summary(
+      vec![
+        artifact(ArtifactType::Processor, Some("AMD EPYC 7763")),
+        artifact(ArtifactType::Processor, Some("AMD EPYC 7763")),
+      ],
+      vec![],
+      vec![],
+      vec![],
+    );
+    let node_b = summary(
+      vec![artifact(ArtifactType::Processor, Some("AMD EPYC 7763"))],
+      vec![],
+      vec![],
+      vec![],
+    );
+    let got = calculate_hsm_hw_component_summary(&[node_a, node_b]);
+    assert_eq!(got.get("AMD EPYC 7763"), Some(&3));
+  }
+
+  #[test]
+  fn hw_summary_converts_memory_mib_to_gib() {
+    // 524 288 MiB / 1024 = 512 GiB.
+    let node = summary(
+      vec![],
+      vec![artifact(ArtifactType::Memory, Some("524288 MiB"))],
+      vec![],
+      vec![],
+    );
+    let got = calculate_hsm_hw_component_summary(&[node]);
+    assert_eq!(got.get("Memory (GiB)"), Some(&512));
+  }
+
+  #[test]
+  fn hw_summary_skips_artifacts_with_no_info_field() {
+    // Processors / accels / NICs with `info = None` must not be counted.
+    let node = summary(
+      vec![artifact(ArtifactType::Processor, None)],
+      vec![],
+      vec![artifact(ArtifactType::NodeAccel, None)],
+      vec![artifact(ArtifactType::NodeHsnNic, None)],
+    );
+    assert!(calculate_hsm_hw_component_summary(&[node]).is_empty());
+  }
+
+  #[test]
+  fn hw_summary_treats_unparseable_memory_as_zero() {
+    // "ERROR NA".parse::<usize>() fails — the function defaults to 0,
+    // which still creates the entry with value 0. Pin the behaviour
+    // so a future "raise on parse error" change is deliberate.
+    let node = summary(
+      vec![],
+      vec![artifact(ArtifactType::Memory, Some("garbage"))],
+      vec![],
+      vec![],
+    );
+    let got = calculate_hsm_hw_component_summary(&[node]);
+    assert_eq!(got.get("Memory (GiB)"), Some(&0));
+  }
+
+  // ---- get_cluster_hw_pattern ----
+
+  #[test]
+  fn hw_pattern_empty_input_is_empty() {
+    assert!(get_cluster_hw_pattern(vec![]).is_empty());
+  }
+
+  #[test]
+  fn hw_pattern_strips_whitespace_from_processor_info() {
+    let node = summary(
+      vec![artifact(ArtifactType::Processor, Some("AMD EPYC 7763"))],
+      vec![],
+      vec![],
+      vec![],
+    );
+    let got = get_cluster_hw_pattern(vec![node]);
+    assert_eq!(got.get("AMDEPYC7763"), Some(&1));
+    assert!(
+      got.get("AMD EPYC 7763").is_none(),
+      "whitespace-bearing key must NOT be present"
+    );
+  }
+
+  #[test]
+  fn hw_pattern_aggregates_memory_as_raw_value_not_gib() {
+    // Unlike `calculate_hsm_hw_component_summary`, this helper does
+    // NOT divide memory by 1024; it sums the raw value under the
+    // literal key "memory". Catches a future "let's unify these
+    // helpers" change that would silently shift consumers' numbers.
+    let node = summary(
+      vec![],
+      vec![artifact(ArtifactType::Memory, Some("512 MiB"))],
+      vec![],
+      vec![],
+    );
+    let got = get_cluster_hw_pattern(vec![node]);
+    assert_eq!(got.get("memory"), Some(&512));
+  }
+}
