@@ -30,7 +30,7 @@ pub fn subcommand_add_node() -> Command {
     )
     .arg(
       arg!(-d --disabled "Register the node as disabled")
-        .action(ArgAction::SetFalse),
+        .action(ArgAction::SetTrue),
     )
 }
 
