@@ -64,7 +64,7 @@ List CFS sessions, optionally filtered.
 | `xnames` | string | no | Comma-separated xnames to filter by |
 | `min_age` | string | no | Minimum session age (e.g. `1h`, `2d`) |
 | `max_age` | string | no | Maximum session age |
-| `session_type` | string | no | `image` or `node` |
+| `session_type` | string | no | `image` or `runtime` |
 | `status` | string | no | `pending`, `running`, `complete` |
 | `name` | string | no | Exact session name |
 | `limit` | u8 | no | Maximum number of results |
@@ -715,7 +715,7 @@ Power on, off, or reset nodes or an entire cluster.
 
 ```json
 {
-  "action": "reboot",
+  "action": "reset",
   "targets_expression": "x3000c0s[1-4]b0n0",
   "target_type": "nodes",
   "force": false
@@ -724,7 +724,7 @@ Power on, off, or reset nodes or an entire cluster.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `action` | string | **yes** | `on`, `off`, or `reset` |
+| `action` | string | **yes** | `on`, `off`, or `reset` (lowercase; serde rejects anything else with 422) |
 | `targets_expression` | string | **yes** | Hosts expression (for `target_type: nodes`) or HSM group name (for `target_type: cluster`) |
 | `target_type` | string | **yes** | `nodes` or `cluster` |
 | `force` | bool | no | Hard power off/reset without graceful shutdown (default: `false`) |
