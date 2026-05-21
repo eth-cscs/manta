@@ -1,0 +1,15 @@
+# Pins the Rust toolchain used for this workspace.
+#
+# Both rustup (local development) and most CI Rust actions
+# (e.g. dtolnay/rust-toolchain, actions-rust-lang/setup-rust-toolchain)
+# honor this file, so everyone runs the same rustc + rustfmt + clippy.
+# This avoids the "works on my machine, breaks in CI" cargo-fmt diffs
+# that happen when local rustfmt is newer than CI's preinstalled
+# rustfmt.
+#
+# Bump in lockstep with the rust:N-bookworm builder image referenced
+# in crates/manta-cli/Dockerfile and crates/manta-server/Dockerfile.
+
+[toolchain]
+channel = "1.92.0"
+components = ["rustfmt", "clippy"]

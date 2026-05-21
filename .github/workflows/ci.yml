@@ -18,6 +18,16 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+    # Install the Rust toolchain pinned by rust-toolchain.toml at the
+    # workspace root. Without this, the workflow uses whatever Rust
+    # ships preinstalled on the ubuntu-latest runner image — typically
+    # several months behind what developers use locally — and rustfmt
+    # output differs across Rust versions, so `cargo fmt -- --check`
+    # tripped on diffs that local fmt didn't predict.
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: "1.92.0"
+        components: rustfmt, clippy
     # System libs that several transitive C-based deps need to build:
     #   - cmake               for librdkafka-sys (rdkafka, used by manta-shared::kafka)
     #   - libcurl4-openssl-dev for crates that link curl statically
