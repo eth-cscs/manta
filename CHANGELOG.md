@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.9] - 2026-05-20
+## [2.0.0-beta.10] - 2026-05-21
 
 ### Bug Fixes
 
@@ -62,6 +62,7 @@ All notable changes to this project will be documented in this file.
 ### Styling
 
 - Cargo fmt baseline after workspace split
+- Cargo fmt baseline across 9 files touched in recent commits
 
 ### Testing
 
