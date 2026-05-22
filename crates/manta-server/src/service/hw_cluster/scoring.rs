@@ -21,9 +21,16 @@ use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use crate::server::common;
 
 /// Compute a scarcity score for each hardware component type across all nodes.
+//
+// The `usize -> f64` casts below would trigger `clippy::cast_precision_loss`
+// because f64's 52-bit mantissa can't represent every 64-bit usize. In
+// practice these values are hardware-component counts (low thousands at
+// the largest realistic site); 2^52 ≈ 4.5e15 covers any plausible fleet
+// size by many orders of magnitude.
+#[allow(clippy::cast_precision_loss)]
 pub async fn calculate_hw_component_scarcity_scores(
   hsm_node_hw_component_count: &[(String, HashMap<String, usize>)],
-) -> HashMap<String, f32> {
+) -> HashMap<String, f64> {
   let total_num_hw_components: usize = hsm_node_hw_component_count
     .iter()
     .flat_map(|(_, hw_component_qty_hashmap)| hw_component_qty_hashmap.values())
@@ -39,7 +46,7 @@ pub async fn calculate_hw_component_scarcity_scores(
   hw_component_vec.sort();
   hw_component_vec.dedup();
 
-  let mut hw_component_scarcity_score_hashmap: HashMap<String, f32> =
+  let mut hw_component_scarcity_score_hashmap: HashMap<String, f64> =
     HashMap::new();
   for hw_component in hw_component_vec {
     let mut hsm_hw_component_count = 0;
@@ -54,7 +61,7 @@ pub async fn calculate_hw_component_scarcity_scores(
 
     hw_component_scarcity_score_hashmap.insert(
       hw_component.to_string(),
-      (total_num_hw_components as f32) / (hsm_hw_component_count as f32),
+      (total_num_hw_components as f64) / (hsm_hw_component_count as f64),
     );
   }
 
@@ -67,16 +74,20 @@ pub async fn calculate_hw_component_scarcity_scores(
 }
 
 /// Calculates a normalised score for each node based on component scarcity.
+//
+// Same `cast_precision_loss` justification as above — qty is a per-node
+// component count, never large enough to overflow f64's mantissa.
+#[allow(clippy::cast_precision_loss)]
 pub fn calculate_hsm_node_scores_from_final_hsm(
   parent_hsm_node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
   parent_hsm_hw_component_summary_hashmap: &HashMap<String, usize>,
   final_hsm_summary_hashmap: &HashMap<String, usize>,
-  hw_component_scarcity_scores_hashmap: &HashMap<String, f32>,
-) -> Vec<(String, f32)> {
-  let mut node_score_vec: Vec<(String, f32)> = Vec::new();
+  hw_component_scarcity_scores_hashmap: &HashMap<String, f64>,
+) -> Vec<(String, f64)> {
+  let mut node_score_vec: Vec<(String, f64)> = Vec::new();
 
   for (xname, hw_component_count) in parent_hsm_node_hw_component_count_vec {
-    let mut node_score: f32 = 0.0;
+    let mut node_score: f64 = 0.0;
     for (hw_component, qty) in hw_component_count {
       let scarcity_score = hw_component_scarcity_scores_hashmap
         .get(hw_component)
@@ -84,7 +95,7 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
         .unwrap_or(0.0);
 
       if final_hsm_summary_hashmap.get(hw_component).is_none() {
-        node_score -= scarcity_score * *qty as f32;
+        node_score -= scarcity_score * *qty as f64;
       } else {
         let final_qty = final_hsm_summary_hashmap
           .get(hw_component)
@@ -96,9 +107,9 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
           .unwrap_or(0);
 
         if final_qty < parent_qty {
-          node_score += scarcity_score * *qty as f32;
+          node_score += scarcity_score * *qty as f64;
         } else {
-          node_score -= scarcity_score * *qty as f32;
+          node_score -= scarcity_score * *qty as f64;
         }
       }
     }
@@ -225,10 +236,10 @@ async fn get_node_hw_component_count(
 }
 
 /// Print a table of node hardware component scores with color-coded cells.
-pub fn print_table_f32_score(
+pub fn print_score_table(
   user_defined_hw_component_vec: &[String],
   hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
-  hsm_score_vec: &[(String, f32)],
+  hsm_score_vec: &[(String, f64)],
 ) {
   let hsm_hw_component_vec: Vec<String> = hsm_hw_pattern_vec
     .iter()
@@ -287,13 +298,13 @@ pub fn print_table_f32_score(
       }
     }
 
-    let default_score = (xname.to_string(), 0f32);
+    let default_score = (xname.to_string(), 0.0);
     let node_score = hsm_score_vec
       .iter()
       .find(|(node_name, _)| node_name.eq(xname))
       .unwrap_or(&default_score)
       .1;
-    let node_score_table_cell = if node_score <= 0f32 {
+    let node_score_table_cell = if node_score <= 0.0 {
       comfy_table::Cell::new(node_score)
         .set_alignment(comfy_table::CellAlignment::Center)
         .fg(Color::Red)
@@ -388,9 +399,9 @@ pub async fn get_hsm_node_hw_component_counter(
 
 /// Selects the best candidate node by highest score, breaking ties by xname.
 pub fn get_best_candidate_in_hsm(
-  hsm_score_vec: &mut [(String, f32)],
+  hsm_score_vec: &mut [(String, f64)],
   hsm_hw_component_vec: &[(String, HashMap<String, usize>)],
-) -> Option<((String, f32), HashMap<String, usize>)> {
+) -> Option<((String, f64), HashMap<String, usize>)> {
   if hsm_score_vec.is_empty() || hsm_hw_component_vec.is_empty() {
     return None;
   }
@@ -402,7 +413,7 @@ pub fn get_best_candidate_in_hsm(
       .then(a.0.cmp(&b.0))
   });
 
-  let best_candidate: (String, f32) = hsm_score_vec.first()?.clone();
+  let best_candidate: (String, f64) = hsm_score_vec.first()?.clone();
 
   hsm_hw_component_vec
     .iter()
@@ -412,14 +423,14 @@ pub fn get_best_candidate_in_hsm(
 
 /// For PIN mode: selects best candidate preferring existing target nodes first.
 pub fn get_best_candidate_in_target_and_parent_hsm(
-  target_hsm_node_score_tuple_vec: &mut [(String, f32)],
-  parent_hsm_node_score_tuple_vec: &mut [(String, f32)],
+  target_hsm_node_score_tuple_vec: &mut [(String, f64)],
+  parent_hsm_node_score_tuple_vec: &mut [(String, f64)],
   target_hsm_node_hw_component_count_vec: &mut [(
     String,
     HashMap<String, usize>,
   )],
   parent_hsm_node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
-) -> Option<((String, f32), HashMap<String, usize>)> {
+) -> Option<((String, f64), HashMap<String, usize>)> {
   let target_best_candidate_tuple = get_best_candidate_in_hsm(
     target_hsm_node_score_tuple_vec,
     target_hsm_node_hw_component_count_vec,
@@ -476,7 +487,7 @@ pub async fn resolve_hw_description_to_xnames(
       &combined_target_parent_hsm_node_hw_component_count_vec,
     );
 
-  let hw_component_scarcity_scores_hashmap: HashMap<String, f32> =
+  let hw_component_scarcity_scores_hashmap: HashMap<String, f64> =
     calculate_hw_component_scarcity_scores(
       &combined_target_parent_hsm_node_hw_component_count_vec,
     )

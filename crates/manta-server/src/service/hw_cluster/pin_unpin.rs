@@ -21,7 +21,7 @@ pub fn calculate_target_hsm_pin(
   combination_target_parent_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
   target_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
   parent_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
-  hw_component_scarcity_scores_hashmap: &HashMap<String, f32>,
+  hw_component_scarcity_scores_hashmap: &HashMap<String, f64>,
 ) -> Result<NodeHwCountVec, Error> {
   let mut combination_target_parent_hsm_hw_component_summary_hashmap: HashMap<
     String,
@@ -38,7 +38,7 @@ pub fn calculate_target_hsm_pin(
       parent_hsm_node_hw_component_count_vec,
     );
 
-  let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
+  let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
     scoring::calculate_hsm_node_scores_from_final_hsm(
       target_hsm_node_hw_component_count_vec,
       &target_hsm_hw_component_summary_hashmap,
@@ -46,7 +46,7 @@ pub fn calculate_target_hsm_pin(
       hw_component_scarcity_scores_hashmap,
     );
 
-  let mut parent_hsm_node_score_tuple_vec: Vec<(String, f32)> =
+  let mut parent_hsm_node_score_tuple_vec: Vec<(String, f64)> =
     scoring::calculate_hsm_node_scores_from_final_hsm(
       parent_hsm_node_hw_component_count_vec,
       &parent_hsm_hw_component_summary_hashmap,
@@ -114,13 +114,13 @@ pub fn calculate_target_hsm_pin(
       best_candidate_counters
     );
 
-    scoring::print_table_f32_score(
+    scoring::print_score_table(
       user_defined_hw_component_vec,
       target_hsm_node_hw_component_count_vec,
       &target_hsm_node_score_tuple_vec,
     );
 
-    scoring::print_table_f32_score(
+    scoring::print_score_table(
       user_defined_hw_component_vec,
       parent_hsm_node_hw_component_count_vec,
       &parent_hsm_node_score_tuple_vec,
@@ -153,7 +153,7 @@ pub fn calculate_target_hsm_pin(
     parent_hsm_node_score_tuple_vec
       .retain(|(node, _)| !node.eq(&best_candidate.0));
 
-    let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
+    let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
       scoring::calculate_hsm_node_scores_from_final_hsm(
         target_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
@@ -161,7 +161,7 @@ pub fn calculate_target_hsm_pin(
         hw_component_scarcity_scores_hashmap,
       );
 
-    let mut parent_hsm_node_score_tuple_vec: Vec<(String, f32)> =
+    let mut parent_hsm_node_score_tuple_vec: Vec<(String, f64)> =
       scoring::calculate_hsm_node_scores_from_final_hsm(
         parent_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
@@ -213,13 +213,13 @@ pub fn calculate_target_hsm_pin(
   tracing::info!("----- FINAL RESULT -----");
   tracing::info!("No candidates found");
 
-  scoring::print_table_f32_score(
+  scoring::print_score_table(
     user_defined_hw_component_vec,
     target_hsm_node_hw_component_count_vec,
     &target_hsm_node_score_tuple_vec,
   );
 
-  scoring::print_table_f32_score(
+  scoring::print_score_table(
     user_defined_hw_component_vec,
     parent_hsm_node_hw_component_count_vec,
     &parent_hsm_node_score_tuple_vec,
@@ -236,7 +236,7 @@ pub fn calculate_target_hsm_unpin(
   user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>,
   user_defined_hw_component_vec: &[String],
   combination_target_parent_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
-  hw_component_scarcity_scores_hashmap: &HashMap<String, f32>,
+  hw_component_scarcity_scores_hashmap: &HashMap<String, f64>,
 ) -> Result<NodeHwCountVec, Error> {
   let mut combination_target_parent_hsm_hw_component_summary_hashmap: HashMap<
     String,
@@ -247,7 +247,7 @@ pub fn calculate_target_hsm_unpin(
 
   let mut combination_target_parent_hsm_node_score_tuple_vec: Vec<(
     String,
-    f32,
+    f64,
   )> = scoring::calculate_hsm_node_scores_from_final_hsm(
     combination_target_parent_hsm_node_hw_component_count_vec,
     &combination_target_parent_hsm_hw_component_summary_hashmap,
@@ -298,7 +298,7 @@ pub fn calculate_target_hsm_unpin(
       best_candidate_counters
     );
 
-    scoring::print_table_f32_score(
+    scoring::print_score_table(
       user_defined_hw_component_vec,
       combination_target_parent_hsm_node_hw_component_count_vec,
       &combination_target_parent_hsm_node_score_tuple_vec,
@@ -322,7 +322,7 @@ pub fn calculate_target_hsm_unpin(
     combination_target_parent_hsm_node_score_tuple_vec
       .retain(|(node, _)| !node.eq(&best_candidate.0));
 
-    let mut target_hsm_node_score_tuple_vec: Vec<(String, f32)> =
+    let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
       scoring::calculate_hsm_node_scores_from_final_hsm(
         combination_target_parent_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
@@ -350,7 +350,7 @@ pub fn calculate_target_hsm_unpin(
   tracing::info!("----- FINAL RESULT -----");
   tracing::info!("No candidates found");
 
-  scoring::print_table_f32_score(
+  scoring::print_score_table(
     user_defined_hw_component_vec,
     combination_target_parent_hsm_node_hw_component_count_vec,
     &combination_target_parent_hsm_node_score_tuple_vec,

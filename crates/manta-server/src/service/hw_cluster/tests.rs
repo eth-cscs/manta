@@ -139,7 +139,7 @@ fn keep_iterating_mixed_components() {
 
 #[test]
 fn best_candidate_empty_inputs() {
-  let mut scores: Vec<(String, f32)> = vec![];
+  let mut scores: Vec<(String, f64)> = vec![];
   let hw: Vec<(String, HashMap<String, usize>)> = vec![];
   assert!(get_best_candidate_in_hsm(&mut scores, &hw).is_none());
 }
