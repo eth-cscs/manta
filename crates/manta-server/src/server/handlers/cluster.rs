@@ -14,7 +14,9 @@ use crate::service;
 /// Query parameters for `GET /clusters`.
 #[derive(Deserialize, IntoParams)]
 pub struct ClusterQuery {
+  /// Cluster (HSM group) name to list nodes for.
   pub hsm_group: Option<String>,
+  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
   pub status: Option<String>,
 }
 

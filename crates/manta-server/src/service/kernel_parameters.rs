@@ -38,11 +38,25 @@ pub async fn get_kernel_parameters(
 /// Describes which kernel parameter mutation to apply.
 pub enum KernelParamOperation<'a> {
   /// Add kernel parameters, optionally overwriting existing values.
-  Add { params: &'a str, overwrite: bool },
+  Add {
+    /// Space-separated `key=value` pairs to add.
+    params: &'a str,
+    /// When true, replace existing parameters with the same key
+    /// instead of skipping them.
+    overwrite: bool,
+  },
   /// Replace all kernel parameters with the given value.
-  Apply { params: &'a str },
+  Apply {
+    /// Space-separated `key=value` pairs that fully replace the
+    /// existing parameter set.
+    params: &'a str,
+  },
   /// Remove the specified kernel parameters.
-  Delete { params: &'a str },
+  Delete {
+    /// Space-separated parameter names (or `key=value` pairs) to
+    /// remove.
+    params: &'a str,
+  },
 }
 
 impl<'a> KernelParamOperation<'a> {

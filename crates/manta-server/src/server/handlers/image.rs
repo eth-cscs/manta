@@ -16,17 +16,26 @@ use crate::service;
 /// Query parameters for `GET /images`.
 #[derive(Deserialize, IntoParams)]
 pub struct ImageQuery {
+  /// Exact IMS image ID; returns just that image when set.
   pub id: Option<String>,
+  /// HSM group whose associated images should be returned.
   pub hsm_group: Option<String>,
+  /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,
 }
 
 /// Wrapper so the image tuple serializes to named fields.
 #[derive(Serialize, ToSchema)]
 pub struct ImageEntry {
+  /// Raw IMS image object (CSM / OpenCHAMI shape, passed through).
   pub image: serde_json::Value,
+  /// Name of the CFS configuration linked to this image at build time.
   pub configuration_name: String,
+  /// IMS image ID (UUID). Convenience copy of `image.id` for clients
+  /// that don't want to parse the inner JSON.
   pub image_id: String,
+  /// Whether the image is still linked to its configuration (vs.
+  /// configuration was deleted but image survives).
   pub is_linked: bool,
 }
 

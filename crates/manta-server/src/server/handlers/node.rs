@@ -19,9 +19,12 @@ use crate::service;
 /// Query parameters for `GET /nodes`.
 #[derive(Deserialize, IntoParams)]
 pub struct NodesQuery {
+  /// Comma-separated xnames, NIDs, or hostlist expression
+  /// (e.g. `x3000c0s1b0n[0-3]`).
   pub xname: String,
   /// Expand results to include nodes sharing the same power supply.
   pub include_siblings: Option<bool>,
+  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
   pub status: Option<String>,
 }
 
@@ -95,10 +98,16 @@ pub async fn delete_node(
 /// Body for `POST /nodes`.
 #[derive(Deserialize, ToSchema)]
 pub struct AddNodeRequest {
+  /// Physical location ID (xname) of the node, e.g. `x3000c0s1b0n0`.
   pub id: String,
+  /// Initial HSM group the node belongs to.
   pub group: String,
+  /// Whether to register the node as enabled. Defaults to `false`
+  /// (disabled) per serde's default for `bool`; CLI's
+  /// `manta add node` flips the polarity via `--disabled`.
   #[serde(default)]
   pub enabled: bool,
+  /// Optional architecture tag: `"X86"`, `"ARM"`, or `"Other"`.
   pub arch: Option<String>,
 }
 

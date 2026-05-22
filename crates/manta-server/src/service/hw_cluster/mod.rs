@@ -43,21 +43,31 @@ pub type NodeHwCountVec = Vec<(String, HashMap<String, usize>)>;
 
 /// Result of an `add hw-component` operation.
 pub struct AddHwResult {
+  /// Xnames moved from the parent group into the target group as
+  /// part of this operation.
   pub nodes_moved: Vec<String>,
+  /// Final membership of the target group after the move.
   pub target_nodes: Vec<String>,
+  /// Final membership of the parent group after the move.
   pub parent_nodes: Vec<String>,
 }
 
 /// Result of a `delete hw-component` operation.
 pub struct DeleteHwResult {
+  /// Xnames moved out of the target group and returned to the
+  /// parent group as part of this operation.
   pub nodes_moved: Vec<String>,
+  /// Final membership of the target group after the move.
   pub target_nodes: Vec<String>,
+  /// Final membership of the parent group after the move.
   pub parent_nodes: Vec<String>,
 }
 
 /// Result of an `apply hw-configuration` (pin/unpin) operation.
 pub struct ApplyHwResult {
+  /// Final membership of the target group after pin/unpin completes.
   pub target_nodes: Vec<String>,
+  /// Final membership of the parent group after pin/unpin completes.
   pub parent_nodes: Vec<String>,
 }
 

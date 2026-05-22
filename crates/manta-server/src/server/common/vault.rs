@@ -1,3 +1,10 @@
+//! Vault client used by handlers that need backend-specific secrets
+//! (Gitea token for `create_session`, Kubernetes credentials for the
+//! console and log-streaming handlers).
+
+/// Thin Vault HTTP client. Authenticates via OIDC/JWT against a
+/// per-site `jwt-manta-<site>` role, then reads K/V v2 secrets under
+/// `manta/data/<...>`.
 pub mod http_client {
 
   use manta_backend_dispatcher::error::Error;

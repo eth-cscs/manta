@@ -17,7 +17,10 @@ use crate::service;
 /// Query parameters for `GET /kernel-parameters`.
 #[derive(Deserialize, IntoParams)]
 pub struct KernelParametersQuery {
+  /// HSM group whose members' kernel parameters should be returned.
   pub hsm_group: Option<String>,
+  /// Explicit comma-separated xnames; mutually exclusive with
+  /// `hsm_group`.
   pub nodes: Option<String>,
 }
 

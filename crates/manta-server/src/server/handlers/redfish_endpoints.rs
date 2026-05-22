@@ -19,10 +19,15 @@ use crate::service;
 /// Query parameters for `GET /redfish-endpoints`.
 #[derive(Deserialize, IntoParams)]
 pub struct RedfishEndpointsQuery {
+  /// Exact endpoint ID (BMC xname) filter.
   pub id: Option<String>,
+  /// FQDN substring filter.
   pub fqdn: Option<String>,
+  /// UUID exact-match filter.
   pub uuid: Option<String>,
+  /// MAC-address exact-match filter (colon-separated hex).
   pub macaddr: Option<String>,
+  /// IP-address exact-match filter (IPv4 or IPv6).
   pub ipaddress: Option<String>,
 }
 

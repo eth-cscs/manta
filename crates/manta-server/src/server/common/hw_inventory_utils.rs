@@ -1,3 +1,6 @@
+//! Pure helpers for parsing raw HSM hardware-inventory JSON into the
+//! component aggregations the hw_cluster service operates on.
+
 use serde_json::Value;
 
 /// Extract memory DIMM capacities (MiB) from a node's

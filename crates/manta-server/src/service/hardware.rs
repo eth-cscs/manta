@@ -25,7 +25,11 @@ const HW_INVENTORY_CONCURRENCY_LIMIT: usize = 15;
 
 /// Result of a hardware cluster query.
 pub struct HardwareClusterResult {
+  /// Resolved HSM group name the inventory was collected for (may
+  /// differ from the requested name if the caller's authorization
+  /// only permitted a subset).
   pub hsm_group_name: String,
+  /// Per-node hardware summaries, one entry per group member.
   pub node_summaries: Vec<NodeSummary>,
 }
 
@@ -155,6 +159,7 @@ pub async fn get_hardware_cluster(
 
 /// Result of a hardware nodes-list query.
 pub struct HardwareNodesListResult {
+  /// Per-node hardware summaries, one entry per resolved xname.
   pub node_summaries: Vec<NodeSummary>,
 }
 

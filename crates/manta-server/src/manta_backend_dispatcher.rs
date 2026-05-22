@@ -14,7 +14,11 @@ use ochami_rs::backend_connector::Ochami;
 /// [`crate::backend_dispatcher`] module.
 #[derive(Debug)]
 pub enum StaticBackendDispatcher {
+  /// HPE Cray System Management (CSM) backend, used by Alps-style
+  /// deployments. Wraps a `csm-rs` HTTP client.
   CSM(Csm),
+  /// OpenCHAMI backend, used by sites running the open-source CSM
+  /// alternative. Wraps an `ochami-rs` HTTP client.
   OCHAMI(Ochami),
 }
 

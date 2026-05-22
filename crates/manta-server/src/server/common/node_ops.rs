@@ -1,3 +1,7 @@
+//! Node-expression resolution: parsing hostlist strings, NID-to-xname
+//! translation, HSM-group expansion, and the authorization helpers
+//! that validate the caller can act on the resolved set.
+
 use std::collections::HashMap;
 use std::sync::LazyLock;
 

@@ -1,3 +1,6 @@
+//! Server-side helpers for resolving and filtering BSS boot
+//! parameters during handler-side orchestration.
+
 use manta_backend_dispatcher::types::{Group, bss::BootParameters};
 
 /// Get a vector of boot parameters that are restricted based on the groups available to the user.

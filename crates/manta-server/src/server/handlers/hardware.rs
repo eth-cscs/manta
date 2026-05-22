@@ -14,6 +14,7 @@ use crate::service;
 /// Query parameters for `GET /hardware-clusters`.
 #[derive(Deserialize, IntoParams)]
 pub struct HardwareClusterQuery {
+  /// Cluster (HSM group) name to inventory.
   pub hsm_group: Option<String>,
 }
 

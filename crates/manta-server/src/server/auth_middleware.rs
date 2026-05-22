@@ -46,6 +46,8 @@ pub struct AuthRateLimiter {
 }
 
 impl AuthRateLimiter {
+  /// Construct a fresh limiter wrapped in an `Arc` so it can be
+  /// shared via Axum's `Extension` layer across handler invocations.
   pub fn new() -> Arc<Self> {
     Arc::new(Self::default())
   }

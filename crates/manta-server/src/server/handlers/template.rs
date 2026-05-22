@@ -21,8 +21,11 @@ use crate::service;
 /// Query parameters for `GET /templates`.
 #[derive(Deserialize, IntoParams)]
 pub struct TemplateQuery {
+  /// Exact template name.
   pub name: Option<String>,
+  /// HSM group whose associated templates should be returned.
   pub hsm_group: Option<String>,
+  /// Cap on the number of templates returned (most recent first).
   pub limit: Option<u8>,
 }
 

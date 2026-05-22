@@ -1,3 +1,7 @@
+//! Ephemeral CFS environment provisioning — launches a temporary
+//! container booted from an existing IMS image and returns its
+//! hostname.
+
 use csm_rs::ims;
 use manta_backend_dispatcher::error::Error;
 

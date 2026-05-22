@@ -17,9 +17,13 @@ use crate::service;
 /// Query parameters for `GET /configurations`.
 #[derive(Deserialize, IntoParams)]
 pub struct ConfigurationQuery {
+  /// Exact configuration name to fetch.
   pub name: Option<String>,
+  /// Glob pattern matched against configuration names.
   pub pattern: Option<String>,
+  /// HSM group whose associated configurations should be returned.
   pub hsm_group: Option<String>,
+  /// Cap on the number of configurations returned (most recent first).
   pub limit: Option<u8>,
 }
 

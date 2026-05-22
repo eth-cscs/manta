@@ -1,3 +1,7 @@
+//! IMS image helpers shared by handlers that need to locate or
+//! cross-reference images by CFS configuration name (e.g. boot-config
+//! application, SAT-file rendering).
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{cfs::CfsTrait, ims::ImsTrait},

@@ -16,7 +16,10 @@ use crate::service;
 /// Query parameters for `GET /boot-parameters`.
 #[derive(Deserialize, IntoParams)]
 pub struct BootParametersQuery {
+  /// HSM group whose members' boot parameters should be returned.
   pub hsm_group: Option<String>,
+  /// Explicit comma-separated xnames; mutually exclusive with
+  /// `hsm_group`.
   pub nodes: Option<String>,
 }
 
@@ -59,6 +62,7 @@ pub async fn get_boot_parameters(
 /// Body for `DELETE /boot-parameters`.
 #[derive(Deserialize, ToSchema)]
 pub struct DeleteBootParametersRequest {
+  /// Xnames whose BSS boot-parameter entries should be deleted.
   pub hosts: Vec<String>,
 }
 

@@ -20,6 +20,7 @@ use crate::service;
 /// Query parameters for `GET /groups`.
 #[derive(Deserialize, IntoParams)]
 pub struct GroupQuery {
+  /// Exact group name; returns all groups when `None`.
   pub name: Option<String>,
 }
 
@@ -185,13 +186,17 @@ pub async fn create_group(
 /// Body for `POST /groups/{name}/members`.
 #[derive(Deserialize, ToSchema)]
 pub struct AddNodesToGroupRequest {
+  /// Hostlist expression (xnames, NIDs, or hostlist notation)
+  /// identifying the new member set for the group.
   pub hosts_expression: String,
 }
 
 /// Response for `POST /groups/{name}/members`.
 #[derive(Serialize, ToSchema)]
 pub struct AddNodesToGroupResponse {
+  /// Xnames that were added to the group as part of this request.
   pub added: Vec<String>,
+  /// Xnames that were removed from the group as part of this request.
   pub removed: Vec<String>,
 }
 

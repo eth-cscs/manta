@@ -167,8 +167,13 @@ pub struct SiteHeader {
 /// The unauthenticated `/auth/*` handlers and the health endpoint
 /// still use explicit extractors — they don't need a Bearer token.
 pub struct RequestCtx {
+  /// Shared server state (backend dispatcher, per-site config, TLS
+  /// material, optional Vault + k8s URLs).
   pub state: Arc<ServerState>,
+  /// Bearer token extracted from the inbound `Authorization` header.
   pub token: String,
+  /// Site name extracted from the inbound `X-Manta-Site` header;
+  /// used to pick the right `[sites.X]` entry from `state`.
   pub site_name: String,
 }
 
@@ -326,6 +331,8 @@ pub(super) fn parse_iso_datetime(
 /// Standard JSON error body returned by all failed endpoints.
 #[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
+  /// Human-readable explanation of the failure. Never includes
+  /// stack traces, credentials, or internal type names.
   pub error: String,
 }
 
