@@ -70,3 +70,47 @@ jobs:
           echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
           exit 1
         fi
+
+  # Validate that both Dockerfiles still build and produce a runnable
+  # binary. Runs in parallel with the cargo `build` job above (no
+  # `needs:` dependency) so a Rust failure and a Docker failure both
+  # surface in the same CI run instead of serialising.
+  #
+  # Layer caching via the GitHub Actions cache backend keeps the
+  # incremental rebuild cost reasonable — without it every push would
+  # re-run a full Rust workspace compile inside the image (~10 min
+  # each). With it, an unchanged Dockerfile + Cargo.lock reuses every
+  # layer.
+  docker:
+    name: docker (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: cli
+            dockerfile: crates/manta-cli/Dockerfile
+            tag: manta-cli:ci
+          - image: server
+            dockerfile: crates/manta-server/Dockerfile
+            tag: manta-server:ci
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          load: true
+          tags: ${{ matrix.tag }}
+          cache-from: type=gha,scope=manta-${{ matrix.image }}
+          cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
+      # Smoke-test: the binary inside the image must at least produce
+      # `--help` without crashing. Catches missing runtime libs
+      # (librdkafka1, ca-certificates, …) that wouldn't surface from a
+      # successful `cargo build` step.
+      - name: Smoke-test --help
+        run: docker run --rm ${{ matrix.tag }} --help
