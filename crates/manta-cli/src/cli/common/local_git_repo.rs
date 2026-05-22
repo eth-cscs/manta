@@ -71,9 +71,12 @@ pub fn parse_repo_name_from_remote(repo: &Repository) -> Result<String, Error> {
   let remote = repo
     .find_remote("origin")
     .map_err(|e| anyhow!("Failed to find remote 'origin': {}", e))?;
+  // git2 0.21 changed `Remote::url()` to return `Result<&str, git2::Error>`
+  // (rather than `Option<&str>`), with the Err carrying the underlying
+  // libgit2 message — usually a UTF-8 decode failure on the stored URL.
   let url = remote
     .url()
-    .ok_or_else(|| anyhow!("Remote 'origin' URL is not valid UTF-8"))?;
+    .map_err(|e| anyhow!("Remote 'origin' URL is not valid UTF-8: {}", e))?;
   parse_repo_name_from_url(url)
     .ok_or_else(|| anyhow!("Remote URL has no '/' separator"))
 }
@@ -170,7 +173,10 @@ mod tests {
       .unwrap();
 
     let commit = get_last_commit(&repo).unwrap();
-    assert_eq!(commit.message(), Some("initial commit"));
+    // git2 0.21 changed `Commit::message()` from `Option<&str>` to
+    // `Result<&str, git2::Error>` (Err on non-UTF-8); unwrap is fine
+    // here because the test wrote a known-ASCII message.
+    assert_eq!(commit.message().unwrap(), "initial commit");
   }
 
   #[test]

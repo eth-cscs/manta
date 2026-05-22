@@ -56,7 +56,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "time"] }
 tokio-util = "0.7.4" # used by manta_console to create a read stream from container stdout
 uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
-git2 = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
+git2 = { version = "0.21", default-features = false, features = ["vendored-openssl"] }
 dialoguer = { version = "0.12.0", features = ["password"], default-features = false }
 futures = { version = "0.3.31", default-features = false }
 toml = "0.8.16"

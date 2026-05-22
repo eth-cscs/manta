@@ -25,7 +25,7 @@ ochami-rs                = { workspace = true }
 
 # HTTP server framework
 axum              = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2", "ws"] }
-axum-server       = { version = "0.7", features = ["tls-rustls"] }
+axum-server       = { version = "0.8", features = ["tls-rustls"] }
 tower-http        = { version = "0.6", features = ["trace", "cors", "timeout"] }
 tokio             = { workspace = true }
 tokio-tungstenite = { workspace = true }
@@ -39,7 +39,6 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 
 # TLS bootstrap
 rustls         = { version = "0.23", default-features = false, features = ["ring"] }
-rustls-pemfile = "2"
 
 # Server-side helpers used by service/* and server/common/*
 anyhow             = { workspace = true }
@@ -47,7 +46,7 @@ base64             = { workspace = true }
 chrono             = { workspace = true }
 comfy-table        = "7.2.2"
 config             = { workspace = true }
-git2               = { version = "0.18.1", default-features = false, features = ["vendored-openssl"] }
+git2               = { version = "0.21", default-features = false, features = ["vendored-openssl"] }
 hostlist-parser    = "0.1.6"
 nodeset            = "0.5.0"
 minijinja          = { workspace = true }
