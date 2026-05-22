@@ -1,6 +1,7 @@
 //! Routes the `manta log` command to its exec function.
 
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
@@ -18,9 +19,7 @@ pub async fn handle_log(
 ) -> Result<(), Error> {
   let token = get_api_token(ctx).await?;
 
-  let user_input = cli_log
-    .get_one::<String>("VALUE")
-    .context("The 'VALUE' argument is mandatory")?;
+  let user_input = cli_log.req_str("VALUE")?;
   let timestamps = cli_log.get_flag("timestamps");
 
   use tokio::io::AsyncBufReadExt as _;
@@ -32,7 +31,7 @@ pub async fn handle_log(
     .get_sessions(
       &token,
       &GetSessionParams {
-        name: Some(user_input.clone()),
+        name: Some(user_input.to_string()),
         xnames: vec![],
         hsm_group: None,
         min_age: None,
@@ -52,7 +51,7 @@ pub async fn handle_log(
         &token,
         &GetSessionParams {
           name: None,
-          xnames: vec![user_input.clone()],
+          xnames: vec![user_input.to_string()],
           hsm_group: None,
           min_age: None,
           max_age: None,

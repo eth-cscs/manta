@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -15,23 +16,22 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
     cli_args.get_one::<u8>("limit").copied()
   };
 
-  let mut session_type: Option<String> =
-    cli_args.get_one::<String>("type").cloned();
+  let mut session_type = cli_args.opt_string("type");
   if session_type.as_deref() == Some("runtime") {
     session_type = Some("dynamic".to_string());
   }
 
   GetSessionParams {
-    hsm_group: cli_args.get_one::<String>("hsm-group").cloned(),
+    hsm_group: cli_args.opt_string("hsm-group"),
     xnames: cli_args
-      .get_one::<String>("xnames")
-      .map(|s| vec![s.clone()])
+      .opt_string("xnames")
+      .map(|s| vec![s])
       .unwrap_or_default(),
-    min_age: cli_args.get_one::<String>("min-age").cloned(),
-    max_age: cli_args.get_one::<String>("max-age").cloned(),
+    min_age: cli_args.opt_string("min-age"),
+    max_age: cli_args.opt_string("max-age"),
     session_type,
-    status: cli_args.get_one::<String>("status").cloned(),
-    name: cli_args.get_one::<String>("name").cloned(),
+    status: cli_args.opt_string("status"),
+    name: cli_args.opt_string("name"),
     limit,
   }
 }
@@ -52,7 +52,7 @@ pub async fn exec(
     .get_sessions(token, &params)
     .await?;
 
-  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+  let output_opt = cli_args.opt_str("output");
   output::session::print(&sessions, output_opt)?;
 
   Ok(())

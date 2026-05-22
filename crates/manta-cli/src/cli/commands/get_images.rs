@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -19,7 +20,7 @@ fn parse_images_params(
   };
 
   GetImagesParams {
-    id: cli_args.get_one::<String>("id").cloned(),
+    id: cli_args.opt_string("id"),
     hsm_group: cli_args
       .try_get_one::<String>("hsm-group")
       .ok()

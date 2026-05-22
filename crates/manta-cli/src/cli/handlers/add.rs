@@ -5,6 +5,7 @@ use crate::cli::commands::{
   add_kernel_parameters, add_node, add_redfish_endpoint,
 };
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
@@ -21,14 +22,10 @@ pub async fn handle_add(
 
   match cli_add.subcommand() {
     Some(("node", m)) => {
-      let id = m
-        .get_one::<String>("id")
-        .context("'id' argument is mandatory")?;
-      let group = m
-        .get_one::<String>("group")
-        .context("'group' argument is mandatory")?;
+      let id = m.req_str("id")?;
+      let group = m.req_str("group")?;
       let hardware_file_opt = m.get_one::<PathBuf>("hardware");
-      let arch_opt = m.get_one::<String>("arch").cloned();
+      let arch_opt = m.opt_string("arch");
       let enabled = !m.get_flag("disabled");
       add_node::exec(
         ctx,
@@ -42,11 +39,9 @@ pub async fn handle_add(
       .await?;
     }
     Some(("group", m)) => {
-      let label = m
-        .get_one::<String>("label")
-        .context("'label' argument is mandatory")?;
-      let description = m.get_one::<String>("description").map(String::as_str);
-      let node_expression = m.get_one::<String>("nodes").map(String::as_str);
+      let label = m.req_str("label")?;
+      let description = m.opt_str("description");
+      let node_expression = m.opt_str("nodes");
       add_group::exec(
         ctx,
         &token,
@@ -62,13 +57,11 @@ pub async fn handle_add(
       // Authorization (target + parent HSM group access) is enforced by
       // POST /api/v1/hardware-clusters/{target}/members on the server.
       let target = m
-        .get_one::<String>("target-cluster")
-        .map(String::as_str)
+        .opt_str("target-cluster")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'target-cluster' is required (no default in cli.toml)")?;
       let parent = m
-        .get_one::<String>("parent-cluster")
-        .map(String::as_str)
+        .opt_str("parent-cluster")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
       let dryrun = m.get_flag("dry-run");
@@ -79,8 +72,7 @@ pub async fn handle_add(
         &token,
         target,
         parent,
-        m.get_one::<String>("pattern")
-          .context("'pattern' argument is mandatory")?,
+        m.req_str("pattern")?,
         dryrun,
         create_hsm_group,
       )
@@ -90,16 +82,13 @@ pub async fn handle_add(
       add_boot_parameters::exec(ctx, &token, m).await?;
     }
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt =
-        m.get_one::<String>("hsm-group").map(String::as_str);
+      let hsm_group_name_arg_opt = m.opt_str("hsm-group");
       let nodes_opt: Option<&str> = if hsm_group_name_arg_opt.is_none() {
-        m.get_one::<String>("nodes").map(String::as_str)
+        m.opt_str("nodes")
       } else {
         None
       };
-      let kernel_parameters = m
-        .get_one::<String>("VALUE")
-        .context("'VALUE' argument is mandatory")?;
+      let kernel_parameters = m.req_str("VALUE")?;
       let overwrite: bool = m.get_flag("overwrite");
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");

@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -12,15 +13,12 @@ use manta_shared::shared::params::node::GetNodesParams;
 fn parse_nodes_params(
   cli_args: &clap::ArgMatches,
 ) -> Result<GetNodesParams, Error> {
-  let xname = cli_args
-    .get_one::<String>("VALUE")
-    .context("The 'xnames' argument must have values")?
-    .clone();
+  let xname = cli_args.req_str("VALUE")?.to_string();
 
   Ok(GetNodesParams {
     xname,
     include_siblings: cli_args.get_flag("include-siblings"),
-    status_filter: cli_args.get_one::<String>("status").cloned(),
+    status_filter: cli_args.opt_string("status"),
   })
 }
 
@@ -32,7 +30,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_nodes_params(cli_args)?;
   let nids_only = cli_args.get_flag("nids-only-one-line");
-  let output_opt: Option<&String> = cli_args.get_one("output");
+  let output_opt = cli_args.opt_str("output");
   let status_summary = cli_args.get_flag("summary-status");
 
   let server_url = ctx.manta_server_url;
@@ -49,7 +47,7 @@ pub async fn exec(
     let node_nid_list: Vec<String> =
       node_details_list.iter().map(|nd| nd.nid.clone()).collect();
 
-    if output_opt.is_some_and(|v| v == "json") {
+    if output_opt == Some("json") {
       println!(
         "{}",
         serde_json::to_string(&node_nid_list)
@@ -59,7 +57,7 @@ pub async fn exec(
       println!("{}", node_nid_list.join(","));
     }
   } else {
-    match output_opt.map(String::as_str) {
+    match output_opt {
       Some("json") => {
         println!(
           "{}",

@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
 use manta_shared::common::app_context::AppContext;
@@ -29,23 +30,15 @@ pub async fn exec(
     .cloned()
     .collect();
 
-  let hsm_group_name_arg_opt: Option<&str> = cli_apply_session
-    .get_one::<String>("hsm-group")
-    .map(String::as_str);
+  let hsm_group_name_arg_opt = cli_apply_session.opt_str("hsm-group");
 
-  let cfs_conf_sess_name_opt: Option<&String> =
-    cli_apply_session.get_one("name");
-  let playbook_file_name_opt: Option<&String> =
-    cli_apply_session.get_one("playbook-name");
+  let cfs_conf_sess_name_opt = cli_apply_session.opt_str("name");
+  let playbook_file_name_opt = cli_apply_session.opt_str("playbook-name");
 
-  let hsm_group_members_opt: Option<&str> = cli_apply_session
-    .get_one("ansible-limit")
-    .map(String::as_str);
-  let ansible_verbosity: Option<&String> =
-    cli_apply_session.get_one("ansible-verbosity");
+  let hsm_group_members_opt = cli_apply_session.opt_str("ansible-limit");
+  let ansible_verbosity = cli_apply_session.opt_str("ansible-verbosity");
 
-  let ansible_passthrough: Option<&String> =
-    cli_apply_session.get_one("ansible-passthrough");
+  let ansible_passthrough = cli_apply_session.opt_str("ansible-passthrough");
 
   let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
   let timestamps: bool = cli_apply_session.get_flag("timestamps");
@@ -53,13 +46,13 @@ pub async fn exec(
   let _ = apply_session(
     ctx,
     token,
-    cfs_conf_sess_name_opt.map(String::as_str),
-    playbook_file_name_opt.map(String::as_str),
+    cfs_conf_sess_name_opt,
+    playbook_file_name_opt,
     hsm_group_name_arg_opt,
     &repo_path_vec,
     hsm_group_members_opt,
-    ansible_verbosity.map(String::as_str),
-    ansible_passthrough.map(String::as_str),
+    ansible_verbosity,
+    ansible_passthrough,
     watch_logs,
     timestamps,
   )

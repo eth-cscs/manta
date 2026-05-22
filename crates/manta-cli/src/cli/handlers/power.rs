@@ -2,6 +2,7 @@
 
 use crate::cli::commands::power_common::{self, PowerAction};
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
@@ -17,13 +18,9 @@ pub async fn handle_power(
   match cli_power.subcommand() {
     Some(("on", m)) => match m.subcommand() {
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m
-          .get_one::<String>("CLUSTER_NAME")
-          .context("The 'cluster name' argument must have a value")?;
+        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
         let assume_yes: bool = m.get_flag("assume-yes");
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         power_common::exec_cluster(
           ctx,
           PowerAction::On,
@@ -36,13 +33,9 @@ pub async fn handle_power(
         .await?;
       }
       Some(("nodes", m)) => {
-        let xname_requested: &str = m
-          .get_one::<String>("VALUE")
-          .context("The 'xnames' argument must have values")?;
+        let xname_requested = m.req_str("VALUE")?;
         let assume_yes: bool = m.get_flag("assume-yes");
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::On,
@@ -59,15 +52,11 @@ pub async fn handle_power(
     },
     Some(("off", m)) => match m.subcommand() {
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m
-          .get_one::<String>("CLUSTER_NAME")
-          .context("The 'cluster name' argument must have a value")?;
+        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
         let graceful = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         let assume_yes: bool = m.get_flag("assume-yes");
 
         let force = !graceful;
@@ -84,16 +73,12 @@ pub async fn handle_power(
         .await?;
       }
       Some(("nodes", m)) => {
-        let xname_requested: &str = m
-          .get_one::<String>("VALUE")
-          .context("The 'xnames' argument must have values")?;
+        let xname_requested = m.req_str("VALUE")?;
         let force = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
         let assume_yes: bool = m.get_flag("assume-yes");
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::Off,
@@ -110,15 +95,11 @@ pub async fn handle_power(
     },
     Some(("reset", m)) => match m.subcommand() {
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m
-          .get_one::<String>("CLUSTER_NAME")
-          .context("The 'cluster name' argument must have a value")?;
+        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
         let force = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         let assume_yes: bool = m.get_flag("assume-yes");
         power_common::exec_cluster(
           ctx,
@@ -132,16 +113,12 @@ pub async fn handle_power(
         .await?;
       }
       Some(("nodes", m)) => {
-        let xname_requested: &str = m
-          .get_one::<String>("VALUE")
-          .context("The 'xnames' argument must have values")?;
+        let xname_requested = m.req_str("VALUE")?;
         let force = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
         let assume_yes: bool = m.get_flag("assume-yes");
-        let output: &str = m
-          .get_one::<String>("output")
-          .context("'output' argument is required")?;
+        let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::Reset,

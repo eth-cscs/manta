@@ -2,8 +2,9 @@
 
 use crate::cli::commands::console_common;
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
-use anyhow::{Context, Error, bail};
+use anyhow::{Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
 use std::io::IsTerminal;
@@ -20,9 +21,7 @@ pub async fn handle_console(
       if !std::io::stdout().is_terminal() {
         bail!("This command needs to run in interactive mode");
       }
-      let xname = m
-        .get_one::<String>("XNAME")
-        .context("The 'XNAME' argument must have a value")?;
+      let xname = m.req_str("XNAME")?;
 
       let server_url = ctx.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;
@@ -36,9 +35,7 @@ pub async fn handle_console(
       if !std::io::stdout().is_terminal() {
         bail!("This command needs to run in interactive mode");
       }
-      let session_name = m
-        .get_one::<String>("SESSION_NAME")
-        .context("The 'SESSION_NAME' argument must have a value")?;
+      let session_name = m.req_str("SESSION_NAME")?;
 
       let server_url = ctx.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;

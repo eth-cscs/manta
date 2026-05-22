@@ -4,6 +4,7 @@ use anyhow::{Context, Error};
 use manta_shared::shared::dto::BootParameters;
 use serde_json::Value;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use manta_shared::common::app_context::AppContext;
 
@@ -13,23 +14,12 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let hosts = cli_args
-    .get_one::<String>("hosts")
-    .context("'hosts' argument is mandatory")?;
-  let macs: Option<String> = cli_args.get_one("macs").cloned();
-  let nids: Option<String> = cli_args.get_one("nids").cloned();
-  let params = cli_args
-    .get_one::<String>("params")
-    .context("'params' argument is mandatory")?
-    .clone();
-  let kernel = cli_args
-    .get_one::<String>("kernel")
-    .context("'kernel' argument is mandatory")?
-    .clone();
-  let initrd = cli_args
-    .get_one::<String>("initrd")
-    .context("'initrd' argument is mandatory")?
-    .clone();
+  let hosts = cli_args.req_str("hosts")?;
+  let macs = cli_args.opt_string("macs");
+  let nids = cli_args.opt_string("nids");
+  let params = cli_args.req_str("params")?.to_string();
+  let kernel = cli_args.req_str("kernel")?.to_string();
+  let initrd = cli_args.req_str("initrd")?.to_string();
   let cloud_init = cli_args.get_one::<Value>("cloud-init").cloned();
 
   let host_vec: Vec<String> = hosts

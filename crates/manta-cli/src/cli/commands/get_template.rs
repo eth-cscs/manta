@@ -1,7 +1,8 @@
 //! Implements the `manta get templates` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -19,7 +20,7 @@ fn parse_template_params(
   };
 
   GetTemplateParams {
-    name: cli_args.get_one::<String>("name").cloned(),
+    name: cli_args.opt_string("name"),
     hsm_group: cli_args
       .try_get_one::<String>("hsm-group")
       .ok()
@@ -43,9 +44,7 @@ pub async fn exec(
     .get_templates(token, &params)
     .await?;
 
-  let output_opt: &String = cli_args
-    .get_one("output")
-    .context("output must be a valid value")?;
+  let output_opt = cli_args.req_str("output")?;
 
   if templates.is_empty() {
     println!("No BOS template found!");

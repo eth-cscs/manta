@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -14,9 +15,9 @@ fn parse_cluster_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetClusterParams {
   GetClusterParams {
-    hsm_group_name: cli_args.get_one::<String>("HSM_GROUP_NAME").cloned(),
+    hsm_group_name: cli_args.opt_string("HSM_GROUP_NAME"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
-    status_filter: cli_args.get_one::<String>("status").cloned(),
+    status_filter: cli_args.opt_string("status"),
   }
 }
 
@@ -29,7 +30,7 @@ pub async fn exec(
   let params = parse_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
   let nids_only = cli_args.get_flag("nids-only-one-line");
   let xnames_only = cli_args.get_flag("xnames-only-one-line");
-  let output_opt: Option<&String> = cli_args.get_one("output");
+  let output_opt = cli_args.opt_str("output");
   let summary_status = cli_args.get_flag("summary-status");
 
   let server_url = ctx.manta_server_url;
@@ -46,7 +47,7 @@ pub async fn exec(
     let node_nid_list: Vec<String> =
       node_details_list.iter().map(|nd| nd.nid.clone()).collect();
 
-    if output_opt.is_some_and(|o| o == "json") {
+    if output_opt == Some("json") {
       println!(
         "{}",
         serde_json::to_string(&node_nid_list)
@@ -61,7 +62,7 @@ pub async fn exec(
       .map(|nd| nd.xname.clone())
       .collect();
 
-    if output_opt.is_some_and(|o| o == "json") {
+    if output_opt == Some("json") {
       println!(
         "{}",
         serde_json::to_string(&node_xname_list)
@@ -71,7 +72,7 @@ pub async fn exec(
       println!("{}", node_xname_list.join(","));
     }
   } else {
-    match output_opt.map(String::as_str) {
+    match output_opt {
       Some("json") => {
         println!(
           "{}",

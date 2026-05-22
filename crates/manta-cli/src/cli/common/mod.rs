@@ -4,6 +4,7 @@
 //! `manta-cli` crate when the workspace split lands.
 
 pub mod authentication;
+pub mod clap_ext;
 pub mod display;
 pub mod hooks;
 pub mod kernel_parameters_ops;

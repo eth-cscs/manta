@@ -3,6 +3,7 @@
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::hw_cluster::HwClusterMode;
@@ -15,12 +16,10 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
 
-  let target_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
-    .get_one::<String>("target-cluster")
-    .map(String::as_str);
-  let parent_hsm_group_name_arg_opt: Option<&str> = cli_apply_hw_cluster
-    .get_one::<String>("parent-cluster")
-    .map(String::as_str);
+  let target_hsm_group_name_arg_opt =
+    cli_apply_hw_cluster.opt_str("target-cluster");
+  let parent_hsm_group_name_arg_opt =
+    cli_apply_hw_cluster.opt_str("parent-cluster");
   let dryrun = cli_apply_hw_cluster.get_flag("dry-run");
   let create_target_hsm_group = *cli_apply_hw_cluster
     .get_one::<bool>("create-target-hsm-group")
@@ -36,9 +35,7 @@ pub async fn exec(
   } else {
     HwClusterMode::Pin
   };
-  let pattern = cli_apply_hw_cluster
-    .get_one::<String>("pattern")
-    .context("pattern argument is required")?;
+  let pattern = cli_apply_hw_cluster.req_str("pattern")?;
 
   let server_url = ctx.manta_server_url;
   let target = target_hsm_group_name_arg_opt

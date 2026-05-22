@@ -7,6 +7,7 @@ use crate::cli::commands::{
   delete_node, delete_redfish_endpoint,
 };
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
@@ -22,9 +23,7 @@ pub async fn handle_delete(
 
   match cli_delete.subcommand() {
     Some(("group", m)) => {
-      let label: &String = m
-        .get_one("VALUE")
-        .context("Group name argument is mandatory")?;
+      let label = m.req_str("VALUE")?;
       let force: bool = *m
         .get_one("force")
         .context("'force' argument must have a value")?;
@@ -32,21 +31,15 @@ pub async fn handle_delete(
         .await?;
     }
     Some(("node", m)) => {
-      let id: &String = m
-        .get_one("VALUE")
-        .context("Node id argument is mandatory")?;
+      let id = m.req_str("VALUE")?;
       delete_node::exec(ctx, &token, id).await?;
     }
     Some(("hardware", m)) => {
       let dryrun = m.get_flag("dry-run");
       let delete_hsm_group = m.get_flag("delete-hsm-group");
-      let target_hsm_group_name_arg_opt =
-        m.get_one::<String>("target-cluster").map(String::as_str);
-      let parent_hsm_group_name_arg_opt =
-        m.get_one::<String>("parent-cluster").map(String::as_str);
-      let pattern = m
-        .get_one::<String>("pattern")
-        .context("'pattern' argument is mandatory")?;
+      let target_hsm_group_name_arg_opt = m.opt_str("target-cluster");
+      let parent_hsm_group_name_arg_opt = m.opt_str("parent-cluster");
+      let pattern = m.req_str("pattern")?;
       delete_hw_component_cluster::exec(
         ctx,
         &token,
@@ -59,9 +52,8 @@ pub async fn handle_delete(
       .await?;
     }
     Some(("boot-parameters", m)) => {
-      let xnames = m.get_one::<String>("hosts");
-      let hosts: Vec<String> = xnames
-        .map(String::as_str)
+      let hosts: Vec<String> = m
+        .opt_str("hosts")
         .unwrap_or_default()
         .split(',')
         .map(String::from)
@@ -69,19 +61,16 @@ pub async fn handle_delete(
       delete_boot_parameters::exec(ctx, &token, hosts).await?;
     }
     Some(("redfish-endpoint", m)) => {
-      let id: &String = m.get_one("id").context(
+      let id = m.get_one::<String>("id").context(
         "Host argument is mandatory. \
            Please provide the host to delete",
       )?;
       delete_redfish_endpoint::exec(ctx, &token, id).await?;
     }
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt =
-        m.get_one::<String>("hsm-group").map(String::as_str);
-      let nodes = m.get_one::<String>("nodes").map(String::as_str);
-      let kernel_parameters = m
-        .get_one::<String>("VALUE")
-        .context("'VALUE' argument is mandatory")?;
+      let hsm_group_name_arg_opt = m.opt_str("hsm-group");
+      let nodes = m.opt_str("nodes");
+      let kernel_parameters = m.req_str("VALUE")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let dryrun = m.get_flag("dry-run");
@@ -98,9 +87,7 @@ pub async fn handle_delete(
       .await?;
     }
     Some(("session", m)) => {
-      let session_name = m
-        .get_one::<String>("SESSION_NAME")
-        .context("'session-name' argument must be provided")?;
+      let session_name = m.req_str("SESSION_NAME")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
       if let Err(e) = delete_and_cancel_session::exec(
@@ -140,13 +127,12 @@ pub async fn handle_delete(
       } else {
         None
       };
-      let cfs_configuration_name_pattern: Option<&String> =
-        m.get_one("configuration-name");
+      let cfs_configuration_name_pattern = m.opt_str("configuration-name");
       let assume_yes = m.get_flag("assume-yes");
       if let Err(e) = delete_configurations_and_derivatives::exec(
         ctx,
         &token,
-        cfs_configuration_name_pattern.map(String::as_str),
+        cfs_configuration_name_pattern,
         since_opt,
         until_opt,
         assume_yes,
@@ -157,12 +143,8 @@ pub async fn handle_delete(
       }
     }
     Some(("images", m)) => {
-      let image_id_vec: Vec<&str> = m
-        .get_one::<String>("IMAGE_LIST")
-        .context("'IMAGE_LIST' argument must be provided")?
-        .split(',')
-        .map(str::trim)
-        .collect();
+      let image_id_vec: Vec<&str> =
+        m.req_str("IMAGE_LIST")?.split(',').map(str::trim).collect();
       let dry_run: bool = m.get_flag("dry-run");
       match delete_images::command::exec(
         ctx,

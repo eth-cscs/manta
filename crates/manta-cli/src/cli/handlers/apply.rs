@@ -1,6 +1,7 @@
 //! Routes `manta apply *` subcommands to their exec functions.
 
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::{commands, http_client::MantaClient};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
@@ -68,8 +69,7 @@ pub async fn handle_apply(
 
       let ansible_passthrough_env: Option<String> =
         ctx.settings.get("ansible-passthrough").ok();
-      let ansible_passthrough_cli_arg =
-        m.get_one::<String>("ansible-passthrough").cloned();
+      let ansible_passthrough_cli_arg = m.opt_string("ansible-passthrough");
       let ansible_passthrough =
         ansible_passthrough_env.or(ansible_passthrough_cli_arg);
       let ansible_verbosity: Option<u8> = m
@@ -84,8 +84,6 @@ pub async fn handle_apply(
         .transpose()?;
 
       let overwrite: bool = m.get_flag("overwrite-configuration");
-      let prehook: Option<&String> = m.get_one("pre-hook");
-      let posthook: Option<&String> = m.get_one("post-hook");
       let reboot: bool = m.get_flag("reboot");
       let watch_logs: bool = m.get_flag("watch-logs");
       let timestamps: bool = m.get_flag("timestamps");
@@ -104,8 +102,8 @@ pub async fn handle_apply(
           reboot,
           watch_logs,
           timestamps,
-          prehook_opt: prehook.map(String::as_str),
-          posthook_opt: posthook.map(String::as_str),
+          prehook_opt: m.opt_str("pre-hook"),
+          posthook_opt: m.opt_str("post-hook"),
           image_only: m.get_flag("image-only"),
           session_template_only: m.get_flag("sessiontemplate-only"),
           overwrite,
@@ -117,13 +115,10 @@ pub async fn handle_apply(
     }
 
     Some(("template", m)) => {
-      let bos_session_name_opt: Option<&String> = m.get_one("name");
-      let bos_sessiontemplate_name: &String = m
-        .get_one("template")
-        .context("Template name is mandatory")?;
-      let limit: &String = m.get_one("limit").context("Limit is mandatory")?;
-      let bos_session_operation: &String =
-        m.get_one("operation").context("Operation is mandatory")?;
+      let bos_session_name_opt = m.opt_str("name");
+      let bos_sessiontemplate_name = m.req_str("template")?;
+      let limit = m.req_str("limit")?;
+      let bos_session_operation = m.req_str("operation")?;
       let include_disabled: bool = *m
         .get_one("include-disabled")
         .context("'include-disabled' must have a value")?;
@@ -132,7 +127,7 @@ pub async fn handle_apply(
       commands::apply_template::exec(
         ctx,
         &token,
-        bos_session_name_opt.map(String::as_str),
+        bos_session_name_opt,
         bos_sessiontemplate_name,
         bos_session_operation,
         limit,
@@ -147,9 +142,7 @@ pub async fn handle_apply(
       if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
         bail!("This command needs to run in interactive mode");
       }
-      let image_id = m
-        .get_one::<String>("image-id")
-        .context("'image-id' argument is mandatory")?;
+      let image_id = m.req_str("image-id")?;
       let server_url = ctx.manta_server_url;
       let response = MantaClient::new(server_url, ctx.site_name)?
         .create_ephemeral_env(&token, image_id)
@@ -161,24 +154,22 @@ pub async fn handle_apply(
     }
 
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt = m.get_one::<String>("hsm-group");
-      let nodes_opt: Option<&String> = if hsm_group_name_arg_opt.is_none() {
-        m.get_one::<String>("nodes")
+      let hsm_group_name_arg_opt = m.opt_str("hsm-group");
+      let nodes_opt = if hsm_group_name_arg_opt.is_none() {
+        m.opt_str("nodes")
       } else {
         None
       };
       let dryrun = m.get_flag("dry-run");
-      let kernel_parameters = m
-        .get_one::<String>("VALUE")
-        .context("'VALUE' argument is mandatory")?;
+      let kernel_parameters = m.req_str("VALUE")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       commands::apply_kernel_parameters::exec(
         ctx,
         &token,
         kernel_parameters,
-        nodes_opt.map(std::string::String::as_str),
-        hsm_group_name_arg_opt.map(std::string::String::as_str),
+        nodes_opt,
+        hsm_group_name_arg_opt,
         assume_yes,
         do_not_reboot,
         dryrun,
@@ -188,31 +179,23 @@ pub async fn handle_apply(
 
     Some(("boot", m)) => match m.subcommand() {
       Some(("nodes", m)) => {
-        let hosts_string: &str = m
-          .get_one::<String>("VALUE")
-          .context("'xnames' argument must have values")?;
-        let new_boot_image_id_opt: Option<&String> = m.get_one("boot-image");
+        let hosts_string = m.req_str("VALUE")?;
+        let new_boot_image_id_opt = m.opt_str("boot-image");
         if let Some(new_boot_image_id) = new_boot_image_id_opt
           && uuid::Uuid::parse_str(new_boot_image_id).is_err()
         {
           bail!("Image id is not a UUID");
         }
-        let new_boot_image_configuration_opt: Option<&String> =
-          m.get_one("boot-image-configuration");
-        let new_runtime_configuration_opt: Option<&String> =
-          m.get_one("runtime-configuration");
-        let new_kernel_parameters_opt: Option<&String> =
-          m.get_one::<String>("kernel-parameters");
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
         commands::apply_boot_node::exec(
           ctx,
           &token,
-          new_boot_image_id_opt.map(String::as_str),
-          new_boot_image_configuration_opt.map(String::as_str),
-          new_runtime_configuration_opt.map(String::as_str),
-          new_kernel_parameters_opt.map(String::as_str),
+          new_boot_image_id_opt,
+          m.opt_str("boot-image-configuration"),
+          m.opt_str("runtime-configuration"),
+          m.opt_str("kernel-parameters"),
           hosts_string,
           assume_yes,
           do_not_reboot,
@@ -221,26 +204,17 @@ pub async fn handle_apply(
         .await?;
       }
       Some(("cluster", m)) => {
-        let hsm_group_name_arg: &String = m
-          .get_one("CLUSTER_NAME")
-          .context("Cluster name must be provided")?;
-        let new_boot_image_id_opt: Option<&String> = m.get_one("boot-image");
-        let new_boot_image_configuration_opt: Option<&String> =
-          m.get_one("boot-image-configuration");
-        let new_runtime_configuration_opt: Option<&String> =
-          m.get_one("runtime-configuration");
-        let new_kernel_parameters_opt: Option<&String> =
-          m.get_one("kernel-parameters");
+        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
         commands::apply_boot_cluster::exec(
           ctx,
           &token,
-          new_boot_image_id_opt.map(String::as_str),
-          new_boot_image_configuration_opt.map(String::as_str),
-          new_runtime_configuration_opt.map(String::as_str),
-          new_kernel_parameters_opt.map(String::as_str),
+          m.opt_str("boot-image"),
+          m.opt_str("boot-image-configuration"),
+          m.opt_str("runtime-configuration"),
+          m.opt_str("kernel-parameters"),
           hsm_group_name_arg,
           assume_yes,
           do_not_reboot,

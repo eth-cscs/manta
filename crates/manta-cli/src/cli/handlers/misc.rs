@@ -4,7 +4,8 @@ use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
 };
 use crate::cli::common::authentication::get_api_token;
-use anyhow::{Context, Error, bail};
+use crate::cli::common::clap_ext::ArgMatchesExt;
+use anyhow::{Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
 
@@ -19,13 +20,8 @@ pub async fn handle_misc(
   match cli_root.subcommand() {
     Some(("add-nodes-to-groups", m)) => {
       let dryrun = m.get_flag("dry-run");
-      let hosts_expression = m
-        .get_one::<String>("nodes")
-        .context("The 'nodes' argument must have a value")?;
-      let target_hsm_name: &str = m
-        .get_one::<String>("group")
-        .map(String::as_str)
-        .context("The 'group' argument is mandatory")?;
+      let hosts_expression = m.req_str("nodes")?;
+      let target_hsm_name = m.req_str("group")?;
       add_nodes_to_hsm_groups::exec(
         ctx,
         &token,
@@ -38,13 +34,8 @@ pub async fn handle_misc(
     }
     Some(("remove-nodes-from-groups", m)) => {
       let dryrun = m.get_flag("dry-run");
-      let nodes = m
-        .get_one::<String>("nodes")
-        .context("The 'nodes' argument must have a value")?;
-      let target_hsm_name: &str = m
-        .get_one::<String>("group")
-        .map(String::as_str)
-        .context("The 'group' argument is mandatory")?;
+      let nodes = m.req_str("nodes")?;
+      let target_hsm_name = m.req_str("group")?;
       remove_nodes_from_hsm_groups::exec(
         ctx,
         &token,

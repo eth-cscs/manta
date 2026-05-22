@@ -1,7 +1,8 @@
 //! Implements the `manta add redfish-endpoint` command.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams;
@@ -12,27 +13,20 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let id: String = cli_args
-    .get_one::<String>("id")
-    .context("'id' argument is mandatory")?
-    .to_string();
-  let name: Option<String> = cli_args.get_one("name").cloned();
-  let hostname: Option<String> =
-    cli_args.get_one::<String>("hostname").cloned();
-  let domain: Option<String> = cli_args.get_one::<String>("domain").cloned();
-  let fqdn: Option<String> = cli_args.get_one::<String>("fqdn").cloned();
+  let id: String = cli_args.req_str("id")?.to_string();
+  let name = cli_args.opt_string("name");
+  let hostname = cli_args.opt_string("hostname");
+  let domain = cli_args.opt_string("domain");
+  let fqdn = cli_args.opt_string("fqdn");
   let enabled: bool = cli_args.get_flag("enabled");
-  let user: Option<String> = cli_args.get_one::<String>("user").cloned();
-  let password: Option<String> =
-    cli_args.get_one::<String>("password").cloned();
+  let user = cli_args.opt_string("user");
+  let password = cli_args.opt_string("password");
   let use_ssdp: bool = cli_args.get_flag("use-ssdp");
   let mac_required: bool = cli_args.get_flag("mac-required");
-  let mac_addr: Option<String> = cli_args.get_one::<String>("macaddr").cloned();
-  let ip_address: Option<String> =
-    cli_args.get_one::<String>("ipaddress").cloned();
+  let mac_addr = cli_args.opt_string("macaddr");
+  let ip_address = cli_args.opt_string("ipaddress");
   let rediscover_on_update: bool = cli_args.get_flag("rediscover-on-update");
-  let template_id: Option<String> =
-    cli_args.get_one::<String>("template-id").cloned();
+  let template_id = cli_args.opt_string("template-id");
 
   let params = UpdateRedfishEndpointParams {
     id: id.clone(),

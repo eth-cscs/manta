@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -12,11 +13,11 @@ fn parse_redfish_endpoints_params(
   cli_args: &clap::ArgMatches,
 ) -> GetRedfishEndpointsParams {
   GetRedfishEndpointsParams {
-    id: cli_args.get_one::<String>("id").cloned(),
-    fqdn: cli_args.get_one::<String>("fqdn").cloned(),
-    uuid: cli_args.get_one::<String>("uuid").cloned(),
-    macaddr: cli_args.get_one::<String>("macaddr").cloned(),
-    ipaddress: cli_args.get_one::<String>("ipaddress").cloned(),
+    id: cli_args.opt_string("id"),
+    fqdn: cli_args.opt_string("fqdn"),
+    uuid: cli_args.opt_string("uuid"),
+    macaddr: cli_args.opt_string("macaddr"),
+    ipaddress: cli_args.opt_string("ipaddress"),
   }
 }
 
@@ -27,9 +28,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_redfish_endpoints_params(cli_args);
-  let output = cli_args
-    .get_one::<String>("output")
-    .map_or("table", String::as_str);
+  let output = cli_args.opt_str("output").unwrap_or("table");
 
   let server_url = ctx.manta_server_url;
   let endpoints = MantaClient::new(server_url, ctx.site_name)?

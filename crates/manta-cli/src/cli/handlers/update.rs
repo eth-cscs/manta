@@ -2,6 +2,7 @@
 
 use crate::cli::commands::{update_boot_parameters, update_redfish_endpoint};
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
@@ -16,36 +17,32 @@ pub async fn handle_update(
 
   match cli_update.subcommand() {
     Some(("boot-parameters", m)) => {
-      let hosts: &str = m
-        .get_one::<String>("hosts")
-        .map(String::as_str)
-        .context("The 'hosts' argument is mandatory")?;
-      let params = m.get_one::<String>("params").map(String::as_str);
-      let kernel = m.get_one::<String>("kernel").map(String::as_str);
-      let initrd = m.get_one::<String>("initrd").map(String::as_str);
+      let hosts = m.req_str("hosts")?;
+      let params = m.opt_str("params");
+      let kernel = m.opt_str("kernel");
+      let initrd = m.opt_str("initrd");
       update_boot_parameters::exec(
         ctx, &token, hosts, None, None, params, kernel, initrd,
       )
       .await?;
     }
     Some(("redfish-endpoint", m)) => {
-      let id: String = m
-        .get_one("id")
-        .cloned()
+      let id = m
+        .opt_string("id")
         .context("The 'id' argument is mandatory")?;
-      let name: Option<String> = m.get_one("name").cloned();
-      let hostname: Option<String> = m.get_one("hostname").cloned();
-      let domain: Option<String> = m.get_one("domain").cloned();
-      let fqdn: Option<String> = m.get_one("fqdn").cloned();
+      let name = m.opt_string("name");
+      let hostname = m.opt_string("hostname");
+      let domain = m.opt_string("domain");
+      let fqdn = m.opt_string("fqdn");
       let enabled: bool = m.get_flag("enabled");
-      let user: Option<String> = m.get_one("user").cloned();
-      let password: Option<String> = m.get_one("password").cloned();
+      let user = m.opt_string("user");
+      let password = m.opt_string("password");
       let use_ssdp: bool = m.get_flag("use-ssdp");
       let mac_required: bool = m.get_flag("mac-required");
-      let mac_addr: Option<String> = m.get_one("macaddr").cloned();
-      let ip_address: Option<String> = m.get_one("ipaddress").cloned();
+      let mac_addr = m.opt_string("macaddr");
+      let ip_address = m.opt_string("ipaddress");
       let rediscover_on_update: bool = m.get_flag("rediscover-on-update");
-      let template_id: Option<String> = m.get_one("template-id").cloned();
+      let template_id = m.opt_string("template-id");
       update_redfish_endpoint::exec(
         ctx,
         &token,

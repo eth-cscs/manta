@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::configuration::print_table_struct;
 use manta_shared::common::app_context::AppContext;
@@ -19,8 +20,8 @@ fn parse_configuration_params(
   };
 
   GetConfigurationParams {
-    name: cli_args.get_one::<String>("name").cloned(),
-    pattern: cli_args.get_one::<String>("pattern").cloned(),
+    name: cli_args.opt_string("name"),
+    pattern: cli_args.opt_string("pattern"),
     hsm_group: cli_args
       .try_get_one::<String>("hsm-group")
       .ok()
@@ -51,9 +52,9 @@ pub async fn exec(
     bail!("No CFS configuration found!");
   }
 
-  let output_opt = cli_args.get_one::<String>("output").map(String::as_str);
+  let output_opt = cli_args.opt_str("output");
 
-  if output_opt.is_some_and(|o| o == "json") {
+  if output_opt == Some("json") {
     println!(
       "{}",
       serde_json::to_string_pretty(&cfs_configuration_vec)

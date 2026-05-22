@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
 use manta_shared::common::app_context::AppContext;
@@ -13,8 +14,8 @@ fn parse_kernel_parameters_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetKernelParametersParams {
   GetKernelParametersParams {
-    hsm_group: cli_args.get_one::<String>("hsm-group").cloned(),
-    nodes: cli_args.get_one::<String>("nodes").cloned(),
+    hsm_group: cli_args.opt_string("hsm-group"),
+    nodes: cli_args.opt_string("nodes"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
@@ -33,11 +34,10 @@ pub async fn exec(
     .get_kernel_parameters(token, &params)
     .await?;
 
-  let output: &String =
-    cli_args.get_one("output").context("output value missing")?;
-  let filter_opt = cli_args.get_one::<String>("filter").map(String::as_str);
+  let output = cli_args.req_str("output")?;
+  let filter_opt = cli_args.opt_str("filter");
 
-  match output.as_str() {
+  match output {
     "json" => println!(
       "{}",
       serde_json::to_string_pretty(&boot_parameters)
