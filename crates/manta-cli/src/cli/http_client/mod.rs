@@ -53,7 +53,7 @@ impl MantaClient {
     {
       server_url.to_owned()
     } else {
-      format!("http://{}", server_url)
+      format!("http://{server_url}")
     };
 
     let client = reqwest::Client::builder()
@@ -83,7 +83,7 @@ impl MantaClient {
     } else {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("Server returned {}: {}", status, body)
+      bail!("Server returned {status}: {body}")
     }
   }
 
@@ -95,7 +95,7 @@ impl MantaClient {
     } else {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("Server returned {}: {}", status, body)
+      bail!("Server returned {status}: {body}")
     }
   }
 
@@ -332,9 +332,9 @@ impl QueryBuilder {
 /// Convert an `http://` or `https://` base URL to the corresponding `ws://` / `wss://` URL.
 pub(super) fn ws_base_url(http_url: &str) -> String {
   if let Some(rest) = http_url.strip_prefix("https://") {
-    format!("wss://{}", rest)
+    format!("wss://{rest}")
   } else if let Some(rest) = http_url.strip_prefix("http://") {
-    format!("ws://{}", rest)
+    format!("ws://{rest}")
   } else {
     http_url.to_owned()
   }

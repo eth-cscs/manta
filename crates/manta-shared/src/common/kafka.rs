@@ -107,10 +107,7 @@ impl Kafka {
       .set("message.timeout.ms", KAFKA_MESSAGE_TIMEOUT_MS)
       .create()
       .map_err(|e| {
-        MantaError::KafkaError(format!(
-          "Failed to create Kafka producer: {}",
-          e
-        ))
+        MantaError::KafkaError(format!("Failed to create Kafka producer: {e}"))
       })?;
     // Another thread may have raced us; either value is
     // fine since they are configured identically.
@@ -193,7 +190,7 @@ mod tests {
     // both the placeholder string and that brokers/topic remain
     // visible (they're not secret).
     let uninit = Kafka::new(vec!["b:9092".into()], "audit".into());
-    let s = format!("{:?}", uninit);
+    let s = format!("{uninit:?}");
     assert!(s.contains("brokers"), "brokers field must be visible");
     assert!(s.contains("\"b:9092\""), "broker value must be visible");
     assert!(s.contains("audit"), "topic must be visible");

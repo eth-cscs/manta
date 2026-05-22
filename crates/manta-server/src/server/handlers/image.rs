@@ -116,7 +116,8 @@ pub async fn delete_images(
 
   let id_strings: Vec<String> =
     q.ids.split(',').map(|s| s.trim().to_string()).collect();
-  let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
+  let id_refs: Vec<&str> =
+    id_strings.iter().map(std::string::String::as_str).collect();
 
   if q.dry_run {
     service::image::validate_image_deletion(&infra, &ctx.token, &id_refs, None)

@@ -136,10 +136,9 @@ async fn ensure_add_target_group_exists(
     Err(_) => {
       if !create_hsm_group {
         return Err(Error::NotFound(format!(
-          "Group '{}' does not exist, but the \
+          "Group '{target_hsm_group_name}' does not exist, but the \
            option to create the group was NOT \
-           specified, cannot continue.",
-          target_hsm_group_name
+           specified, cannot continue."
         )));
       }
       tracing::info!(
@@ -213,7 +212,7 @@ pub async fn add_hw_component(
   )
   .await?;
 
-  let pattern_str = format!("{}:{}", target_hsm_group_name, pattern);
+  let pattern_str = format!("{target_hsm_group_name}:{pattern}");
   let pattern_lowercase = pattern_str.to_lowercase();
   let mut pattern_element_vec: Vec<&str> =
     pattern_lowercase.split(':').collect();
@@ -341,7 +340,7 @@ async fn handle_empty_target(
        fails, ignore please. Reported: {}",
       e
     ),
-  };
+  }
   Ok(())
 }
 
@@ -355,9 +354,8 @@ fn compute_delete_final_summary(
   for (hw_component, counter) in deltas {
     let current = *current_summary.get(hw_component).ok_or_else(|| {
       Error::NotFound(format!(
-        "hw component '{}' not found in target HSM \
-           hw component summary",
-        hw_component
+        "hw component '{hw_component}' not found in target HSM \
+           hw component summary"
       ))
     })?;
 
@@ -402,7 +400,7 @@ async fn apply_node_moves(
            fails, ignore please. Reported: {}",
           e
         ),
-      };
+      }
     } else {
       tracing::debug!(
         "HSM group {} is now empty and the option to \
@@ -431,13 +429,12 @@ pub async fn delete_hw_component(
     Ok(_) => {}
     Err(_) => {
       return Err(Error::NotFound(format!(
-        "HSM group {} does not exist, cannot remove hw from it.",
-        target_hsm_group_name
+        "HSM group {target_hsm_group_name} does not exist, cannot remove hw from it."
       )));
     }
   }
 
-  let pattern_str = format!("{}:{}", target_hsm_group_name, pattern);
+  let pattern_str = format!("{target_hsm_group_name}:{pattern}");
   let pattern_lowercase = pattern_str.to_lowercase();
   let mut pattern_element_vec: Vec<&str> =
     pattern_lowercase.split(':').collect();

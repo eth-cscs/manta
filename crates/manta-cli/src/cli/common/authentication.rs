@@ -83,10 +83,7 @@ async fn get_token_from_env(client: &MantaClient) -> Result<String> {
   );
 
   let shasta_token = std::env::var(auth_token_env_name).map_err(|_| {
-    anyhow!(
-      "authentication token not found in env var '{}'",
-      auth_token_env_name
-    )
+    anyhow!("authentication token not found in env var '{auth_token_env_name}'")
   })?;
 
   tracing::info!(
@@ -154,6 +151,40 @@ fn store_token_in_local_file(
   Ok(())
 }
 
+async fn get_token_interactively(client: &MantaClient) -> Result<String> {
+  println!("Please type your {}", "Keycloak credentials".green());
+
+  let username: String =
+    Input::new().with_prompt("username").interact_text()?;
+
+  let password = Password::new().with_prompt("password").interact()?;
+
+  let mut shasta_token_rslt = client.get_token(&username, &password).await;
+
+  let mut attempts = 0;
+
+  while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
+    if let Err(ref err) = shasta_token_rslt {
+      tracing::info!(
+        "Authentication attempt {} failed. Reason: {}",
+        attempts + 1,
+        err
+      );
+    }
+
+    println!("Please type your {}", "Keycloak credentials".green());
+    let username: String =
+      Input::new().with_prompt("username").interact_text()?;
+    let password = Password::new().with_prompt("password").interact()?;
+
+    shasta_token_rslt = client.get_token(&username, &password).await;
+
+    attempts += 1;
+  }
+
+  shasta_token_rslt
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -167,7 +198,7 @@ mod tests {
     let token = "my-secret-token-12345";
 
     let mut path = tmp_dir.path().to_path_buf();
-    path.push(format!("{}{}", site_name, AUTH_CACHE_FILE_SUFFIX));
+    path.push(format!("{site_name}{AUTH_CACHE_FILE_SUFFIX}"));
 
     let mut file = File::options()
       .write(true)
@@ -236,38 +267,4 @@ mod tests {
   fn max_login_attempts_is_reasonable() {
     assert!(MAX_LOGIN_ATTEMPTS >= 1 && MAX_LOGIN_ATTEMPTS <= 10);
   }
-}
-
-async fn get_token_interactively(client: &MantaClient) -> Result<String> {
-  println!("Please type your {}", "Keycloak credentials".green());
-
-  let username: String =
-    Input::new().with_prompt("username").interact_text()?;
-
-  let password = Password::new().with_prompt("password").interact()?;
-
-  let mut shasta_token_rslt = client.get_token(&username, &password).await;
-
-  let mut attempts = 0;
-
-  while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
-    if let Err(ref err) = shasta_token_rslt {
-      tracing::info!(
-        "Authentication attempt {} failed. Reason: {}",
-        attempts + 1,
-        err
-      );
-    }
-
-    println!("Please type your {}", "Keycloak credentials".green());
-    let username: String =
-      Input::new().with_prompt("username").interact_text()?;
-    let password = Password::new().with_prompt("password").interact()?;
-
-    shasta_token_rslt = client.get_token(&username, &password).await;
-
-    attempts += 1;
-  }
-
-  shasta_token_rslt
 }

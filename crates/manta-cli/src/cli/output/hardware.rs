@@ -49,14 +49,14 @@ fn build_details_table(
       {
         let n = counts.get(col).copied().unwrap_or(0);
         row.push(
-          Cell::new(format!("⚠️  ({})", n))
+          Cell::new(format!("⚠️  ({n})"))
             .fg(Color::Yellow)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
       } else if headers.contains(col) && counts.contains_key(col) {
         let n = counts.get(col).copied().unwrap_or(0);
         row.push(
-          Cell::new(format!("✅ ({})", n))
+          Cell::new(format!("✅ ({n})"))
             .fg(Color::Green)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
@@ -84,7 +84,7 @@ fn print_to_terminal_cluster_hw_pattern(
     hsm_group_name,
     pattern
       .iter()
-      .map(|(hw, qty)| format!("{}:{}", hw, qty))
+      .map(|(hw, qty)| format!("{hw}:{qty}"))
       .collect::<Vec<_>>()
       .join(":")
   );
@@ -186,7 +186,7 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
         );
       print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);
     }
-    other => bail!("unsupported output format '{}'", other),
+    other => bail!("unsupported output format '{other}'"),
   }
   Ok(())
 }

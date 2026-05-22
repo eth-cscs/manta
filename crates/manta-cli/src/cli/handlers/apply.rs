@@ -77,8 +77,7 @@ pub async fn handle_apply(
         .map(|v| {
           v.parse::<u8>().with_context(|| {
             format!(
-              "Could not parse ansible-verbosity '{}' as a number (0-255)",
-              v
+              "Could not parse ansible-verbosity '{v}' as a number (0-255)"
             )
           })
         })
@@ -157,7 +156,7 @@ pub async fn handle_apply(
         .await?;
       if let Some(hostname) = response.get("hostname").and_then(|v| v.as_str())
       {
-        println!("{}", hostname);
+        println!("{hostname}");
       }
     }
 
@@ -178,8 +177,8 @@ pub async fn handle_apply(
         ctx,
         &token,
         kernel_parameters,
-        nodes_opt.map(|x| x.as_str()),
-        hsm_group_name_arg_opt.map(|x| x.as_str()),
+        nodes_opt.map(std::string::String::as_str),
+        hsm_group_name_arg_opt.map(std::string::String::as_str),
         assume_yes,
         do_not_reboot,
         dryrun,

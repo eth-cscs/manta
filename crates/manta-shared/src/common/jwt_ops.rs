@@ -25,11 +25,11 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, MantaError> {
     .decode(base64_claims)
     .or_else(|_| BASE64_STANDARD.decode(base64_claims))
     .map_err(|e| {
-      MantaError::JwtMalformed(format!("could not decode claims: {}", e))
+      MantaError::JwtMalformed(format!("could not decode claims: {e}"))
     })?;
 
   let claims_str = std::str::from_utf8(&claims_u8).map_err(|e| {
-    MantaError::JwtMalformed(format!("claims are not valid UTF-8: {}", e))
+    MantaError::JwtMalformed(format!("claims are not valid UTF-8: {e}"))
   })?;
 
   Ok(serde_json::from_str::<Value>(claims_str)?)
@@ -89,7 +89,7 @@ mod tests {
   fn make_jwt(payload: &serde_json::Value) -> String {
     let header = BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
     let body = BASE64_URL_SAFE_NO_PAD.encode(payload.to_string());
-    format!("{}.{}.sig", header, body)
+    format!("{header}.{body}.sig")
   }
 
   // ---- get_name ----
@@ -116,7 +116,7 @@ mod tests {
     let token = make_jwt(&serde_json::json!({
       "name": "Bob Jones"
     }));
-    let bearer_token = format!("Bearer {}", token);
+    let bearer_token = format!("Bearer {token}");
     assert_eq!(get_name(&bearer_token).unwrap(), "Bob Jones");
   }
 
@@ -155,7 +155,7 @@ mod tests {
     let payload = serde_json::json!({"name": "Test"});
     let header = BASE64_STANDARD.encode(r#"{"alg":"none"}"#);
     let body = BASE64_STANDARD.encode(payload.to_string());
-    let token = format!("{}.{}.sig", header, body);
+    let token = format!("{header}.{body}.sig");
     assert_eq!(get_name(&token).unwrap(), "Test");
   }
 
@@ -168,15 +168,15 @@ mod tests {
   fn jwt_with_valid_base64_but_invalid_json() {
     // base64 of "not json at all"
     let body = BASE64_URL_SAFE_NO_PAD.encode("not json at all");
-    let token = format!("header.{}.sig", body);
+    let token = format!("header.{body}.sig");
     assert!(get_claims_from_jwt_token(&token).is_err());
   }
 
   #[test]
   fn jwt_with_valid_base64_but_invalid_utf8() {
     // Raw bytes that aren't valid UTF-8
-    let body = BASE64_URL_SAFE_NO_PAD.encode(&[0xFF, 0xFE, 0xFD]);
-    let token = format!("header.{}.sig", body);
+    let body = BASE64_URL_SAFE_NO_PAD.encode([0xFF, 0xFE, 0xFD]);
+    let token = format!("header.{body}.sig");
     assert!(get_claims_from_jwt_token(&token).is_err());
   }
 
@@ -190,7 +190,7 @@ mod tests {
   fn bearer_prefix_with_extra_spaces() {
     // "Bearer  token" - the split(' ').nth(1) would get empty string
     let token = make_jwt(&serde_json::json!({"name": "Test"}));
-    let bad_bearer = format!("Bearer  {}", token);
+    let bad_bearer = format!("Bearer  {token}");
     // nth(1) returns empty string, which has no dots -> error
     assert!(get_name(&bad_bearer).is_err());
   }

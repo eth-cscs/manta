@@ -27,7 +27,7 @@ const VCS_URL_SUFFIX: &str = "/vcs";
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
 fn main() {
   if let Err(e) = run() {
-    eprintln!("{}", e);
+    eprintln!("{e}");
     std::process::exit(1);
   }
 }
@@ -64,10 +64,10 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .get_matches();
 
   let settings = manta_config::get_server_configuration()
-    .map_err(|e| format!("Could not read server configuration: {}", e))?;
+    .map_err(|e| format!("Could not read server configuration: {e}"))?;
   let configuration: ServerConfiguration = settings
     .try_deserialize()
-    .map_err(|e| format!("Server configuration file is not valid: {}", e))?;
+    .map_err(|e| format!("Server configuration file is not valid: {e}"))?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
@@ -163,5 +163,5 @@ async fn run_server(
     key_path.as_deref(),
   )
   .await
-  .map_err(|e| e.into())
+  .map_err(std::convert::Into::into)
 }

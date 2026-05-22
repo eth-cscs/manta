@@ -17,7 +17,7 @@ use manta_shared::common::log_ops;
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
 fn main() {
   if let Err(e) = run() {
-    eprintln!("{}", e);
+    eprintln!("{e}");
     std::process::exit(1);
   }
 }
@@ -29,11 +29,11 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::cli::build::build_cli().get_matches();
 
   let settings = manta_shared::common::config::get_cli_configuration()
-    .map_err(|e| format!("Could not read CLI configuration file: {}", e))?;
+    .map_err(|e| format!("Could not read CLI configuration file: {e}"))?;
   let configuration: CliConfiguration = settings
     .clone()
     .try_deserialize()
-    .map_err(|e| format!("CLI configuration file is not valid: {}", e))?;
+    .map_err(|e| format!("CLI configuration file is not valid: {e}"))?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()

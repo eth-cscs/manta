@@ -56,7 +56,7 @@ pub async fn exec(
     .add_redfish_endpoint(token, params)
     .await?;
 
-  println!("Redfish endpoint for node '{}' added", id);
+  println!("Redfish endpoint for node '{id}' added");
 
   Ok(())
 }

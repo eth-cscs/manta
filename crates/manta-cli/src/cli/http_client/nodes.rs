@@ -35,8 +35,6 @@ impl MantaClient {
   }
 
   pub async fn delete_node(&self, token: &str, id: &str) -> anyhow::Result<()> {
-    self
-      .delete_no_content(token, &format!("/nodes/{}", id))
-      .await
+    self.delete_no_content(token, &format!("/nodes/{id}")).await
   }
 }

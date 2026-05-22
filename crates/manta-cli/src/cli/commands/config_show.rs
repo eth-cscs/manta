@@ -53,11 +53,12 @@ async fn show(
   // Print configuration file content to stdout
   println!(
     "Configuration file: {}",
-    get_cli_config_file_path()
-      .map(|p| p.to_string_lossy().to_string())
-      .unwrap_or_else(|_| "<unknown>".to_string())
+    get_cli_config_file_path().map_or_else(
+      |_| "<unknown>".to_string(),
+      |p| p.to_string_lossy().to_string()
+    )
   );
-  println!("Log level: {}", log_level);
+  println!("Log level: {log_level}");
   println!(
     "Sites: {}",
     site_table
@@ -66,7 +67,7 @@ async fn show(
       .collect::<Vec<String>>()
       .join(", ")
   );
-  println!("Current site: {}", site_name);
+  println!("Current site: {site_name}");
   println!(
     "Groups available: {}",
     hsm_group_available_opt
@@ -75,8 +76,8 @@ async fn show(
       ])
       .join(", ")
   );
-  println!("Current HSM: {}", settings_hsm_group);
-  println!("Parent HSM: {}", settings_parent_hsm_group);
+  println!("Current HSM: {settings_hsm_group}");
+  println!("Parent HSM: {settings_parent_hsm_group}");
 
   Ok(())
 }

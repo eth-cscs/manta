@@ -40,9 +40,9 @@ pub async fn exec(
         tracing::debug!("Pre-hook script exists and is executable.")
       }
       Err(e) => {
-        bail!("{}. File: {}", e, prehook_path);
+        bail!("{e}. File: {prehook_path}");
       }
-    };
+    }
   }
   if let Some(posthook_path) = posthook {
     match crate::cli::common::hooks::check_hook_perms(Some(posthook_path)) {
@@ -50,22 +50,22 @@ pub async fn exec(
         tracing::debug!("Post-hook script exists and is executable.")
       }
       Err(e) => {
-        bail!("{}. File: {}", e, posthook_path);
+        bail!("{e}. File: {posthook_path}");
       }
-    };
+    }
   }
 
   println!();
   if let Some(prehook_path) = prehook {
-    println!("Running the pre-hook {}", prehook_path);
+    println!("Running the pre-hook {prehook_path}");
     match crate::cli::common::hooks::run_hook(prehook) {
       Ok(_code) => {
         tracing::debug!("Pre-hook script completed ok. RT={}", _code)
       }
       Err(_error) => {
-        bail!("Pre-hook script failed. Error: {}", _error);
+        bail!("Pre-hook script failed. Error: {_error}");
       }
-    };
+    }
   }
 
   let server_url = ctx.manta_server_url;
@@ -76,15 +76,15 @@ pub async fn exec(
     .await?;
 
   if let Some(posthook_path) = posthook {
-    println!("Running the post-hook {}", posthook_path);
+    println!("Running the post-hook {posthook_path}");
     match crate::cli::common::hooks::run_hook(posthook) {
       Ok(_code) => {
         tracing::debug!("Post-hook script completed ok. RT={}", _code)
       }
       Err(_error) => {
-        bail!("Post-hook script failed. Error: {}", _error);
+        bail!("Post-hook script failed. Error: {_error}");
       }
-    };
+    }
   }
 
   println!(

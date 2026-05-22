@@ -87,7 +87,7 @@ impl SatFile {
           .retain(|image| image_name_sessiontemplate_vec.contains(&image.name));
       }
 
-      if self.images.as_ref().is_some_and(|images| images.is_empty()) {
+      if self.images.as_ref().is_some_and(std::vec::Vec::is_empty) {
         self.images = None;
       }
 

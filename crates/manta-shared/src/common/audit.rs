@@ -168,7 +168,7 @@ mod tests {
       json!({"name": name, "preferred_username": preferred_username})
         .to_string(),
     );
-    format!("{}.{}.sig", header, body)
+    format!("{header}.{body}.sig")
   }
 
   // ---- build_audit_message ----

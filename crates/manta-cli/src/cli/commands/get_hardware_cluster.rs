@@ -28,8 +28,7 @@ pub async fn exec(
     parse_hardware_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
   let output = cli_args
     .get_one::<String>("output")
-    .map(String::as_str)
-    .unwrap_or("summary");
+    .map_or("summary", String::as_str);
 
   let server_url = ctx.manta_server_url;
   let json = MantaClient::new(server_url, ctx.site_name)?

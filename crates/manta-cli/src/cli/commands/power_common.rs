@@ -67,7 +67,7 @@ pub async fn exec_nodes(
   };
 
   let server_url = ctx.manta_server_url;
-  println!("Nodes expression: {}", hosts_expression);
+  println!("Nodes expression: {hosts_expression}");
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
     bail!("Operation cancelled by user");
@@ -100,7 +100,7 @@ pub async fn exec_cluster(
   };
 
   let server_url = ctx.manta_server_url;
-  println!("Cluster: {}", hsm_group_name_arg);
+  println!("Cluster: {hsm_group_name_arg}");
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
     bail!("Operation cancelled by user");

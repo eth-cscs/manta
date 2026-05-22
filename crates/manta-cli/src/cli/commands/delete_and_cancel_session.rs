@@ -15,8 +15,7 @@ pub async fn exec(
   let server_url = ctx.manta_server_url;
   if !common::user_interaction::confirm(
     &format!(
-      "Session '{}' will get canceled:\nDo you want to continue?",
-      session_name,
+      "Session '{session_name}' will get canceled:\nDo you want to continue?",
     ),
     assume_yes,
   ) {

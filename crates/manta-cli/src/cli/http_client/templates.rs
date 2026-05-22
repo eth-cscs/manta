@@ -40,7 +40,7 @@ impl MantaClient {
       "dry_run": dry_run,
     });
     self
-      .post_json(token, &format!("/templates/{}/sessions", name), &body)
+      .post_json(token, &format!("/templates/{name}/sessions"), &body)
       .await
   }
 }

@@ -32,22 +32,19 @@ const XNAME_BLADE_PREFIX_LEN: usize = 10;
 fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
   if long_nid.len() != NID_STRING_LENGTH {
     return Err(Error::InvalidNodeId(format!(
-      "Nid '{}' not valid, Nid does not have {} characters",
-      long_nid, NID_STRING_LENGTH
+      "Nid '{long_nid}' not valid, Nid does not have {NID_STRING_LENGTH} characters"
     )));
   }
 
   let nid_number = long_nid.strip_prefix("nid").ok_or_else(|| {
     Error::InvalidNodeId(format!(
-      "Nid '{}' not valid, 'nid' prefix missing",
-      long_nid
+      "Nid '{long_nid}' not valid, 'nid' prefix missing"
     ))
   })?;
 
   nid_number.parse::<usize>().map_err(|e| {
     Error::InvalidNodeId(format!(
-      "Could not convert Nid '{}' from long to short format: {}",
-      nid_number, e
+      "Could not convert Nid '{nid_number}' from long to short format: {e}"
     ))
   })
 }

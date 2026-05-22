@@ -233,12 +233,15 @@ pub async fn create_session(
     .await
     .map_err(to_handler_error)?;
 
-  let repo_name_refs: Vec<&str> =
-    body.repo_names.iter().map(|s| s.as_str()).collect();
+  let repo_name_refs: Vec<&str> = body
+    .repo_names
+    .iter()
+    .map(std::string::String::as_str)
+    .collect();
   let repo_commit_refs: Vec<&str> = body
     .repo_last_commit_ids
     .iter()
-    .map(|s| s.as_str())
+    .map(std::string::String::as_str)
     .collect();
 
   let (session_name, config_name) = service::session::create_cfs_session(
@@ -324,7 +327,7 @@ pub async fn get_session_logs(
 
   let sse_stream = logs_stream.lines().map(|result| {
     Ok::<Event, Infallible>(
-      Event::default().data(result.unwrap_or_else(|e| format!("error: {}", e))),
+      Event::default().data(result.unwrap_or_else(|e| format!("error: {e}"))),
     )
   });
 

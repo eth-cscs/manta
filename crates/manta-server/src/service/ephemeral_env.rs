@@ -38,9 +38,8 @@ pub async fn exec(
     user_public_ssh_value["id"].clone()
   } else {
     return Err(Error::NotFound(format!(
-      "User '{}' does not have an SSH public key in Alps. \
-       Please contact platform sys admins.",
-      user_public_key_name
+      "User '{user_public_key_name}' does not have an SSH public key in Alps. \
+       Please contact platform sys admins."
     )));
   };
 

@@ -68,7 +68,7 @@ pub async fn validate_image_deletion(
   // Check if any requested image is used to boot nodes
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
     .iter()
-    .map(|boot_param| boot_param.try_get_boot_image_id())
+    .map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
     .collect::<Option<Vec<String>>>()
     .ok_or_else(|| {
       Error::MissingField(
@@ -87,7 +87,7 @@ pub async fn validate_image_deletion(
        since they boot nodes.\n{}",
       image_xnames_boot_map
         .iter()
-        .map(|id| id.to_string())
+        .map(std::string::ToString::to_string)
         .collect::<Vec<_>>()
         .join(", ")
     )));
@@ -167,6 +167,6 @@ fn get_restricted_image_ids(
 ) -> Option<Vec<String>> {
   get_restricted_boot_parameters(group_available_vec, boot_parameter_vec)
     .iter()
-    .map(|boot_param| boot_param.try_get_boot_image_id())
+    .map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
     .collect()
 }

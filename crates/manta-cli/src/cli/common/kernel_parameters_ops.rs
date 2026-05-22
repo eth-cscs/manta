@@ -101,7 +101,7 @@ mod tests {
     // Both have different ip= values so 2 groups
     assert_eq!(result.len(), 2);
     // Each group should only have the ip= param
-    for (params, _) in &result {
+    for params in result.keys() {
       assert!(params.iter().all(|p| p.contains("ip")));
     }
   }

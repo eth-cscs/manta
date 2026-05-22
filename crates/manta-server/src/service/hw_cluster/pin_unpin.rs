@@ -294,8 +294,7 @@ pub fn calculate_target_hsm_unpin(
       combination_target_parent_hsm_node_score_tuple_vec
         .iter()
         .find(|(node, _score)| node.eq(&best_candidate.0))
-        .map(|(_, score)| *score)
-        .unwrap_or(0.0),
+        .map_or(0.0, |(_, score)| *score),
       best_candidate_counters
     );
 
@@ -368,7 +367,7 @@ pub fn parse_hw_pattern_usize(
   target_hsm_group_name: &str,
   pattern: &str,
 ) -> Result<(Vec<String>, HashMap<String, usize>), Error> {
-  let pattern = format!("{}:{}", target_hsm_group_name, pattern);
+  let pattern = format!("{target_hsm_group_name}:{pattern}");
   tracing::info!("pattern: {}", pattern);
 
   let pattern_lowercase = pattern.to_lowercase();
@@ -440,10 +439,9 @@ pub async fn ensure_target_group_exists(
     Err(_) => {
       if !create_target_hsm_group {
         return Err(Error::NotFound(format!(
-          "Target HSM group '{}' does not exist, \
+          "Target HSM group '{target_hsm_group_name}' does not exist, \
            but the option to create the group was \
            NOT specified, cannot continue.",
-          target_hsm_group_name,
         )));
       }
       tracing::info!(
@@ -591,7 +589,7 @@ pub async fn apply_group_updates(
            Reported: {}",
           e
         ),
-      };
+      }
     } else if parent_will_be_empty {
       tracing::debug!(
         "Parent HSM group '{}' is now empty and \

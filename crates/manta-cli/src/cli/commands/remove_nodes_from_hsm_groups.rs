@@ -19,8 +19,7 @@ pub async fn exec(
 
   if !common::user_interaction::confirm(
     &format!(
-      "Nodes matching '{}' will be removed from HSM group '{}'. Do you want to proceed?",
-      hosts_expression, target_hsm_name
+      "Nodes matching '{hosts_expression}' will be removed from HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),
     false,
   ) {
@@ -29,8 +28,7 @@ pub async fn exec(
 
   if dryrun {
     println!(
-      "dryrun - Delete nodes matching '{}' in {}",
-      hosts_expression, target_hsm_name
+      "dryrun - Delete nodes matching '{hosts_expression}' in {target_hsm_name}"
     );
     return Ok(());
   }
@@ -42,7 +40,7 @@ pub async fn exec(
   audit::maybe_send_audit(
     kafka_audit_opt,
     token,
-    format!("Remove nodes from group '{}'", target_hsm_name),
+    format!("Remove nodes from group '{target_hsm_name}'"),
     Some(serde_json::json!(hosts_expression)),
     Some(serde_json::json!(vec![target_hsm_name])),
   )

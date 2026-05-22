@@ -73,7 +73,7 @@ impl MantaClient {
   ) -> anyhow::Result<Value> {
     let q = [("dry_run", dry_run.to_string())];
     self
-      .delete_json_with_query(token, &format!("/sessions/{}", name), &q)
+      .delete_json_with_query(token, &format!("/sessions/{name}"), &q)
       .await
   }
 
@@ -102,7 +102,7 @@ impl MantaClient {
     if !resp.status().is_success() {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("GET session logs returned {}: {}", status, body);
+      bail!("GET session logs returned {status}: {body}");
     }
 
     let byte_stream = resp.bytes_stream().map_err(std::io::Error::other);

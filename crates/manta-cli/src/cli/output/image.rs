@@ -41,7 +41,7 @@ pub fn print(image_detail_vec: &[(Image, String, String, bool)]) {
       &image_details
         .2
         .split(',')
-        .map(|v| v.trim())
+        .map(str::trim)
         .collect::<Vec<_>>()
         .join("\n"),
       &image_details

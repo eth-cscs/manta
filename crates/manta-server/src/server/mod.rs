@@ -70,7 +70,7 @@ impl ServerState {
     site_name: &'a str,
   ) -> Result<InfraContext<'a>, Error> {
     let site = self.sites.get(site_name).ok_or_else(|| {
-      Error::NotFound(format!("site '{}' not found", site_name))
+      Error::NotFound(format!("site '{site_name}' not found"))
     })?;
     Ok(InfraContext {
       backend: &site.backend,
@@ -114,7 +114,7 @@ pub async fn start_server(
     ))
     .layer(axum::middleware::from_fn(log_requests));
 
-  let addr: SocketAddr = format!("{}:{}", listen_addr, port)
+  let addr: SocketAddr = format!("{listen_addr}:{port}")
     .parse()
     .map_err(|e| Error::BadRequest(format!("Invalid listen address: {e}")))?;
 
@@ -129,7 +129,7 @@ pub async fn start_server(
           "HTTPS server ready, accepting requests on https://{}",
           addr
         );
-        eprintln!("HTTPS server ready, accepting requests on https://{}", addr);
+        eprintln!("HTTPS server ready, accepting requests on https://{addr}");
       });
       axum_server::bind_rustls(addr, tls_config)
         .handle(handle)
@@ -145,7 +145,7 @@ pub async fn start_server(
           "HTTP server ready, accepting requests on http://{}",
           addr
         );
-        eprintln!("HTTP server ready, accepting requests on http://{}", addr);
+        eprintln!("HTTP server ready, accepting requests on http://{addr}");
       });
       axum_server::bind(addr)
         .handle(handle)

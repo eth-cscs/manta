@@ -13,14 +13,14 @@ fn cfs_session_struct_to_vec(
   let start_time_utc = cfs_session
     .get_start_time()
     .and_then(|date_time| {
-      let date = format!("{}Z", date_time);
+      let date = format!("{date_time}Z");
       date.parse::<DateTime<Local>>().ok()
     })
     .unwrap_or_default();
 
   let completion_time_utc_opt =
     cfs_session.get_completion_time().and_then(|date_time| {
-      let date = format!("{}Z", date_time);
+      let date = format!("{date_time}Z");
       date.parse::<DateTime<Local>>().ok()
     });
 
@@ -77,8 +77,7 @@ fn cfs_session_struct_to_vec(
     .target
     .as_ref()
     .and_then(|t| t.groups.as_ref())
-    .map(|g| !g.is_empty())
-    .unwrap_or(false)
+    .is_some_and(|g| !g.is_empty())
   {
     let mut target_aux = cfs_session
       .target

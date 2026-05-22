@@ -102,11 +102,11 @@ async fn apply_session(
         hsm_group_opt,
         &repo_name_vec
           .iter()
-          .map(|s| s.as_str())
+          .map(std::string::String::as_str)
           .collect::<Vec<&str>>(),
         &repo_last_commit_id_vec
           .iter()
-          .map(|s| s.as_str())
+          .map(std::string::String::as_str)
           .collect::<Vec<&str>>(),
         ansible_limit_opt,
         ansible_verbosity,
@@ -131,7 +131,7 @@ async fn apply_session(
       .context("Failed to read CFS session log stream")?
     {
       if let Some(content) = raw.strip_prefix("data: ") {
-        println!("{}", content);
+        println!("{content}");
       }
     }
   }
@@ -235,18 +235,17 @@ fn check_local_repos(
   // Print CFS session/configuration layers summary
   println!("Please review the following CFS layers:");
   for layer_summary in layers_summary {
-    let layer_num = layer_summary.first().map(|s| s.as_str()).unwrap_or("?");
+    let layer_num = layer_summary
+      .first()
+      .map_or("?", std::string::String::as_str);
     let repo_name = layer_summary
       .get(1)
-      .map(|s| s.as_str())
-      .unwrap_or("unknown");
+      .map_or("unknown", std::string::String::as_str);
     let committed = layer_summary
       .get(2)
-      .map(|s| s.as_str())
-      .unwrap_or("unknown");
+      .map_or("unknown", std::string::String::as_str);
     println!(
-      " - Layer-{}; repo name: {}; local changes committed: {}",
-      layer_num, repo_name, committed
+      " - Layer-{layer_num}; repo name: {repo_name}; local changes committed: {committed}"
     );
   }
 

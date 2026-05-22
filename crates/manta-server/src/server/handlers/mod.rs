@@ -259,7 +259,7 @@ pub(super) fn serialize_or_500<T: Serialize>(
   v: &T,
 ) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
   serde_json::to_value(v).map_err(|e| {
-    let msg = format!("Failed to serialize: {}", e);
+    let msg = format!("Failed to serialize: {e}");
     tracing::error!("{}", msg);
     (
       StatusCode::INTERNAL_SERVER_ERROR,
@@ -326,7 +326,7 @@ pub(super) fn parse_iso_datetime(
       (
         StatusCode::BAD_REQUEST,
         Json(ErrorResponse {
-          error: format!("Invalid '{}' datetime '{}': {}", field, value, e),
+          error: format!("Invalid '{field}' datetime '{value}': {e}"),
         }),
       )
     },

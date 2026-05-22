@@ -133,7 +133,7 @@ async fn health_returns_200_without_auth() {
 async fn health_body_contains_status_ok() {
   let resp = router().oneshot(get("/api/v1/health")).await.unwrap();
   let body = body_string(resp.into_body()).await;
-  assert!(body.contains("\"ok\""), "body was: {}", body);
+  assert!(body.contains("\"ok\""), "body was: {body}");
 }
 
 // ---------------------------------------------------------------------------
@@ -221,8 +221,7 @@ async fn get_routes_reject_missing_bearer_token() {
     assert_eq!(
       resp.status(),
       StatusCode::UNAUTHORIZED,
-      "expected 401 for GET {}",
-      uri
+      "expected 401 for GET {uri}"
     );
   }
 }
@@ -249,8 +248,7 @@ async fn delete_routes_without_body_reject_missing_bearer_token() {
     assert_eq!(
       resp.status(),
       StatusCode::UNAUTHORIZED,
-      "expected 401 for DELETE {}",
-      uri
+      "expected 401 for DELETE {uri}"
     );
   }
 }
@@ -301,9 +299,7 @@ async fn body_routes_reject_missing_bearer_token() {
     assert_eq!(
       resp.status(),
       StatusCode::UNAUTHORIZED,
-      "expected 401 for {} {}",
-      method,
-      uri
+      "expected 401 for {method} {uri}"
     );
   }
 }
@@ -349,9 +345,7 @@ async fn post_routes_reject_invalid_bodies() {
     assert_eq!(
       resp.status(),
       StatusCode::UNPROCESSABLE_ENTITY,
-      "expected 422 for POST {} with body {}",
-      uri,
-      body
+      "expected 422 for POST {uri} with body {body}"
     );
   }
 }
@@ -455,14 +449,12 @@ async fn assert_route_exists(method: Method, uri: &str) {
   assert_ne!(
     resp.status(),
     StatusCode::NOT_FOUND,
-    "route not found: {}",
-    uri
+    "route not found: {uri}"
   );
   assert_ne!(
     resp.status(),
     StatusCode::METHOD_NOT_ALLOWED,
-    "method not allowed: {}",
-    uri
+    "method not allowed: {uri}"
   );
 }
 
@@ -716,12 +708,11 @@ fn to_handler_error_bad_request_variants() {
     Error::UnsupportedBackend("unknown".into()),
     Error::InvalidNodeId("x9999".into()),
   ] {
-    let label = format!("{:?}", err);
+    let label = format!("{err:?}");
     assert_eq!(
       to_handler_error(err).0,
       StatusCode::BAD_REQUEST,
-      "expected 400 for {}",
-      label
+      "expected 400 for {label}"
     );
   }
 }
@@ -736,12 +727,11 @@ fn to_handler_error_unauthorized_variants() {
     Error::AuthenticationTokenNotFound("no header".into()),
     Error::JwtMalformed("bad claims".into()),
   ] {
-    let label = format!("{:?}", err);
+    let label = format!("{err:?}");
     assert_eq!(
       to_handler_error(err).0,
       StatusCode::UNAUTHORIZED,
-      "expected 401 for {}",
-      label
+      "expected 401 for {label}"
     );
   }
 }

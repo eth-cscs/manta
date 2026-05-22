@@ -10,7 +10,7 @@ pub fn get_restricted_boot_parameters(
 ) -> Vec<BootParameters> {
   let group_members: Vec<String> = group_available_vec
     .iter()
-    .flat_map(|group| group.get_members())
+    .flat_map(manta_backend_dispatcher::types::Group::get_members)
     .collect();
 
   boot_parameter_vec

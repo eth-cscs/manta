@@ -13,9 +13,8 @@ pub fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
   if let Some(exit_code) = output.status.code() {
     if exit_code != 0 {
       bail!(
-        "Error: the hook failed with return code={}. \
-         I will not continue.",
-        exit_code
+        "Error: the hook failed with return code={exit_code}. \
+         I will not continue."
       );
     }
     Ok(exit_code)

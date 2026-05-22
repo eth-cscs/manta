@@ -70,13 +70,13 @@ pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
 pub fn parse_repo_name_from_remote(repo: &Repository) -> Result<String, Error> {
   let remote = repo
     .find_remote("origin")
-    .map_err(|e| anyhow!("Failed to find remote 'origin': {}", e))?;
+    .map_err(|e| anyhow!("Failed to find remote 'origin': {e}"))?;
   // git2 0.21 changed `Remote::url()` to return `Result<&str, git2::Error>`
   // (rather than `Option<&str>`), with the Err carrying the underlying
   // libgit2 message — usually a UTF-8 decode failure on the stored URL.
   let url = remote
     .url()
-    .map_err(|e| anyhow!("Remote 'origin' URL is not valid UTF-8: {}", e))?;
+    .map_err(|e| anyhow!("Remote 'origin' URL is not valid UTF-8: {e}"))?;
   parse_repo_name_from_url(url)
     .ok_or_else(|| anyhow!("Remote URL has no '/' separator"))
 }

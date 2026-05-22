@@ -33,8 +33,8 @@ pub struct SatApplyOptions<'a> {
 fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
     crate::cli::common::hooks::check_hook_perms(hook_opt)
-      .map_err(|e| anyhow::anyhow!("{}. File: {}", e, hook))?;
-    println!("{}-hook script '{}' exists and is executable.", label, hook);
+      .map_err(|e| anyhow::anyhow!("{e}. File: {hook}"))?;
+    println!("{label}-hook script '{hook}' exists and is executable.");
   }
   Ok(())
 }
@@ -45,7 +45,7 @@ fn run_hook_if_present(
   label: &str,
 ) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
-    println!("Running the {}-hook '{}'", label, hook);
+    println!("Running the {label}-hook '{hook}'");
     let code = crate::cli::common::hooks::run_hook(hook_opt)?;
     tracing::debug!("{}-hook script completed ok. RT={}", label, code);
   }

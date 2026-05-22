@@ -31,8 +31,7 @@ pub mod http_client {
     let client = reqwest::Client::builder().build()?;
 
     let api_url = format!(
-      "{}{}/auth/jwt-manta-{}/login",
-      vault_base_url, VAULT_API_PREFIX, site_name
+      "{vault_base_url}{VAULT_API_PREFIX}/auth/jwt-manta-{site_name}/login"
     );
 
     tracing::debug!("Accessing/login to {}", api_url);
@@ -91,13 +90,12 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path =
-      format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
+    let vault_secret_path = format!("{VAULT_SECRET_PATH_PREFIX}/{site_name}");
 
     let vault_secret = fetch_secret(
       &vault_token,
       vault_base_url,
-      &format!("{}/{}/vcs", VAULT_API_PREFIX, vault_secret_path),
+      &format!("{VAULT_API_PREFIX}/{vault_secret_path}/vcs"),
     )
     .await?;
 
@@ -123,13 +121,12 @@ pub mod http_client {
     let vault_token =
       auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
 
-    let vault_secret_path =
-      format!("{}/{}", VAULT_SECRET_PATH_PREFIX, site_name);
+    let vault_secret_path = format!("{VAULT_SECRET_PATH_PREFIX}/{site_name}");
 
     let secret = fetch_secret(
       &vault_token,
       vault_base_url,
-      &format!("{}/{}/k8s", VAULT_API_PREFIX, vault_secret_path),
+      &format!("{VAULT_API_PREFIX}/{vault_secret_path}/k8s"),
     )
     .await?;
 

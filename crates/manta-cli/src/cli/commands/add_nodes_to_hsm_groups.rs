@@ -19,8 +19,7 @@ pub async fn exec(
 
   if !common::user_interaction::confirm(
     &format!(
-      "Nodes matching '{}' will be added to HSM group '{}'. Do you want to proceed?",
-      hosts_expression, target_hsm_name
+      "Nodes matching '{hosts_expression}' will be added to HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),
     false,
   ) {
@@ -29,8 +28,7 @@ pub async fn exec(
 
   if dryrun {
     println!(
-      "dryrun - Add nodes matching '{}' to {}",
-      hosts_expression, target_hsm_name
+      "dryrun - Add nodes matching '{hosts_expression}' to {target_hsm_name}"
     );
     return Ok(());
   }
@@ -39,12 +37,12 @@ pub async fn exec(
     .add_nodes_to_group(token, target_hsm_name, hosts_expression)
     .await?;
 
-  println!("HSM '{}' members: {:?}", target_hsm_name, updated_members);
+  println!("HSM '{target_hsm_name}' members: {updated_members:?}");
 
   audit::maybe_send_audit(
     kafka_audit_opt,
     token,
-    format!("add nodes to group: {}", target_hsm_name),
+    format!("add nodes to group: {target_hsm_name}"),
     Some(serde_json::json!(added)),
     Some(serde_json::json!(vec![target_hsm_name])),
   )

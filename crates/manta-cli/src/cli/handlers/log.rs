@@ -66,7 +66,7 @@ pub async fn handle_log(
     by_xname
       .into_iter()
       .next()
-      .context(format!("No CFS session found for '{}'", user_input))?
+      .context(format!("No CFS session found for '{user_input}'"))?
       .name
       .clone()
   };
@@ -83,7 +83,7 @@ pub async fn handle_log(
     .context("Failed to read CFS session log stream")?
   {
     if let Some(content) = raw.strip_prefix("data: ") {
-      println!("{}", content);
+      println!("{content}");
     }
   }
   println!("Log streaming ended");

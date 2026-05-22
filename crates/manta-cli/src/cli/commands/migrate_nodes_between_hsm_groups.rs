@@ -38,8 +38,7 @@ pub async fn exec(
     ctx.kafka_audit_opt,
     token,
     format!(
-      "Migrate nodes from {:?} to {:?}",
-      parent_hsm_name_vec, target_hsm_name_vec
+      "Migrate nodes from {parent_hsm_name_vec:?} to {target_hsm_name_vec:?}"
     ),
     None,
     Some(serde_json::json!(vec![

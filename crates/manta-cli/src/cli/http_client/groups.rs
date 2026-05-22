@@ -54,7 +54,7 @@ impl MantaClient {
   ) -> anyhow::Result<(Vec<String>, Vec<String>)> {
     let body = serde_json::json!({ "hosts_expression": hosts_expression });
     let resp: Value = self
-      .post_json(token, &format!("/groups/{}/members", name), &body)
+      .post_json(token, &format!("/groups/{name}/members"), &body)
       .await?;
     let added = resp["added"]
       .as_array()
@@ -83,7 +83,7 @@ impl MantaClient {
   ) -> anyhow::Result<()> {
     let q = [("force", force.to_string())];
     self
-      .delete_no_content_with_query(token, &format!("/groups/{}", label), &q)
+      .delete_no_content_with_query(token, &format!("/groups/{label}"), &q)
       .await
   }
 
@@ -98,7 +98,7 @@ impl MantaClient {
     self
       .delete_no_content_with_body(
         token,
-        &format!("/groups/{}/members", name),
+        &format!("/groups/{name}/members"),
         &body,
       )
       .await

@@ -49,7 +49,7 @@ impl MantaClient {
     id: &str,
   ) -> anyhow::Result<()> {
     self
-      .delete_no_content(token, &format!("/redfish-endpoints/{}", id))
+      .delete_no_content(token, &format!("/redfish-endpoints/{id}"))
       .await
   }
 }

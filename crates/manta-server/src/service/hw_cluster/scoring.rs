@@ -267,7 +267,7 @@ pub fn print_table_f32_score(
         let counter =
           node_pattern_hashmap.get(hw_component).copied().unwrap_or(0);
         row.push(
-          comfy_table::Cell::new(format!("\u{1F7E2} ({})", counter))
+          comfy_table::Cell::new(format!("\u{1F7E2} ({counter})"))
             .fg(Color::Green)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
@@ -275,7 +275,7 @@ pub fn print_table_f32_score(
         let counter =
           node_pattern_hashmap.get(hw_component).copied().unwrap_or(0);
         row.push(
-          comfy_table::Cell::new(format!("\u{1F7E1} ({})", counter))
+          comfy_table::Cell::new(format!("\u{1F7E1} ({counter})"))
             .fg(Color::Yellow)
             .set_alignment(comfy_table::CellAlignment::Center),
         );
@@ -579,8 +579,7 @@ pub async fn fetch_hsm_hw_inventory(
     .await
     .map_err(|e| {
       Error::NotFound(format!(
-        "Failed to get members from HSM group '{}': {e}",
-        group_name
+        "Failed to get members from HSM group '{group_name}': {e}"
       ))
     })?;
 

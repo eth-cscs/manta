@@ -78,7 +78,7 @@ impl MantaClient {
     let mut req = url.into_client_request().context("Invalid WebSocket URL")?;
     req.headers_mut().insert(
       "Authorization",
-      HeaderValue::from_str(&format!("Bearer {}", token))
+      HeaderValue::from_str(&format!("Bearer {token}"))
         .context("Invalid token header value")?,
     );
     req.headers_mut().insert(

@@ -56,12 +56,12 @@ pub async fn exec(
     added = members;
   }
 
-  println!("Group '{}' created", label);
+  println!("Group '{label}' created");
 
   audit::maybe_send_audit(
     ctx.kafka_audit_opt,
     auth_token,
-    format!("Create Group '{}'", label),
+    format!("Create Group '{label}'"),
     Some(serde_json::json!(added)),
     Some(serde_json::json!(label)),
   )

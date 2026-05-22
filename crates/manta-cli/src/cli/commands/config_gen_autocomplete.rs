@@ -33,7 +33,7 @@ fn gen_autocomplete(
       env::var_os("SHELL").ok_or_else(|| Error::msg("$SHELL env missing"))?,
     )
     .file_name()
-    .map(|v| v.to_ascii_uppercase())
+    .map(std::ffi::OsStr::to_ascii_uppercase)
     .ok_or_else(|| Error::msg("Could not determine shell from $SHELL env"))?;
 
     shell_ostring.into_string().map_err(|os_str| {
@@ -49,7 +49,7 @@ fn gen_autocomplete(
     "ZSH" => clap_complete::Shell::Zsh,
     "FISH" => clap_complete::Shell::Fish,
     _ => {
-      bail!("Shell '{}' not supported", shell);
+      bail!("Shell '{shell}' not supported");
     }
   };
 

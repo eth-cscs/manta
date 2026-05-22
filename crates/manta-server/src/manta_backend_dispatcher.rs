@@ -39,8 +39,7 @@ impl StaticBackendDispatcher {
         Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy)))
       }
       _ => Err(Error::UnsupportedBackend(format!(
-        "Backend '{}' not supported",
-        backend_type
+        "Backend '{backend_type}' not supported"
       ))),
     }
   }

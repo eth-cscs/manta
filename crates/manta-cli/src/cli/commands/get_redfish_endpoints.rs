@@ -29,8 +29,7 @@ pub async fn exec(
   let params = parse_redfish_endpoints_params(cli_args);
   let output = cli_args
     .get_one::<String>("output")
-    .map(String::as_str)
-    .unwrap_or("table");
+    .map_or("table", String::as_str);
 
   let server_url = ctx.manta_server_url;
   let endpoints = MantaClient::new(server_url, ctx.site_name)?

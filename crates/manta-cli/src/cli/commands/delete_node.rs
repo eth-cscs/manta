@@ -15,6 +15,6 @@ pub async fn exec(
   MantaClient::new(server_url, ctx.site_name)?
     .delete_node(token, id)
     .await?;
-  println!("Node deleted '{}'", id);
+  println!("Node deleted '{id}'");
   Ok(())
 }

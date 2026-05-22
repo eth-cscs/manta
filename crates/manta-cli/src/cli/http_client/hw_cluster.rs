@@ -24,7 +24,7 @@ impl MantaClient {
     self
       .post_json(
         token,
-        &format!("/hardware-clusters/{}/members", target),
+        &format!("/hardware-clusters/{target}/members"),
         &body,
       )
       .await
@@ -48,7 +48,7 @@ impl MantaClient {
     self
       .delete_json_with_body(
         token,
-        &format!("/hardware-clusters/{}/members", target),
+        &format!("/hardware-clusters/{target}/members"),
         &body,
       )
       .await
@@ -77,7 +77,7 @@ impl MantaClient {
     self
       .post_json(
         token,
-        &format!("/hardware-clusters/{}/configuration", target),
+        &format!("/hardware-clusters/{target}/configuration"),
         &body,
       )
       .await

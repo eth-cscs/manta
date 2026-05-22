@@ -31,7 +31,7 @@ pub async fn exec(
   )
   .await;
 
-  println!("Node '{}' created and added to group '{}'", id, group);
+  println!("Node '{id}' created and added to group '{group}'");
 
   Ok(())
 }

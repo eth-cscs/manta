@@ -64,11 +64,9 @@ fn validate_hsm_in_available(
 ) -> Result<(), Error> {
   if !hsm_available_vec.iter().any(|h| h == hsm_group) {
     bail!(
-      "HSM group provided ({}) not valid, \
+      "HSM group provided ({hsm_group}) not valid, \
        please choose one of the following \
-       options: {:?}",
-      hsm_group,
-      hsm_available_vec
+       options: {hsm_available_vec:?}"
     );
   }
 

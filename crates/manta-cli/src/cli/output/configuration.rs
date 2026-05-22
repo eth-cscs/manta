@@ -42,8 +42,10 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
         .last_updated
         .clone()
         .parse::<DateTime<Local>>()
-        .map(|dt| dt.format(DATETIME_FORMAT).to_string())
-        .unwrap_or_else(|_| cfs_configuration.last_updated.clone()),
+        .map_or_else(
+          |_| cfs_configuration.last_updated.clone(),
+          |dt| dt.format(DATETIME_FORMAT).to_string(),
+        ),
       layers,
     ]);
   }

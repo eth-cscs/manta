@@ -205,8 +205,7 @@ pub async fn persist_boot_config(
 
   if let Some(new_runtime_configuration_name) = new_runtime_configuration_opt {
     println!(
-      "Updating runtime configuration to '{}'",
-      new_runtime_configuration_name
+      "Updating runtime configuration to '{new_runtime_configuration_name}'"
     );
 
     infra

@@ -20,13 +20,13 @@ pub async fn exec(
     .delete_group(token, label, force)
     .await?;
 
-  println!("Group '{}' deleted", label);
+  println!("Group '{label}' deleted");
 
   // Audit
   audit::maybe_send_audit(
     kafka_audit_opt,
     token,
-    format!("Delete Group '{}'", label),
+    format!("Delete Group '{label}'"),
     None,
     Some(serde_json::json!(label)),
   )

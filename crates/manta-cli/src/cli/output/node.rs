@@ -62,7 +62,7 @@ pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
 
       let mut kernel_params_string: String = kernel_params_vec
         .first()
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .unwrap_or_default();
       let mut cell_width = kernel_params_string.len();
 

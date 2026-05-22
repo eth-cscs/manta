@@ -141,9 +141,8 @@ pub async fn validate_and_prepare_template_session(
         xnames_to_validate_access_vec.append(&mut hsm_members_vec);
       } else {
         return Err(Error::BadRequest(format!(
-          "Value '{}' in 'limit' argument does not match \
-           an xname or a HSM group name.",
-          limit_value
+          "Value '{limit_value}' in 'limit' argument does not match \
+           an xname or a HSM group name."
         )));
       }
     }

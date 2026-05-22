@@ -122,8 +122,7 @@ pub async fn handle_delete(
           "%Y-%m-%dT%H:%M:%S",
         )
         .context(format!(
-          "Could not parse 'since' date '{}'. Expected format: YYYY-MM-DD",
-          since
+          "Could not parse 'since' date '{since}'. Expected format: YYYY-MM-DD"
         ))?;
         Some(date_time)
       } else {
@@ -135,8 +134,7 @@ pub async fn handle_delete(
           "%Y-%m-%dT%H:%M:%S",
         )
         .context(format!(
-          "Could not parse 'until' date '{}'. Expected format: YYYY-MM-DD",
-          until
+          "Could not parse 'until' date '{until}'. Expected format: YYYY-MM-DD"
         ))?;
         Some(date_time)
       } else {
@@ -163,7 +161,7 @@ pub async fn handle_delete(
         .get_one::<String>("IMAGE_LIST")
         .context("'IMAGE_LIST' argument must be provided")?
         .split(',')
-        .map(|s| s.trim())
+        .map(str::trim)
         .collect();
       let dry_run: bool = m.get_flag("dry-run");
       match delete_images::command::exec(
